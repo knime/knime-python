@@ -3,7 +3,8 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Tripos Extension for KNIME: JPython Scripting nodes
 Bundle-SymbolicName: org.knime.ext.jython;singleton:=true
 Bundle-Version: 1.0.0
-Bundle-ClassPath: scriptednode.jar
+Bundle-ClassPath: scriptednode.jar,
+ jython.jar
 Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
 Bundle-Vendor: Tripos, Inc.
 Bundle-Localization: plugin
@@ -11,8 +12,7 @@ DynamicImport-Package: *
 Require-Bundle: org.eclipse.core.runtime,
  org.knime.workbench.core,
  org.knime.workbench.repository,
- org.knime.base,
- org.python.plugin
+ org.knime.base
 Eclipse-AutoStart: true
 Export-Package: org.knime.ext.jython
 
