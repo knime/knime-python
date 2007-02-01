@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.jython"
       label="KNIME Python Scripting Feature"
-      version="1.2.0.BETA"
+      version="1.2.0"
       provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany"
       plugin="org.knime.ext.jython">
 
@@ -279,6 +279,6 @@ terms of this License.
          id="org.knime.ext.jython"
          download-size="0"
          install-size="0"
-         version="1.2.0.BETA"/>
+         version="1.2.0"/>
 
 </feature>
