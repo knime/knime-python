@@ -8,7 +8,7 @@ contact@knime.org
 This plugin uses as library the jython.jar object code, retreived from the
 JYTHON project's home page: http://www.jython.org/. 
 Jython is released under its own terms and conditions which can be found 
-in the file "JythonLicense.txt" in the same directory as this file.
+in the file "JythonLicense.txt" in the same directory as the jar file.
 
 Jythons is copyrighted material.
 Copyright (c) 2000, Jython Developers
