@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 1.0//EN" "http://www.inf.uni-konstanz.de/bioml/research/knime/Node.dtd">
+<knimeNode icon="./jpython.gif"  type="Learner">
+	<name>JPython Script 1:1</name>
+	
+	<shortDescription>
+	    Executes a JPython script, taking 1 input table and returning 1 output table.
+	</shortDescription>
+
+	<fullDescription>
+		<intro>
+		<p>
+		Executes a JPython script, taking 1 input DataTable and returning 1 output DataTable.  
+		A simple example script is included (but commented out) in the dialog's text window of the Script tab.
+		</p>
+		</intro>
+		<option name="inData0">
+		    The input DataTable containing all available input from input port 0.<br />
+		    Available methods:  getDataTableSpec(), iterator().<br />
+		    Example use to obtain DataTableSpec:
+		    <pre>
+    dts = inData0.getDataTableSpec()
+    input1ColumnIndex= dts.findColumnIndex("H atoms")
+            </pre>
+            <br />
+            Example use to step through rows in DataTable:
+            
+            <pre>
+    iterator = inData0.iterator()
+    while iterator.hasNext():
+        row = iterator.next()
+        ...
+            </pre>
+            
+		</option>
+		<option name="outContainer">
+		    Output container housing the outgoing DataTable for output port 0.  This must be populated with rows by the script or else there will be no output from the node.<br />
+		    Available methods:  addRowToTable(ColumnRow arg1)<br />
+		    Example use to iteratively create outgoing DataTable (creates duplicate of input DataTable):
+		    
+		    <pre>
+    iterator = inData0.iterator()
+    while iterator.hasNext():
+        row = iterator.next()
+        outContainer.addRowToTable(row)
+            </pre>
+            
+		</option>
+		<option name="ColumnIndex">
+		    ColumnIndex objects point to particular columns in the DataTable.  A ColumnIndex is useful as input to other methods which need to access values in one particular column of the DataTable.<br />
+		    Available methods:  <i>NONE</i><br />
+		    Example use to identify the column that is labelled "Size of Shoe":
+		    
+		    <pre>
+    dts = inData0.getDataTableSpec()
+    shoeSizeColumnIndex= dts.findColumnIndex("Size of Shoe")
+            </pre>
+            
+		</option>
+		<option name="ColumnRow">
+		    ColumnRow objects correspond to rows in the DataTable.  The results from methods that return a row from a DataTable are actually returning an object of this class.<br />
+		    Available methods:  getCell(ColumnIndex arg1)<br />
+		    Example use to obtain the value from a row for a column that contains strings:
+		    
+		    <pre>
+    dts = inData0.getDataTableSpec()
+    petNamesColumnIndex= dts.findColumnIndex("Name of Pet")
+    iterator = inData0.iterator()
+    row = iterator.next()
+    current_name = str(row.getCell(petNamesColumnIndex))
+            </pre>
+            
+		    Example use to obtain the floating-point value from a row for a particular column:
+		    
+		    <pre>
+    dts = inData0.getDataTableSpec()
+    petWeightColumnIndex= dts.findColumnIndex("Weight of Pet")
+    iterator = inData0.iterator()
+    row = iterator.next()
+    current_name = float(str(row.getCell(petWeightColumnIndex)))
+            </pre>
+            
+		</option>
+		<option name="DataTableSpec">
+		    DataTableSpec objects contain specifications of all of the types of data currently in the DataTable.<br />
+		    Available methods:  findColumnIndex(String arg1)<br />
+		    Example use to obtain DataTableSpec and then locate a particular column by its label:
+		    <pre>
+    dts = inData0.getDataTableSpec()
+    sunshineColumnIndex= dts.findColumnIndex("Days of Sunshine")
+            </pre>
+		</option>
+				
+	</fullDescription>
+	
+	<ports>
+		<dataIn name="Table that the JPython script will operate on." index="0">Table that the JPython script will operate on.</dataIn>
+		<dataOut name="Table containing the results of the JPython script." index="0">Table containing the results of the JPython script.</dataOut>
+	</ports>	
+</knimeNode>
