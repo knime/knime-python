@@ -17,7 +17,7 @@
 			function.  For example, a simple JPython function to sum the
 			values in 2 input columns might be:<br />
 			<br />
-			<tt>val("col1") + val("col2") / 2</tt>
+			<tt>val("col1") + val("col2")</tt>
 			</p>
 		</intro>
 				
