@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+   <extension-point id="classpath" name="Classpath" schema="schema/classpath.exsd"/>
+   <extension
+         point="org.knime.workbench.repository.nodes">
+      <node
+            category-path="/python"
+            factory-class="org.knime.ext.jython.PythonScript11NodeFactory"
+            id="org.knime.ext.jython.script11"/>
+      <node
+            category-path="/python"
+            factory-class="org.knime.ext.jython.PythonScript21NodeFactory"
+            id="org.knime.ext.jython.script21"/>
+      <node
+            category-path="/python"
+            factory-class="org.knime.ext.jython.PythonFunctionNodeFactory"
+            id="org.knime.ext.jython.expression"/>
+   </extension>
+   
+   <extension
+         point="org.knime.workbench.repository.categories">
+      <category
+            icon="icons/category_basic.gif"
+            level-id="python"
+            name="Python"
+            path="/"/>
+   </extension>
+   
+
+</plugin>
