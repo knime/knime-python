@@ -17,7 +17,7 @@ import org.knime.core.node.NodeView;
 public class PythonFunctionNodeFactory extends NodeFactory
 {
 	/**
-	 * @see org.knime.core.node.NodeFactory#createNodeModel()
+	 * {@inheritDoc}
 	 */
 	public NodeModel createNodeModel()
 	{
@@ -25,7 +25,7 @@ public class PythonFunctionNodeFactory extends NodeFactory
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeFactory#getNrNodeViews()
+	 * {@inheritDoc}
 	 */
 	public int getNrNodeViews()
 	{
@@ -33,8 +33,7 @@ public class PythonFunctionNodeFactory extends NodeFactory
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeFactory#createNodeView(int,
-	 *      org.knime.core.node.NodeModel)
+	 * {@inheritDoc}
 	 */
 	public NodeView createNodeView(final int viewIndex,
 			final NodeModel nodeModel)
@@ -43,7 +42,7 @@ public class PythonFunctionNodeFactory extends NodeFactory
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeFactory#hasDialog()
+	 * {@inheritDoc}
 	 */
 	public boolean hasDialog()
 	{
@@ -51,7 +50,7 @@ public class PythonFunctionNodeFactory extends NodeFactory
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeFactory#createNodeDialogPane()
+	 * {@inheritDoc}
 	 */
 	public NodeDialogPane createNodeDialogPane()
 	{

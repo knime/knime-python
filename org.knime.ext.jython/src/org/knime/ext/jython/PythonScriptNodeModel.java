@@ -224,8 +224,7 @@ public class PythonScriptNodeModel extends NodeModel
 	
 	
 	/**
-	 * @see org.knime.core.node.NodeModel
-	 *      #configure(org.knime.core.data.DataTableSpec[])
+	 * {@inheritDoc}
 	 */
 	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
 			throws InvalidSettingsException
@@ -266,14 +265,14 @@ public class PythonScriptNodeModel extends NodeModel
 	
 	
 	/**
-	 * @see org.knime.core.node.NodeModel#reset()
+	 * {@inheritDoc}
 	 */
 	protected void reset()
 	{
 	}
 
     /**
-     * @see NodeModel#loadInternals(java.io.File, ExecutionMonitor)
+     * {@inheritDoc}
      */
 	@Override
     protected void loadInternals(final File nodeInternDir,
@@ -283,9 +282,8 @@ public class PythonScriptNodeModel extends NodeModel
     }
 	
 	
-    /** 
-     * @see org.knime.core.node.NodeModel
-     *  #saveInternals(java.io.File, org.knime.core.node.ExecutionMonitor)
+    /**
+     * {@inheritDoc}
      */
     @Override
     protected void saveInternals(final File nodeInternDir,
@@ -296,8 +294,7 @@ public class PythonScriptNodeModel extends NodeModel
 	
 	
 	/**
-	 * @see org.knime.core.node.NodeModel
-	 *      #saveSettingsTo(org.knime.core.node.NodeSettings)
+	 * {@inheritDoc}
 	 */
 	protected void saveSettingsTo(final NodeSettingsWO settings)
 	{
@@ -307,8 +304,7 @@ public class PythonScriptNodeModel extends NodeModel
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeModel
-	 *      #loadValidatedSettingsFrom(org.knime.core.node.NodeSettings)
+	 * {@inheritDoc}
 	 */
 	protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
 			throws InvalidSettingsException
@@ -319,8 +315,7 @@ public class PythonScriptNodeModel extends NodeModel
 	}
 
 	/**
-	 * @see org.knime.core.node.NodeModel
-	 *      #validateSettings(org.knime.core.node.NodeSettings)
+	 * {@inheritDoc}
 	 */
 	protected void validateSettings(final NodeSettingsRO settings)
 			throws InvalidSettingsException

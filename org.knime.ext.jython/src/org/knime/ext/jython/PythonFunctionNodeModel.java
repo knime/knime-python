@@ -73,8 +73,7 @@ public class PythonFunctionNodeModel extends PythonScriptNodeModel
 	}
 	
 	/**
-	 * @see org.knime.core.node.NodeModel
-	 *      #configure(org.knime.core.data.DataTableSpec[])
+	 * {@inheritDoc}
 	 */
 	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
 			throws InvalidSettingsException

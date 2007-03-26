@@ -67,10 +67,7 @@ public class PythonFunctionNodeDialog extends NodeDialogPane
 	}
 
 	/**
-	 *
-	 * @see org.knime.core.node.NodeDialogPane
-	 *      #loadSettingsFrom(org.knime.core.node.NodeSettings,
-	 *      org.knime.core.data.DataTableSpec[])
+	 * {@inheritDoc}
 	 */
 	protected void loadSettingsFrom(final NodeSettingsRO settings,
 			final DataTableSpec[] specs)
@@ -99,9 +96,7 @@ public class PythonFunctionNodeDialog extends NodeDialogPane
 	}
 
 	/**
-	 *
-	 * @see org.knime.core.node.NodeDialogPane
-	 *      #saveSettingsTo(org.knime.core.node.NodeSettings)
+	 * {@inheritDoc}
 	 */
 	protected void saveSettingsTo(final NodeSettingsWO settings)
 			throws InvalidSettingsException
