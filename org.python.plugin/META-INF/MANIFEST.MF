@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Tripos JPython Library Wrapper Plugin
 Bundle-SymbolicName: org.python.plugin
-Bundle-Version: 1.2.1
+Bundle-Version: 1.2.2
 Bundle-Vendor: Tripos, Inc.
 Bundle-Localization: plugin
 Export-Package: com.ziclix.python.sql,
