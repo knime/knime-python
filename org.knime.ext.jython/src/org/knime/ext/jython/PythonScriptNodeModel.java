@@ -145,13 +145,22 @@ public class PythonScriptNodeModel extends NodeModel
 	    
 	    String pathSep = System.getProperty("path.separator");
 	    String fileSep = System.getProperty("file.separator");
-	    String pythonDir = getSubDirectoryName(pluginsRootDir, "org.python.plugin");
-	    String knimeCoreDir = getSubDirectoryName(pluginsRootDir, "org.knime.core");
-	    String knimeBaseDir = getSubDirectoryName(pluginsRootDir, "org.knime.base");
+//	    String pythonDir = getSubDirectoryName(pluginsRootDir, "org.python.plugin");
+//	    String knimeCoreDir = getSubDirectoryName(pluginsRootDir, "org.knime.core");
+//	    String knimeBaseDir = getSubDirectoryName(pluginsRootDir, "org.knime.base");
+        String pythonDir = "org.python.plugin";
+        String knimeCoreDir = "org.knime.core";
+        String knimeBaseDir = "org.knime.base";
+        if (!(new File(pluginsRootPath + fileSep + pythonDir).exists()
+            && new File(pluginsRootPath + fileSep + knimeCoreDir).exists()
+            && new File(pluginsRootPath + fileSep + knimeBaseDir).exists()))
+        {
+            throw new IOException("Jython initialization problem. Check dependencies!");
+        }
 	    String absolutePythonHomeDir = new File(pluginsRootPath + fileSep + pythonDir).getCanonicalPath();
 	    String absoluteKnimeCoreDir = new File(pluginsRootPath + fileSep + knimeCoreDir).getCanonicalPath();
 	    String absoluteKnimeBaseDir = new File(pluginsRootPath + fileSep + knimeBaseDir).getCanonicalPath();
-	    
+
 	    // set up ext dirs
 		StringBuffer ext = new StringBuffer();
 		ext.append(absoluteKnimeBaseDir + fileSep + "lib");
@@ -170,7 +179,7 @@ public class PythonScriptNodeModel extends NodeModel
 		classpath.append(absoluteKnimeBaseDir + fileSep + "knime-base.jar");
 		classpath.append(getJavaClasspathExtensionPath());
 		
-		Options.verbose = Py.DEBUG;
+		Options.verbose = Py.WARNING;
 		// set necessary properties
 		Properties props = new Properties();
 		props.setProperty("python.home", absolutePythonHomeDir);
@@ -205,9 +214,10 @@ public class PythonScriptNodeModel extends NodeModel
 			PyCode code = __builtin__.compile(scriptHeader + script + scriptFooter, "<>", "exec");
 			interpreter.exec(code);
 		} catch (PyException pe) {
-			pe.printStackTrace();
-			logger.error(pe.getMessage() + "\nFULL SCRIPT:\n" + scriptHeader + script + scriptFooter, pe);
-			throw pe;
+//			pe.printStackTrace();
+			logger.error(pe.getMessage()); // + "\nFULL SCRIPT:\n" + scriptHeader + script + scriptFooter, pe);
+//            setWarningMessage("Jython execution failed: " + pe.value.safeRepr());
+			throw new Exception("Jython error (see console for error log).", (Throwable)pe);
 		}
         interpreter.cleanup();	
 		
