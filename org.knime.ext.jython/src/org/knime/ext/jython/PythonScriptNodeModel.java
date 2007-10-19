@@ -5,15 +5,12 @@ package org.knime.ext.jython;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Properties;
-import org.python.core.Options;
-import org.python.core.Py;
-import org.python.core.PyCode;
-import org.python.core.PyException;
-import org.python.core.PySystemState;
-import org.python.core.__builtin__;
-import org.python.util.PythonInterpreter;
 
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.knime.base.data.append.column.AppendedColumnTable;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
@@ -23,7 +20,23 @@ import org.knime.core.data.container.DataContainer;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
-import org.knime.core.node.*;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.node.NodeModel;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.osgi.framework.Bundle;
+import org.python.core.Options;
+import org.python.core.Py;
+import org.python.core.PyCode;
+import org.python.core.PyException;
+import org.python.core.PySystemState;
+import org.python.core.__builtin__;
+import org.python.util.PythonInterpreter;
 
 /**
  * This is the base implementation of the "JPython Script" node
@@ -138,51 +151,71 @@ public class PythonScriptNodeModel extends NodeModel
 		if (numOutputs == 2) {
 			outContainer2 = new DataContainer(outSpecs[1]);
 		}
-		
-		// construct all necessary paths
-	    String pluginsRootPath = getPluginsRootPath();
-	    File pluginsRootDir = new File(pluginsRootPath);
-	    
-	    String pathSep = System.getProperty("path.separator");
+	 
+		String pathSep = System.getProperty("path.separator");
 	    String fileSep = System.getProperty("file.separator");
-//	    String pythonDir = getSubDirectoryName(pluginsRootDir, "org.python.plugin");
-//	    String knimeCoreDir = getSubDirectoryName(pluginsRootDir, "org.knime.core");
-//	    String knimeBaseDir = getSubDirectoryName(pluginsRootDir, "org.knime.base");
-        String pythonDir = "org.python.plugin";
-        String knimeCoreDir = "org.knime.core";
-        String knimeBaseDir = "org.knime.base";
-        if (!(new File(pluginsRootPath + fileSep + pythonDir).exists()
-            && new File(pluginsRootPath + fileSep + knimeCoreDir).exists()
-            && new File(pluginsRootPath + fileSep + knimeBaseDir).exists()))
-        {
-            throw new IOException("Jython initialization problem. Check dependencies!");
-        }
-	    String absolutePythonHomeDir = new File(pluginsRootPath + fileSep + pythonDir).getCanonicalPath();
-	    String absoluteKnimeCoreDir = new File(pluginsRootPath + fileSep + knimeCoreDir).getCanonicalPath();
-	    String absoluteKnimeBaseDir = new File(pluginsRootPath + fileSep + knimeBaseDir).getCanonicalPath();
-
-	    // set up ext dirs
-		StringBuffer ext = new StringBuffer();
-		ext.append(absoluteKnimeBaseDir + fileSep + "lib");
-		ext.append(pathSep);
-		ext.append(absoluteKnimeCoreDir + fileSep + "lib");
-		ext.append(getJavaExtDirsExtensionPath());
 		
-		// set up the classpath
-		StringBuffer classpath = new StringBuffer();
-		classpath.append(absoluteKnimeCoreDir +  fileSep + "bin");
-		classpath.append(pathSep);
-		classpath.append(absoluteKnimeCoreDir + fileSep + "knime-core.jar");
-		classpath.append(pathSep);
-		classpath.append(absoluteKnimeBaseDir + fileSep + "bin");
-		classpath.append(pathSep);
-		classpath.append(absoluteKnimeBaseDir + fileSep + "knime-base.jar");
-		classpath.append(getJavaClasspathExtensionPath());
+        // construct all necessary paths
+        Bundle core = Platform.getBundle("org.knime.core");
+        String coreClassPath =
+                core.getHeaders().get("Bundle-Classpath").toString();
+        String corePluginPath =
+                FileLocator
+                        .resolve(FileLocator.find(core, new Path("."), null))
+                        .getPath();
+
+        Bundle base = Platform.getBundle("org.knime.base");
+        String baseClassPath =
+                base.getHeaders().get("Bundle-Classpath").toString();
+        String basePluginPath =
+                FileLocator
+                        .resolve(FileLocator.find(base, new Path("."), null))
+                        .getPath();
+
+        Bundle python = Platform.getBundle("org.python.plugin");
+        String pythonPluginPath =
+                FileLocator.resolve(
+                        FileLocator.find(python, new Path("."), null))
+                        .getPath();
+
+        // set up ext dirs
+        StringBuffer ext = new StringBuffer();
+        ext.append(basePluginPath + fileSep + "lib");
+        ext.append(pathSep);
+        ext.append(corePluginPath + fileSep + "lib");
+        ext.append(pathSep);
+        ext.append(getJavaExtDirsExtensionPath());
+
+        // set up the classpath
+        StringBuilder classpath = new StringBuilder();
+        for (String s : coreClassPath.split(",")) {
+            URL u = FileLocator.find(core, new Path(s), null);
+            if (u != null) {
+                classpath.append(FileLocator.resolve(u).getFile());
+                classpath.append(pathSep);
+            }
+        }
+        // this entry is necessary if KNIME is started from Eclipse SDK
+        classpath.append(corePluginPath + fileSep + "bin");
+        classpath.append(pathSep);
+
+        for (String s : baseClassPath.split(",")) {
+            URL u = FileLocator.find(base, new Path(s), null);
+            if (u != null) {
+                classpath.append(FileLocator.resolve(u).getFile());
+                classpath.append(pathSep);
+            }
+        }
+        // this entry is necessary if KNIME is started from Eclipse SDK
+        classpath.append(basePluginPath + fileSep + "bin");
+        classpath.append(pathSep);
+
+        classpath.append(getJavaClasspathExtensionPath());
 		
 		Options.verbose = Py.WARNING;
 		// set necessary properties
 		Properties props = new Properties();
-		props.setProperty("python.home", absolutePythonHomeDir);
+		props.setProperty("python.home", pythonPluginPath);
 		props.setProperty("java.ext.dirs", ext.toString());
 		props.setProperty("java.class.path", classpath.toString());
 		props.setProperty("python.packages.path", "java.class.path, sun.boot.class.path");
@@ -336,14 +369,6 @@ public class PythonScriptNodeModel extends NodeModel
 	}
 	
 	
-	public static void setPluginsRootPath(String path) {
-		pluginsRootPath = path;
-	}
-	
-	public static String getPluginsRootPath() {
-		return pluginsRootPath;
-	}
-	
 	public static void setJavaExtDirsExtensionPath(String path) {
 		javaExtDirsExtensionsPath = path;
 	}
@@ -358,35 +383,5 @@ public class PythonScriptNodeModel extends NodeModel
 	
 	public static String getJavaClasspathExtensionPath() {
 		return javaClasspathExtensionsPath;
-	}
-	
-	private String getSubDirectoryName(File parentDir, String dirNameStartsWith) {
-        // get the correct 'commons' subdirectory name
-        String[] fileList = parentDir.list();
-        String dirName = "";
-        String fileName = "";
-        for (int i=0; i < fileList.length; i++) {
-        	fileName = fileList[i];
-        	if (fileName.indexOf(dirNameStartsWith) != -1) {
-        		return fileName;
-        	}
-        }
-        
-        return null;
-	}
-	
-	private String toPathString(String[] pathsArray) {
-		String pathSep = System.getProperty("path.separator");
-		StringBuffer buffer = new StringBuffer();
-		
-		for (int i=0; i < pathsArray.length; i++) {
-			if (i != 0) { 
-				buffer.append(pathSep); 
-			}
-			buffer.append(pathsArray[i]);
-		}
-			
-		return buffer.toString();	
-	}
-	
+	}	
 }
