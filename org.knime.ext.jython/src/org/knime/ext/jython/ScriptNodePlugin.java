@@ -4,15 +4,12 @@
  */
 package org.knime.ext.jython;
 
-import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
 import org.knime.core.node.NodeLogger;
@@ -54,14 +51,6 @@ public class ScriptNodePlugin extends Plugin
 	{
 		super.start(context);
 
-		// set the resources path for the sketcher
-        URL pluginURL = Platform.resolve(this.find(new Path(".")));  
-        File tmpFile = new File(pluginURL.getPath() + "/..");
-        String pluginsRootPath = tmpFile.getAbsolutePath();
-        
-        PythonScriptNodeModel.setPluginsRootPath(pluginsRootPath);
-        PythonFunctionNodeModel.setPluginsRootPath(pluginsRootPath);
-        
         loadClasspathExtensions();    
 	}
 	
@@ -73,7 +62,7 @@ public class ScriptNodePlugin extends Plugin
 			.getExtensionPoint("org.knime.ext.jython.classpath");
 		IExtension[] extensions = pt.getExtensions();       
     
-	    ArrayList classpathExtensions = new ArrayList();
+	    ArrayList<Object> classpathExtensions = new ArrayList<Object>();
 	    for (int i=0; i < extensions.length; i++) {
 	    	IConfigurationElement[] configElements = 
 	    		extensions[i].getConfigurationElements();
