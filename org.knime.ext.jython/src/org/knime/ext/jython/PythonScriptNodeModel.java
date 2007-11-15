@@ -371,7 +371,6 @@ public class PythonScriptNodeModel extends NodeModel
 			throws InvalidSettingsException
 	{
         settings.getString(SCRIPT);
-        settings.getBoolean(APPEND_COLS);
         settings.getStringArray(COLUMN_NAMES);
         settings.getStringArray(COLUMN_TYPES);
 	}
