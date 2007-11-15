@@ -4,6 +4,7 @@
  */
 package org.knime.ext.jython;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -12,6 +13,7 @@ import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.osgi.framework.BundleContext;
 
@@ -99,7 +101,15 @@ public class ScriptNodePlugin extends Plugin
 	    		javaClasspathExtensions.append(pathSep + javaClasspathEntriesList[i]);
 	    	}
 	    }
-	    
+	   // set cache and suppress System.err-messages from cache creation
+	    System.setProperty("python.verbose", "error");
+	    File knimeDirFile = new File(KNIMEConstants.getKNIMEHomeDir());
+		File jythoncacheDir = new File(knimeDirFile, "packages");
+		if (!jythoncacheDir.exists()) {
+			logger.info("Creating python.cachedir in "
+					+ jythoncacheDir.getAbsolutePath());
+		}
+		PythonScriptNodeModel.setPythonCacheDir(knimeDirFile.getAbsolutePath());
 	    PythonScriptNodeModel.setJavaExtDirsExtensionPath(javaExtDirExtensions.toString());
 	    PythonScriptNodeModel.setJavaClasspathExtensionPath(javaClasspathExtensions.toString());
 	}

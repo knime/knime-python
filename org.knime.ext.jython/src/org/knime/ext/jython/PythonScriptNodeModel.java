@@ -45,8 +45,9 @@ import org.python.util.PythonInterpreter;
  */
 public class PythonScriptNodeModel extends NodeModel
 {
-	
+
 	public static final String SCRIPT = "script";
+	public static final String APPEND_COLS = "append_columns";
 	public static final String COLUMN_NAMES = "new_column_names";
 	public static final String COLUMN_TYPES = "new_column_types";
 	protected int numInputs = 0;
@@ -57,18 +58,20 @@ public class PythonScriptNodeModel extends NodeModel
 	protected String scriptHeader = "";
 	protected String scriptFooter = "";
 	protected String script = "";
+	protected boolean appendCols = true;
 	protected String[] columnNames;
 	protected String[] columnTypes;
 	private static String pluginsRootPath;
 	private static String javaExtDirsExtensionsPath;
 	private static String javaClasspathExtensionsPath;
-	
-	protected PythonScriptNodeModel(int numInputs, int numOutputs) {
+	private static String pythoncacheDir;
+
+	protected PythonScriptNodeModel(final int numInputs, final int numOutputs) {
 		super(numInputs, numOutputs);
-		
+
 		this.numInputs = numInputs;
 		this.numOutputs = numOutputs;
-		
+
 		// define the common imports string
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("from org.knime.core.data import *\n");
@@ -95,9 +98,9 @@ public class PythonScriptNodeModel extends NodeModel
 		buffer.append("    else:\n");
 		buffer.append("        return stringCellValue\n");
 		buffer.append("\n");
-		
+
 		scriptHeader = buffer.toString();
-		
+
 		buffer = new StringBuffer();
 		buffer.append("## Available scripting variables:\n");
 		buffer.append("##     inData0 - input DataTable 0\n");
@@ -133,11 +136,12 @@ public class PythonScriptNodeModel extends NodeModel
 		script = buffer.toString();
 	}
 
-	
-	protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
+
+	@Override
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
 			final ExecutionContext exec) throws CanceledExecutionException,
 			Exception
-	{		
+	{
 		BufferedDataTable in = inData[0];
 		BufferedDataTable in2 = null;
 		if (numInputs == 2) {
@@ -151,10 +155,10 @@ public class PythonScriptNodeModel extends NodeModel
 		if (numOutputs == 2) {
 			outContainer2 = new DataContainer(outSpecs[1]);
 		}
-	 
+
 		String pathSep = System.getProperty("path.separator");
 	    String fileSep = System.getProperty("file.separator");
-		
+
         // construct all necessary paths
         Bundle core = Platform.getBundle("org.knime.core");
         String coreClassPath =
@@ -211,11 +215,12 @@ public class PythonScriptNodeModel extends NodeModel
         classpath.append(pathSep);
 
         classpath.append(getJavaClasspathExtensionPath());
-		
+
 		Options.verbose = Py.WARNING;
 		// set necessary properties
 		Properties props = new Properties();
 		props.setProperty("python.home", pythonPluginPath);
+		props.setProperty("python.cachedir", pythoncacheDir);
 		props.setProperty("java.ext.dirs", ext.toString());
 		props.setProperty("java.class.path", classpath.toString());
 		props.setProperty("python.packages.path", "java.class.path, sun.boot.class.path");
@@ -227,7 +232,7 @@ public class PythonScriptNodeModel extends NodeModel
 		PythonInterpreter interpreter = new PythonInterpreter(null, state);
 		interpreter.setOut(new LoggerOutputStream(logger, NodeLogger.LEVEL.INFO));
 		interpreter.setErr(new LoggerOutputStream(logger, NodeLogger.LEVEL.ERROR));
-		
+
 		interpreter.set("inData0", in);
 		if (numInputs == 2) {
 			interpreter.set("inData1", in2);
@@ -235,7 +240,7 @@ public class PythonScriptNodeModel extends NodeModel
 		interpreter.set("outContainer", outContainer);
 		interpreter.set("outColumnNames", columnNames);
 		interpreter.set("outColumnTypes", columnTypes);
-		
+
 		exec.setMessage("Executing user python script...");
         try {
             exec.checkCanceled();
@@ -250,10 +255,10 @@ public class PythonScriptNodeModel extends NodeModel
 //			pe.printStackTrace();
 			logger.error(pe.getMessage()); // + "\nFULL SCRIPT:\n" + scriptHeader + script + scriptFooter, pe);
 //            setWarningMessage("Jython execution failed: " + pe.value.safeRepr());
-			throw new Exception("Jython error (see console for error log).", (Throwable)pe);
+			throw new Exception("Jython error (see console for error log).", pe);
 		}
-        interpreter.cleanup();	
-		
+        interpreter.cleanup();
+
 		outContainer.close();
 		if (outContainer2 != null) {
 			outContainer2.close();
@@ -264,53 +269,55 @@ public class PythonScriptNodeModel extends NodeModel
 		}
 		return new BufferedDataTable[] {exec.createBufferedDataTable(outContainer.getTable(), exec) };
 	}
-	
-	
+
+
 	/**
 	 * {@inheritDoc}
 	 */
-	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
+	@Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
 			throws InvalidSettingsException
 	{
 		//	append the property columns to the data table spec
-        DataTableSpec newSpec = inSpecs[0];
-        
+        DataTableSpec newSpec = appendCols ? inSpecs[0] : new DataTableSpec();
+
         if (columnNames == null) {
         	return new DataTableSpec[]{newSpec};
         }
-        
+
         for (int i=0; i < columnNames.length; i++) {
         	DataType type = StringCell.TYPE;
         	String columnType = columnTypes[i];
-        	
+
         	if ("String".equals(columnType)) {
-        		type = StringCell.TYPE; 
+        		type = StringCell.TYPE;
         	} else if ("Integer".equals(columnType)) {
         		type = IntCell.TYPE;
         	} else if ("Double".equals(columnType)) {
         		type = DoubleCell.TYPE;
         	}
-        	DataColumnSpec newColumn = 
+        	DataColumnSpec newColumn =
         		new DataColumnSpecCreator(columnNames[i], type).createSpec();
-        	
+
         	newSpec = AppendedColumnTable.getTableSpec(newSpec, newColumn);
         }
-        
+
         if (script == null) {
         	script = "";
         }
-        
+
         if (numOutputs == 2) {
         	return new DataTableSpec[] {newSpec, newSpec};
         }
         return new DataTableSpec[]{newSpec};
 	}
-	
-	
+
+
 	/**
 	 * {@inheritDoc}
 	 */
-	protected void reset()
+	@Override
+    protected void reset()
 	{
 	}
 
@@ -323,8 +330,8 @@ public class PythonScriptNodeModel extends NodeModel
         throws IOException, CanceledExecutionException {
         // Nothing to load.
     }
-	
-	
+
+
     /**
      * {@inheritDoc}
      */
@@ -334,14 +341,16 @@ public class PythonScriptNodeModel extends NodeModel
             CanceledExecutionException {
         // no internals to save
     }
-	
-	
+
+
 	/**
 	 * {@inheritDoc}
 	 */
-	protected void saveSettingsTo(final NodeSettingsWO settings)
+	@Override
+    protected void saveSettingsTo(final NodeSettingsWO settings)
 	{
         settings.addString(SCRIPT, script);
+        settings.addBoolean(APPEND_COLS, appendCols);
         settings.addStringArray(COLUMN_NAMES, columnNames);
         settings.addStringArray(COLUMN_TYPES, columnTypes);
 	}
@@ -349,10 +358,13 @@ public class PythonScriptNodeModel extends NodeModel
 	/**
 	 * {@inheritDoc}
 	 */
-	protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
+	@Override
+    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
 			throws InvalidSettingsException
 	{
         script = settings.getString(SCRIPT);
+        // since 1.3
+        appendCols = settings.getBoolean(APPEND_COLS, true);
         columnNames = settings.getStringArray(COLUMN_NAMES);
         columnTypes = settings.getStringArray(COLUMN_TYPES);
 	}
@@ -360,28 +372,33 @@ public class PythonScriptNodeModel extends NodeModel
 	/**
 	 * {@inheritDoc}
 	 */
-	protected void validateSettings(final NodeSettingsRO settings)
+	@Override
+    protected void validateSettings(final NodeSettingsRO settings)
 			throws InvalidSettingsException
 	{
         settings.getString(SCRIPT);
         settings.getStringArray(COLUMN_NAMES);
         settings.getStringArray(COLUMN_TYPES);
 	}
-	
-	
-	public static void setJavaExtDirsExtensionPath(String path) {
+
+
+	public static void setJavaExtDirsExtensionPath(final String path) {
 		javaExtDirsExtensionsPath = path;
 	}
-	
+
 	public static String getJavaExtDirsExtensionPath() {
 		return javaExtDirsExtensionsPath;
 	}
-	
-	public static void setJavaClasspathExtensionPath(String path) {
+
+	public static void setJavaClasspathExtensionPath(final String path) {
 		javaClasspathExtensionsPath = path;
 	}
-	
+
+	public static void setPythonCacheDir(final String path) {
+		pythoncacheDir = path;
+	}
+
 	public static String getJavaClasspathExtensionPath() {
 		return javaClasspathExtensionsPath;
-	}	
+	}
 }
