@@ -47,6 +47,7 @@ public class PythonScriptNodeModel extends NodeModel
 {
 	
 	public static final String SCRIPT = "script";
+	public static final String APPEND_COLS = "append_columns";
 	public static final String COLUMN_NAMES = "new_column_names";
 	public static final String COLUMN_TYPES = "new_column_types";
 	protected int numInputs = 0;
@@ -57,11 +58,13 @@ public class PythonScriptNodeModel extends NodeModel
 	protected String scriptHeader = "";
 	protected String scriptFooter = "";
 	protected String script = "";
+	protected boolean appendCols = true;
 	protected String[] columnNames;
 	protected String[] columnTypes;
 	private static String pluginsRootPath;
 	private static String javaExtDirsExtensionsPath;
 	private static String javaClasspathExtensionsPath;
+	private static String pythoncacheDir;
 	
 	protected PythonScriptNodeModel(int numInputs, int numOutputs) {
 		super(numInputs, numOutputs);
@@ -216,6 +219,7 @@ public class PythonScriptNodeModel extends NodeModel
 		// set necessary properties
 		Properties props = new Properties();
 		props.setProperty("python.home", pythonPluginPath);
+		props.setProperty("python.cachedir", pythoncacheDir);
 		props.setProperty("java.ext.dirs", ext.toString());
 		props.setProperty("java.class.path", classpath.toString());
 		props.setProperty("python.packages.path", "java.class.path, sun.boot.class.path");
@@ -273,7 +277,7 @@ public class PythonScriptNodeModel extends NodeModel
 			throws InvalidSettingsException
 	{
 		//	append the property columns to the data table spec
-        DataTableSpec newSpec = inSpecs[0];
+        DataTableSpec newSpec = appendCols ? inSpecs[0] : new DataTableSpec();
         
         if (columnNames == null) {
         	return new DataTableSpec[]{newSpec};
@@ -342,6 +346,7 @@ public class PythonScriptNodeModel extends NodeModel
 	protected void saveSettingsTo(final NodeSettingsWO settings)
 	{
         settings.addString(SCRIPT, script);
+        settings.addBoolean(APPEND_COLS, appendCols);
         settings.addStringArray(COLUMN_NAMES, columnNames);
         settings.addStringArray(COLUMN_TYPES, columnTypes);
 	}
@@ -353,6 +358,8 @@ public class PythonScriptNodeModel extends NodeModel
 			throws InvalidSettingsException
 	{
         script = settings.getString(SCRIPT);
+        // since 1.3
+        appendCols = settings.getBoolean(APPEND_COLS, true);
         columnNames = settings.getStringArray(COLUMN_NAMES);
         columnTypes = settings.getStringArray(COLUMN_TYPES);
 	}
@@ -364,6 +371,7 @@ public class PythonScriptNodeModel extends NodeModel
 			throws InvalidSettingsException
 	{
         settings.getString(SCRIPT);
+        settings.getBoolean(APPEND_COLS);
         settings.getStringArray(COLUMN_NAMES);
         settings.getStringArray(COLUMN_TYPES);
 	}
@@ -379,6 +387,10 @@ public class PythonScriptNodeModel extends NodeModel
 	
 	public static void setJavaClasspathExtensionPath(String path) {
 		javaClasspathExtensionsPath = path;
+	}
+	
+	public static void setPythonCacheDir(String path) {
+		pythoncacheDir = path;
 	}
 	
 	public static String getJavaClasspathExtensionPath() {

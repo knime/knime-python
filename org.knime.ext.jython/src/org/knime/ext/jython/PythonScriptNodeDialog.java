@@ -11,8 +11,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import javax.swing.AbstractAction;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -36,6 +38,7 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 	private JTextArea scriptTextArea = new JTextArea(10,40);
 	private JTable table;
 	private int counter = 1;
+	private JCheckBox m_appendColsCB;
 
 	/**
 	 * New pane for configuring ScriptedNode node dialog
@@ -51,10 +54,12 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 	
 		// construct the output column selection panel
 		JPanel outputPanel = new JPanel();
-		outputPanel.setLayout(new BorderLayout());
+		outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
 		JPanel outputButtonPanel = new JPanel();
 		JPanel outputMainPanel = new JPanel(new BorderLayout());
-		
+		JPanel newtableCBPanel = new JPanel();
+		m_appendColsCB = new JCheckBox("Append columns to input table spec");
+		newtableCBPanel.add(m_appendColsCB, BorderLayout.WEST);
 		JButton addButton = new JButton(new AbstractAction() {
 
         	public void actionPerformed(ActionEvent e) {
@@ -99,8 +104,9 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 		
 		outputMainPanel.add(table.getTableHeader(), BorderLayout.PAGE_START);
 		outputMainPanel.add(table, BorderLayout.CENTER);
-		outputPanel.add(outputButtonPanel, BorderLayout.PAGE_START);
-		outputPanel.add(outputMainPanel, BorderLayout.CENTER);
+		outputPanel.add(newtableCBPanel);
+		outputPanel.add(outputButtonPanel);
+		outputPanel.add(outputMainPanel);
 		
 		TableColumn typeColumn = table.getColumnModel().getColumn(1);
 		JComboBox typeSelector = new JComboBox();
@@ -178,16 +184,21 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 		}
 		scriptTextArea.setText(script);
 		
+		boolean appendCols = settings.getBoolean(
+		        PythonScriptNodeModel.APPEND_COLS, true);
+		m_appendColsCB.setSelected(appendCols);
+		
 		String[] dataTableColumnNames = 
 			settings.getStringArray(PythonScriptNodeModel.COLUMN_NAMES, new String[0]);
 		String[] dataTableColumnTypes = 
 			settings.getStringArray(PythonScriptNodeModel.COLUMN_TYPES, new String[0]);
 
+		((ScriptNodeOutputColumnsTableModel) table.getModel()).clearRows();
+		
 		if (dataTableColumnNames == null) {
 			return;
 		}
 		
-		((ScriptNodeOutputColumnsTableModel) table.getModel()).clearRows();
 		for (int i=0; i < dataTableColumnNames.length; i++) {
 			((ScriptNodeOutputColumnsTableModel) table.getModel()).addRow(dataTableColumnNames[i],
 					dataTableColumnTypes[i]);
@@ -217,6 +228,7 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 		}
 		settings.addString(PythonScriptNodeModel.SCRIPT, scriptTextArea.getText());
 
+		settings.addBoolean(PythonScriptNodeModel.APPEND_COLS, m_appendColsCB.isSelected());
 		String[] columnNames = 
 			((ScriptNodeOutputColumnsTableModel) table.getModel()).getDataTableColumnNames();
 		settings.addStringArray(PythonScriptNodeModel.COLUMN_NAMES, columnNames);

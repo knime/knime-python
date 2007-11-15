@@ -14,6 +14,16 @@
 		A simple example script is included (but commented out) in the dialog's text window of the Script tab.
 		</p>
 		</intro>
+		<option name="Append columns to input table spec">
+		If checked, the columns as given in the list are appended to the 
+		input table specification, i.e. the number of columns in the output table
+		equals the number of input columns plus the number of columns as given in the list.
+		If unchecked, the output table will have as many columns as given in the list.
+		</option>
+		<option name="Column list">
+		Specify the column name and type of all result columns. After adding a 
+		new column, click on the name or type to change its value.
+		</option>
 		<option name="inData0">
 		    The input DataTable containing all available input from input port 0.<br />
 		    Available methods:  getDataTableSpec(), iterator().<br />
