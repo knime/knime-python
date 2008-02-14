@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<feature id="org.knime.features.ext.jython" label="KNIME Python Scripting" plugin="org.knime.ext.jython" provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany" version="1.4.0.ALPHA">
+<feature id="org.knime.features.ext.jython" label="KNIME Python Scripting" plugin="org.knime.ext.jython" provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany" version="2.0.0.0014633">
 
    <description url="http://www.knime.org/download_extensions.html">
       This feature contains nodes for python scripting functionality.
    </description>
 
    <copyright>
-      Copyright, 2003 - 2007
+      Copyright, 2003 - 2008
 University of Konstanz, Germany.
 Chair for Bioinformatics and Information Mining
 Prof. Dr. Michael R. Berthold
