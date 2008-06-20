@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<feature id="org.knime.features.ext.jython" label="KNIME Python Scripting" plugin="org.knime.ext.jython" provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany" version="1.3.5">
+<feature id="org.knime.features.ext.jython" label="KNIME Python Scripting" plugin="org.knime.ext.jython" provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany" version="1.3.5.1">
 
    <description url="http://www.knime.org/download_extensions.html">
       This feature contains nodes for python scripting functionality.
