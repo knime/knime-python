@@ -4,13 +4,13 @@ Bundle-Name: Tripos JPython Library Wrapper Plugin
 Bundle-SymbolicName: org.python.plugin
 Bundle-Version: 2.1
 Bundle-Vendor: Tripos, Inc.
-Bundle-Localization: plugin
 Export-Package: com.ziclix.python.sql,
  com.ziclix.python.sql.connect,
  com.ziclix.python.sql.handler,
  com.ziclix.python.sql.pipe,
  com.ziclix.python.sql.pipe.csv,
  com.ziclix.python.sql.pipe.db,
+ com.ziclix.python.sql.resource,
  com.ziclix.python.sql.util,
  jxxload_help,
  org.apache.oro.text.regex,
