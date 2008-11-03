@@ -21,8 +21,8 @@
 	</fullDescription>
 	
 	<ports>
-		<dataIn name="Table 1 that the JPython script will operate on." index="0">Table 1 that the JPython script will operate on.</dataIn>
-		<dataIn name="Table 2 that the JPython script will operate on." index="1">Table 2 that the JPython script will operate on.</dataIn>
-		<dataOut name="Table containing the results of the JPython script." index="0">Table containing the results of the JPython script.</dataOut>
+		<inPort name="Table 1 that the JPython script will operate on." index="0">Table 1 that the JPython script will operate on.</inPort>
+		<inPort name="Table 2 that the JPython script will operate on." index="1">Table 2 that the JPython script will operate on.</inPort>
+		<outPort name="Table containing the results of the JPython script." index="0">Table containing the results of the JPython script.</outPort>
 	</ports>	
 </knimeNode>

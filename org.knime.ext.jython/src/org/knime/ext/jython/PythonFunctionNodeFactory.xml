@@ -24,7 +24,7 @@
 	</fullDescription>
 	
 	<ports>
-		<dataIn name="Table that the JPython function will operate on." index="0">Table that the JPython function will operate on.</dataIn>
-		<dataOut name="Table containing the results of the JPython function." index="0">Table containing the results of the JPython function.</dataOut>
+		<inPort name="Table that the JPython function will operate on." index="0">Table that the JPython function will operate on.</inPort>
+		<outPort name="Table containing the results of the JPython function." index="0">Table containing the results of the JPython function.</outPort>
 	</ports>	
 </knimeNode>

@@ -104,7 +104,7 @@
 	</fullDescription>
 	
 	<ports>
-		<dataIn name="Table that the JPython script will operate on." index="0">Table that the JPython script will operate on.</dataIn>
-		<dataOut name="Table containing the results of the JPython script." index="0">Table containing the results of the JPython script.</dataOut>
+		<inPort name="Table that the JPython script will operate on." index="0">Table that the JPython script will operate on.</inPort>
+		<outPort name="Table containing the results of the JPython script." index="0">Table containing the results of the JPython script.</outPort>
 	</ports>	
 </knimeNode>
