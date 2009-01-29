@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Tripos Extension for KNIME: JPython Scripting nodes
 Bundle-SymbolicName: org.knime.ext.jython;singleton:=true
-Bundle-Version: 2.0.0.0019487
+Bundle-Version: 2.0.1.0019867
 Bundle-ClassPath: knime-jython-patches.jar,
  knime-jython.jar
 Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
