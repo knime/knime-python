@@ -268,7 +268,7 @@ terms of this License.
       <import plugin="org.knime.workbench.core"/>
    </requires>
 
-   <plugin id="org.knime.features.ext.jython.source" version="0.0.0"/>
+   <includes id="org.knime.features.ext.jython.source" version="0.0.0"/>
 
    <plugin download-size="0" id="org.knime.ext.jython" install-size="0" version="0.0.0"/>
 
