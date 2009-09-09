@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.ext.jython"
-      label="KNIME Python Scripting"
+      label="%featureName"
       version="2.1.0.0021700"
       provider-name="KNIME GmbH, Konstanz, Germany"
       plugin="org.knime.ext.jython">
 
    <description url="http://www.knime.org/download_extensions.html">
-      This feature contains nodes for python scripting functionality.
+      %description
    </description>
 
    <copyright>
