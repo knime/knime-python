@@ -725,7 +725,7 @@ propagated with or for interoperation with KNIME.
 	</license>
 
    <url>
-      <update label="KNIME Update Site" url="http://www.knime.org/update/2.1"/>
+      <update label="KNIME Update Site" url="http://www.knime.org/update/2.2"/>
    </url>
 
    <includes id="org.knime.features.ext.jython.source" version="0.0.0"/>
