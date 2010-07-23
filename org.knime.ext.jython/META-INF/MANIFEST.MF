@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME JPython Scripting nodes
 Bundle-SymbolicName: org.knime.ext.jython;singleton:=true
-Bundle-Version: 2.2.0.0026141
+Bundle-Version: 2.2.0.0026408
 Bundle-ClassPath: knime-jython-patches.jar,
  knime-jython.jar
 Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
