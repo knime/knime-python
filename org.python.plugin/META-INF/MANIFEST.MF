@@ -22,3 +22,4 @@ Export-Package: com.ziclix.python.sql,
  org.python.rmi,
  org.python.util
 Bundle-ClassPath: jython.jar
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
