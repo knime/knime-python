@@ -13,9 +13,10 @@
 			This node populates a new column (appended to the input DataTable)
 			by executing the specified JPython function once per row in the 
 			input DataTable.  The values for each column in the input row
-			may be accessed via a <tt>val("column name")</tt> JPython
-			function.  For example, a simple JPython function to sum the
-			values in 2 input columns might be:<br />
+			may be accessed via the <tt>val("column name")</tt> (returning float, 
+			int or string) or the <tt>valplain("column name")</tt> (returning
+			the concrete cell object) JPython function.  For example, a simple 
+			JPython function to sum the	values in 2 input columns might be:<br />
 			<br />
 			<tt>val("col1") + val("col2")</tt>
 			</p>

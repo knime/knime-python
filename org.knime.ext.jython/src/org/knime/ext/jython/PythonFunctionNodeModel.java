@@ -18,7 +18,7 @@ public class PythonFunctionNodeModel extends PythonScriptNodeModel
 	// our logger instance
 	private static NodeLogger logger = NodeLogger.getLogger(PythonFunctionNodeModel.class);
 
-	
+
 	protected PythonFunctionNodeModel() {
 		super(1,1);
 
@@ -33,6 +33,10 @@ public class PythonFunctionNodeModel extends PythonScriptNodeModel
 		header.append("row = 0\n");
 		header.append("outColumnType = outColumnTypes[0]\n");
 		header.append("print \"outcoltype = \" + outColumnType\n");
+		header.append("\n");
+		header.append("def valplain(colname) :\n");
+		header.append("    index = __dts.findColumnIndex(colname)\n");
+		header.append("    return row.getCell(index)\n");
 		header.append("\n");
 		header.append("def val(colname) :\n");
 		header.append("    index = __dts.findColumnIndex(colname)\n");
@@ -60,32 +64,33 @@ public class PythonFunctionNodeModel extends PythonScriptNodeModel
 		header.append("    row = iterator.next()\n");
 		header.append("    newCell = getDataCell(");
 		scriptHeader = header.toString();
-		
-		
+
+
 		StringBuffer footer = new StringBuffer();
 		footer.append(")\n");
 		footer.append("    newRow = AppendedColumnRow(row, [newCell])\n");
 		footer.append("    outContainer.addRowToTable(newRow)");
 		scriptFooter = footer.toString();
-		
+
 		// initialize the script/function contents
 		script = "";
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
-	protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
+	@Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
 			throws InvalidSettingsException
 	{
 		if (script == null || "".equals(script)) {
 			throw new InvalidSettingsException("Please specify a JPython function.");
 		}
-		
+
 		if (columnNames == null || columnNames.length == 0) {
 			throw new InvalidSettingsException("Please specify an output column name.");
 		}
-		
+
         return super.configure(inSpecs);
 	}
 }
