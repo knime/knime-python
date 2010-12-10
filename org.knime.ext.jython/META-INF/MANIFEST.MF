@@ -8,7 +8,7 @@ Require-Bundle: org.eclipse.core.runtime,org.knime.workbench.core,org.
  knime.workbench.repository,org.knime.base,org.python.plugin
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
 DynamicImport-Package: *
-Bundle-Version: 2.3.0.qualifier
+Bundle-Version: 2.4.0.qualifier
 Bundle-ManifestVersion: 2
 Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
 Bundle-SymbolicName: org.knime.ext.jython;singleton:=true
