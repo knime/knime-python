@@ -1,15 +1,17 @@
 Manifest-Version: 1.0
-Export-Package: org.knime.ext.jython
-Bundle-ActivationPolicy: lazy
-Bundle-ClassPath: knime-jython.jar
-Bundle-Name: KNIME JPython Scripting nodes
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.eclipse.core.runtime,org.knime.workbench.core,org.
- knime.workbench.repository,org.knime.base,org.python.plugin
-Bundle-Vendor: KNIME GmbH, Konstanz, Germany
-DynamicImport-Package: *
-Bundle-Version: 2.3.0.qualifier
 Bundle-ManifestVersion: 2
-Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
+Bundle-Name: KNIME JPython Scripting nodes
 Bundle-SymbolicName: org.knime.ext.jython;singleton:=true
-
+Bundle-Version: 2.3.1.qualifier
+Bundle-ClassPath: knime-jython.jar
+Bundle-Activator: org.knime.ext.jython.ScriptNodePlugin
+Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Export-Package: org.knime.ext.jython
+Require-Bundle: org.eclipse.core.runtime,
+ org.knime.workbench.core,
+ org.knime.workbench.repository,
+ org.knime.base,
+ org.python.plugin
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+DynamicImport-Package: *
