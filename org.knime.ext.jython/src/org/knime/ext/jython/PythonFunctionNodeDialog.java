@@ -17,13 +17,9 @@ import org.knime.core.node.*;
  */
 public class PythonFunctionNodeDialog extends NodeDialogPane
 {
-	private static NodeLogger logger = NodeLogger.getLogger(PythonFunctionNodeDialog.class);
 	private JTextArea scriptTextArea = new JTextArea(10,40);
 	private JTextField colNameTextField = new JTextField();
 	private JComboBox  colTypeSelector = new JComboBox();
-	private JTable table;
-	private int counter = 1;
-
 	/**
 	 * New pane for configuring ScriptedNode node dialog
 	 *

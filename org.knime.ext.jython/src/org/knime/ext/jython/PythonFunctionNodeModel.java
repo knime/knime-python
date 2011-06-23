@@ -5,7 +5,6 @@ package org.knime.ext.jython;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 
 /**
  * This is the implementation of the "JPython Script" node
@@ -14,10 +13,6 @@ import org.knime.core.node.NodeLogger;
  */
 public class PythonFunctionNodeModel extends PythonScriptNodeModel
 {
-
-	// our logger instance
-	private static NodeLogger logger = NodeLogger.getLogger(PythonFunctionNodeModel.class);
-
 
 	protected PythonFunctionNodeModel() {
 		super(1,1);

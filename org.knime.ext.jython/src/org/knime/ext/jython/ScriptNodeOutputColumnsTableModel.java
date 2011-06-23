@@ -5,8 +5,9 @@ import java.util.*;
 
 public class ScriptNodeOutputColumnsTableModel extends AbstractTableModel {
 
-	ArrayList data = new ArrayList();
-	ArrayList columnNames = new ArrayList();
+	private static final long serialVersionUID = 3748218849626706004L;
+	ArrayList<ArrayList<Object>> data = new ArrayList<ArrayList<Object>>();
+	ArrayList<String> columnNames = new ArrayList<String>();
 	
 	public String getColumnName(int col) { 
 	    return columnNames.get(col).toString(); 
@@ -22,20 +23,20 @@ public class ScriptNodeOutputColumnsTableModel extends AbstractTableModel {
 	
 	public Object getValueAt(int row, int col) {
 		
-		ArrayList rowList = (ArrayList) data.get(row);
+		ArrayList<Object> rowList = data.get(row);
 		return rowList.get(col);
 	}
 	
 	public boolean isCellEditable(int row, int col) { return true; }
 	
 	public void setValueAt(Object value, int row, int col) {
-		ArrayList rowList = (ArrayList) data.get(row);
+		ArrayList<Object> rowList = data.get(row);
 		rowList.set(col, value);
 	    fireTableCellUpdated(row, col);
 	}
 	
 	public void addRow(Object dataTableColumnName, Object dataTableColumnType) {
-		ArrayList row = new ArrayList();
+		ArrayList<Object> row = new ArrayList<Object>();
 		row.add(dataTableColumnName);
 		row.add(dataTableColumnType);
 		
@@ -65,10 +66,10 @@ public class ScriptNodeOutputColumnsTableModel extends AbstractTableModel {
 	private String[] getDataTableValues(int colIndex) {
 		String[] dataTableColumnValues = new String[data.size()];
 		
-		Iterator i = data.iterator();
+		Iterator<ArrayList<Object>> i = data.iterator();
 		int rowNum = 0;
 		while (i.hasNext()) {
-			ArrayList row = (ArrayList) i.next();
+			ArrayList<Object> row = i.next();
 			dataTableColumnValues[rowNum] = (String) row.get(colIndex);
 			rowNum++;
 		}
@@ -76,6 +77,6 @@ public class ScriptNodeOutputColumnsTableModel extends AbstractTableModel {
 	}
 	
 	public void clearRows() {
-		data = new ArrayList();
+		data = new ArrayList<ArrayList<Object>>();
 	}
 }

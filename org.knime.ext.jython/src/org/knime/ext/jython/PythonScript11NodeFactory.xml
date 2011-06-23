@@ -13,6 +13,9 @@
 		Executes a JPython script, taking 1 input DataTable and returning 1 output DataTable.  
 		A simple example script is included (but commented out) in the dialog's text window of the Script tab.
 		</p>
+		<p>
+		Currently employs jython v2.2.1.
+		</p>
 		</intro>
 		<option name="Append columns to input table spec">
 		If checked, the columns as given in the list are appended to the 

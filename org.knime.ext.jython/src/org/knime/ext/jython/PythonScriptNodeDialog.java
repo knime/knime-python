@@ -62,7 +62,9 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 		newtableCBPanel.add(m_appendColsCB, BorderLayout.WEST);
 		JButton addButton = new JButton(new AbstractAction() {
 
-        	public void actionPerformed(ActionEvent e) {
+			private static final long serialVersionUID = -5607186006589392687L;
+
+			public void actionPerformed(ActionEvent e) {
         		((ScriptNodeOutputColumnsTableModel) table.getModel()).addRow("script output " + counter,
         				"String");
         		counter++;
@@ -72,7 +74,9 @@ public class PythonScriptNodeDialog extends NodeDialogPane
         
         JButton removeButton = new JButton(new AbstractAction() {
 
-        	public void actionPerformed(ActionEvent e) {
+			private static final long serialVersionUID = 7437047379279222176L;
+
+			public void actionPerformed(ActionEvent e) {
         		int[] selectedRows = table.getSelectedRows();
         		logger.debug("selectedRows = " + selectedRows);
         		
@@ -122,7 +126,8 @@ public class PythonScriptNodeDialog extends NodeDialogPane
 		JPanel scriptButtonPanel = new JPanel();
         JButton scriptButton = new JButton(new AbstractAction() {
         	
-        	JFileChooser fileChooser = new JFileChooser();
+			private static final long serialVersionUID = 6097485154386131768L;
+			JFileChooser fileChooser = new JFileChooser();
         	
         	public void actionPerformed(ActionEvent e) {
         		

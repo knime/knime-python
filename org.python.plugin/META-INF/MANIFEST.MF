@@ -12,14 +12,10 @@ Export-Package: com.ziclix.python.sql,
  com.ziclix.python.sql.pipe.db,
  com.ziclix.python.sql.resource,
  com.ziclix.python.sql.util,
- jxxload_help,
- org.apache.oro.text.regex,
  org.python.compiler,
  org.python.core,
  org.python.modules,
  org.python.modules.sre,
- org.python.parser,
- org.python.rmi,
  org.python.util
 Bundle-ClassPath: jython.jar
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6

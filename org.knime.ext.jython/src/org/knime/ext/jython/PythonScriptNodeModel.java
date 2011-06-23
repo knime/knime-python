@@ -61,16 +61,15 @@ public class PythonScriptNodeModel extends NodeModel
 	protected boolean appendCols = true;
 	protected String[] columnNames;
 	protected String[] columnTypes;
-	private static String pluginsRootPath;
 	private static String javaExtDirsExtensionsPath;
 	private static String javaClasspathExtensionsPath;
 	private static String pythoncacheDir;
 	
-	protected PythonScriptNodeModel(int numInputs, int numOutputs) {
-		super(numInputs, numOutputs);
+	protected PythonScriptNodeModel(int inNumInputs, int inNumOutputs) {
+		super(inNumInputs, inNumOutputs);
 		
-		this.numInputs = numInputs;
-		this.numOutputs = numOutputs;
+		this.numInputs = inNumInputs;
+		this.numOutputs = inNumOutputs;
 		
 		// define the common imports string
 		StringBuffer buffer = new StringBuffer();

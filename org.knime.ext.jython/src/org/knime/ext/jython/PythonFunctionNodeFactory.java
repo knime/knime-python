@@ -6,7 +6,6 @@ package org.knime.ext.jython;
 
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeView;
 
 /**
@@ -14,12 +13,12 @@ import org.knime.core.node.NodeView;
  *
  * @author Tripos
  */
-public class PythonFunctionNodeFactory extends NodeFactory
+public class PythonFunctionNodeFactory extends NodeFactory<PythonFunctionNodeModel>
 {
 	/**
 	 * {@inheritDoc}
 	 */
-	public NodeModel createNodeModel()
+	public PythonFunctionNodeModel createNodeModel()
 	{
 		return new PythonFunctionNodeModel();
 	}
@@ -35,8 +34,8 @@ public class PythonFunctionNodeFactory extends NodeFactory
 	/**
 	 * {@inheritDoc}
 	 */
-	public NodeView createNodeView(final int viewIndex,
-			final NodeModel nodeModel)
+	public NodeView<PythonFunctionNodeModel> createNodeView(final int viewIndex,
+			final PythonFunctionNodeModel nodeModel)
 	{
 		return null;
 	}

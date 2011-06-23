@@ -12,7 +12,9 @@
 		<p>
 		Executes a JPython script, taking 2 input DataTables and returning 1 output DataTable.
 		</p>
-		
+		<p>
+		Currently employs jython v2.2.1.
+		</p>
 		</intro>
 		<option name="inData1">
 		    The second input DataTable containing input from input port 1.  Mirrors the range of use and functionality of inData0 (see help on JPython 1:1 node for more details.)<br />

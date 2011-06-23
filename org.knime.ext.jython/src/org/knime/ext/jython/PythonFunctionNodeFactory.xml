@@ -20,6 +20,9 @@
 			<br />
 			<tt>val("col1") + val("col2")</tt>
 			</p>
+			<p>
+			Currently employs jython v2.2.1.
+			</p>
 		</intro>
 				
 	</fullDescription>

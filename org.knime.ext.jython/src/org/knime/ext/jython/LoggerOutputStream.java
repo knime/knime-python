@@ -8,9 +8,9 @@ public class LoggerOutputStream extends ByteArrayOutputStream {
 	private NodeLogger logger;
 	private NodeLogger.LEVEL level;
 	
-	public LoggerOutputStream(NodeLogger logger, NodeLogger.LEVEL level) {
-		this.logger = logger;
-		this.level = level;
+	public LoggerOutputStream(NodeLogger inLogger, NodeLogger.LEVEL inLevel) {
+		this.logger = inLogger;
+		this.level = inLevel;
 	}
 	
 	public void write(byte[] b, int off, int len) {

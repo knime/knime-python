@@ -84,7 +84,7 @@ public class ScriptNodePlugin extends Plugin
 	    	}
 	    }
 	    
-	    Iterator iter = classpathExtensions.iterator();
+	    Iterator<Object> iter = classpathExtensions.iterator();
 	    StringBuffer javaExtDirExtensions = new StringBuffer();
 	    StringBuffer javaClasspathExtensions = new StringBuffer();
 	    String pathSep = System.getProperty("path.separator");
