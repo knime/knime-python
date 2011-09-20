@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: JPython Library Wrapper Plugin
 Bundle-SymbolicName: org.python.plugin
-Bundle-Version: 2.1
+Bundle-Version: 2.2.1.qualifier
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
 Export-Package: com.ziclix.python.sql,
  com.ziclix.python.sql.connect,
