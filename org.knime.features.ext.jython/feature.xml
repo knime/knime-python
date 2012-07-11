@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.jython"
       label="KNIME Python Scripting"
-      version="2.5.0.qualifier"
+      version="2.6.0.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany"
       plugin="org.knime.ext.jython">
 
