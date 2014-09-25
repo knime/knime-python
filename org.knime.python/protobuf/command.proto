@@ -1,0 +1,79 @@
+package knime;
+
+option java_package = "org.knime.python.kernel.proto";
+option java_outer_classname = "ProtobufPythonKernelCommand";
+
+import "table.proto";
+
+message Command {
+	optional Execute execute = 1;
+	optional PutFlowVariables putFlowVariables = 2;
+	optional PutTable putTable = 3;
+	optional AppendToTable appendToTable = 4;
+	optional GetTable getTable = 5;
+	optional ListVariables listVariables = 6;
+	optional Reset reset = 7;
+	optional HasAutoComplete hasAutoComplete = 8;
+	optional AutoComplete autoComplete = 9;
+	optional GetImage getImage = 10;
+	
+	message Execute {
+		required string sourceCode = 1;
+	}
+	
+	message PutFlowVariables {
+		required string key = 1;
+		repeated IntegerVariable integerVariable = 2;
+		repeated DoubleVariable doubleVariable = 3;
+		repeated StringVariable stringVariable = 4;
+		
+		message IntegerVariable {
+			required string key = 1;
+			required int32 value = 2;
+		}
+		
+		message DoubleVariable {
+			required string key = 1;
+			required double value = 2;
+		}
+		
+		message StringVariable {
+			required string key = 1;
+			required string value = 2;
+		}
+	}
+	
+	message PutTable {
+		required string key = 1;
+		required Table table = 2;
+	}
+	
+	message AppendToTable {
+		required string key = 1;
+		required Table table = 2;
+	}
+	
+	message GetTable {
+		required string key = 1;
+		required int32 chunkSize = 2;
+	}
+	
+	message ListVariables {
+	}
+	
+	message Reset {
+	}
+	
+	message HasAutoComplete {
+	}
+	
+	message AutoComplete {
+		required string sourceCode = 1;
+		required int32 line = 2;
+		required int32 column = 3;
+	}
+	
+	message GetImage {
+		required string key = 1;
+	}
+}

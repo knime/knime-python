@@ -1,0 +1,9 @@
+package knime;
+
+option java_package = "org.knime.python.kernel.proto";
+option java_outer_classname = "ProtobufImage";
+
+message Image {
+	required bytes bytes = 1;
+	optional string error = 2;
+}
