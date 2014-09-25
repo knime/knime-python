@@ -108,10 +108,12 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.spell.SpellingParser;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.DataColumnSpecListCellRenderer;
@@ -329,8 +331,9 @@ abstract public class SourceCodePanel extends JPanel {
 		};
 	};
 
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodePanel.class);
+	
 	private JTable m_vars = new JTable(m_varsModel);
-
 	private JButton m_exec = new JButton("Execute script");
 	private JButton m_execSelection = new JButton("Execute selection");
 	private JButton m_reset = new JButton("Reset workspace");
@@ -458,17 +461,22 @@ abstract public class SourceCodePanel extends JPanel {
 		ac.setParameterAssistanceEnabled(true);
 		ac.install(m_editor);
 		// Configure spell checker
-		File zip = new File(getFilepath("org.fife.rsyntaxtextarea", "res", "english_dic.zip"));
-		try {
-			SpellingParser parser = SpellingParser.createEnglishSpellingParser(zip, true);
-			if (!USER_DICTIONARY.exists()) {
-				USER_DICTIONARY.getParentFile().mkdirs();
-				USER_DICTIONARY.createNewFile();
+		String dictPath = getFilepath("org.fife.rsyntaxtextarea", "res", "english_dic.zip");
+		if (dictPath != null) {
+			File zip = new File(dictPath);
+			try {
+				SpellingParser parser = SpellingParser.createEnglishSpellingParser(zip, true);
+				if (!USER_DICTIONARY.exists()) {
+					USER_DICTIONARY.getParentFile().mkdirs();
+					USER_DICTIONARY.createNewFile();
+				}
+				parser.setUserDictionary(USER_DICTIONARY);
+				m_editor.addParser(parser);
+			} catch (IOException e1) {
+				LOGGER.warn(e1.getMessage(), e1);
 			}
-			parser.setUserDictionary(USER_DICTIONARY);
-			m_editor.addParser(parser);
-		} catch (IOException e1) {
-			e1.printStackTrace();
+		} else {
+			LOGGER.warn("Could not locate org.fife.rsyntaxtextarea/res/english_dic.zip");
 		}
 		// Configure console
 		m_console.setEditable(false);
