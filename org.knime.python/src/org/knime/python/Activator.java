@@ -50,11 +50,15 @@ package org.knime.python;
 import java.io.File;
 import java.io.StringWriter;
 import java.net.URI;
+import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.FileUtil;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -122,7 +126,7 @@ public class Activator implements BundleActivator {
 		}
 		try {
 			// Start python kernel tester script
-			String scriptPath = getFilepath("py", "PythonKernelTester.py");
+			String scriptPath = getFile("org.knime.python", "py" + File.separator + "PythonKernelTester.py").getAbsolutePath();
 			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
 			Process process = pb.start();
 			// Get console output of script
@@ -152,27 +156,22 @@ public class Activator implements BundleActivator {
 	}
 
 	/**
-	 * Returns the absolute path for the given file contained in this plugin.
+	 * Returns the file contained in the plugin with the given ID.
 	 * 
-	 * @param directory
-	 *            The directory within this plugin
-	 * @param filename
-	 *            The filename
-	 * @return The absolute path
+	 * @param symbolicName ID of the plugin containing the file
+	 * @param relativePath File path inside the plugin
+	 * @return The file
 	 */
-	public static String getFilepath(final String directory, final String filename) {
-		String filepath = null;
-		try {
-			// Get URI to file
-			URI fileURI = FileLocator.resolve(
-					FileLocator.find(context.getBundle(), new Path(directory + File.separator + filename), null))
-					.toURI();
-			// Convert URI to file path
-			filepath = new File(fileURI).getPath();
-		} catch (Exception e) {
-			// Returns null
-		}
-		return filepath;
-	}
+    public static File getFile(final String symbolicName,
+            final String relativePath) {
+        try {
+            Bundle bundle = Platform.getBundle(symbolicName);
+            URL url = FileLocator.find(bundle, new Path(relativePath), null);
+            return FileUtil.getFileFromURL(FileLocator.toFileURL(url));
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            return null;
+        }
+    }
 
 }

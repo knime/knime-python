@@ -48,6 +48,7 @@
 package org.knime.python.kernel;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -135,7 +136,7 @@ public class PythonKernel {
 		// Start listening
 		thread.start();
 		// Get path to python kernel script
-		String scriptPath = Activator.getFilepath("py", "PythonKernel.py");
+		String scriptPath = Activator.getFile("org.knime.python", "py" + File.separator + "PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
 		pb.redirectError(Redirect.INHERIT);

@@ -64,7 +64,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -97,9 +96,6 @@ import javax.swing.text.StyledDocument;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Platform;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
@@ -108,7 +104,6 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.spell.SpellingParser;
 import org.fife.ui.rtextarea.RTextScrollPane;
-import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
@@ -119,6 +114,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.DataColumnSpecListCellRenderer;
 import org.knime.core.node.util.FlowVariableListCellRenderer;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python.Activator;
 
 /**
  * Abstract source code panel as basis for source code panels for a specific
@@ -220,7 +216,7 @@ abstract public class SourceCodePanel extends JPanel {
 			gbc.gridx++;
 			gbc.insets = new Insets(0, 5, 0, 5);
 			add(m_stopButton, gbc);
-			Icon stopIcon = new ImageIcon(getFilepath("org.knime.python", "res", "stop.gif"));
+			Icon stopIcon = new ImageIcon(Activator.getFile("org.knime.python", "res" + File.separator + "stop.gif").getAbsolutePath());
 			m_stopButton.setIcon(stopIcon);
 			m_stopButton.setToolTipText("Stop execution");
 			m_stopButton.setPreferredSize(new Dimension(m_stopButton.getPreferredSize().height, m_stopButton
@@ -429,7 +425,7 @@ abstract public class SourceCodePanel extends JPanel {
 		editorConsoleSplit.setBottomComponent(consolePanel);
 		editorConsoleSplit.setDividerLocation(400);
 		add(editorConsoleSplit, BorderLayout.CENTER);
-		Icon clearIcon = new ImageIcon(getFilepath("org.knime.python", "res", "clear.gif"));
+		Icon clearIcon = new ImageIcon(Activator.getFile("org.knime.python", "res" + File.separator + "clear.gif").getAbsolutePath());
 		m_clearConsole.setIcon(clearIcon);
 		m_clearConsole.setToolTipText("Clear console");
 		m_clearConsole.setPreferredSize(new Dimension(m_clearConsole.getPreferredSize().height, m_clearConsole
@@ -461,7 +457,7 @@ abstract public class SourceCodePanel extends JPanel {
 		ac.setParameterAssistanceEnabled(true);
 		ac.install(m_editor);
 		// Configure spell checker
-		String dictPath = getFilepath("org.fife.rsyntaxtextarea", "res", "english_dic.zip");
+		String dictPath = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip").getAbsolutePath();
 		if (dictPath != null) {
 			File zip = new File(dictPath);
 			try {
@@ -967,34 +963,6 @@ abstract public class SourceCodePanel extends JPanel {
 					+ (originalString.length() - MAX_STRING_LENGTH_IN_CONSOLE) + " characters";
 		}
 		return string;
-	}
-
-	/**
-	 * Returns the absolute path for the given file contained in the specified
-	 * plugin.
-	 * 
-	 * @param pluginID
-	 *            ID of the plugin containing the file
-	 * @param directory
-	 *            The directory within this plugin
-	 * @param filename
-	 *            The filename
-	 * @return The absolute path
-	 */
-	private static String getFilepath(final String pluginID, final String directory, final String filename) {
-		String filepath = null;
-		try {
-			// Get URI to file
-			URI fileURI = FileLocator.resolve(
-					FileLocator.find(Platform.getBundle(pluginID), new Path(directory + File.separator + filename),
-							null)).toURI();
-			// Convert URI to file path
-			filepath = new File(fileURI).getPath();
-		} catch (Exception e) {
-			e.printStackTrace();
-			// Returns null
-		}
-		return filepath;
 	}
 
 	/**
