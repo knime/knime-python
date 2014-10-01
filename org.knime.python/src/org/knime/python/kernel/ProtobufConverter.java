@@ -192,19 +192,23 @@ class ProtobufConverter {
 				columnBuilders.add(StringListColumn.newBuilder().setName(colSpec.getName())
 						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
 			} else if (colSpec.getType().isCollectionType()) {
-				type = "ObjectListColumn";
-				columnBuilders.add(ObjectListColumn.newBuilder().setName(colSpec.getName())
-						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
-				// TODO only throw error if object type is not supported
-				throw new IOException("List column " + colSpec.getName() + " has unsupported type "
-						+ colSpec.getType().getCollectionElementType().toString());
+//				type = "ObjectListColumn";
+//				columnBuilders.add(ObjectListColumn.newBuilder().setName(colSpec.getName())
+//						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
+//				// TODO only throw error if object type is not supported
+//				throw new IOException("List column " + colSpec.getName() + " has unsupported type "
+//						+ colSpec.getType().getCollectionElementType().toString());
+				type = "StringListColumn";
+				columnBuilders.add(StringListColumn.newBuilder().setName(colSpec.getName()));
 			} else {
-				type = "ObjectColumn";
-				columnBuilders.add(ObjectColumn.newBuilder().setName(colSpec.getName())
-						.setType(colSpec.getType().toString()));
-				// TODO only throw error if object type is not supported
-				throw new IOException("Column " + colSpec.getName() + " has unsupported type "
-						+ colSpec.getType().toString());
+//				type = "ObjectColumn";
+//				columnBuilders.add(ObjectColumn.newBuilder().setName(colSpec.getName())
+//						.setType(colSpec.getType().toString()));
+//				// TODO only throw error if object type is not supported
+//				throw new IOException("Column " + colSpec.getName() + " has unsupported type "
+//						+ colSpec.getType().toString());
+				type = "StringColumn";
+				columnBuilders.add(StringColumn.newBuilder().setName(colSpec.getName()));
 			}
 			int typeIndex = nextTypeIndexMap.containsKey(type) ? nextTypeIndexMap.get(type) : 0;
 			nextTypeIndexMap.put(type, typeIndex + 1);
@@ -252,7 +256,11 @@ class ProtobufConverter {
 					StringColumn.Builder stringColumn = (StringColumn.Builder) builder;
 					Table.StringValue.Builder stringValueBuilder = Table.StringValue.newBuilder();
 					if (!cell.isMissing()) {
-						stringValueBuilder.setValue(((StringValue) cell).getStringValue());
+						if (cell.getType().isCompatible(StringValue.class)) {
+							stringValueBuilder.setValue(((StringValue) cell).getStringValue());
+						} else {
+							stringValueBuilder.setValue(cell.toString());
+						}
 					}
 					stringColumn.addStringValue(stringValueBuilder.build());
 				} else if (builder instanceof DateAndTimeColumn.Builder) {
@@ -339,7 +347,11 @@ class ProtobufConverter {
 						for (DataCell singleCell : collectionCell) {
 							Table.StringValue.Builder stringValue = Table.StringValue.newBuilder();
 							if (!singleCell.isMissing()) {
-								stringValue.setValue(((StringValue) singleCell).getStringValue());
+								if (singleCell.getType().isCompatible(StringValue.class)) {
+									stringValue.setValue(((StringValue) singleCell).getStringValue());
+								} else {
+									stringValue.setValue(singleCell.toString());
+								}
 							}
 							stringListValueBuilder.addValue(stringValue);
 						}
