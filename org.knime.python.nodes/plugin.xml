@@ -5,6 +5,7 @@
    	<extension point="org.knime.workbench.repository.nodes">
    		<node category-path="/preview/python" factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory" id="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
    		<node category-path="/preview/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory"/>
+   		<node category-path="/preview/python" factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory" id="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/preview" />

@@ -549,6 +549,7 @@ abstract public class SourceCodePanel extends JPanel {
 				}
 			}
 		});
+		setColumnListEnabled(variableNames.getInputTables().length>0);
 	}
 
 	/**
