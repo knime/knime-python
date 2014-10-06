@@ -550,8 +550,8 @@ public class PythonKernel {
 		if (m_pid >= 0) {
 			try {
 				ProcessBuilder pb;
-				if (System.getProperty("os.name").contains("win")) {
-					pb = new ProcessBuilder("taskkill", "/pid", "" + m_pid, "/f");
+				if (System.getProperty("os.name").toLowerCase().contains("win")) {
+					pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
 				} else {
 					pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
 				}
