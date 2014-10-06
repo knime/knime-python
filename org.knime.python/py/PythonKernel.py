@@ -7,6 +7,7 @@ import struct
 import base64
 import traceback
 import numpy
+import os
 from datetime import datetime
 from pandas import DataFrame, NaT
 from pandas.tslib import Timestamp
@@ -55,6 +56,10 @@ def run():
     global _connection
     _connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     _connection.connect(('localhost', int(sys.argv[1])))
+    # First send PID of this process (so it can reliably be killed later)
+    pid_response = simpleresponse_pb2.SimpleResponse()
+    pid_response.integer = os.getpid()
+    write_message(pid_response)
     try:
         while 1:
             command = read_next_command()

@@ -30,6 +30,7 @@ def check_required_libs():
     check_lib('struct')
     check_lib('base64')
     check_lib('traceback')
+    check_lib('os')
     # these libs are non standard requirements
     check_lib('numpy')
     check_lib('pandas')

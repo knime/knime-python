@@ -109,6 +109,7 @@ public class PythonKernel {
 	private ServerSocket m_serverSocket;
 	private Socket m_socket;
 	private boolean m_hasAutocomplete = false;
+	private int m_pid = -1;
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -153,6 +154,8 @@ public class PythonKernel {
 			close();
 			throw new IOException("Could not start python kernel");
 		}
+		// First get PID of Python process
+		m_pid = SimpleResponse.parseFrom(readMessageBytes(m_socket.getInputStream())).getInteger();
 		try {
 			// Check if python kernel supports autocompletion (this depends
 			// on the optional module Jedi)
@@ -543,6 +546,20 @@ public class PythonKernel {
 		} catch (Throwable t) {
 		}
 		m_process.destroy();
+		// If the original process was a script we have to kill the actual Python process by PID
+		if (m_pid >= 0) {
+			try {
+				ProcessBuilder pb;
+				if (System.getProperty("os.name").contains("win")) {
+					pb = new ProcessBuilder("taskkill", "/pid", "" + m_pid, "/f");
+				} else {
+					pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
+				}
+				pb.start();
+			} catch (IOException e) {
+				//
+			}
+		}
 	}
 
 	/**
