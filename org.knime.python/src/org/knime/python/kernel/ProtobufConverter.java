@@ -49,6 +49,8 @@ package org.knime.python.kernel;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -684,13 +686,15 @@ class ProtobufConverter {
 		Table.DateAndTimeValue.Builder dateAndTimeValueBuilder = Table.DateAndTimeValue.newBuilder();
 		if (!cell.isMissing()) {
 			DateAndTimeValue value = (DateAndTimeValue) cell;
-			dateAndTimeValueBuilder.setYear(value.getYear());
-			dateAndTimeValueBuilder.setMonth(value.getMonth() + 1);
-			dateAndTimeValueBuilder.setDay(value.getDayOfMonth());
-			dateAndTimeValueBuilder.setHour(value.getHourOfDay());
-			dateAndTimeValueBuilder.setMinute(value.getMinute());
-			dateAndTimeValueBuilder.setSecond(value.getSecond());
-			dateAndTimeValueBuilder.setMillisecond(value.getMillis());
+			if (value.getUTCCalendarClone().get(Calendar.ERA)==GregorianCalendar.AD) {
+				dateAndTimeValueBuilder.setYear(value.getYear());
+				dateAndTimeValueBuilder.setMonth(value.getMonth() + 1);
+				dateAndTimeValueBuilder.setDay(value.getDayOfMonth());
+				dateAndTimeValueBuilder.setHour(value.getHourOfDay());
+				dateAndTimeValueBuilder.setMinute(value.getMinute());
+				dateAndTimeValueBuilder.setSecond(value.getSecond());
+				dateAndTimeValueBuilder.setMillisecond(value.getMillis());
+			}
 		}
 		return dateAndTimeValueBuilder.build();
 	}
