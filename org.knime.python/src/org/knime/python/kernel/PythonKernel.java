@@ -121,10 +121,13 @@ public class PythonKernel {
 	 * @throws IOException
 	 */
 	public PythonKernel() throws IOException {
+		if (Activator.testPythonInstallation().hasError()) {
+			throw new IOException("Could not start python kernel");
+		}
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
 		int port = m_serverSocket.getLocalPort();
-		m_serverSocket.setSoTimeout(1000);
+		m_serverSocket.setSoTimeout(10000);
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				try {
