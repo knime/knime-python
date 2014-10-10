@@ -31,6 +31,7 @@ def check_required_libs():
     check_lib('base64')
     check_lib('traceback')
     check_lib('os')
+    check_lib('pickle')
     # these libs are non standard requirements
     check_lib('numpy')
     check_lib('pandas')

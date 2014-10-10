@@ -43,33 +43,95 @@
  * ------------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   Mar 19, 2014 ("Patrick Winter"): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.port;
 
-import org.knime.code.generic.SourceCodeConfig;
-import org.knime.code.generic.VariableNames;
+import javax.swing.JComponent;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.ModelContentRO;
+import org.knime.core.node.ModelContentWO;
+import org.knime.core.node.port.AbstractSimplePortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+/**
+ * Port object containing a {@link PickledObject}.
+ *
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+public final class PickledObjectPortObject extends AbstractSimplePortObject {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
-	}
+    private PickledObjectPortObjectSpec m_spec;
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * The type of this port.
+     */
+    public static final PortType TYPE = new PortType(PickledObjectPortObject.class);
+
+    /**
+     * Constructor used by the framework.
+     */
+    public PickledObjectPortObject() {
+        // used by the framework
+    }
+
+    /**
+     * @param spec The specification of this port object.
+     */
+    public PickledObjectPortObject(final PickledObjectPortObjectSpec spec) {
+        m_spec = spec;
+    }
+
+    /**
+     * @return The contained PickledObject
+     */
+    public PickledObject getPickledObject() {
+        return m_spec.getPickledObject();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getSummary() {
+        return m_spec.getPickledObject().toString();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PortObjectSpec getSpec() {
+        return m_spec;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void save(final ModelContentWO model, final ExecutionMonitor exec) throws CanceledExecutionException {
+        // nothing to do
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void load(final ModelContentRO model, final PortObjectSpec spec, final ExecutionMonitor exec)
+            throws InvalidSettingsException, CanceledExecutionException {
+        m_spec = (PickledObjectPortObjectSpec)spec;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JComponent[] getViews() {
+    	return m_spec.getViews();
+    }
 
 }

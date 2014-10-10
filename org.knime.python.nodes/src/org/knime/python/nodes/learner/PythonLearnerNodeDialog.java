@@ -45,31 +45,95 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.learner;
 
-import org.knime.code.generic.SourceCodeConfig;
-import org.knime.code.generic.VariableNames;
+import org.knime.code.generic.SourceCodeOptionsPanel;
+import org.knime.code.python.PythonSourceCodePanel;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.DataAwareNodeDialogPane;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.workflow.FlowVariable;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+/**
+ * <code>NodeDialog</code> for the node.
+ * 
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+	PythonSourceCodePanel m_sourceCodePanel;
+	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+
+	/**
+	 * Create the dialog for this node.
+	 */
+	protected PythonLearnerNodeDialog() {
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames());
+		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+		addTab("Script", m_sourceCodePanel, false);
+		addTab("Options", m_sourceCodeOptionsPanel, true);
+	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
+		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+		m_sourceCodePanel.saveSettingsTo(config);
+		m_sourceCodeOptionsPanel.saveSettingsTo(config);
+		config.saveTo(settings);
 	}
 
 	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
+	 * {@inheritDoc}
 	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
+	@Override
+	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
+		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+		config.loadFromInDialog(settings);
+		m_sourceCodePanel.loadSettingsFrom(config, specs);
+		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+				new FlowVariable[getAvailableFlowVariables().size()]));
+		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void loadSettingsFrom(NodeSettingsRO settings, BufferedDataTable[] input) throws NotConfigurableException {
+		loadSettingsFrom(settings, new PortObjectSpec[] { input[0].getDataTableSpec() });
+		m_sourceCodePanel.updateData(input);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean closeOnESC() {
+		return false;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void onOpen() {
+		m_sourceCodePanel.open();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void onClose() {
+		m_sourceCodePanel.close();
 	}
 
 }

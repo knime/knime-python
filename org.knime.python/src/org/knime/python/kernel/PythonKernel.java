@@ -78,11 +78,13 @@ import org.knime.python.kernel.proto.ProtobufAutocompleteSuggestions.Autocomplet
 import org.knime.python.kernel.proto.ProtobufExecuteResponse.ExecuteResponse;
 import org.knime.python.kernel.proto.ProtobufImage.Image;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table;
+import org.knime.python.kernel.proto.ProtobufPickledObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AppendToTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImage;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.HasAutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ListVariables;
@@ -90,11 +92,13 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlow
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Reset;
 import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
+import org.knime.python.port.PickledObject;
 
 /**
  * Provides operations on a python kernel running in another process.
@@ -140,7 +144,8 @@ public class PythonKernel {
 		// Start listening
 		thread.start();
 		// Get path to python kernel script
-		String scriptPath = Activator.getFile("org.knime.python", "py" + File.separator + "PythonKernel.py").getAbsolutePath();
+		String scriptPath = Activator.getFile("org.knime.python", "py" + File.separator + "PythonKernel.py")
+				.getAbsolutePath();
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
 		pb.redirectError(Redirect.INHERIT);
@@ -444,6 +449,103 @@ public class PythonKernel {
 		return ImageIO.read(img.getBytes().newInput());
 	}
 
+	public PickledObject getObject(final String name) throws IOException {
+		Command.Builder commandBuilder = Command.newBuilder();
+		commandBuilder.setGetObject(GetObject.newBuilder().setKey(name));
+		ProtobufPickledObject.PickledObject pickledObject;
+		synchronized (this) {
+			OutputStream outToServer = m_socket.getOutputStream();
+			InputStream inFromServer = m_socket.getInputStream();
+			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+			pickledObject = ProtobufPickledObject.PickledObject.parseFrom(readMessageBytes(inFromServer));
+		}
+		return new PickledObject(pickledObject.getPickledObject(), pickledObject.getType(),
+				pickledObject.getStringRepresentation());
+	}
+
+	public PickledObject getObject(final String name, final ExecutionContext exec) throws Exception {
+		System.out.print("getObject...");
+		final AtomicBoolean done = new AtomicBoolean(false);
+		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
+		final AtomicReference<PickledObject> pickledObject = new AtomicReference<PickledObject>(null);
+		final Thread nodeExecutionThread = Thread.currentThread();
+		// Thread running the execute
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					pickledObject.set(getObject(name));
+				} catch (Exception e) {
+					exception.set(e);
+				}
+				done.set(true);
+				// Wake up waiting thread
+				nodeExecutionThread.interrupt();
+			}
+		}).start();
+		// Wait until execution is done
+		while (done.get() != true) {
+			try {
+				// Wake up once a second to check if execution has been canceled
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// Happens if python thread is done
+			}
+			exec.checkCanceled();
+		}
+		// If their was an exception in the execution thread throw it here
+		if (exception.get() != null) {
+			throw exception.get();
+		}
+		System.out.println(" done");
+		return pickledObject.get();
+	}
+
+	public void putObject(final String name, final PickledObject object) throws IOException {
+		Command.Builder commandBuilder = Command.newBuilder();
+		commandBuilder.setPutObject(PutObject.newBuilder().setKey(name).setPickledObject(object.getPickledObject()));
+		synchronized (this) {
+			OutputStream outToServer = m_socket.getOutputStream();
+			InputStream inFromServer = m_socket.getInputStream();
+			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+			readMessageBytes(inFromServer);
+		}
+	}
+
+	public void putObject(final String name, final PickledObject object, final ExecutionContext exec) throws Exception {
+		System.out.print("putObject...");
+		final AtomicBoolean done = new AtomicBoolean(false);
+		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
+		final Thread nodeExecutionThread = Thread.currentThread();
+		// Thread running the execute
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					putObject(name, object);
+				} catch (Exception e) {
+					exception.set(e);
+				}
+				done.set(true);
+				// Wake up waiting thread
+				nodeExecutionThread.interrupt();
+			}
+		}).start();
+		// Wait until execution is done
+		while (done.get() != true) {
+			try {
+				// Wake up once a second to check if execution has been canceled
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// Happens if python thread is done
+			}
+			exec.checkCanceled();
+		}
+		// If their was an exception in the execution thread throw it here
+		if (exception.get() != null) {
+			throw exception.get();
+		}
+		System.out.println(" done");
+	}
+
 	/**
 	 * Returns the list of all defined variables, functions, classes and loaded
 	 * modules.
@@ -548,8 +650,8 @@ public class PythonKernel {
 			m_socket.close();
 		} catch (Throwable t) {
 		}
-		m_process.destroy();
-		// If the original process was a script we have to kill the actual Python process by PID
+		// If the original process was a script we have to kill the actual
+		// Python process by PID
 		if (m_pid >= 0) {
 			try {
 				ProcessBuilder pb;
@@ -562,6 +664,8 @@ public class PythonKernel {
 			} catch (IOException e) {
 				//
 			}
+		} else {
+			m_process.destroy();
 		}
 	}
 

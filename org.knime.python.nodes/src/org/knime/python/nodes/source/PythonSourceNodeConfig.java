@@ -52,8 +52,8 @@ import org.knime.code.generic.VariableNames;
 
 class PythonSourceNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[0], new String[] { "output_table" }, null);
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[0],
+			new String[] { "output_table" }, null, null, null);
 
 	/**
 	 * {@inheritDoc}

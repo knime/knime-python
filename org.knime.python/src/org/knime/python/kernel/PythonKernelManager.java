@@ -58,6 +58,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python.port.PickledObject;
 
 /**
  * Manages a python kernel including executing commands in separate threads and
@@ -89,6 +90,44 @@ public class PythonKernelManager {
 	 */
 	public synchronized BufferedImage getImage(final String name) throws IOException {
 		return m_kernel.getImage(name);
+	}
+	
+	public synchronized void putObject(final String name, final PickledObject object,
+			final PythonKernelResponseHandler<Void> responseHandler) {
+		final PythonKernel kernel = m_kernel;
+		runInThread(new Runnable() {
+			@Override
+			public void run() {
+				Exception exception = null;
+				try {
+					kernel.putObject(name, object);
+				} catch (Exception e) {
+					exception = e;
+				}
+				if (kernel.equals(m_kernel)) {
+					responseHandler.handleResponse(null, exception);
+				}
+			}
+		});
+	}
+
+	public synchronized void getObject(final String name, final PythonKernelResponseHandler<PickledObject> responseHandler) {
+		final PythonKernel kernel = m_kernel;
+		runInThread(new Runnable() {
+			@Override
+			public void run() {
+				PickledObject response = null;
+				Exception exception = null;
+				try {
+					response = kernel.getObject(name);
+				} catch (Exception e) {
+					exception = e;
+				}
+				if (kernel.equals(m_kernel)) {
+					responseHandler.handleResponse(response, exception);
+				}
+			}
+		});
 	}
 
 	/**
@@ -175,6 +214,7 @@ public class PythonKernelManager {
 	 */
 	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
 			final String variablesName, final Collection<FlowVariable> variables,
+			final String[] objectNames, final PickledObject[] objects,
 			final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
 			final int rowLimit) {
 		final PythonKernel kernel = m_kernel;
@@ -184,6 +224,9 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					kernel.putFlowVariables(variablesName, variables);
+					for (int i = 0; i < objects.length; i++) {
+						kernel.putObject(objectNames[i], objects[i]);
+					}
 					for (int i = 0; i < tables.length; i++) {
 						kernel.putDataTable(tableNames[i], tables[i],
 								executionMonitor.createSubProgress(1 / (double) tables.length), rowLimit);

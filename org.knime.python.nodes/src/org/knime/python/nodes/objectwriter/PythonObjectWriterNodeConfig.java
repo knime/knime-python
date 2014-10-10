@@ -45,22 +45,23 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.objectwriter;
 
 import org.knime.code.generic.SourceCodeConfig;
 import org.knime.code.generic.VariableNames;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+class PythonObjectWriterNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null,
+			new String[] { "input_object" }, null);
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+		return "import pickle\nimport os\npickle.dump(" + VARIABLE_NAMES.getInputObjects()[0] + ", open("
+				+ VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl', 'wb'))\n";
 	}
 
 	/**

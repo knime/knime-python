@@ -150,6 +150,34 @@ public final class ProtobufPythonKernelCommand {
      * <code>optional .knime.Command.GetImage getImage = 10;</code>
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImageOrBuilder getGetImageOrBuilder();
+
+    // optional .knime.Command.GetObject getObject = 11;
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    boolean hasGetObject();
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getGetObject();
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder getGetObjectOrBuilder();
+
+    // optional .knime.Command.PutObject putObject = 12;
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    boolean hasPutObject();
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject getPutObject();
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder getPutObjectOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -330,6 +358,32 @@ public final class ProtobufPythonKernelCommand {
                 getImage_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000200;
+              break;
+            }
+            case 90: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000400) == 0x00000400)) {
+                subBuilder = getObject_.toBuilder();
+              }
+              getObject_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(getObject_);
+                getObject_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000400;
+              break;
+            }
+            case 98: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000800) == 0x00000800)) {
+                subBuilder = putObject_.toBuilder();
+              }
+              putObject_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(putObject_);
+                putObject_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000800;
               break;
             }
           }
@@ -8235,6 +8289,1128 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.GetImage)
     }
 
+    public interface GetObjectOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string key = 1;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      boolean hasKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      java.lang.String getKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getKeyBytes();
+    }
+    /**
+     * Protobuf type {@code knime.Command.GetObject}
+     */
+    public static final class GetObject extends
+        com.google.protobuf.GeneratedMessage
+        implements GetObjectOrBuilder {
+      // Use GetObject.newBuilder() to construct.
+      private GetObject(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private GetObject(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final GetObject defaultInstance;
+      public static GetObject getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public GetObject getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private GetObject(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetObject_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetObject_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<GetObject> PARSER =
+          new com.google.protobuf.AbstractParser<GetObject>() {
+        public GetObject parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new GetObject(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<GetObject> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private java.lang.Object key_;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      private void initFields() {
+        key_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.GetObject}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetObject_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetObject_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetObject_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            bitField0_ |= 0x00000001;
+            key_ = other.key_;
+            onChanged();
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string key = 1;
+        private java.lang.Object key_ = "";
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public java.lang.String getKey() {
+          java.lang.Object ref = key_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getKeyBytes() {
+          java.lang.Object ref = key_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            key_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKey(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKeyBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.GetObject)
+      }
+
+      static {
+        defaultInstance = new GetObject(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.GetObject)
+    }
+
+    public interface PutObjectOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string key = 1;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      boolean hasKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      java.lang.String getKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getKeyBytes();
+
+      // required string pickledObject = 2;
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      boolean hasPickledObject();
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      java.lang.String getPickledObject();
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      com.google.protobuf.ByteString
+          getPickledObjectBytes();
+    }
+    /**
+     * Protobuf type {@code knime.Command.PutObject}
+     */
+    public static final class PutObject extends
+        com.google.protobuf.GeneratedMessage
+        implements PutObjectOrBuilder {
+      // Use PutObject.newBuilder() to construct.
+      private PutObject(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private PutObject(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final PutObject defaultInstance;
+      public static PutObject getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public PutObject getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private PutObject(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                bitField0_ |= 0x00000002;
+                pickledObject_ = input.readBytes();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutObject_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutObject_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<PutObject> PARSER =
+          new com.google.protobuf.AbstractParser<PutObject>() {
+        public PutObject parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new PutObject(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<PutObject> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private java.lang.Object key_;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required string pickledObject = 2;
+      public static final int PICKLEDOBJECT_FIELD_NUMBER = 2;
+      private java.lang.Object pickledObject_;
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      public boolean hasPickledObject() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      public java.lang.String getPickledObject() {
+        java.lang.Object ref = pickledObject_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            pickledObject_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string pickledObject = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getPickledObjectBytes() {
+        java.lang.Object ref = pickledObject_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          pickledObject_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      private void initFields() {
+        key_ = "";
+        pickledObject_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasPickledObject()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeBytes(2, getPickledObjectBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(2, getPickledObjectBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.PutObject}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutObject_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutObject_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          pickledObject_ = "";
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutObject_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.pickledObject_ = pickledObject_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            bitField0_ |= 0x00000001;
+            key_ = other.key_;
+            onChanged();
+          }
+          if (other.hasPickledObject()) {
+            bitField0_ |= 0x00000002;
+            pickledObject_ = other.pickledObject_;
+            onChanged();
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          if (!hasPickledObject()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string key = 1;
+        private java.lang.Object key_ = "";
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public java.lang.String getKey() {
+          java.lang.Object ref = key_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getKeyBytes() {
+          java.lang.Object ref = key_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            key_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKey(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKeyBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+
+        // required string pickledObject = 2;
+        private java.lang.Object pickledObject_ = "";
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public boolean hasPickledObject() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public java.lang.String getPickledObject() {
+          java.lang.Object ref = pickledObject_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            pickledObject_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public com.google.protobuf.ByteString
+            getPickledObjectBytes() {
+          java.lang.Object ref = pickledObject_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            pickledObject_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public Builder setPickledObject(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+          pickledObject_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public Builder clearPickledObject() {
+          bitField0_ = (bitField0_ & ~0x00000002);
+          pickledObject_ = getDefaultInstance().getPickledObject();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string pickledObject = 2;</code>
+         */
+        public Builder setPickledObjectBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+          pickledObject_ = value;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.PutObject)
+      }
+
+      static {
+        defaultInstance = new PutObject(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.PutObject)
+    }
+
     private int bitField0_;
     // optional .knime.Command.Execute execute = 1;
     public static final int EXECUTE_FIELD_NUMBER = 1;
@@ -8456,6 +9632,50 @@ public final class ProtobufPythonKernelCommand {
       return getImage_;
     }
 
+    // optional .knime.Command.GetObject getObject = 11;
+    public static final int GETOBJECT_FIELD_NUMBER = 11;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getObject_;
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    public boolean hasGetObject() {
+      return ((bitField0_ & 0x00000400) == 0x00000400);
+    }
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getGetObject() {
+      return getObject_;
+    }
+    /**
+     * <code>optional .knime.Command.GetObject getObject = 11;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder getGetObjectOrBuilder() {
+      return getObject_;
+    }
+
+    // optional .knime.Command.PutObject putObject = 12;
+    public static final int PUTOBJECT_FIELD_NUMBER = 12;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject putObject_;
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    public boolean hasPutObject() {
+      return ((bitField0_ & 0x00000800) == 0x00000800);
+    }
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject getPutObject() {
+      return putObject_;
+    }
+    /**
+     * <code>optional .knime.Command.PutObject putObject = 12;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder getPutObjectOrBuilder() {
+      return putObject_;
+    }
+
     private void initFields() {
       execute_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute.getDefaultInstance();
       putFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.getDefaultInstance();
@@ -8467,6 +9687,8 @@ public final class ProtobufPythonKernelCommand {
       hasAutoComplete_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.HasAutoComplete.getDefaultInstance();
       autoComplete_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete.getDefaultInstance();
       getImage_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImage.getDefaultInstance();
+      getObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
+      putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -8515,6 +9737,18 @@ public final class ProtobufPythonKernelCommand {
           return false;
         }
       }
+      if (hasGetObject()) {
+        if (!getGetObject().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasPutObject()) {
+        if (!getPutObject().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -8551,6 +9785,12 @@ public final class ProtobufPythonKernelCommand {
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
         output.writeMessage(10, getImage_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        output.writeMessage(11, getObject_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        output.writeMessage(12, putObject_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -8600,6 +9840,14 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(10, getImage_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(11, getObject_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(12, putObject_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -8719,6 +9967,8 @@ public final class ProtobufPythonKernelCommand {
           getHasAutoCompleteFieldBuilder();
           getAutoCompleteFieldBuilder();
           getGetImageFieldBuilder();
+          getGetObjectFieldBuilder();
+          getPutObjectFieldBuilder();
         }
       }
       private static Builder create() {
@@ -8787,6 +10037,18 @@ public final class ProtobufPythonKernelCommand {
           getImageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000200);
+        if (getObjectBuilder_ == null) {
+          getObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
+        } else {
+          getObjectBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000400);
+        if (putObjectBuilder_ == null) {
+          putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
+        } else {
+          putObjectBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000800);
         return this;
       }
 
@@ -8895,6 +10157,22 @@ public final class ProtobufPythonKernelCommand {
         } else {
           result.getImage_ = getImageBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+          to_bitField0_ |= 0x00000400;
+        }
+        if (getObjectBuilder_ == null) {
+          result.getObject_ = getObject_;
+        } else {
+          result.getObject_ = getObjectBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+          to_bitField0_ |= 0x00000800;
+        }
+        if (putObjectBuilder_ == null) {
+          result.putObject_ = putObject_;
+        } else {
+          result.putObject_ = putObjectBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -8941,6 +10219,12 @@ public final class ProtobufPythonKernelCommand {
         if (other.hasGetImage()) {
           mergeGetImage(other.getGetImage());
         }
+        if (other.hasGetObject()) {
+          mergeGetObject(other.getGetObject());
+        }
+        if (other.hasPutObject()) {
+          mergePutObject(other.getPutObject());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -8984,6 +10268,18 @@ public final class ProtobufPythonKernelCommand {
         }
         if (hasGetImage()) {
           if (!getGetImage().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasGetObject()) {
+          if (!getGetObject().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasPutObject()) {
+          if (!getPutObject().isInitialized()) {
             
             return false;
           }
@@ -10180,6 +11476,240 @@ public final class ProtobufPythonKernelCommand {
         return getImageBuilder_;
       }
 
+      // optional .knime.Command.GetObject getObject = 11;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder> getObjectBuilder_;
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public boolean hasGetObject() {
+        return ((bitField0_ & 0x00000400) == 0x00000400);
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject getGetObject() {
+        if (getObjectBuilder_ == null) {
+          return getObject_;
+        } else {
+          return getObjectBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public Builder setGetObject(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject value) {
+        if (getObjectBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          getObject_ = value;
+          onChanged();
+        } else {
+          getObjectBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000400;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public Builder setGetObject(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder builderForValue) {
+        if (getObjectBuilder_ == null) {
+          getObject_ = builderForValue.build();
+          onChanged();
+        } else {
+          getObjectBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000400;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public Builder mergeGetObject(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject value) {
+        if (getObjectBuilder_ == null) {
+          if (((bitField0_ & 0x00000400) == 0x00000400) &&
+              getObject_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance()) {
+            getObject_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.newBuilder(getObject_).mergeFrom(value).buildPartial();
+          } else {
+            getObject_ = value;
+          }
+          onChanged();
+        } else {
+          getObjectBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000400;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public Builder clearGetObject() {
+        if (getObjectBuilder_ == null) {
+          getObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
+          onChanged();
+        } else {
+          getObjectBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000400);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder getGetObjectBuilder() {
+        bitField0_ |= 0x00000400;
+        onChanged();
+        return getGetObjectFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder getGetObjectOrBuilder() {
+        if (getObjectBuilder_ != null) {
+          return getObjectBuilder_.getMessageOrBuilder();
+        } else {
+          return getObject_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetObject getObject = 11;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder> 
+          getGetObjectFieldBuilder() {
+        if (getObjectBuilder_ == null) {
+          getObjectBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObjectOrBuilder>(
+                  getObject_,
+                  getParentForChildren(),
+                  isClean());
+          getObject_ = null;
+        }
+        return getObjectBuilder_;
+      }
+
+      // optional .knime.Command.PutObject putObject = 12;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder> putObjectBuilder_;
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public boolean hasPutObject() {
+        return ((bitField0_ & 0x00000800) == 0x00000800);
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject getPutObject() {
+        if (putObjectBuilder_ == null) {
+          return putObject_;
+        } else {
+          return putObjectBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public Builder setPutObject(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject value) {
+        if (putObjectBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          putObject_ = value;
+          onChanged();
+        } else {
+          putObjectBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000800;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public Builder setPutObject(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder builderForValue) {
+        if (putObjectBuilder_ == null) {
+          putObject_ = builderForValue.build();
+          onChanged();
+        } else {
+          putObjectBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000800;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public Builder mergePutObject(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject value) {
+        if (putObjectBuilder_ == null) {
+          if (((bitField0_ & 0x00000800) == 0x00000800) &&
+              putObject_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance()) {
+            putObject_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.newBuilder(putObject_).mergeFrom(value).buildPartial();
+          } else {
+            putObject_ = value;
+          }
+          onChanged();
+        } else {
+          putObjectBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000800;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public Builder clearPutObject() {
+        if (putObjectBuilder_ == null) {
+          putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
+          onChanged();
+        } else {
+          putObjectBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000800);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder getPutObjectBuilder() {
+        bitField0_ |= 0x00000800;
+        onChanged();
+        return getPutObjectFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder getPutObjectOrBuilder() {
+        if (putObjectBuilder_ != null) {
+          return putObjectBuilder_.getMessageOrBuilder();
+        } else {
+          return putObject_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.PutObject putObject = 12;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder> 
+          getPutObjectFieldBuilder() {
+        if (putObjectBuilder_ == null) {
+          putObjectBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder>(
+                  putObject_,
+                  getParentForChildren(),
+                  isClean());
+          putObject_ = null;
+        }
+        return putObjectBuilder_;
+      }
+
       // @@protoc_insertion_point(builder_scope:knime.Command)
     }
 
@@ -10261,6 +11791,16 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_GetImage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_GetObject_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_GetObject_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_PutObject_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_PutObject_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -10270,7 +11810,7 @@ public final class ProtobufPythonKernelCommand {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcommand.proto\022\005knime\032\013table.proto\"\264\t\n\007" +
+      "\n\rcommand.proto\022\005knime\032\013table.proto\"\331\n\n\007" +
       "Command\022\'\n\007execute\030\001 \001(\0132\026.knime.Command" +
       ".Execute\0229\n\020putFlowVariables\030\002 \001(\0132\037.kni" +
       "me.Command.PutFlowVariables\022)\n\010putTable\030" +
@@ -10283,26 +11823,30 @@ public final class ProtobufPythonKernelCommand {
       "\0132\036.knime.Command.HasAutoComplete\0221\n\014aut" +
       "oComplete\030\t \001(\0132\033.knime.Command.AutoComp" +
       "lete\022)\n\010getImage\030\n \001(\0132\027.knime.Command.G" +
-      "etImage\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032\204" +
-      "\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017inte" +
-      "gerVariable\030\002 \003(\0132/.knime.Command.PutFlo" +
-      "wVariables.IntegerVariable\022F\n\016doubleVari" +
-      "able\030\003 \003(\0132..knime.Command.PutFlowVariab" +
-      "les.DoubleVariable\022F\n\016stringVariable\030\004 \003" +
-      "(\0132..knime.Command.PutFlowVariables.Stri",
-      "ngVariable\032-\n\017IntegerVariable\022\013\n\003key\030\001 \002" +
-      "(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022\013\n\003k" +
-      "ey\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVariabl" +
-      "e\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010PutTabl" +
-      "e\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Ta" +
-      "ble\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005tab" +
-      "le\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariab" +
-      "les\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014AutoC" +
-      "omplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(",
-      "\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002" +
-      "(\tB<\n\035org.knime.python.kernel.protoB\033Pro" +
-      "tobufPythonKernelCommand"
+      "etImage\022+\n\tgetObject\030\013 \001(\0132\030.knime.Comma" +
+      "nd.GetObject\022+\n\tputObject\030\014 \001(\0132\030.knime." +
+      "Command.PutObject\032\035\n\007Execute\022\022\n\nsourceCo" +
+      "de\030\001 \002(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002" +
+      "(\t\022H\n\017integerVariable\030\002 \003(\0132/.knime.Comm" +
+      "and.PutFlowVariables.IntegerVariable\022F\n\016" +
+      "doubleVariable\030\003 \003(\0132..knime.Command.Put",
+      "FlowVariables.DoubleVariable\022F\n\016stringVa" +
+      "riable\030\004 \003(\0132..knime.Command.PutFlowVari" +
+      "ables.StringVariable\032-\n\017IntegerVariable\022" +
+      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVar" +
+      "iable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016Str" +
+      "ingVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\032" +
+      "4\n\010PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132" +
+      "\014.knime.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 " +
+      "\002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetT" +
+      "able\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\r",
+      "ListVariables\032\007\n\005Reset\032\021\n\017HasAutoComplet" +
+      "e\032@\n\014AutoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n" +
+      "\004line\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022" +
+      "\013\n\003key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/" +
+      "\n\tPutObject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObjec" +
+      "t\030\002 \002(\tB<\n\035org.knime.python.kernel.proto" +
+      "B\033ProtobufPythonKernelCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -10314,7 +11858,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -10393,6 +11937,18 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_GetImage_descriptor,
               new java.lang.String[] { "Key", });
+          internal_static_knime_Command_GetObject_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(10);
+          internal_static_knime_Command_GetObject_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_GetObject_descriptor,
+              new java.lang.String[] { "Key", });
+          internal_static_knime_Command_PutObject_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(11);
+          internal_static_knime_Command_PutObject_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_PutObject_descriptor,
+              new java.lang.String[] { "Key", "PickledObject", });
           return null;
         }
       };

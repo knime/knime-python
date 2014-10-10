@@ -1,0 +1,10 @@
+package knime;
+
+option java_package = "org.knime.python.kernel.proto";
+option java_outer_classname = "ProtobufPickledObject";
+
+message PickledObject {
+	required string pickledObject = 1;
+	required string type = 2;
+	required string stringRepresentation = 3;
+}

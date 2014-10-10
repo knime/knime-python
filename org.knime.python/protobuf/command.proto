@@ -16,6 +16,8 @@ message Command {
 	optional HasAutoComplete hasAutoComplete = 8;
 	optional AutoComplete autoComplete = 9;
 	optional GetImage getImage = 10;
+	optional GetObject getObject = 11;
+	optional PutObject putObject = 12;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -75,5 +77,14 @@ message Command {
 	
 	message GetImage {
 		required string key = 1;
+	}
+	
+	message GetObject {
+		required string key = 1;
+	}
+	
+	message PutObject {
+		required string key = 1;
+		required string pickledObject = 2;
 	}
 }

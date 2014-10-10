@@ -49,7 +49,6 @@ package org.knime.python;
 
 import java.io.File;
 import java.io.StringWriter;
-import java.net.URI;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
@@ -71,8 +70,6 @@ public class Activator implements BundleActivator {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	private static BundleContext context;
-
 	/**
 	 * Command to start python.
 	 */
@@ -85,7 +82,6 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void start(BundleContext bundleContext) throws Exception {
-		Activator.context = bundleContext;
 		// When this plugin is loaded test the python installation
 		new Thread(new Runnable() {
 			@Override
@@ -100,7 +96,6 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void stop(BundleContext bundleContext) throws Exception {
-		Activator.context = null;
 	}
 
 	/**
@@ -126,7 +121,8 @@ public class Activator implements BundleActivator {
 		}
 		try {
 			// Start python kernel tester script
-			String scriptPath = getFile("org.knime.python", "py" + File.separator + "PythonKernelTester.py").getAbsolutePath();
+			String scriptPath = getFile("org.knime.python", "py" + File.separator + "PythonKernelTester.py")
+					.getAbsolutePath();
 			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
 			Process process = pb.start();
 			// Get console output of script
@@ -158,20 +154,21 @@ public class Activator implements BundleActivator {
 	/**
 	 * Returns the file contained in the plugin with the given ID.
 	 * 
-	 * @param symbolicName ID of the plugin containing the file
-	 * @param relativePath File path inside the plugin
+	 * @param symbolicName
+	 *            ID of the plugin containing the file
+	 * @param relativePath
+	 *            File path inside the plugin
 	 * @return The file
 	 */
-    public static File getFile(final String symbolicName,
-            final String relativePath) {
-        try {
-            Bundle bundle = Platform.getBundle(symbolicName);
-            URL url = FileLocator.find(bundle, new Path(relativePath), null);
-            return FileUtil.getFileFromURL(FileLocator.toFileURL(url));
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            return null;
-        }
-    }
+	public static File getFile(final String symbolicName, final String relativePath) {
+		try {
+			Bundle bundle = Platform.getBundle(symbolicName);
+			URL url = FileLocator.find(bundle, new Path(relativePath), null);
+			return FileUtil.getFileFromURL(FileLocator.toFileURL(url));
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage(), e);
+			return null;
+		}
+	}
 
 }

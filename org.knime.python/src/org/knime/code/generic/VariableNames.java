@@ -53,9 +53,11 @@ public class VariableNames {
 	private String[] m_inputTables;
 	private String[] m_outputTables;
 	private String[] m_outputImages;
+	private String[] m_inputObjects;
+	private String[] m_outputObjects;
 
 	public VariableNames(final String flowVariables, final String[] inputTables, final String[] outputTables,
-			final String[] outputImages) {
+			final String[] outputImages, final String[] inputObjects, final String[] outputObjects) {
 		if (flowVariables == null) {
 			throw new IllegalArgumentException("flow variables may not be null");
 		}
@@ -63,6 +65,8 @@ public class VariableNames {
 		m_inputTables = inputTables != null ? inputTables : new String[0];
 		m_outputTables = outputTables != null ? outputTables : new String[0];
 		m_outputImages = outputImages != null ? outputImages : new String[0];
+		m_inputObjects = inputObjects != null ? inputObjects : new String[0];
+		m_outputObjects = outputObjects != null ? outputObjects : new String[0];
 	}
 
 	public String getFlowVariables() {
@@ -79,6 +83,14 @@ public class VariableNames {
 
 	public String[] getOutputImages() {
 		return m_outputImages;
+	}
+
+	public String[] getInputObjects() {
+		return m_inputObjects;
+	}
+
+	public String[] getOutputObjects() {
+		return m_outputObjects;
 	}
 
 }

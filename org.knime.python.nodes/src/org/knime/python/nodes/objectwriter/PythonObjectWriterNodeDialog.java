@@ -45,31 +45,93 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.objectwriter;
 
-import org.knime.code.generic.SourceCodeConfig;
-import org.knime.code.generic.VariableNames;
+import org.knime.code.python.PythonSourceCodePanel;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.DataAwareNodeDialogPane;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python.port.PickledObject;
+import org.knime.python.port.PickledObjectPortObject;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+/**
+ * <code>NodeDialog</code> for the node.
+ * 
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+	PythonSourceCodePanel m_sourceCodePanel;
+
+	/**
+	 * Create the dialog for this node.
+	 */
+	protected PythonObjectWriterNodeDialog() {
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
+		addTab("Script", m_sourceCodePanel, false);
+	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
+		PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
+		m_sourceCodePanel.saveSettingsTo(config);
+		config.saveTo(settings);
 	}
 
 	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
+	 * {@inheritDoc}
 	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
+	@Override
+	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
+		PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
+		config.loadFromInDialog(settings);
+		m_sourceCodePanel.loadSettingsFrom(config, specs);
+		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+				new FlowVariable[getAvailableFlowVariables().size()]));
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void loadSettingsFrom(NodeSettingsRO settings, PortObject[] input) throws NotConfigurableException {
+		loadSettingsFrom(settings, new PortObjectSpec[0]);
+		m_sourceCodePanel.updateData(new BufferedDataTable[0],
+				new PickledObject[] { ((PickledObjectPortObject) input[0]).getPickledObject() });
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean closeOnESC() {
+		return false;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void onOpen() {
+		m_sourceCodePanel.open();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void onClose() {
+		m_sourceCodePanel.close();
 	}
 
 }

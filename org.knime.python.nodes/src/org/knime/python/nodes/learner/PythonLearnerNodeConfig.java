@@ -45,22 +45,24 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.learner;
 
 import org.knime.code.generic.SourceCodeConfig;
 import org.knime.code.generic.VariableNames;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+class PythonLearnerNodeConfig extends SourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+			new String[] { "input_table" }, null, null, null, new String[] { "output_model" });
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+		return "from sklearn.cluster import KMeans\nkmeans = KMeans(n_clusters=4)\nkmeans.fit("
+				+ VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data())\n" + VARIABLE_NAMES.getOutputObjects()[0]
+				+ " = kmeans\n";
 	}
 
 	/**

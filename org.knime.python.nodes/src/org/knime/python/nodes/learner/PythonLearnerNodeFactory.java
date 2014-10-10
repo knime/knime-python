@@ -45,31 +45,58 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.learner;
 
-import org.knime.code.generic.SourceCodeConfig;
-import org.knime.code.generic.VariableNames;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
-
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+/**
+ * <code>NodeFactory</code> for the node.
+ * 
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+public class PythonLearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+	public PythonLearnerNodeModel createNodeModel() {
+		return new PythonLearnerNodeModel();
 	}
 
 	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
+	 * {@inheritDoc}
 	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
+	@Override
+	public int getNrNodeViews() {
+		return 0;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex, final PythonLearnerNodeModel nodeModel) {
+		return null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean hasDialog() {
+		return true;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeDialogPane createNodeDialogPane() {
+		return new PythonLearnerNodeDialog();
 	}
 
 }

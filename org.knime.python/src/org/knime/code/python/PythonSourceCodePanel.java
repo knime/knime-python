@@ -71,6 +71,7 @@ import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
 import org.knime.python.kernel.PythonKernelManager;
 import org.knime.python.kernel.PythonKernelResponseHandler;
+import org.knime.python.port.PickledObject;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -86,6 +87,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
 	private PythonKernelManager m_kernelManager;
 	private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
+	private PickledObject[] m_inputObjects = new PickledObject[0];
 	private Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
 
@@ -179,6 +181,16 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	public void updateData(BufferedDataTable[] inputData) {
 		super.updateData(inputData);
 		m_inputData = inputData;
+		putDataIntoPython();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public void updateData(BufferedDataTable[] inputData, PickledObject[] inputObjects) {
+		super.updateData(inputData);
+		m_inputData = inputData;
+		m_inputObjects = inputObjects;
 		putDataIntoPython();
 	}
 
@@ -366,23 +378,24 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * python kernel is running).
 	 */
 	private void putDataIntoPython() {
-		if (m_kernelManager != null && (m_inputData.length > 0 || getFlowVariables().size() > 0)) {
+		if (m_kernelManager != null) {
 			setRunning(true);
 			setStatusMessage("Loading input data into python");
 			m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData, getVariableNames()
-					.getFlowVariables(), getFlowVariables(), new PythonKernelResponseHandler<Void>() {
-				@Override
-				public void handleResponse(Void response, Exception exception) {
-					if (exception != null) {
-						m_kernelManager.close();
-						setInteractive(false);
-						logError(exception, "Error while loading input data into python");
-					} else {
-						setStatusMessage("Successfully loaded input data into python");
-					}
-					setRunning(false);
-				}
-			}, new ExecutionMonitor(new JProgressBarProgressMonitor(getProgressBar())), getRowLimit());
+					.getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(), m_inputObjects,
+					new PythonKernelResponseHandler<Void>() {
+						@Override
+						public void handleResponse(Void response, Exception exception) {
+							if (exception != null) {
+								m_kernelManager.close();
+								setInteractive(false);
+								logError(exception, "Error while loading input data into python");
+							} else {
+								setStatusMessage("Successfully loaded input data into python");
+							}
+							setRunning(false);
+						}
+					}, new ExecutionMonitor(new JProgressBarProgressMonitor(getProgressBar())), getRowLimit());
 		}
 	}
 

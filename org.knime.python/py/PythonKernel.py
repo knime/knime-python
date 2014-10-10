@@ -8,6 +8,7 @@ import base64
 import traceback
 import numpy
 import os
+import pickle
 from datetime import datetime
 from pandas import DataFrame, NaT
 from pandas.tslib import Timestamp
@@ -20,6 +21,7 @@ import simpleresponse_pb2
 import variablelist_pb2
 import image_pb2
 import executeresponse_pb2
+import pickledobject_pb2
 
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
@@ -149,6 +151,17 @@ def run():
                     img.error = command.getImage.key + ' is not an image'
                     img.bytes = ''
                 write_message(img)
+            elif command.HasField('getObject'):
+                object = get_variable(command.getObject.key)
+                pickled_object = pickledobject_pb2.PickledObject()
+                pickled_object.pickledObject = pickle.dumps(object)
+                pickled_object.type = type(object).__name__
+                pickled_object.stringRepresentation = str(object)
+                write_message(pickled_object)
+            elif command.HasField('putObject'):
+                object = pickle.loads(command.putObject.pickledObject)
+                put_variable(command.putObject.key, object)
+                write_dummy()
     finally:
         _connection.close()
 
@@ -507,7 +520,7 @@ def data_frame_to_protobuf_table(data_frame):
                     for cell in data_frame[column]:
                         boolean_val = boolean_col.booleanValue.add()
                         boolean_val.value = bool(cell)
-                elif data_frame[column].dtype == 'int64':
+                elif data_frame[column].dtype == 'int64' or data_frame[column].dtype == 'int32':
                     minvalue = data_frame[column][data_frame[column].idxmin()]
                     maxvalue = data_frame[column][data_frame[column].idxmax()]
                     int32min = -2147483648

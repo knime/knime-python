@@ -45,22 +45,22 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script;
+package org.knime.python.nodes.objectreader;
 
 import org.knime.code.generic.SourceCodeConfig;
 import org.knime.code.generic.VariableNames;
 
-class PythonScriptNodeConfig extends SourceCodeConfig {
+class PythonObjectReaderNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, null, null);
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null, null,
+			new String[] { "output_object" });
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()";
+		return getDefaultSourceCode("python_object.pkl");
 	}
 
 	/**
@@ -70,6 +70,12 @@ class PythonScriptNodeConfig extends SourceCodeConfig {
 	 */
 	static VariableNames getVariableNames() {
 		return VARIABLE_NAMES;
+	}
+
+	static String getDefaultSourceCode(String path) {
+		path = path.replace("/", "' + os.sep + '");
+		return "import pickle\nimport os\n" + VARIABLE_NAMES.getOutputObjects()[0] + " = pickle.load(open("
+				+ VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path + "', 'rb'))\n";
 	}
 
 }
