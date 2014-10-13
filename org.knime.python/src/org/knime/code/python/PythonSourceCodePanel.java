@@ -47,7 +47,6 @@
  */
 package org.knime.code.python;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -62,6 +61,7 @@ import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.knime.code.generic.ImageContainer;
 import org.knime.code.generic.SourceCodePanel;
 import org.knime.code.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
@@ -474,7 +474,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected BufferedImage getOutImage(String name) {
+	protected ImageContainer getOutImage(String name) {
 		try {
 			return m_kernelManager.getImage(name);
 		} catch (IOException e) {

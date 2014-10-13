@@ -70,8 +70,8 @@
 			The output image. This is the content of the
 			variable
 			<b>output_image</b>
-			which has to be defined and has to be a string containig a byte array
-			representing a PNG image. Otherwise this node will not successfully
+			which has to be defined and has to be a string containing either an SVG or a byte array
+			representing a PNG or JPG image. Otherwise this node will not successfully
 			execute.
 		</outPort>
 	</ports>

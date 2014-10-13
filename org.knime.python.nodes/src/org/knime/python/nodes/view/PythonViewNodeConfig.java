@@ -61,7 +61,7 @@ class PythonViewNodeConfig extends SourceCodeConfig {
 	@Override
 	protected String getDefaultSourceCode() {
 		return "try:\n\tfrom StringIO import StringIO\nexcept:\n\tfrom io import StringIO\nbuffer = StringIO()\n"
-				+ VARIABLE_NAMES.getInputTables()[0] + ".plot().get_figure().savefig(buffer)\n"
+				+ VARIABLE_NAMES.getInputTables()[0] + ".plot().get_figure().savefig(buffer, format='svg')\n"
 				+ VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()";
 	}
 

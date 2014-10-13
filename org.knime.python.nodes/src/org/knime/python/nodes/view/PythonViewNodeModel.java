@@ -54,6 +54,9 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.knime.base.data.xml.SvgCell;
+import org.knime.base.data.xml.SvgImageContent;
+import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -93,7 +96,7 @@ class PythonViewNodeModel extends NodeModel {
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
 		PythonKernel kernel = new PythonKernel();
-		BufferedImage image = null;
+		ImageContainer image = null;
 		try {
 			kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
@@ -106,8 +109,12 @@ class PythonViewNodeModel extends NodeModel {
 		} finally {
 			kernel.close();
 		}
-		return new PortObject[] { new ImagePortObject(new PNGImageContent(imageToBytes(image)),
-				new ImagePortObjectSpec(PNGImageContent.TYPE)) };
+		if (image.hasSvgDocument()) {
+			return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()), new ImagePortObjectSpec(SvgCell.TYPE))};
+		} else {
+			return new PortObject[] { new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
+					new ImagePortObjectSpec(PNGImageContent.TYPE)) };
+		}
 	}
 
 	/**

@@ -61,7 +61,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -602,10 +601,10 @@ abstract public class SourceCodePanel extends JPanel {
 	 *            Name of the image to load
 	 */
 	private void setImage(final JLabel label, final String imageName) {
-		BufferedImage image = getOutImage(imageName);
+		ImageContainer image = getOutImage(imageName);
 		if (image != null) {
 			label.setText(null);
-			label.setIcon(new ImageIcon(image));
+			label.setIcon(new ImageIcon(image.getBufferedImage()));
 			label.setBorder(null);
 		} else {
 			label.setIcon(null);
@@ -989,7 +988,7 @@ abstract public class SourceCodePanel extends JPanel {
 	 *            The variable name in the workspace
 	 * @return The image
 	 */
-	protected BufferedImage getOutImage(final String name) {
+	protected ImageContainer getOutImage(final String name) {
 		return null;
 	}
 

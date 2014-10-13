@@ -47,11 +47,11 @@
  */
 package org.knime.python.kernel;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -66,6 +66,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
 
+import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
+import org.apache.batik.transcoder.TranscoderException;
+import org.apache.batik.util.XMLResourceDescriptor;
+import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
@@ -99,6 +103,9 @@ import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
 import org.knime.python.port.PickledObject;
+import org.w3c.dom.svg.SVGDocument;
+
+import com.google.protobuf.ByteString;
 
 /**
  * Provides operations on a python kernel running in another process.
@@ -433,7 +440,7 @@ public class PythonKernel {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	public BufferedImage getImage(final String name) throws IOException {
+	public ImageContainer getImage(final String name) throws IOException {
 		Command.Builder commandBuilder = Command.newBuilder();
 		commandBuilder.setGetImage(GetImage.newBuilder().setKey(name));
 		Image img;
@@ -446,7 +453,29 @@ public class PythonKernel {
 		if (img.hasError()) {
 			throw new IOException(img.getError());
 		}
-		return ImageIO.read(img.getBytes().newInput());
+		ByteString bytes = img.getBytes();
+		if (bytes.isValidUtf8() && bytes.toStringUtf8().startsWith("<?xml")) {
+			try {
+				return new ImageContainer(stringToSVG(bytes.toStringUtf8()));
+			} catch (TranscoderException e) {
+				throw new IOException(e.getMessage(), e);
+			}
+		} else {
+			return new ImageContainer(ImageIO.read(bytes.newInput()));
+		}
+	}
+	
+	private SVGDocument stringToSVG(final String svgString) throws IOException {
+		SVGDocument doc = null;
+		StringReader reader = new StringReader(svgString);
+		try {
+			String parser = XMLResourceDescriptor.getXMLParserClassName();
+			SAXSVGDocumentFactory f = new SAXSVGDocumentFactory(parser);
+			doc = f.createSVGDocument("file:/file.svg", reader);
+		} finally {
+			reader.close();
+		}
+		return doc;
 	}
 
 	public PickledObject getObject(final String name) throws IOException {

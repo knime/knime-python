@@ -47,12 +47,12 @@
  */
 package org.knime.python.kernel;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
@@ -88,7 +88,7 @@ public class PythonKernelManager {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	public synchronized BufferedImage getImage(final String name) throws IOException {
+	public synchronized ImageContainer getImage(final String name) throws IOException {
 		return m_kernel.getImage(name);
 	}
 	
