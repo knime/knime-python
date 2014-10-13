@@ -47,6 +47,8 @@
  */
 package org.knime.python.nodes.script;
 
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
@@ -72,7 +74,7 @@ public class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> 
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 0;
+		return 2;
 	}
 
 	/**
@@ -80,7 +82,14 @@ public class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> 
 	 */
 	@Override
 	public NodeView<PythonScriptNodeModel> createNodeView(final int viewIndex, final PythonScriptNodeModel nodeModel) {
-		return null;
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonScriptNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonScriptNodeModel>(nodeModel);
+        }
+        return null;
 	}
 
 	/**

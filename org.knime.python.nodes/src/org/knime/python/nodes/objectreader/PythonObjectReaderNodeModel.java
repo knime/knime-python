@@ -47,17 +47,15 @@
  */
 package org.knime.python.nodes.objectreader;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
-import org.knime.core.node.CanceledExecutionException;
+import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeCreationContext;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
@@ -74,7 +72,7 @@ import org.knime.python.port.PickledObjectPortObjectSpec;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonObjectReaderNodeModel extends NodeModel {
+class PythonObjectReaderNodeModel extends ExtToolOutputNodeModel {
 
 	private PythonObjectReaderNodeConfig m_config = new PythonObjectReaderNodeConfig();
 
@@ -109,7 +107,9 @@ class PythonObjectReaderNodeModel extends NodeModel {
 		try {
 			kernel.putFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
-			kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.55).setProgress(1);
 			object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
 			exec.createSubProgress(0.45).setProgress(1);
@@ -125,22 +125,6 @@ class PythonObjectReaderNodeModel extends NodeModel {
 	@Override
 	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
 		return new PortObjectSpec[] { null };
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
 	}
 
 	/**
@@ -168,13 +152,6 @@ class PythonObjectReaderNodeModel extends NodeModel {
 		PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
 		config.loadFrom(settings);
 		m_config = config;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void reset() {
 	}
 
 }

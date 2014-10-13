@@ -47,15 +47,13 @@
  */
 package org.knime.python.nodes.predictor;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
+import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
@@ -70,7 +68,7 @@ import org.knime.python.port.PickledObjectPortObject;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonPredictorNodeModel extends NodeModel {
+class PythonPredictorNodeModel extends ExtToolOutputNodeModel {
 
 	private PythonPredictorNodeConfig m_config = new PythonPredictorNodeConfig();
 
@@ -97,7 +95,9 @@ class PythonPredictorNodeModel extends NodeModel {
 			exec.createSubProgress(0.1).setProgress(1);
 			kernel.putDataTable(PythonPredictorNodeConfig.getVariableNames().getInputTables()[0],
 					(BufferedDataTable) inData[1], exec.createSubProgress(0.2));
-			kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.4).setProgress(1);
 			table = kernel.getDataTable(PythonPredictorNodeConfig.getVariableNames().getOutputTables()[0], exec,
 					exec.createSubProgress(0.3));
@@ -113,22 +113,6 @@ class PythonPredictorNodeModel extends NodeModel {
 	@Override
 	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
 		return new PortObjectSpec[] { null };
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
 	}
 
 	/**
@@ -156,13 +140,6 @@ class PythonPredictorNodeModel extends NodeModel {
 		PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
 		config.loadFrom(settings);
 		m_config = config;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void reset() {
 	}
 
 }

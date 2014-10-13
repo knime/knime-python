@@ -47,6 +47,8 @@
  */
 package org.knime.python.nodes.objectreader;
 
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.ContextAwareNodeFactory;
 import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
@@ -73,7 +75,7 @@ public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<Pytho
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 0;
+		return 2;
 	}
 
 	/**
@@ -82,6 +84,13 @@ public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<Pytho
 	@Override
 	public NodeView<PythonObjectReaderNodeModel> createNodeView(final int viewIndex,
 			final PythonObjectReaderNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonObjectReaderNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonObjectReaderNodeModel>(nodeModel);
+        }
 		return null;
 	}
 

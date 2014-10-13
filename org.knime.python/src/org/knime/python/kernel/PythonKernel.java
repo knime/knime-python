@@ -223,16 +223,18 @@ public class PythonKernel {
 	 *             If something goes wrong during execution or if execution has
 	 *             been canceled
 	 */
-	public void execute(final String sourceCode, final ExecutionContext exec) throws Exception {
+	public String[] execute(final String sourceCode, final ExecutionContext exec) throws Exception {
 		final AtomicBoolean done = new AtomicBoolean(false);
 		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
 		final Thread nodeExecutionThread = Thread.currentThread();
+		final AtomicReference<String[]> output = new AtomicReference<String[]>();
 		// Thread running the execute
 		new Thread(new Runnable() {
 			public void run() {
 				String[] out;
 				try {
 					out = execute(sourceCode);
+					output.set(out);
 					// If the error log has content throw it as exception
 					if (!out[1].isEmpty()) {
 						throw new Exception(out[1]);
@@ -259,6 +261,7 @@ public class PythonKernel {
 		if (exception.get() != null) {
 			throw exception.get();
 		}
+		return output.get();
 	}
 
 	/**

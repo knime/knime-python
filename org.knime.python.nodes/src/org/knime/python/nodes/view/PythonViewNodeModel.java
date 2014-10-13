@@ -49,21 +49,20 @@ package org.knime.python.nodes.view;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
 import javax.imageio.ImageIO;
 
 import org.knime.base.data.xml.SvgCell;
 import org.knime.base.data.xml.SvgImageContent;
+import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
@@ -79,7 +78,7 @@ import org.knime.python.kernel.PythonKernel;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonViewNodeModel extends NodeModel {
+class PythonViewNodeModel extends ExtToolOutputNodeModel {
 
 	private PythonViewNodeConfig m_config = new PythonViewNodeConfig();
 
@@ -102,7 +101,9 @@ class PythonViewNodeModel extends NodeModel {
 					getAvailableFlowVariables().values());
 			kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
 					(BufferedDataTable) inData[0], exec.createSubProgress(0.3));
-			kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.4).setProgress(1);
 			image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
 			exec.createSubProgress(0.3).setProgress(1);
@@ -144,22 +145,6 @@ class PythonViewNodeModel extends NodeModel {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void loadInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	protected void saveSettingsTo(NodeSettingsWO settings) {
 		m_config.saveTo(settings);
 	}
@@ -181,13 +166,6 @@ class PythonViewNodeModel extends NodeModel {
 		PythonViewNodeConfig config = new PythonViewNodeConfig();
 		config.loadFrom(settings);
 		m_config = config;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void reset() {
 	}
 
 }

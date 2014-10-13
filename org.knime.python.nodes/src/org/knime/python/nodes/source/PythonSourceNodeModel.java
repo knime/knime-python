@@ -47,18 +47,17 @@
  */
 package org.knime.python.nodes.source;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
+import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.port.PortType;
 import org.knime.python.kernel.PythonKernel;
 
 /**
@@ -67,7 +66,7 @@ import org.knime.python.kernel.PythonKernel;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonSourceNodeModel extends NodeModel {
+class PythonSourceNodeModel extends ExtToolOutputNodeModel {
 
 	private PythonSourceNodeConfig m_config = new PythonSourceNodeConfig();
 
@@ -75,7 +74,7 @@ class PythonSourceNodeModel extends NodeModel {
 	 * Constructor for the node model.
 	 */
 	protected PythonSourceNodeModel() {
-		super(0, 1);
+		super(new PortType[0], new PortType[] { BufferedDataTable.TYPE });
 	}
 
 	/**
@@ -88,7 +87,9 @@ class PythonSourceNodeModel extends NodeModel {
 		try {
 			kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
-			kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.55).setProgress(1);
 			table = kernel.getDataTable(PythonSourceNodeConfig.getVariableNames().getOutputTables()[0], exec,
 					exec.createSubProgress(0.45));
@@ -104,22 +105,6 @@ class PythonSourceNodeModel extends NodeModel {
 	@Override
 	protected DataTableSpec[] configure(DataTableSpec[] inSpecs) throws InvalidSettingsException {
 		return new DataTableSpec[] { null };
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveInternals(File nodeInternDir, ExecutionMonitor exec) throws IOException,
-			CanceledExecutionException {
 	}
 
 	/**
@@ -147,13 +132,6 @@ class PythonSourceNodeModel extends NodeModel {
 		PythonSourceNodeConfig config = new PythonSourceNodeConfig();
 		config.loadFrom(settings);
 		m_config = config;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void reset() {
 	}
 
 }

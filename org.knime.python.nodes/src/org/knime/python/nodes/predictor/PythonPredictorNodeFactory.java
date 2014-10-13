@@ -47,6 +47,8 @@
  */
 package org.knime.python.nodes.predictor;
 
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
@@ -72,7 +74,7 @@ public class PythonPredictorNodeFactory extends NodeFactory<PythonPredictorNodeM
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 0;
+		return 2;
 	}
 
 	/**
@@ -81,6 +83,13 @@ public class PythonPredictorNodeFactory extends NodeFactory<PythonPredictorNodeM
 	@Override
 	public NodeView<PythonPredictorNodeModel> createNodeView(final int viewIndex,
 			final PythonPredictorNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonPredictorNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonPredictorNodeModel>(nodeModel);
+        }
 		return null;
 	}
 

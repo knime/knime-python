@@ -47,6 +47,8 @@
  */
 package org.knime.python.nodes.objectwriter;
 
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
@@ -72,7 +74,7 @@ public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWrite
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 0;
+		return 2;
 	}
 
 	/**
@@ -81,6 +83,13 @@ public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWrite
 	@Override
 	public NodeView<PythonObjectWriterNodeModel> createNodeView(final int viewIndex,
 			final PythonObjectWriterNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonObjectWriterNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonObjectWriterNodeModel>(nodeModel);
+        }
 		return null;
 	}
 
