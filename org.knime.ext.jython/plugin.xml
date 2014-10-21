@@ -5,15 +5,15 @@
    <extension
          point="org.knime.workbench.repository.nodes">
       <node
-            category-path="/labs/python"
+            category-path="/labs/jython"
             factory-class="org.knime.ext.jython.PythonScript11NodeFactory"
             id="org.knime.ext.jython.script11"/>
       <node
-            category-path="/labs/python"
+            category-path="/labs/jython"
             factory-class="org.knime.ext.jython.PythonScript21NodeFactory"
             id="org.knime.ext.jython.script21"/>
       <node
-            category-path="/labs/python"
+            category-path="/labs/jython"
             factory-class="org.knime.ext.jython.PythonFunctionNodeFactory"
             id="org.knime.ext.jython.expression"/>
    </extension>
@@ -22,8 +22,8 @@
          point="org.knime.workbench.repository.categories">
       <category
             icon="icons/category_basic.gif"
-            level-id="python"
-            name="Python"
+            level-id="jython"
+            name="Jython"
             path="/labs"/>
    </extension>
    
