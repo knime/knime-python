@@ -9,7 +9,7 @@ import traceback
 import numpy
 import os
 import pickle
-import importlib
+import imp
 import types
 from datetime import datetime
 from pandas import DataFrame, NaT
@@ -898,12 +898,9 @@ class TypeExtensionManager:
             path = type_extension
             last_separator = path.rfind(os.sep)
             file_extension_start = path.rfind('.')
-            import_path = path[:last_separator]
-            if import_path not in sys.path:
-                sys.path.append(import_path)
             module_name = path[last_separator+1:file_extension_start]
             try:
-                type_extension = (importlib.import_module(module_name))
+                type_extension = imp.load_source(module_name, path)
             except ImportError as e:
                 raise ImportError('Error while loading python type extension ' + module_name + '\nCause: ' + str(e))
             self._type_extensions[index] = type_extension
