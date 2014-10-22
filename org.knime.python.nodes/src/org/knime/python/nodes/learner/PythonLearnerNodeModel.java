@@ -62,7 +62,6 @@ import org.knime.core.node.port.PortType;
 import org.knime.python.kernel.PythonKernel;
 import org.knime.python.port.PickledObject;
 import org.knime.python.port.PickledObjectPortObject;
-import org.knime.python.port.PickledObjectPortObjectSpec;
 
 /**
  * This is the model implementation.
@@ -102,7 +101,7 @@ class PythonLearnerNodeModel extends ExtToolOutputNodeModel {
 		} finally {
 			kernel.close();
 		}
-		return new PortObject[] { new PickledObjectPortObject(new PickledObjectPortObjectSpec(object)) };
+		return new PortObject[] { new PickledObjectPortObject(object) };
 	}
 
 	/**

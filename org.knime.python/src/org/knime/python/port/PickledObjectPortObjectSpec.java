@@ -57,6 +57,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
@@ -69,29 +70,25 @@ import org.knime.core.node.port.AbstractSimplePortObjectSpec;
  */
 public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectSpec {
 
-	private PickledObject m_pickledObject;
+	private String m_pickledObjectType;
+	private String m_pickledObjectString;
 
 	/**
 	 * Constructor for a port object spec that holds no {@link PickledObject}.
 	 */
 	public PickledObjectPortObjectSpec() {
-		m_pickledObject = null;
+		m_pickledObjectType = null;
+		m_pickledObjectString = null;
 	}
 
 	/**
 	 * @param pickledObject
-	 *            The {@link PickledObject} that will be contained by this port
-	 *            object spec
+	 *            The type of the {@link PickledObject} that will be contained by this port
+	 *            object
 	 */
-	public PickledObjectPortObjectSpec(final PickledObject pickledObject) {
-		m_pickledObject = pickledObject;
-	}
-
-	/**
-	 * @return The contained {@link PickledObject} object
-	 */
-	public PickledObject getPickledObject() {
-		return m_pickledObject;
+	public PickledObjectPortObjectSpec(final String pickledObjectType, final String pickledObjectString) {
+		m_pickledObjectType = pickledObjectType;
+		m_pickledObjectString = pickledObjectString;
 	}
 
 	/**
@@ -99,7 +96,8 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 	 */
 	@Override
 	protected void save(final ModelContentWO model) {
-		m_pickledObject.save(model);
+		model.addString("pickledObjectType", m_pickledObjectType);
+		model.addString("pickledObjectString", m_pickledObjectString);
 	}
 
 	/**
@@ -107,7 +105,8 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 	 */
 	@Override
 	protected void load(final ModelContentRO model) throws InvalidSettingsException {
-		m_pickledObject = new PickledObject(model);
+		m_pickledObjectType = model.getString("pickledObjectType", null);
+		m_pickledObjectString = model.getString("pickledObjectString", null);
 	}
 
 	/**
@@ -122,7 +121,7 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 			return false;
 		}
 		PickledObjectPortObjectSpec spec = (PickledObjectPortObjectSpec) ospec;
-		return m_pickledObject.equals(spec.m_pickledObject);
+		return m_pickledObjectType.equals(spec.m_pickledObjectType) && m_pickledObjectString.equals(spec.m_pickledObjectString);
 	}
 
 	/**
@@ -130,7 +129,10 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 	 */
 	@Override
 	public int hashCode() {
-		return m_pickledObject != null ? m_pickledObject.hashCode() : 0;
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		hcb.append(m_pickledObjectType);
+		hcb.append(m_pickledObjectString);
+		return hcb.hashCode();
 	}
 
 	/**
@@ -139,11 +141,10 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 	@Override
 	public JComponent[] getViews() {
 		String text;
-		if (getPickledObject() != null) {
-			String pickledObject = getPickledObject().getStringRepresentation();
-			pickledObject = shortenString(pickledObject, 1000, "\n...");
-			text = "<html><b>" + getPickledObject().getType() + "</b><br><br><code>"
-					+ pickledObject.replace("\n", "<br>") + "</code></html>";
+		if (m_pickledObjectType != null) {
+			text = "<html><b>" + m_pickledObjectType
+					+ "</b><br><br><code>"
+					+ m_pickledObjectString.replace("\n", "<br>") + "</code></html>";
 		} else {
 			text = "No object available";
 		}
@@ -167,13 +168,6 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 		JComponent f = new JScrollPane(panel);
 		f.setName("Pickled object");
 		return new JComponent[] { f };
-	}
-
-	private static String shortenString(String string, final int maxLength, final String suffix) {
-		if (string.length() > maxLength) {
-			string = string.substring(0, maxLength - suffix.length()) + suffix;
-		}
-		return string;
 	}
 
 }

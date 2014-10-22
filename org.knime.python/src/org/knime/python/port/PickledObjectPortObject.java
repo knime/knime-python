@@ -47,7 +47,15 @@
  */
 package org.knime.python.port;
 
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
 import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -60,78 +68,147 @@ import org.knime.core.node.port.PortType;
 
 /**
  * Port object containing a {@link PickledObject}.
- *
+ * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public final class PickledObjectPortObject extends AbstractSimplePortObject {
 
-    private PickledObjectPortObjectSpec m_spec;
+	private PickledObjectPortObjectSpec m_spec;
 
-    /**
-     * The type of this port.
-     */
-    public static final PortType TYPE = new PortType(PickledObjectPortObject.class);
+	private PickledObject m_pickledObject;
 
-    /**
-     * Constructor used by the framework.
-     */
-    public PickledObjectPortObject() {
-        // used by the framework
-    }
+	/**
+	 * The type of this port.
+	 */
+	public static final PortType TYPE = new PortType(
+			PickledObjectPortObject.class);
 
-    /**
-     * @param spec The specification of this port object.
-     */
-    public PickledObjectPortObject(final PickledObjectPortObjectSpec spec) {
-        m_spec = spec;
-    }
+	/**
+	 * Constructor used by the framework.
+	 */
+	public PickledObjectPortObject() {
+		m_pickledObject = null;
+	}
 
-    /**
-     * @return The contained PickledObject
-     */
-    public PickledObject getPickledObject() {
-        return m_spec.getPickledObject();
-    }
+	/**
+	 * @param spec
+	 *            The specification of this port object.
+	 */
+	public PickledObjectPortObject(final PickledObject pickledObject) {
+		m_pickledObject = pickledObject;
+		m_spec = new PickledObjectPortObjectSpec(m_pickledObject.getType(), m_pickledObject.getStringRepresentation());
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getSummary() {
-        return m_spec.getPickledObject().toString();
-    }
+	/**
+	 * @return The contained PickledObject
+	 */
+	public PickledObject getPickledObject() {
+		return m_pickledObject;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PortObjectSpec getSpec() {
-        return m_spec;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getSummary() {
+		return m_pickledObject.toString();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void save(final ModelContentWO model, final ExecutionMonitor exec) throws CanceledExecutionException {
-        // nothing to do
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public PortObjectSpec getSpec() {
+		return m_spec;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void load(final ModelContentRO model, final PortObjectSpec spec, final ExecutionMonitor exec)
-            throws InvalidSettingsException, CanceledExecutionException {
-        m_spec = (PickledObjectPortObjectSpec)spec;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void save(final ModelContentWO model, final ExecutionMonitor exec)
+			throws CanceledExecutionException {
+		m_pickledObject.save(model);
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JComponent[] getViews() {
-    	return m_spec.getViews();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void load(final ModelContentRO model, final PortObjectSpec spec,
+			final ExecutionMonitor exec) throws InvalidSettingsException,
+			CanceledExecutionException {
+		m_spec = (PickledObjectPortObjectSpec) spec;
+		m_pickledObject = new PickledObject(model);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public JComponent[] getViews() {
+		String text;
+		if (getPickledObject() != null) {
+			String pickledObject = getPickledObject().getStringRepresentation();
+			pickledObject = shortenString(pickledObject, 1000, "\n...");
+			text = "<html><b>" + getPickledObject().getType()
+					+ "</b><br><br><code>"
+					+ pickledObject.replace("\n", "<br>") + "</code></html>";
+		} else {
+			text = "No object available";
+		}
+		JLabel label = new JLabel(text);
+		Font font = label.getFont();
+		Font plainFont = new Font(font.getFontName(), Font.PLAIN,
+				font.getSize());
+		label.setFont(plainFont);
+		JPanel panel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(5, 5, 5, 5);
+		gbc.anchor = GridBagConstraints.NORTHWEST;
+		gbc.fill = GridBagConstraints.BOTH;
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		panel.add(label, gbc);
+		gbc.insets = new Insets(0, 0, 0, 0);
+		gbc.gridy++;
+		gbc.weighty = Double.MIN_VALUE;
+		gbc.weightx = Double.MIN_VALUE;
+		panel.add(new JLabel(), gbc);
+		JComponent f = new JScrollPane(panel);
+		f.setName("Pickled object");
+		return new JComponent[] { f };
+	}
+
+	private static String shortenString(String string, final int maxLength,
+			final String suffix) {
+		if (string.length() > maxLength) {
+			string = string.substring(0, maxLength - suffix.length()) + suffix;
+		}
+		return string;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof PickledObjectPortObject)) {
+			return false;
+		}
+		PickledObjectPortObject portObject = (PickledObjectPortObject) o;
+		return m_pickledObject.equals(portObject.m_pickledObject);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int hashCode() {
+		return m_pickledObject != null ? m_pickledObject.hashCode() : 0;
+	}
 
 }
