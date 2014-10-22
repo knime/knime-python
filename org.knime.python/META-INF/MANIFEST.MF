@@ -19,7 +19,8 @@ Export-Package: org.knime.code.generic,
  org.knime.python,
  org.knime.python.kernel,
  org.knime.python.kernel.proto,
- org.knime.python.port
+ org.knime.python.port,
+ org.knime.python.typeextension
 Bundle-Activator: org.knime.python.Activator
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: knime-python.jar

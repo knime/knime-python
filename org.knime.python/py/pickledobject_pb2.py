@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='pickledobject.proto',
   package='knime',
-  serialized_pb='\n\x13pickledobject.proto\x12\x05knime\"R\n\rPickledObject\x12\x15\n\rpickledObject\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\x1c\n\x14stringRepresentation\x18\x03 \x02(\tB6\n\x1dorg.knime.python.kernel.protoB\x15ProtobufPickledObject')
+  serialized_pb='\n\x13pickledobject.proto\x12\x05knime\"R\n\rPickledObject\x12\x15\n\rpickledObject\x18\x01 \x02(\x0c\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\x1c\n\x14stringRepresentation\x18\x03 \x02(\tB6\n\x1dorg.knime.python.kernel.protoB\x15ProtobufPickledObject')
 
 
 
@@ -27,8 +27,8 @@ _PICKLEDOBJECT = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='pickledObject', full_name='knime.PickledObject.pickledObject', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=unicode("", "utf-8"),
+      number=1, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value="",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),

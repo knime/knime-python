@@ -215,7 +215,7 @@ abstract public class SourceCodePanel extends JPanel {
 			gbc.gridx++;
 			gbc.insets = new Insets(0, 5, 0, 5);
 			add(m_stopButton, gbc);
-			Icon stopIcon = new ImageIcon(Activator.getFile("org.knime.python", "res" + File.separator + "stop.gif").getAbsolutePath());
+			Icon stopIcon = new ImageIcon(Activator.getFile("org.knime.python", "res/stop.gif").getAbsolutePath());
 			m_stopButton.setIcon(stopIcon);
 			m_stopButton.setToolTipText("Stop execution");
 			m_stopButton.setPreferredSize(new Dimension(m_stopButton.getPreferredSize().height, m_stopButton
@@ -424,7 +424,7 @@ abstract public class SourceCodePanel extends JPanel {
 		editorConsoleSplit.setBottomComponent(consolePanel);
 		editorConsoleSplit.setDividerLocation(400);
 		add(editorConsoleSplit, BorderLayout.CENTER);
-		Icon clearIcon = new ImageIcon(Activator.getFile("org.knime.python", "res" + File.separator + "clear.gif").getAbsolutePath());
+		Icon clearIcon = new ImageIcon(Activator.getFile("org.knime.python", "res/clear.gif").getAbsolutePath());
 		m_clearConsole.setIcon(clearIcon);
 		m_clearConsole.setToolTipText("Clear console");
 		m_clearConsole.setPreferredSize(new Dimension(m_clearConsole.getPreferredSize().height, m_clearConsole

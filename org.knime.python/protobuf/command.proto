@@ -18,6 +18,7 @@ message Command {
 	optional GetImage getImage = 10;
 	optional GetObject getObject = 11;
 	optional PutObject putObject = 12;
+	optional LoadTypeExtensions loadTypeExtensions = 13;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -85,6 +86,16 @@ message Command {
 	
 	message PutObject {
 		required string key = 1;
-		required string pickledObject = 2;
+		required bytes pickledObject = 2;
+	}
+	
+	message LoadTypeExtensions {
+		repeated TypeExtension typeExtension = 1;
+	}
+	
+	message TypeExtension {
+		required string id = 1;
+		required string type = 2;
+		required string path = 3;
 	}
 }

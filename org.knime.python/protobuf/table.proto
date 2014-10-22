@@ -167,9 +167,10 @@ message Table {
 	}
 	
 	message ObjectListColumn {
-		required string name = 1;
-		required bool isSet = 2;
-		repeated ObjectListValue objectListValue = 3;
+		required string type = 1;
+		required string name = 2;
+		required bool isSet = 3;
+		repeated ObjectListValue objectListValue = 4;
 	}
 	
 	message ObjectListValue {

@@ -3,13 +3,13 @@
 
 <plugin>
    	<extension point="org.knime.workbench.repository.nodes">
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory" id="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory" id="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.learner.PythonLearnerNodeFactory" id="org.knime.python.nodes.learner.PythonLearnerNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.predictor.PythonPredictorNodeFactory" id="org.knime.python.nodes.predictor.PythonPredictorNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory" id="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" id="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory" id="org.knime.python.nodes.script.PythonScriptNodeFactory" after="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory" after="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory" id="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory" after="org.knime.python.nodes.view.PythonViewNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" id="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" after="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.learner.PythonLearnerNodeFactory" id="org.knime.python.nodes.learner.PythonLearnerNodeFactory" after="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.predictor.PythonPredictorNodeFactory" id="org.knime.python.nodes.predictor.PythonPredictorNodeFactory" after="org.knime.python.nodes.learner.PythonLearnerNodeFactory"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/labs" />

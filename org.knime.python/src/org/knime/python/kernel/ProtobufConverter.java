@@ -103,7 +103,10 @@ import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectColumn;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListColumn;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.StringColumn;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.StringListColumn;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.TypeExtension;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
 
 /**
@@ -133,7 +136,7 @@ class ProtobufConverter {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	static Table dataTableToProtobuf(final BufferedDataTable table, final int chunkSize,
 			final CloseableRowIterator rowIterator, final int chunk, final ExecutionMonitor executionMonitor,
 			final int rowLimit) throws IOException {
@@ -160,9 +163,6 @@ class ProtobufConverter {
 			} else if (colSpec.getType().isCompatible(DateAndTimeValue.class)) {
 				type = "DateAndTimeColumn";
 				columnBuilders.add(DateAndTimeColumn.newBuilder().setName(colSpec.getName()));
-			} else if (colSpec.getType().isCompatible(StringValue.class)) {
-				type = "StringColumn";
-				columnBuilders.add(StringColumn.newBuilder().setName(colSpec.getName()));
 			} else if (colSpec.getType().isCollectionType()
 					&& colSpec.getType().getCollectionElementType().isCompatible(BooleanValue.class)) {
 				type = "BooleanListColumn";
@@ -188,29 +188,29 @@ class ProtobufConverter {
 				type = "DateAndTimeListColumn";
 				columnBuilders.add(DateAndTimeListColumn.newBuilder().setName(colSpec.getName())
 						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
-			} else if (colSpec.getType().isCollectionType()
-					&& colSpec.getType().getCollectionElementType().isCompatible(StringValue.class)) {
-				type = "StringListColumn";
-				columnBuilders.add(StringListColumn.newBuilder().setName(colSpec.getName())
-						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
 			} else if (colSpec.getType().isCollectionType()) {
-//				type = "ObjectListColumn";
-//				columnBuilders.add(ObjectListColumn.newBuilder().setName(colSpec.getName())
-//						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
-//				// TODO only throw error if object type is not supported
-//				throw new IOException("List column " + colSpec.getName() + " has unsupported type "
-//						+ colSpec.getType().getCollectionElementType().toString());
-				type = "StringListColumn";
-				columnBuilders.add(StringListColumn.newBuilder().setName(colSpec.getName()));
+				TypeExtension typeExtension = TypeExtension.getTypeExtension(colSpec.getType()
+						.getCollectionElementType());
+				if (typeExtension != null) {
+					type = "ObjectListColumn";
+					columnBuilders.add(ObjectListColumn.newBuilder().setName(colSpec.getName())
+							.setType(typeExtension.getId())
+							.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
+				} else {
+					type = "StringListColumn";
+					columnBuilders.add(StringListColumn.newBuilder().setName(colSpec.getName())
+							.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
+				}
 			} else {
-//				type = "ObjectColumn";
-//				columnBuilders.add(ObjectColumn.newBuilder().setName(colSpec.getName())
-//						.setType(colSpec.getType().toString()));
-//				// TODO only throw error if object type is not supported
-//				throw new IOException("Column " + colSpec.getName() + " has unsupported type "
-//						+ colSpec.getType().toString());
-				type = "StringColumn";
-				columnBuilders.add(StringColumn.newBuilder().setName(colSpec.getName()));
+				TypeExtension typeExtension = TypeExtension.getTypeExtension(colSpec.getType());
+				if (typeExtension != null) {
+					type = "ObjectColumn";
+					columnBuilders.add(ObjectColumn.newBuilder().setName(colSpec.getName())
+							.setType(typeExtension.getId()));
+				} else {
+					type = "StringColumn";
+					columnBuilders.add(StringColumn.newBuilder().setName(colSpec.getName()));
+				}
 			}
 			int typeIndex = nextTypeIndexMap.containsKey(type) ? nextTypeIndexMap.get(type) : 0;
 			nextTypeIndexMap.put(type, typeIndex + 1);
@@ -367,14 +367,26 @@ class ProtobufConverter {
 						CollectionDataValue collectionCell = (CollectionDataValue) cell;
 						for (DataCell singleCell : collectionCell) {
 							Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-							// TODO object cell
+							Serializer serializer = TypeExtension.getTypeExtension(cell.getType()).getJavaSerializer();
+							try {
+								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
+							} catch (Exception e) {
+								throw new IOException(e.getMessage(), e);
+							}
 							objectListValueBuilder.addValue(objectValue);
 						}
 					}
 					objectListColumn.addObjectListValue(objectListValueBuilder.build());
 				} else if (builder instanceof ObjectColumn.Builder) {
 					ObjectColumn.Builder objectColumn = (ObjectColumn.Builder) builder;
-					// TODO object cell
+					Serializer serializer = TypeExtension.getTypeExtension(cell.getType()).getJavaSerializer();
+					Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
+					try {
+						objectValue.setValue(ByteString.copyFrom(serializer.serialize(cell)));
+					} catch (Exception e) {
+						throw new IOException(e.getMessage(), e);
+					}
+					objectColumn.addObjectValue(objectValue);
 				}
 				index++;
 			}
@@ -435,6 +447,7 @@ class ProtobufConverter {
 	 * @throws IOException
 	 *             If an error occured
 	 */
+	@SuppressWarnings("rawtypes")
 	static BufferedDataContainer createContainerFromProtobuf(final Table table, final ExecutionContext exec)
 			throws IOException {
 		if (!table.getValid()) {
@@ -493,9 +506,15 @@ class ProtobufConverter {
 						.getCollectionType(StringCell.TYPE);
 				colSpecs[i] = new DataColumnSpecCreator(column.getName(), type).createSpec();
 			} else if (colType.equals("ObjectListColumn")) {
-				// TODO object cell
+				ObjectListColumn column = table.getObjectListCol(colRefList.get(i).getIndexInType());
+				Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
+				DataType type = column.getIsSet() ? SetCell.getCollectionType(serializer.getDataType()) : ListCell
+						.getCollectionType(serializer.getDataType());
+				colSpecs[i] = new DataColumnSpecCreator(column.getName(), type).createSpec();
 			} else if (colType.equals("ObjectColumn")) {
-				// TODO object cell
+				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
+				Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
+				colSpecs[i] = new DataColumnSpecCreator(column.getName(), serializer.getDataType()).createSpec();
 			}
 		}
 		BufferedDataContainer container = exec.createDataContainer(new DataTableSpec(colSpecs));
@@ -543,6 +562,7 @@ class ProtobufConverter {
 	 * @throws IOException
 	 *             If an error occured
 	 */
+	@SuppressWarnings("rawtypes")
 	private static DataRow createRow(final Table table, final int index) throws IOException {
 		DataCell[] cells = new DataCell[table.getNumCols()];
 		List<ColumnReference> colRefList = table.getColRefList();
@@ -663,13 +683,27 @@ class ProtobufConverter {
 				} else {
 					List<DataCell> singleCells = new ArrayList<DataCell>();
 					for (Table.ObjectValue singleValue : value.getValueList()) {
-						// TODO object cell
+						Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
+						try {
+							cells[i] = singleValue.hasValue() ? serializer
+									.deserialize(singleValue.getValue().toByteArray()) : new MissingCell(null);
+						} catch (Exception e) {
+							throw new IOException(e.getMessage(), e);
+						}
 					}
 					cells[i] = column.getIsSet() ? CollectionCellFactory.createSetCell(singleCells)
 							: CollectionCellFactory.createListCell(singleCells);
 				}
 			} else if (colType.equals("ObjectColumn")) {
-				// TODO object cell
+				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
+				Table.ObjectValue value = column.getObjectValue(index);
+				Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
+				try {
+					cells[i] = value.hasValue() ? serializer.deserialize(value.getValue().toByteArray()) : new MissingCell(
+							null);
+				} catch (Exception e) {
+					throw new IOException(e.getMessage(), e);
+				}
 			}
 		}
 		return new DefaultRow(table.getRowId(index), cells);
@@ -686,7 +720,7 @@ class ProtobufConverter {
 		Table.DateAndTimeValue.Builder dateAndTimeValueBuilder = Table.DateAndTimeValue.newBuilder();
 		if (!cell.isMissing()) {
 			DateAndTimeValue value = (DateAndTimeValue) cell;
-			if (value.getUTCCalendarClone().get(Calendar.ERA)==GregorianCalendar.AD) {
+			if (value.getUTCCalendarClone().get(Calendar.ERA) == GregorianCalendar.AD) {
 				dateAndTimeValueBuilder.setYear(value.getYear());
 				dateAndTimeValueBuilder.setMonth(value.getMonth() + 1);
 				dateAndTimeValueBuilder.setDay(value.getDayOfMonth());

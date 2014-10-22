@@ -57,6 +57,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
+import org.knime.python.typeextension.TypeExtension;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -89,6 +90,7 @@ public class Activator implements BundleActivator {
 				testPythonInstallation();
 			}
 		}).start();
+		TypeExtension.init();
 	}
 
 	/**
@@ -121,8 +123,7 @@ public class Activator implements BundleActivator {
 		}
 		try {
 			// Start python kernel tester script
-			String scriptPath = getFile("org.knime.python", "py" + File.separator + "PythonKernelTester.py")
-					.getAbsolutePath();
+			String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
 			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
 			Process process = pb.start();
 			// Get console output of script

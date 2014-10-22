@@ -20943,52 +20943,67 @@ public final class ProtobufKnimeTable {
     public interface ObjectListColumnOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
 
-      // required string name = 1;
+      // required string type = 1;
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string type = 1;</code>
+       */
+      boolean hasType();
+      /**
+       * <code>required string type = 1;</code>
+       */
+      java.lang.String getType();
+      /**
+       * <code>required string type = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getTypeBytes();
+
+      // required string name = 2;
+      /**
+       * <code>required string name = 2;</code>
        */
       boolean hasName();
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string name = 2;</code>
        */
       java.lang.String getName();
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string name = 2;</code>
        */
       com.google.protobuf.ByteString
           getNameBytes();
 
-      // required bool isSet = 2;
+      // required bool isSet = 3;
       /**
-       * <code>required bool isSet = 2;</code>
+       * <code>required bool isSet = 3;</code>
        */
       boolean hasIsSet();
       /**
-       * <code>required bool isSet = 2;</code>
+       * <code>required bool isSet = 3;</code>
        */
       boolean getIsSet();
 
-      // repeated .knime.Table.ObjectListValue objectListValue = 3;
+      // repeated .knime.Table.ObjectListValue objectListValue = 4;
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> 
           getObjectListValueList();
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue getObjectListValue(int index);
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       int getObjectListValueCount();
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       java.util.List<? extends org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder> 
           getObjectListValueOrBuilderList();
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder getObjectListValueOrBuilder(
           int index);
@@ -21046,18 +21061,23 @@ public final class ProtobufKnimeTable {
               }
               case 10: {
                 bitField0_ |= 0x00000001;
+                type_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                bitField0_ |= 0x00000002;
                 name_ = input.readBytes();
                 break;
               }
-              case 16: {
-                bitField0_ |= 0x00000002;
+              case 24: {
+                bitField0_ |= 0x00000004;
                 isSet_ = input.readBool();
                 break;
               }
-              case 26: {
-                if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+              case 34: {
+                if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
                   objectListValue_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue>();
-                  mutable_bitField0_ |= 0x00000004;
+                  mutable_bitField0_ |= 0x00000008;
                 }
                 objectListValue_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.PARSER, extensionRegistry));
                 break;
@@ -21070,7 +21090,7 @@ public final class ProtobufKnimeTable {
           throw new com.google.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
-          if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+          if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
             objectListValue_ = java.util.Collections.unmodifiableList(objectListValue_);
           }
           this.unknownFields = unknownFields.build();
@@ -21105,17 +21125,60 @@ public final class ProtobufKnimeTable {
       }
 
       private int bitField0_;
-      // required string name = 1;
-      public static final int NAME_FIELD_NUMBER = 1;
-      private java.lang.Object name_;
+      // required string type = 1;
+      public static final int TYPE_FIELD_NUMBER = 1;
+      private java.lang.Object type_;
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string type = 1;</code>
        */
-      public boolean hasName() {
+      public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string type = 1;</code>
+       */
+      public java.lang.String getType() {
+        java.lang.Object ref = type_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            type_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string type = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getTypeBytes() {
+        java.lang.Object ref = type_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          type_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required string name = 2;
+      public static final int NAME_FIELD_NUMBER = 2;
+      private java.lang.Object name_;
+      /**
+       * <code>required string name = 2;</code>
+       */
+      public boolean hasName() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required string name = 2;</code>
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -21132,7 +21195,7 @@ public final class ProtobufKnimeTable {
         }
       }
       /**
-       * <code>required string name = 1;</code>
+       * <code>required string name = 2;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -21148,52 +21211,52 @@ public final class ProtobufKnimeTable {
         }
       }
 
-      // required bool isSet = 2;
-      public static final int ISSET_FIELD_NUMBER = 2;
+      // required bool isSet = 3;
+      public static final int ISSET_FIELD_NUMBER = 3;
       private boolean isSet_;
       /**
-       * <code>required bool isSet = 2;</code>
+       * <code>required bool isSet = 3;</code>
        */
       public boolean hasIsSet() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required bool isSet = 2;</code>
+       * <code>required bool isSet = 3;</code>
        */
       public boolean getIsSet() {
         return isSet_;
       }
 
-      // repeated .knime.Table.ObjectListValue objectListValue = 3;
-      public static final int OBJECTLISTVALUE_FIELD_NUMBER = 3;
+      // repeated .knime.Table.ObjectListValue objectListValue = 4;
+      public static final int OBJECTLISTVALUE_FIELD_NUMBER = 4;
       private java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> objectListValue_;
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       public java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> getObjectListValueList() {
         return objectListValue_;
       }
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       public java.util.List<? extends org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder> 
           getObjectListValueOrBuilderList() {
         return objectListValue_;
       }
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       public int getObjectListValueCount() {
         return objectListValue_.size();
       }
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue getObjectListValue(int index) {
         return objectListValue_.get(index);
       }
       /**
-       * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+       * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
        */
       public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder getObjectListValueOrBuilder(
           int index) {
@@ -21201,6 +21264,7 @@ public final class ProtobufKnimeTable {
       }
 
       private void initFields() {
+        type_ = "";
         name_ = "";
         isSet_ = false;
         objectListValue_ = java.util.Collections.emptyList();
@@ -21210,6 +21274,10 @@ public final class ProtobufKnimeTable {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
+        if (!hasType()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
         if (!hasName()) {
           memoizedIsInitialized = 0;
           return false;
@@ -21232,13 +21300,16 @@ public final class ProtobufKnimeTable {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getNameBytes());
+          output.writeBytes(1, getTypeBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBool(2, isSet_);
+          output.writeBytes(2, getNameBytes());
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeBool(3, isSet_);
         }
         for (int i = 0; i < objectListValue_.size(); i++) {
-          output.writeMessage(3, objectListValue_.get(i));
+          output.writeMessage(4, objectListValue_.get(i));
         }
         getUnknownFields().writeTo(output);
       }
@@ -21251,15 +21322,19 @@ public final class ProtobufKnimeTable {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(1, getNameBytes());
+            .computeBytesSize(1, getTypeBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBoolSize(2, isSet_);
+            .computeBytesSize(2, getNameBytes());
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBoolSize(3, isSet_);
         }
         for (int i = 0; i < objectListValue_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(3, objectListValue_.get(i));
+            .computeMessageSize(4, objectListValue_.get(i));
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -21378,13 +21453,15 @@ public final class ProtobufKnimeTable {
 
         public Builder clear() {
           super.clear();
-          name_ = "";
+          type_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
-          isSet_ = false;
+          name_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
+          isSet_ = false;
+          bitField0_ = (bitField0_ & ~0x00000004);
           if (objectListValueBuilder_ == null) {
             objectListValue_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000008);
           } else {
             objectListValueBuilder_.clear();
           }
@@ -21419,15 +21496,19 @@ public final class ProtobufKnimeTable {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
-          result.name_ = name_;
+          result.type_ = type_;
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
+          result.name_ = name_;
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
           result.isSet_ = isSet_;
           if (objectListValueBuilder_ == null) {
-            if (((bitField0_ & 0x00000004) == 0x00000004)) {
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
               objectListValue_ = java.util.Collections.unmodifiableList(objectListValue_);
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000008);
             }
             result.objectListValue_ = objectListValue_;
           } else {
@@ -21449,8 +21530,13 @@ public final class ProtobufKnimeTable {
 
         public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListColumn other) {
           if (other == org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListColumn.getDefaultInstance()) return this;
-          if (other.hasName()) {
+          if (other.hasType()) {
             bitField0_ |= 0x00000001;
+            type_ = other.type_;
+            onChanged();
+          }
+          if (other.hasName()) {
+            bitField0_ |= 0x00000002;
             name_ = other.name_;
             onChanged();
           }
@@ -21461,7 +21547,7 @@ public final class ProtobufKnimeTable {
             if (!other.objectListValue_.isEmpty()) {
               if (objectListValue_.isEmpty()) {
                 objectListValue_ = other.objectListValue_;
-                bitField0_ = (bitField0_ & ~0x00000004);
+                bitField0_ = (bitField0_ & ~0x00000008);
               } else {
                 ensureObjectListValueIsMutable();
                 objectListValue_.addAll(other.objectListValue_);
@@ -21474,7 +21560,7 @@ public final class ProtobufKnimeTable {
                 objectListValueBuilder_.dispose();
                 objectListValueBuilder_ = null;
                 objectListValue_ = other.objectListValue_;
-                bitField0_ = (bitField0_ & ~0x00000004);
+                bitField0_ = (bitField0_ & ~0x00000008);
                 objectListValueBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getObjectListValueFieldBuilder() : null;
@@ -21488,6 +21574,10 @@ public final class ProtobufKnimeTable {
         }
 
         public final boolean isInitialized() {
+          if (!hasType()) {
+            
+            return false;
+          }
           if (!hasName()) {
             
             return false;
@@ -21524,16 +21614,90 @@ public final class ProtobufKnimeTable {
         }
         private int bitField0_;
 
-        // required string name = 1;
-        private java.lang.Object name_ = "";
+        // required string type = 1;
+        private java.lang.Object type_ = "";
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string type = 1;</code>
          */
-        public boolean hasName() {
+        public boolean hasType() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string type = 1;</code>
+         */
+        public java.lang.String getType() {
+          java.lang.Object ref = type_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            type_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string type = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getTypeBytes() {
+          java.lang.Object ref = type_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            type_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string type = 1;</code>
+         */
+        public Builder setType(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          type_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string type = 1;</code>
+         */
+        public Builder clearType() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          type_ = getDefaultInstance().getType();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string type = 1;</code>
+         */
+        public Builder setTypeBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          type_ = value;
+          onChanged();
+          return this;
+        }
+
+        // required string name = 2;
+        private java.lang.Object name_ = "";
+        /**
+         * <code>required string name = 2;</code>
+         */
+        public boolean hasName() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required string name = 2;</code>
          */
         public java.lang.String getName() {
           java.lang.Object ref = name_;
@@ -21547,7 +21711,7 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string name = 2;</code>
          */
         public com.google.protobuf.ByteString
             getNameBytes() {
@@ -21563,81 +21727,81 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string name = 2;</code>
          */
         public Builder setName(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000001;
+  bitField0_ |= 0x00000002;
           name_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string name = 2;</code>
          */
         public Builder clearName() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          bitField0_ = (bitField0_ & ~0x00000002);
           name_ = getDefaultInstance().getName();
           onChanged();
           return this;
         }
         /**
-         * <code>required string name = 1;</code>
+         * <code>required string name = 2;</code>
          */
         public Builder setNameBytes(
             com.google.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000001;
+  bitField0_ |= 0x00000002;
           name_ = value;
           onChanged();
           return this;
         }
 
-        // required bool isSet = 2;
+        // required bool isSet = 3;
         private boolean isSet_ ;
         /**
-         * <code>required bool isSet = 2;</code>
+         * <code>required bool isSet = 3;</code>
          */
         public boolean hasIsSet() {
-          return ((bitField0_ & 0x00000002) == 0x00000002);
+          return ((bitField0_ & 0x00000004) == 0x00000004);
         }
         /**
-         * <code>required bool isSet = 2;</code>
+         * <code>required bool isSet = 3;</code>
          */
         public boolean getIsSet() {
           return isSet_;
         }
         /**
-         * <code>required bool isSet = 2;</code>
+         * <code>required bool isSet = 3;</code>
          */
         public Builder setIsSet(boolean value) {
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000004;
           isSet_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required bool isSet = 2;</code>
+         * <code>required bool isSet = 3;</code>
          */
         public Builder clearIsSet() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000004);
           isSet_ = false;
           onChanged();
           return this;
         }
 
-        // repeated .knime.Table.ObjectListValue objectListValue = 3;
+        // repeated .knime.Table.ObjectListValue objectListValue = 4;
         private java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> objectListValue_ =
           java.util.Collections.emptyList();
         private void ensureObjectListValueIsMutable() {
-          if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+          if (!((bitField0_ & 0x00000008) == 0x00000008)) {
             objectListValue_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue>(objectListValue_);
-            bitField0_ |= 0x00000004;
+            bitField0_ |= 0x00000008;
            }
         }
 
@@ -21645,7 +21809,7 @@ public final class ProtobufKnimeTable {
             org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder> objectListValueBuilder_;
 
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> getObjectListValueList() {
           if (objectListValueBuilder_ == null) {
@@ -21655,7 +21819,7 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public int getObjectListValueCount() {
           if (objectListValueBuilder_ == null) {
@@ -21665,7 +21829,7 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue getObjectListValue(int index) {
           if (objectListValueBuilder_ == null) {
@@ -21675,7 +21839,7 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder setObjectListValue(
             int index, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue value) {
@@ -21692,7 +21856,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder setObjectListValue(
             int index, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder builderForValue) {
@@ -21706,7 +21870,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder addObjectListValue(org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue value) {
           if (objectListValueBuilder_ == null) {
@@ -21722,7 +21886,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder addObjectListValue(
             int index, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue value) {
@@ -21739,7 +21903,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder addObjectListValue(
             org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder builderForValue) {
@@ -21753,7 +21917,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder addObjectListValue(
             int index, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder builderForValue) {
@@ -21767,7 +21931,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder addAllObjectListValue(
             java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue> values) {
@@ -21781,12 +21945,12 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder clearObjectListValue() {
           if (objectListValueBuilder_ == null) {
             objectListValue_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000008);
             onChanged();
           } else {
             objectListValueBuilder_.clear();
@@ -21794,7 +21958,7 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public Builder removeObjectListValue(int index) {
           if (objectListValueBuilder_ == null) {
@@ -21807,14 +21971,14 @@ public final class ProtobufKnimeTable {
           return this;
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder getObjectListValueBuilder(
             int index) {
           return getObjectListValueFieldBuilder().getBuilder(index);
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder getObjectListValueOrBuilder(
             int index) {
@@ -21824,7 +21988,7 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public java.util.List<? extends org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder> 
              getObjectListValueOrBuilderList() {
@@ -21835,14 +21999,14 @@ public final class ProtobufKnimeTable {
           }
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder addObjectListValueBuilder() {
           return getObjectListValueFieldBuilder().addBuilder(
               org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.getDefaultInstance());
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder addObjectListValueBuilder(
             int index) {
@@ -21850,7 +22014,7 @@ public final class ProtobufKnimeTable {
               index, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.getDefaultInstance());
         }
         /**
-         * <code>repeated .knime.Table.ObjectListValue objectListValue = 3;</code>
+         * <code>repeated .knime.Table.ObjectListValue objectListValue = 4;</code>
          */
         public java.util.List<org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder> 
              getObjectListValueBuilderList() {
@@ -21863,7 +22027,7 @@ public final class ProtobufKnimeTable {
             objectListValueBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
                 org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValue.Builder, org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListValueOrBuilder>(
                     objectListValue_,
-                    ((bitField0_ & 0x00000004) == 0x00000004),
+                    ((bitField0_ & 0x00000008) == 0x00000008),
                     getParentForChildren(),
                     isClean());
             objectListValue_ = null;
@@ -28611,7 +28775,7 @@ public final class ProtobufKnimeTable {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\013table.proto\022\005knime\"\221\030\n\005Table\022\r\n\005valid\030" +
+      "\n\013table.proto\022\005knime\"\237\030\n\005Table\022\r\n\005valid\030" +
       "\023 \002(\010\022\r\n\005error\030\024 \001(\t\022\017\n\007numCols\030\001 \002(\005\022\017\n" +
       "\007numRows\030\002 \002(\005\022\r\n\005rowId\030\003 \003(\t\022,\n\006colRef\030" +
       "\004 \003(\0132\034.knime.Table.ColumnReference\022.\n\nb" +
@@ -28684,13 +28848,13 @@ public final class ProtobufKnimeTable {
       "imeValue\032Y\n\014ObjectColumn\022\014\n\004type\030\001 \002(\t\022\014" +
       "\n\004name\030\002 \002(\t\022-\n\013objectValue\030\003 \003(\0132\030.knim" +
       "e.Table.ObjectValue\032\034\n\013ObjectValue\022\r\n\005va" +
-      "lue\030\001 \001(\014\032f\n\020ObjectListColumn\022\014\n\004name\030\001 " +
-      "\002(\t\022\r\n\005isSet\030\002 \002(\010\0225\n\017objectListValue\030\003 " +
-      "\003(\0132\034.knime.Table.ObjectListValue\032M\n\017Obj" +
-      "ectListValue\022\021\n\tisMissing\030\001 \002(\010\022\'\n\005value" +
-      "\030\002 \003(\0132\030.knime.Table.ObjectValueB3\n\035org." +
-      "knime.python.kernel.protoB\022ProtobufKnime" +
-      "Table"
+      "lue\030\001 \001(\014\032t\n\020ObjectListColumn\022\014\n\004type\030\001 " +
+      "\002(\t\022\014\n\004name\030\002 \002(\t\022\r\n\005isSet\030\003 \002(\010\0225\n\017obje" +
+      "ctListValue\030\004 \003(\0132\034.knime.Table.ObjectLi" +
+      "stValue\032M\n\017ObjectListValue\022\021\n\tisMissing\030" +
+      "\001 \002(\010\022\'\n\005value\030\002 \003(\0132\030.knime.Table.Objec" +
+      "tValueB3\n\035org.knime.python.kernel.protoB" +
+      "\022ProtobufKnimeTable"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -28870,7 +29034,7 @@ public final class ProtobufKnimeTable {
           internal_static_knime_Table_ObjectListColumn_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Table_ObjectListColumn_descriptor,
-              new java.lang.String[] { "Name", "IsSet", "ObjectListValue", });
+              new java.lang.String[] { "Type", "Name", "IsSet", "ObjectListValue", });
           internal_static_knime_Table_ObjectListValue_descriptor =
             internal_static_knime_Table_descriptor.getNestedTypes().get(28);
           internal_static_knime_Table_ObjectListValue_fieldAccessorTable = new

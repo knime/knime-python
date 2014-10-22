@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension-point id="org.knime.python.typeextension" name="Python type extension" schema="schema/org.knime.python.typeextension.exsd"/>
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
@@ -9,6 +10,15 @@
             id="org.knime.python.PythonPreferencePage"
             name="Python">
       </page>
+   </extension>
+   <extension
+         point="org.knime.python.typeextension">
+      <type
+            id="org.knime.xml"
+            java-serializer="org.knime.python.typeextension.example.XMLSerializer"
+            python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
+            python-type="instance">
+      </type>
    </extension>
 
 </plugin>

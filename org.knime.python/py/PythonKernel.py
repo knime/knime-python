@@ -9,6 +9,8 @@ import traceback
 import numpy
 import os
 import pickle
+import importlib
+import types
 from datetime import datetime
 from pandas import DataFrame, NaT
 from pandas.tslib import Timestamp
@@ -80,9 +82,16 @@ def run():
                 put_variable('flow_variables', flow_variables)
                 write_dummy()
             elif command.HasField('putTable'):
-                frame = protobuf_table_to_data_frame(command.putTable.table)
-                put_variable(command.putTable.key, frame)
-                write_dummy()
+                try:
+                    frame = protobuf_table_to_data_frame(command.putTable.table)
+                    put_variable(command.putTable.key, frame)
+                except BaseException as e:
+                    simple_response = simpleresponse_pb2.SimpleResponse()
+                    simple_response.string = str(e)
+                    write_message(simple_response)
+                    raise e
+                simple_response = simpleresponse_pb2.SimpleResponse()
+                write_message(simple_response)
             elif command.HasField('appendToTable'):
                 frame = protobuf_table_to_data_frame(command.appendToTable.table)
                 append_to_table(command.appendToTable.key, frame)
@@ -161,6 +170,10 @@ def run():
             elif command.HasField('putObject'):
                 object = pickle.loads(command.putObject.pickledObject)
                 put_variable(command.putObject.key, object)
+                write_dummy()
+            elif command.HasField('loadTypeExtensions'):
+                for type_extension in command.loadTypeExtensions.typeExtension:
+                    _type_extension_manager.add_type_extension(type_extension.id, type_extension.type, type_extension.path)
                 write_dummy()
     finally:
         _connection.close()
@@ -484,11 +497,37 @@ def protobuf_table_to_data_frame(table_message):
             data[column.name] = cells
             column_names.append(column.name)
         elif colRef.type == 'ObjectListColumn':
-            pass
-            # TODO custom types
+            column = table_message.objectListCol[colRef.indexInType]
+            type_extension = _type_extension_manager.get_type_extension_by_id(column.type)
+            if type_extension is not None:
+                cells = []
+                for value in column.objectListValue:
+                    if not value.isMissing:
+                        collection_cell = []
+                        for single_value in value.value:
+                            if single_value.HasField('value'):
+                                collection_cell.append(type_extension.deserialize(single_value.value))
+                            else:
+                                collection_cell.append(None)
+                        if column.isSet:
+                            collection_cell = set(collection_cell)
+                        cells.append(collection_cell)
+                    else:
+                        cells.append(None)
+                data[column.name] = cells
+                column_names.append(column.name)
         elif colRef.type == 'ObjectColumn':
-            pass
-            # TODO custom types
+            column = table_message.objectCol[colRef.indexInType]
+            cells = []
+            type_extension = _type_extension_manager.get_type_extension_by_id(column.type)
+            if type_extension is not None:
+                for value in column.objectValue:
+                    if value.HasField('value'):
+                        cells.append(type_extension.deserialize(value.value))
+                    else:
+                        cells.append(None)
+                data[column.name] = cells
+                column_names.append(column.name)
     return DataFrame(data, index=table_message.rowId, columns=column_names)
 
 
@@ -699,10 +738,36 @@ def data_frame_to_protobuf_table(data_frame):
                                         if not is_missing(single_cell):
                                             string_val.value = single_cell
                         else:
-                            raise ValueError('List column ' + str(column) + ' has unsupported type '
-                                             + list_col_type.__name__)
+                            type_extension = _type_extension_manager.get_type_extension_by_type(list_col_type.__name__)
+                            if (type_extension is None):
+                                raise ValueError('List column ' + str(column) + ' has unsupported type ' + list_col_type.__name__)
+                            col_ref.type = 'ObjectListColumn'
+                            col_ref.indexInType = len(table_message.objectListCol)
+                            object_list_col = table_message.objectListCol.add()
+                            object_list_col.isSet = is_set
+                            object_list_col.name = str(column)
+                            object_col.type = _type_extension_manager.get_id_by_type(list_col_type.__name__)
+                            for cell in data_frame[column]:
+                                object_list_val = object_list_col.objectListValue.add()
+                                object_list_val.isMissing = cell is None
+                                if cell is not None:
+                                    for single_cell in cell:
+                                        object_val = object_list_val.value.add()
+                                        if not is_missing(single_cell):
+                                            object_val.value = type_extension.serialize(single_cell)
                     else:
-                        raise ValueError('Column ' + str(column) + ' has unsupported type ' + col_type.__name__)
+                        type_extension = _type_extension_manager.get_type_extension_by_type(col_type.__name__)
+                        if (type_extension is None):
+                            raise ValueError('Column ' + str(column) + ' has unsupported type ' + col_type.__name__)
+                        col_ref.type = 'ObjectColumn'
+                        col_ref.indexInType = len(table_message.objectCol)
+                        object_col = table_message.objectCol.add()
+                        object_col.name = str(column)
+                        object_col.type = _type_extension_manager.get_id_by_type(col_type.__name__)
+                        for cell in data_frame[column]:
+                            object_val = object_col.objectValue.add()
+                            if not is_missing(cell):
+                                object_val.value = type_extension.serialize(cell)
         table_message.numCols = len(table_message.colRef)
         return table_message
     except ValueError as e:
@@ -779,8 +844,53 @@ def is_missing(value):
 def is_nan(value):
     try:
         return math.isnan(value)
-    except TypeError:
+    except BaseException:
         return False
+
+
+class TypeExtensionManager:
+    def __init__(self):
+        self._id_to_index = {}
+        self._type_to_id = {}
+        self._type_extensions = []
+    def get_type_extension_by_id(self, id):
+        if id not in self._id_to_index:
+            return None
+        return self.get_type_extension_by_index(self._id_to_index[id])
+    def get_type_extension_by_type(self, type_string):
+        if type_string not in self._type_to_id:
+            return None
+        return self.get_type_extension_by_id(self._type_to_id[type_string])
+    def get_id_by_type(self, type_string):
+        if type_string not in self._type_to_id:
+            return None
+        return self._type_to_id[type_string]
+    def get_type_extension_by_index(self, index):
+        if index >= len(self._type_extensions):
+            return None
+        type_extension = self._type_extensions[index]
+        if type(type_extension) is not types.ModuleType:
+            path = type_extension
+            last_separator = path.rfind(os.sep)
+            file_extension_start = path.rfind('.')
+            import_path = path[:last_separator]
+            if import_path not in sys.path:
+                sys.path.append(import_path)
+            module_name = path[last_separator+1:file_extension_start]
+            try:
+                type_extension = (importlib.import_module(module_name))
+            except ImportError as e:
+                raise ImportError('Error while loading python type extension ' + module_name + '\nCause: ' + str(e))
+            self._type_extensions[index] = type_extension
+        return type_extension
+    def add_type_extension(self, id, type_string, path):
+        index = len(self._type_extensions)
+        self._type_extensions.append(path)
+        self._id_to_index[id] = index
+        self._type_to_id[type_string] = id
+
+
+_type_extension_manager = TypeExtensionManager()
 
 
 run()

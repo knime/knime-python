@@ -11,20 +11,15 @@ public final class ProtobufPickledObject {
   public interface PickledObjectOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required string pickledObject = 1;
+    // required bytes pickledObject = 1;
     /**
-     * <code>required string pickledObject = 1;</code>
+     * <code>required bytes pickledObject = 1;</code>
      */
     boolean hasPickledObject();
     /**
-     * <code>required string pickledObject = 1;</code>
+     * <code>required bytes pickledObject = 1;</code>
      */
-    java.lang.String getPickledObject();
-    /**
-     * <code>required string pickledObject = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getPickledObjectBytes();
+    com.google.protobuf.ByteString getPickledObject();
 
     // required string type = 2;
     /**
@@ -162,47 +157,20 @@ public final class ProtobufPickledObject {
     }
 
     private int bitField0_;
-    // required string pickledObject = 1;
+    // required bytes pickledObject = 1;
     public static final int PICKLEDOBJECT_FIELD_NUMBER = 1;
-    private java.lang.Object pickledObject_;
+    private com.google.protobuf.ByteString pickledObject_;
     /**
-     * <code>required string pickledObject = 1;</code>
+     * <code>required bytes pickledObject = 1;</code>
      */
     public boolean hasPickledObject() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string pickledObject = 1;</code>
+     * <code>required bytes pickledObject = 1;</code>
      */
-    public java.lang.String getPickledObject() {
-      java.lang.Object ref = pickledObject_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          pickledObject_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string pickledObject = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getPickledObjectBytes() {
-      java.lang.Object ref = pickledObject_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        pickledObject_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    public com.google.protobuf.ByteString getPickledObject() {
+      return pickledObject_;
     }
 
     // required string type = 2;
@@ -292,7 +260,7 @@ public final class ProtobufPickledObject {
     }
 
     private void initFields() {
-      pickledObject_ = "";
+      pickledObject_ = com.google.protobuf.ByteString.EMPTY;
       type_ = "";
       stringRepresentation_ = "";
     }
@@ -321,7 +289,7 @@ public final class ProtobufPickledObject {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getPickledObjectBytes());
+        output.writeBytes(1, pickledObject_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getTypeBytes());
@@ -340,7 +308,7 @@ public final class ProtobufPickledObject {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getPickledObjectBytes());
+          .computeBytesSize(1, pickledObject_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -466,7 +434,7 @@ public final class ProtobufPickledObject {
 
       public Builder clear() {
         super.clear();
-        pickledObject_ = "";
+        pickledObject_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         type_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -529,9 +497,7 @@ public final class ProtobufPickledObject {
       public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPickledObject.PickledObject other) {
         if (other == org.knime.python.kernel.proto.ProtobufPickledObject.PickledObject.getDefaultInstance()) return this;
         if (other.hasPickledObject()) {
-          bitField0_ |= 0x00000001;
-          pickledObject_ = other.pickledObject_;
-          onChanged();
+          setPickledObject(other.getPickledObject());
         }
         if (other.hasType()) {
           bitField0_ |= 0x00000002;
@@ -582,49 +548,24 @@ public final class ProtobufPickledObject {
       }
       private int bitField0_;
 
-      // required string pickledObject = 1;
-      private java.lang.Object pickledObject_ = "";
+      // required bytes pickledObject = 1;
+      private com.google.protobuf.ByteString pickledObject_ = com.google.protobuf.ByteString.EMPTY;
       /**
-       * <code>required string pickledObject = 1;</code>
+       * <code>required bytes pickledObject = 1;</code>
        */
       public boolean hasPickledObject() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string pickledObject = 1;</code>
+       * <code>required bytes pickledObject = 1;</code>
        */
-      public java.lang.String getPickledObject() {
-        java.lang.Object ref = pickledObject_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          pickledObject_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
+      public com.google.protobuf.ByteString getPickledObject() {
+        return pickledObject_;
       }
       /**
-       * <code>required string pickledObject = 1;</code>
+       * <code>required bytes pickledObject = 1;</code>
        */
-      public com.google.protobuf.ByteString
-          getPickledObjectBytes() {
-        java.lang.Object ref = pickledObject_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          pickledObject_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string pickledObject = 1;</code>
-       */
-      public Builder setPickledObject(
-          java.lang.String value) {
+      public Builder setPickledObject(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -634,24 +575,11 @@ public final class ProtobufPickledObject {
         return this;
       }
       /**
-       * <code>required string pickledObject = 1;</code>
+       * <code>required bytes pickledObject = 1;</code>
        */
       public Builder clearPickledObject() {
         bitField0_ = (bitField0_ & ~0x00000001);
         pickledObject_ = getDefaultInstance().getPickledObject();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string pickledObject = 1;</code>
-       */
-      public Builder setPickledObjectBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        pickledObject_ = value;
         onChanged();
         return this;
       }
@@ -830,7 +758,7 @@ public final class ProtobufPickledObject {
   static {
     java.lang.String[] descriptorData = {
       "\n\023pickledobject.proto\022\005knime\"R\n\rPickledO" +
-      "bject\022\025\n\rpickledObject\030\001 \002(\t\022\014\n\004type\030\002 \002" +
+      "bject\022\025\n\rpickledObject\030\001 \002(\014\022\014\n\004type\030\002 \002" +
       "(\t\022\034\n\024stringRepresentation\030\003 \002(\tB6\n\035org." +
       "knime.python.kernel.protoB\025ProtobufPickl" +
       "edObject"

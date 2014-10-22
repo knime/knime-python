@@ -47,7 +47,6 @@
  */
 package org.knime.python.kernel;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -92,6 +91,7 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObje
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.HasAutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ListVariables;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable;
@@ -99,6 +99,7 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlow
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Reset;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension;
 import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
@@ -151,8 +152,7 @@ public class PythonKernel {
 		// Start listening
 		thread.start();
 		// Get path to python kernel script
-		String scriptPath = Activator.getFile("org.knime.python", "py" + File.separator + "PythonKernel.py")
-				.getAbsolutePath();
+		String scriptPath = Activator.getFile("org.knime.python", "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
 		pb.redirectError(Redirect.INHERIT);
@@ -176,17 +176,25 @@ public class PythonKernel {
 			// on the optional module Jedi)
 			Command.Builder commandBuilder = Command.newBuilder();
 			commandBuilder.setHasAutoComplete(HasAutoComplete.newBuilder());
-			SimpleResponse response;
-			synchronized (this) {
-				OutputStream outToServer = m_socket.getOutputStream();
-				InputStream inFromServer = m_socket.getInputStream();
-				writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
-				response = SimpleResponse.parseFrom(readMessageBytes(inFromServer));
-			}
+			OutputStream outToServer = m_socket.getOutputStream();
+			InputStream inFromServer = m_socket.getInputStream();
+			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+			SimpleResponse response = SimpleResponse.parseFrom(readMessageBytes(inFromServer));
 			m_hasAutocomplete = response.getBoolean();
 		} catch (Exception e) {
 			//
 		}
+		Command.Builder commandBuilder = Command.newBuilder();
+		LoadTypeExtensions.Builder loadTypeExtensions = LoadTypeExtensions.newBuilder();
+		for (org.knime.python.typeextension.TypeExtension typeExtension : org.knime.python.typeextension.TypeExtension.getTypeExtensions()) {
+			loadTypeExtensions.addTypeExtension(TypeExtension.newBuilder().setId(typeExtension.getId()).setType(typeExtension.getType())
+					.setPath(typeExtension.getPythonSerializerPath()));
+		}
+		commandBuilder.setLoadTypeExtensions(loadTypeExtensions);
+		OutputStream outToServer = m_socket.getOutputStream();
+		InputStream inFromServer = m_socket.getInputStream();
+		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+		readMessageBytes(inFromServer);
 	}
 
 	/**
@@ -350,7 +358,10 @@ public class PythonKernel {
 			OutputStream outToServer = m_socket.getOutputStream();
 			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
 			InputStream inFromServer = m_socket.getInputStream();
-			readMessageBytes(inFromServer);
+			SimpleResponse response = SimpleResponse.parseFrom(readMessageBytes(inFromServer));
+			if (response.hasString()) {
+				throw new IOException(response.getString());
+			}
 			rowsDeserialized += tableMessage.getNumRows();
 			deserializationMonitor.setProgress(rowsDeserialized / (double) rowLimit);
 			while (rowsDeserialized < rowLimit) {
@@ -359,7 +370,10 @@ public class PythonKernel {
 				commandBuilder = Command.newBuilder();
 				commandBuilder.setAppendToTable(AppendToTable.newBuilder().setKey(name).setTable(tableMessage));
 				writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
-				readMessageBytes(inFromServer);
+				response = SimpleResponse.parseFrom(readMessageBytes(inFromServer));
+				if (response.hasString()) {
+					throw new IOException(response.getString());
+				}
 				rowsDeserialized += tableMessage.getNumRows();
 				deserializationMonitor.setProgress(rowsDeserialized / (double) rowLimit);
 			}
@@ -467,7 +481,7 @@ public class PythonKernel {
 			return new ImageContainer(ImageIO.read(bytes.newInput()));
 		}
 	}
-	
+
 	private SVGDocument stringToSVG(final String svgString) throws IOException {
 		SVGDocument doc = null;
 		StringReader reader = new StringReader(svgString);
@@ -491,12 +505,11 @@ public class PythonKernel {
 			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
 			pickledObject = ProtobufPickledObject.PickledObject.parseFrom(readMessageBytes(inFromServer));
 		}
-		return new PickledObject(pickledObject.getPickledObject(), pickledObject.getType(),
+		return new PickledObject(pickledObject.getPickledObject().toByteArray(), pickledObject.getType(),
 				pickledObject.getStringRepresentation());
 	}
 
 	public PickledObject getObject(final String name, final ExecutionContext exec) throws Exception {
-		System.out.print("getObject...");
 		final AtomicBoolean done = new AtomicBoolean(false);
 		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
 		final AtomicReference<PickledObject> pickledObject = new AtomicReference<PickledObject>(null);
@@ -528,13 +541,12 @@ public class PythonKernel {
 		if (exception.get() != null) {
 			throw exception.get();
 		}
-		System.out.println(" done");
 		return pickledObject.get();
 	}
 
 	public void putObject(final String name, final PickledObject object) throws IOException {
 		Command.Builder commandBuilder = Command.newBuilder();
-		commandBuilder.setPutObject(PutObject.newBuilder().setKey(name).setPickledObject(object.getPickledObject()));
+		commandBuilder.setPutObject(PutObject.newBuilder().setKey(name).setPickledObject(ByteString.copyFrom(object.getPickledObject())));
 		synchronized (this) {
 			OutputStream outToServer = m_socket.getOutputStream();
 			InputStream inFromServer = m_socket.getInputStream();
@@ -544,7 +556,6 @@ public class PythonKernel {
 	}
 
 	public void putObject(final String name, final PickledObject object, final ExecutionContext exec) throws Exception {
-		System.out.print("putObject...");
 		final AtomicBoolean done = new AtomicBoolean(false);
 		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
 		final Thread nodeExecutionThread = Thread.currentThread();
@@ -575,7 +586,6 @@ public class PythonKernel {
 		if (exception.get() != null) {
 			throw exception.get();
 		}
-		System.out.println(" done");
 	}
 
 	/**

@@ -32,6 +32,8 @@ def check_required_libs():
     check_lib('traceback')
     check_lib('os')
     check_lib('pickle')
+    check_lib('importlib')
+    check_lib('types')
     # these libs are non standard requirements
     check_lib('numpy')
     check_lib('pandas')
