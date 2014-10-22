@@ -17,7 +17,7 @@
             id="org.knime.xml"
             java-serializer="org.knime.python.typeextension.example.XMLSerializer"
             python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
-            python-type="instance">
+            python-type="xml.dom.minidom.Document">
       </type>
    </extension>
 

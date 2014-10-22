@@ -738,15 +738,16 @@ def data_frame_to_protobuf_table(data_frame):
                                         if not is_missing(single_cell):
                                             string_val.value = single_cell
                         else:
-                            type_extension = _type_extension_manager.get_type_extension_by_type(list_col_type.__name__)
+                            type_string = get_type_string(first_valid_list_object(data_frame, column))
+                            type_extension = _type_extension_manager.get_type_extension_by_type(type_string)
                             if (type_extension is None):
-                                raise ValueError('List column ' + str(column) + ' has unsupported type ' + list_col_type.__name__)
+                                raise ValueError('List column ' + str(column) + ' has unsupported type ' + type_string)
                             col_ref.type = 'ObjectListColumn'
                             col_ref.indexInType = len(table_message.objectListCol)
                             object_list_col = table_message.objectListCol.add()
                             object_list_col.isSet = is_set
                             object_list_col.name = str(column)
-                            object_col.type = _type_extension_manager.get_id_by_type(list_col_type.__name__)
+                            object_col.type = _type_extension_manager.get_id_by_type(type_string)
                             for cell in data_frame[column]:
                                 object_list_val = object_list_col.objectListValue.add()
                                 object_list_val.isMissing = cell is None
@@ -756,14 +757,15 @@ def data_frame_to_protobuf_table(data_frame):
                                         if not is_missing(single_cell):
                                             object_val.value = type_extension.serialize(single_cell)
                     else:
-                        type_extension = _type_extension_manager.get_type_extension_by_type(col_type.__name__)
+                        type_string = get_type_string(first_valid_object(data_frame, column))
+                        type_extension = _type_extension_manager.get_type_extension_by_type(type_string)
                         if (type_extension is None):
-                            raise ValueError('Column ' + str(column) + ' has unsupported type ' + col_type.__name__)
+                            raise ValueError('Column ' + str(column) + ' has unsupported type ' + type_string)
                         col_ref.type = 'ObjectColumn'
                         col_ref.indexInType = len(table_message.objectCol)
                         object_col = table_message.objectCol.add()
                         object_col.name = str(column)
-                        object_col.type = _type_extension_manager.get_id_by_type(col_type.__name__)
+                        object_col.type = _type_extension_manager.get_id_by_type(type_string)
                         for cell in data_frame[column]:
                             object_val = object_col.objectValue.add()
                             if not is_missing(cell):
@@ -809,6 +811,22 @@ def list_column_type(data_frame, column_name):
     return col_type
 
 
+def first_valid_object(data_frame, column_name):
+    for cell in data_frame[column_name]:
+        if not is_missing(cell):
+            return cell
+    return None
+
+
+def first_valid_list_object(data_frame, column_name):
+    for list_cell in data_frame[column_name]:
+        if list_cell is not None:
+            for cell in list_cell:
+                if not is_missing(cell):
+                    return cell
+    return None
+
+
 # checks if the two given types are equivalent based on the equivalence list and the equivalence of numpy types to
 # python types
 def types_are_equivalent(type_1, type_2):
@@ -846,6 +864,13 @@ def is_nan(value):
         return math.isnan(value)
     except BaseException:
         return False
+
+
+def get_type_string(object):
+    if hasattr(object, '__module__'):
+        return object.__module__ + '.' + object.__class__.__name__
+    else:
+        return object.__class__.__name__
 
 
 class TypeExtensionManager:
