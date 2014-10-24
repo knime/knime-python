@@ -60,7 +60,7 @@ public class TypeExtension {
 						Serializer<? extends DataValue> serializer = (Serializer<? extends DataValue>) o;
 						String id = config.getAttribute("id");
 						typeExtensions.put(id, new TypeExtension(id, config
-								.getAttribute("python-type"), file.getAbsolutePath(), serializer));
+								.getAttribute("python-type-identifier"), file.getAbsolutePath(), serializer));
 					}
 				}
 			} catch (CoreException e) {
