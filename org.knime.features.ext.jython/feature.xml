@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.ext.jython"
-      label="KNIME Python Scripting"
+      label="KNIME Jython Scripting (Legacy)"
       version="2.11.0.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany"
       plugin="org.knime.ext.jython">
 
    <description url="http://www.knime.org/downloads/extensions">
-      This feature contains nodes for python scripting functionality.
+      This plugin contains nodes for Jython scripting functionality.
+The scripts run in the included Jython runtime.
    </description>
 
    <copyright>

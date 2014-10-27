@@ -6,7 +6,8 @@
       provider-name="KNIME GmbH, Konstanz, Germany">
 
    <description>
-      This plugin contains the Python integration.
+      This plugin contains nodes that integrate Python into KNIME.
+The scripts run in a local Python installation (not included).
    </description>
 
    <copyright>
