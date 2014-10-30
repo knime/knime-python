@@ -24,7 +24,7 @@ def check_required_libs():
         check_lib('io')
     else:
         check_lib('StringIO')
-    check_lib('datetime')
+    check_class('datetime', 'datetime')
     check_lib('math')
     check_lib('socket')
     check_lib('struct')
@@ -36,8 +36,24 @@ def check_required_libs():
     check_lib('types')
     # these libs are non standard requirements
     check_lib('numpy')
-    check_lib('pandas')
+    check_class('pandas', 'DataFrame')
+    check_class('pandas', 'NaT')
+    check_class('pandas.tslib', 'Timestamp')
+    check_lib('pandas.tslib', 'NaT')
     check_lib('google.protobuf')
+
+
+def check_class(lib, cls):
+    global _message, _error
+    if not class_available(lib, cls):
+        _message += 'Class ' + cls + ' in library ' + lib + ' is missing\n'
+        _error = True
+
+
+def class_available(lib, cls):
+    local_env = {}
+    exec('try:\n\tfrom ' + lib + ' import ' + cls + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
+    return local_env['success']
 
 
 # checks if the given lib can be imported
