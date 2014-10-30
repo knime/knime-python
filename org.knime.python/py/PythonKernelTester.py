@@ -37,9 +37,8 @@ def check_required_libs():
     # these libs are non standard requirements
     check_lib('numpy')
     check_class('pandas', 'DataFrame')
-    check_class('pandas', 'NaT')
     check_class('pandas.tslib', 'Timestamp')
-    check_lib('pandas.tslib', 'NaT')
+    check_class('pandas.tslib', 'NaT')
     check_lib('google.protobuf')
 
 
