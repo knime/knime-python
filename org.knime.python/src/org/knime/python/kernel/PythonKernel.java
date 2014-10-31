@@ -76,6 +76,7 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.Activator;
+import org.knime.python.PythonKernelTestResult;
 import org.knime.python.kernel.proto.ProtobufAutocompleteSuggestions.AutocompleteSuggestions;
 import org.knime.python.kernel.proto.ProtobufAutocompleteSuggestions.AutocompleteSuggestions.AutocompleteSuggestion;
 import org.knime.python.kernel.proto.ProtobufExecuteResponse.ExecuteResponse;
@@ -133,8 +134,9 @@ public class PythonKernel {
 	 * @throws IOException
 	 */
 	public PythonKernel() throws IOException {
-		if (Activator.testPythonInstallation().hasError()) {
-			throw new IOException("Could not start python kernel");
+		PythonKernelTestResult testResult = Activator.testPythonInstallation();
+		if (testResult.hasError()) {
+			throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
 		}
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
