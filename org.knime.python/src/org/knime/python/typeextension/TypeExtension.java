@@ -10,9 +10,12 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
+import org.knime.core.node.NodeLogger;
 import org.knime.python.Activator;
 
 public class TypeExtension {
+
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(TypeExtension.class);
 
 	private static Map<String, TypeExtension> typeExtensions;
 	
@@ -64,7 +67,7 @@ public class TypeExtension {
 					}
 				}
 			} catch (CoreException e) {
-				e.printStackTrace();
+				LOGGER.error(e.getMessage(), e);
 			}
 		}
 	}

@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
-import java.lang.ProcessBuilder.Redirect;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -74,6 +73,7 @@ import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
@@ -116,6 +116,8 @@ import com.google.protobuf.ByteString;
  */
 public class PythonKernel {
 
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
+
 	private static final int CHUNK_SIZE = 1000;
 
 	private Process m_process;
@@ -157,8 +159,6 @@ public class PythonKernel {
 		String scriptPath = Activator.getFile("org.knime.python", "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
-		pb.redirectError(Redirect.INHERIT);
-		pb.redirectOutput(Redirect.INHERIT);
 		// Start python
 		m_process = pb.start();
 		try {
@@ -694,6 +694,7 @@ public class PythonKernel {
 			m_socket.close();
 		} catch (Throwable t) {
 		}
+		printStreamToLog();
 		// If the original process was a script we have to kill the actual
 		// Python process by PID
 		if (m_pid >= 0) {
@@ -711,6 +712,31 @@ public class PythonKernel {
 		} else {
 			m_process.destroy();
 		}
+	}
+	
+	private void printStreamToLog() {
+		try {
+			String out = readAvailableBytesFromStream(m_process.getInputStream());
+			String error = readAvailableBytesFromStream(m_process.getErrorStream());
+			if (!out.isEmpty()) {
+				LOGGER.info(out);
+			}
+			if (!error.isEmpty()) {
+				LOGGER.error(error);
+			}
+		} catch (IOException e) {
+			// ignore
+		}
+	}
+	
+	private String readAvailableBytesFromStream(final InputStream stream) throws IOException {
+		byte[] bytes = new byte[1024];
+		StringBuilder sb = new StringBuilder();
+		while(stream.available() > 0) {
+			int read = stream.read(bytes);
+			sb.append(new String(bytes, 0, read));
+		}
+		return sb.toString();
 	}
 
 	/**
