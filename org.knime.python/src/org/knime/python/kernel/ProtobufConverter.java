@@ -368,10 +368,8 @@ class ProtobufConverter {
 						for (DataCell singleCell : collectionCell) {
 							Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
 							Serializer serializer = TypeExtension.getTypeExtension(cell.getType()).getJavaSerializer();
-							try {
+							if (!singleCell.isMissing()) {
 								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
-							} catch (Exception e) {
-								throw new IOException(e.getMessage(), e);
 							}
 							objectListValueBuilder.addValue(objectValue);
 						}
@@ -381,10 +379,8 @@ class ProtobufConverter {
 					ObjectColumn.Builder objectColumn = (ObjectColumn.Builder) builder;
 					Serializer serializer = TypeExtension.getTypeExtension(cell.getType()).getJavaSerializer();
 					Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-					try {
+					if (!cell.isMissing()) {
 						objectValue.setValue(ByteString.copyFrom(serializer.serialize(cell)));
-					} catch (Exception e) {
-						throw new IOException(e.getMessage(), e);
 					}
 					objectColumn.addObjectValue(objectValue);
 				}
@@ -684,12 +680,8 @@ class ProtobufConverter {
 					List<DataCell> singleCells = new ArrayList<DataCell>();
 					for (Table.ObjectValue singleValue : value.getValueList()) {
 						Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
-						try {
-							cells[i] = singleValue.hasValue() ? serializer
-									.deserialize(singleValue.getValue().toByteArray()) : new MissingCell(null);
-						} catch (Exception e) {
-							throw new IOException(e.getMessage(), e);
-						}
+						cells[i] = singleValue.hasValue() ? serializer
+								.deserialize(singleValue.getValue().toByteArray()) : new MissingCell(null);
 					}
 					cells[i] = column.getIsSet() ? CollectionCellFactory.createSetCell(singleCells)
 							: CollectionCellFactory.createListCell(singleCells);
@@ -698,12 +690,8 @@ class ProtobufConverter {
 				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
 				Table.ObjectValue value = column.getObjectValue(index);
 				Serializer serializer = TypeExtension.getTypeExtension(column.getType()).getJavaSerializer();
-				try {
-					cells[i] = value.hasValue() ? serializer.deserialize(value.getValue().toByteArray()) : new MissingCell(
-							null);
-				} catch (Exception e) {
-					throw new IOException(e.getMessage(), e);
-				}
+				cells[i] = value.hasValue() ? serializer.deserialize(value.getValue().toByteArray()) : new MissingCell(
+						null);
 			}
 		}
 		return new DefaultRow(table.getRowId(index), cells);
