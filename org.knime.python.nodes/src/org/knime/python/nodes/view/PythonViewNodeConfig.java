@@ -52,17 +52,20 @@ import org.knime.code.generic.VariableNames;
 
 class PythonViewNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, null, new String[] { "output_image" }, null, null);
+	private static final VariableNames VARIABLE_NAMES = new VariableNames(
+			"flow_variables", new String[] { "input_table" }, null,
+			new String[] { "output_image" }, null, null);
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "try:\n\tfrom StringIO import StringIO\nexcept:\n\tfrom io import StringIO\nbuffer = StringIO()\n"
-				+ VARIABLE_NAMES.getInputTables()[0] + ".plot().get_figure().savefig(buffer, format='svg')\n"
-				+ VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()";
+		return "data = "
+				+ VARIABLE_NAMES.getInputTables()[0]
+				+ "._get_numeric_data()\ndata.index = range(0, len(data))\ntry:\n"
+				+ "\tfrom StringIO import StringIO\nexcept:\n\tfrom io import StringIO\nbuffer = StringIO()\n"
+				+ "data.plot().get_figure().savefig(buffer, format='svg')\noutput_image = buffer.getvalue()";
 	}
 
 	/**
