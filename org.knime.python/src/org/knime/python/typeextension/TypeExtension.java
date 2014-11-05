@@ -78,7 +78,8 @@ public class TypeExtension {
 
 	public static TypeExtension getTypeExtension(final DataType type) {
 		for (TypeExtension typeExtension : typeExtensions.values()) {
-			if (type.getPreferredValueClass().equals(typeExtension.getJavaSerializer().getDataValue())) {
+			Class<? extends DataValue> preferredValueClass = type.getPreferredValueClass();
+			if (preferredValueClass != null && preferredValueClass.equals(typeExtension.getJavaSerializer().getDataValue())) {
 				return typeExtension;
 			}
 		}
