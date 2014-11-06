@@ -74,7 +74,7 @@ public class PythonViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 2;
+		return 3;
 	}
 
 	/**
@@ -83,11 +83,14 @@ public class PythonViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 	@Override
 	public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
         if (viewIndex == 0) {
-            return
-                new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
+        	return new PythonViewNodeView(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
+        } else if (viewIndex == 2) {
+            return
+                    new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
+        	
         }
 		return null;
 	}

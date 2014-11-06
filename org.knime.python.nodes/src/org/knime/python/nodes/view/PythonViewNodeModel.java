@@ -47,9 +47,13 @@
  */
 package org.knime.python.nodes.view;
 
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -61,7 +65,9 @@ import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -70,6 +76,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.util.FileUtil;
 import org.knime.python.kernel.PythonKernel;
 
 /**
@@ -81,6 +88,8 @@ import org.knime.python.kernel.PythonKernel;
 class PythonViewNodeModel extends ExtToolOutputNodeModel {
 
 	private PythonViewNodeConfig m_config = new PythonViewNodeConfig();
+	
+	private BufferedImage m_image;
 
 	/**
 	 * Constructor for the node model.
@@ -107,6 +116,7 @@ class PythonViewNodeModel extends ExtToolOutputNodeModel {
 			exec.createSubProgress(0.4).setProgress(1);
 			image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
 			exec.createSubProgress(0.3).setProgress(1);
+			m_image = image.getBufferedImage();
 		} finally {
 			kernel.close();
 		}
@@ -116,6 +126,16 @@ class PythonViewNodeModel extends ExtToolOutputNodeModel {
 			return new PortObject[] { new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
 					new ImagePortObjectSpec(PNGImageContent.TYPE)) };
 		}
+	}
+	
+	@Override
+	protected void reset() {
+		m_image = null;
+		super.reset();
+	}
+	
+	Image getOutputImage() {
+		return m_image;
 	}
 
 	/**
@@ -167,5 +187,37 @@ class PythonViewNodeModel extends ExtToolOutputNodeModel {
 		config.loadFrom(settings);
 		m_config = config;
 	}
+
+    /**
+     * The saved image is loaded.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadInternals(final File nodeInternDir,
+            final ExecutionMonitor exec)
+            throws IOException, CanceledExecutionException {
+        super.loadInternals(nodeInternDir, exec);
+        File file = new File(nodeInternDir, "image.png");
+        if (file.exists() && file.canRead()) {
+        	m_image = ImageIO.read(file);
+        }
+    }
+
+    /**
+     * The created image is saved.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveInternals(final File nodeInternDir,
+            final ExecutionMonitor exec)
+            throws IOException, CanceledExecutionException {
+        super.saveInternals(nodeInternDir, exec);
+        if (m_image != null) {
+            File file = new File(nodeInternDir, "image.png");
+            ImageIO.write(m_image, "png", file);
+        }
+    }
 
 }
