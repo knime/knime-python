@@ -60,7 +60,7 @@ class PythonLearnerNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "from sklearn.cluster import KMeans\nkmeans = KMeans(n_clusters=4)\nkmeans.fit("
+		return "from sklearn.cluster import KMeans\nkmeans = KMeans(4)\nkmeans.fit("
 				+ VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data())\n" + VARIABLE_NAMES.getOutputObjects()[0]
 				+ " = kmeans\n";
 	}

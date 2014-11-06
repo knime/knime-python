@@ -105,7 +105,7 @@ class PythonObjectWriterNodeModel extends ExtToolOutputNodeModel {
 	 */
 	@Override
 	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { null };
+		return new PortObjectSpec[0];
 	}
 
 	/**
