@@ -344,6 +344,9 @@ public class PythonKernel {
 	 */
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
 			int rowLimit) throws IOException {
+		if (table == null) {
+			throw new IOException("Table " + name + " is not available.");
+		}
 		if (rowLimit > table.getRowCount()) {
 			rowLimit = table.getRowCount();
 		}
@@ -547,6 +550,9 @@ public class PythonKernel {
 	}
 
 	public void putObject(final String name, final PickledObject object) throws IOException {
+		if (object == null) {
+			throw new IOException("Object " + name + " is not available.");
+		}
 		Command.Builder commandBuilder = Command.newBuilder();
 		commandBuilder.setPutObject(PutObject.newBuilder().setKey(name).setPickledObject(ByteString.copyFrom(object.getPickledObject())));
 		synchronized (this) {

@@ -104,6 +104,8 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
 		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+		m_sourceCodePanel.updateData(new BufferedDataTable[] { null },
+				new PickledObject[] { null });
 	}
 
 	/**
@@ -113,11 +115,15 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
 	protected void loadSettingsFrom(NodeSettingsRO settings, PortObject[] input) throws NotConfigurableException {
 		PortObjectSpec[] specs = new PortObjectSpec[input.length];
 		for (int i = 0; i < specs.length; i++) {
-			specs[i] = input[i].getSpec();
+			specs[i] = input[i] == null ? null : input[i].getSpec();
 		}
 		loadSettingsFrom(settings, specs);
+		PickledObject pickledObject = null;
+		if (input[0]!=null) {
+			pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
+		}
 		m_sourceCodePanel.updateData(new BufferedDataTable[] { (BufferedDataTable) input[1] },
-				new PickledObject[] { ((PickledObjectPortObject) input[0]).getPickledObject() });
+				new PickledObject[] { pickledObject });
 	}
 
 	/**

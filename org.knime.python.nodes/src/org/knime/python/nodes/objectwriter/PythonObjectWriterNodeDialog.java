@@ -98,6 +98,8 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 		m_sourceCodePanel.loadSettingsFrom(config, specs);
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
+		m_sourceCodePanel.updateData(new BufferedDataTable[0],
+				new PickledObject[] { null });
 	}
 
 	/**
@@ -106,8 +108,12 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 	@Override
 	protected void loadSettingsFrom(NodeSettingsRO settings, PortObject[] input) throws NotConfigurableException {
 		loadSettingsFrom(settings, new PortObjectSpec[0]);
+		PickledObject pickledObject = null;
+		if (input[0] != null) {
+			pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
+		}
 		m_sourceCodePanel.updateData(new BufferedDataTable[0],
-				new PickledObject[] { ((PickledObjectPortObject) input[0]).getPickledObject() });
+				new PickledObject[] { pickledObject });
 	}
 
 	/**

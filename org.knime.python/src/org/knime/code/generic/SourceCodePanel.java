@@ -671,7 +671,7 @@ abstract public class SourceCodePanel extends JPanel {
 	public void updateData(final BufferedDataTable[] inputData) {
 		DataTableSpec[] tableSpecs = new DataTableSpec[inputData.length];
 		for (int i = 0; i < inputData.length; i++) {
-			tableSpecs[i] = inputData[i].getDataTableSpec();
+			tableSpecs[i] = inputData[i] == null ? null : inputData[i].getDataTableSpec();
 		}
 		updateSpec(tableSpecs);
 	}
@@ -687,8 +687,10 @@ abstract public class SourceCodePanel extends JPanel {
 		// (by index)
 		m_columnsModel.clear();
 		for (int i = 0; i < specs.length; i++) {
-			for (DataColumnSpec colSpec : specs[i]) {
-				m_columnsModel.addElement(colSpec);
+			if (specs[i] != null) {
+				for (DataColumnSpec colSpec : specs[i]) {
+					m_columnsModel.addElement(colSpec);
+				}
 			}
 		}
 	}

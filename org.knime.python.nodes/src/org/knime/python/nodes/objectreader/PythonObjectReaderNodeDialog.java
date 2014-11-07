@@ -48,9 +48,8 @@
 package org.knime.python.nodes.objectreader;
 
 import org.knime.code.python.PythonSourceCodePanel;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
@@ -63,7 +62,7 @@ import org.knime.core.node.workflow.FlowVariable;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonObjectReaderNodeDialog extends DataAwareNodeDialogPane {
+class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
 
@@ -95,15 +94,6 @@ class PythonObjectReaderNodeDialog extends DataAwareNodeDialogPane {
 		m_sourceCodePanel.loadSettingsFrom(config, specs);
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, BufferedDataTable[] input) throws NotConfigurableException {
-		loadSettingsFrom(settings, new PortObjectSpec[0]);
-		m_sourceCodePanel.updateData(input);
 	}
 
 	/**

@@ -101,6 +101,7 @@ class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
 		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+		m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
 	}
 
 	/**
@@ -108,7 +109,7 @@ class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
 	 */
 	@Override
 	protected void loadSettingsFrom(NodeSettingsRO settings, BufferedDataTable[] input) throws NotConfigurableException {
-		loadSettingsFrom(settings, new PortObjectSpec[] { input[0].getDataTableSpec() });
+		loadSettingsFrom(settings, new PortObjectSpec[] { input[0] == null ? null : input[0].getDataTableSpec() });
 		m_sourceCodePanel.updateData(input);
 	}
 
