@@ -9,7 +9,7 @@ _error = False
 # check libs, output info and exit with 1 if an error occurred
 def main():
     pythonVersion = sys.version_info
-    print('Python version: ' + str(pythonVersion.major) + '.' + str(pythonVersion.minor) + '.' + str(pythonVersion.micro))
+    print('Python version: ' + str(pythonVersion[0]) + '.' + str(pythonVersion[1]) + '.' + str(pythonVersion[2]))
     check_required_libs()
     print(_message)
     if _error:
