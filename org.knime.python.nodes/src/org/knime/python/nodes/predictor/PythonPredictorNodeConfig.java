@@ -60,9 +60,12 @@ class PythonPredictorNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n"
-				+ VARIABLE_NAMES.getOutputTables()[0] + "['prediction'] = " + VARIABLE_NAMES.getInputObjects()[0]
-				+ ".predict(" + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data())\n";
+		return "from pandas import Series\ndata = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
+				"value_column = data[data.columns[0]]\npredictions = []\nm = " + VARIABLE_NAMES.getInputObjects()[0] +
+				"[0]\nc = " + VARIABLE_NAMES.getInputObjects()[0] + "[1]\nfor i in range(len(value_column)):\n" +
+				"\tpredictions.append(value_column[i]*m+c)\n" + VARIABLE_NAMES.getOutputTables()[0] + " = " +
+				VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" + VARIABLE_NAMES.getOutputTables()[0] +
+				"['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)";
 	}
 
 	/**

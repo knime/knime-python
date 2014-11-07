@@ -61,11 +61,10 @@ class PythonViewNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "data = "
-				+ VARIABLE_NAMES.getInputTables()[0]
-				+ "._get_numeric_data()\ndata.index = range(0, len(data))\ntry:\n"
-				+ "\tfrom StringIO import StringIO\nexcept:\n\tfrom io import StringIO\nbuffer = StringIO()\n"
-				+ "data.plot().get_figure().savefig(buffer, format='svg')\noutput_image = buffer.getvalue()";
+		return "from StringIO import StringIO\ndata = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
+				"data.index = range(0, len(data))\nbuffer = StringIO()\n" +
+				"data.plot().get_figure().savefig(buffer, format='svg')\n" +
+				VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()";
 	}
 
 	/**

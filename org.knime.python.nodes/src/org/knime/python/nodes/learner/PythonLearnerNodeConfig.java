@@ -60,9 +60,10 @@ class PythonLearnerNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "from sklearn.cluster import KMeans\nkmeans = KMeans(4)\nkmeans.fit("
-				+ VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data())\n" + VARIABLE_NAMES.getOutputObjects()[0]
-				+ " = kmeans\n";
+		return "from numpy import array, ones, linalg\ndata = " + VARIABLE_NAMES.getInputTables()[0] +
+				"._get_numeric_data()\nvalue_column = data[data.columns[0]]\ntarget_column = data[data.columns[1]]\n" +
+				"A = array([array(value_column), ones(len(value_column))])\n" + VARIABLE_NAMES.getOutputObjects()[0] +
+				" = linalg.lstsq(A.T, target_column)[0]";
 	}
 
 	/**
