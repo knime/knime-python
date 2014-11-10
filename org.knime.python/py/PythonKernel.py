@@ -172,7 +172,7 @@ def run():
                 pickled_object = pickledobject_pb2.PickledObject()
                 pickled_object.pickledObject = pickle.dumps(object)
                 pickled_object.type = type(object).__name__
-                pickled_object.stringRepresentation = str(object)
+                pickled_object.stringRepresentation = object_to_unicode(object)
                 write_message(pickled_object)
             elif command.HasField('putObject'):
                 object = pickle.loads(command.putObject.pickledObject)
@@ -276,10 +276,7 @@ def list_variables():
         elif var_type == 'function':
             functions.append({'name': key, 'type': var_type, 'value': ''})
         else:
-            try:
-                value = unicode(value)
-            except UnicodeDecodeError:
-                value = '(base64 encoded)\n' + base64.b64encode(value)
+            value = object_to_unicode(value)
             variables.append({'name': key, 'type': var_type, 'value': value})
     # sort lists by name
     modules = sorted(modules, key=lambda k: k['name'])
@@ -924,6 +921,15 @@ class TypeExtensionManager:
         self._type_extensions.append(path)
         self._id_to_index[id] = index
         self._type_to_id[type_string] = id
+
+
+def object_to_unicode(object):
+    try:
+        return unicode(object)
+    except UnicodeDecodeError:
+        return '(base64 encoded)\n' + base64.b64encode(value)
+    except Exception:
+        return ''
 
 
 _type_extension_manager = TypeExtensionManager()
