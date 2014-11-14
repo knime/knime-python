@@ -333,7 +333,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									String doc = completion.get("doc").trim();
 									if (type.equals("function")) {
 										try {
-											name = functionWithRelevantParameters(doc);
+											// name = functionWithRelevantParameters(doc);
+											name += "()";
 										} catch (IllegalArgumentException e) {
 											LOGGER.error(e.getMessage(), e);
 											// could not parse parameters from
