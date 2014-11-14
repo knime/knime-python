@@ -125,6 +125,7 @@ public class PythonKernel {
 	private Socket m_socket;
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
+	private boolean m_closed = false;
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -692,31 +693,45 @@ public class PythonKernel {
 	 * for communication.
 	 */
 	public void close() {
-		try {
-			m_serverSocket.close();
-		} catch (Throwable t) {
-		}
-		try {
-			m_socket.close();
-		} catch (Throwable t) {
-		}
-		printStreamToLog();
-		// If the original process was a script we have to kill the actual
-		// Python process by PID
-		if (m_pid >= 0) {
+		if (!m_closed) {
 			try {
-				ProcessBuilder pb;
-				if (System.getProperty("os.name").toLowerCase().contains("win")) {
-					pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
-				} else {
-					pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
-				}
-				pb.start();
-			} catch (IOException e) {
-				//
+				m_serverSocket.close();
+			} catch (Throwable t) {
 			}
-		} else {
-			m_process.destroy();
+			try {
+				m_socket.close();
+			} catch (Throwable t) {
+			}
+			printStreamToLog();
+			// If the original process was a script we have to kill the actual
+			// Python process by PID
+			if (m_pid >= 0) {
+				try {
+					ProcessBuilder pb;
+					if (System.getProperty("os.name").toLowerCase().contains("win")) {
+						pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
+					} else {
+						pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
+					}
+					pb.start();
+				} catch (IOException e) {
+					//
+				}
+			} else {
+				m_process.destroy();
+			}
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						//
+					}
+					printStreamToLog();
+				}
+			}).start();
+			m_closed = true;
 		}
 	}
 	
@@ -728,7 +743,7 @@ public class PythonKernel {
 				LOGGER.info(out);
 			}
 			if (!error.isEmpty()) {
-				LOGGER.error(error);
+				LOGGER.warn(error);
 			}
 		} catch (IOException e) {
 			// ignore
