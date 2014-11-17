@@ -27,9 +27,8 @@
 				selected script.
 				<br />
 				<br />
-				The editor can optionally provide autocomplete suggestions if the
-				Python
-				module jedi is installed.
+				The editor optionally provides autocompletion (CTRL + Space) if the
+				Python module <b>jedi</b> is installed.
 			</option>
 			<option name="Flow variables">
 				The list contains the available flow variables. A
