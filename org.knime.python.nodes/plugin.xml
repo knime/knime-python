@@ -5,7 +5,8 @@
    	<extension point="org.knime.workbench.repository.nodes">
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory" id="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory" id="org.knime.python.nodes.script.PythonScriptNodeFactory" after="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory" after="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory" id="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory" after="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory" after="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory" id="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory" after="org.knime.python.nodes.view.PythonViewNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" id="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" after="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.learner.PythonLearnerNodeFactory" id="org.knime.python.nodes.learner.PythonLearnerNodeFactory" after="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
