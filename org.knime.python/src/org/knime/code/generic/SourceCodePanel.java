@@ -487,7 +487,12 @@ abstract public class SourceCodePanel extends JPanel {
 		m_execSelection.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				runExec(m_editor.getSelectedText());
+				String selectedText = m_editor.getSelectedText();
+				if (selectedText != null && !selectedText.isEmpty()) {
+					runExec(selectedText);
+				} else {
+					setStatusMessage("Nothing selected");
+				}
 			}
 		});
 		m_reset.addActionListener(new ActionListener() {
