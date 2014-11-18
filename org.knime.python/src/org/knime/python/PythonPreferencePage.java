@@ -47,15 +47,21 @@
  */
 package org.knime.python;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.preference.PreferencePage;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -63,8 +69,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -149,6 +158,35 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_pathEditor.setStringValue(getPythonPath());
 		GridData gridData = new GridData();
 		gridData.horizontalSpan = 3;
+		Link startScriptInfo = new Link(m_container, SWT.NONE);
+		startScriptInfo.setLayoutData(gridData);
+		String message = "See the <a href=\"http://tech.knime.org/faq#q28\">FAQ</a> for details on how to use a start script";
+		startScriptInfo.setText(message);
+		final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
+		startScriptInfo.setForeground(gray);
+		startScriptInfo.addDisposeListener(new DisposeListener() {
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				gray.dispose();
+			}
+		});
+		startScriptInfo.setFont(JFaceResources.getFontRegistry().getItalic(""));
+		startScriptInfo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				try {
+					PlatformUI.getWorkbench().getBrowserSupport()
+							.getExternalBrowser().openURL(new URL(e.text));
+				} catch (PartInitException ex) {
+					LOGGER.error(ex);
+				} catch (MalformedURLException ex) {
+					LOGGER.error(ex);
+				}
+			}
+		});
+		gridData = new GridData();
+		gridData.horizontalSpan = 3;
+		gridData.verticalIndent = 20;
 		m_info = new Label(m_container, SWT.NONE);
 		m_info.setLayoutData(gridData);
 		gridData = new GridData();
