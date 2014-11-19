@@ -179,19 +179,33 @@ public final class ProtobufPythonKernelCommand {
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObjectOrBuilder getPutObjectOrBuilder();
 
-    // optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;
+    // optional .knime.Command.AddSerializers addSerializers = 13;
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    boolean hasLoadTypeExtensions();
+    boolean hasAddSerializers();
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions getLoadTypeExtensions();
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers getAddSerializers();
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder getLoadTypeExtensionsOrBuilder();
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder getAddSerializersOrBuilder();
+
+    // optional .knime.Command.AddDeserializers addDeserializers = 14;
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    boolean hasAddDeserializers();
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers getAddDeserializers();
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder getAddDeserializersOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -401,16 +415,29 @@ public final class ProtobufPythonKernelCommand {
               break;
             }
             case 106: {
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder subBuilder = null;
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder subBuilder = null;
               if (((bitField0_ & 0x00001000) == 0x00001000)) {
-                subBuilder = loadTypeExtensions_.toBuilder();
+                subBuilder = addSerializers_.toBuilder();
               }
-              loadTypeExtensions_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.PARSER, extensionRegistry);
+              addSerializers_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.PARSER, extensionRegistry);
               if (subBuilder != null) {
-                subBuilder.mergeFrom(loadTypeExtensions_);
-                loadTypeExtensions_ = subBuilder.buildPartial();
+                subBuilder.mergeFrom(addSerializers_);
+                addSerializers_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00001000;
+              break;
+            }
+            case 114: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder subBuilder = null;
+              if (((bitField0_ & 0x00002000) == 0x00002000)) {
+                subBuilder = addDeserializers_.toBuilder();
+              }
+              addDeserializers_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(addDeserializers_);
+                addDeserializers_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00002000;
               break;
             }
           }
@@ -9366,53 +9393,53 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.PutObject)
     }
 
-    public interface LoadTypeExtensionsOrBuilder
+    public interface AddSerializersOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
 
-      // repeated .knime.Command.TypeExtension typeExtension = 1;
+      // repeated .knime.Command.Serializer serializer = 1;
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> 
-          getTypeExtensionList();
+      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> 
+          getSerializerList();
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension getTypeExtension(int index);
+      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer getSerializer(int index);
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      int getTypeExtensionCount();
+      int getSerializerCount();
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder> 
-          getTypeExtensionOrBuilderList();
+      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder> 
+          getSerializerOrBuilderList();
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder getTypeExtensionOrBuilder(
+      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder getSerializerOrBuilder(
           int index);
     }
     /**
-     * Protobuf type {@code knime.Command.LoadTypeExtensions}
+     * Protobuf type {@code knime.Command.AddSerializers}
      */
-    public static final class LoadTypeExtensions extends
+    public static final class AddSerializers extends
         com.google.protobuf.GeneratedMessage
-        implements LoadTypeExtensionsOrBuilder {
-      // Use LoadTypeExtensions.newBuilder() to construct.
-      private LoadTypeExtensions(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        implements AddSerializersOrBuilder {
+      // Use AddSerializers.newBuilder() to construct.
+      private AddSerializers(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private LoadTypeExtensions(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private AddSerializers(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-      private static final LoadTypeExtensions defaultInstance;
-      public static LoadTypeExtensions getDefaultInstance() {
+      private static final AddSerializers defaultInstance;
+      public static AddSerializers getDefaultInstance() {
         return defaultInstance;
       }
 
-      public LoadTypeExtensions getDefaultInstanceForType() {
+      public AddSerializers getDefaultInstanceForType() {
         return defaultInstance;
       }
 
@@ -9422,7 +9449,7 @@ public final class ProtobufPythonKernelCommand {
           getUnknownFields() {
         return this.unknownFields;
       }
-      private LoadTypeExtensions(
+      private AddSerializers(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
@@ -9447,10 +9474,10 @@ public final class ProtobufPythonKernelCommand {
               }
               case 10: {
                 if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                  typeExtension_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension>();
+                  serializer_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer>();
                   mutable_bitField0_ |= 0x00000001;
                 }
-                typeExtension_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.PARSER, extensionRegistry));
+                serializer_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.PARSER, extensionRegistry));
                 break;
               }
             }
@@ -9462,7 +9489,7 @@ public final class ProtobufPythonKernelCommand {
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-            typeExtension_ = java.util.Collections.unmodifiableList(typeExtension_);
+            serializer_ = java.util.Collections.unmodifiableList(serializer_);
           }
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
@@ -9470,77 +9497,77 @@ public final class ProtobufPythonKernelCommand {
       }
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_LoadTypeExtensions_descriptor;
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddSerializers_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_LoadTypeExtensions_fieldAccessorTable
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddSerializers_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder.class);
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<LoadTypeExtensions> PARSER =
-          new com.google.protobuf.AbstractParser<LoadTypeExtensions>() {
-        public LoadTypeExtensions parsePartialFrom(
+      public static com.google.protobuf.Parser<AddSerializers> PARSER =
+          new com.google.protobuf.AbstractParser<AddSerializers>() {
+        public AddSerializers parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws com.google.protobuf.InvalidProtocolBufferException {
-          return new LoadTypeExtensions(input, extensionRegistry);
+          return new AddSerializers(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<LoadTypeExtensions> getParserForType() {
+      public com.google.protobuf.Parser<AddSerializers> getParserForType() {
         return PARSER;
       }
 
-      // repeated .knime.Command.TypeExtension typeExtension = 1;
-      public static final int TYPEEXTENSION_FIELD_NUMBER = 1;
-      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> typeExtension_;
+      // repeated .knime.Command.Serializer serializer = 1;
+      public static final int SERIALIZER_FIELD_NUMBER = 1;
+      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> serializer_;
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> getTypeExtensionList() {
-        return typeExtension_;
+      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> getSerializerList() {
+        return serializer_;
       }
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder> 
-          getTypeExtensionOrBuilderList() {
-        return typeExtension_;
+      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder> 
+          getSerializerOrBuilderList() {
+        return serializer_;
       }
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      public int getTypeExtensionCount() {
-        return typeExtension_.size();
+      public int getSerializerCount() {
+        return serializer_.size();
       }
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension getTypeExtension(int index) {
-        return typeExtension_.get(index);
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer getSerializer(int index) {
+        return serializer_.get(index);
       }
       /**
-       * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+       * <code>repeated .knime.Command.Serializer serializer = 1;</code>
        */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder getTypeExtensionOrBuilder(
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder getSerializerOrBuilder(
           int index) {
-        return typeExtension_.get(index);
+        return serializer_.get(index);
       }
 
       private void initFields() {
-        typeExtension_ = java.util.Collections.emptyList();
+        serializer_ = java.util.Collections.emptyList();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        for (int i = 0; i < getTypeExtensionCount(); i++) {
-          if (!getTypeExtension(i).isInitialized()) {
+        for (int i = 0; i < getSerializerCount(); i++) {
+          if (!getSerializer(i).isInitialized()) {
             memoizedIsInitialized = 0;
             return false;
           }
@@ -9552,8 +9579,8 @@ public final class ProtobufPythonKernelCommand {
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
-        for (int i = 0; i < typeExtension_.size(); i++) {
-          output.writeMessage(1, typeExtension_.get(i));
+        for (int i = 0; i < serializer_.size(); i++) {
+          output.writeMessage(1, serializer_.get(i));
         }
         getUnknownFields().writeTo(output);
       }
@@ -9564,9 +9591,9 @@ public final class ProtobufPythonKernelCommand {
         if (size != -1) return size;
 
         size = 0;
-        for (int i = 0; i < typeExtension_.size(); i++) {
+        for (int i = 0; i < serializer_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(1, typeExtension_.get(i));
+            .computeMessageSize(1, serializer_.get(i));
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -9580,53 +9607,53 @@ public final class ProtobufPythonKernelCommand {
         return super.writeReplace();
       }
 
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           com.google.protobuf.ByteString data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           com.google.protobuf.ByteString data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(byte[] data)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(byte[] data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           byte[] data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(java.io.InputStream input)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseDelimitedFrom(java.io.InputStream input)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseDelimitedFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseDelimitedFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           com.google.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parseFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -9635,7 +9662,7 @@ public final class ProtobufPythonKernelCommand {
 
       public static Builder newBuilder() { return Builder.create(); }
       public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions prototype) {
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers prototype) {
         return newBuilder().mergeFrom(prototype);
       }
       public Builder toBuilder() { return newBuilder(this); }
@@ -9647,24 +9674,24 @@ public final class ProtobufPythonKernelCommand {
         return builder;
       }
       /**
-       * Protobuf type {@code knime.Command.LoadTypeExtensions}
+       * Protobuf type {@code knime.Command.AddSerializers}
        */
       public static final class Builder extends
           com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder {
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder {
         public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_LoadTypeExtensions_descriptor;
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddSerializers_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_LoadTypeExtensions_fieldAccessorTable
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddSerializers_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder.class);
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder.class);
         }
 
-        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.newBuilder()
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.newBuilder()
         private Builder() {
           maybeForceBuilderInitialization();
         }
@@ -9676,7 +9703,7 @@ public final class ProtobufPythonKernelCommand {
         }
         private void maybeForceBuilderInitialization() {
           if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            getTypeExtensionFieldBuilder();
+            getSerializerFieldBuilder();
           }
         }
         private static Builder create() {
@@ -9685,11 +9712,11 @@ public final class ProtobufPythonKernelCommand {
 
         public Builder clear() {
           super.clear();
-          if (typeExtensionBuilder_ == null) {
-            typeExtension_ = java.util.Collections.emptyList();
+          if (serializerBuilder_ == null) {
+            serializer_ = java.util.Collections.emptyList();
             bitField0_ = (bitField0_ & ~0x00000001);
           } else {
-            typeExtensionBuilder_.clear();
+            serializerBuilder_.clear();
           }
           return this;
         }
@@ -9700,71 +9727,71 @@ public final class ProtobufPythonKernelCommand {
 
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_LoadTypeExtensions_descriptor;
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddSerializers_descriptor;
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions getDefaultInstanceForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance();
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions build() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions result = buildPartial();
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions buildPartial() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions(this);
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers(this);
           int from_bitField0_ = bitField0_;
-          if (typeExtensionBuilder_ == null) {
+          if (serializerBuilder_ == null) {
             if (((bitField0_ & 0x00000001) == 0x00000001)) {
-              typeExtension_ = java.util.Collections.unmodifiableList(typeExtension_);
+              serializer_ = java.util.Collections.unmodifiableList(serializer_);
               bitField0_ = (bitField0_ & ~0x00000001);
             }
-            result.typeExtension_ = typeExtension_;
+            result.serializer_ = serializer_;
           } else {
-            result.typeExtension_ = typeExtensionBuilder_.build();
+            result.serializer_ = serializerBuilder_.build();
           }
           onBuilt();
           return result;
         }
 
         public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions) {
-            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions)other);
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions other) {
-          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance()) return this;
-          if (typeExtensionBuilder_ == null) {
-            if (!other.typeExtension_.isEmpty()) {
-              if (typeExtension_.isEmpty()) {
-                typeExtension_ = other.typeExtension_;
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance()) return this;
+          if (serializerBuilder_ == null) {
+            if (!other.serializer_.isEmpty()) {
+              if (serializer_.isEmpty()) {
+                serializer_ = other.serializer_;
                 bitField0_ = (bitField0_ & ~0x00000001);
               } else {
-                ensureTypeExtensionIsMutable();
-                typeExtension_.addAll(other.typeExtension_);
+                ensureSerializerIsMutable();
+                serializer_.addAll(other.serializer_);
               }
               onChanged();
             }
           } else {
-            if (!other.typeExtension_.isEmpty()) {
-              if (typeExtensionBuilder_.isEmpty()) {
-                typeExtensionBuilder_.dispose();
-                typeExtensionBuilder_ = null;
-                typeExtension_ = other.typeExtension_;
+            if (!other.serializer_.isEmpty()) {
+              if (serializerBuilder_.isEmpty()) {
+                serializerBuilder_.dispose();
+                serializerBuilder_ = null;
+                serializer_ = other.serializer_;
                 bitField0_ = (bitField0_ & ~0x00000001);
-                typeExtensionBuilder_ = 
+                serializerBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                     getTypeExtensionFieldBuilder() : null;
+                     getSerializerFieldBuilder() : null;
               } else {
-                typeExtensionBuilder_.addAllMessages(other.typeExtension_);
+                serializerBuilder_.addAllMessages(other.serializer_);
               }
             }
           }
@@ -9773,8 +9800,8 @@ public final class ProtobufPythonKernelCommand {
         }
 
         public final boolean isInitialized() {
-          for (int i = 0; i < getTypeExtensionCount(); i++) {
-            if (!getTypeExtension(i).isInitialized()) {
+          for (int i = 0; i < getSerializerCount(); i++) {
+            if (!getSerializer(i).isInitialized()) {
               
               return false;
             }
@@ -9786,11 +9813,11 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions parsedMessage = null;
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions) e.getUnfinishedMessage();
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers) e.getUnfinishedMessage();
             throw e;
           } finally {
             if (parsedMessage != null) {
@@ -9801,258 +9828,258 @@ public final class ProtobufPythonKernelCommand {
         }
         private int bitField0_;
 
-        // repeated .knime.Command.TypeExtension typeExtension = 1;
-        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> typeExtension_ =
+        // repeated .knime.Command.Serializer serializer = 1;
+        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> serializer_ =
           java.util.Collections.emptyList();
-        private void ensureTypeExtensionIsMutable() {
+        private void ensureSerializerIsMutable() {
           if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-            typeExtension_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension>(typeExtension_);
+            serializer_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer>(serializer_);
             bitField0_ |= 0x00000001;
            }
         }
 
         private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder> typeExtensionBuilder_;
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder> serializerBuilder_;
 
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> getTypeExtensionList() {
-          if (typeExtensionBuilder_ == null) {
-            return java.util.Collections.unmodifiableList(typeExtension_);
+        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> getSerializerList() {
+          if (serializerBuilder_ == null) {
+            return java.util.Collections.unmodifiableList(serializer_);
           } else {
-            return typeExtensionBuilder_.getMessageList();
+            return serializerBuilder_.getMessageList();
           }
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public int getTypeExtensionCount() {
-          if (typeExtensionBuilder_ == null) {
-            return typeExtension_.size();
+        public int getSerializerCount() {
+          if (serializerBuilder_ == null) {
+            return serializer_.size();
           } else {
-            return typeExtensionBuilder_.getCount();
+            return serializerBuilder_.getCount();
           }
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension getTypeExtension(int index) {
-          if (typeExtensionBuilder_ == null) {
-            return typeExtension_.get(index);
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer getSerializer(int index) {
+          if (serializerBuilder_ == null) {
+            return serializer_.get(index);
           } else {
-            return typeExtensionBuilder_.getMessage(index);
+            return serializerBuilder_.getMessage(index);
           }
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder setTypeExtension(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension value) {
-          if (typeExtensionBuilder_ == null) {
+        public Builder setSerializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer value) {
+          if (serializerBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureTypeExtensionIsMutable();
-            typeExtension_.set(index, value);
+            ensureSerializerIsMutable();
+            serializer_.set(index, value);
             onChanged();
           } else {
-            typeExtensionBuilder_.setMessage(index, value);
+            serializerBuilder_.setMessage(index, value);
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder setTypeExtension(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder builderForValue) {
-          if (typeExtensionBuilder_ == null) {
-            ensureTypeExtensionIsMutable();
-            typeExtension_.set(index, builderForValue.build());
+        public Builder setSerializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder builderForValue) {
+          if (serializerBuilder_ == null) {
+            ensureSerializerIsMutable();
+            serializer_.set(index, builderForValue.build());
             onChanged();
           } else {
-            typeExtensionBuilder_.setMessage(index, builderForValue.build());
+            serializerBuilder_.setMessage(index, builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder addTypeExtension(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension value) {
-          if (typeExtensionBuilder_ == null) {
+        public Builder addSerializer(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer value) {
+          if (serializerBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureTypeExtensionIsMutable();
-            typeExtension_.add(value);
+            ensureSerializerIsMutable();
+            serializer_.add(value);
             onChanged();
           } else {
-            typeExtensionBuilder_.addMessage(value);
+            serializerBuilder_.addMessage(value);
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder addTypeExtension(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension value) {
-          if (typeExtensionBuilder_ == null) {
+        public Builder addSerializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer value) {
+          if (serializerBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureTypeExtensionIsMutable();
-            typeExtension_.add(index, value);
+            ensureSerializerIsMutable();
+            serializer_.add(index, value);
             onChanged();
           } else {
-            typeExtensionBuilder_.addMessage(index, value);
+            serializerBuilder_.addMessage(index, value);
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder addTypeExtension(
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder builderForValue) {
-          if (typeExtensionBuilder_ == null) {
-            ensureTypeExtensionIsMutable();
-            typeExtension_.add(builderForValue.build());
+        public Builder addSerializer(
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder builderForValue) {
+          if (serializerBuilder_ == null) {
+            ensureSerializerIsMutable();
+            serializer_.add(builderForValue.build());
             onChanged();
           } else {
-            typeExtensionBuilder_.addMessage(builderForValue.build());
+            serializerBuilder_.addMessage(builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder addTypeExtension(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder builderForValue) {
-          if (typeExtensionBuilder_ == null) {
-            ensureTypeExtensionIsMutable();
-            typeExtension_.add(index, builderForValue.build());
+        public Builder addSerializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder builderForValue) {
+          if (serializerBuilder_ == null) {
+            ensureSerializerIsMutable();
+            serializer_.add(index, builderForValue.build());
             onChanged();
           } else {
-            typeExtensionBuilder_.addMessage(index, builderForValue.build());
+            serializerBuilder_.addMessage(index, builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder addAllTypeExtension(
-            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension> values) {
-          if (typeExtensionBuilder_ == null) {
-            ensureTypeExtensionIsMutable();
-            super.addAll(values, typeExtension_);
+        public Builder addAllSerializer(
+            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer> values) {
+          if (serializerBuilder_ == null) {
+            ensureSerializerIsMutable();
+            super.addAll(values, serializer_);
             onChanged();
           } else {
-            typeExtensionBuilder_.addAllMessages(values);
+            serializerBuilder_.addAllMessages(values);
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder clearTypeExtension() {
-          if (typeExtensionBuilder_ == null) {
-            typeExtension_ = java.util.Collections.emptyList();
+        public Builder clearSerializer() {
+          if (serializerBuilder_ == null) {
+            serializer_ = java.util.Collections.emptyList();
             bitField0_ = (bitField0_ & ~0x00000001);
             onChanged();
           } else {
-            typeExtensionBuilder_.clear();
+            serializerBuilder_.clear();
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public Builder removeTypeExtension(int index) {
-          if (typeExtensionBuilder_ == null) {
-            ensureTypeExtensionIsMutable();
-            typeExtension_.remove(index);
+        public Builder removeSerializer(int index) {
+          if (serializerBuilder_ == null) {
+            ensureSerializerIsMutable();
+            serializer_.remove(index);
             onChanged();
           } else {
-            typeExtensionBuilder_.remove(index);
+            serializerBuilder_.remove(index);
           }
           return this;
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder getTypeExtensionBuilder(
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder getSerializerBuilder(
             int index) {
-          return getTypeExtensionFieldBuilder().getBuilder(index);
+          return getSerializerFieldBuilder().getBuilder(index);
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder getTypeExtensionOrBuilder(
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder getSerializerOrBuilder(
             int index) {
-          if (typeExtensionBuilder_ == null) {
-            return typeExtension_.get(index);  } else {
-            return typeExtensionBuilder_.getMessageOrBuilder(index);
+          if (serializerBuilder_ == null) {
+            return serializer_.get(index);  } else {
+            return serializerBuilder_.getMessageOrBuilder(index);
           }
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder> 
-             getTypeExtensionOrBuilderList() {
-          if (typeExtensionBuilder_ != null) {
-            return typeExtensionBuilder_.getMessageOrBuilderList();
+        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder> 
+             getSerializerOrBuilderList() {
+          if (serializerBuilder_ != null) {
+            return serializerBuilder_.getMessageOrBuilderList();
           } else {
-            return java.util.Collections.unmodifiableList(typeExtension_);
+            return java.util.Collections.unmodifiableList(serializer_);
           }
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder addTypeExtensionBuilder() {
-          return getTypeExtensionFieldBuilder().addBuilder(
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.getDefaultInstance());
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder addSerializerBuilder() {
+          return getSerializerFieldBuilder().addBuilder(
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.getDefaultInstance());
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder addTypeExtensionBuilder(
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder addSerializerBuilder(
             int index) {
-          return getTypeExtensionFieldBuilder().addBuilder(
-              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.getDefaultInstance());
+          return getSerializerFieldBuilder().addBuilder(
+              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.getDefaultInstance());
         }
         /**
-         * <code>repeated .knime.Command.TypeExtension typeExtension = 1;</code>
+         * <code>repeated .knime.Command.Serializer serializer = 1;</code>
          */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder> 
-             getTypeExtensionBuilderList() {
-          return getTypeExtensionFieldBuilder().getBuilderList();
+        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder> 
+             getSerializerBuilderList() {
+          return getSerializerFieldBuilder().getBuilderList();
         }
         private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder> 
-            getTypeExtensionFieldBuilder() {
-          if (typeExtensionBuilder_ == null) {
-            typeExtensionBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder>(
-                    typeExtension_,
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder> 
+            getSerializerFieldBuilder() {
+          if (serializerBuilder_ == null) {
+            serializerBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder>(
+                    serializer_,
                     ((bitField0_ & 0x00000001) == 0x00000001),
                     getParentForChildren(),
                     isClean());
-            typeExtension_ = null;
+            serializer_ = null;
           }
-          return typeExtensionBuilder_;
+          return serializerBuilder_;
         }
 
-        // @@protoc_insertion_point(builder_scope:knime.Command.LoadTypeExtensions)
+        // @@protoc_insertion_point(builder_scope:knime.Command.AddSerializers)
       }
 
       static {
-        defaultInstance = new LoadTypeExtensions(true);
+        defaultInstance = new AddSerializers(true);
         defaultInstance.initFields();
       }
 
-      // @@protoc_insertion_point(class_scope:knime.Command.LoadTypeExtensions)
+      // @@protoc_insertion_point(class_scope:knime.Command.AddSerializers)
     }
 
-    public interface TypeExtensionOrBuilder
+    public interface SerializerOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
 
       // required string id = 1;
@@ -10101,24 +10128,24 @@ public final class ProtobufPythonKernelCommand {
           getPathBytes();
     }
     /**
-     * Protobuf type {@code knime.Command.TypeExtension}
+     * Protobuf type {@code knime.Command.Serializer}
      */
-    public static final class TypeExtension extends
+    public static final class Serializer extends
         com.google.protobuf.GeneratedMessage
-        implements TypeExtensionOrBuilder {
-      // Use TypeExtension.newBuilder() to construct.
-      private TypeExtension(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        implements SerializerOrBuilder {
+      // Use Serializer.newBuilder() to construct.
+      private Serializer(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private TypeExtension(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Serializer(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-      private static final TypeExtension defaultInstance;
-      public static TypeExtension getDefaultInstance() {
+      private static final Serializer defaultInstance;
+      public static Serializer getDefaultInstance() {
         return defaultInstance;
       }
 
-      public TypeExtension getDefaultInstanceForType() {
+      public Serializer getDefaultInstanceForType() {
         return defaultInstance;
       }
 
@@ -10128,7 +10155,7 @@ public final class ProtobufPythonKernelCommand {
           getUnknownFields() {
         return this.unknownFields;
       }
-      private TypeExtension(
+      private Serializer(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
@@ -10180,28 +10207,28 @@ public final class ProtobufPythonKernelCommand {
       }
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_TypeExtension_descriptor;
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Serializer_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_TypeExtension_fieldAccessorTable
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Serializer_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder.class);
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<TypeExtension> PARSER =
-          new com.google.protobuf.AbstractParser<TypeExtension>() {
-        public TypeExtension parsePartialFrom(
+      public static com.google.protobuf.Parser<Serializer> PARSER =
+          new com.google.protobuf.AbstractParser<Serializer>() {
+        public Serializer parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws com.google.protobuf.InvalidProtocolBufferException {
-          return new TypeExtension(input, extensionRegistry);
+          return new Serializer(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<TypeExtension> getParserForType() {
+      public com.google.protobuf.Parser<Serializer> getParserForType() {
         return PARSER;
       }
 
@@ -10406,53 +10433,53 @@ public final class ProtobufPythonKernelCommand {
         return super.writeReplace();
       }
 
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           com.google.protobuf.ByteString data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           com.google.protobuf.ByteString data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(byte[] data)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(byte[] data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           byte[] data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(java.io.InputStream input)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseDelimitedFrom(java.io.InputStream input)
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseDelimitedFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseDelimitedFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           com.google.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parseFrom(
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parseFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -10461,7 +10488,7 @@ public final class ProtobufPythonKernelCommand {
 
       public static Builder newBuilder() { return Builder.create(); }
       public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension prototype) {
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer prototype) {
         return newBuilder().mergeFrom(prototype);
       }
       public Builder toBuilder() { return newBuilder(this); }
@@ -10473,24 +10500,24 @@ public final class ProtobufPythonKernelCommand {
         return builder;
       }
       /**
-       * Protobuf type {@code knime.Command.TypeExtension}
+       * Protobuf type {@code knime.Command.Serializer}
        */
       public static final class Builder extends
           com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtensionOrBuilder {
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.SerializerOrBuilder {
         public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_TypeExtension_descriptor;
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Serializer_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_TypeExtension_fieldAccessorTable
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Serializer_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.Builder.class);
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.Builder.class);
         }
 
-        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.newBuilder()
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.newBuilder()
         private Builder() {
           maybeForceBuilderInitialization();
         }
@@ -10525,23 +10552,23 @@ public final class ProtobufPythonKernelCommand {
 
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_TypeExtension_descriptor;
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Serializer_descriptor;
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension getDefaultInstanceForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.getDefaultInstance();
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.getDefaultInstance();
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension build() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension result = buildPartial();
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension buildPartial() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension(this);
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer(this);
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -10562,16 +10589,16 @@ public final class ProtobufPythonKernelCommand {
         }
 
         public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension) {
-            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension)other);
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension other) {
-          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension.getDefaultInstance()) return this;
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer.getDefaultInstance()) return this;
           if (other.hasId()) {
             bitField0_ |= 0x00000001;
             id_ = other.id_;
@@ -10611,11 +10638,11 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension parsedMessage = null;
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension) e.getUnfinishedMessage();
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer) e.getUnfinishedMessage();
             throw e;
           } finally {
             if (parsedMessage != null) {
@@ -10848,15 +10875,1344 @@ public final class ProtobufPythonKernelCommand {
           return this;
         }
 
-        // @@protoc_insertion_point(builder_scope:knime.Command.TypeExtension)
+        // @@protoc_insertion_point(builder_scope:knime.Command.Serializer)
       }
 
       static {
-        defaultInstance = new TypeExtension(true);
+        defaultInstance = new Serializer(true);
         defaultInstance.initFields();
       }
 
-      // @@protoc_insertion_point(class_scope:knime.Command.TypeExtension)
+      // @@protoc_insertion_point(class_scope:knime.Command.Serializer)
+    }
+
+    public interface AddDeserializersOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // repeated .knime.Command.Deserializer deserializer = 1;
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> 
+          getDeserializerList();
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer getDeserializer(int index);
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      int getDeserializerCount();
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder> 
+          getDeserializerOrBuilderList();
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder getDeserializerOrBuilder(
+          int index);
+    }
+    /**
+     * Protobuf type {@code knime.Command.AddDeserializers}
+     */
+    public static final class AddDeserializers extends
+        com.google.protobuf.GeneratedMessage
+        implements AddDeserializersOrBuilder {
+      // Use AddDeserializers.newBuilder() to construct.
+      private AddDeserializers(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private AddDeserializers(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final AddDeserializers defaultInstance;
+      public static AddDeserializers getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public AddDeserializers getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private AddDeserializers(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                  deserializer_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer>();
+                  mutable_bitField0_ |= 0x00000001;
+                }
+                deserializer_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.PARSER, extensionRegistry));
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+            deserializer_ = java.util.Collections.unmodifiableList(deserializer_);
+          }
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddDeserializers_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddDeserializers_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<AddDeserializers> PARSER =
+          new com.google.protobuf.AbstractParser<AddDeserializers>() {
+        public AddDeserializers parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new AddDeserializers(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<AddDeserializers> getParserForType() {
+        return PARSER;
+      }
+
+      // repeated .knime.Command.Deserializer deserializer = 1;
+      public static final int DESERIALIZER_FIELD_NUMBER = 1;
+      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> deserializer_;
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> getDeserializerList() {
+        return deserializer_;
+      }
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder> 
+          getDeserializerOrBuilderList() {
+        return deserializer_;
+      }
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      public int getDeserializerCount() {
+        return deserializer_.size();
+      }
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer getDeserializer(int index) {
+        return deserializer_.get(index);
+      }
+      /**
+       * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder getDeserializerOrBuilder(
+          int index) {
+        return deserializer_.get(index);
+      }
+
+      private void initFields() {
+        deserializer_ = java.util.Collections.emptyList();
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        for (int i = 0; i < getDeserializerCount(); i++) {
+          if (!getDeserializer(i).isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        for (int i = 0; i < deserializer_.size(); i++) {
+          output.writeMessage(1, deserializer_.get(i));
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        for (int i = 0; i < deserializer_.size(); i++) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeMessageSize(1, deserializer_.get(i));
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.AddDeserializers}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddDeserializers_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddDeserializers_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+            getDeserializerFieldBuilder();
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          if (deserializerBuilder_ == null) {
+            deserializer_ = java.util.Collections.emptyList();
+            bitField0_ = (bitField0_ & ~0x00000001);
+          } else {
+            deserializerBuilder_.clear();
+          }
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddDeserializers_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers(this);
+          int from_bitField0_ = bitField0_;
+          if (deserializerBuilder_ == null) {
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              deserializer_ = java.util.Collections.unmodifiableList(deserializer_);
+              bitField0_ = (bitField0_ & ~0x00000001);
+            }
+            result.deserializer_ = deserializer_;
+          } else {
+            result.deserializer_ = deserializerBuilder_.build();
+          }
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance()) return this;
+          if (deserializerBuilder_ == null) {
+            if (!other.deserializer_.isEmpty()) {
+              if (deserializer_.isEmpty()) {
+                deserializer_ = other.deserializer_;
+                bitField0_ = (bitField0_ & ~0x00000001);
+              } else {
+                ensureDeserializerIsMutable();
+                deserializer_.addAll(other.deserializer_);
+              }
+              onChanged();
+            }
+          } else {
+            if (!other.deserializer_.isEmpty()) {
+              if (deserializerBuilder_.isEmpty()) {
+                deserializerBuilder_.dispose();
+                deserializerBuilder_ = null;
+                deserializer_ = other.deserializer_;
+                bitField0_ = (bitField0_ & ~0x00000001);
+                deserializerBuilder_ = 
+                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                     getDeserializerFieldBuilder() : null;
+              } else {
+                deserializerBuilder_.addAllMessages(other.deserializer_);
+              }
+            }
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          for (int i = 0; i < getDeserializerCount(); i++) {
+            if (!getDeserializer(i).isInitialized()) {
+              
+              return false;
+            }
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // repeated .knime.Command.Deserializer deserializer = 1;
+        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> deserializer_ =
+          java.util.Collections.emptyList();
+        private void ensureDeserializerIsMutable() {
+          if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+            deserializer_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer>(deserializer_);
+            bitField0_ |= 0x00000001;
+           }
+        }
+
+        private com.google.protobuf.RepeatedFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder> deserializerBuilder_;
+
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> getDeserializerList() {
+          if (deserializerBuilder_ == null) {
+            return java.util.Collections.unmodifiableList(deserializer_);
+          } else {
+            return deserializerBuilder_.getMessageList();
+          }
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public int getDeserializerCount() {
+          if (deserializerBuilder_ == null) {
+            return deserializer_.size();
+          } else {
+            return deserializerBuilder_.getCount();
+          }
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer getDeserializer(int index) {
+          if (deserializerBuilder_ == null) {
+            return deserializer_.get(index);
+          } else {
+            return deserializerBuilder_.getMessage(index);
+          }
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder setDeserializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer value) {
+          if (deserializerBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            ensureDeserializerIsMutable();
+            deserializer_.set(index, value);
+            onChanged();
+          } else {
+            deserializerBuilder_.setMessage(index, value);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder setDeserializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder builderForValue) {
+          if (deserializerBuilder_ == null) {
+            ensureDeserializerIsMutable();
+            deserializer_.set(index, builderForValue.build());
+            onChanged();
+          } else {
+            deserializerBuilder_.setMessage(index, builderForValue.build());
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder addDeserializer(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer value) {
+          if (deserializerBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            ensureDeserializerIsMutable();
+            deserializer_.add(value);
+            onChanged();
+          } else {
+            deserializerBuilder_.addMessage(value);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder addDeserializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer value) {
+          if (deserializerBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            ensureDeserializerIsMutable();
+            deserializer_.add(index, value);
+            onChanged();
+          } else {
+            deserializerBuilder_.addMessage(index, value);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder addDeserializer(
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder builderForValue) {
+          if (deserializerBuilder_ == null) {
+            ensureDeserializerIsMutable();
+            deserializer_.add(builderForValue.build());
+            onChanged();
+          } else {
+            deserializerBuilder_.addMessage(builderForValue.build());
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder addDeserializer(
+            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder builderForValue) {
+          if (deserializerBuilder_ == null) {
+            ensureDeserializerIsMutable();
+            deserializer_.add(index, builderForValue.build());
+            onChanged();
+          } else {
+            deserializerBuilder_.addMessage(index, builderForValue.build());
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder addAllDeserializer(
+            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer> values) {
+          if (deserializerBuilder_ == null) {
+            ensureDeserializerIsMutable();
+            super.addAll(values, deserializer_);
+            onChanged();
+          } else {
+            deserializerBuilder_.addAllMessages(values);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder clearDeserializer() {
+          if (deserializerBuilder_ == null) {
+            deserializer_ = java.util.Collections.emptyList();
+            bitField0_ = (bitField0_ & ~0x00000001);
+            onChanged();
+          } else {
+            deserializerBuilder_.clear();
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public Builder removeDeserializer(int index) {
+          if (deserializerBuilder_ == null) {
+            ensureDeserializerIsMutable();
+            deserializer_.remove(index);
+            onChanged();
+          } else {
+            deserializerBuilder_.remove(index);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder getDeserializerBuilder(
+            int index) {
+          return getDeserializerFieldBuilder().getBuilder(index);
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder getDeserializerOrBuilder(
+            int index) {
+          if (deserializerBuilder_ == null) {
+            return deserializer_.get(index);  } else {
+            return deserializerBuilder_.getMessageOrBuilder(index);
+          }
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder> 
+             getDeserializerOrBuilderList() {
+          if (deserializerBuilder_ != null) {
+            return deserializerBuilder_.getMessageOrBuilderList();
+          } else {
+            return java.util.Collections.unmodifiableList(deserializer_);
+          }
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder addDeserializerBuilder() {
+          return getDeserializerFieldBuilder().addBuilder(
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.getDefaultInstance());
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder addDeserializerBuilder(
+            int index) {
+          return getDeserializerFieldBuilder().addBuilder(
+              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.getDefaultInstance());
+        }
+        /**
+         * <code>repeated .knime.Command.Deserializer deserializer = 1;</code>
+         */
+        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder> 
+             getDeserializerBuilderList() {
+          return getDeserializerFieldBuilder().getBuilderList();
+        }
+        private com.google.protobuf.RepeatedFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder> 
+            getDeserializerFieldBuilder() {
+          if (deserializerBuilder_ == null) {
+            deserializerBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder>(
+                    deserializer_,
+                    ((bitField0_ & 0x00000001) == 0x00000001),
+                    getParentForChildren(),
+                    isClean());
+            deserializer_ = null;
+          }
+          return deserializerBuilder_;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.AddDeserializers)
+      }
+
+      static {
+        defaultInstance = new AddDeserializers(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.AddDeserializers)
+    }
+
+    public interface DeserializerOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string id = 1;
+      /**
+       * <code>required string id = 1;</code>
+       */
+      boolean hasId();
+      /**
+       * <code>required string id = 1;</code>
+       */
+      java.lang.String getId();
+      /**
+       * <code>required string id = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getIdBytes();
+
+      // required string path = 2;
+      /**
+       * <code>required string path = 2;</code>
+       */
+      boolean hasPath();
+      /**
+       * <code>required string path = 2;</code>
+       */
+      java.lang.String getPath();
+      /**
+       * <code>required string path = 2;</code>
+       */
+      com.google.protobuf.ByteString
+          getPathBytes();
+    }
+    /**
+     * Protobuf type {@code knime.Command.Deserializer}
+     */
+    public static final class Deserializer extends
+        com.google.protobuf.GeneratedMessage
+        implements DeserializerOrBuilder {
+      // Use Deserializer.newBuilder() to construct.
+      private Deserializer(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private Deserializer(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final Deserializer defaultInstance;
+      public static Deserializer getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public Deserializer getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private Deserializer(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                id_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                bitField0_ |= 0x00000002;
+                path_ = input.readBytes();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Deserializer_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Deserializer_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<Deserializer> PARSER =
+          new com.google.protobuf.AbstractParser<Deserializer>() {
+        public Deserializer parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new Deserializer(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<Deserializer> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string id = 1;
+      public static final int ID_FIELD_NUMBER = 1;
+      private java.lang.Object id_;
+      /**
+       * <code>required string id = 1;</code>
+       */
+      public boolean hasId() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string id = 1;</code>
+       */
+      public java.lang.String getId() {
+        java.lang.Object ref = id_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            id_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string id = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        java.lang.Object ref = id_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          id_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required string path = 2;
+      public static final int PATH_FIELD_NUMBER = 2;
+      private java.lang.Object path_;
+      /**
+       * <code>required string path = 2;</code>
+       */
+      public boolean hasPath() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required string path = 2;</code>
+       */
+      public java.lang.String getPath() {
+        java.lang.Object ref = path_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            path_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string path = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getPathBytes() {
+        java.lang.Object ref = path_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          path_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      private void initFields() {
+        id_ = "";
+        path_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasId()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasPath()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getIdBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeBytes(2, getPathBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getIdBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(2, getPathBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.Deserializer}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.DeserializerOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Deserializer_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Deserializer_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          id_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          path_ = "";
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Deserializer_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.id_ = id_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.path_ = path_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer.getDefaultInstance()) return this;
+          if (other.hasId()) {
+            bitField0_ |= 0x00000001;
+            id_ = other.id_;
+            onChanged();
+          }
+          if (other.hasPath()) {
+            bitField0_ |= 0x00000002;
+            path_ = other.path_;
+            onChanged();
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasId()) {
+            
+            return false;
+          }
+          if (!hasPath()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string id = 1;
+        private java.lang.Object id_ = "";
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public boolean hasId() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public java.lang.String getId() {
+          java.lang.Object ref = id_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            id_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getIdBytes() {
+          java.lang.Object ref = id_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            id_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public Builder setId(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          id_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public Builder clearId() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          id_ = getDefaultInstance().getId();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string id = 1;</code>
+         */
+        public Builder setIdBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          id_ = value;
+          onChanged();
+          return this;
+        }
+
+        // required string path = 2;
+        private java.lang.Object path_ = "";
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public boolean hasPath() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public java.lang.String getPath() {
+          java.lang.Object ref = path_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            path_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public com.google.protobuf.ByteString
+            getPathBytes() {
+          java.lang.Object ref = path_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            path_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public Builder setPath(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+          path_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public Builder clearPath() {
+          bitField0_ = (bitField0_ & ~0x00000002);
+          path_ = getDefaultInstance().getPath();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string path = 2;</code>
+         */
+        public Builder setPathBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+          path_ = value;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.Deserializer)
+      }
+
+      static {
+        defaultInstance = new Deserializer(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.Deserializer)
     }
 
     private int bitField0_;
@@ -11124,26 +12480,48 @@ public final class ProtobufPythonKernelCommand {
       return putObject_;
     }
 
-    // optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;
-    public static final int LOADTYPEEXTENSIONS_FIELD_NUMBER = 13;
-    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions loadTypeExtensions_;
+    // optional .knime.Command.AddSerializers addSerializers = 13;
+    public static final int ADDSERIALIZERS_FIELD_NUMBER = 13;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers addSerializers_;
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    public boolean hasLoadTypeExtensions() {
+    public boolean hasAddSerializers() {
       return ((bitField0_ & 0x00001000) == 0x00001000);
     }
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions getLoadTypeExtensions() {
-      return loadTypeExtensions_;
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers getAddSerializers() {
+      return addSerializers_;
     }
     /**
-     * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+     * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
      */
-    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder getLoadTypeExtensionsOrBuilder() {
-      return loadTypeExtensions_;
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder getAddSerializersOrBuilder() {
+      return addSerializers_;
+    }
+
+    // optional .knime.Command.AddDeserializers addDeserializers = 14;
+    public static final int ADDDESERIALIZERS_FIELD_NUMBER = 14;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers addDeserializers_;
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    public boolean hasAddDeserializers() {
+      return ((bitField0_ & 0x00002000) == 0x00002000);
+    }
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers getAddDeserializers() {
+      return addDeserializers_;
+    }
+    /**
+     * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder getAddDeserializersOrBuilder() {
+      return addDeserializers_;
     }
 
     private void initFields() {
@@ -11159,7 +12537,8 @@ public final class ProtobufPythonKernelCommand {
       getImage_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImage.getDefaultInstance();
       getObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject.getDefaultInstance();
       putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
-      loadTypeExtensions_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance();
+      addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
+      addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -11220,8 +12599,14 @@ public final class ProtobufPythonKernelCommand {
           return false;
         }
       }
-      if (hasLoadTypeExtensions()) {
-        if (!getLoadTypeExtensions().isInitialized()) {
+      if (hasAddSerializers()) {
+        if (!getAddSerializers().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasAddDeserializers()) {
+        if (!getAddDeserializers().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -11270,7 +12655,10 @@ public final class ProtobufPythonKernelCommand {
         output.writeMessage(12, putObject_);
       }
       if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        output.writeMessage(13, loadTypeExtensions_);
+        output.writeMessage(13, addSerializers_);
+      }
+      if (((bitField0_ & 0x00002000) == 0x00002000)) {
+        output.writeMessage(14, addDeserializers_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -11331,7 +12719,11 @@ public final class ProtobufPythonKernelCommand {
       }
       if (((bitField0_ & 0x00001000) == 0x00001000)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(13, loadTypeExtensions_);
+          .computeMessageSize(13, addSerializers_);
+      }
+      if (((bitField0_ & 0x00002000) == 0x00002000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(14, addDeserializers_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -11453,7 +12845,8 @@ public final class ProtobufPythonKernelCommand {
           getGetImageFieldBuilder();
           getGetObjectFieldBuilder();
           getPutObjectFieldBuilder();
-          getLoadTypeExtensionsFieldBuilder();
+          getAddSerializersFieldBuilder();
+          getAddDeserializersFieldBuilder();
         }
       }
       private static Builder create() {
@@ -11534,12 +12927,18 @@ public final class ProtobufPythonKernelCommand {
           putObjectBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000800);
-        if (loadTypeExtensionsBuilder_ == null) {
-          loadTypeExtensions_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance();
+        if (addSerializersBuilder_ == null) {
+          addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
         } else {
-          loadTypeExtensionsBuilder_.clear();
+          addSerializersBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00001000);
+        if (addDeserializersBuilder_ == null) {
+          addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
+        } else {
+          addDeserializersBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00002000);
         return this;
       }
 
@@ -11667,10 +13066,18 @@ public final class ProtobufPythonKernelCommand {
         if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
           to_bitField0_ |= 0x00001000;
         }
-        if (loadTypeExtensionsBuilder_ == null) {
-          result.loadTypeExtensions_ = loadTypeExtensions_;
+        if (addSerializersBuilder_ == null) {
+          result.addSerializers_ = addSerializers_;
         } else {
-          result.loadTypeExtensions_ = loadTypeExtensionsBuilder_.build();
+          result.addSerializers_ = addSerializersBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+          to_bitField0_ |= 0x00002000;
+        }
+        if (addDeserializersBuilder_ == null) {
+          result.addDeserializers_ = addDeserializers_;
+        } else {
+          result.addDeserializers_ = addDeserializersBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -11724,8 +13131,11 @@ public final class ProtobufPythonKernelCommand {
         if (other.hasPutObject()) {
           mergePutObject(other.getPutObject());
         }
-        if (other.hasLoadTypeExtensions()) {
-          mergeLoadTypeExtensions(other.getLoadTypeExtensions());
+        if (other.hasAddSerializers()) {
+          mergeAddSerializers(other.getAddSerializers());
+        }
+        if (other.hasAddDeserializers()) {
+          mergeAddDeserializers(other.getAddDeserializers());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -11786,8 +13196,14 @@ public final class ProtobufPythonKernelCommand {
             return false;
           }
         }
-        if (hasLoadTypeExtensions()) {
-          if (!getLoadTypeExtensions().isInitialized()) {
+        if (hasAddSerializers()) {
+          if (!getAddSerializers().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasAddDeserializers()) {
+          if (!getAddDeserializers().isInitialized()) {
             
             return false;
           }
@@ -13218,121 +14634,238 @@ public final class ProtobufPythonKernelCommand {
         return putObjectBuilder_;
       }
 
-      // optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;
-      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions loadTypeExtensions_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance();
+      // optional .knime.Command.AddSerializers addSerializers = 13;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder> loadTypeExtensionsBuilder_;
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder> addSerializersBuilder_;
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public boolean hasLoadTypeExtensions() {
+      public boolean hasAddSerializers() {
         return ((bitField0_ & 0x00001000) == 0x00001000);
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions getLoadTypeExtensions() {
-        if (loadTypeExtensionsBuilder_ == null) {
-          return loadTypeExtensions_;
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers getAddSerializers() {
+        if (addSerializersBuilder_ == null) {
+          return addSerializers_;
         } else {
-          return loadTypeExtensionsBuilder_.getMessage();
+          return addSerializersBuilder_.getMessage();
         }
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public Builder setLoadTypeExtensions(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions value) {
-        if (loadTypeExtensionsBuilder_ == null) {
+      public Builder setAddSerializers(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers value) {
+        if (addSerializersBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          loadTypeExtensions_ = value;
+          addSerializers_ = value;
           onChanged();
         } else {
-          loadTypeExtensionsBuilder_.setMessage(value);
+          addSerializersBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00001000;
         return this;
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public Builder setLoadTypeExtensions(
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder builderForValue) {
-        if (loadTypeExtensionsBuilder_ == null) {
-          loadTypeExtensions_ = builderForValue.build();
+      public Builder setAddSerializers(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder builderForValue) {
+        if (addSerializersBuilder_ == null) {
+          addSerializers_ = builderForValue.build();
           onChanged();
         } else {
-          loadTypeExtensionsBuilder_.setMessage(builderForValue.build());
+          addSerializersBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00001000;
         return this;
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public Builder mergeLoadTypeExtensions(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions value) {
-        if (loadTypeExtensionsBuilder_ == null) {
+      public Builder mergeAddSerializers(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers value) {
+        if (addSerializersBuilder_ == null) {
           if (((bitField0_ & 0x00001000) == 0x00001000) &&
-              loadTypeExtensions_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance()) {
-            loadTypeExtensions_ =
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.newBuilder(loadTypeExtensions_).mergeFrom(value).buildPartial();
+              addSerializers_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance()) {
+            addSerializers_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.newBuilder(addSerializers_).mergeFrom(value).buildPartial();
           } else {
-            loadTypeExtensions_ = value;
+            addSerializers_ = value;
           }
           onChanged();
         } else {
-          loadTypeExtensionsBuilder_.mergeFrom(value);
+          addSerializersBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00001000;
         return this;
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public Builder clearLoadTypeExtensions() {
-        if (loadTypeExtensionsBuilder_ == null) {
-          loadTypeExtensions_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.getDefaultInstance();
+      public Builder clearAddSerializers() {
+        if (addSerializersBuilder_ == null) {
+          addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
           onChanged();
         } else {
-          loadTypeExtensionsBuilder_.clear();
+          addSerializersBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00001000);
         return this;
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder getLoadTypeExtensionsBuilder() {
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder getAddSerializersBuilder() {
         bitField0_ |= 0x00001000;
         onChanged();
-        return getLoadTypeExtensionsFieldBuilder().getBuilder();
+        return getAddSerializersFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder getLoadTypeExtensionsOrBuilder() {
-        if (loadTypeExtensionsBuilder_ != null) {
-          return loadTypeExtensionsBuilder_.getMessageOrBuilder();
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder getAddSerializersOrBuilder() {
+        if (addSerializersBuilder_ != null) {
+          return addSerializersBuilder_.getMessageOrBuilder();
         } else {
-          return loadTypeExtensions_;
+          return addSerializers_;
         }
       }
       /**
-       * <code>optional .knime.Command.LoadTypeExtensions loadTypeExtensions = 13;</code>
+       * <code>optional .knime.Command.AddSerializers addSerializers = 13;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder> 
-          getLoadTypeExtensionsFieldBuilder() {
-        if (loadTypeExtensionsBuilder_ == null) {
-          loadTypeExtensionsBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensionsOrBuilder>(
-                  loadTypeExtensions_,
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder> 
+          getAddSerializersFieldBuilder() {
+        if (addSerializersBuilder_ == null) {
+          addSerializersBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializersOrBuilder>(
+                  addSerializers_,
                   getParentForChildren(),
                   isClean());
-          loadTypeExtensions_ = null;
+          addSerializers_ = null;
         }
-        return loadTypeExtensionsBuilder_;
+        return addSerializersBuilder_;
+      }
+
+      // optional .knime.Command.AddDeserializers addDeserializers = 14;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder> addDeserializersBuilder_;
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public boolean hasAddDeserializers() {
+        return ((bitField0_ & 0x00002000) == 0x00002000);
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers getAddDeserializers() {
+        if (addDeserializersBuilder_ == null) {
+          return addDeserializers_;
+        } else {
+          return addDeserializersBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public Builder setAddDeserializers(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers value) {
+        if (addDeserializersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          addDeserializers_ = value;
+          onChanged();
+        } else {
+          addDeserializersBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00002000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public Builder setAddDeserializers(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder builderForValue) {
+        if (addDeserializersBuilder_ == null) {
+          addDeserializers_ = builderForValue.build();
+          onChanged();
+        } else {
+          addDeserializersBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00002000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public Builder mergeAddDeserializers(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers value) {
+        if (addDeserializersBuilder_ == null) {
+          if (((bitField0_ & 0x00002000) == 0x00002000) &&
+              addDeserializers_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance()) {
+            addDeserializers_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.newBuilder(addDeserializers_).mergeFrom(value).buildPartial();
+          } else {
+            addDeserializers_ = value;
+          }
+          onChanged();
+        } else {
+          addDeserializersBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00002000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public Builder clearAddDeserializers() {
+        if (addDeserializersBuilder_ == null) {
+          addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
+          onChanged();
+        } else {
+          addDeserializersBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00002000);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder getAddDeserializersBuilder() {
+        bitField0_ |= 0x00002000;
+        onChanged();
+        return getAddDeserializersFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder getAddDeserializersOrBuilder() {
+        if (addDeserializersBuilder_ != null) {
+          return addDeserializersBuilder_.getMessageOrBuilder();
+        } else {
+          return addDeserializers_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder> 
+          getAddDeserializersFieldBuilder() {
+        if (addDeserializersBuilder_ == null) {
+          addDeserializersBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder>(
+                  addDeserializers_,
+                  getParentForChildren(),
+                  isClean());
+          addDeserializers_ = null;
+        }
+        return addDeserializersBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:knime.Command)
@@ -13427,15 +14960,25 @@ public final class ProtobufPythonKernelCommand {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_PutObject_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_LoadTypeExtensions_descriptor;
+    internal_static_knime_Command_AddSerializers_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_LoadTypeExtensions_fieldAccessorTable;
+      internal_static_knime_Command_AddSerializers_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_TypeExtension_descriptor;
+    internal_static_knime_Command_Serializer_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_TypeExtension_fieldAccessorTable;
+      internal_static_knime_Command_Serializer_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_AddDeserializers_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_AddDeserializers_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_Deserializer_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_Deserializer_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -13445,7 +14988,7 @@ public final class ProtobufPythonKernelCommand {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcommand.proto\022\005knime\032\013table.proto\"\234\014\n\007" +
+      "\n\rcommand.proto\022\005knime\032\013table.proto\"\263\r\n\007" +
       "Command\022\'\n\007execute\030\001 \001(\0132\026.knime.Command" +
       ".Execute\0229\n\020putFlowVariables\030\002 \001(\0132\037.kni" +
       "me.Command.PutFlowVariables\022)\n\010putTable\030" +
@@ -13460,33 +15003,37 @@ public final class ProtobufPythonKernelCommand {
       "lete\022)\n\010getImage\030\n \001(\0132\027.knime.Command.G" +
       "etImage\022+\n\tgetObject\030\013 \001(\0132\030.knime.Comma" +
       "nd.GetObject\022+\n\tputObject\030\014 \001(\0132\030.knime." +
-      "Command.PutObject\022=\n\022loadTypeExtensions\030" +
-      "\r \001(\0132!.knime.Command.LoadTypeExtensions" +
-      "\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032\204\003\n\020PutF" +
-      "lowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017integerVari" +
-      "able\030\002 \003(\0132/.knime.Command.PutFlowVariab",
-      "les.IntegerVariable\022F\n\016doubleVariable\030\003 " +
-      "\003(\0132..knime.Command.PutFlowVariables.Dou" +
-      "bleVariable\022F\n\016stringVariable\030\004 \003(\0132..kn" +
-      "ime.Command.PutFlowVariables.StringVaria" +
-      "ble\032-\n\017IntegerVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005v" +
-      "alue\030\002 \002(\005\032,\n\016DoubleVariable\022\013\n\003key\030\001 \002(" +
-      "\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVariable\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010PutTable\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Table\0329\n\r" +
-      "AppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(",
-      "\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003key\030\001 \002(\t" +
-      "\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariables\032\007\n\005" +
-      "Reset\032\021\n\017HasAutoComplete\032@\n\014AutoComplete" +
-      "\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022\016\n\006co" +
-      "lumn\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002(\t\032\030\n\tG" +
-      "etObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutObject\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(\014\032I\n\022LoadTy" +
-      "peExtensions\0223\n\rtypeExtension\030\001 \003(\0132\034.kn" +
-      "ime.Command.TypeExtension\0327\n\rTypeExtensi" +
-      "on\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002",
-      "(\tB<\n\035org.knime.python.kernel.protoB\033Pro" +
-      "tobufPythonKernelCommand"
+      "Command.PutObject\0225\n\016addSerializers\030\r \001(" +
+      "\0132\035.knime.Command.AddSerializers\0229\n\020addD" +
+      "eserializers\030\016 \001(\0132\037.knime.Command.AddDe" +
+      "serializers\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002" +
+      "(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017",
+      "integerVariable\030\002 \003(\0132/.knime.Command.Pu" +
+      "tFlowVariables.IntegerVariable\022F\n\016double" +
+      "Variable\030\003 \003(\0132..knime.Command.PutFlowVa" +
+      "riables.DoubleVariable\022F\n\016stringVariable" +
+      "\030\004 \003(\0132..knime.Command.PutFlowVariables." +
+      "StringVariable\032-\n\017IntegerVariable\022\013\n\003key" +
+      "\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022" +
+      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVar" +
+      "iable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010Put" +
+      "Table\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knim",
+      "e.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n" +
+      "\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013" +
+      "\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVa" +
+      "riables\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014A" +
+      "utoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030" +
+      "\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key" +
+      "\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutO" +
+      "bject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(" +
+      "\014\032?\n\016AddSerializers\022-\n\nserializer\030\001 \003(\0132" +
+      "\031.knime.Command.Serializer\0324\n\nSerializer",
+      "\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t" +
+      "\032E\n\020AddDeserializers\0221\n\014deserializer\030\001 \003" +
+      "(\0132\033.knime.Command.Deserializer\032(\n\014Deser" +
+      "ializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\tB<\n\035org" +
+      ".knime.python.kernel.protoB\033ProtobufPyth" +
+      "onKernelCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -13498,7 +15045,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "LoadTypeExtensions", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -13589,18 +15136,30 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_PutObject_descriptor,
               new java.lang.String[] { "Key", "PickledObject", });
-          internal_static_knime_Command_LoadTypeExtensions_descriptor =
+          internal_static_knime_Command_AddSerializers_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(12);
-          internal_static_knime_Command_LoadTypeExtensions_fieldAccessorTable = new
+          internal_static_knime_Command_AddSerializers_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_LoadTypeExtensions_descriptor,
-              new java.lang.String[] { "TypeExtension", });
-          internal_static_knime_Command_TypeExtension_descriptor =
+              internal_static_knime_Command_AddSerializers_descriptor,
+              new java.lang.String[] { "Serializer", });
+          internal_static_knime_Command_Serializer_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(13);
-          internal_static_knime_Command_TypeExtension_fieldAccessorTable = new
+          internal_static_knime_Command_Serializer_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_TypeExtension_descriptor,
+              internal_static_knime_Command_Serializer_descriptor,
               new java.lang.String[] { "Id", "Type", "Path", });
+          internal_static_knime_Command_AddDeserializers_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(14);
+          internal_static_knime_Command_AddDeserializers_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_AddDeserializers_descriptor,
+              new java.lang.String[] { "Deserializer", });
+          internal_static_knime_Command_Deserializer_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(15);
+          internal_static_knime_Command_Deserializer_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_Deserializer_descriptor,
+              new java.lang.String[] { "Id", "Path", });
           return null;
         }
       };

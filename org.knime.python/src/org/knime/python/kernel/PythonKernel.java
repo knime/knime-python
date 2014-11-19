@@ -84,15 +84,17 @@ import org.knime.python.kernel.proto.ProtobufImage.Image;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table;
 import org.knime.python.kernel.proto.ProtobufPickledObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AppendToTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImage;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.HasAutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ListVariables;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.LoadTypeExtensions;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable;
@@ -100,11 +102,14 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlow
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Reset;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.TypeExtension;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer;
 import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
 import org.knime.python.port.PickledObject;
+import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.PythonToKnimeExtension;
+import org.knime.python.typeextension.TypeExtensions;
 import org.w3c.dom.svg.SVGDocument;
 
 import com.google.protobuf.ByteString;
@@ -187,15 +192,28 @@ public class PythonKernel {
 		} catch (Exception e) {
 			//
 		}
+		// Python serializers
 		Command.Builder commandBuilder = Command.newBuilder();
-		LoadTypeExtensions.Builder loadTypeExtensions = LoadTypeExtensions.newBuilder();
-		for (org.knime.python.typeextension.TypeExtension typeExtension : org.knime.python.typeextension.TypeExtension.getTypeExtensions()) {
-			loadTypeExtensions.addTypeExtension(TypeExtension.newBuilder().setId(typeExtension.getId()).setType(typeExtension.getType())
+		AddSerializers.Builder addSerializers = AddSerializers.newBuilder();
+		for (PythonToKnimeExtension typeExtension : TypeExtensions.getPythonToKnimeExtensions()) {
+			addSerializers.addSerializer(Serializer.newBuilder().setId(typeExtension.getId()).setType(typeExtension.getType())
 					.setPath(typeExtension.getPythonSerializerPath()));
 		}
-		commandBuilder.setLoadTypeExtensions(loadTypeExtensions);
+		commandBuilder.setAddSerializers(addSerializers);
 		OutputStream outToServer = m_socket.getOutputStream();
 		InputStream inFromServer = m_socket.getInputStream();
+		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+		readMessageBytes(inFromServer);
+		// Python deserializers
+		commandBuilder = Command.newBuilder();
+		AddDeserializers.Builder addDeserializers = AddDeserializers.newBuilder();
+		for (KnimeToPythonExtension typeExtension : TypeExtensions.getKnimeToPythonExtensions()) {
+			addDeserializers.addDeserializer(Deserializer.newBuilder().setId(typeExtension.getId())
+					.setPath(typeExtension.getPythonDeserializerPath()));
+		}
+		commandBuilder.setAddDeserializers(addDeserializers);
+		outToServer = m_socket.getOutputStream();
+		inFromServer = m_socket.getInputStream();
 		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
 		readMessageBytes(inFromServer);
 	}

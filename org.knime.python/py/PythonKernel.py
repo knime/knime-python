@@ -178,9 +178,13 @@ def run():
                 object = pickle.loads(command.putObject.pickledObject)
                 put_variable(command.putObject.key, object)
                 write_dummy()
-            elif command.HasField('loadTypeExtensions'):
-                for type_extension in command.loadTypeExtensions.typeExtension:
-                    _type_extension_manager.add_type_extension(type_extension.id, type_extension.type, type_extension.path)
+            elif command.HasField('addSerializers'):
+                for serializer in command.addSerializers.serializer:
+                    _type_extension_manager.add_serializer(serializer.id, serializer.type, serializer.path)
+                write_dummy()
+            elif command.HasField('addDeserializers'):
+                for deserializer in command.addDeserializers.deserializer:
+                    _type_extension_manager.add_deserializer(deserializer.id, deserializer.path)
                 write_dummy()
     finally:
         _connection.close()
@@ -502,7 +506,7 @@ def protobuf_table_to_data_frame(table_message):
             column_names.append(column.name)
         elif colRef.type == 'ObjectListColumn':
             column = table_message.objectListCol[colRef.indexInType]
-            type_extension = _type_extension_manager.get_type_extension_by_id(column.type)
+            type_extension = _type_extension_manager.get_deserializer_by_id(column.type)
             if type_extension is not None:
                 cells = []
                 for value in column.objectListValue:
@@ -523,7 +527,7 @@ def protobuf_table_to_data_frame(table_message):
         elif colRef.type == 'ObjectColumn':
             column = table_message.objectCol[colRef.indexInType]
             cells = []
-            type_extension = _type_extension_manager.get_type_extension_by_id(column.type)
+            type_extension = _type_extension_manager.get_deserializer_by_id(column.type)
             if type_extension is not None:
                 for value in column.objectValue:
                     if value.HasField('value'):
@@ -743,7 +747,7 @@ def data_frame_to_protobuf_table(data_frame):
                                             string_val.value = single_cell
                         else:
                             type_string = get_type_string(first_valid_list_object(data_frame, column))
-                            type_extension = _type_extension_manager.get_type_extension_by_type(type_string)
+                            type_extension = _type_extension_manager.get_serializer_by_type(type_string)
                             if (type_extension is None):
                                 raise ValueError('List column ' + str(column) + ' has unsupported type ' + type_string)
                             col_ref.type = 'ObjectListColumn'
@@ -751,7 +755,7 @@ def data_frame_to_protobuf_table(data_frame):
                             object_list_col = table_message.objectListCol.add()
                             object_list_col.isSet = is_set
                             object_list_col.name = str(column)
-                            object_col.type = _type_extension_manager.get_id_by_type(type_string)
+                            object_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
                             for cell in data_frame[column]:
                                 object_list_val = object_list_col.objectListValue.add()
                                 object_list_val.isMissing = cell is None
@@ -762,14 +766,14 @@ def data_frame_to_protobuf_table(data_frame):
                                             object_val.value = type_extension.serialize(single_cell)
                     else:
                         type_string = get_type_string(first_valid_object(data_frame, column))
-                        type_extension = _type_extension_manager.get_type_extension_by_type(type_string)
+                        type_extension = _type_extension_manager.get_serializer_by_type(type_string)
                         if (type_extension is None):
                             raise ValueError('Column ' + str(column) + ' has unsupported type ' + type_string)
                         col_ref.type = 'ObjectColumn'
                         col_ref.indexInType = len(table_message.objectCol)
                         object_col = table_message.objectCol.add()
                         object_col.name = str(column)
-                        object_col.type = _type_extension_manager.get_id_by_type(type_string)
+                        object_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
                         for cell in data_frame[column]:
                             object_val = object_col.objectValue.add()
                             if not is_missing(cell):
@@ -886,25 +890,31 @@ def get_type_string(object):
 
 class TypeExtensionManager:
     def __init__(self):
-        self._id_to_index = {}
-        self._type_to_id = {}
-        self._type_extensions = []
-    def get_type_extension_by_id(self, id):
-        if id not in self._id_to_index:
+        self._serializer_id_to_index = {}
+        self._serializer_type_to_id = {}
+        self._serializers = []
+        self._deserializer_id_to_index = {}
+        self._deserializers = []
+    def get_deserializer_by_id(self, id):
+        if id not in self._deserializer_id_to_index:
             return None
-        return self.get_type_extension_by_index(self._id_to_index[id])
-    def get_type_extension_by_type(self, type_string):
-        if type_string not in self._type_to_id:
+        return self.get_extension_by_index(self._deserializer_id_to_index[id], self._deserializers)
+    def get_serializer_by_id(self, id):
+        if id not in self._serializer_id_to_index:
             return None
-        return self.get_type_extension_by_id(self._type_to_id[type_string])
-    def get_id_by_type(self, type_string):
-        if type_string not in self._type_to_id:
+        return self.get_extension_by_index(self._serializer_id_to_index[id], self._serializers)
+    def get_serializer_by_type(self, type_string):
+        if type_string not in self._serializer_type_to_id:
             return None
-        return self._type_to_id[type_string]
-    def get_type_extension_by_index(self, index):
-        if index >= len(self._type_extensions):
+        return self.get_serializer_by_id(self._serializer_type_to_id[type_string])
+    def get_serializer_id_by_type(self, type_string):
+        if type_string not in self._serializer_type_to_id:
             return None
-        type_extension = self._type_extensions[index]
+        return self._serializer_type_to_id[type_string]
+    def get_extension_by_index(self, index, extensions):
+        if index >= len(extensions):
+            return None
+        type_extension = extensions[index]
         if type(type_extension) is not types.ModuleType:
             path = type_extension
             last_separator = path.rfind(os.sep)
@@ -914,13 +924,17 @@ class TypeExtensionManager:
                 type_extension = imp.load_source(module_name, path)
             except ImportError as e:
                 raise ImportError('Error while loading python type extension ' + module_name + '\nCause: ' + str(e))
-            self._type_extensions[index] = type_extension
+            extensions[index] = type_extension
         return type_extension
-    def add_type_extension(self, id, type_string, path):
-        index = len(self._type_extensions)
-        self._type_extensions.append(path)
-        self._id_to_index[id] = index
-        self._type_to_id[type_string] = id
+    def add_serializer(self, id, type_string, path):
+        index = len(self._serializers)
+        self._serializers.append(path)
+        self._serializer_id_to_index[id] = index
+        self._serializer_type_to_id[type_string] = id
+    def add_deserializer(self, id, path):
+        index = len(self._deserializers)
+        self._deserializers.append(path)
+        self._deserializer_id_to_index[id] = index
 
 
 def object_to_unicode(object):

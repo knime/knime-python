@@ -18,7 +18,8 @@ message Command {
 	optional GetImage getImage = 10;
 	optional GetObject getObject = 11;
 	optional PutObject putObject = 12;
-	optional LoadTypeExtensions loadTypeExtensions = 13;
+	optional AddSerializers addSerializers = 13;
+	optional AddDeserializers addDeserializers = 14;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -89,13 +90,23 @@ message Command {
 		required bytes pickledObject = 2;
 	}
 	
-	message LoadTypeExtensions {
-		repeated TypeExtension typeExtension = 1;
+	message AddSerializers {
+		repeated Serializer serializer = 1;
 	}
 	
-	message TypeExtension {
+	message Serializer {
 		required string id = 1;
 		required string type = 2;
 		required string path = 3;
 	}
+	
+	message AddDeserializers {
+		repeated Deserializer deserializer = 1;
+	}
+	
+	message Deserializer {
+		required string id = 1;
+		required string path = 2;
+	}
+	
 }

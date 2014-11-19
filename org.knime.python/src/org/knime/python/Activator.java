@@ -57,7 +57,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python.typeextension.TypeExtension;
+import org.knime.python.typeextension.TypeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -90,7 +90,7 @@ public class Activator implements BundleActivator {
 				testPythonInstallation();
 			}
 		}).start();
-		TypeExtension.init();
+		TypeExtensions.init();
 	}
 
 	/**

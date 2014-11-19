@@ -216,7 +216,6 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	private void setPythonPath(final String pythonPath) {
 		// If python path has changed retest the underling python installation
-		boolean retest = !pythonPath.equals(getPythonPath());
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode("org.knime.python");
 		prefs.put("pythonPath", pythonPath);
 		try {
@@ -224,12 +223,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		} catch (BackingStoreException e) {
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
-		if (retest) {
-			setInfo("Testing python installation...");
-			setError("");
-			// Test the python installation now so we don't have to do it later
-			testPythonInstallation(true);
-		}
+		setInfo("Testing python installation...");
+		setError("");
+		// Test the python installation now so we don't have to do it later
+		testPythonInstallation(true);
 	}
 
 	/**

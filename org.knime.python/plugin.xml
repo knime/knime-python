@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
-   <extension-point id="org.knime.python.typeextension" name="Python type extension" schema="schema/org.knime.python.typeextension.exsd"/>
+   <extension-point id="org.knime.python.typeextension.knimetopython" name="Python type extension (KNIME to Python)" schema="schema/typeextension.knimetopython.exsd"/>
+   <extension-point id="org.knime.python.typeextension.pythontoknime" name="Python type extension (Python to KNIME)" schema="schema/typeextension.pythontoknime.exsd"/>
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
@@ -12,12 +13,20 @@
       </page>
    </extension>
    <extension
-         point="org.knime.python.typeextension">
+         point="org.knime.python.typeextension.pythontoknime">
+      <type
+            id="org.knime.xml"
+            java-deserializer="org.knime.python.typeextension.example.XMLDeserializer"
+            python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
+            python-type-identifier="xml.dom.minidom.Document">
+      </type>
+   </extension>
+   <extension
+         point="org.knime.python.typeextension.knimetopython">
       <type
             id="org.knime.xml"
             java-serializer="org.knime.python.typeextension.example.XMLSerializer"
-            python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
-            python-type-identifier="xml.dom.minidom.Document">
+            python-deserializer="src/org/knime/python/typeextension/example/XMLDeserializer.py">
       </type>
    </extension>
 

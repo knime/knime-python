@@ -438,6 +438,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 *             If the documentation string does not have the expected
 	 *             content
 	 */
+	@SuppressWarnings("unused")
 	private String functionWithRelevantParameters(final String docString) throws IllegalArgumentException {
 		// Function call is described in the first line of the documentation
 		int endIndex = docString.indexOf("\n\n");
