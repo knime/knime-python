@@ -186,6 +186,8 @@ def run():
                 for deserializer in command.addDeserializers.deserializer:
                     _type_extension_manager.add_deserializer(deserializer.id, deserializer.path)
                 write_dummy()
+            elif command.HasField('shutdown'):
+                exit()
     finally:
         _connection.close()
 

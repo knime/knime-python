@@ -206,6 +206,20 @@ public final class ProtobufPythonKernelCommand {
      * <code>optional .knime.Command.AddDeserializers addDeserializers = 14;</code>
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializersOrBuilder getAddDeserializersOrBuilder();
+
+    // optional .knime.Command.Shutdown shutdown = 15;
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    boolean hasShutdown();
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown getShutdown();
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder getShutdownOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -438,6 +452,19 @@ public final class ProtobufPythonKernelCommand {
                 addDeserializers_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00002000;
+              break;
+            }
+            case 122: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder subBuilder = null;
+              if (((bitField0_ & 0x00004000) == 0x00004000)) {
+                subBuilder = shutdown_.toBuilder();
+              }
+              shutdown_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(shutdown_);
+                shutdown_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00004000;
               break;
             }
           }
@@ -12215,6 +12242,315 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.Deserializer)
     }
 
+    public interface ShutdownOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+    }
+    /**
+     * Protobuf type {@code knime.Command.Shutdown}
+     */
+    public static final class Shutdown extends
+        com.google.protobuf.GeneratedMessage
+        implements ShutdownOrBuilder {
+      // Use Shutdown.newBuilder() to construct.
+      private Shutdown(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private Shutdown(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final Shutdown defaultInstance;
+      public static Shutdown getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public Shutdown getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private Shutdown(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Shutdown_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Shutdown_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<Shutdown> PARSER =
+          new com.google.protobuf.AbstractParser<Shutdown>() {
+        public Shutdown parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new Shutdown(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<Shutdown> getParserForType() {
+        return PARSER;
+      }
+
+      private void initFields() {
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.Shutdown}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Shutdown_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Shutdown_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_Shutdown_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown(this);
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance()) return this;
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.Shutdown)
+      }
+
+      static {
+        defaultInstance = new Shutdown(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.Shutdown)
+    }
+
     private int bitField0_;
     // optional .knime.Command.Execute execute = 1;
     public static final int EXECUTE_FIELD_NUMBER = 1;
@@ -12524,6 +12860,28 @@ public final class ProtobufPythonKernelCommand {
       return addDeserializers_;
     }
 
+    // optional .knime.Command.Shutdown shutdown = 15;
+    public static final int SHUTDOWN_FIELD_NUMBER = 15;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown shutdown_;
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    public boolean hasShutdown() {
+      return ((bitField0_ & 0x00004000) == 0x00004000);
+    }
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown getShutdown() {
+      return shutdown_;
+    }
+    /**
+     * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder getShutdownOrBuilder() {
+      return shutdown_;
+    }
+
     private void initFields() {
       execute_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute.getDefaultInstance();
       putFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.getDefaultInstance();
@@ -12539,6 +12897,7 @@ public final class ProtobufPythonKernelCommand {
       putObject_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject.getDefaultInstance();
       addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
       addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
+      shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -12660,6 +13019,9 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00002000) == 0x00002000)) {
         output.writeMessage(14, addDeserializers_);
       }
+      if (((bitField0_ & 0x00004000) == 0x00004000)) {
+        output.writeMessage(15, shutdown_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -12724,6 +13086,10 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00002000) == 0x00002000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(14, addDeserializers_);
+      }
+      if (((bitField0_ & 0x00004000) == 0x00004000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(15, shutdown_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -12847,6 +13213,7 @@ public final class ProtobufPythonKernelCommand {
           getPutObjectFieldBuilder();
           getAddSerializersFieldBuilder();
           getAddDeserializersFieldBuilder();
+          getShutdownFieldBuilder();
         }
       }
       private static Builder create() {
@@ -12939,6 +13306,12 @@ public final class ProtobufPythonKernelCommand {
           addDeserializersBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00002000);
+        if (shutdownBuilder_ == null) {
+          shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
+        } else {
+          shutdownBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00004000);
         return this;
       }
 
@@ -13079,6 +13452,14 @@ public final class ProtobufPythonKernelCommand {
         } else {
           result.addDeserializers_ = addDeserializersBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
+          to_bitField0_ |= 0x00004000;
+        }
+        if (shutdownBuilder_ == null) {
+          result.shutdown_ = shutdown_;
+        } else {
+          result.shutdown_ = shutdownBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -13136,6 +13517,9 @@ public final class ProtobufPythonKernelCommand {
         }
         if (other.hasAddDeserializers()) {
           mergeAddDeserializers(other.getAddDeserializers());
+        }
+        if (other.hasShutdown()) {
+          mergeShutdown(other.getShutdown());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -14868,6 +15252,123 @@ public final class ProtobufPythonKernelCommand {
         return addDeserializersBuilder_;
       }
 
+      // optional .knime.Command.Shutdown shutdown = 15;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder> shutdownBuilder_;
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public boolean hasShutdown() {
+        return ((bitField0_ & 0x00004000) == 0x00004000);
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown getShutdown() {
+        if (shutdownBuilder_ == null) {
+          return shutdown_;
+        } else {
+          return shutdownBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public Builder setShutdown(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown value) {
+        if (shutdownBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          shutdown_ = value;
+          onChanged();
+        } else {
+          shutdownBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00004000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public Builder setShutdown(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder builderForValue) {
+        if (shutdownBuilder_ == null) {
+          shutdown_ = builderForValue.build();
+          onChanged();
+        } else {
+          shutdownBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00004000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public Builder mergeShutdown(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown value) {
+        if (shutdownBuilder_ == null) {
+          if (((bitField0_ & 0x00004000) == 0x00004000) &&
+              shutdown_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance()) {
+            shutdown_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.newBuilder(shutdown_).mergeFrom(value).buildPartial();
+          } else {
+            shutdown_ = value;
+          }
+          onChanged();
+        } else {
+          shutdownBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00004000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public Builder clearShutdown() {
+        if (shutdownBuilder_ == null) {
+          shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
+          onChanged();
+        } else {
+          shutdownBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00004000);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder getShutdownBuilder() {
+        bitField0_ |= 0x00004000;
+        onChanged();
+        return getShutdownFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder getShutdownOrBuilder() {
+        if (shutdownBuilder_ != null) {
+          return shutdownBuilder_.getMessageOrBuilder();
+        } else {
+          return shutdown_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder> 
+          getShutdownFieldBuilder() {
+        if (shutdownBuilder_ == null) {
+          shutdownBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder>(
+                  shutdown_,
+                  getParentForChildren(),
+                  isClean());
+          shutdown_ = null;
+        }
+        return shutdownBuilder_;
+      }
+
       // @@protoc_insertion_point(builder_scope:knime.Command)
     }
 
@@ -14979,6 +15480,11 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_Deserializer_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_Shutdown_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_Shutdown_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -14988,7 +15494,7 @@ public final class ProtobufPythonKernelCommand {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcommand.proto\022\005knime\032\013table.proto\"\263\r\n\007" +
+      "\n\rcommand.proto\022\005knime\032\013table.proto\"\352\r\n\007" +
       "Command\022\'\n\007execute\030\001 \001(\0132\026.knime.Command" +
       ".Execute\0229\n\020putFlowVariables\030\002 \001(\0132\037.kni" +
       "me.Command.PutFlowVariables\022)\n\010putTable\030" +
@@ -15006,34 +15512,35 @@ public final class ProtobufPythonKernelCommand {
       "Command.PutObject\0225\n\016addSerializers\030\r \001(" +
       "\0132\035.knime.Command.AddSerializers\0229\n\020addD" +
       "eserializers\030\016 \001(\0132\037.knime.Command.AddDe" +
-      "serializers\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002" +
-      "(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017",
-      "integerVariable\030\002 \003(\0132/.knime.Command.Pu" +
-      "tFlowVariables.IntegerVariable\022F\n\016double" +
-      "Variable\030\003 \003(\0132..knime.Command.PutFlowVa" +
-      "riables.DoubleVariable\022F\n\016stringVariable" +
-      "\030\004 \003(\0132..knime.Command.PutFlowVariables." +
-      "StringVariable\032-\n\017IntegerVariable\022\013\n\003key" +
-      "\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022" +
-      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVar" +
-      "iable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010Put" +
-      "Table\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knim",
-      "e.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n" +
-      "\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013" +
-      "\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVa" +
-      "riables\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014A" +
-      "utoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030" +
-      "\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key" +
-      "\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutO" +
-      "bject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(" +
-      "\014\032?\n\016AddSerializers\022-\n\nserializer\030\001 \003(\0132" +
-      "\031.knime.Command.Serializer\0324\n\nSerializer",
-      "\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t" +
-      "\032E\n\020AddDeserializers\0221\n\014deserializer\030\001 \003" +
-      "(\0132\033.knime.Command.Deserializer\032(\n\014Deser" +
-      "ializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\tB<\n\035org" +
-      ".knime.python.kernel.protoB\033ProtobufPyth" +
-      "onKernelCommand"
+      "serializers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Co" +
+      "mmand.Shutdown\032\035\n\007Execute\022\022\n\nsourceCode\030",
+      "\001 \002(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022" +
+      "H\n\017integerVariable\030\002 \003(\0132/.knime.Command" +
+      ".PutFlowVariables.IntegerVariable\022F\n\016dou" +
+      "bleVariable\030\003 \003(\0132..knime.Command.PutFlo" +
+      "wVariables.DoubleVariable\022F\n\016stringVaria" +
+      "ble\030\004 \003(\0132..knime.Command.PutFlowVariabl" +
+      "es.StringVariable\032-\n\017IntegerVariable\022\013\n\003" +
+      "key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariab" +
+      "le\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016String" +
+      "Variable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010",
+      "PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.k" +
+      "nime.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t" +
+      "\022\033\n\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetTabl" +
+      "e\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rLis" +
+      "tVariables\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@" +
+      "\n\014AutoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004li" +
+      "ne\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003" +
+      "key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tP" +
+      "utObject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002" +
+      " \002(\014\032?\n\016AddSerializers\022-\n\nserializer\030\001 \003",
+      "(\0132\031.knime.Command.Serializer\0324\n\nSeriali" +
+      "zer\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 " +
+      "\002(\t\032E\n\020AddDeserializers\0221\n\014deserializer\030" +
+      "\001 \003(\0132\033.knime.Command.Deserializer\032(\n\014De" +
+      "serializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010" +
+      "ShutdownB<\n\035org.knime.python.kernel.prot" +
+      "oB\033ProtobufPythonKernelCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -15045,7 +15552,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -15160,6 +15667,12 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_Deserializer_descriptor,
               new java.lang.String[] { "Id", "Path", });
+          internal_static_knime_Command_Shutdown_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(16);
+          internal_static_knime_Command_Shutdown_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_Shutdown_descriptor,
+              new java.lang.String[] { });
           return null;
         }
       };

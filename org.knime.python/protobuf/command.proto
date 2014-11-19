@@ -20,6 +20,7 @@ message Command {
 	optional PutObject putObject = 12;
 	optional AddSerializers addSerializers = 13;
 	optional AddDeserializers addDeserializers = 14;
+	optional Shutdown shutdown = 15;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -107,6 +108,9 @@ message Command {
 	message Deserializer {
 		required string id = 1;
 		required string path = 2;
+	}
+	
+	message Shutdown {
 	}
 	
 }

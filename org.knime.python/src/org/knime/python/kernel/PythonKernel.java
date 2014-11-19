@@ -103,6 +103,7 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObje
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Reset;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown;
 import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
@@ -712,35 +713,50 @@ public class PythonKernel {
 	 */
 	public void close() {
 		if (!m_closed) {
-			try {
-				m_serverSocket.close();
-			} catch (Throwable t) {
-			}
-			try {
-				m_socket.close();
-			} catch (Throwable t) {
-			}
-			printStreamToLog();
-			// If the original process was a script we have to kill the actual
-			// Python process by PID
-			if (m_pid >= 0) {
-				try {
-					ProcessBuilder pb;
-					if (System.getProperty("os.name").toLowerCase().contains("win")) {
-						pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
-					} else {
-						pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
-					}
-					pb.start();
-				} catch (IOException e) {
-					//
-				}
-			} else {
-				m_process.destroy();
-			}
+			m_closed = true;
 			new Thread(new Runnable() {
-				@Override
 				public void run() {
+					printStreamToLog();
+					// Send shutdown
+					try {
+						Command.Builder commandBuilder = Command.newBuilder();
+						commandBuilder.setShutdown(Shutdown.newBuilder());
+						OutputStream outToServer = m_socket.getOutputStream();
+						writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+						// Give it some time to shutdown before we force it
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							//
+						}
+					} catch (Throwable t) {
+						// continue with killing
+					}
+					try {
+						m_serverSocket.close();
+					} catch (Throwable t) {
+					}
+					try {
+						m_socket.close();
+					} catch (Throwable t) {
+					}
+					// If the original process was a script we have to kill the actual
+					// Python process by PID
+					if (m_pid >= 0) {
+						try {
+							ProcessBuilder pb;
+							if (System.getProperty("os.name").toLowerCase().contains("win")) {
+								pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
+							} else {
+								pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
+							}
+							pb.start();
+						} catch (IOException e) {
+							//
+						}
+					} else {
+						m_process.destroy();
+					}
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -749,7 +765,6 @@ public class PythonKernel {
 					printStreamToLog();
 				}
 			}).start();
-			m_closed = true;
 		}
 	}
 	
