@@ -307,7 +307,7 @@ abstract public class SourceCodePanel extends JPanel {
 	private Style m_normalStyle;
 
 	private Style m_errorStyle;
-	private RSyntaxTextArea m_editor = new RSyntaxTextArea();
+	private RSyntaxTextArea m_editor;
 
 	private StatusBar m_statusBar = new StatusBar();
 
@@ -357,6 +357,7 @@ abstract public class SourceCodePanel extends JPanel {
 	 *            Name of the output image variables
 	 */
 	public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
+		m_editor = createEditor(syntaxStyle);
 		m_variableNames = variableNames;
 		if (variableNames.getOutputImages().length > 1) {
 			m_showImages.setText("Show Images");
@@ -435,17 +436,6 @@ abstract public class SourceCodePanel extends JPanel {
 		// Console style for errors with red text
 		m_errorStyle = m_console.addStyle("errorstyle", null);
 		StyleConstants.setForeground(m_errorStyle, Color.red);
-		// Configure editor
-		m_editor.setSyntaxEditingStyle(syntaxStyle);
-		m_editor.setCodeFoldingEnabled(true);
-		m_editor.setAntiAliasingEnabled(true);
-		m_editor.setAutoIndentEnabled(true);
-		m_editor.setFadeCurrentLineHighlight(true);
-		m_editor.setHighlightCurrentLine(true);
-		m_editor.setLineWrap(false);
-		m_editor.setRoundedSelectionEdges(true);
-		m_editor.setBorder(new EtchedBorder());
-		m_editor.setTabSize(4);
 		// Configure auto completion
 		CompletionProvider provider = createCompletionProvider();
 		AutoCompletion ac = new AutoCompletion(provider);
@@ -1036,6 +1026,25 @@ abstract public class SourceCodePanel extends JPanel {
 	 */
 	protected VariableNames getVariableNames() {
 		return m_variableNames;
+	}
+	
+	RSyntaxTextArea getEditor() {
+		return m_editor;
+	}
+	
+	static RSyntaxTextArea createEditor(final String syntaxStyle) {
+		RSyntaxTextArea editor = new RSyntaxTextArea();
+		editor.setSyntaxEditingStyle(syntaxStyle);
+		editor.setCodeFoldingEnabled(true);
+		editor.setAntiAliasingEnabled(true);
+		editor.setAutoIndentEnabled(true);
+		editor.setFadeCurrentLineHighlight(true);
+		editor.setHighlightCurrentLine(true);
+		editor.setLineWrap(false);
+		editor.setRoundedSelectionEdges(true);
+		editor.setBorder(new EtchedBorder());
+		editor.setTabSize(4);
+		return editor;
 	}
 
 }

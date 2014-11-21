@@ -48,6 +48,7 @@
 package org.knime.python.nodes.script2in1out;
 
 import org.knime.code.generic.SourceCodeOptionsPanel;
+import org.knime.code.generic.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
@@ -68,6 +69,7 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
 	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
 	 * Create the dialog for this node.
@@ -75,8 +77,10 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
 	protected PythonScript2In1OutNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonScript2In1OutNodeConfig.getVariableNames());
 		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script-2in1out");
 		addTab("Script", m_sourceCodePanel, false);
 		addTab("Options", m_sourceCodeOptionsPanel, true);
+		addTab("Templates", m_templatesPanel, true);
 	}
 
 	/**

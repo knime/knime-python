@@ -48,6 +48,7 @@
 package org.knime.python.nodes.script;
 
 import org.knime.code.generic.SourceCodeOptionsPanel;
+import org.knime.code.generic.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
@@ -68,6 +69,7 @@ class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
 	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
 	 * Create the dialog for this node.
@@ -75,8 +77,10 @@ class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
 	protected PythonScriptNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptNodeConfig.getVariableNames());
 		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
 		addTab("Script", m_sourceCodePanel, false);
 		addTab("Options", m_sourceCodeOptionsPanel, true);
+		addTab("Templates", m_templatesPanel, true);
 	}
 
 	/**

@@ -47,6 +47,7 @@
  */
 package org.knime.python.nodes.objectwriter;
 
+import org.knime.code.generic.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
@@ -69,13 +70,16 @@ import org.knime.python.port.PickledObjectPortObject;
 class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
+	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
 	 * Create the dialog for this node.
 	 */
 	protected PythonObjectWriterNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
+		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
 		addTab("Script", m_sourceCodePanel, false);
+		addTab("Templates", m_templatesPanel, true);
 	}
 
 	/**

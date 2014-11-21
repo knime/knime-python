@@ -47,6 +47,7 @@
  */
 package org.knime.python.nodes.objectreader;
 
+import org.knime.code.generic.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -65,13 +66,16 @@ import org.knime.core.node.workflow.FlowVariable;
 class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
+	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
 	 * Create the dialog for this node.
 	 */
 	protected PythonObjectReaderNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames());
+		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
 		addTab("Script", m_sourceCodePanel, false);
+		addTab("Templates", m_templatesPanel, true);
 	}
 
 	/**
