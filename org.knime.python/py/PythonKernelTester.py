@@ -16,6 +16,7 @@ def main():
 # check for all libs that are required by the python kernel
 def check_required_libs():
     python3 = sys.version_info >= (3, 0)
+    check_version_python()
     # these libs should be standard
     if python3:
         check_lib('io')
@@ -33,20 +34,23 @@ def check_required_libs():
     check_lib('types')
     # these libs are non standard requirements
     check_lib('numpy')
-    check_lib('pandas', ['DataFrame'])
-    check_lib('google.protobuf')
-    # check lib versions
-    check_version_python()
-    check_version_pandas()
+    if check_lib('pandas', ['DataFrame']):
+        check_version_pandas()
+    if check_lib('google.protobuf'):
+        check_version_protobuf()
 
 
 def check_lib(lib, cls=[]):
+    error = False
     if not lib_available(lib):
+        error = True
         add_to_message('Library ' + lib + ' is missing')
     else:
         for cl in cls:
             if not class_available(lib, cl):
+                error = True
                 add_to_message('Class ' + cl + ' in library ' + lib + ' is missing')
+    return not error
 
 
 def class_available(lib, cls):
@@ -97,6 +101,13 @@ def check_version_pandas():
             add_to_message('Installed pandas version is ' + '.'.join(version) + ', required minimum is ' + '.'.join(min_version))
     except:
         add_to_message('Could not detect pandas version')
+
+
+def check_version_protobuf():
+    try:
+        import table_pb2
+    except Exception as e:
+        add_to_message('Error while trying to load protobuf: ' + str(e))
 
 
 def add_to_message(line):
