@@ -55,8 +55,15 @@ public class SourceCodeTemplatesPanel extends JPanel {
 
 	public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel,
 			final String repositoryId) {
+		this(sourceCodePanel, null, null, repositoryId);
+	}
+
+	public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel,
+			final String pluginId, final String predefinedTemplatesFolder,
+			final String repositoryId) {
 		m_sourceCodePanel = sourceCodePanel;
-		m_repository = new SourceCodeTemplateRepository(repositoryId);
+		m_repository = new SourceCodeTemplateRepository(pluginId,
+				predefinedTemplatesFolder, repositoryId);
 		m_editor = SourceCodePanel.createEditor(m_sourceCodePanel.getEditor()
 				.getSyntaxEditingStyle());
 		m_editor.setEditable(false);
@@ -101,8 +108,14 @@ public class SourceCodeTemplatesPanel extends JPanel {
 		setLayout(new BorderLayout());
 		add(split, BorderLayout.CENTER);
 		JPanel editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-		int maxWidth = Math.max(Math.max(m_create.getPreferredSize().width, m_apply.getPreferredSize().width), m_remove.getPreferredSize().width);
-		int maxHeight = Math.max(Math.max(m_create.getPreferredSize().height, m_apply.getPreferredSize().height), m_remove.getPreferredSize().height);
+		int maxWidth = Math.max(
+				Math.max(m_create.getPreferredSize().width,
+						m_apply.getPreferredSize().width),
+				m_remove.getPreferredSize().width);
+		int maxHeight = Math.max(
+				Math.max(m_create.getPreferredSize().height,
+						m_apply.getPreferredSize().height),
+				m_remove.getPreferredSize().height);
 		Dimension dimension = new Dimension(maxWidth, maxHeight);
 		m_create.setPreferredSize(dimension);
 		m_apply.setPreferredSize(dimension);
@@ -189,7 +202,7 @@ public class SourceCodeTemplatesPanel extends JPanel {
 			m_editor.setText("");
 		}
 		m_apply.setEnabled(template != null);
-		m_remove.setEnabled(template != null);
+		m_remove.setEnabled(template != null && !template.isPredefined());
 	}
 
 	private void openCreateDialog() {
@@ -298,28 +311,15 @@ public class SourceCodeTemplatesPanel extends JPanel {
 		dialog.setVisible(true);
 		// Continues here after dialog is closed
 		if (apply.get()) {
-			String error = "";
-			if (category.getSelectedItem() == null
-					|| category.getSelectedItem().toString().isEmpty()) {
-				error = "Category must not be empty";
-			} else if (title.getText().isEmpty()) {
-				error = "Title must not be empty";
-			}
-			if (!error.isEmpty()) {
-				JOptionPane.showMessageDialog(this, error,
+			try {
+				m_repository.createTemplate(
+						(String) category.getSelectedItem(), title.getText(),
+						description.getText(), m_sourceCodePanel.getEditor()
+								.getText());
+				refreshCategories();
+			} catch (IOException | IllegalArgumentException e) {
+				JOptionPane.showMessageDialog(this, e.getMessage(),
 						"Could not create template", JOptionPane.ERROR_MESSAGE);
-			} else {
-				try {
-					m_repository.createTemplate(category.getSelectedItem()
-							.toString(), title.getText(),
-							description.getText(), m_sourceCodePanel
-									.getEditor().getText());
-					refreshCategories();
-				} catch (IOException e) {
-					JOptionPane.showMessageDialog(this, e.getMessage(),
-							"Could not create template file",
-							JOptionPane.ERROR_MESSAGE);
-				}
 			}
 		}
 		dialog.dispose();

@@ -13,6 +13,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
+import org.knime.python.Activator;
 
 public class SourceCodeTemplateRepository {
 
@@ -25,16 +26,19 @@ public class SourceCodeTemplateRepository {
 	private File m_templatesFolder;
 	private Map<String, Set<SourceCodeTemplate>> m_categorizedTemplates;
 
-	public SourceCodeTemplateRepository(final String repositoryId) {
+	public SourceCodeTemplateRepository(final String pluginId, final String predefinedTemplatesFolder, final String repositoryId) {
 		m_id = repositoryId;
 		m_templatesFolder = new File(new File(new File(
-				KNIMEConstants.getKNIMEHomeDir()), "python-templates"),
-				repositoryId);
+				KNIMEConstants.getKNIMEHomeDir()), "sourcecode-templates"),
+				m_id);
 		if (!m_templatesFolder.exists()) {
 			m_templatesFolder.mkdirs();
 		}
 		m_categorizedTemplates = new TreeMap<String, Set<SourceCodeTemplate>>();
-		loadTemplates();
+		if (pluginId != null && predefinedTemplatesFolder != null) {
+			loadTemplates(new File(Activator.getFile(pluginId, predefinedTemplatesFolder), m_id), true);
+		}
+		loadTemplates(m_templatesFolder, false);
 	}
 
 	public Set<String> getCategories() {
@@ -50,10 +54,15 @@ public class SourceCodeTemplateRepository {
 
 	public void createTemplate(final String category, final String title,
 			final String description, final String sourceCode)
-			throws IOException {
+			throws IOException, IllegalArgumentException {
+		if (category == null || category.isEmpty()) {
+			throw new IllegalArgumentException("Category must not be empty");
+		} else if (title == null || title.isEmpty()) {
+			throw new IllegalArgumentException("Title must not be empty");
+		}
 		String fileName = generateFileName(title);
 		SourceCodeTemplate template = new SourceCodeTemplate(fileName,
-				category, title, description, sourceCode);
+				category, title, description, sourceCode, false);
 		saveTemplateFile(template);
 		putIntoMap(template);
 	}
@@ -79,7 +88,7 @@ public class SourceCodeTemplateRepository {
 	}
 
 	private String generateFileName(final String title) throws IOException {
-		return File.createTempFile(title + "_", ".xml", m_templatesFolder)
+		return File.createTempFile(title + "__", ".xml", m_templatesFolder)
 				.getName();
 	}
 
@@ -102,21 +111,23 @@ public class SourceCodeTemplateRepository {
 		}
 	}
 
-	private void loadTemplates() {
-		for (File file : m_templatesFolder.listFiles()) {
-			if (!file.isDirectory()) {
-				try {
-					NodeSettingsRO settings = NodeSettings
-							.loadFromXML(new FileInputStream(file));
-					String category = settings.getString(CATEGORY_CFG);
-					String title = settings.getString(TITLE_CFG);
-					String description = settings.getString(DESCRIPTION_CFG);
-					String sourceCode = settings.getString(SOURCECODE_CFG);
-					SourceCodeTemplate template = new SourceCodeTemplate(
-							file.getName(), category, title, description,
-							sourceCode);
-					putIntoMap(template);
-				} catch (IOException | InvalidSettingsException e) {
+	private void loadTemplates(final File folder, final boolean predefined) {
+		if (folder.isDirectory()) {
+			for (File file : folder.listFiles()) {
+				if (!file.isDirectory()) {
+					try {
+						NodeSettingsRO settings = NodeSettings
+								.loadFromXML(new FileInputStream(file));
+						String category = settings.getString(CATEGORY_CFG);
+						String title = settings.getString(TITLE_CFG);
+						String description = settings.getString(DESCRIPTION_CFG);
+						String sourceCode = settings.getString(SOURCECODE_CFG);
+						SourceCodeTemplate template = new SourceCodeTemplate(
+								file.getName(), category, title, description,
+								sourceCode, predefined);
+						putIntoMap(template);
+					} catch (IOException | InvalidSettingsException e) {
+					}
 				}
 			}
 		}
