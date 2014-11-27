@@ -63,12 +63,8 @@ public class PythonKernelTestResult {
 	 * 
 	 * @param message
 	 *            The result message containing detailed information
-	 * @param error
-	 *            true if the installation is not capable of running the python
-	 *            kernel, false otherwise
 	 */
-	PythonKernelTestResult(final String message, final boolean error) {
-		m_error = error;
+	PythonKernelTestResult(final String message) {
 		int endOfLineOne = message.indexOf(System.lineSeparator());
 		if (endOfLineOne < 0) {
 			endOfLineOne = message.length();
@@ -81,6 +77,9 @@ public class PythonKernelTestResult {
 		if (m_version == null) {
 			m_error = true;
 			m_message = "Could not detect python version";
+		}
+		if (!m_message.isEmpty()) {
+			m_error = true;
 		}
 	}
 

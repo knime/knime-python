@@ -100,7 +100,7 @@ def check_version_pandas():
         if smaller:
             add_to_message('Installed pandas version is ' + '.'.join(version) + ', required minimum is ' + '.'.join(min_version))
     except:
-        add_to_message('Could not detect pandas version')
+        add_to_message('Could not detect pandas version, required minimum is ' + '.'.join(min_version))
 
 
 def check_version_protobuf():

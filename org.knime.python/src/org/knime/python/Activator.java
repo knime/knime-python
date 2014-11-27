@@ -131,12 +131,12 @@ public class Activator implements BundleActivator {
 			IOUtils.copy(process.getInputStream(), writer);
 			// Create test result with console output as message and error code
 			// != 0 as error
-			pythonTestResult = new PythonKernelTestResult(writer.toString(), process.waitFor() != 0);
+			pythonTestResult = new PythonKernelTestResult(writer.toString());
 			return pythonTestResult;
 		} catch (Throwable t) {
 			LOGGER.error(t.getMessage(), t);
 			// Python could not be started
-			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'", true);
+			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
 		}
 	}
 
