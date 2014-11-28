@@ -82,7 +82,7 @@ def check_version_python():
 
 
 def check_version_pandas():
-    min_version = '0.13.0'.split('.')
+    min_version = '0.7.0'.split('.')
     try:
         import pandas
         version = pandas.__version__.split('.')
