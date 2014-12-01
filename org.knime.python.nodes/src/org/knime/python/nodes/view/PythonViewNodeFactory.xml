@@ -55,6 +55,17 @@
 				Changes only take effect after reseting the workspace.
 			</option>
 		</tab>
+		<tab name="Templates">
+			<option name="Create from editor...">
+				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-view</i>
+			</option>
+			<option name="Remove selected">
+				Removes the selected template.<br/><br />Note: Templates provided by plugins can not be removed.
+			</option>
+			<option name="Apply selected">
+				Replaces the script contained in the editor of the script tab with the selected template.
+			</option>
+		</tab>
 	</fullDescription>
 
 	<ports>
