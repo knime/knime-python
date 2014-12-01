@@ -1,4 +1,4 @@
-package org.knime.code.generic;
+package org.knime.code.generic.templates;
 
 import java.io.File;
 import java.io.FileInputStream;

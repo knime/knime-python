@@ -15,6 +15,7 @@ Require-Bundle: org.fife.rsyntaxtextarea;bundle-version="[2.5.3,2.6.0)",
  org.eclipse.core.resources;bundle-version="[3.7.101,4.0.0)",
  org.knime.ext.svg;bundle-version="[2.11.0,3.0.0)"
 Export-Package: org.knime.code.generic,
+ org.knime.code.generic.templates,
  org.knime.code.python,
  org.knime.python,
  org.knime.python.kernel,

@@ -55,9 +55,10 @@ import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
-import org.knime.code.generic.SourceCodeTemplatesExtensions;
+import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
+import org.knime.python.kernel.PythonModuleExtensions;
 import org.knime.python.typeextension.TypeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -93,6 +94,7 @@ public class Activator implements BundleActivator {
 		}).start();
 		TypeExtensions.init();
 		SourceCodeTemplatesExtensions.init();
+		PythonModuleExtensions.init();
 	}
 
 	/**

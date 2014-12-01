@@ -1,4 +1,4 @@
-package org.knime.code.generic;
+package org.knime.code.generic.templates;
 
 public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 

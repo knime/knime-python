@@ -21,6 +21,7 @@ message Command {
 	optional AddSerializers addSerializers = 13;
 	optional AddDeserializers addDeserializers = 14;
 	optional Shutdown shutdown = 15;
+	optional AddModules addModules = 16;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -111,6 +112,10 @@ message Command {
 	}
 	
 	message Shutdown {
+	}
+	
+	message AddModules {
+		repeated string modulePath = 1;
 	}
 	
 }

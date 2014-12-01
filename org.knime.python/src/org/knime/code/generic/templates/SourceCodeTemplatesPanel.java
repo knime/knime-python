@@ -1,4 +1,4 @@
-package org.knime.code.generic;
+package org.knime.code.generic.templates;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -36,6 +36,7 @@ import javax.swing.event.ListSelectionListener;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.knime.code.generic.SourceCodePanel;
 
 public class SourceCodeTemplatesPanel extends JPanel {
 

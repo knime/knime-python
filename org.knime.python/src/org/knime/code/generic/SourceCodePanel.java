@@ -1028,11 +1028,11 @@ abstract public class SourceCodePanel extends JPanel {
 		return m_variableNames;
 	}
 	
-	RSyntaxTextArea getEditor() {
+	public RSyntaxTextArea getEditor() {
 		return m_editor;
 	}
 	
-	static RSyntaxTextArea createEditor(final String syntaxStyle) {
+	public static RSyntaxTextArea createEditor(final String syntaxStyle) {
 		RSyntaxTextArea editor = new RSyntaxTextArea();
 		editor.setSyntaxEditingStyle(syntaxStyle);
 		editor.setCodeFoldingEnabled(true);

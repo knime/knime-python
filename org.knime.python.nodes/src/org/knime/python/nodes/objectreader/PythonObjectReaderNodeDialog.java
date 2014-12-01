@@ -47,7 +47,7 @@
  */
 package org.knime.python.nodes.objectreader;
 
-import org.knime.code.generic.SourceCodeTemplatesPanel;
+import org.knime.code.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;

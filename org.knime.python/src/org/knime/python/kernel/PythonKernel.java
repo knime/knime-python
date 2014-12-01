@@ -85,6 +85,7 @@ import org.knime.python.kernel.proto.ProtobufKnimeTable.Table;
 import org.knime.python.kernel.proto.ProtobufPickledObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AppendToTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete;
@@ -213,6 +214,17 @@ public class PythonKernel {
 					.setPath(typeExtension.getPythonDeserializerPath()));
 		}
 		commandBuilder.setAddDeserializers(addDeserializers);
+		outToServer = m_socket.getOutputStream();
+		inFromServer = m_socket.getInputStream();
+		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+		readMessageBytes(inFromServer);
+		// Python modules
+		commandBuilder = Command.newBuilder();
+		AddModules.Builder addModules = AddModules.newBuilder();
+		for (String module : PythonModuleExtensions.getPythonModules()) {
+			addModules.addModulePath(module);
+		}
+		commandBuilder.setAddModules(addModules);
 		outToServer = m_socket.getOutputStream();
 		inFromServer = m_socket.getInputStream();
 		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
