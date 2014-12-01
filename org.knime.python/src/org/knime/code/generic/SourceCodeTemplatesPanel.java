@@ -55,15 +55,8 @@ public class SourceCodeTemplatesPanel extends JPanel {
 
 	public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel,
 			final String repositoryId) {
-		this(sourceCodePanel, null, null, repositoryId);
-	}
-
-	public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel,
-			final String pluginId, final String predefinedTemplatesFolder,
-			final String repositoryId) {
 		m_sourceCodePanel = sourceCodePanel;
-		m_repository = new SourceCodeTemplateRepository(pluginId,
-				predefinedTemplatesFolder, repositoryId);
+		m_repository = new SourceCodeTemplateRepository(repositoryId);
 		m_editor = SourceCodePanel.createEditor(m_sourceCodePanel.getEditor()
 				.getSyntaxEditingStyle());
 		m_editor.setEditable(false);

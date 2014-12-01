@@ -13,7 +13,6 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
-import org.knime.python.Activator;
 
 public class SourceCodeTemplateRepository {
 
@@ -26,7 +25,7 @@ public class SourceCodeTemplateRepository {
 	private File m_templatesFolder;
 	private Map<String, Set<SourceCodeTemplate>> m_categorizedTemplates;
 
-	public SourceCodeTemplateRepository(final String pluginId, final String predefinedTemplatesFolder, final String repositoryId) {
+	public SourceCodeTemplateRepository(final String repositoryId) {
 		m_id = repositoryId;
 		m_templatesFolder = new File(new File(new File(
 				KNIMEConstants.getKNIMEHomeDir()), "sourcecode-templates"),
@@ -35,8 +34,8 @@ public class SourceCodeTemplateRepository {
 			m_templatesFolder.mkdirs();
 		}
 		m_categorizedTemplates = new TreeMap<String, Set<SourceCodeTemplate>>();
-		if (pluginId != null && predefinedTemplatesFolder != null) {
-			loadTemplates(new File(Activator.getFile(pluginId, predefinedTemplatesFolder), m_id), true);
+		for (File templateFolder : SourceCodeTemplatesExtensions.getTemplateFolders()) {
+			loadTemplates(new File(templateFolder, m_id), true);
 		}
 		loadTemplates(m_templatesFolder, false);
 	}
