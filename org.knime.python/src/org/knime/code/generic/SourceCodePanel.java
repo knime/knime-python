@@ -529,6 +529,7 @@ abstract public class SourceCodePanel extends JPanel {
 					m_editor.insert(
 							createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()),
 							m_editor.getCaretPosition());
+					m_editor.requestFocus();
 				}
 			}
 		});
@@ -540,6 +541,7 @@ abstract public class SourceCodePanel extends JPanel {
 					// TODO add support for multiple tables
 					m_editor.insert(createVariableAccessString(m_variableNames.getInputTables()[0], column.getName()),
 							m_editor.getCaretPosition());
+					m_editor.requestFocus();
 				}
 			}
 		});
