@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
-import org.knime.core.node.ExecutionContext;
+import org.knime.core.data.filestore.FileStoreFactory;
 
 public abstract class Deserializer<Value extends DataValue> {
 	
@@ -19,6 +19,6 @@ public abstract class Deserializer<Value extends DataValue> {
 		return m_type;
 	}
 	
-	public abstract DataCell deserialize(final byte[] bytes, final ExecutionContext exec) throws IOException;
+	public abstract DataCell deserialize(final byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException;
 
 }

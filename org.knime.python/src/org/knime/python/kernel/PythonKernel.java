@@ -69,6 +69,7 @@ import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
@@ -476,7 +477,7 @@ public class PythonKernel {
 					// the specs of the table
 					container = ProtobufConverter.createContainerFromProtobuf(table, exec);
 				}
-				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, exec);
+				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, FileStoreFactory.createWorkflowFileStoreFactory(exec));
 			}
 		}
 		container.close();
