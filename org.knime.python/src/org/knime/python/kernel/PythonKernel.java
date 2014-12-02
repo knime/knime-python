@@ -476,7 +476,7 @@ public class PythonKernel {
 					// the specs of the table
 					container = ProtobufConverter.createContainerFromProtobuf(table, exec);
 				}
-				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor);
+				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, exec);
 			}
 		}
 		container.close();

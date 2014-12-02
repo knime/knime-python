@@ -535,9 +535,9 @@ class ProtobufConverter {
 	 *             If an error occured
 	 */
 	static void addRowsFromProtobuf(final Table table, final BufferedDataContainer container, final int rowsOverall,
-			final ExecutionMonitor executionMonitor) throws IOException {
+			final ExecutionMonitor executionMonitor, final ExecutionContext exec) throws IOException {
 		for (int i = 0; i < table.getNumRows(); i++) {
-			container.addRowToTable(createRow(table, i));
+			container.addRowToTable(createRow(table, i, exec));
 			if (executionMonitor != null) {
 				try {
 					executionMonitor.checkCanceled();
@@ -561,7 +561,7 @@ class ProtobufConverter {
 	 *             If an error occured
 	 */
 	@SuppressWarnings("rawtypes")
-	private static DataRow createRow(final Table table, final int index) throws IOException {
+	private static DataRow createRow(final Table table, final int index, final ExecutionContext exec) throws IOException {
 		DataCell[] cells = new DataCell[table.getNumCols()];
 		List<ColumnReference> colRefList = table.getColRefList();
 		for (int i = 0; i < colRefList.size(); i++) {
@@ -683,7 +683,7 @@ class ProtobufConverter {
 					for (Table.ObjectValue singleValue : value.getValueList()) {
 						Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
 						cells[i] = singleValue.hasValue() ? deserializer
-								.deserialize(singleValue.getValue().toByteArray()) : new MissingCell(null);
+								.deserialize(singleValue.getValue().toByteArray(), exec) : new MissingCell(null);
 					}
 					cells[i] = column.getIsSet() ? CollectionCellFactory.createSetCell(singleCells)
 							: CollectionCellFactory.createListCell(singleCells);
@@ -692,7 +692,7 @@ class ProtobufConverter {
 				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
 				Table.ObjectValue value = column.getObjectValue(index);
 				Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
-				cells[i] = value.hasValue() ? deserializer.deserialize(value.getValue().toByteArray()) : new MissingCell(
+				cells[i] = value.hasValue() ? deserializer.deserialize(value.getValue().toByteArray(), exec) : new MissingCell(
 						null);
 			}
 		}
