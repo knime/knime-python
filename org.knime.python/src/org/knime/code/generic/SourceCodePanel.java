@@ -617,6 +617,7 @@ abstract public class SourceCodePanel extends JPanel {
 		// Clean console and variables table
 		m_console.setText("");
 		m_varsModel.setRowCount(0);
+		m_statusBar.getProgressBar().setValue(0);
 	}
 
 	/**

@@ -90,6 +90,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	private PickledObject[] m_inputObjects = new PickledObject[0];
 	private Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
+	private JProgressBarProgressMonitor m_progressMonitor;
 
 	/**
 	 * Create a python source code panel.
@@ -140,6 +141,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									// instance
 									m_lock.lock();
 									m_kernelRestarts++;
+									if (m_progressMonitor != null) {
+										m_progressMonitor.setCanceled(true);
+									}
 									m_kernelManager.close();
 									// Disable interactivity while we restart
 									// the kernel
@@ -169,6 +173,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		super.close();
 		if (m_kernelManager != null) {
 			setInteractive(false);
+			if (m_progressMonitor != null) {
+				m_progressMonitor.setCanceled(true);
+			}
 			m_kernelManager.close();
 			m_kernelManager = null;
 		}
@@ -382,12 +389,16 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		if (m_kernelManager != null) {
 			setRunning(true);
 			setStatusMessage("Loading input data into python");
+			m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
 			m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData, getVariableNames()
 					.getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(), m_inputObjects,
 					new PythonKernelResponseHandler<Void>() {
 						@Override
 						public void handleResponse(Void response, Exception exception) {
 							if (exception != null) {
+								if (m_progressMonitor != null) {
+									m_progressMonitor.setCanceled(true);
+								}
 								if (m_kernelManager != null) {
 									m_kernelManager.close();
 									m_kernelManager = null;
@@ -399,7 +410,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 							}
 							setRunning(false);
 						}
-					}, new ExecutionMonitor(new JProgressBarProgressMonitor(getProgressBar())), getRowLimit());
+					}, new ExecutionMonitor(m_progressMonitor), getRowLimit());
 		}
 	}
 

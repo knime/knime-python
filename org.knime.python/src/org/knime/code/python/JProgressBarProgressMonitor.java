@@ -63,6 +63,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 
 	private JProgressBar m_progressBar;
 	private double m_progress;
+	private boolean m_isCanceled;
 
 	/**
 	 * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
@@ -71,6 +72,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 *            Progress bar that will display the progress
 	 */
 	public JProgressBarProgressMonitor(final JProgressBar progressBar) {
+		m_isCanceled = false;
 		m_progressBar = progressBar;
 		m_progressBar.setIndeterminate(false);
 		m_progressBar.setMinimum(0);
@@ -84,7 +86,13 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 */
 	@Override
 	public void checkCanceled() throws CanceledExecutionException {
-		// do nothing
+		if (m_isCanceled) {
+            throw new CanceledExecutionException();
+        }
+	}
+	
+	public void setCanceled(final boolean canceled) {
+		m_isCanceled = canceled;
 	}
 
 	/**
