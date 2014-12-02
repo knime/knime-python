@@ -388,7 +388,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						@Override
 						public void handleResponse(Void response, Exception exception) {
 							if (exception != null) {
-								m_kernelManager.close();
+								if (m_kernelManager != null) {
+									m_kernelManager.close();
+									m_kernelManager = null;
+								}
 								setInteractive(false);
 								logError(exception, "Error while loading input data into python");
 							} else {

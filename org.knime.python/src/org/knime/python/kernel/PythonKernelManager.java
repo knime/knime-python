@@ -57,7 +57,9 @@ import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.util.ThreadPool;
 import org.knime.python.port.PickledObject;
 
 /**
@@ -68,6 +70,9 @@ import org.knime.python.port.PickledObject;
  */
 public class PythonKernelManager {
 
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelManager.class);
+
+	private ThreadPool m_threadPool;
 	private PythonKernel m_kernel;
 
 	/**
@@ -76,6 +81,7 @@ public class PythonKernelManager {
 	 * @throws IOException
 	 */
 	public PythonKernelManager() throws IOException {
+		m_threadPool = new ThreadPool(8);
 		m_kernel = new PythonKernel();
 	}
 
@@ -362,6 +368,9 @@ public class PythonKernelManager {
 	 * Closes the underling python kernel.
 	 */
 	public synchronized void close() {
+		m_threadPool.interruptAll();
+		m_threadPool.shutdown();
+		m_threadPool = new ThreadPool(8);
 		m_kernel.close();
 	}
 
@@ -372,8 +381,11 @@ public class PythonKernelManager {
 	 *            The runnable to run
 	 */
 	private void runInThread(final Runnable runnable) {
-		// TODO switch to thread pool
-		new Thread(runnable).start();
+		try {
+			m_threadPool.submit(runnable);
+		} catch (InterruptedException e) {
+			LOGGER.warn(e);
+		}
 	}
 
 }
