@@ -781,17 +781,19 @@ public class PythonKernel {
 	}
 	
 	private void printStreamToLog() {
-		try {
-			String out = readAvailableBytesFromStream(m_process.getInputStream());
-			String error = readAvailableBytesFromStream(m_process.getErrorStream());
-			if (!out.isEmpty()) {
-				LOGGER.info(out);
+		if (m_process != null) {
+			try {
+				String out = readAvailableBytesFromStream(m_process.getInputStream());
+				String error = readAvailableBytesFromStream(m_process.getErrorStream());
+				if (!out.isEmpty()) {
+					LOGGER.info(out);
+				}
+				if (!error.isEmpty()) {
+					LOGGER.warn(error);
+				}
+			} catch (IOException e) {
+				// ignore
 			}
-			if (!error.isEmpty()) {
-				LOGGER.warn(error);
-			}
-		} catch (IOException e) {
-			// ignore
 		}
 	}
 	
