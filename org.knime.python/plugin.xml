@@ -4,7 +4,7 @@
    <extension-point id="org.knime.python.typeextension.knimetopython" name="Python type extension (KNIME to Python)" schema="schema/typeextension.knimetopython.exsd"/>
    <extension-point id="org.knime.python.typeextension.pythontoknime" name="Python type extension (Python to KNIME)" schema="schema/typeextension.pythontoknime.exsd"/>
    <extension-point id="org.knime.python.sourcecodetemplates" name="Source code templates extension" schema="schema/sourcecodetemplates.exsd"/>
-   <extension-point id="org.knime.python.module" name="Python module extension" schema="schema/module.exsd"/>
+   <extension-point id="org.knime.python.modules" name="Python modules extension" schema="schema/modules.exsd"/>
    <extension
          point="org.eclipse.ui.preferencePages">
       <page

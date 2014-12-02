@@ -18,7 +18,7 @@
       </annotation>
       <complexType>
          <sequence minOccurs="1" maxOccurs="unbounded">
-            <element ref="module"/>
+            <element ref="directory"/>
          </sequence>
          <attribute name="point" type="string" use="required">
             <annotation>
@@ -47,12 +47,12 @@
       </complexType>
    </element>
 
-   <element name="module">
+   <element name="directory">
       <complexType>
          <attribute name="path" type="string" use="required">
             <annotation>
                <documentation>
-                  Path inside the plugin to the modules python file.
+                  Path inside the plugin to the directory containing python modules.
                </documentation>
             </annotation>
          </attribute>
