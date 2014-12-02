@@ -169,7 +169,7 @@ public class Activator implements BundleActivator {
 		try {
 			Bundle bundle = Platform.getBundle(symbolicName);
 			URL url = FileLocator.find(bundle, new Path(relativePath), null);
-			return FileUtil.getFileFromURL(FileLocator.toFileURL(url));
+			return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 			return null;
