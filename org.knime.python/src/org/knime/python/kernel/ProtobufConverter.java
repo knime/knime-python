@@ -105,9 +105,11 @@ import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.ObjectListColumn;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.StringColumn;
 import org.knime.python.kernel.proto.ProtobufKnimeTable.Table.StringListColumn;
 import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.DeserializerFactory;
 import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python.typeextension.Serializer;
-import org.knime.python.typeextension.TypeExtensions;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
@@ -142,7 +144,7 @@ class ProtobufConverter {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	static Table dataTableToProtobuf(final BufferedDataTable table, final int chunkSize,
 			final CloseableRowIterator rowIterator, final int chunk, final ExecutionMonitor executionMonitor,
-			final int rowLimit) throws IOException {
+			final int rowLimit, final KnimeToPythonExtensions knimeToPythonExtensions) throws IOException {
 		Table.Builder tableBuilder = ProtobufKnimeTable.Table.newBuilder();
 		tableBuilder.setValid(true);
 		tableBuilder.setNumCols(table.getDataTableSpec().getNumColumns());
@@ -192,7 +194,7 @@ class ProtobufConverter {
 				columnBuilders.add(DateAndTimeListColumn.newBuilder().setName(colSpec.getName())
 						.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
 			} else if (colSpec.getType().isCollectionType()) {
-				KnimeToPythonExtension typeExtension = TypeExtensions.getKnimeToPythonExtension(colSpec.getType()
+				KnimeToPythonExtension typeExtension = KnimeToPythonExtensions.getExtension(colSpec.getType()
 						.getCollectionElementType());
 				if (typeExtension != null) {
 					type = "ObjectListColumn";
@@ -205,7 +207,7 @@ class ProtobufConverter {
 							.setIsSet(colSpec.getType().isCompatible(SetDataValue.class)));
 				}
 			} else {
-				KnimeToPythonExtension typeExtension = TypeExtensions.getKnimeToPythonExtension(colSpec.getType());
+				KnimeToPythonExtension typeExtension = KnimeToPythonExtensions.getExtension(colSpec.getType());
 				if (typeExtension != null) {
 					type = "ObjectColumn";
 					columnBuilders.add(ObjectColumn.newBuilder().setName(colSpec.getName())
@@ -370,7 +372,7 @@ class ProtobufConverter {
 						CollectionDataValue collectionCell = (CollectionDataValue) cell;
 						for (DataCell singleCell : collectionCell) {
 							Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-							Serializer serializer = TypeExtensions.getKnimeToPythonExtension(cell.getType()).getJavaSerializer();
+							Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(cell.getType()).getId());
 							if (!singleCell.isMissing()) {
 								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
 							}
@@ -380,7 +382,7 @@ class ProtobufConverter {
 					objectListColumn.addObjectListValue(objectListValueBuilder.build());
 				} else if (builder instanceof ObjectColumn.Builder) {
 					ObjectColumn.Builder objectColumn = (ObjectColumn.Builder) builder;
-					Serializer serializer = TypeExtensions.getKnimeToPythonExtension(cell.getType()).getJavaSerializer();
+					Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(cell.getType()).getId());
 					Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
 					if (!cell.isMissing()) {
 						objectValue.setValue(ByteString.copyFrom(serializer.serialize(cell)));
@@ -506,14 +508,14 @@ class ProtobufConverter {
 				colSpecs[i] = new DataColumnSpecCreator(column.getName(), type).createSpec();
 			} else if (colType.equals("ObjectListColumn")) {
 				ObjectListColumn column = table.getObjectListCol(colRefList.get(i).getIndexInType());
-				Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
-				DataType type = column.getIsSet() ? SetCell.getCollectionType(deserializer.getDataType()) : ListCell
-						.getCollectionType(deserializer.getDataType());
+				DeserializerFactory deserializerFactory = PythonToKnimeExtensions.getExtension(column.getType()).getJavaDeserializerFactory();
+				DataType type = column.getIsSet() ? SetCell.getCollectionType(deserializerFactory.getDataType()) : ListCell
+						.getCollectionType(deserializerFactory.getDataType());
 				colSpecs[i] = new DataColumnSpecCreator(column.getName(), type).createSpec();
 			} else if (colType.equals("ObjectColumn")) {
 				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
-				Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
-				colSpecs[i] = new DataColumnSpecCreator(column.getName(), deserializer.getDataType()).createSpec();
+				DeserializerFactory deserializerFactory = PythonToKnimeExtensions.getExtension(column.getType()).getJavaDeserializerFactory();
+				colSpecs[i] = new DataColumnSpecCreator(column.getName(), deserializerFactory.getDataType()).createSpec();
 			}
 		}
 		BufferedDataContainer container = exec.createDataContainer(new DataTableSpec(colSpecs));
@@ -536,9 +538,9 @@ class ProtobufConverter {
 	 *             If an error occured
 	 */
 	static void addRowsFromProtobuf(final Table table, final BufferedDataContainer container, final int rowsOverall,
-			final ExecutionMonitor executionMonitor, final FileStoreFactory fileStoreFactory) throws IOException {
+			final ExecutionMonitor executionMonitor, final FileStoreFactory fileStoreFactory, final PythonToKnimeExtensions pythonToKnimeExtensions) throws IOException {
 		for (int i = 0; i < table.getNumRows(); i++) {
-			container.addRowToTable(createRow(table, i, fileStoreFactory));
+			container.addRowToTable(createRow(table, i, fileStoreFactory, pythonToKnimeExtensions));
 			if (executionMonitor != null) {
 				try {
 					executionMonitor.checkCanceled();
@@ -562,7 +564,7 @@ class ProtobufConverter {
 	 *             If an error occured
 	 */
 	@SuppressWarnings("rawtypes")
-	private static DataRow createRow(final Table table, final int index, final FileStoreFactory fileStoreFactory) throws IOException {
+	private static DataRow createRow(final Table table, final int index, final FileStoreFactory fileStoreFactory, final PythonToKnimeExtensions pythonToKnimeExtensions) throws IOException {
 		DataCell[] cells = new DataCell[table.getNumCols()];
 		List<ColumnReference> colRefList = table.getColRefList();
 		for (int i = 0; i < colRefList.size(); i++) {
@@ -682,7 +684,7 @@ class ProtobufConverter {
 				} else {
 					List<DataCell> singleCells = new ArrayList<DataCell>();
 					for (Table.ObjectValue singleValue : value.getValueList()) {
-						Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
+						Deserializer deserializer = pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(column.getType()).getId());
 						cells[i] = singleValue.hasValue() ? deserializer
 								.deserialize(singleValue.getValue().toByteArray(), fileStoreFactory) : new MissingCell(null);
 					}
@@ -692,7 +694,7 @@ class ProtobufConverter {
 			} else if (colType.equals("ObjectColumn")) {
 				ObjectColumn column = table.getObjectCol(colRefList.get(i).getIndexInType());
 				Table.ObjectValue value = column.getObjectValue(index);
-				Deserializer deserializer = TypeExtensions.getPythonToKnimeExtension(column.getType()).getJavaDeserializer();
+				Deserializer deserializer = pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(column.getType()).getId());
 				cells[i] = value.hasValue() ? deserializer.deserialize(value.getValue().toByteArray(), fileStoreFactory) : new MissingCell(
 						null);
 			}

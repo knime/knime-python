@@ -60,7 +60,6 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
-import org.knime.core.util.ThreadUtils;
 import org.knime.python.port.PickledObject;
 
 /**

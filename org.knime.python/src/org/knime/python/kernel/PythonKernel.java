@@ -110,8 +110,9 @@ import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
 import org.knime.python.port.PickledObject;
 import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
-import org.knime.python.typeextension.TypeExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.w3c.dom.svg.SVGDocument;
 
 import com.google.protobuf.ByteString;
@@ -133,6 +134,8 @@ public class PythonKernel {
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
 	private boolean m_closed = false;
+	private KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
+	private PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -199,7 +202,7 @@ public class PythonKernel {
 		// Python serializers
 		Command.Builder commandBuilder = Command.newBuilder();
 		AddSerializers.Builder addSerializers = AddSerializers.newBuilder();
-		for (PythonToKnimeExtension typeExtension : TypeExtensions.getPythonToKnimeExtensions()) {
+		for (PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
 			addSerializers.addSerializer(Serializer.newBuilder().setId(typeExtension.getId()).setType(typeExtension.getType())
 					.setPath(typeExtension.getPythonSerializerPath()));
 		}
@@ -211,7 +214,7 @@ public class PythonKernel {
 		// Python deserializers
 		commandBuilder = Command.newBuilder();
 		AddDeserializers.Builder addDeserializers = AddDeserializers.newBuilder();
-		for (KnimeToPythonExtension typeExtension : TypeExtensions.getKnimeToPythonExtensions()) {
+		for (KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
 			addDeserializers.addDeserializer(Deserializer.newBuilder().setId(typeExtension.getId())
 					.setPath(typeExtension.getPythonDeserializerPath()));
 		}
@@ -379,7 +382,7 @@ public class PythonKernel {
 		CloseableRowIterator rowIterator = table.iteratorFailProve();
 		int chunk = 0;
 		Table tableMessage = ProtobufConverter.dataTableToProtobuf(table, CHUNK_SIZE, rowIterator, chunk++,
-				serializationMonitor, rowLimit);
+				serializationMonitor, rowLimit, knimeToPythonExtensions);
 		Command.Builder commandBuilder = Command.newBuilder();
 		commandBuilder.setPutTable(PutTable.newBuilder().setKey(name).setTable(tableMessage));
 		synchronized (this) {
@@ -394,7 +397,7 @@ public class PythonKernel {
 			deserializationMonitor.setProgress(rowsDeserialized / (double) rowLimit);
 			while (rowsDeserialized < rowLimit) {
 				tableMessage = ProtobufConverter.dataTableToProtobuf(table, CHUNK_SIZE, rowIterator, chunk++,
-						serializationMonitor, rowLimit);
+						serializationMonitor, rowLimit, knimeToPythonExtensions);
 				commandBuilder = Command.newBuilder();
 				commandBuilder.setAppendToTable(AppendToTable.newBuilder().setKey(name).setTable(tableMessage));
 				writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
@@ -467,7 +470,7 @@ public class PythonKernel {
 					// the specs of the table
 					container = ProtobufConverter.createContainerFromProtobuf(table, exec);
 				}
-				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, FileStoreFactory.createWorkflowFileStoreFactory(exec));
+				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, FileStoreFactory.createWorkflowFileStoreFactory(exec), pythonToKnimeExtensions);
 			}
 		}
 		container.close();

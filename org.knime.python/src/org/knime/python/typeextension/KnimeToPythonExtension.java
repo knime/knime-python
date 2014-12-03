@@ -6,12 +6,12 @@ public class KnimeToPythonExtension {
 
 	private String m_id;
 	private String m_pythonDeserializerPath;
-	private Serializer<? extends DataValue> m_javaSerializer;
+	private SerializerFactory<? extends DataValue> m_javaSerializerFactory;
 	
-	public KnimeToPythonExtension(String id, String pythonDeserializerPath, Serializer<? extends DataValue> javaSerializer) {
+	public KnimeToPythonExtension(String id, String pythonDeserializerPath, SerializerFactory<? extends DataValue> javaSerializer) {
 		m_id = id;
 		m_pythonDeserializerPath = pythonDeserializerPath;
-		m_javaSerializer = javaSerializer;
+		m_javaSerializerFactory = javaSerializer;
 	}
 	
 	public String getId() {
@@ -22,8 +22,8 @@ public class KnimeToPythonExtension {
 		return m_pythonDeserializerPath;
 	}
 	
-	public Serializer<? extends DataValue> getJavaSerializer() {
-		return m_javaSerializer;
+	public SerializerFactory<? extends DataValue> getJavaSerializerFactory() {
+		return m_javaSerializerFactory;
 	}
 	
 }

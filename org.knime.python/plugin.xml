@@ -18,7 +18,7 @@
          point="org.knime.python.typeextension.pythontoknime">
       <type
             id="org.knime.xml"
-            java-deserializer="org.knime.python.typeextension.example.XMLDeserializer"
+            java-deserializer-factory="org.knime.python.typeextension.example.XMLDeserializerFactory"
             python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
             python-type-identifier="xml.dom.minidom.Document">
       </type>
@@ -27,7 +27,7 @@
          point="org.knime.python.typeextension.knimetopython">
       <type
             id="org.knime.xml"
-            java-serializer="org.knime.python.typeextension.example.XMLSerializer"
+            java-serializer-factory="org.knime.python.typeextension.example.XMLSerializerFactory"
             python-deserializer="src/org/knime/python/typeextension/example/XMLDeserializer.py">
       </type>
    </extension>

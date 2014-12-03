@@ -59,7 +59,8 @@ import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
 import org.knime.python.kernel.PythonModuleExtensions;
-import org.knime.python.typeextension.TypeExtensions;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -92,7 +93,8 @@ public class Activator implements BundleActivator {
 				testPythonInstallation();
 			}
 		}).start();
-		TypeExtensions.init();
+		KnimeToPythonExtensions.init();
+		PythonToKnimeExtensions.init();
 		SourceCodeTemplatesExtensions.init();
 		PythonModuleExtensions.init();
 	}

@@ -71,7 +71,7 @@ def get_type_id(object):
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="java-deserializer" type="string" use="required">
+         <attribute name="java-deserializer-factory" type="string" use="required">
             <annotation>
                <documentation>
                   Java deserializer that generates DataCells from bytes.
@@ -79,7 +79,7 @@ def get_type_id(object):
 Has to understand the serialized objects created by the Python serializer.
                </documentation>
                <appinfo>
-                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.Deserializer:"/>
+                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.DeserializerFactory:"/>
                </appinfo>
             </annotation>
          </attribute>

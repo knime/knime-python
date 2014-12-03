@@ -8,11 +8,10 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.python.Activator;
-import org.knime.python.typeextension.TypeExtensions;
 
 public class SourceCodeTemplatesExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(TypeExtensions.class);
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
 	
 	private static List<File> templateFolders;
 	

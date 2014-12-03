@@ -56,7 +56,7 @@
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="java-serializer" type="string" use="required">
+         <attribute name="java-serializer-factory" type="string" use="required">
             <annotation>
                <documentation>
                   Java serializer that generates bytes from DataValues and DataCells from bytes.
@@ -64,7 +64,7 @@
 Has to understand the same serialized objects as the Python serializer.
                </documentation>
                <appinfo>
-                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.Serializer:"/>
+                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.SerializerFactory:"/>
                </appinfo>
             </annotation>
          </attribute>
