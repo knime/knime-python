@@ -26,7 +26,7 @@ public class KnimeToPythonExtensions {
 				"org.knime.python.typeextension.knimetopython");
 		for (IConfigurationElement config : configs) {
 			try {
-				Object o = config.createExecutableExtension("java-serializer");
+				Object o = config.createExecutableExtension("java-serializer-factory");
 				if (o instanceof SerializerFactory) {
 					String contributer = config.getContributor().getName();
 					String filePath = config.getAttribute("python-deserializer");

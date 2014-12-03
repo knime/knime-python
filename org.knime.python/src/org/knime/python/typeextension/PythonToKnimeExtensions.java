@@ -23,7 +23,7 @@ public class PythonToKnimeExtensions {
 				"org.knime.python.typeextension.pythontoknime");
 		for (IConfigurationElement config : configs) {
 			try {
-				Object o = config.createExecutableExtension("java-deserializer");
+				Object o = config.createExecutableExtension("java-deserializer-factory");
 				if (o instanceof DeserializerFactory) {
 					String contributer = config.getContributor().getName();
 					String filePath = config.getAttribute("python-serializer");
