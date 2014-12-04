@@ -94,6 +94,10 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	public void setCanceled(final boolean canceled) {
 		m_isCanceled = canceled;
 	}
+	
+	public boolean isCanceled() {
+		return m_isCanceled;
+	}
 
 	/**
 	 * {@inheritDoc}

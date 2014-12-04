@@ -63,7 +63,6 @@ import org.knime.code.generic.ImageContainer;
 import org.knime.code.generic.SourceCodePanel;
 import org.knime.code.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
@@ -126,30 +125,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 							// Start kernel manager which will start the actual
 							// kernel
 							m_kernelManager = new PythonKernelManager();
-							// If we get to this point the kernel has started
-							// correctly and is connected
-							// To stop a running execution we have to stop the
-							// kernel and start a new one
-							setStopCallback(new Runnable() {
-								@Override
-								public void run() {
-									// The kernel restarts is necessary to know
-									// if a response belongs to an old kernel
-									// instance
-									m_lock.lock();
-									m_kernelRestarts++;
-									if (m_progressMonitor != null) {
-										m_progressMonitor.setCanceled(true);
-									}
-									m_kernelManager.close();
-									// Disable interactivity while we restart
-									// the kernel
-									setInteractive(false);
-									setStatusMessage("Stopped python");
-									setRunning(false);
-									m_lock.unlock();
-								}
-							});
 							setStatusMessage("Python successfully started");
 							putDataIntoPython();
 							setInteractive(true);
@@ -376,6 +351,26 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 */
 	private void putDataIntoPython() {
 		if (m_kernelManager != null) {
+			setStopCallback(new Runnable() {
+				@Override
+				public void run() {
+					// The kernel restarts is necessary to know
+					// if a response belongs to an old kernel
+					// instance
+					m_lock.lock();
+					m_kernelRestarts++;
+					if (m_progressMonitor != null) {
+						m_progressMonitor.setCanceled(true);
+					}
+					m_kernelManager.close();
+					// Disable interactivity while we restart
+					// the kernel
+					setInteractive(false);
+					setStatusMessage("Stopped python");
+					setRunning(false);
+					m_lock.unlock();
+				}
+			});
 			setRunning(true);
 			setStatusMessage("Loading input data into python");
 			m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
@@ -393,7 +388,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									m_kernelManager = null;
 								}
 								setInteractive(false);
-								if (exception.getCause() == null || !(exception.getCause() instanceof CanceledExecutionException)) {
+								if (!m_progressMonitor.isCanceled()) {
 									logError(exception, "Error while loading input data into python");
 								}
 							} else {
