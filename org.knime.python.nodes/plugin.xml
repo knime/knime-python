@@ -24,10 +24,4 @@
            </FileExtension>
         </FileExtensionMapping>
      </extension>
-     <extension
-           point="org.knime.python.sourcecodetemplates">
-        <folder
-              path="templates">
-        </folder>
-     </extension>
 </plugin>
