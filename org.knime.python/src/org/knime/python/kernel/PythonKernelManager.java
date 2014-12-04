@@ -365,7 +365,6 @@ public class PythonKernelManager {
 	 * Closes the underling python kernel.
 	 */
 	public synchronized void close() {
-		m_threadPool.interruptAll();
 		m_threadPool.shutdown();
 		m_threadPool = new ThreadPool(8);
 		m_kernel.close();
