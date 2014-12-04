@@ -25,7 +25,7 @@ public class PythonModuleExtensions {
 			String path = config.getAttribute("path");
 			File file = Activator.getFile(pluginId, path);
 			if (file == null || !file.exists() || !file.isDirectory()) {
-				LOGGER.error("Could not find the directory " + path + " in plugin " + pluginId);
+				LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
 			} else {
 				pythonModulePaths.add(file.getAbsolutePath());
 			}

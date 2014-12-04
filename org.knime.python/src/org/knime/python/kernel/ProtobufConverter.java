@@ -448,7 +448,6 @@ class ProtobufConverter {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	@SuppressWarnings("rawtypes")
 	static BufferedDataContainer createContainerFromProtobuf(final Table table, final ExecutionContext exec)
 			throws IOException {
 		if (!table.getValid()) {
@@ -563,7 +562,6 @@ class ProtobufConverter {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	@SuppressWarnings("rawtypes")
 	private static DataRow createRow(final Table table, final int index, final FileStoreFactory fileStoreFactory, final PythonToKnimeExtensions pythonToKnimeExtensions) throws IOException {
 		DataCell[] cells = new DataCell[table.getNumCols()];
 		List<ColumnReference> colRefList = table.getColRefList();

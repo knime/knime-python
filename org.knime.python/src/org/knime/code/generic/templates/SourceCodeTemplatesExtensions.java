@@ -26,7 +26,7 @@ public class SourceCodeTemplatesExtensions {
 			if (folder != null && folder.isDirectory()) {
 				templateFolders.add(folder);
 			} else {
-				LOGGER.error("Could not find templates folder " + path + " in plugin " + pluginId);
+				LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
 			}
 		}
 	}

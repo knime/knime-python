@@ -48,6 +48,7 @@
 package org.knime.python;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
 
@@ -139,8 +140,8 @@ public class Activator implements BundleActivator {
 			// != 0 as error
 			pythonTestResult = new PythonKernelTestResult(writer.toString());
 			return pythonTestResult;
-		} catch (Throwable t) {
-			LOGGER.error(t.getMessage(), t);
+		} catch (IOException e) {
+			LOGGER.error(e.getMessage(), e);
 			// Python could not be started
 			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
 		}
@@ -173,7 +174,7 @@ public class Activator implements BundleActivator {
 			URL url = FileLocator.find(bundle, new Path(relativePath), null);
 			return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
 		} catch (Exception e) {
-			LOGGER.error(e.getMessage(), e);
+			LOGGER.debug(e.getMessage(), e);
 			return null;
 		}
 	}

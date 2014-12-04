@@ -177,9 +177,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 				try {
 					PlatformUI.getWorkbench().getBrowserSupport()
 							.getExternalBrowser().openURL(new URL(e.text));
-				} catch (PartInitException ex) {
-					LOGGER.error(ex);
-				} catch (MalformedURLException ex) {
+				} catch (PartInitException | MalformedURLException ex) {
 					LOGGER.error(ex);
 				}
 			}

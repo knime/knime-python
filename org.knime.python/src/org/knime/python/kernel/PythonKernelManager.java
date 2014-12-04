@@ -57,7 +57,6 @@ import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
 import org.knime.python.port.PickledObject;
@@ -69,8 +68,6 @@ import org.knime.python.port.PickledObject;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernelManager {
-
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelManager.class);
 
 	private ThreadPool m_threadPool;
 	private PythonKernel m_kernel;
@@ -384,7 +381,7 @@ public class PythonKernelManager {
 		try {
 			m_threadPool.submit(runnable);
 		} catch (InterruptedException e) {
-			LOGGER.warn(e);
+			//
 		}
 	}
 
