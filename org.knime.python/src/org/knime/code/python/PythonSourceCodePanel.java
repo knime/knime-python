@@ -393,9 +393,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									m_kernelManager = null;
 								}
 								setInteractive(false);
-								if (exception.getCause() != null && exception.getCause() instanceof CanceledExecutionException) {
-									logError(exception, "Canceled transfer of data");
-								} else {
+								if (exception.getCause() == null || !(exception.getCause() instanceof CanceledExecutionException)) {
 									logError(exception, "Error while loading input data into python");
 								}
 							} else {
