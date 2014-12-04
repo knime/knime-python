@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Decsion Tree__5234364958757724720.xml">
+<entry key="category" type="xstring" value="scikit learn"/>
+<entry key="title" type="xstring" value="Decsion Tree"/>
+<entry key="description" type="xstring" value="Train a simple decision tree."/>
+<entry key="sourcecode" type="xstring" value="from sklearn.tree import DecisionTreeClassifier%%00010%%00010# Identify class labels%%00010labels = input_table['Cluster Membership']%%00010%%00010# Designate features to learn from%%00010features = input_table.iloc[:,0:10]%%00010%%00010# Create a classifier%%00010output_model = DecisionTreeClassifier()%%00010%%00010# Fit the model using the features and labels%%00010output_model.fit(features, labels)%%00010%%00010"/>
+</config>
