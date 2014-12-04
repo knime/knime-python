@@ -783,7 +783,7 @@ public class PythonKernel {
 					LOGGER.info(out);
 				}
 				if (!error.isEmpty()) {
-					LOGGER.warn(error);
+					LOGGER.error(error);
 				}
 			} catch (IOException e) {
 				// ignore
