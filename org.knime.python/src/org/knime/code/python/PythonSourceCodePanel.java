@@ -63,6 +63,7 @@ import org.knime.code.generic.ImageContainer;
 import org.knime.code.generic.SourceCodePanel;
 import org.knime.code.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
@@ -388,7 +389,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									m_kernelManager = null;
 								}
 								setInteractive(false);
-								if (!m_progressMonitor.isCanceled()) {
+								if (exception.getCause()==null || !(exception.getCause() instanceof CanceledExecutionException)) {
 									logError(exception, "Error while loading input data into python");
 								}
 							} else {
