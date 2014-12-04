@@ -526,9 +526,7 @@ abstract public class SourceCodePanel extends JPanel {
 				if (evt.getClickCount() == 2) {
 					int index = m_flowVariables.locationToIndex(evt.getPoint());
 					FlowVariable flowVariable = m_flowVariablesModel.get(index);
-					m_editor.insert(
-							createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()),
-							m_editor.getCaretPosition());
+					m_editor.replaceSelection(createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()));
 					m_editor.requestFocus();
 				}
 			}
@@ -539,8 +537,7 @@ abstract public class SourceCodePanel extends JPanel {
 					int index = m_columns.locationToIndex(evt.getPoint());
 					DataColumnSpec column = m_columnsModel.get(index);
 					// TODO add support for multiple tables
-					m_editor.insert(createVariableAccessString(m_variableNames.getInputTables()[0], column.getName()),
-							m_editor.getCaretPosition());
+					m_editor.replaceSelection(createVariableAccessString(m_variableNames.getInputTables()[0], column.getName()));
 					m_editor.requestFocus();
 				}
 			}
