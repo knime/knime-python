@@ -2,6 +2,10 @@
 
 import sys
 
+min_pandas_version = '0.7.0'
+min_python_version = '2.5.0'
+min_protobuf_version = '2.5.0'
+
 _message = ''
 
 
@@ -34,17 +38,20 @@ def check_required_libs():
     check_lib('types')
     # these libs are non standard requirements
     check_lib('numpy')
-    if check_lib('pandas', ['DataFrame']):
+    if check_lib('pandas', ['DataFrame'], min_pandas_version):
         check_version_pandas()
-    if check_lib('google.protobuf'):
+    if check_lib('google.protobuf', version=min_protobuf_version):
         check_version_protobuf()
 
 
-def check_lib(lib, cls=[]):
+def check_lib(lib, cls=[], version=None):
     error = False
     if not lib_available(lib):
         error = True
-        add_to_message('Library ' + lib + ' is missing')
+        message = 'Library ' + lib + ' is missing'
+        if version is not None:
+            message += ', required minimum version is ' + version
+        add_to_message(message)
     else:
         for cl in cls:
             if not class_available(lib, cl):
@@ -66,7 +73,7 @@ def lib_available(lib):
 
 
 def check_version_python():
-    min_version = '2.5.0'.split('.')
+    min_version = min_python_version.split('.')
     version = sys.version_info
     smaller = False
     bigger = False
@@ -82,7 +89,7 @@ def check_version_python():
 
 
 def check_version_pandas():
-    min_version = '0.7.0'.split('.')
+    min_version = min_pandas_version.split('.')
     try:
         import pandas
         version = pandas.__version__.split('.')
