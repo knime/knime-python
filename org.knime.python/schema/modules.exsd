@@ -48,6 +48,11 @@
    </element>
 
    <element name="directory">
+      <annotation>
+         <documentation>
+            This directory will be added to the PYTHONPATH.
+         </documentation>
+      </annotation>
       <complexType>
          <attribute name="path" type="string" use="required">
             <annotation>

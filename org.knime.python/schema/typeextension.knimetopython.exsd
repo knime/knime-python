@@ -48,6 +48,11 @@
    </element>
 
    <element name="type">
+      <annotation>
+         <documentation>
+            KNIME type that will be converted to a Python type.
+         </documentation>
+      </annotation>
       <complexType>
          <attribute name="id" type="string" use="required">
             <annotation>
@@ -59,9 +64,10 @@
          <attribute name="java-serializer-factory" type="string" use="required">
             <annotation>
                <documentation>
-                  Java serializer that generates bytes from DataValues and DataCells from bytes.
+                  Factory creating a Java serializer.
 
-Has to understand the same serialized objects as the Python serializer.
+The serializer has to generate bytes from DataValues and DataCells from bytes.
+It has to understand the same serialized objects as the Python serializer.
                </documentation>
                <appinfo>
                   <meta.attribute kind="java" basedOn="org.knime.python.typeextension.SerializerFactory:"/>

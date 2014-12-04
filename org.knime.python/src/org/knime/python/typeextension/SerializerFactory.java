@@ -50,22 +50,48 @@ package org.knime.python.typeextension;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
 
+/**
+ * Factory creating a {@link Serializer}.
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ *
+ * @param <Value> The value type that can be handled by the serializer.
+ */
 public abstract class SerializerFactory<Value extends DataValue> {
 	
 	private Class<? extends Value> m_value;
-	
+
+	/**
+	 * Creates the factory.
+	 * 
+	 * @param dataType The value type that is used for compatibility checks
+	 */
 	public SerializerFactory(final Class<? extends Value> dataValue) {
 		m_value = dataValue;
 	}
 	
+	/**
+	 * @return The value type that this factories serializer is compatible with
+	 */
 	public final Class<? extends Value> getDataValue() {
 		return m_value;
 	}
-	
+
+	/**
+	 * Checks if this factories serializer is compatible with the given type.
+	 * 
+	 * @param type The type to check
+	 * @return true if the serializer is compatible, false otherwise
+	 */
 	public final boolean isCompatible(final DataType type) {
 		return type.isCompatible(m_value);
 	}
 	
+	/**
+	 * Creates a serializer.
+	 * 
+	 * @return The serializer
+	 */
 	public abstract Serializer<? extends Value> createSerializer();
 
 }
