@@ -92,6 +92,9 @@ The serializer has to implement the function serialize(object).
 
 Please note that the containing plugin needs to be unpacked, so that the external Python process can access the module.
                </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
             </annotation>
          </attribute>
       </complexType>

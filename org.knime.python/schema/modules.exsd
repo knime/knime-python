@@ -54,6 +54,9 @@
                <documentation>
                   Path inside the plugin to the directory containing python modules.
                </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
             </annotation>
          </attribute>
       </complexType>
