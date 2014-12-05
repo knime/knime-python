@@ -267,6 +267,8 @@ public class SourceCodeTemplatesPanel extends JPanel {
 		description.setBorder(new EtchedBorder());
 		description.setColumns(30);
 		description.setRows(10);
+		description.setLineWrap(true);
+		description.setWrapStyleWord(true);
 		JButton ok = new JButton("OK");
 		JButton cancel = new JButton("Cancel");
 		Insets buttonMargin = new Insets(0, 0, 0, 0);
