@@ -61,10 +61,17 @@ class PythonViewNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "from StringIO import StringIO\ndata = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
-				"data.index = range(0, len(data))\nbuffer = StringIO()\n" +
+		return "from io import BytesIO\n" +
+				"# Only use numeric columns\n" +
+				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
+				"# Replace row ID by number\n" +
+				"data.index = range(0, len(data))\n" +
+				"# Create buffer to write into\n" +
+				"buffer = BytesIO()\n" +
+				"# Create plot and write it into the buffer\n" +
 				"data.plot().get_figure().savefig(buffer, format='svg')\n" +
-				VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()";
+				"# The output is the content of the buffer\n" +
+				VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()\n";
 	}
 
 	/**

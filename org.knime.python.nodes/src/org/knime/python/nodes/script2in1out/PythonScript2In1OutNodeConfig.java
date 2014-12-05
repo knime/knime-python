@@ -60,8 +60,8 @@ class PythonScript2In1OutNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".join("
-				+ VARIABLE_NAMES.getInputTables()[1] + ", how='inner', lsuffix=' (left)', rsuffix=' (right)')";
+		return "# Do pandas inner join\n" +
+				VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".join(" + VARIABLE_NAMES.getInputTables()[1] + ", how='inner', lsuffix=' (left)', rsuffix=' (right)')\n";
 	}
 
 	/**

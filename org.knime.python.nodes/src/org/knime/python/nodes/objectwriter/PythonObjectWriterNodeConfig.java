@@ -60,8 +60,12 @@ class PythonObjectWriterNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "import pickle\nimport os\npickle.dump(" + VARIABLE_NAMES.getInputObjects()[0] + ", open("
-				+ VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl', 'wb'), pickle.HIGHEST_PROTOCOL)";
+		return "import pickle\n" +
+				"import os\n" +
+				"# Path is workspace/python_object.pkl\n" +
+				"path = " + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl'\n" +
+				"# Save object as pickle file\n" +
+				"pickle.dump(" + VARIABLE_NAMES.getInputObjects()[0] + ", open(path, 'wb'), pickle.HIGHEST_PROTOCOL)\n";
 	}
 
 	/**
