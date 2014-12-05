@@ -943,7 +943,7 @@ def object_to_unicode(object):
     try:
         return unicode(object)
     except UnicodeDecodeError:
-        return '(base64 encoded)\n' + base64.b64encode(value)
+        return '(base64 encoded)\n' + base64.b64encode(object)
     except Exception:
         return ''
 
