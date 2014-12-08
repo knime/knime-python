@@ -48,6 +48,11 @@
    </element>
 
    <element name="type">
+      <annotation>
+         <documentation>
+            Python type that will be converted to a KNIME type.
+         </documentation>
+      </annotation>
       <complexType>
          <attribute name="id" type="string" use="required">
             <annotation>
@@ -71,15 +76,16 @@ def get_type_id(object):
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="java-deserializer" type="string" use="required">
+         <attribute name="java-deserializer-factory" type="string" use="required">
             <annotation>
                <documentation>
-                  Java deserializer that generates DataCells from bytes.
+                  Factory creating a Java deserializer.
 
-Has to understand the serialized objects created by the Python serializer.
+The deserializer has to generates DataCells from bytes.
+It has to understand the serialized objects created by the Python serializer.
                </documentation>
                <appinfo>
-                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.Deserializer:"/>
+                  <meta.attribute kind="java" basedOn="org.knime.python.typeextension.DeserializerFactory:"/>
                </appinfo>
             </annotation>
          </attribute>
@@ -92,6 +98,9 @@ The serializer has to implement the function serialize(object).
 
 Please note that the containing plugin needs to be unpacked, so that the external Python process can access the module.
                </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
             </annotation>
          </attribute>
       </complexType>

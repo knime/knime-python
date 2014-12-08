@@ -69,6 +69,7 @@ import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.knime.code.generic.ImageContainer;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
@@ -85,7 +86,6 @@ import org.knime.python.kernel.proto.ProtobufKnimeTable.Table;
 import org.knime.python.kernel.proto.ProtobufPickledObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AppendToTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete;
@@ -110,8 +110,9 @@ import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
 import org.knime.python.port.PickledObject;
 import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
-import org.knime.python.typeextension.TypeExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.w3c.dom.svg.SVGDocument;
 
 import com.google.protobuf.ByteString;
@@ -133,6 +134,8 @@ public class PythonKernel {
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
 	private boolean m_closed = false;
+	private KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
+	private PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -167,6 +170,8 @@ public class PythonKernel {
 		String scriptPath = Activator.getFile("org.knime.python", "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
+		// Add all python modules to PYTHONPATH variable
+		pb.environment().put("PYTHONPATH", PythonModuleExtensions.getPythonPath());
 		// Start python
 		m_process = pb.start();
 		try {
@@ -197,7 +202,7 @@ public class PythonKernel {
 		// Python serializers
 		Command.Builder commandBuilder = Command.newBuilder();
 		AddSerializers.Builder addSerializers = AddSerializers.newBuilder();
-		for (PythonToKnimeExtension typeExtension : TypeExtensions.getPythonToKnimeExtensions()) {
+		for (PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
 			addSerializers.addSerializer(Serializer.newBuilder().setId(typeExtension.getId()).setType(typeExtension.getType())
 					.setPath(typeExtension.getPythonSerializerPath()));
 		}
@@ -209,22 +214,11 @@ public class PythonKernel {
 		// Python deserializers
 		commandBuilder = Command.newBuilder();
 		AddDeserializers.Builder addDeserializers = AddDeserializers.newBuilder();
-		for (KnimeToPythonExtension typeExtension : TypeExtensions.getKnimeToPythonExtensions()) {
+		for (KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
 			addDeserializers.addDeserializer(Deserializer.newBuilder().setId(typeExtension.getId())
 					.setPath(typeExtension.getPythonDeserializerPath()));
 		}
 		commandBuilder.setAddDeserializers(addDeserializers);
-		outToServer = m_socket.getOutputStream();
-		inFromServer = m_socket.getInputStream();
-		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
-		readMessageBytes(inFromServer);
-		// Python modules
-		commandBuilder = Command.newBuilder();
-		AddModules.Builder addModules = AddModules.newBuilder();
-		for (String module : PythonModuleExtensions.getPythonModules()) {
-			addModules.addModulePath(module);
-		}
-		commandBuilder.setAddModules(addModules);
 		outToServer = m_socket.getOutputStream();
 		inFromServer = m_socket.getInputStream();
 		writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
@@ -388,7 +382,7 @@ public class PythonKernel {
 		CloseableRowIterator rowIterator = table.iteratorFailProve();
 		int chunk = 0;
 		Table tableMessage = ProtobufConverter.dataTableToProtobuf(table, CHUNK_SIZE, rowIterator, chunk++,
-				serializationMonitor, rowLimit);
+				serializationMonitor, rowLimit, knimeToPythonExtensions);
 		Command.Builder commandBuilder = Command.newBuilder();
 		commandBuilder.setPutTable(PutTable.newBuilder().setKey(name).setTable(tableMessage));
 		synchronized (this) {
@@ -403,7 +397,7 @@ public class PythonKernel {
 			deserializationMonitor.setProgress(rowsDeserialized / (double) rowLimit);
 			while (rowsDeserialized < rowLimit) {
 				tableMessage = ProtobufConverter.dataTableToProtobuf(table, CHUNK_SIZE, rowIterator, chunk++,
-						serializationMonitor, rowLimit);
+						serializationMonitor, rowLimit, knimeToPythonExtensions);
 				commandBuilder = Command.newBuilder();
 				commandBuilder.setAppendToTable(AppendToTable.newBuilder().setKey(name).setTable(tableMessage));
 				writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
@@ -476,7 +470,7 @@ public class PythonKernel {
 					// the specs of the table
 					container = ProtobufConverter.createContainerFromProtobuf(table, exec);
 				}
-				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, exec);
+				ProtobufConverter.addRowsFromProtobuf(table, container, rows, deserializationMonitor, FileStoreFactory.createWorkflowFileStoreFactory(exec), pythonToKnimeExtensions);
 			}
 		}
 		container.close();
@@ -789,7 +783,7 @@ public class PythonKernel {
 					LOGGER.info(out);
 				}
 				if (!error.isEmpty()) {
-					LOGGER.warn(error);
+					LOGGER.error(error);
 				}
 			} catch (IOException e) {
 				// ignore

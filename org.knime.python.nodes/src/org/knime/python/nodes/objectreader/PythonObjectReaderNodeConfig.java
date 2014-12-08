@@ -72,10 +72,14 @@ class PythonObjectReaderNodeConfig extends SourceCodeConfig {
 		return VARIABLE_NAMES;
 	}
 
-	static String getDefaultSourceCode(String path) {
-		path = path.replace("/", "' + os.sep + '");
-		return "import pickle\nimport os\n" + VARIABLE_NAMES.getOutputObjects()[0] + " = pickle.load(open("
-				+ VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path + "', 'rb'))";
+	static String getDefaultSourceCode(final String path) {
+		String path2 = path.replace("/", "' + os.sep + '");
+		return "import pickle\n" +
+				"import os\n" +
+				"# Path is workspace/" + path + "\n" +
+				"path = " + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path2 + "'\n" +
+				"# Load object from pickle file\n" +
+				VARIABLE_NAMES.getOutputObjects()[0] + " = pickle.load(open(path, 'rb'))\n";
 	}
 
 }

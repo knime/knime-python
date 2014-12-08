@@ -343,6 +343,7 @@ abstract public class SourceCodePanel extends JPanel {
 	private JButton m_showImages = new JButton("Show Image");
 	private int m_rowLimit = Integer.MAX_VALUE;
 	private VariableNames m_variableNames;
+	private int[] m_tableEnds;
 
 	/**
 	 * Create a source code panel for the given language style.
@@ -526,9 +527,7 @@ abstract public class SourceCodePanel extends JPanel {
 				if (evt.getClickCount() == 2) {
 					int index = m_flowVariables.locationToIndex(evt.getPoint());
 					FlowVariable flowVariable = m_flowVariablesModel.get(index);
-					m_editor.insert(
-							createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()),
-							m_editor.getCaretPosition());
+					m_editor.replaceSelection(createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()));
 					m_editor.requestFocus();
 				}
 			}
@@ -538,14 +537,22 @@ abstract public class SourceCodePanel extends JPanel {
 				if (evt.getClickCount() == 2) {
 					int index = m_columns.locationToIndex(evt.getPoint());
 					DataColumnSpec column = m_columnsModel.get(index);
-					// TODO add support for multiple tables
-					m_editor.insert(createVariableAccessString(m_variableNames.getInputTables()[0], column.getName()),
-							m_editor.getCaretPosition());
+					int tableNumber = findTableForColumnIndex(index);
+					m_editor.replaceSelection(createVariableAccessString(m_variableNames.getInputTables()[tableNumber], column.getName()));
 					m_editor.requestFocus();
 				}
 			}
 		});
 		setColumnListEnabled(variableNames.getInputTables().length>0);
+	}
+	
+	private int findTableForColumnIndex(final int columnIndex) {
+		for (int i = 0; i < m_tableEnds.length; i++) {
+			if (columnIndex < m_tableEnds[i]) {
+				return i;
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -617,6 +624,7 @@ abstract public class SourceCodePanel extends JPanel {
 		// Clean console and variables table
 		m_console.setText("");
 		m_varsModel.setRowCount(0);
+		m_statusBar.getProgressBar().setValue(0);
 	}
 
 	/**
@@ -680,11 +688,13 @@ abstract public class SourceCodePanel extends JPanel {
 	 *            The input table specs
 	 */
 	public void updateSpec(final DataTableSpec[] specs) {
-		// TODO we need to mark and remember the table that a column belongs to
-		// (by index)
+		m_tableEnds = new int[specs.length];
+		int endPosition = 0;
 		m_columnsModel.clear();
 		for (int i = 0; i < specs.length; i++) {
 			if (specs[i] != null) {
+				endPosition += specs[i].getNumColumns();
+				m_tableEnds[i] = endPosition;
 				for (DataColumnSpec colSpec : specs[i]) {
 					m_columnsModel.addElement(colSpec);
 				}

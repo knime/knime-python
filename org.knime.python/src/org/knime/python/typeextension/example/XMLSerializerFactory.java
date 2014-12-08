@@ -45,28 +45,32 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.typeextension;
+package org.knime.python.typeextension.example;
 
 import java.io.IOException;
 
-import org.knime.core.data.DataValue;
+import org.knime.core.data.xml.XMLValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
-/**
- * Serializes a KNIME value to bytes that can be interpreted by the corresponding Python deserializer.
- * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
- *
- * @param <Value> The value type that can be handled by this serializer.
- */
-public interface Serializer<Value extends DataValue> {
+public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
-	/**
-	 * Serializes the given value to a byte array.
-	 * 
-	 * @param value The value to serialize
-	 * @return The byte representation of the given value
-	 * @throws IOException If the given value could not be serialized
-	 */
-	public byte[] serialize(final Value value) throws IOException;
+	public XMLSerializerFactory() {
+		super(XMLValue.class);
+	}
+	
+	@Override
+	public Serializer<XMLValue> createSerializer() {
+		return new XMLSerializer();
+	}
+	
+	private class XMLSerializer implements Serializer<XMLValue> {
+
+		@Override
+		public byte[] serialize(XMLValue value) throws IOException {
+			return value.toString().getBytes();
+		}
+	
+	}
 
 }

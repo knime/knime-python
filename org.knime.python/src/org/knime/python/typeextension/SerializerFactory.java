@@ -45,144 +45,53 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code.python;
+package org.knime.python.typeextension;
 
-import javax.swing.JProgressBar;
-
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.core.node.workflow.NodeProgressListener;
+import org.knime.core.data.DataType;
+import org.knime.core.data.DataValue;
 
 /**
- * Implementation of a {@link NodeProgressMonitor} holding a
- * {@link JProgressBar}.
+ * Factory creating a {@link Serializer}.
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ *
+ * @param <Value> The value type that can be handled by the serializer.
  */
-public class JProgressBarProgressMonitor implements NodeProgressMonitor {
-
-	private JProgressBar m_progressBar;
-	private double m_progress;
-	private boolean m_isCanceled;
+public abstract class SerializerFactory<Value extends DataValue> {
+	
+	private Class<? extends Value> m_value;
 
 	/**
-	 * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
+	 * Creates the factory.
 	 * 
-	 * @param progressBar
-	 *            Progress bar that will display the progress
+	 * @param dataType The value type that is used for compatibility checks
 	 */
-	public JProgressBarProgressMonitor(final JProgressBar progressBar) {
-		m_isCanceled = false;
-		m_progressBar = progressBar;
-		m_progressBar.setIndeterminate(false);
-		m_progressBar.setMinimum(0);
-		m_progressBar.setMaximum(100);
-		m_progressBar.setValue(0);
-		m_progressBar.setStringPainted(true);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void checkCanceled() throws CanceledExecutionException {
-		if (m_isCanceled) {
-            throw new CanceledExecutionException();
-        }
+	public SerializerFactory(final Class<? extends Value> dataValue) {
+		m_value = dataValue;
 	}
 	
-	public void setCanceled(final boolean canceled) {
-		m_isCanceled = canceled;
+	/**
+	 * @return The value type that this factories serializer is compatible with
+	 */
+	public final Class<? extends Value> getDataValue() {
+		return m_value;
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Checks if this factories serializer is compatible with the given type.
+	 * 
+	 * @param type The type to check
+	 * @return true if the serializer is compatible, false otherwise
 	 */
-	@Override
-	public void setProgress(double progress) {
-		m_progress = progress;
-		m_progressBar.setValue((int) Math.round(progress * 100));
-		m_progressBar.setString((int) Math.round(progress * 100) + "%");
+	public final boolean isCompatible(final DataType type) {
+		return type.isCompatible(m_value);
 	}
-
+	
 	/**
-	 * {@inheritDoc}
+	 * Creates a serializer.
+	 * 
+	 * @return The serializer
 	 */
-	@Override
-	public Double getProgress() {
-		return m_progress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(double progress, String message) {
-		setProgress(progress);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setMessage(String message) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(String message) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getMessage() {
-		return null;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setExecuteCanceled() {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void reset() {
-		setProgress(0);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void addProgressListener(NodeProgressListener l) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeProgressListener(NodeProgressListener l) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeAllProgressListener() {
-		// do nothing
-	}
+	public abstract Serializer<? extends Value> createSerializer();
 
 }

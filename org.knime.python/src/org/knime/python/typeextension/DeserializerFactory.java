@@ -45,144 +45,40 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code.python;
+package org.knime.python.typeextension;
 
-import javax.swing.JProgressBar;
-
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.core.node.workflow.NodeProgressListener;
+import org.knime.core.data.DataType;
 
 /**
- * Implementation of a {@link NodeProgressMonitor} holding a
- * {@link JProgressBar}.
+ * Factory creating a {@link Deserializer}.
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class JProgressBarProgressMonitor implements NodeProgressMonitor {
-
-	private JProgressBar m_progressBar;
-	private double m_progress;
-	private boolean m_isCanceled;
-
+public abstract class DeserializerFactory {
+	
+	private DataType m_type;
+	
 	/**
-	 * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
+	 * Creates the factory.
 	 * 
-	 * @param progressBar
-	 *            Progress bar that will display the progress
+	 * @param dataType The cell type created by the deserializer
 	 */
-	public JProgressBarProgressMonitor(final JProgressBar progressBar) {
-		m_isCanceled = false;
-		m_progressBar = progressBar;
-		m_progressBar.setIndeterminate(false);
-		m_progressBar.setMinimum(0);
-		m_progressBar.setMaximum(100);
-		m_progressBar.setValue(0);
-		m_progressBar.setStringPainted(true);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void checkCanceled() throws CanceledExecutionException {
-		if (m_isCanceled) {
-            throw new CanceledExecutionException();
-        }
+	public DeserializerFactory(final DataType dataType) {
+		m_type = dataType;
 	}
 	
-	public void setCanceled(final boolean canceled) {
-		m_isCanceled = canceled;
-	}
-
 	/**
-	 * {@inheritDoc}
+	 * @return The cell type created by the deserializer
 	 */
-	@Override
-	public void setProgress(double progress) {
-		m_progress = progress;
-		m_progressBar.setValue((int) Math.round(progress * 100));
-		m_progressBar.setString((int) Math.round(progress * 100) + "%");
+	public final DataType getDataType() {
+		return m_type;
 	}
-
+	
 	/**
-	 * {@inheritDoc}
+	 * Creates a deserializer.
+	 * 
+	 * @return The deserializer
 	 */
-	@Override
-	public Double getProgress() {
-		return m_progress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(double progress, String message) {
-		setProgress(progress);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setMessage(String message) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(String message) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getMessage() {
-		return null;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setExecuteCanceled() {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void reset() {
-		setProgress(0);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void addProgressListener(NodeProgressListener l) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeProgressListener(NodeProgressListener l) {
-		// do nothing
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeAllProgressListener() {
-		// do nothing
-	}
+	public abstract Deserializer createDeserializer();
 
 }

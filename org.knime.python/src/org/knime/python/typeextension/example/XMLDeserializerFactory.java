@@ -45,28 +45,44 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.typeextension;
+package org.knime.python.typeextension.example;
 
 import java.io.IOException;
 
-import org.knime.core.data.DataValue;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
 
-/**
- * Serializes a KNIME value to bytes that can be interpreted by the corresponding Python deserializer.
- * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
- *
- * @param <Value> The value type that can be handled by this serializer.
- */
-public interface Serializer<Value extends DataValue> {
+import org.knime.core.data.DataCell;
+import org.knime.core.data.filestore.FileStoreFactory;
+import org.knime.core.data.xml.XMLCell;
+import org.knime.core.data.xml.XMLCellFactory;
+import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.DeserializerFactory;
+import org.xml.sax.SAXException;
+
+public class XMLDeserializerFactory extends DeserializerFactory {
 	
-	/**
-	 * Serializes the given value to a byte array.
-	 * 
-	 * @param value The value to serialize
-	 * @return The byte representation of the given value
-	 * @throws IOException If the given value could not be serialized
-	 */
-	public byte[] serialize(final Value value) throws IOException;
+	public XMLDeserializerFactory() {
+		super(XMLCell.TYPE);
+	}
+	
+	@Override
+	public Deserializer createDeserializer() {
+		return new XMLDeserializer();
+	}
+
+	private class XMLDeserializer implements Deserializer {
+		
+		@Override
+		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
+			try {
+				return XMLCellFactory.create(new String(bytes));
+			} catch (ParserConfigurationException | SAXException
+					| XMLStreamException e) {
+				throw new IOException(e.getMessage(), e);
+			}
+		}
+		
+	}
 
 }

@@ -220,20 +220,6 @@ public final class ProtobufPythonKernelCommand {
      * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder getShutdownOrBuilder();
-
-    // optional .knime.Command.AddModules addModules = 16;
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    boolean hasAddModules();
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules getAddModules();
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder getAddModulesOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -479,19 +465,6 @@ public final class ProtobufPythonKernelCommand {
                 shutdown_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00004000;
-              break;
-            }
-            case 130: {
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder subBuilder = null;
-              if (((bitField0_ & 0x00008000) == 0x00008000)) {
-                subBuilder = addModules_.toBuilder();
-              }
-              addModules_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(addModules_);
-                addModules_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00008000;
               break;
             }
           }
@@ -12578,503 +12551,6 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.Shutdown)
     }
 
-    public interface AddModulesOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
-
-      // repeated string modulePath = 1;
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      java.util.List<java.lang.String>
-      getModulePathList();
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      int getModulePathCount();
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      java.lang.String getModulePath(int index);
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      com.google.protobuf.ByteString
-          getModulePathBytes(int index);
-    }
-    /**
-     * Protobuf type {@code knime.Command.AddModules}
-     */
-    public static final class AddModules extends
-        com.google.protobuf.GeneratedMessage
-        implements AddModulesOrBuilder {
-      // Use AddModules.newBuilder() to construct.
-      private AddModules(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-        super(builder);
-        this.unknownFields = builder.getUnknownFields();
-      }
-      private AddModules(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-      private static final AddModules defaultInstance;
-      public static AddModules getDefaultInstance() {
-        return defaultInstance;
-      }
-
-      public AddModules getDefaultInstanceForType() {
-        return defaultInstance;
-      }
-
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
-      @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
-          getUnknownFields() {
-        return this.unknownFields;
-      }
-      private AddModules(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        initFields();
-        int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
-        try {
-          boolean done = false;
-          while (!done) {
-            int tag = input.readTag();
-            switch (tag) {
-              case 0:
-                done = true;
-                break;
-              default: {
-                if (!parseUnknownField(input, unknownFields,
-                                       extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
-              case 10: {
-                if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                  modulePath_ = new com.google.protobuf.LazyStringArrayList();
-                  mutable_bitField0_ |= 0x00000001;
-                }
-                modulePath_.add(input.readBytes());
-                break;
-              }
-            }
-          }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(this);
-        } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
-              e.getMessage()).setUnfinishedMessage(this);
-        } finally {
-          if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-            modulePath_ = new com.google.protobuf.UnmodifiableLazyStringList(modulePath_);
-          }
-          this.unknownFields = unknownFields.build();
-          makeExtensionsImmutable();
-        }
-      }
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddModules_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddModules_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder.class);
-      }
-
-      public static com.google.protobuf.Parser<AddModules> PARSER =
-          new com.google.protobuf.AbstractParser<AddModules>() {
-        public AddModules parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return new AddModules(input, extensionRegistry);
-        }
-      };
-
-      @java.lang.Override
-      public com.google.protobuf.Parser<AddModules> getParserForType() {
-        return PARSER;
-      }
-
-      // repeated string modulePath = 1;
-      public static final int MODULEPATH_FIELD_NUMBER = 1;
-      private com.google.protobuf.LazyStringList modulePath_;
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      public java.util.List<java.lang.String>
-          getModulePathList() {
-        return modulePath_;
-      }
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      public int getModulePathCount() {
-        return modulePath_.size();
-      }
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      public java.lang.String getModulePath(int index) {
-        return modulePath_.get(index);
-      }
-      /**
-       * <code>repeated string modulePath = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getModulePathBytes(int index) {
-        return modulePath_.getByteString(index);
-      }
-
-      private void initFields() {
-        modulePath_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      }
-      private byte memoizedIsInitialized = -1;
-      public final boolean isInitialized() {
-        byte isInitialized = memoizedIsInitialized;
-        if (isInitialized != -1) return isInitialized == 1;
-
-        memoizedIsInitialized = 1;
-        return true;
-      }
-
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
-                          throws java.io.IOException {
-        getSerializedSize();
-        for (int i = 0; i < modulePath_.size(); i++) {
-          output.writeBytes(1, modulePath_.getByteString(i));
-        }
-        getUnknownFields().writeTo(output);
-      }
-
-      private int memoizedSerializedSize = -1;
-      public int getSerializedSize() {
-        int size = memoizedSerializedSize;
-        if (size != -1) return size;
-
-        size = 0;
-        {
-          int dataSize = 0;
-          for (int i = 0; i < modulePath_.size(); i++) {
-            dataSize += com.google.protobuf.CodedOutputStream
-              .computeBytesSizeNoTag(modulePath_.getByteString(i));
-          }
-          size += dataSize;
-          size += 1 * getModulePathList().size();
-        }
-        size += getUnknownFields().getSerializedSize();
-        memoizedSerializedSize = size;
-        return size;
-      }
-
-      private static final long serialVersionUID = 0L;
-      @java.lang.Override
-      protected java.lang.Object writeReplace()
-          throws java.io.ObjectStreamException {
-        return super.writeReplace();
-      }
-
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return PARSER.parseFrom(input);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return PARSER.parseFrom(input, extensionRegistry);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return PARSER.parseDelimitedFrom(input);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseDelimitedFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return PARSER.parseDelimitedFrom(input, extensionRegistry);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          com.google.protobuf.CodedInputStream input)
-          throws java.io.IOException {
-        return PARSER.parseFrom(input);
-      }
-      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return PARSER.parseFrom(input, extensionRegistry);
-      }
-
-      public static Builder newBuilder() { return Builder.create(); }
-      public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules prototype) {
-        return newBuilder().mergeFrom(prototype);
-      }
-      public Builder toBuilder() { return newBuilder(this); }
-
-      @java.lang.Override
-      protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        Builder builder = new Builder(parent);
-        return builder;
-      }
-      /**
-       * Protobuf type {@code knime.Command.AddModules}
-       */
-      public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddModules_descriptor;
-        }
-
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddModules_fieldAccessorTable
-              .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder.class);
-        }
-
-        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.newBuilder()
-        private Builder() {
-          maybeForceBuilderInitialization();
-        }
-
-        private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-          super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          }
-        }
-        private static Builder create() {
-          return new Builder();
-        }
-
-        public Builder clear() {
-          super.clear();
-          modulePath_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-          bitField0_ = (bitField0_ & ~0x00000001);
-          return this;
-        }
-
-        public Builder clone() {
-          return create().mergeFrom(buildPartial());
-        }
-
-        public com.google.protobuf.Descriptors.Descriptor
-            getDescriptorForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_AddModules_descriptor;
-        }
-
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules getDefaultInstanceForType() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance();
-        }
-
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules build() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules result = buildPartial();
-          if (!result.isInitialized()) {
-            throw newUninitializedMessageException(result);
-          }
-          return result;
-        }
-
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules buildPartial() {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules(this);
-          int from_bitField0_ = bitField0_;
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            modulePath_ = new com.google.protobuf.UnmodifiableLazyStringList(
-                modulePath_);
-            bitField0_ = (bitField0_ & ~0x00000001);
-          }
-          result.modulePath_ = modulePath_;
-          onBuilt();
-          return result;
-        }
-
-        public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules) {
-            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules)other);
-          } else {
-            super.mergeFrom(other);
-            return this;
-          }
-        }
-
-        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules other) {
-          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance()) return this;
-          if (!other.modulePath_.isEmpty()) {
-            if (modulePath_.isEmpty()) {
-              modulePath_ = other.modulePath_;
-              bitField0_ = (bitField0_ & ~0x00000001);
-            } else {
-              ensureModulePathIsMutable();
-              modulePath_.addAll(other.modulePath_);
-            }
-            onChanged();
-          }
-          this.mergeUnknownFields(other.getUnknownFields());
-          return this;
-        }
-
-        public final boolean isInitialized() {
-          return true;
-        }
-
-        public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules parsedMessage = null;
-          try {
-            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules) e.getUnfinishedMessage();
-            throw e;
-          } finally {
-            if (parsedMessage != null) {
-              mergeFrom(parsedMessage);
-            }
-          }
-          return this;
-        }
-        private int bitField0_;
-
-        // repeated string modulePath = 1;
-        private com.google.protobuf.LazyStringList modulePath_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        private void ensureModulePathIsMutable() {
-          if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-            modulePath_ = new com.google.protobuf.LazyStringArrayList(modulePath_);
-            bitField0_ |= 0x00000001;
-           }
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public java.util.List<java.lang.String>
-            getModulePathList() {
-          return java.util.Collections.unmodifiableList(modulePath_);
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public int getModulePathCount() {
-          return modulePath_.size();
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public java.lang.String getModulePath(int index) {
-          return modulePath_.get(index);
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public com.google.protobuf.ByteString
-            getModulePathBytes(int index) {
-          return modulePath_.getByteString(index);
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public Builder setModulePath(
-            int index, java.lang.String value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureModulePathIsMutable();
-          modulePath_.set(index, value);
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public Builder addModulePath(
-            java.lang.String value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureModulePathIsMutable();
-          modulePath_.add(value);
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public Builder addAllModulePath(
-            java.lang.Iterable<java.lang.String> values) {
-          ensureModulePathIsMutable();
-          super.addAll(values, modulePath_);
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public Builder clearModulePath() {
-          modulePath_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-          bitField0_ = (bitField0_ & ~0x00000001);
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>repeated string modulePath = 1;</code>
-         */
-        public Builder addModulePathBytes(
-            com.google.protobuf.ByteString value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureModulePathIsMutable();
-          modulePath_.add(value);
-          onChanged();
-          return this;
-        }
-
-        // @@protoc_insertion_point(builder_scope:knime.Command.AddModules)
-      }
-
-      static {
-        defaultInstance = new AddModules(true);
-        defaultInstance.initFields();
-      }
-
-      // @@protoc_insertion_point(class_scope:knime.Command.AddModules)
-    }
-
     private int bitField0_;
     // optional .knime.Command.Execute execute = 1;
     public static final int EXECUTE_FIELD_NUMBER = 1;
@@ -13406,28 +12882,6 @@ public final class ProtobufPythonKernelCommand {
       return shutdown_;
     }
 
-    // optional .knime.Command.AddModules addModules = 16;
-    public static final int ADDMODULES_FIELD_NUMBER = 16;
-    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules addModules_;
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    public boolean hasAddModules() {
-      return ((bitField0_ & 0x00008000) == 0x00008000);
-    }
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules getAddModules() {
-      return addModules_;
-    }
-    /**
-     * <code>optional .knime.Command.AddModules addModules = 16;</code>
-     */
-    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder getAddModulesOrBuilder() {
-      return addModules_;
-    }
-
     private void initFields() {
       execute_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute.getDefaultInstance();
       putFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.getDefaultInstance();
@@ -13444,7 +12898,6 @@ public final class ProtobufPythonKernelCommand {
       addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
       addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
       shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
-      addModules_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -13569,9 +13022,6 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         output.writeMessage(15, shutdown_);
       }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        output.writeMessage(16, addModules_);
-      }
       getUnknownFields().writeTo(output);
     }
 
@@ -13640,10 +13090,6 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(15, shutdown_);
-      }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(16, addModules_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13768,7 +13214,6 @@ public final class ProtobufPythonKernelCommand {
           getAddSerializersFieldBuilder();
           getAddDeserializersFieldBuilder();
           getShutdownFieldBuilder();
-          getAddModulesFieldBuilder();
         }
       }
       private static Builder create() {
@@ -13867,12 +13312,6 @@ public final class ProtobufPythonKernelCommand {
           shutdownBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00004000);
-        if (addModulesBuilder_ == null) {
-          addModules_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance();
-        } else {
-          addModulesBuilder_.clear();
-        }
-        bitField0_ = (bitField0_ & ~0x00008000);
         return this;
       }
 
@@ -14021,14 +13460,6 @@ public final class ProtobufPythonKernelCommand {
         } else {
           result.shutdown_ = shutdownBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
-          to_bitField0_ |= 0x00008000;
-        }
-        if (addModulesBuilder_ == null) {
-          result.addModules_ = addModules_;
-        } else {
-          result.addModules_ = addModulesBuilder_.build();
-        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -14089,9 +13520,6 @@ public final class ProtobufPythonKernelCommand {
         }
         if (other.hasShutdown()) {
           mergeShutdown(other.getShutdown());
-        }
-        if (other.hasAddModules()) {
-          mergeAddModules(other.getAddModules());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -15941,123 +15369,6 @@ public final class ProtobufPythonKernelCommand {
         return shutdownBuilder_;
       }
 
-      // optional .knime.Command.AddModules addModules = 16;
-      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules addModules_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder> addModulesBuilder_;
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public boolean hasAddModules() {
-        return ((bitField0_ & 0x00008000) == 0x00008000);
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules getAddModules() {
-        if (addModulesBuilder_ == null) {
-          return addModules_;
-        } else {
-          return addModulesBuilder_.getMessage();
-        }
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public Builder setAddModules(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules value) {
-        if (addModulesBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          addModules_ = value;
-          onChanged();
-        } else {
-          addModulesBuilder_.setMessage(value);
-        }
-        bitField0_ |= 0x00008000;
-        return this;
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public Builder setAddModules(
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder builderForValue) {
-        if (addModulesBuilder_ == null) {
-          addModules_ = builderForValue.build();
-          onChanged();
-        } else {
-          addModulesBuilder_.setMessage(builderForValue.build());
-        }
-        bitField0_ |= 0x00008000;
-        return this;
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public Builder mergeAddModules(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules value) {
-        if (addModulesBuilder_ == null) {
-          if (((bitField0_ & 0x00008000) == 0x00008000) &&
-              addModules_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance()) {
-            addModules_ =
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.newBuilder(addModules_).mergeFrom(value).buildPartial();
-          } else {
-            addModules_ = value;
-          }
-          onChanged();
-        } else {
-          addModulesBuilder_.mergeFrom(value);
-        }
-        bitField0_ |= 0x00008000;
-        return this;
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public Builder clearAddModules() {
-        if (addModulesBuilder_ == null) {
-          addModules_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.getDefaultInstance();
-          onChanged();
-        } else {
-          addModulesBuilder_.clear();
-        }
-        bitField0_ = (bitField0_ & ~0x00008000);
-        return this;
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder getAddModulesBuilder() {
-        bitField0_ |= 0x00008000;
-        onChanged();
-        return getAddModulesFieldBuilder().getBuilder();
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder getAddModulesOrBuilder() {
-        if (addModulesBuilder_ != null) {
-          return addModulesBuilder_.getMessageOrBuilder();
-        } else {
-          return addModules_;
-        }
-      }
-      /**
-       * <code>optional .knime.Command.AddModules addModules = 16;</code>
-       */
-      private com.google.protobuf.SingleFieldBuilder<
-          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder> 
-          getAddModulesFieldBuilder() {
-        if (addModulesBuilder_ == null) {
-          addModulesBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModules.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddModulesOrBuilder>(
-                  addModules_,
-                  getParentForChildren(),
-                  isClean());
-          addModules_ = null;
-        }
-        return addModulesBuilder_;
-      }
-
       // @@protoc_insertion_point(builder_scope:knime.Command)
     }
 
@@ -16174,11 +15485,6 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_Shutdown_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_AddModules_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_AddModules_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -16188,7 +15494,7 @@ public final class ProtobufPythonKernelCommand {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcommand.proto\022\005knime\032\013table.proto\"\273\016\n\007" +
+      "\n\rcommand.proto\022\005knime\032\013table.proto\"\352\r\n\007" +
       "Command\022\'\n\007execute\030\001 \001(\0132\026.knime.Command" +
       ".Execute\0229\n\020putFlowVariables\030\002 \001(\0132\037.kni" +
       "me.Command.PutFlowVariables\022)\n\010putTable\030" +
@@ -16207,36 +15513,34 @@ public final class ProtobufPythonKernelCommand {
       "\0132\035.knime.Command.AddSerializers\0229\n\020addD" +
       "eserializers\030\016 \001(\0132\037.knime.Command.AddDe" +
       "serializers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Co" +
-      "mmand.Shutdown\022-\n\naddModules\030\020 \001(\0132\031.kni",
-      "me.Command.AddModules\032\035\n\007Execute\022\022\n\nsour" +
-      "ceCode\030\001 \002(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key" +
-      "\030\001 \002(\t\022H\n\017integerVariable\030\002 \003(\0132/.knime." +
-      "Command.PutFlowVariables.IntegerVariable" +
-      "\022F\n\016doubleVariable\030\003 \003(\0132..knime.Command" +
-      ".PutFlowVariables.DoubleVariable\022F\n\016stri" +
-      "ngVariable\030\004 \003(\0132..knime.Command.PutFlow" +
-      "Variables.StringVariable\032-\n\017IntegerVaria" +
-      "ble\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016Doubl" +
-      "eVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n",
-      "\016StringVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 " +
-      "\002(\t\0324\n\010PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 " +
-      "\002(\0132\014.knime.Table\0329\n\rAppendToTable\022\013\n\003ke" +
-      "y\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Table\032*\n\010" +
-      "GetTable\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005" +
-      "\032\017\n\rListVariables\032\007\n\005Reset\032\021\n\017HasAutoCom" +
-      "plete\032@\n\014AutoComplete\022\022\n\nsourceCode\030\001 \002(" +
-      "\t\022\014\n\004line\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetIm" +
-      "age\022\013\n\003key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002" +
-      "(\t\032/\n\tPutObject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledO",
-      "bject\030\002 \002(\014\032?\n\016AddSerializers\022-\n\nseriali" +
-      "zer\030\001 \003(\0132\031.knime.Command.Serializer\0324\n\n" +
-      "Serializer\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004" +
-      "path\030\003 \002(\t\032E\n\020AddDeserializers\0221\n\014deseri" +
-      "alizer\030\001 \003(\0132\033.knime.Command.Deserialize" +
-      "r\032(\n\014Deserializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 " +
-      "\002(\t\032\n\n\010Shutdown\032 \n\nAddModules\022\022\n\nmoduleP" +
-      "ath\030\001 \003(\tB<\n\035org.knime.python.kernel.pro" +
-      "toB\033ProtobufPythonKernelCommand"
+      "mmand.Shutdown\032\035\n\007Execute\022\022\n\nsourceCode\030",
+      "\001 \002(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022" +
+      "H\n\017integerVariable\030\002 \003(\0132/.knime.Command" +
+      ".PutFlowVariables.IntegerVariable\022F\n\016dou" +
+      "bleVariable\030\003 \003(\0132..knime.Command.PutFlo" +
+      "wVariables.DoubleVariable\022F\n\016stringVaria" +
+      "ble\030\004 \003(\0132..knime.Command.PutFlowVariabl" +
+      "es.StringVariable\032-\n\017IntegerVariable\022\013\n\003" +
+      "key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariab" +
+      "le\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016String" +
+      "Variable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010",
+      "PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.k" +
+      "nime.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t" +
+      "\022\033\n\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetTabl" +
+      "e\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rLis" +
+      "tVariables\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@" +
+      "\n\014AutoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004li" +
+      "ne\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003" +
+      "key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tP" +
+      "utObject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002" +
+      " \002(\014\032?\n\016AddSerializers\022-\n\nserializer\030\001 \003",
+      "(\0132\031.knime.Command.Serializer\0324\n\nSeriali" +
+      "zer\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 " +
+      "\002(\t\032E\n\020AddDeserializers\0221\n\014deserializer\030" +
+      "\001 \003(\0132\033.knime.Command.Deserializer\032(\n\014De" +
+      "serializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010" +
+      "ShutdownB<\n\035org.knime.python.kernel.prot" +
+      "oB\033ProtobufPythonKernelCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -16248,7 +15552,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", "AddModules", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -16369,12 +15673,6 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_Shutdown_descriptor,
               new java.lang.String[] { });
-          internal_static_knime_Command_AddModules_descriptor =
-            internal_static_knime_Command_descriptor.getNestedTypes().get(17);
-          internal_static_knime_Command_AddModules_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_AddModules_descriptor,
-              new java.lang.String[] { "ModulePath", });
           return null;
         }
       };

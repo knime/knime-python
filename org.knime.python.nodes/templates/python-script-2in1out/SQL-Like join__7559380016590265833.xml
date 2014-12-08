@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="SQL-Like join__7559380016590265833.xml">
+<entry key="category" type="xstring" value="Data manipulation"/>
+<entry key="title" type="xstring" value="SQL-Like join"/>
+<entry key="description" type="xstring" value="Use pandas merge to perform a SQL like join on two tables."/>
+<entry key="sourcecode" type="xstring" value="from pandas import merge%%00010%%00010# Assign inputs to left/right%%00010left_table = input_table_1%%00010right_table = input_table_2%%00010%%00010# Choose a column name to join on%%00010%%00010join_key = 'Cluster Membership'%%00010%%00010# Choose a join method left/right/inner/outer%%00010join_method = 'right'%%00010%%00010# use pandas::merge to do a SQL like join. %%00010output_table = merge(left_table,%%00010%%00009%%00009%%00009%%00009%%00009 right_table, %%00010%%00009%%00009%%00009%%00009%%00009 how=join_method, %%00010%%00009%%00009%%00009%%00009%%00009 on = join_key)"/>
+</config>

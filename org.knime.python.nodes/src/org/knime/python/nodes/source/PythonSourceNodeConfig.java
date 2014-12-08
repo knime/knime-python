@@ -60,7 +60,9 @@ class PythonSourceNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "from pandas import DataFrame\n" + VARIABLE_NAMES.getOutputTables()[0] + " = DataFrame()";
+		return "from pandas import DataFrame\n" +
+				"# Create empty table\n" +
+				VARIABLE_NAMES.getOutputTables()[0] + " = DataFrame()\n";
 	}
 
 	/**

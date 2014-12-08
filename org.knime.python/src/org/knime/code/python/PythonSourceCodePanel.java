@@ -50,13 +50,11 @@ package org.knime.code.python;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.commons.lang.StringUtils;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
@@ -65,8 +63,8 @@ import org.knime.code.generic.ImageContainer;
 import org.knime.code.generic.SourceCodePanel;
 import org.knime.code.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.NodeLogger;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
 import org.knime.python.kernel.PythonKernelManager;
@@ -83,13 +81,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 public class PythonSourceCodePanel extends SourceCodePanel {
 
 	private static final long serialVersionUID = -3111905445745421972L;
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
 
 	private PythonKernelManager m_kernelManager;
 	private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
 	private PickledObject[] m_inputObjects = new PickledObject[0];
 	private Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
+	private JProgressBarProgressMonitor m_progressMonitor;
 
 	/**
 	 * Create a python source code panel.
@@ -128,27 +126,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 							// Start kernel manager which will start the actual
 							// kernel
 							m_kernelManager = new PythonKernelManager();
-							// If we get to this point the kernel has started
-							// correctly and is connected
-							// To stop a running execution we have to stop the
-							// kernel and start a new one
-							setStopCallback(new Runnable() {
-								@Override
-								public void run() {
-									// The kernel restarts is necessary to know
-									// if a response belongs to an old kernel
-									// instance
-									m_lock.lock();
-									m_kernelRestarts++;
-									m_kernelManager.close();
-									// Disable interactivity while we restart
-									// the kernel
-									setInteractive(false);
-									setStatusMessage("Stopped python");
-									setRunning(false);
-									m_lock.unlock();
-								}
-							});
 							setStatusMessage("Python successfully started");
 							putDataIntoPython();
 							setInteractive(true);
@@ -169,6 +146,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		super.close();
 		if (m_kernelManager != null) {
 			setInteractive(false);
+			if (m_progressMonitor != null) {
+				m_progressMonitor.setCanceled(true);
+			}
 			m_kernelManager.close();
 			m_kernelManager = null;
 		}
@@ -332,15 +312,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 									String type = completion.get("type");
 									String doc = completion.get("doc").trim();
 									if (type.equals("function")) {
-										try {
-											// name = functionWithRelevantParameters(doc);
-											name += "()";
-										} catch (IllegalArgumentException e) {
-											LOGGER.error(e.getMessage(), e);
-											// could not parse parameters from
-											// doc, fall back to no parameters
-											name += "()";
-										}
+										name += "()";
 									}
 									doc = "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
 									completions.add(new BasicCompletion(provider, name, type, doc));
@@ -380,28 +352,57 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 */
 	private void putDataIntoPython() {
 		if (m_kernelManager != null) {
+			setStopCallback(new Runnable() {
+				@Override
+				public void run() {
+					// The kernel restarts is necessary to know
+					// if a response belongs to an old kernel
+					// instance
+					m_lock.lock();
+					m_kernelRestarts++;
+					if (m_progressMonitor != null) {
+						m_progressMonitor.setCanceled(true);
+					}
+					m_kernelManager.close();
+					// Disable interactivity while we restart
+					// the kernel
+					setInteractive(false);
+					setStatusMessage("Stopped python");
+					setRunning(false);
+					m_lock.unlock();
+				}
+			});
 			setRunning(true);
 			setStatusMessage("Loading input data into python");
+			m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
 			m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData, getVariableNames()
 					.getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(), m_inputObjects,
 					new PythonKernelResponseHandler<Void>() {
 						@Override
 						public void handleResponse(Void response, Exception exception) {
 							if (exception != null) {
-								m_kernelManager.close();
+								if (m_progressMonitor != null) {
+									m_progressMonitor.setCanceled(true);
+								}
+								if (m_kernelManager != null) {
+									m_kernelManager.close();
+									m_kernelManager = null;
+								}
 								setInteractive(false);
-								logError(exception, "Error while loading input data into python");
+								if (exception.getCause()==null || !(exception.getCause() instanceof CanceledExecutionException)) {
+									logError(exception, "Error while loading input data into python");
+								}
 							} else {
 								setStatusMessage("Successfully loaded input data into python");
 							}
 							setRunning(false);
 						}
-					}, new ExecutionMonitor(new JProgressBarProgressMonitor(getProgressBar())), getRowLimit());
+					}, new ExecutionMonitor(m_progressMonitor), getRowLimit());
 		}
 	}
 
 	/**
-	 * Logs the given error in the KNIME log, in the console as error and
+	 * Logs the given error in the console as error and
 	 * optionally sets a status message.
 	 * 
 	 * @param exception
@@ -410,66 +411,20 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 *            The new status message or null if it should not be changed
 	 */
 	private void logError(final Exception exception, final String statusMessage) {
-		// Put exception in KNIME log
-		LOGGER.error(exception.getMessage(), exception);
 		if (exception instanceof SocketException || exception instanceof InvalidProtocolBufferException) {
 			setInteractive(false);
 			close();
 			errorToConsole("Connection to Python lost");
 		} else {
-			// Print exception message to console
-			errorToConsole(exception.getMessage());
+			if (exception.getMessage() != null && !exception.getMessage().isEmpty()) {
+				// Print exception message to console
+				errorToConsole(exception.getMessage());
+			}
 		}
 		// Set status message (if not null)
 		if (statusMessage != null) {
 			setStatusMessage(statusMessage);
 		}
-	}
-
-	/**
-	 * Extracts the function call with non optional parameters from the given
-	 * documentation.
-	 * 
-	 * @param docString
-	 *            The documentation string containing the function call with all
-	 *            parameters in the first line
-	 * @return The function call with only the required parameters
-	 * @throws IllegalArgumentException
-	 *             If the documentation string does not have the expected
-	 *             content
-	 */
-	@SuppressWarnings("unused")
-	private String functionWithRelevantParameters(final String docString) throws IllegalArgumentException {
-		// Function call is described in the first line of the documentation
-		int endIndex = docString.indexOf("\n\n");
-		if (endIndex < 0) {
-			endIndex = docString.length();
-		}
-		String firstLine = docString.substring(0, endIndex).trim();
-		// Basic check if first line could be correct
-		if (!firstLine.contains("(") || !firstLine.contains(")")) {
-			throw new IllegalArgumentException(
-					"The first line of the given doc string does not contain paranthesis. First line: " + firstLine);
-		}
-		// Get name of the function without parenthesis and arguments
-		String name = firstLine.substring(0, firstLine.indexOf("("));
-		// Get array of parameters by looking at the string between the
-		// parenthesis and splitting it on comma while also absorbing
-		// whitespaces with the regex
-		String[] allParams = firstLine.substring(firstLine.indexOf("(") + 1, firstLine.indexOf(")")).split("[ ]*,[ ]*");
-		List<String> relevantParams = new LinkedList<String>();
-		// Fill list with only the required parameters
-		for (int i = 0; i < allParams.length; i++) {
-			String param = allParams[i];
-			// Parameter must not contain '=' (optional) or equals self and is
-			// at position 0 (self reference)
-			if (!param.contains("=") && (!param.equals("self") || i > 0) && !param.startsWith("*")) {
-				relevantParams.add(param);
-			}
-		}
-		// Assemble function call: <name> + '(' + <parameters joined by comma> +
-		// ')'
-		return name + "(" + StringUtils.join(relevantParams.toArray(new String[relevantParams.size()]), ", ") + ")";
 	}
 
 	/**

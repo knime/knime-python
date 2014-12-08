@@ -18,7 +18,7 @@
       </annotation>
       <complexType>
          <sequence minOccurs="1" maxOccurs="unbounded">
-            <element ref="folder"/>
+            <element ref="directory"/>
          </sequence>
          <attribute name="point" type="string" use="required">
             <annotation>
@@ -47,13 +47,21 @@
       </complexType>
    </element>
 
-   <element name="folder">
+   <element name="directory">
+      <annotation>
+         <documentation>
+            All templates in this directory will be added as read only templates. The template directory has to follow the same structure as the user templates folder .metadata/knime/sourcecode-templates in the knime workspace directory.
+         </documentation>
+      </annotation>
       <complexType>
          <attribute name="path" type="string" use="required">
             <annotation>
                <documentation>
                   Path (starting from the plugin root) to the templates folder.
                </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
             </annotation>
          </attribute>
       </complexType>

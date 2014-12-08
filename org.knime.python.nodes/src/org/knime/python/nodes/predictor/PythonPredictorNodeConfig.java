@@ -60,12 +60,26 @@ class PythonPredictorNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "from pandas import Series\ndata = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
-				"value_column = data[data.columns[0]]\npredictions = []\nm = " + VARIABLE_NAMES.getInputObjects()[0] +
-				"[0]\nc = " + VARIABLE_NAMES.getInputObjects()[0] + "[1]\nfor i in range(len(value_column)):\n" +
-				"\tpredictions.append(value_column[i]*m+c)\n" + VARIABLE_NAMES.getOutputTables()[0] + " = " +
-				VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" + VARIABLE_NAMES.getOutputTables()[0] +
-				"['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)";
+		return "from pandas import Series\n" +
+				"# Only use numeric columns\n" +
+				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
+				"# Use first column as value\n" +
+				"value_column = data[data.columns[0]]\n" +
+				"# List of predicitions\n" +
+				"predictions = []\n" +
+				"# prediciton = value * m + c\n" +
+				"# m is first value in model\n" +
+				"m = " + VARIABLE_NAMES.getInputObjects()[0] + "[0]\n" +
+				"# c is second value in model\n" +
+				"c = " + VARIABLE_NAMES.getInputObjects()[0] + "[1]\n" +
+				"# Iterate over values\n" +
+				"for i in range(len(value_column)):\n" +
+				"\t# Calculate predictions\n" +
+				"\tpredictions.append(value_column[i]*m+c)\n" +
+				"# Copy input table to output table\n" +
+				VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" +
+				"# Append predictions\n" +
+				VARIABLE_NAMES.getOutputTables()[0] + "['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)\n";
 	}
 
 	/**

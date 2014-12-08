@@ -26,8 +26,8 @@
      </extension>
      <extension
            point="org.knime.python.sourcecodetemplates">
-        <folder
-              path="templates">
-        </folder>
+        <directory
+              path="templates/">
+        </directory>
      </extension>
 </plugin>

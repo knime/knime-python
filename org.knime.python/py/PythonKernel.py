@@ -71,7 +71,6 @@ def run():
     pid_response = simpleresponse_pb2.SimpleResponse()
     pid_response.integer = os.getpid()
     write_message(pid_response)
-    reset()
     try:
         while 1:
             command = read_next_command()
@@ -189,10 +188,6 @@ def run():
                 write_dummy()
             elif command.HasField('shutdown'):
                 exit()
-            elif command.HasField('addModules'):
-                for module in command.addModules.modulePath:
-                    _module_manager.add(module)
-                write_dummy()
     finally:
         _connection.close()
 
@@ -309,7 +304,6 @@ def reset():
     global _global_env, _local_env
     _global_env = {}
     _local_env = {}
-    put_variable('load_module', _module_manager.load)
 
 
 # returns true if auto complete is available, false otherwise
@@ -763,7 +757,7 @@ def data_frame_to_protobuf_table(data_frame):
                             object_list_col = table_message.objectListCol.add()
                             object_list_col.isSet = is_set
                             object_list_col.name = str(column)
-                            object_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
+                            object_list_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
                             for cell in data_frame[column]:
                                 object_list_val = object_list_col.objectListValue.add()
                                 object_list_val.isMissing = cell is None
@@ -945,35 +939,16 @@ class TypeExtensionManager:
         self._deserializer_id_to_index[id] = index
 
 
-class ModuleManager:
-    def __init__(self):
-        self._modules = {}
-    def add(self, path):
-        last_separator = path.rfind(os.sep)
-        file_extension_start = path.rfind('.')
-        module_name = path[last_separator+1:file_extension_start]
-        self._modules[module_name] = path
-    def load(self, name):
-        if name not in self._modules:
-            raise LookupError('The module ' + name + ' is unknown')
-        path = self._modules[name]
-        try:
-            put_variable(name, imp.load_source(name, path))
-        except ImportError as e:
-            raise ImportError('Error while loading python module ' + module_name + '\nCause: ' + str(e))
-
-
 def object_to_unicode(object):
     try:
         return unicode(object)
     except UnicodeDecodeError:
-        return '(base64 encoded)\n' + base64.b64encode(value)
+        return '(base64 encoded)\n' + base64.b64encode(object)
     except Exception:
         return ''
 
 
 _type_extension_manager = TypeExtensionManager()
-_module_manager = ModuleManager()
 
 
 run()

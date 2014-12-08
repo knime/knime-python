@@ -48,6 +48,7 @@
 package org.knime.python;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
 
@@ -59,7 +60,8 @@ import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
 import org.knime.python.kernel.PythonModuleExtensions;
-import org.knime.python.typeextension.TypeExtensions;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -92,7 +94,8 @@ public class Activator implements BundleActivator {
 				testPythonInstallation();
 			}
 		}).start();
-		TypeExtensions.init();
+		KnimeToPythonExtensions.init();
+		PythonToKnimeExtensions.init();
 		SourceCodeTemplatesExtensions.init();
 		PythonModuleExtensions.init();
 	}
@@ -137,8 +140,8 @@ public class Activator implements BundleActivator {
 			// != 0 as error
 			pythonTestResult = new PythonKernelTestResult(writer.toString());
 			return pythonTestResult;
-		} catch (Throwable t) {
-			LOGGER.error(t.getMessage(), t);
+		} catch (IOException e) {
+			LOGGER.error(e.getMessage(), e);
 			// Python could not be started
 			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
 		}
@@ -171,7 +174,7 @@ public class Activator implements BundleActivator {
 			URL url = FileLocator.find(bundle, new Path(relativePath), null);
 			return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
 		} catch (Exception e) {
-			LOGGER.error(e.getMessage(), e);
+			LOGGER.debug(e.getMessage(), e);
 			return null;
 		}
 	}
