@@ -372,7 +372,7 @@ class ProtobufConverter {
 						CollectionDataValue collectionCell = (CollectionDataValue) cell;
 						for (DataCell singleCell : collectionCell) {
 							Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-							Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(cell.getType()).getId());
+							Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(singleCell.getType()).getId());
 							if (!singleCell.isMissing()) {
 								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
 							}
@@ -683,8 +683,8 @@ class ProtobufConverter {
 					List<DataCell> singleCells = new ArrayList<DataCell>();
 					for (Table.ObjectValue singleValue : value.getValueList()) {
 						Deserializer deserializer = pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(column.getType()).getId());
-						cells[i] = singleValue.hasValue() ? deserializer
-								.deserialize(singleValue.getValue().toByteArray(), fileStoreFactory) : new MissingCell(null);
+						singleCells.add(singleValue.hasValue() ? deserializer
+								.deserialize(singleValue.getValue().toByteArray(), fileStoreFactory) : new MissingCell(null));
 					}
 					cells[i] = column.getIsSet() ? CollectionCellFactory.createSetCell(singleCells)
 							: CollectionCellFactory.createListCell(singleCells);

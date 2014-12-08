@@ -757,7 +757,7 @@ def data_frame_to_protobuf_table(data_frame):
                             object_list_col = table_message.objectListCol.add()
                             object_list_col.isSet = is_set
                             object_list_col.name = str(column)
-                            object_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
+                            object_list_col.type = _type_extension_manager.get_serializer_id_by_type(type_string)
                             for cell in data_frame[column]:
                                 object_list_val = object_list_col.objectListValue.add()
                                 object_list_val.isMissing = cell is None
