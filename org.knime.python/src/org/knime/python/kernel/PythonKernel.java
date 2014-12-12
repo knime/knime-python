@@ -47,6 +47,7 @@
  */
 package org.knime.python.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -171,7 +172,9 @@ public class PythonKernel {
 		// Start python kernel that listens to the given port
 		ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
 		// Add all python modules to PYTHONPATH variable
-		pb.environment().put("PYTHONPATH", PythonModuleExtensions.getPythonPath());
+		String existingPath = pb.environment().get("PYTHONPATH");
+		existingPath = existingPath == null ? "" : (existingPath + File.pathSeparator);
+		pb.environment().put("PYTHONPATH", existingPath + PythonModuleExtensions.getPythonPath());
 		// Start python
 		m_process = pb.start();
 		try {

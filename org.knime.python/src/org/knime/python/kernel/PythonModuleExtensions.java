@@ -80,7 +80,7 @@ public class PythonModuleExtensions {
 	}
 	
 	public static String getPythonPath() {
-		return StringUtils.join(pythonModulePaths, ":");
+		return StringUtils.join(pythonModulePaths, File.pathSeparator);
 	}
 
 }
