@@ -114,7 +114,7 @@ def check_version_protobuf():
     try:
         import table_pb2
     except Exception as e:
-        add_to_message('Error while trying to load protobuf: ' + str(e))
+        add_to_message('Error while trying to load protobuf:\n' + str(e) + '\nThe minimum required protobuf version is ' + min_protobuf_version)
 
 
 def add_to_message(line):
