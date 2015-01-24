@@ -47,9 +47,7 @@ except ImportError:
     _jedi_available = False
 
 # global variables in the execution environment
-_global_env = {}
-# local variables in the execution environment
-_local_env = {}
+_exec_env = {}
 # TCP connection
 _connection = None
 
@@ -235,7 +233,7 @@ def execute(source_code):
     sys.stdout = output
     # run execute with the provided source code
     try:
-        exec(source_code, _global_env, _local_env)
+        exec(source_code, _exec_env, _exec_env)
     except Exception:
         traceback.print_exc(file=error)
     sys.stdout = sys.__stdout__
@@ -244,18 +242,18 @@ def execute(source_code):
 
 # put the given variable into the local environment under the given name
 def put_variable(name, variable):
-    _local_env[name] = variable
+    _exec_env[name] = variable
 
 
 # append the given data frame to an existing one
 def append_to_table(name, data_frame):
-    _local_env[name] = _local_env[name].append(data_frame)
+    _exec_env[name] = _exec_env[name].append(data_frame)
 
 
 # get the variable with the given name
 def get_variable(name):
-    if name in _local_env:
-        return _local_env[name]
+    if name in _exec_env:
+        return _exec_env[name]
     else:
         return None
 
@@ -268,7 +266,7 @@ def list_variables():
     functions = []
     variables = []
     # iterate over dictionary to and put modules, classes, functions and variables in their respective lists
-    for key, value in dict(_local_env).items():
+    for key, value in dict(_exec_env).items():
         # get name of the type
         var_type = type(value).__name__
         # class type changed from classobj to type in python 3
@@ -281,7 +279,7 @@ def list_variables():
             classes.append({'name': key, 'type': var_type, 'value': ''})
         elif var_type == 'function':
             functions.append({'name': key, 'type': var_type, 'value': ''})
-        else:
+        elif key != '__builtins__':
             value = object_to_unicode(value)
             variables.append({'name': key, 'type': var_type, 'value': value})
     # sort lists by name
@@ -301,9 +299,8 @@ def list_variables():
 # reset the current environment
 def reset():
     # reset environment by emptying variable definitions
-    global _global_env, _local_env
-    _global_env = {}
-    _local_env = {}
+    global _exec_env
+    _exec_env = {}
 
 
 # returns true if auto complete is available, false otherwise
