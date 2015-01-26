@@ -61,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -77,6 +78,7 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.util.ThreadUtils;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
 import org.knime.python.kernel.proto.ProtobufAutocompleteSuggestions.AutocompleteSuggestions;
@@ -128,15 +130,17 @@ public class PythonKernel {
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
 	private static final int CHUNK_SIZE = 1000;
+	
+	private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
-	private Process m_process;
-	private ServerSocket m_serverSocket;
+	private final Process m_process;
+	private final ServerSocket m_serverSocket;
 	private Socket m_socket;
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
 	private boolean m_closed = false;
-	private KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
-	private PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
+	private final KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
+	private final PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -157,7 +161,8 @@ public class PythonKernel {
 		int port = m_serverSocket.getLocalPort();
 		m_serverSocket.setSoTimeout(10000);
 		Thread thread = new Thread(new Runnable() {
-			public void run() {
+			@Override
+            public void run() {
 				try {
 					m_socket = m_serverSocket.accept();
 				} catch (IOException e) {
@@ -247,6 +252,9 @@ public class PythonKernel {
 			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
 			response = ExecuteResponse.parseFrom(readMessageBytes(inFromServer));
 		}
+		if (response.getOutput().length() > 0) {
+			LOGGER.debug(response.getOutput());
+		}
 		return new String[] { response.getOutput(), response.getError() };
 	}
 
@@ -268,8 +276,9 @@ public class PythonKernel {
 		final Thread nodeExecutionThread = Thread.currentThread();
 		final AtomicReference<String[]> output = new AtomicReference<String[]>();
 		// Thread running the execute
-		new Thread(new Runnable() {
-			public void run() {
+		ThreadUtils.threadWithContext(new Runnable() {
+			@Override
+            public void run() {
 				String[] out;
 				try {
 					out = execute(sourceCode);
@@ -285,7 +294,7 @@ public class PythonKernel {
 				// Wake up waiting thread
 				nodeExecutionThread.interrupt();
 			}
-		}).start();
+		}, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
 		// Wait until execution is done
 		while (done.get() != true) {
 			try {
@@ -550,7 +559,8 @@ public class PythonKernel {
 		final Thread nodeExecutionThread = Thread.currentThread();
 		// Thread running the execute
 		new Thread(new Runnable() {
-			public void run() {
+			@Override
+            public void run() {
 				try {
 					pickledObject.set(getObject(name));
 				} catch (Exception e) {
@@ -598,7 +608,8 @@ public class PythonKernel {
 		final Thread nodeExecutionThread = Thread.currentThread();
 		// Thread running the execute
 		new Thread(new Runnable() {
-			public void run() {
+			@Override
+            public void run() {
 				try {
 					putObject(name, object);
 				} catch (Exception e) {
@@ -724,7 +735,8 @@ public class PythonKernel {
 		if (!m_closed) {
 			m_closed = true;
 			new Thread(new Runnable() {
-				public void run() {
+				@Override
+                public void run() {
 					printStreamToLog();
 					// Send shutdown
 					try {
