@@ -67,6 +67,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.python.Activator;
 import org.knime.python.PythonKernelTestResult;
+import org.knime.python.kernel.EditorObjectWriter;
 import org.knime.python.kernel.PythonKernelManager;
 import org.knime.python.kernel.PythonKernelResponseHandler;
 import org.knime.python.port.PickledObject;
@@ -75,7 +76,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * Source code panel for python code.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonSourceCodePanel extends SourceCodePanel {
@@ -84,10 +85,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
 	private PythonKernelManager m_kernelManager;
 	private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
-	private PickledObject[] m_inputObjects = new PickledObject[0];
-	private Lock m_lock = new ReentrantLock();
+	private PickledObject[] m_pythonInputObjects = new PickledObject[0];
+	private EditorObjectWriter[] m_generalInputObjects = new EditorObjectWriter[0];
+	private final Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
 	private JProgressBarProgressMonitor m_progressMonitor;
+
 
 	/**
 	 * Create a python source code panel.
@@ -129,7 +132,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 							setStatusMessage("Python successfully started");
 							putDataIntoPython();
 							setInteractive(true);
-						} catch (IOException e) {
+						} catch (final IOException e) {
 							logError(e, "Error during python start");
 						}
 					}
@@ -158,19 +161,25 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void updateData(BufferedDataTable[] inputData) {
+	public void updateData(final BufferedDataTable[] inputData) {
 		super.updateData(inputData);
 		m_inputData = inputData;
+		putDataIntoPython();
+	}
+
+	public void updateData(final EditorObjectWriter... spec) {
+		super.updateData(m_inputData);
+		m_generalInputObjects = spec;
 		putDataIntoPython();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public void updateData(BufferedDataTable[] inputData, PickledObject[] inputObjects) {
+	public void updateData(final BufferedDataTable[] inputData, final PickledObject[] inputObjects) {
 		super.updateData(inputData);
 		m_inputData = inputData;
-		m_inputObjects = inputObjects;
+		m_pythonInputObjects = inputObjects;
 		putDataIntoPython();
 	}
 
@@ -208,7 +217,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						setStatusMessage("Python successfully restarted");
 						putDataIntoPython();
 						setInteractive(true);
-					} catch (IOException e) {
+					} catch (final IOException e) {
 						logError(e, "Error during python restart");
 					}
 					m_lock.unlock();
@@ -217,7 +226,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 			// Execute will be run in a separate thread by the kernel manager
 			m_kernelManager.execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
 				@Override
-				public void handleResponse(String[] response, Exception exception) {
+				public void handleResponse(final String[] response, final Exception exception) {
 					m_lock.lock();
 					// Check if kernel was restarted since start of the
 					// execution, if it was we don't care about the response
@@ -248,14 +257,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		if (m_kernelManager != null) {
 			m_kernelManager.listVariables(new PythonKernelResponseHandler<List<Map<String, String>>>() {
 				@Override
-				public void handleResponse(List<Map<String, String>> response, Exception exception) {
+				public void handleResponse(final List<Map<String, String>> response, final Exception exception) {
 					if (exception != null) {
 						setVariables(new Variable[0]);
 					} else {
 						// Create Variable array from response
-						Variable[] variables = new Variable[response.size()];
+						final Variable[] variables = new Variable[response.size()];
 						for (int i = 0; i < variables.length; i++) {
-							Map<String, String> variable = response.get(i);
+							final Map<String, String> variable = response.get(i);
 							variables[i] = new Variable(variable.get("name"), variable.get("type"), variable
 									.get("value"));
 						}
@@ -278,7 +287,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		if (m_kernelManager != null) {
 			m_kernelManager.resetWorkspace(new PythonKernelResponseHandler<Void>() {
 				@Override
-				public void handleResponse(Void response, Exception exception) {
+				public void handleResponse(final Void response, final Exception exception) {
 					if (exception != null) {
 						logError(exception, null);
 					}
@@ -305,11 +314,11 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 			m_kernelManager.autoComplete(sourceCode, line, column,
 					new PythonKernelResponseHandler<List<Map<String, String>>>() {
 						@Override
-						public void handleResponse(List<Map<String, String>> response, Exception exception) {
+						public void handleResponse(final List<Map<String, String>> response, final Exception exception) {
 							if (exception == null) {
-								for (Map<String, String> completion : response) {
+								for (final Map<String, String> completion : response) {
 									String name = completion.get("name");
-									String type = completion.get("type");
+									final String type = completion.get("type");
 									String doc = completion.get("doc").trim();
 									if (type.equals("function")) {
 										name += "()";
@@ -329,7 +338,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 					// Since this is run in Swings UI thread, we don't want to
 					// wait for to long
 					completions.wait(2000);
-				} catch (InterruptedException e) {
+				} catch (final InterruptedException e) {
 					//
 				}
 			}
@@ -376,10 +385,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 			setStatusMessage("Loading input data into python");
 			m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
 			m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData, getVariableNames()
-					.getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(), m_inputObjects,
-					new PythonKernelResponseHandler<Void>() {
+					.getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(), m_pythonInputObjects,
+					m_generalInputObjects, new PythonKernelResponseHandler<Void>() {
 						@Override
-						public void handleResponse(Void response, Exception exception) {
+						public void handleResponse(final Void response, final Exception exception) {
 							if (exception != null) {
 								if (m_progressMonitor != null) {
 									m_progressMonitor.setCanceled(true);
@@ -404,7 +413,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	/**
 	 * Logs the given error in the console as error and
 	 * optionally sets a status message.
-	 * 
+	 *
 	 * @param exception
 	 *            The exception to log
 	 * @param statusMessage
@@ -431,10 +440,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected ImageContainer getOutImage(String name) {
+	protected ImageContainer getOutImage(final String name) {
 		try {
 			return m_kernelManager.getImage(name);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			return null;
 		}
 	}
@@ -443,7 +452,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected String createVariableAccessString(String variable, String field) {
+	protected String createVariableAccessString(final String variable, final String field) {
 		return variable + "['" + field.replace("\\", "\\\\").replace("'", "\\'") + "']";
 	}
 

@@ -64,7 +64,7 @@ import org.knime.python.port.PickledObject;
 /**
  * Manages a python kernel including executing commands in separate threads and
  * switching the underling kernel.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernelManager {
@@ -74,7 +74,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Creates a manager that will start a new python kernel.
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	public PythonKernelManager() throws IOException {
@@ -84,7 +84,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Returns the image with the given name.
-	 * 
+	 *
 	 * @param name
 	 *            Name of the image
 	 * @return The image
@@ -94,7 +94,7 @@ public class PythonKernelManager {
 	public synchronized ImageContainer getImage(final String name) throws IOException {
 		return m_kernel.getImage(name);
 	}
-	
+
 	public synchronized void putObject(final String name, final PickledObject object,
 			final PythonKernelResponseHandler<Void> responseHandler) {
 		final PythonKernel kernel = m_kernel;
@@ -104,7 +104,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					kernel.putObject(name, object);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -123,7 +123,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					response = kernel.getObject(name);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -135,9 +135,9 @@ public class PythonKernelManager {
 
 	/**
 	 * Switches the underling python kernel and closes the old one.
-	 * 
+	 *
 	 * This can be used to shutdown an unresponsive kernel.
-	 * 
+	 *
 	 * @throws IOException
 	 *             If an error occurs during creation of the new python kernel
 	 */
@@ -148,7 +148,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Execute the given source code.
-	 * 
+	 *
 	 * @param sourceCode
 	 *            The source code to execute
 	 * @param responseHandler
@@ -164,7 +164,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					response = kernel.execute(sourceCode);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -176,7 +176,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Put the given flow variables into the workspace.
-	 * 
+	 *
 	 * @param name
 	 *            The name of the flow variables dict
 	 * @param flowVariables
@@ -194,7 +194,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					kernel.putFlowVariables(name, flowVariables);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -206,7 +206,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Put the given {@link DataTable} into the workspace.
-	 * 
+	 *
 	 * @param name
 	 *            The name of the table
 	 * @param table
@@ -218,6 +218,26 @@ public class PythonKernelManager {
 	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
 			final String variablesName, final Collection<FlowVariable> variables,
 			final String[] objectNames, final PickledObject[] objects,
+			final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
+			final int rowLimit) {
+		putData(tableNames, tables, variablesName, variables, objectNames, objects,
+				new EditorObjectWriter[0], responseHandler, executionMonitor, rowLimit);
+	}
+
+	/**
+	 * Put the given {@link DataTable} into the workspace.
+	 *
+	 * @param name
+	 *            The name of the table
+	 * @param table
+	 *            The table
+	 * @param responseHandler
+	 *            Handler called after execution (response object is always
+	 *            null)
+	 */
+	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
+			final String variablesName, final Collection<FlowVariable> variables,
+			final String[] objectNames, final PickledObject[] objects, final EditorObjectWriter[] generalObjects,
 			final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
 			final int rowLimit) {
 		final PythonKernel kernel = m_kernel;
@@ -234,7 +254,10 @@ public class PythonKernelManager {
 						kernel.putDataTable(tableNames[i], tables[i],
 								executionMonitor.createSubProgress(1 / (double) tables.length), rowLimit);
 					}
-				} catch (Exception e) {
+					for (final EditorObjectWriter generalObject : generalObjects) {
+						kernel.putGeneralObject(generalObject);
+					}
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -246,7 +269,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Get a {@link DataTable} from the workspace.
-	 * 
+	 *
 	 * @param name
 	 *            The name of the table to get
 	 * @return The table
@@ -263,7 +286,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					response = kernel.getDataTable(name, exec, executionMonitor);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -276,9 +299,9 @@ public class PythonKernelManager {
 	/**
 	 * Returns the list of all defined variables, functions, classes and loaded
 	 * modules.
-	 * 
+	 *
 	 * Each variable map contains the fields 'name', 'type' and 'value'.
-	 * 
+	 *
 	 * @param responseHandler
 	 *            Handler for the responded list of variables
 	 */
@@ -291,7 +314,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					response = kernel.listVariables();
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -303,7 +326,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Resets the workspace of the python kernel.
-	 * 
+	 *
 	 * @param responseHandler
 	 *            Handler called after execution (response object is always
 	 *            null)
@@ -316,7 +339,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					kernel.resetWorkspace();
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -329,9 +352,9 @@ public class PythonKernelManager {
 	/**
 	 * Returns the list of possible auto completions to the given source at the
 	 * given position.
-	 * 
+	 *
 	 * Each auto completion contains the fields 'name', 'type' and 'doc'.
-	 * 
+	 *
 	 * @param sourceCode
 	 *            The source code
 	 * @param line
@@ -351,7 +374,7 @@ public class PythonKernelManager {
 				Exception exception = null;
 				try {
 					response = kernel.autoComplete(sourceCode, line, column);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					exception = e;
 				}
 				if (kernel.equals(m_kernel)) {
@@ -372,14 +395,14 @@ public class PythonKernelManager {
 
 	/**
 	 * Runs the given runnable in a separate thread.
-	 * 
+	 *
 	 * @param runnable
 	 *            The runnable to run
 	 */
 	private void runInThread(final Runnable runnable) {
 		try {
 			m_threadPool.submit(runnable);
-		} catch (InterruptedException e) {
+		} catch (final InterruptedException e) {
 			//
 		}
 	}

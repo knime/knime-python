@@ -220,6 +220,34 @@ public final class ProtobufPythonKernelCommand {
      * <code>optional .knime.Command.Shutdown shutdown = 15;</code>
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ShutdownOrBuilder getShutdownOrBuilder();
+
+    // optional .knime.Command.PutSQL putSQL = 16;
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    boolean hasPutSQL();
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL getPutSQL();
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder getPutSQLOrBuilder();
+
+    // optional .knime.Command.GetSQL getSQL = 17;
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    boolean hasGetSQL();
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getGetSQL();
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder getGetSQLOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -465,6 +493,32 @@ public final class ProtobufPythonKernelCommand {
                 shutdown_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00004000;
+              break;
+            }
+            case 130: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder subBuilder = null;
+              if (((bitField0_ & 0x00008000) == 0x00008000)) {
+                subBuilder = putSQL_.toBuilder();
+              }
+              putSQL_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(putSQL_);
+                putSQL_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00008000;
+              break;
+            }
+            case 138: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder subBuilder = null;
+              if (((bitField0_ & 0x00010000) == 0x00010000)) {
+                subBuilder = getSQL_.toBuilder();
+              }
+              getSQL_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(getSQL_);
+                getSQL_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00010000;
               break;
             }
           }
@@ -12551,6 +12605,1380 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.Shutdown)
     }
 
+    public interface PutSQLOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string key = 1;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      boolean hasKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      java.lang.String getKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getKeyBytes();
+
+      // required .knime.SQLInput sql = 2;
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      boolean hasSql();
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput getSql();
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder getSqlOrBuilder();
+    }
+    /**
+     * Protobuf type {@code knime.Command.PutSQL}
+     */
+    public static final class PutSQL extends
+        com.google.protobuf.GeneratedMessage
+        implements PutSQLOrBuilder {
+      // Use PutSQL.newBuilder() to construct.
+      private PutSQL(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private PutSQL(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final PutSQL defaultInstance;
+      public static PutSQL getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public PutSQL getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private PutSQL(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = sql_.toBuilder();
+                }
+                sql_ = input.readMessage(org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(sql_);
+                  sql_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutSQL_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutSQL_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<PutSQL> PARSER =
+          new com.google.protobuf.AbstractParser<PutSQL>() {
+        public PutSQL parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new PutSQL(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<PutSQL> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private java.lang.Object key_;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required .knime.SQLInput sql = 2;
+      public static final int SQL_FIELD_NUMBER = 2;
+      private org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput sql_;
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      public boolean hasSql() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput getSql() {
+        return sql_;
+      }
+      /**
+       * <code>required .knime.SQLInput sql = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder getSqlOrBuilder() {
+        return sql_;
+      }
+
+      private void initFields() {
+        key_ = "";
+        sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance();
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasSql()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!getSql().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeMessage(2, sql_);
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeMessageSize(2, sql_);
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.PutSQL}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutSQL_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutSQL_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+            getSqlFieldBuilder();
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          if (sqlBuilder_ == null) {
+            sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance();
+          } else {
+            sqlBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutSQL_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          if (sqlBuilder_ == null) {
+            result.sql_ = sql_;
+          } else {
+            result.sql_ = sqlBuilder_.build();
+          }
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            bitField0_ |= 0x00000001;
+            key_ = other.key_;
+            onChanged();
+          }
+          if (other.hasSql()) {
+            mergeSql(other.getSql());
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          if (!hasSql()) {
+            
+            return false;
+          }
+          if (!getSql().isInitialized()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string key = 1;
+        private java.lang.Object key_ = "";
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public java.lang.String getKey() {
+          java.lang.Object ref = key_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getKeyBytes() {
+          java.lang.Object ref = key_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            key_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKey(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKeyBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+
+        // required .knime.SQLInput sql = 2;
+        private org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance();
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder> sqlBuilder_;
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public boolean hasSql() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput getSql() {
+          if (sqlBuilder_ == null) {
+            return sql_;
+          } else {
+            return sqlBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public Builder setSql(org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput value) {
+          if (sqlBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            sql_ = value;
+            onChanged();
+          } else {
+            sqlBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public Builder setSql(
+            org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder builderForValue) {
+          if (sqlBuilder_ == null) {
+            sql_ = builderForValue.build();
+            onChanged();
+          } else {
+            sqlBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public Builder mergeSql(org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput value) {
+          if (sqlBuilder_ == null) {
+            if (((bitField0_ & 0x00000002) == 0x00000002) &&
+                sql_ != org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance()) {
+              sql_ =
+                org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.newBuilder(sql_).mergeFrom(value).buildPartial();
+            } else {
+              sql_ = value;
+            }
+            onChanged();
+          } else {
+            sqlBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public Builder clearSql() {
+          if (sqlBuilder_ == null) {
+            sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance();
+            onChanged();
+          } else {
+            sqlBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder getSqlBuilder() {
+          bitField0_ |= 0x00000002;
+          onChanged();
+          return getSqlFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder getSqlOrBuilder() {
+          if (sqlBuilder_ != null) {
+            return sqlBuilder_.getMessageOrBuilder();
+          } else {
+            return sql_;
+          }
+        }
+        /**
+         * <code>required .knime.SQLInput sql = 2;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder> 
+            getSqlFieldBuilder() {
+          if (sqlBuilder_ == null) {
+            sqlBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder>(
+                    sql_,
+                    getParentForChildren(),
+                    isClean());
+            sql_ = null;
+          }
+          return sqlBuilder_;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.PutSQL)
+      }
+
+      static {
+        defaultInstance = new PutSQL(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.PutSQL)
+    }
+
+    public interface GetSQLOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string key = 1;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      boolean hasKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      java.lang.String getKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getKeyBytes();
+
+      // required .knime.SQLOutput sql = 2;
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      boolean hasSql();
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput getSql();
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder getSqlOrBuilder();
+    }
+    /**
+     * Protobuf type {@code knime.Command.GetSQL}
+     */
+    public static final class GetSQL extends
+        com.google.protobuf.GeneratedMessage
+        implements GetSQLOrBuilder {
+      // Use GetSQL.newBuilder() to construct.
+      private GetSQL(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private GetSQL(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final GetSQL defaultInstance;
+      public static GetSQL getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public GetSQL getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private GetSQL(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = sql_.toBuilder();
+                }
+                sql_ = input.readMessage(org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(sql_);
+                  sql_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetSQL_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetSQL_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<GetSQL> PARSER =
+          new com.google.protobuf.AbstractParser<GetSQL>() {
+        public GetSQL parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new GetSQL(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<GetSQL> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private java.lang.Object key_;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required .knime.SQLOutput sql = 2;
+      public static final int SQL_FIELD_NUMBER = 2;
+      private org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput sql_;
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      public boolean hasSql() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput getSql() {
+        return sql_;
+      }
+      /**
+       * <code>required .knime.SQLOutput sql = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder getSqlOrBuilder() {
+        return sql_;
+      }
+
+      private void initFields() {
+        key_ = "";
+        sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.getDefaultInstance();
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasSql()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!getSql().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeMessage(2, sql_);
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeMessageSize(2, sql_);
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.GetSQL}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetSQL_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetSQL_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+            getSqlFieldBuilder();
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          if (sqlBuilder_ == null) {
+            sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.getDefaultInstance();
+          } else {
+            sqlBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetSQL_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          if (sqlBuilder_ == null) {
+            result.sql_ = sql_;
+          } else {
+            result.sql_ = sqlBuilder_.build();
+          }
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            bitField0_ |= 0x00000001;
+            key_ = other.key_;
+            onChanged();
+          }
+          if (other.hasSql()) {
+            mergeSql(other.getSql());
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          if (!hasSql()) {
+            
+            return false;
+          }
+          if (!getSql().isInitialized()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string key = 1;
+        private java.lang.Object key_ = "";
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public java.lang.String getKey() {
+          java.lang.Object ref = key_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getKeyBytes() {
+          java.lang.Object ref = key_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            key_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKey(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKeyBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+
+        // required .knime.SQLOutput sql = 2;
+        private org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.getDefaultInstance();
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder> sqlBuilder_;
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public boolean hasSql() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput getSql() {
+          if (sqlBuilder_ == null) {
+            return sql_;
+          } else {
+            return sqlBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public Builder setSql(org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput value) {
+          if (sqlBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            sql_ = value;
+            onChanged();
+          } else {
+            sqlBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public Builder setSql(
+            org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder builderForValue) {
+          if (sqlBuilder_ == null) {
+            sql_ = builderForValue.build();
+            onChanged();
+          } else {
+            sqlBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public Builder mergeSql(org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput value) {
+          if (sqlBuilder_ == null) {
+            if (((bitField0_ & 0x00000002) == 0x00000002) &&
+                sql_ != org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.getDefaultInstance()) {
+              sql_ =
+                org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.newBuilder(sql_).mergeFrom(value).buildPartial();
+            } else {
+              sql_ = value;
+            }
+            onChanged();
+          } else {
+            sqlBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000002;
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public Builder clearSql() {
+          if (sqlBuilder_ == null) {
+            sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.getDefaultInstance();
+            onChanged();
+          } else {
+            sqlBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder getSqlBuilder() {
+          bitField0_ |= 0x00000002;
+          onChanged();
+          return getSqlFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder getSqlOrBuilder() {
+          if (sqlBuilder_ != null) {
+            return sqlBuilder_.getMessageOrBuilder();
+          } else {
+            return sql_;
+          }
+        }
+        /**
+         * <code>required .knime.SQLOutput sql = 2;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder> 
+            getSqlFieldBuilder() {
+          if (sqlBuilder_ == null) {
+            sqlBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.SQLOutputOrBuilder>(
+                    sql_,
+                    getParentForChildren(),
+                    isClean());
+            sql_ = null;
+          }
+          return sqlBuilder_;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.GetSQL)
+      }
+
+      static {
+        defaultInstance = new GetSQL(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.GetSQL)
+    }
+
     private int bitField0_;
     // optional .knime.Command.Execute execute = 1;
     public static final int EXECUTE_FIELD_NUMBER = 1;
@@ -12882,6 +14310,50 @@ public final class ProtobufPythonKernelCommand {
       return shutdown_;
     }
 
+    // optional .knime.Command.PutSQL putSQL = 16;
+    public static final int PUTSQL_FIELD_NUMBER = 16;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL putSQL_;
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    public boolean hasPutSQL() {
+      return ((bitField0_ & 0x00008000) == 0x00008000);
+    }
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL getPutSQL() {
+      return putSQL_;
+    }
+    /**
+     * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder getPutSQLOrBuilder() {
+      return putSQL_;
+    }
+
+    // optional .knime.Command.GetSQL getSQL = 17;
+    public static final int GETSQL_FIELD_NUMBER = 17;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getSQL_;
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    public boolean hasGetSQL() {
+      return ((bitField0_ & 0x00010000) == 0x00010000);
+    }
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getGetSQL() {
+      return getSQL_;
+    }
+    /**
+     * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder getGetSQLOrBuilder() {
+      return getSQL_;
+    }
+
     private void initFields() {
       execute_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute.getDefaultInstance();
       putFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.getDefaultInstance();
@@ -12898,6 +14370,8 @@ public final class ProtobufPythonKernelCommand {
       addSerializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddSerializers.getDefaultInstance();
       addDeserializers_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AddDeserializers.getDefaultInstance();
       shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
+      putSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
+      getSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -12970,6 +14444,18 @@ public final class ProtobufPythonKernelCommand {
           return false;
         }
       }
+      if (hasPutSQL()) {
+        if (!getPutSQL().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasGetSQL()) {
+        if (!getGetSQL().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -13021,6 +14507,12 @@ public final class ProtobufPythonKernelCommand {
       }
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         output.writeMessage(15, shutdown_);
+      }
+      if (((bitField0_ & 0x00008000) == 0x00008000)) {
+        output.writeMessage(16, putSQL_);
+      }
+      if (((bitField0_ & 0x00010000) == 0x00010000)) {
+        output.writeMessage(17, getSQL_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -13090,6 +14582,14 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(15, shutdown_);
+      }
+      if (((bitField0_ & 0x00008000) == 0x00008000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(16, putSQL_);
+      }
+      if (((bitField0_ & 0x00010000) == 0x00010000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(17, getSQL_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13214,6 +14714,8 @@ public final class ProtobufPythonKernelCommand {
           getAddSerializersFieldBuilder();
           getAddDeserializersFieldBuilder();
           getShutdownFieldBuilder();
+          getPutSQLFieldBuilder();
+          getGetSQLFieldBuilder();
         }
       }
       private static Builder create() {
@@ -13312,6 +14814,18 @@ public final class ProtobufPythonKernelCommand {
           shutdownBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00004000);
+        if (putSQLBuilder_ == null) {
+          putSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
+        } else {
+          putSQLBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00008000);
+        if (getSQLBuilder_ == null) {
+          getSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
+        } else {
+          getSQLBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00010000);
         return this;
       }
 
@@ -13460,6 +14974,22 @@ public final class ProtobufPythonKernelCommand {
         } else {
           result.shutdown_ = shutdownBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
+          to_bitField0_ |= 0x00008000;
+        }
+        if (putSQLBuilder_ == null) {
+          result.putSQL_ = putSQL_;
+        } else {
+          result.putSQL_ = putSQLBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
+          to_bitField0_ |= 0x00010000;
+        }
+        if (getSQLBuilder_ == null) {
+          result.getSQL_ = getSQL_;
+        } else {
+          result.getSQL_ = getSQLBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -13520,6 +15050,12 @@ public final class ProtobufPythonKernelCommand {
         }
         if (other.hasShutdown()) {
           mergeShutdown(other.getShutdown());
+        }
+        if (other.hasPutSQL()) {
+          mergePutSQL(other.getPutSQL());
+        }
+        if (other.hasGetSQL()) {
+          mergeGetSQL(other.getGetSQL());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -13588,6 +15124,18 @@ public final class ProtobufPythonKernelCommand {
         }
         if (hasAddDeserializers()) {
           if (!getAddDeserializers().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasPutSQL()) {
+          if (!getPutSQL().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasGetSQL()) {
+          if (!getGetSQL().isInitialized()) {
             
             return false;
           }
@@ -15369,6 +16917,240 @@ public final class ProtobufPythonKernelCommand {
         return shutdownBuilder_;
       }
 
+      // optional .knime.Command.PutSQL putSQL = 16;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL putSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder> putSQLBuilder_;
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public boolean hasPutSQL() {
+        return ((bitField0_ & 0x00008000) == 0x00008000);
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL getPutSQL() {
+        if (putSQLBuilder_ == null) {
+          return putSQL_;
+        } else {
+          return putSQLBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public Builder setPutSQL(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL value) {
+        if (putSQLBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          putSQL_ = value;
+          onChanged();
+        } else {
+          putSQLBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00008000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public Builder setPutSQL(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder builderForValue) {
+        if (putSQLBuilder_ == null) {
+          putSQL_ = builderForValue.build();
+          onChanged();
+        } else {
+          putSQLBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00008000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public Builder mergePutSQL(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL value) {
+        if (putSQLBuilder_ == null) {
+          if (((bitField0_ & 0x00008000) == 0x00008000) &&
+              putSQL_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance()) {
+            putSQL_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.newBuilder(putSQL_).mergeFrom(value).buildPartial();
+          } else {
+            putSQL_ = value;
+          }
+          onChanged();
+        } else {
+          putSQLBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00008000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public Builder clearPutSQL() {
+        if (putSQLBuilder_ == null) {
+          putSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
+          onChanged();
+        } else {
+          putSQLBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00008000);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder getPutSQLBuilder() {
+        bitField0_ |= 0x00008000;
+        onChanged();
+        return getPutSQLFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder getPutSQLOrBuilder() {
+        if (putSQLBuilder_ != null) {
+          return putSQLBuilder_.getMessageOrBuilder();
+        } else {
+          return putSQL_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.PutSQL putSQL = 16;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder> 
+          getPutSQLFieldBuilder() {
+        if (putSQLBuilder_ == null) {
+          putSQLBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQLOrBuilder>(
+                  putSQL_,
+                  getParentForChildren(),
+                  isClean());
+          putSQL_ = null;
+        }
+        return putSQLBuilder_;
+      }
+
+      // optional .knime.Command.GetSQL getSQL = 17;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder> getSQLBuilder_;
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public boolean hasGetSQL() {
+        return ((bitField0_ & 0x00010000) == 0x00010000);
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL getGetSQL() {
+        if (getSQLBuilder_ == null) {
+          return getSQL_;
+        } else {
+          return getSQLBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public Builder setGetSQL(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL value) {
+        if (getSQLBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          getSQL_ = value;
+          onChanged();
+        } else {
+          getSQLBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00010000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public Builder setGetSQL(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder builderForValue) {
+        if (getSQLBuilder_ == null) {
+          getSQL_ = builderForValue.build();
+          onChanged();
+        } else {
+          getSQLBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00010000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public Builder mergeGetSQL(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL value) {
+        if (getSQLBuilder_ == null) {
+          if (((bitField0_ & 0x00010000) == 0x00010000) &&
+              getSQL_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance()) {
+            getSQL_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.newBuilder(getSQL_).mergeFrom(value).buildPartial();
+          } else {
+            getSQL_ = value;
+          }
+          onChanged();
+        } else {
+          getSQLBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00010000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public Builder clearGetSQL() {
+        if (getSQLBuilder_ == null) {
+          getSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
+          onChanged();
+        } else {
+          getSQLBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00010000);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder getGetSQLBuilder() {
+        bitField0_ |= 0x00010000;
+        onChanged();
+        return getGetSQLFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder getGetSQLOrBuilder() {
+        if (getSQLBuilder_ != null) {
+          return getSQLBuilder_.getMessageOrBuilder();
+        } else {
+          return getSQL_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder> 
+          getGetSQLFieldBuilder() {
+        if (getSQLBuilder_ == null) {
+          getSQLBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder>(
+                  getSQL_,
+                  getParentForChildren(),
+                  isClean());
+          getSQL_ = null;
+        }
+        return getSQLBuilder_;
+      }
+
       // @@protoc_insertion_point(builder_scope:knime.Command)
     }
 
@@ -15485,6 +17267,16 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_Shutdown_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_PutSQL_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_PutSQL_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_GetSQL_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_GetSQL_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -15494,53 +17286,59 @@ public final class ProtobufPythonKernelCommand {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcommand.proto\022\005knime\032\013table.proto\"\352\r\n\007" +
-      "Command\022\'\n\007execute\030\001 \001(\0132\026.knime.Command" +
-      ".Execute\0229\n\020putFlowVariables\030\002 \001(\0132\037.kni" +
-      "me.Command.PutFlowVariables\022)\n\010putTable\030" +
-      "\003 \001(\0132\027.knime.Command.PutTable\0223\n\rappend" +
-      "ToTable\030\004 \001(\0132\034.knime.Command.AppendToTa" +
-      "ble\022)\n\010getTable\030\005 \001(\0132\027.knime.Command.Ge" +
-      "tTable\0223\n\rlistVariables\030\006 \001(\0132\034.knime.Co" +
-      "mmand.ListVariables\022#\n\005reset\030\007 \001(\0132\024.kni" +
-      "me.Command.Reset\0227\n\017hasAutoComplete\030\010 \001(",
-      "\0132\036.knime.Command.HasAutoComplete\0221\n\014aut" +
-      "oComplete\030\t \001(\0132\033.knime.Command.AutoComp" +
-      "lete\022)\n\010getImage\030\n \001(\0132\027.knime.Command.G" +
-      "etImage\022+\n\tgetObject\030\013 \001(\0132\030.knime.Comma" +
-      "nd.GetObject\022+\n\tputObject\030\014 \001(\0132\030.knime." +
-      "Command.PutObject\0225\n\016addSerializers\030\r \001(" +
-      "\0132\035.knime.Command.AddSerializers\0229\n\020addD" +
-      "eserializers\030\016 \001(\0132\037.knime.Command.AddDe" +
-      "serializers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Co" +
-      "mmand.Shutdown\032\035\n\007Execute\022\022\n\nsourceCode\030",
-      "\001 \002(\t\032\204\003\n\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022" +
-      "H\n\017integerVariable\030\002 \003(\0132/.knime.Command" +
-      ".PutFlowVariables.IntegerVariable\022F\n\016dou" +
-      "bleVariable\030\003 \003(\0132..knime.Command.PutFlo" +
-      "wVariables.DoubleVariable\022F\n\016stringVaria" +
-      "ble\030\004 \003(\0132..knime.Command.PutFlowVariabl" +
-      "es.StringVariable\032-\n\017IntegerVariable\022\013\n\003" +
-      "key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariab" +
-      "le\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016String" +
-      "Variable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010",
-      "PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.k" +
-      "nime.Table\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t" +
-      "\022\033\n\005table\030\002 \002(\0132\014.knime.Table\032*\n\010GetTabl" +
-      "e\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rLis" +
-      "tVariables\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@" +
-      "\n\014AutoComplete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004li" +
-      "ne\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003" +
-      "key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tP" +
-      "utObject\022\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002" +
-      " \002(\014\032?\n\016AddSerializers\022-\n\nserializer\030\001 \003",
-      "(\0132\031.knime.Command.Serializer\0324\n\nSeriali" +
-      "zer\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 " +
-      "\002(\t\032E\n\020AddDeserializers\0221\n\014deserializer\030" +
-      "\001 \003(\0132\033.knime.Command.Deserializer\032(\n\014De" +
-      "serializer\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010" +
-      "ShutdownB<\n\035org.knime.python.kernel.prot" +
-      "oB\033ProtobufPythonKernelCommand"
+      "\n\rcommand.proto\022\005knime\032\013table.proto\032\016sql" +
+      "Input.proto\032\017sqlOutput.proto\"\243\017\n\007Command" +
+      "\022\'\n\007execute\030\001 \001(\0132\026.knime.Command.Execut" +
+      "e\0229\n\020putFlowVariables\030\002 \001(\0132\037.knime.Comm" +
+      "and.PutFlowVariables\022)\n\010putTable\030\003 \001(\0132\027" +
+      ".knime.Command.PutTable\0223\n\rappendToTable" +
+      "\030\004 \001(\0132\034.knime.Command.AppendToTable\022)\n\010" +
+      "getTable\030\005 \001(\0132\027.knime.Command.GetTable\022" +
+      "3\n\rlistVariables\030\006 \001(\0132\034.knime.Command.L" +
+      "istVariables\022#\n\005reset\030\007 \001(\0132\024.knime.Comm",
+      "and.Reset\0227\n\017hasAutoComplete\030\010 \001(\0132\036.kni" +
+      "me.Command.HasAutoComplete\0221\n\014autoComple" +
+      "te\030\t \001(\0132\033.knime.Command.AutoComplete\022)\n" +
+      "\010getImage\030\n \001(\0132\027.knime.Command.GetImage" +
+      "\022+\n\tgetObject\030\013 \001(\0132\030.knime.Command.GetO" +
+      "bject\022+\n\tputObject\030\014 \001(\0132\030.knime.Command" +
+      ".PutObject\0225\n\016addSerializers\030\r \001(\0132\035.kni" +
+      "me.Command.AddSerializers\0229\n\020addDeserial" +
+      "izers\030\016 \001(\0132\037.knime.Command.AddDeseriali" +
+      "zers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Command.S",
+      "hutdown\022%\n\006putSQL\030\020 \001(\0132\025.knime.Command." +
+      "PutSQL\022%\n\006getSQL\030\021 \001(\0132\025.knime.Command.G" +
+      "etSQL\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032\204\003\n" +
+      "\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017intege" +
+      "rVariable\030\002 \003(\0132/.knime.Command.PutFlowV" +
+      "ariables.IntegerVariable\022F\n\016doubleVariab" +
+      "le\030\003 \003(\0132..knime.Command.PutFlowVariable" +
+      "s.DoubleVariable\022F\n\016stringVariable\030\004 \003(\013" +
+      "2..knime.Command.PutFlowVariables.String" +
+      "Variable\032-\n\017IntegerVariable\022\013\n\003key\030\001 \002(\t",
+      "\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022\013\n\003key" +
+      "\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVariable\022" +
+      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010PutTable\022" +
+      "\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Tabl" +
+      "e\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table" +
+      "\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003key\030" +
+      "\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariable" +
+      "s\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014AutoCom" +
+      "plete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022" +
+      "\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002(\t",
+      "\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutObject\022" +
+      "\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(\014\032?\n\016A" +
+      "ddSerializers\022-\n\nserializer\030\001 \003(\0132\031.knim" +
+      "e.Command.Serializer\0324\n\nSerializer\022\n\n\002id" +
+      "\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t\032E\n\020Ad" +
+      "dDeserializers\0221\n\014deserializer\030\001 \003(\0132\033.k" +
+      "nime.Command.Deserializer\032(\n\014Deserialize" +
+      "r\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010Shutdown\032" +
+      "3\n\006PutSQL\022\013\n\003key\030\001 \002(\t\022\034\n\003sql\030\002 \002(\0132\017.kn" +
+      "ime.SQLInput\0324\n\006GetSQL\022\013\n\003key\030\001 \002(\t\022\035\n\003s",
+      "ql\030\002 \002(\0132\020.knime.SQLOutputB<\n\035org.knime." +
+      "python.kernel.protoB\033ProtobufPythonKerne" +
+      "lCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -15552,7 +17350,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", "PutSQL", "GetSQL", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -15673,6 +17471,18 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_Shutdown_descriptor,
               new java.lang.String[] { });
+          internal_static_knime_Command_PutSQL_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(17);
+          internal_static_knime_Command_PutSQL_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_PutSQL_descriptor,
+              new java.lang.String[] { "Key", "Sql", });
+          internal_static_knime_Command_GetSQL_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(18);
+          internal_static_knime_Command_GetSQL_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_GetSQL_descriptor,
+              new java.lang.String[] { "Key", "Sql", });
           return null;
         }
       };
@@ -15680,6 +17490,8 @@ public final class ProtobufPythonKernelCommand {
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
           org.knime.python.kernel.proto.ProtobufKnimeTable.getDescriptor(),
+          org.knime.python.kernel.proto.ProtobufKnimeSQLInput.getDescriptor(),
+          org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.getDescriptor(),
         }, assigner);
   }
 

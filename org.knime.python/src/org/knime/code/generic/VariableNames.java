@@ -49,15 +49,21 @@ package org.knime.code.generic;
 
 public class VariableNames {
 
-	private String m_flowVariables;
-	private String[] m_inputTables;
-	private String[] m_outputTables;
-	private String[] m_outputImages;
-	private String[] m_inputObjects;
-	private String[] m_outputObjects;
-
+	private final String m_flowVariables;
+	private final String[] m_inputTables;
+	private final String[] m_outputTables;
+	private final String[] m_outputImages;
+	private final String[] m_pythonInputObjects;
+	private final String[] m_pythonOutputObjects;
+	private final String[] m_generalInputObjects;
+	private final String[] m_generalOutputObjects;
 	public VariableNames(final String flowVariables, final String[] inputTables, final String[] outputTables,
 			final String[] outputImages, final String[] inputObjects, final String[] outputObjects) {
+		this(flowVariables, inputTables, outputTables, outputImages, inputObjects, outputObjects, null, null);
+	}
+	public VariableNames(final String flowVariables, final String[] inputTables, final String[] outputTables,
+			final String[] outputImages, final String[] pythonInputObjects, final String[] pythonOutputObjects,
+			final String[] generalInputObjects, final String[] generalOutputObjects) {
 		if (flowVariables == null) {
 			throw new IllegalArgumentException("flow variables may not be null");
 		}
@@ -65,8 +71,10 @@ public class VariableNames {
 		m_inputTables = inputTables != null ? inputTables : new String[0];
 		m_outputTables = outputTables != null ? outputTables : new String[0];
 		m_outputImages = outputImages != null ? outputImages : new String[0];
-		m_inputObjects = inputObjects != null ? inputObjects : new String[0];
-		m_outputObjects = outputObjects != null ? outputObjects : new String[0];
+		m_pythonInputObjects = pythonInputObjects != null ? pythonInputObjects : new String[0];
+		m_pythonOutputObjects = pythonOutputObjects != null ? pythonOutputObjects : new String[0];
+		m_generalInputObjects = generalInputObjects != null ? generalInputObjects : new String[0];
+		m_generalOutputObjects = generalOutputObjects != null ? generalOutputObjects : new String[0];
 	}
 
 	public String getFlowVariables() {
@@ -86,11 +94,19 @@ public class VariableNames {
 	}
 
 	public String[] getInputObjects() {
-		return m_inputObjects;
+		return m_pythonInputObjects;
 	}
 
 	public String[] getOutputObjects() {
-		return m_outputObjects;
+		return m_pythonOutputObjects;
+	}
+
+	public String[] getGeneralInputObjects() {
+		return m_generalInputObjects;
+	}
+
+	public String[] getGeneralOutputObjects() {
+		return m_generalOutputObjects;
 	}
 
 }

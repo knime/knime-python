@@ -4,6 +4,8 @@ option java_package = "org.knime.python.kernel.proto";
 option java_outer_classname = "ProtobufPythonKernelCommand";
 
 import "table.proto";
+import "sqlInput.proto";
+import "sqlOutput.proto";
 
 message Command {
 	optional Execute execute = 1;
@@ -21,6 +23,8 @@ message Command {
 	optional AddSerializers addSerializers = 13;
 	optional AddDeserializers addDeserializers = 14;
 	optional Shutdown shutdown = 15;
+	optional PutSQL putSQL = 16;
+	optional GetSQL getSQL = 17;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -113,4 +117,14 @@ message Command {
 	message Shutdown {
 	}
 	
+    message PutSQL {
+        required string key = 1;
+        required SQLInput sql = 2;
+    }
+    
+    message GetSQL {
+        required string key = 1;
+        required SQLOutput sql = 2;
+    }
+    
 }

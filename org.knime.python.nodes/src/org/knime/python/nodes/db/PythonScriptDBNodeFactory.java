@@ -45,42 +45,67 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.kernel;
+package org.knime.python.nodes.db;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
-import org.knime.python.Activator;
+/**
+ * <code>NodeFactory</code> for the node.
+ *
+ * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeModel> {
 
-public class PythonModuleExtensions {
-
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
-
-	private static Set<String> pythonModulePaths;
-
-	public static void init() {
-		pythonModulePaths = new HashSet<String>();
-		final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.modules");
-		for (final IConfigurationElement config : configs) {
-			final String pluginId = config.getContributor().getName();
-			final String path = config.getAttribute("path");
-			final File file = Activator.getFile(pluginId, path);
-			if (file == null || !file.exists() || !file.isDirectory()) {
-				LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
-			} else {
-				pythonModulePaths.add(file.getAbsolutePath());
-			}
-		}
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public PythonScriptDBNodeModel createNodeModel() {
+		return new PythonScriptDBNodeModel();
 	}
 
-	public static String getPythonPath() {
-		return StringUtils.join(pythonModulePaths, File.pathSeparator);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int getNrNodeViews() {
+		return 2;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
+        }
+        return null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean hasDialog() {
+		return true;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeDialogPane createNodeDialogPane() {
+		return new PythonScriptDBNodeDialog();
 	}
 
 }

@@ -45,42 +45,34 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.kernel;
+package org.knime.python.nodes.db;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import org.knime.code.generic.SourceCodeConfig;
+import org.knime.code.generic.VariableNames;
 
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
-import org.knime.python.Activator;
+class PythonScriptDBNodeConfig extends SourceCodeConfig {
 
-public class PythonModuleExtensions {
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+			null, null, null, null, null, new String[] {"db_util"}, null);
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected String getDefaultSourceCode() {
+		return "# Copy input to output\n" +
+				"dbUtil = " + VARIABLE_NAMES.getGeneralInputObjects()[0] + ".copy()\n" +
+				"dbUtil.set_output_query(\"SELECT * FROM RESULT\")";
 
-	private static Set<String> pythonModulePaths;
-
-	public static void init() {
-		pythonModulePaths = new HashSet<String>();
-		final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.modules");
-		for (final IConfigurationElement config : configs) {
-			final String pluginId = config.getContributor().getName();
-			final String path = config.getAttribute("path");
-			final File file = Activator.getFile(pluginId, path);
-			if (file == null || !file.exists() || !file.isDirectory()) {
-				LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
-			} else {
-				pythonModulePaths.add(file.getAbsolutePath());
-			}
-		}
 	}
 
-	public static String getPythonPath() {
-		return StringUtils.join(pythonModulePaths, File.pathSeparator);
+	/**
+	 * Get the variable names for this node
+	 *
+	 * @return The variable names
+	 */
+	static VariableNames getVariableNames() {
+		return VARIABLE_NAMES;
 	}
 
 }

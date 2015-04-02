@@ -23,6 +23,9 @@ import variablelist_pb2
 import image_pb2
 import executeresponse_pb2
 import pickledobject_pb2
+import sqlInput_pb2
+import sqlOutput_pb2
+from DBUtil import *
 
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
@@ -58,6 +61,27 @@ EQUIVALENT_TYPES = [
 ]
 if _tslib_available:
     EQUIVALENT_TYPES.append([datetime, Timestamp])
+    
+#******************************************************
+#Remote debugging section
+#******************************************************
+REMOTE_DBG = False 
+# append pydev remote debugger
+if REMOTE_DBG:
+    try:
+        #for infos see http://pydev.org/manual_adv_remote_debugger.html
+        # you have to create a new environment variable PYTHONPATH that points to the psrc folder
+        # located in ECLIPSE\plugins\org.python.pydev_xxx
+        import pydevd # with the addon script.module.pydevd, only use `import pydevd`
+    # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
+        pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+    except ImportError as e:
+        sys.stderr.write("Error: " +
+            "You must add org.python.pydev.debug.pysrc to your PYTHONPATH. ".format(e))
+        sys.exit(1)
+#******************************************************
+#Remote debugging section
+#******************************************************
 
 
 # connect to the server on the localhost at the port given by the argument 1 and listen for commands
@@ -176,6 +200,13 @@ def run():
                 object = pickle.loads(command.putObject.pickledObject)
                 put_variable(command.putObject.key, object)
                 write_dummy()
+            elif command.HasField('getSQL'):
+                sqlOut = get_sql(command)
+                write_message(sqlOut)
+            elif command.HasField('putSQL'):
+                print("put sql command found")
+                put_sql(command)
+                write_dummy()
             elif command.HasField('addSerializers'):
                 for serializer in command.addSerializers.serializer:
                     _type_extension_manager.add_serializer(serializer.id, serializer.type, serializer.path)
@@ -244,6 +275,21 @@ def execute(source_code):
 def put_variable(name, variable):
     _exec_env[name] = variable
 
+def get_sql(command):
+    #print("get sql command found")
+    dbUtil = get_variable(command.getSQL.key)
+    sqlOut = sqlOutput_pb2.SQLOutput()
+    sqlOut.query = dbUtil.get_output_query()
+    return sqlOut
+
+def put_sql(command):
+    #print("put sql command found")
+    name = command.putSQL.key
+    sql = command.putSQL.sql
+    #print("SQL object: " + str(sql))
+    #print("SQL object: " + sql.query)
+    dbUtil = DBUtil(sql)
+    _exec_env[name] = dbUtil
 
 # append the given data frame to an existing one
 def append_to_table(name, data_frame):
