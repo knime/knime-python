@@ -277,10 +277,10 @@ def put_variable(name, variable):
 
 def get_sql(command):
     #print("get sql command found")
-    dbUtil = get_variable(command.getSQL.key)
-    sqlOut = sqlOutput_pb2.SQLOutput()
-    sqlOut.query = dbUtil.get_output_query()
-    return sqlOut
+    db_util = get_variable(command.getSQL.key)
+    sql_out = sqlOutput_pb2.SQLOutput()
+    sql_out.query = db_util.get_output_query()
+    return sql_out
 
 def put_sql(command):
     #print("put sql command found")
@@ -288,8 +288,8 @@ def put_sql(command):
     sql = command.putSQL.sql
     #print("SQL object: " + str(sql))
     #print("SQL object: " + sql.query)
-    dbUtil = DBUtil(sql)
-    _exec_env[name] = dbUtil
+    db_util = DBUtil(sql)
+    _exec_env[name] = db_util
 
 # append the given data frame to an existing one
 def append_to_table(name, data_frame):
