@@ -326,7 +326,6 @@ def connect(jclassname, driver_args, jars=None, libs=None):
 
 # DB-API 2.0 Connection Object
 class Connection(object):
-
     Error = Error
     Warning = Warning
     InterfaceError = InterfaceError
@@ -349,22 +348,46 @@ class Connection(object):
         self.jconn.close()
         self._closed = True
 
-    def commit(self):
+    def commit(self, savepoint=None):
         try:
-            self.jconn.commit()
+            if savepoint == None:
+                self.jconn.commit()
+            else:
+                self.jconn.commit(savepoint)
         except:
             ex = sys.exc_info()[1]
             _handle_sql_exception(ex)
 
-    def rollback(self):
+    def rollback(self, savepoint=None):
         try:
-            self.jconn.rollback()
+            if savepoint == None:
+                self.jconn.rollback()
+            else:
+                self.jconn.rollback(savepoint)
         except:
             ex = sys.exc_info()[1]
             _handle_sql_exception(ex)
-
+    
+    def set_savepoint(self, name=None):
+        try:
+            if name == None:
+                return self.jconn.setSavepoint()
+            return self.jconn.setSavepoint(name)
+        except:
+            ex = sys.exc_info()[1]
+            _handle_sql_exception(ex)
+    
+    def release_savepoint(self, savepoint):
+        try:
+            self.jconn.releaseSavepoint(savepoint)
+        except:
+            ex = sys.exc_info()[1]
+            _handle_sql_exception(ex)
+    
     def cursor(self):
         return Cursor(self, self._converters)
+    
+    
 
 # DB-API 2.0 Cursor Object
 class Cursor(object):

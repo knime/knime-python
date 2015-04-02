@@ -60,9 +60,11 @@ class PythonScriptDBNodeConfig extends SourceCodeConfig {
 	 */
 	@Override
 	protected String getDefaultSourceCode() {
-		return "# Copy input to output\n" +
-				"dbUtil = " + VARIABLE_NAMES.getGeneralInputObjects()[0] + ".copy()\n" +
-				"dbUtil.set_output_query(\"SELECT * FROM RESULT\")";
+		final String var = VARIABLE_NAMES.getGeneralInputObjects()[0];
+		return "# To list all functions of the db_util object \n" +
+				"call " + var + ".print_description()\n\n" + 
+				"df = " + var + ".get_dataframe()\n" +
+				var + ".write_dataframe('resultTableName', df)";
 
 	}
 

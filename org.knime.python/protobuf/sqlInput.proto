@@ -10,7 +10,8 @@ message SQLInput {
     required string password = 4;
     required string query = 5;
     required string dbIdentifier = 6;
-    optional int32  connectionTimeout =7;
-    optional string timezone = 8;
-    repeated string jars = 9;
+    required int32  connectionTimeout =7;
+    required bool autocommit = 8;
+    required string timezone = 9;
+    repeated string jars = 10;
 }
