@@ -348,12 +348,9 @@ class Connection(object):
         self.jconn.close()
         self._closed = True
 
-    def commit(self, savepoint=None):
+    def commit(self):
         try:
-            if savepoint == None:
-                self.jconn.commit()
-            else:
-                self.jconn.commit(savepoint)
+            self.jconn.commit()
         except:
             ex = sys.exc_info()[1]
             _handle_sql_exception(ex)

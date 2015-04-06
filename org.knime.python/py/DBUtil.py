@@ -65,8 +65,6 @@ class DBUtil(object):
     Longer description here.
     
     Attributes:
-        conn: description.
-        cursor: description.
         input_query: description.
         output_query: description.
         output_writer: description.
@@ -77,16 +75,16 @@ class DBUtil(object):
         Args:
             sql: A SQL object containing informations to connect to database.
         """
-        self.conn = jaydebeapi.connect(sql.driver, 
+        self._conn = jaydebeapi.connect(sql.driver, 
                                        [sql.JDBCUrl, sql.userName, sql.password], 
                                        sql.jars)
-        self.conn.jconn.setAutoCommit(False)
-        self.cursor = self.conn.cursor()
+        self._conn.jconn.setAutoCommit(False)
+        self._cursor = self._conn.cursor()
         self.input_query = sql.query
         #stores the name of the result table if any
         self.output_writer = None
         self.output_query = None
-        self._dummy = None
+        #self._dummy = None
     
     def get_output_query(self):
         """Gets output query.
@@ -118,156 +116,149 @@ class DBUtil(object):
             DBReader: A new instance of DBReader.
         """
         if query == None:
-            return DBReader(self.conn, self.input_query)
-        return DBReader(self.conn, query)
+            return DBReader(self._conn, self.input_query)
+        return DBReader(self._conn, query)
 
-    def get_db_writer(self, tablename, col_specs):
+    def get_db_writer(self, tablename, col_specs, drop=False):
         """Gets a new instance of DBWriter
         
         Args:
             tablename: The name of the table where the data should be written to.
             col_specs: A DataFrame object or a dict object containing the 
                 columns specifications.
+            drop: If it is true, the existing table will be dropped. Otherwise,
+                the data will be appended to the table. Default value is False.
             
         Returns:
             output_writer: A new instance of DBWriter.
         
         """
-        self.output_writer = DBWriter(self.conn, tablename, col_specs)
+        self.output_writer = DBWriter(self._conn, tablename, col_specs, drop=drop)
         return self.output_writer
 
     def get_cursor(self):
         """Gets the cursor object."""
-        return self.cursor
+        return self._cursor
 
     def close_cursor(self):
         """Closes the cursor object."""
-        self.cursor.close()
+        self._cursor.close()
 
     def get_dataframe(self, query=None):
         """ get dataframe """
         if query == None:
-            self.cursor.execute(self.input_query)
+            self._cursor.execute(self.input_query)
         else:
-            self.cursor.execute(query)
+            self._cursor.execute(query)
         
         str_columns = [] # array to store all columns from type string
         columns = [] # array to store all columns names
 
-        for desc in self.cursor.description:
+        for desc in self._cursor.description:
             columns.append(desc[0])
             if 'VARCHAR' in desc[1].values:
-                str_columns.append(desc[0])
+                str_columns.append(desc[0]) 
 
-        df = DataFrame(self.cursor.fetchall(), columns=columns)
+        df = DataFrame(self._cursor.fetchall(), columns=columns)
         df[str_columns] = df[str_columns].astype(np.character)
         return df
 
-    def write_dataframe(self, tablename, dataframe):
+    def write_dataframe(self, tablename, dataframe, drop=False):
         """ write dataframe """
-        self.output_writer = self.get_db_writer(tablename, dataframe)
+        self.output_writer = self.get_db_writer(tablename, dataframe, drop=drop)
         self.output_writer.write_many(dataframe)
-        #self.output_writer.insert_into_table(dataframe)
-        #self.tablename = tablename
-        #self._drop_table(tablename)
-        #self._create_table(tablename, dataframe)
-        #self._insert_into_table(tablename, dataframe)
         self.output_writer.commit() 
 
     def close_connection(self):
         """ close connection """
-        self.conn.close()
+        self._conn.close()
         
     def print_description(self):
         """ Prints descriptions of this object. """
         # All public instance attributes
         filter_private = lambda x : not(x.startswith('_'))
         attrs = filter(filter_private, self.__dict__.keys())
-        print 'ATTRIBUTES ...'
+        #wrapper = textwrap.TextWrapper(initial_indent=" ")
+        print 'ATTRIBUTES'
         for at in attrs:
-            print at
+            print '\t', at
         
         print
         # All public methods
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        results = filter(filter_private, [m[0] for m in methods])
-        print 'METHODS ...'
-        for r in results:
-            print r, ":"
-            print inspect.getdoc(getattr(self, r))
+        public_methods = filter(filter_private, [m[0] for m in methods])
+        print 'METHODS'
+        for m in public_methods:
+            print '\t', m, ":"
+            print '\t\t' , '\t\t'.join(inspect.getdoc(getattr(self, m)).splitlines(True))
             print
         
-        
-
 
 class DBReader(object):
 
     def __init__(self, conn, query):
-        self.cursor = conn.cursor()
-        self.cursor.execute(query)
+        self._cursor = conn.cursor()
+        self._cursor.execute(query)
 
     def fetchone(self):
-        result = self.cursor.fetchone()
+        result = self._cursor.fetchone()
         return result
     
     def fetchmany(self, size):
-        result = self.cursor.fetchmany(size)
+        result = self._cursor.fetchmany(size)
         return result
 
     def fetchall(self):
-        result = self.cursor.fetchall()
+        result = self._cursor.fetchall()
         return result
 
     def close_cursor(self):
-        self.cursor.close()
+        self._cursor.close()
 
     def get_cursor(self):
-        return self.cursor
+        return self._cursor
 
 
 class DBWriter(object):
 
-    def __init__(self, conn, tablename, col_specs):
-        self.conn = conn
-        self.cursor = conn.cursor()
-        self.col_specs = _get_db_col_specs(col_specs)
+    def __init__(self, conn, tablename, col_specs, drop=False):
+        self._conn = conn
+        self._cursor = conn.cursor()
+        self._col_specs = _get_db_col_specs(col_specs)
         if (tablename is None) or (str(tablename).isspace()):
             exit("ERROR: Enter a valid table name")
         else:
-            self.tablename = tablename 
-        #self._create_table()
-        '''
-        if drop:
-            self._drop_table()
-            self._create_table(notexists=False)
+            self.tablename = tablename
+        
+        if self._table_exists():
+            if drop:
+                self._drop_table()
+                self._create_table()
         else:
-            self._create_table(notexists=True)
-        '''
+            self._create_table()
 
     def commit(self):
-        self.conn.commit()
+        self._conn.commit()
 
     def get_cursor(self):
-        return self.cursor
+        return self._cursor
 
     def close_cursor(self):
-        self.cursor.close()
+        self._cursor.close()
         
-    def get_query(self):
-        wildcards = (',').join('?' * len(self.col_specs))
-        col_names = (',').join(col for col in self.col_specs.keys())
+    def _get_insert_query(self):
+        wildcards = (',').join('?' * len(self._col_specs))
+        col_names = (',').join(col for col in self._col_specs.keys())
         query = """INSERT INTO %s (%s) VALUES (%s)""" %(self.tablename,
                     col_names, wildcards)
         return query
 
     def write_row(self, row):
         if isinstance(row, dict):
-            query = self.get_query()
-            print query
-            print row.values()
+            query = self._get_insert_query()
             values = []
             total_none = 0
-            for name in self.col_specs.keys():
+            for name in self._col_specs.keys():
                 value = row.get(name)
                 values.append(value)
                 if value is None:
@@ -276,51 +267,46 @@ class DBWriter(object):
             if total_none == len(row):
                 exit("ERROR: Nothing is inserted. All columns in 'row' " + 
                     "do not exist in table '" + str(self.tablename) + "'.")
-            print values
-            self.cursor.execute(query, values)
+
+            self._cursor.execute(query, values)
         else:
             exit("ERROR: 'row' must be a 'dict' object with 'column names'"
                   " as keys and 'column values' as values")
                   
     def write_many(self, dataframe):
-        query = self.get_query()
-        self.cursor.executemany(query, dataframe.values)     
+        query = self._get_insert_query()
+        self._cursor.executemany(query, dataframe.values)     
+            
+    def _execute_query(self, query):
+        savepoint = None
+        try:
+            savepoint = self._conn.set_savepoint()
+        except:
+            savepoint = None
+        try:
+            self._cursor.execute(query)
+            if savepoint != None:
+                self._conn.release_savepoint(savepoint)
+            return True
+        except:
+            #print type(ex)
+            #print ex.args
+            if savepoint != None:
+                self._conn.rollback(savepoint)
+            return False       
             
     def _drop_table(self):
         query = """DROP TABLE %s""" % self.tablename
-        try:
-            self.cursor.execute(query)
-            return True
-        except Exception as ex:
-            print type(ex)
-            print ex.args
-            print "ERROR DROP"
-            return False
+        return self._execute_query(query)
         
     def _table_exists(self):
-        query = """SELECT 1 AS test FROM %s""" % self.tablename
-        savepoint = None
-        try:
-            savepoint = self.conn.set_savepoint()
-        except Exception as ex:
-            savepoint = None
-        try:
-            self.cursor.execute(query)
-            if savepoint != None:
-                self.conn.release_savepoint(savepoint)
-            return True
-        except Exception as ex:
-            print type(ex)
-            print ex.args
-            if savepoint != None:
-                self.conn.rollback(savepoint)
-            #self.conn.commit()
-            return False
+        query = """SELECT 1 AS tmp FROM %s""" % self.tablename
+        return self._execute_query(query)
             
     def _create_table(self):
         try:
             col_list = []
-            for col_name, col_type in self.col_specs.iteritems():
+            for col_name, col_type in self._col_specs.iteritems():
                col_name = _quote_column(col_name)
                col_list.append((col_name, col_type))
 
@@ -329,36 +315,8 @@ class DBWriter(object):
                             %(columns)s
                         );"""
             query = query % {'tablename' : self.tablename, 'columns' : columns}
-            self.cursor.execute(query)
+            self._cursor.execute(query)
 
         except AttributeError:
             exit("ERROR: 'col_specs' must be a 'dict' object with 'column names'"
                   " as keys and 'column types' as values")
-
-   
-    #===================================================================================================================
-    # def _create_table(self, tablename, dataframe):
-    #     column_types = []
-    #     for idx, name in enumerate(dataframe.columns):
-    #         if np.issubclass_(dataframe[name].dtype.type, np.floating):
-    #             sqltype = 'numeric(30,10)'
-    #         elif np.issubclass_(dataframe[name].dtype.type, np.integer):
-    #             sqltype = 'integer'
-    #         else:
-    #             sqltype = 'varchar(255)'
-    #         '''
-    #         elif np.issubclass_(type(dataframe[name][0]), str):
-    #             sqltype = 'varchar(255)'
-    #         else:
-    #             sqltype = 'blob'
-    #         '''
-    #         name = quote_column(name)
-    #         column_types.append((name, sqltype))
-    #         
-    #     columns = (',\n').join('%s %s' % col for col in column_types)
-    #     query = """CREATE TABLE %(tablename)s (
-    #                     %(columns)s
-    #                 );"""
-    #     query = query % {'tablename' : tablename, 'columns' : columns}
-    #     self.cursor.execute(query)
-    #===================================================================================================================
