@@ -45,99 +45,67 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.db;
+package org.knime.python.nodes.hive;
 
-import org.knime.code.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.code.python.PythonSourceCodePanel;
-import org.knime.core.node.InvalidSettingsException;
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.database.DatabasePortObjectSpec;
-import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python.kernel.SQLEditorObjectWriter;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
 /**
- * <code>NodeDialog</code> for the node.
+ * <code>NodeFactory</code> for the node.
  *
  * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonScriptDBNodeDialog extends NodeDialogPane {
-
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+public class PythonScriptHiveNodeFactory extends NodeFactory<PythonScriptHiveNodeModel> {
 
 	/**
-	 * Create the dialog for this node.
+	 * {@inheritDoc}
 	 */
-	protected PythonScriptDBNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames());
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Templates", m_templatesPanel, true);
+	@Override
+	public PythonScriptHiveNodeModel createNodeModel() {
+		return new PythonScriptHiveNodeModel();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		config.saveTo(settings);
+	public int getNrNodeViews() {
+		return 2;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-		if (specs == null || specs.length < 1 || specs[0] == null) {
-			throw new NotConfigurableException("No database connection available");
-		}
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
-		try {
-			final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
-			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
-					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-					connectionSettings, getCredentialsProvider());
-			m_sourceCodePanel.updateData(sqlObject);
-		} catch (final InvalidSettingsException e) {
-			throw new NotConfigurableException(e.getMessage(), e);
-		}
+	public NodeView<PythonScriptHiveNodeModel> createNodeView(final int viewIndex, final PythonScriptHiveNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonScriptHiveNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonScriptHiveNodeModel>(nodeModel);
+        }
+        return null;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean closeOnESC() {
-		return false;
+	public boolean hasDialog() {
+		return true;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
+	public NodeDialogPane createNodeDialogPane() {
+		return new PythonScriptHiveNodeDialog();
 	}
 
 }

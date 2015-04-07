@@ -204,7 +204,6 @@ def run():
                 sqlOut = get_sql(command)
                 write_message(sqlOut)
             elif command.HasField('putSQL'):
-                print("put sql command found")
                 put_sql(command)
                 write_dummy()
             elif command.HasField('addSerializers'):
@@ -286,6 +285,7 @@ def put_sql(command):
     #print("put sql command found")
     name = command.putSQL.key
     sql = command.putSQL.sql
+    file = command.putSQL.file
     #print("SQL object: " + str(sql))
     #print("SQL object: " + sql.query)
     db_util = DBUtil(sql)

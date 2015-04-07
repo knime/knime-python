@@ -101,47 +101,57 @@ public final class ProtobufKnimeSQLInput {
     com.google.protobuf.ByteString
         getDbIdentifierBytes();
 
-    // optional int32 connectionTimeout = 7;
+    // required int32 connectionTimeout = 7;
     /**
-     * <code>optional int32 connectionTimeout = 7;</code>
+     * <code>required int32 connectionTimeout = 7;</code>
      */
     boolean hasConnectionTimeout();
     /**
-     * <code>optional int32 connectionTimeout = 7;</code>
+     * <code>required int32 connectionTimeout = 7;</code>
      */
     int getConnectionTimeout();
 
-    // optional string timezone = 8;
+    // required bool autocommit = 8;
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required bool autocommit = 8;</code>
+     */
+    boolean hasAutocommit();
+    /**
+     * <code>required bool autocommit = 8;</code>
+     */
+    boolean getAutocommit();
+
+    // required string timezone = 9;
+    /**
+     * <code>required string timezone = 9;</code>
      */
     boolean hasTimezone();
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required string timezone = 9;</code>
      */
     java.lang.String getTimezone();
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required string timezone = 9;</code>
      */
     com.google.protobuf.ByteString
         getTimezoneBytes();
 
-    // repeated string jars = 9;
+    // repeated string jars = 10;
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     java.util.List<java.lang.String>
     getJarsList();
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     int getJarsCount();
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     java.lang.String getJars(int index);
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     com.google.protobuf.ByteString
         getJarsBytes(int index);
@@ -232,15 +242,20 @@ public final class ProtobufKnimeSQLInput {
               connectionTimeout_ = input.readInt32();
               break;
             }
-            case 66: {
+            case 64: {
               bitField0_ |= 0x00000080;
-              timezone_ = input.readBytes();
+              autocommit_ = input.readBool();
               break;
             }
             case 74: {
-              if (!((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
+              bitField0_ |= 0x00000100;
+              timezone_ = input.readBytes();
+              break;
+            }
+            case 82: {
+              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
                 jars_ = new com.google.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000100;
+                mutable_bitField0_ |= 0x00000200;
               }
               jars_.add(input.readBytes());
               break;
@@ -253,7 +268,7 @@ public final class ProtobufKnimeSQLInput {
         throw new com.google.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
+        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
           jars_ = new com.google.protobuf.UnmodifiableLazyStringList(jars_);
         }
         this.unknownFields = unknownFields.build();
@@ -546,33 +561,49 @@ public final class ProtobufKnimeSQLInput {
       }
     }
 
-    // optional int32 connectionTimeout = 7;
+    // required int32 connectionTimeout = 7;
     public static final int CONNECTIONTIMEOUT_FIELD_NUMBER = 7;
     private int connectionTimeout_;
     /**
-     * <code>optional int32 connectionTimeout = 7;</code>
+     * <code>required int32 connectionTimeout = 7;</code>
      */
     public boolean hasConnectionTimeout() {
       return ((bitField0_ & 0x00000040) == 0x00000040);
     }
     /**
-     * <code>optional int32 connectionTimeout = 7;</code>
+     * <code>required int32 connectionTimeout = 7;</code>
      */
     public int getConnectionTimeout() {
       return connectionTimeout_;
     }
 
-    // optional string timezone = 8;
-    public static final int TIMEZONE_FIELD_NUMBER = 8;
-    private java.lang.Object timezone_;
+    // required bool autocommit = 8;
+    public static final int AUTOCOMMIT_FIELD_NUMBER = 8;
+    private boolean autocommit_;
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required bool autocommit = 8;</code>
      */
-    public boolean hasTimezone() {
+    public boolean hasAutocommit() {
       return ((bitField0_ & 0x00000080) == 0x00000080);
     }
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required bool autocommit = 8;</code>
+     */
+    public boolean getAutocommit() {
+      return autocommit_;
+    }
+
+    // required string timezone = 9;
+    public static final int TIMEZONE_FIELD_NUMBER = 9;
+    private java.lang.Object timezone_;
+    /**
+     * <code>required string timezone = 9;</code>
+     */
+    public boolean hasTimezone() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>required string timezone = 9;</code>
      */
     public java.lang.String getTimezone() {
       java.lang.Object ref = timezone_;
@@ -589,7 +620,7 @@ public final class ProtobufKnimeSQLInput {
       }
     }
     /**
-     * <code>optional string timezone = 8;</code>
+     * <code>required string timezone = 9;</code>
      */
     public com.google.protobuf.ByteString
         getTimezoneBytes() {
@@ -605,30 +636,30 @@ public final class ProtobufKnimeSQLInput {
       }
     }
 
-    // repeated string jars = 9;
-    public static final int JARS_FIELD_NUMBER = 9;
+    // repeated string jars = 10;
+    public static final int JARS_FIELD_NUMBER = 10;
     private com.google.protobuf.LazyStringList jars_;
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     public java.util.List<java.lang.String>
         getJarsList() {
       return jars_;
     }
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     public int getJarsCount() {
       return jars_.size();
     }
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     public java.lang.String getJars(int index) {
       return jars_.get(index);
     }
     /**
-     * <code>repeated string jars = 9;</code>
+     * <code>repeated string jars = 10;</code>
      */
     public com.google.protobuf.ByteString
         getJarsBytes(int index) {
@@ -643,6 +674,7 @@ public final class ProtobufKnimeSQLInput {
       query_ = "";
       dbIdentifier_ = "";
       connectionTimeout_ = 0;
+      autocommit_ = false;
       timezone_ = "";
       jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
     }
@@ -675,6 +707,18 @@ public final class ProtobufKnimeSQLInput {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasConnectionTimeout()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasAutocommit()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasTimezone()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -704,10 +748,13 @@ public final class ProtobufKnimeSQLInput {
         output.writeInt32(7, connectionTimeout_);
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeBytes(8, getTimezoneBytes());
+        output.writeBool(8, autocommit_);
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeBytes(9, getTimezoneBytes());
       }
       for (int i = 0; i < jars_.size(); i++) {
-        output.writeBytes(9, jars_.getByteString(i));
+        output.writeBytes(10, jars_.getByteString(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -748,7 +795,11 @@ public final class ProtobufKnimeSQLInput {
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(8, getTimezoneBytes());
+          .computeBoolSize(8, autocommit_);
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(9, getTimezoneBytes());
       }
       {
         int dataSize = 0;
@@ -889,10 +940,12 @@ public final class ProtobufKnimeSQLInput {
         bitField0_ = (bitField0_ & ~0x00000020);
         connectionTimeout_ = 0;
         bitField0_ = (bitField0_ & ~0x00000040);
-        timezone_ = "";
+        autocommit_ = false;
         bitField0_ = (bitField0_ & ~0x00000080);
-        jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        timezone_ = "";
         bitField0_ = (bitField0_ & ~0x00000100);
+        jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
 
@@ -952,11 +1005,15 @@ public final class ProtobufKnimeSQLInput {
         if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
           to_bitField0_ |= 0x00000080;
         }
+        result.autocommit_ = autocommit_;
+        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+          to_bitField0_ |= 0x00000100;
+        }
         result.timezone_ = timezone_;
-        if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        if (((bitField0_ & 0x00000200) == 0x00000200)) {
           jars_ = new com.google.protobuf.UnmodifiableLazyStringList(
               jars_);
-          bitField0_ = (bitField0_ & ~0x00000100);
+          bitField0_ = (bitField0_ & ~0x00000200);
         }
         result.jars_ = jars_;
         result.bitField0_ = to_bitField0_;
@@ -1008,15 +1065,18 @@ public final class ProtobufKnimeSQLInput {
         if (other.hasConnectionTimeout()) {
           setConnectionTimeout(other.getConnectionTimeout());
         }
+        if (other.hasAutocommit()) {
+          setAutocommit(other.getAutocommit());
+        }
         if (other.hasTimezone()) {
-          bitField0_ |= 0x00000080;
+          bitField0_ |= 0x00000100;
           timezone_ = other.timezone_;
           onChanged();
         }
         if (!other.jars_.isEmpty()) {
           if (jars_.isEmpty()) {
             jars_ = other.jars_;
-            bitField0_ = (bitField0_ & ~0x00000100);
+            bitField0_ = (bitField0_ & ~0x00000200);
           } else {
             ensureJarsIsMutable();
             jars_.addAll(other.jars_);
@@ -1049,6 +1109,18 @@ public final class ProtobufKnimeSQLInput {
           return false;
         }
         if (!hasDbIdentifier()) {
+          
+          return false;
+        }
+        if (!hasConnectionTimeout()) {
+          
+          return false;
+        }
+        if (!hasAutocommit()) {
+          
+          return false;
+        }
+        if (!hasTimezone()) {
           
           return false;
         }
@@ -1518,22 +1590,22 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
 
-      // optional int32 connectionTimeout = 7;
+      // required int32 connectionTimeout = 7;
       private int connectionTimeout_ ;
       /**
-       * <code>optional int32 connectionTimeout = 7;</code>
+       * <code>required int32 connectionTimeout = 7;</code>
        */
       public boolean hasConnectionTimeout() {
         return ((bitField0_ & 0x00000040) == 0x00000040);
       }
       /**
-       * <code>optional int32 connectionTimeout = 7;</code>
+       * <code>required int32 connectionTimeout = 7;</code>
        */
       public int getConnectionTimeout() {
         return connectionTimeout_;
       }
       /**
-       * <code>optional int32 connectionTimeout = 7;</code>
+       * <code>required int32 connectionTimeout = 7;</code>
        */
       public Builder setConnectionTimeout(int value) {
         bitField0_ |= 0x00000040;
@@ -1542,7 +1614,7 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
       /**
-       * <code>optional int32 connectionTimeout = 7;</code>
+       * <code>required int32 connectionTimeout = 7;</code>
        */
       public Builder clearConnectionTimeout() {
         bitField0_ = (bitField0_ & ~0x00000040);
@@ -1551,16 +1623,49 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
 
-      // optional string timezone = 8;
-      private java.lang.Object timezone_ = "";
+      // required bool autocommit = 8;
+      private boolean autocommit_ ;
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required bool autocommit = 8;</code>
        */
-      public boolean hasTimezone() {
+      public boolean hasAutocommit() {
         return ((bitField0_ & 0x00000080) == 0x00000080);
       }
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required bool autocommit = 8;</code>
+       */
+      public boolean getAutocommit() {
+        return autocommit_;
+      }
+      /**
+       * <code>required bool autocommit = 8;</code>
+       */
+      public Builder setAutocommit(boolean value) {
+        bitField0_ |= 0x00000080;
+        autocommit_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required bool autocommit = 8;</code>
+       */
+      public Builder clearAutocommit() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        autocommit_ = false;
+        onChanged();
+        return this;
+      }
+
+      // required string timezone = 9;
+      private java.lang.Object timezone_ = "";
+      /**
+       * <code>required string timezone = 9;</code>
+       */
+      public boolean hasTimezone() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      /**
+       * <code>required string timezone = 9;</code>
        */
       public java.lang.String getTimezone() {
         java.lang.Object ref = timezone_;
@@ -1574,7 +1679,7 @@ public final class ProtobufKnimeSQLInput {
         }
       }
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required string timezone = 9;</code>
        */
       public com.google.protobuf.ByteString
           getTimezoneBytes() {
@@ -1590,77 +1695,77 @@ public final class ProtobufKnimeSQLInput {
         }
       }
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required string timezone = 9;</code>
        */
       public Builder setTimezone(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000080;
+  bitField0_ |= 0x00000100;
         timezone_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required string timezone = 9;</code>
        */
       public Builder clearTimezone() {
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000100);
         timezone_ = getDefaultInstance().getTimezone();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string timezone = 8;</code>
+       * <code>required string timezone = 9;</code>
        */
       public Builder setTimezoneBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000080;
+  bitField0_ |= 0x00000100;
         timezone_ = value;
         onChanged();
         return this;
       }
 
-      // repeated string jars = 9;
+      // repeated string jars = 10;
       private com.google.protobuf.LazyStringList jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       private void ensureJarsIsMutable() {
-        if (!((bitField0_ & 0x00000100) == 0x00000100)) {
+        if (!((bitField0_ & 0x00000200) == 0x00000200)) {
           jars_ = new com.google.protobuf.LazyStringArrayList(jars_);
-          bitField0_ |= 0x00000100;
+          bitField0_ |= 0x00000200;
          }
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public java.util.List<java.lang.String>
           getJarsList() {
         return java.util.Collections.unmodifiableList(jars_);
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public int getJarsCount() {
         return jars_.size();
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public java.lang.String getJars(int index) {
         return jars_.get(index);
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public com.google.protobuf.ByteString
           getJarsBytes(int index) {
         return jars_.getByteString(index);
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public Builder setJars(
           int index, java.lang.String value) {
@@ -1673,7 +1778,7 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public Builder addJars(
           java.lang.String value) {
@@ -1686,7 +1791,7 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public Builder addAllJars(
           java.lang.Iterable<java.lang.String> values) {
@@ -1696,16 +1801,16 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public Builder clearJars() {
         jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000100);
+        bitField0_ = (bitField0_ & ~0x00000200);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string jars = 9;</code>
+       * <code>repeated string jars = 10;</code>
        */
       public Builder addJarsBytes(
           com.google.protobuf.ByteString value) {
@@ -1743,13 +1848,13 @@ public final class ProtobufKnimeSQLInput {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\016sqlInput.proto\022\005knime\"\257\001\n\010SQLInput\022\016\n\006" +
+      "\n\016sqlInput.proto\022\005knime\"\303\001\n\010SQLInput\022\016\n\006" +
       "driver\030\001 \002(\t\022\017\n\007JDBCUrl\030\002 \002(\t\022\020\n\010userNam" +
       "e\030\003 \002(\t\022\020\n\010password\030\004 \002(\t\022\r\n\005query\030\005 \002(\t" +
       "\022\024\n\014dbIdentifier\030\006 \002(\t\022\031\n\021connectionTime" +
-      "out\030\007 \001(\005\022\020\n\010timezone\030\010 \001(\t\022\014\n\004jars\030\t \003(" +
-      "\tB6\n\035org.knime.python.kernel.protoB\025Prot" +
-      "obufKnimeSQLInput"
+      "out\030\007 \002(\005\022\022\n\nautocommit\030\010 \002(\010\022\020\n\010timezon" +
+      "e\030\t \002(\t\022\014\n\004jars\030\n \003(\tB6\n\035org.knime.pytho" +
+      "n.kernel.protoB\025ProtobufKnimeSQLInput"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1761,7 +1866,7 @@ public final class ProtobufKnimeSQLInput {
           internal_static_knime_SQLInput_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_SQLInput_descriptor,
-              new java.lang.String[] { "Driver", "JDBCUrl", "UserName", "Password", "Query", "DbIdentifier", "ConnectionTimeout", "Timezone", "Jars", });
+              new java.lang.String[] { "Driver", "JDBCUrl", "UserName", "Password", "Query", "DbIdentifier", "ConnectionTimeout", "Autocommit", "Timezone", "Jars", });
           return null;
         }
       };

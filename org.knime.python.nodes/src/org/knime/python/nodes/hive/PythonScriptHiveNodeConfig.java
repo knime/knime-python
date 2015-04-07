@@ -45,12 +45,12 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.db;
+package org.knime.python.nodes.hive;
 
 import org.knime.code.generic.SourceCodeConfig;
 import org.knime.code.generic.VariableNames;
 
-class PythonScriptDBNodeConfig extends SourceCodeConfig {
+class PythonScriptHiveNodeConfig extends SourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
 			null, null, null, null, null, new String[] {"db_util"}, null);

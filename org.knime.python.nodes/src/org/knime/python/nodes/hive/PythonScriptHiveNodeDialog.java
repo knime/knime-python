@@ -45,8 +45,9 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.db;
+package org.knime.python.nodes.hive;
 
+import org.knime.base.filehandling.remote.connectioninformation.port.ConnectionInformationPortObjectSpec;
 import org.knime.code.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.InvalidSettingsException;
@@ -56,7 +57,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
-import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.kernel.SQLEditorObjectWriter;
 
@@ -66,7 +67,7 @@ import org.knime.python.kernel.SQLEditorObjectWriter;
  * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonScriptDBNodeDialog extends NodeDialogPane {
+class PythonScriptHiveNodeDialog extends NodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
 	SourceCodeTemplatesPanel m_templatesPanel;
@@ -74,8 +75,8 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 	/**
 	 * Create the dialog for this node.
 	 */
-	protected PythonScriptDBNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames());
+	protected PythonScriptHiveNodeDialog() {
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptHiveNodeConfig.getVariableNames());
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
 		addTab("Script", m_sourceCodePanel, false);
 		addTab("Templates", m_templatesPanel, true);
@@ -86,7 +87,7 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 	 */
 	@Override
 	protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
+		final PythonScriptHiveNodeConfig config = new PythonScriptHiveNodeConfig();
 		m_sourceCodePanel.saveSettingsTo(config);
 		config.saveTo(settings);
 	}
@@ -95,21 +96,23 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-		if (specs == null || specs.length < 1 || specs[0] == null) {
-			throw new NotConfigurableException("No database connection available");
+	protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+			throws NotConfigurableException {
+		if (specs == null || specs.length < 2 || specs[0] == null || specs[1] == null) {
+			throw new NotConfigurableException("Please connect the node");
 		}
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
+		final PythonScriptHiveNodeConfig config = new PythonScriptHiveNodeConfig();
 		config.loadFromInDialog(settings);
 		m_sourceCodePanel.loadSettingsFrom(config, specs);
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
-		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
+		final ConnectionInformationPortObjectSpec fileSpec = (ConnectionInformationPortObjectSpec) specs[0];
+		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[1];
 		try {
-			final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
+			final CredentialsProvider cp = getCredentialsProvider();
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
-					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-					connectionSettings, getCredentialsProvider());
+					PythonScriptHiveNodeConfig.getVariableNames().getGeneralInputObjects()[0],
+					dbSpec.getConnectionSettings(cp), cp, fileSpec.getConnectionInformation());
 			m_sourceCodePanel.updateData(sqlObject);
 		} catch (final InvalidSettingsException e) {
 			throw new NotConfigurableException(e.getMessage(), e);

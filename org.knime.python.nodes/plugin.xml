@@ -17,6 +17,12 @@
            factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory"
            id="org.knime.python.nodes.db.PythonScriptDBNodeFactory">
      </node>
+     <node
+           category-path="/labs/python"
+           expert-flag="false"
+           factory-class="org.knime.python.nodes.hive.PythonScriptHiveNodeFactory"
+           id="org.knime.python.nodes.hive.PythonScriptHiveNodeFactory">
+     </node>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/labs" />

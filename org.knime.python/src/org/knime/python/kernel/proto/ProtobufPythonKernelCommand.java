@@ -12636,6 +12636,20 @@ public final class ProtobufPythonKernelCommand {
        * <code>required .knime.SQLInput sql = 2;</code>
        */
       org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInputOrBuilder getSqlOrBuilder();
+
+      // optional .knime.RemoteFileInput file = 3;
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      boolean hasFile();
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput getFile();
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder getFileOrBuilder();
     }
     /**
      * Protobuf type {@code knime.Command.PutSQL}
@@ -12704,6 +12718,19 @@ public final class ProtobufPythonKernelCommand {
                   sql_ = subBuilder.buildPartial();
                 }
                 bitField0_ |= 0x00000002;
+                break;
+              }
+              case 26: {
+                org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                  subBuilder = file_.toBuilder();
+                }
+                file_ = input.readMessage(org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(file_);
+                  file_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000004;
                 break;
               }
             }
@@ -12811,9 +12838,32 @@ public final class ProtobufPythonKernelCommand {
         return sql_;
       }
 
+      // optional .knime.RemoteFileInput file = 3;
+      public static final int FILE_FIELD_NUMBER = 3;
+      private org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput file_;
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      public boolean hasFile() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput getFile() {
+        return file_;
+      }
+      /**
+       * <code>optional .knime.RemoteFileInput file = 3;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder getFileOrBuilder() {
+        return file_;
+      }
+
       private void initFields() {
         key_ = "";
         sql_ = org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput.getDefaultInstance();
+        file_ = org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -12832,6 +12882,12 @@ public final class ProtobufPythonKernelCommand {
           memoizedIsInitialized = 0;
           return false;
         }
+        if (hasFile()) {
+          if (!getFile().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
+        }
         memoizedIsInitialized = 1;
         return true;
       }
@@ -12844,6 +12900,9 @@ public final class ProtobufPythonKernelCommand {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeMessage(2, sql_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeMessage(3, file_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -12861,6 +12920,10 @@ public final class ProtobufPythonKernelCommand {
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
             .computeMessageSize(2, sql_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeMessageSize(3, file_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -12971,6 +13034,7 @@ public final class ProtobufPythonKernelCommand {
         private void maybeForceBuilderInitialization() {
           if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getSqlFieldBuilder();
+            getFileFieldBuilder();
           }
         }
         private static Builder create() {
@@ -12987,6 +13051,12 @@ public final class ProtobufPythonKernelCommand {
             sqlBuilder_.clear();
           }
           bitField0_ = (bitField0_ & ~0x00000002);
+          if (fileBuilder_ == null) {
+            file_ = org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.getDefaultInstance();
+          } else {
+            fileBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000004);
           return this;
         }
 
@@ -13027,6 +13097,14 @@ public final class ProtobufPythonKernelCommand {
           } else {
             result.sql_ = sqlBuilder_.build();
           }
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          if (fileBuilder_ == null) {
+            result.file_ = file_;
+          } else {
+            result.file_ = fileBuilder_.build();
+          }
           result.bitField0_ = to_bitField0_;
           onBuilt();
           return result;
@@ -13051,6 +13129,9 @@ public final class ProtobufPythonKernelCommand {
           if (other.hasSql()) {
             mergeSql(other.getSql());
           }
+          if (other.hasFile()) {
+            mergeFile(other.getFile());
+          }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
         }
@@ -13067,6 +13148,12 @@ public final class ProtobufPythonKernelCommand {
           if (!getSql().isInitialized()) {
             
             return false;
+          }
+          if (hasFile()) {
+            if (!getFile().isInitialized()) {
+              
+              return false;
+            }
           }
           return true;
         }
@@ -13279,6 +13366,123 @@ public final class ProtobufPythonKernelCommand {
             sql_ = null;
           }
           return sqlBuilder_;
+        }
+
+        // optional .knime.RemoteFileInput file = 3;
+        private org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput file_ = org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.getDefaultInstance();
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder> fileBuilder_;
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public boolean hasFile() {
+          return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput getFile() {
+          if (fileBuilder_ == null) {
+            return file_;
+          } else {
+            return fileBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public Builder setFile(org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput value) {
+          if (fileBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            file_ = value;
+            onChanged();
+          } else {
+            fileBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000004;
+          return this;
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public Builder setFile(
+            org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder builderForValue) {
+          if (fileBuilder_ == null) {
+            file_ = builderForValue.build();
+            onChanged();
+          } else {
+            fileBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000004;
+          return this;
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public Builder mergeFile(org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput value) {
+          if (fileBuilder_ == null) {
+            if (((bitField0_ & 0x00000004) == 0x00000004) &&
+                file_ != org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.getDefaultInstance()) {
+              file_ =
+                org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.newBuilder(file_).mergeFrom(value).buildPartial();
+            } else {
+              file_ = value;
+            }
+            onChanged();
+          } else {
+            fileBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000004;
+          return this;
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public Builder clearFile() {
+          if (fileBuilder_ == null) {
+            file_ = org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.getDefaultInstance();
+            onChanged();
+          } else {
+            fileBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000004);
+          return this;
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder getFileBuilder() {
+          bitField0_ |= 0x00000004;
+          onChanged();
+          return getFileFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder getFileOrBuilder() {
+          if (fileBuilder_ != null) {
+            return fileBuilder_.getMessageOrBuilder();
+          } else {
+            return file_;
+          }
+        }
+        /**
+         * <code>optional .knime.RemoteFileInput file = 3;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder> 
+            getFileFieldBuilder() {
+          if (fileBuilder_ == null) {
+            fileBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput.Builder, org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInputOrBuilder>(
+                    file_,
+                    getParentForChildren(),
+                    isClean());
+            file_ = null;
+          }
+          return fileBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:knime.Command.PutSQL)
@@ -17287,58 +17491,59 @@ public final class ProtobufPythonKernelCommand {
   static {
     java.lang.String[] descriptorData = {
       "\n\rcommand.proto\022\005knime\032\013table.proto\032\016sql" +
-      "Input.proto\032\017sqlOutput.proto\"\243\017\n\007Command" +
-      "\022\'\n\007execute\030\001 \001(\0132\026.knime.Command.Execut" +
-      "e\0229\n\020putFlowVariables\030\002 \001(\0132\037.knime.Comm" +
-      "and.PutFlowVariables\022)\n\010putTable\030\003 \001(\0132\027" +
-      ".knime.Command.PutTable\0223\n\rappendToTable" +
-      "\030\004 \001(\0132\034.knime.Command.AppendToTable\022)\n\010" +
-      "getTable\030\005 \001(\0132\027.knime.Command.GetTable\022" +
-      "3\n\rlistVariables\030\006 \001(\0132\034.knime.Command.L" +
-      "istVariables\022#\n\005reset\030\007 \001(\0132\024.knime.Comm",
-      "and.Reset\0227\n\017hasAutoComplete\030\010 \001(\0132\036.kni" +
-      "me.Command.HasAutoComplete\0221\n\014autoComple" +
-      "te\030\t \001(\0132\033.knime.Command.AutoComplete\022)\n" +
-      "\010getImage\030\n \001(\0132\027.knime.Command.GetImage" +
-      "\022+\n\tgetObject\030\013 \001(\0132\030.knime.Command.GetO" +
-      "bject\022+\n\tputObject\030\014 \001(\0132\030.knime.Command" +
-      ".PutObject\0225\n\016addSerializers\030\r \001(\0132\035.kni" +
-      "me.Command.AddSerializers\0229\n\020addDeserial" +
-      "izers\030\016 \001(\0132\037.knime.Command.AddDeseriali" +
-      "zers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Command.S",
-      "hutdown\022%\n\006putSQL\030\020 \001(\0132\025.knime.Command." +
-      "PutSQL\022%\n\006getSQL\030\021 \001(\0132\025.knime.Command.G" +
-      "etSQL\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032\204\003\n" +
-      "\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017intege" +
-      "rVariable\030\002 \003(\0132/.knime.Command.PutFlowV" +
-      "ariables.IntegerVariable\022F\n\016doubleVariab" +
-      "le\030\003 \003(\0132..knime.Command.PutFlowVariable" +
-      "s.DoubleVariable\022F\n\016stringVariable\030\004 \003(\013" +
-      "2..knime.Command.PutFlowVariables.String" +
-      "Variable\032-\n\017IntegerVariable\022\013\n\003key\030\001 \002(\t",
-      "\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022\013\n\003key" +
-      "\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVariable\022" +
-      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010PutTable\022" +
-      "\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Tabl" +
-      "e\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table" +
-      "\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003key\030" +
-      "\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariable" +
-      "s\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014AutoCom" +
-      "plete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022" +
-      "\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002(\t",
-      "\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutObject\022" +
-      "\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(\014\032?\n\016A" +
-      "ddSerializers\022-\n\nserializer\030\001 \003(\0132\031.knim" +
-      "e.Command.Serializer\0324\n\nSerializer\022\n\n\002id" +
-      "\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t\032E\n\020Ad" +
-      "dDeserializers\0221\n\014deserializer\030\001 \003(\0132\033.k" +
-      "nime.Command.Deserializer\032(\n\014Deserialize" +
-      "r\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010Shutdown\032" +
-      "3\n\006PutSQL\022\013\n\003key\030\001 \002(\t\022\034\n\003sql\030\002 \002(\0132\017.kn" +
-      "ime.SQLInput\0324\n\006GetSQL\022\013\n\003key\030\001 \002(\t\022\035\n\003s",
-      "ql\030\002 \002(\0132\020.knime.SQLOutputB<\n\035org.knime." +
-      "python.kernel.protoB\033ProtobufPythonKerne" +
-      "lCommand"
+      "Input.proto\032\017sqlOutput.proto\032\025remoteFile" +
+      "Input.proto\"\311\017\n\007Command\022\'\n\007execute\030\001 \001(\013" +
+      "2\026.knime.Command.Execute\0229\n\020putFlowVaria" +
+      "bles\030\002 \001(\0132\037.knime.Command.PutFlowVariab" +
+      "les\022)\n\010putTable\030\003 \001(\0132\027.knime.Command.Pu" +
+      "tTable\0223\n\rappendToTable\030\004 \001(\0132\034.knime.Co" +
+      "mmand.AppendToTable\022)\n\010getTable\030\005 \001(\0132\027." +
+      "knime.Command.GetTable\0223\n\rlistVariables\030" +
+      "\006 \001(\0132\034.knime.Command.ListVariables\022#\n\005r",
+      "eset\030\007 \001(\0132\024.knime.Command.Reset\0227\n\017hasA" +
+      "utoComplete\030\010 \001(\0132\036.knime.Command.HasAut" +
+      "oComplete\0221\n\014autoComplete\030\t \001(\0132\033.knime." +
+      "Command.AutoComplete\022)\n\010getImage\030\n \001(\0132\027" +
+      ".knime.Command.GetImage\022+\n\tgetObject\030\013 \001" +
+      "(\0132\030.knime.Command.GetObject\022+\n\tputObjec" +
+      "t\030\014 \001(\0132\030.knime.Command.PutObject\0225\n\016add" +
+      "Serializers\030\r \001(\0132\035.knime.Command.AddSer" +
+      "ializers\0229\n\020addDeserializers\030\016 \001(\0132\037.kni" +
+      "me.Command.AddDeserializers\022)\n\010shutdown\030",
+      "\017 \001(\0132\027.knime.Command.Shutdown\022%\n\006putSQL" +
+      "\030\020 \001(\0132\025.knime.Command.PutSQL\022%\n\006getSQL\030" +
+      "\021 \001(\0132\025.knime.Command.GetSQL\032\035\n\007Execute\022" +
+      "\022\n\nsourceCode\030\001 \002(\t\032\204\003\n\020PutFlowVariables" +
+      "\022\013\n\003key\030\001 \002(\t\022H\n\017integerVariable\030\002 \003(\0132/" +
+      ".knime.Command.PutFlowVariables.IntegerV" +
+      "ariable\022F\n\016doubleVariable\030\003 \003(\0132..knime." +
+      "Command.PutFlowVariables.DoubleVariable\022" +
+      "F\n\016stringVariable\030\004 \003(\0132..knime.Command." +
+      "PutFlowVariables.StringVariable\032-\n\017Integ",
+      "erVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\005\032," +
+      "\n\016DoubleVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002" +
+      " \002(\001\032,\n\016StringVariable\022\013\n\003key\030\001 \002(\t\022\r\n\005v" +
+      "alue\030\002 \002(\t\0324\n\010PutTable\022\013\n\003key\030\001 \002(\t\022\033\n\005t" +
+      "able\030\002 \002(\0132\014.knime.Table\0329\n\rAppendToTabl" +
+      "e\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Ta" +
+      "ble\032*\n\010GetTable\022\013\n\003key\030\001 \002(\t\022\021\n\tchunkSiz" +
+      "e\030\002 \002(\005\032\017\n\rListVariables\032\007\n\005Reset\032\021\n\017Has" +
+      "AutoComplete\032@\n\014AutoComplete\022\022\n\nsourceCo" +
+      "de\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022\016\n\006column\030\003 \002(\005\032\027",
+      "\n\010GetImage\022\013\n\003key\030\001 \002(\t\032\030\n\tGetObject\022\013\n\003" +
+      "key\030\001 \002(\t\032/\n\tPutObject\022\013\n\003key\030\001 \002(\t\022\025\n\rp" +
+      "ickledObject\030\002 \002(\014\032?\n\016AddSerializers\022-\n\n" +
+      "serializer\030\001 \003(\0132\031.knime.Command.Seriali" +
+      "zer\0324\n\nSerializer\022\n\n\002id\030\001 \002(\t\022\014\n\004type\030\002 " +
+      "\002(\t\022\014\n\004path\030\003 \002(\t\032E\n\020AddDeserializers\0221\n" +
+      "\014deserializer\030\001 \003(\0132\033.knime.Command.Dese" +
+      "rializer\032(\n\014Deserializer\022\n\n\002id\030\001 \002(\t\022\014\n\004" +
+      "path\030\002 \002(\t\032\n\n\010Shutdown\032Y\n\006PutSQL\022\013\n\003key\030" +
+      "\001 \002(\t\022\034\n\003sql\030\002 \002(\0132\017.knime.SQLInput\022$\n\004f",
+      "ile\030\003 \001(\0132\026.knime.RemoteFileInput\0324\n\006Get" +
+      "SQL\022\013\n\003key\030\001 \002(\t\022\035\n\003sql\030\002 \002(\0132\020.knime.SQ" +
+      "LOutputB<\n\035org.knime.python.kernel.proto" +
+      "B\033ProtobufPythonKernelCommand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -17476,7 +17681,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_PutSQL_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_PutSQL_descriptor,
-              new java.lang.String[] { "Key", "Sql", });
+              new java.lang.String[] { "Key", "Sql", "File", });
           internal_static_knime_Command_GetSQL_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(18);
           internal_static_knime_Command_GetSQL_fieldAccessorTable = new
@@ -17492,6 +17697,7 @@ public final class ProtobufPythonKernelCommand {
           org.knime.python.kernel.proto.ProtobufKnimeTable.getDescriptor(),
           org.knime.python.kernel.proto.ProtobufKnimeSQLInput.getDescriptor(),
           org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.getDescriptor(),
+          org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.getDescriptor(),
         }, assigner);
   }
 
