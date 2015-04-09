@@ -8,12 +8,13 @@ from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 
+import hiveOutput_pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='sqlOutput.proto',
   package='knime',
-  serialized_pb='\n\x0fsqlOutput.proto\x12\x05knime\"\x1a\n\tSQLOutput\x12\r\n\x05query\x18\x05 \x02(\tB7\n\x1dorg.knime.python.kernel.protoB\x16ProtobufKnimeSQLOutput')
+  serialized_pb='\n\x0fsqlOutput.proto\x12\x05knime\x1a\x10hiveOutput.proto\";\n\tSQLOutput\x12\r\n\x05query\x18\x01 \x02(\t\x12\x1f\n\x04hive\x18\x02 \x01(\x0b\x32\x11.knime.HiveOutputB7\n\x1dorg.knime.python.kernel.protoB\x16ProtobufKnimeSQLOutput')
 
 
 
@@ -27,8 +28,15 @@ _SQLOUTPUT = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='query', full_name='knime.SQLOutput.query', index=0,
-      number=5, type=9, cpp_type=9, label=2,
+      number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='hive', full_name='knime.SQLOutput.hive', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -41,10 +49,11 @@ _SQLOUTPUT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=26,
-  serialized_end=52,
+  serialized_start=44,
+  serialized_end=103,
 )
 
+_SQLOUTPUT.fields_by_name['hive'].message_type = hiveOutput_pb2._HIVEOUTPUT
 DESCRIPTOR.message_types_by_name['SQLOutput'] = _SQLOUTPUT
 
 class SQLOutput(_message.Message):

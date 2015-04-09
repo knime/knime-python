@@ -11,20 +11,34 @@ public final class ProtobufKnimeSQLOutput {
   public interface SQLOutputOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required string query = 5;
+    // required string query = 1;
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     boolean hasQuery();
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     java.lang.String getQuery();
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     com.google.protobuf.ByteString
         getQueryBytes();
+
+    // optional .knime.HiveOutput hive = 2;
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    boolean hasHive();
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput getHive();
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder getHiveOrBuilder();
   }
   /**
    * Protobuf type {@code knime.SQLOutput}
@@ -77,9 +91,22 @@ public final class ProtobufKnimeSQLOutput {
               }
               break;
             }
-            case 42: {
+            case 10: {
               bitField0_ |= 0x00000001;
               query_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                subBuilder = hive_.toBuilder();
+              }
+              hive_ = input.readMessage(org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(hive_);
+                hive_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000002;
               break;
             }
           }
@@ -122,17 +149,17 @@ public final class ProtobufKnimeSQLOutput {
     }
 
     private int bitField0_;
-    // required string query = 5;
-    public static final int QUERY_FIELD_NUMBER = 5;
+    // required string query = 1;
+    public static final int QUERY_FIELD_NUMBER = 1;
     private java.lang.Object query_;
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     public boolean hasQuery() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     public java.lang.String getQuery() {
       java.lang.Object ref = query_;
@@ -149,7 +176,7 @@ public final class ProtobufKnimeSQLOutput {
       }
     }
     /**
-     * <code>required string query = 5;</code>
+     * <code>required string query = 1;</code>
      */
     public com.google.protobuf.ByteString
         getQueryBytes() {
@@ -165,8 +192,31 @@ public final class ProtobufKnimeSQLOutput {
       }
     }
 
+    // optional .knime.HiveOutput hive = 2;
+    public static final int HIVE_FIELD_NUMBER = 2;
+    private org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput hive_;
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    public boolean hasHive() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput getHive() {
+      return hive_;
+    }
+    /**
+     * <code>optional .knime.HiveOutput hive = 2;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder getHiveOrBuilder() {
+      return hive_;
+    }
+
     private void initFields() {
       query_ = "";
+      hive_ = org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -177,6 +227,12 @@ public final class ProtobufKnimeSQLOutput {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (hasHive()) {
+        if (!getHive().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -185,7 +241,10 @@ public final class ProtobufKnimeSQLOutput {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(5, getQueryBytes());
+        output.writeBytes(1, getQueryBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, hive_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -198,7 +257,11 @@ public final class ProtobufKnimeSQLOutput {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getQueryBytes());
+          .computeBytesSize(1, getQueryBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, hive_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -308,6 +371,7 @@ public final class ProtobufKnimeSQLOutput {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getHiveFieldBuilder();
         }
       }
       private static Builder create() {
@@ -318,6 +382,12 @@ public final class ProtobufKnimeSQLOutput {
         super.clear();
         query_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
+        if (hiveBuilder_ == null) {
+          hive_ = org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.getDefaultInstance();
+        } else {
+          hiveBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -350,6 +420,14 @@ public final class ProtobufKnimeSQLOutput {
           to_bitField0_ |= 0x00000001;
         }
         result.query_ = query_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (hiveBuilder_ == null) {
+          result.hive_ = hive_;
+        } else {
+          result.hive_ = hiveBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -371,6 +449,9 @@ public final class ProtobufKnimeSQLOutput {
           query_ = other.query_;
           onChanged();
         }
+        if (other.hasHive()) {
+          mergeHive(other.getHive());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -379,6 +460,12 @@ public final class ProtobufKnimeSQLOutput {
         if (!hasQuery()) {
           
           return false;
+        }
+        if (hasHive()) {
+          if (!getHive().isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -402,16 +489,16 @@ public final class ProtobufKnimeSQLOutput {
       }
       private int bitField0_;
 
-      // required string query = 5;
+      // required string query = 1;
       private java.lang.Object query_ = "";
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public boolean hasQuery() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public java.lang.String getQuery() {
         java.lang.Object ref = query_;
@@ -425,7 +512,7 @@ public final class ProtobufKnimeSQLOutput {
         }
       }
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public com.google.protobuf.ByteString
           getQueryBytes() {
@@ -441,7 +528,7 @@ public final class ProtobufKnimeSQLOutput {
         }
       }
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public Builder setQuery(
           java.lang.String value) {
@@ -454,7 +541,7 @@ public final class ProtobufKnimeSQLOutput {
         return this;
       }
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public Builder clearQuery() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -463,7 +550,7 @@ public final class ProtobufKnimeSQLOutput {
         return this;
       }
       /**
-       * <code>required string query = 5;</code>
+       * <code>required string query = 1;</code>
        */
       public Builder setQueryBytes(
           com.google.protobuf.ByteString value) {
@@ -474,6 +561,123 @@ public final class ProtobufKnimeSQLOutput {
         query_ = value;
         onChanged();
         return this;
+      }
+
+      // optional .knime.HiveOutput hive = 2;
+      private org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput hive_ = org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder> hiveBuilder_;
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public boolean hasHive() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput getHive() {
+        if (hiveBuilder_ == null) {
+          return hive_;
+        } else {
+          return hiveBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public Builder setHive(org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput value) {
+        if (hiveBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          hive_ = value;
+          onChanged();
+        } else {
+          hiveBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public Builder setHive(
+          org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder builderForValue) {
+        if (hiveBuilder_ == null) {
+          hive_ = builderForValue.build();
+          onChanged();
+        } else {
+          hiveBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public Builder mergeHive(org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput value) {
+        if (hiveBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              hive_ != org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.getDefaultInstance()) {
+            hive_ =
+              org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.newBuilder(hive_).mergeFrom(value).buildPartial();
+          } else {
+            hive_ = value;
+          }
+          onChanged();
+        } else {
+          hiveBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public Builder clearHive() {
+        if (hiveBuilder_ == null) {
+          hive_ = org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.getDefaultInstance();
+          onChanged();
+        } else {
+          hiveBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder getHiveBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getHiveFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder getHiveOrBuilder() {
+        if (hiveBuilder_ != null) {
+          return hiveBuilder_.getMessageOrBuilder();
+        } else {
+          return hive_;
+        }
+      }
+      /**
+       * <code>optional .knime.HiveOutput hive = 2;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder> 
+          getHiveFieldBuilder() {
+        if (hiveBuilder_ == null) {
+          hiveBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutput.Builder, org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.HiveOutputOrBuilder>(
+                  hive_,
+                  getParentForChildren(),
+                  isClean());
+          hive_ = null;
+        }
+        return hiveBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:knime.SQLOutput)
@@ -501,9 +705,10 @@ public final class ProtobufKnimeSQLOutput {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\017sqlOutput.proto\022\005knime\"\032\n\tSQLOutput\022\r\n" +
-      "\005query\030\005 \002(\tB7\n\035org.knime.python.kernel." +
-      "protoB\026ProtobufKnimeSQLOutput"
+      "\n\017sqlOutput.proto\022\005knime\032\020hiveOutput.pro" +
+      "to\";\n\tSQLOutput\022\r\n\005query\030\001 \002(\t\022\037\n\004hive\030\002" +
+      " \001(\0132\021.knime.HiveOutputB7\n\035org.knime.pyt" +
+      "hon.kernel.protoB\026ProtobufKnimeSQLOutput"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -515,13 +720,14 @@ public final class ProtobufKnimeSQLOutput {
           internal_static_knime_SQLOutput_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_SQLOutput_descriptor,
-              new java.lang.String[] { "Query", });
+              new java.lang.String[] { "Query", "Hive", });
           return null;
         }
       };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
+          org.knime.python.kernel.proto.ProtobufKnimeHiveOutput.getDescriptor(),
         }, assigner);
   }
 

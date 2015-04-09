@@ -5,13 +5,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.knime.base.filehandling.remote.connectioninformation.port.ConnectionInformation;
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
 import org.knime.core.node.port.database.DatabaseDriverLoader;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
-import org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput;
-import org.knime.python.kernel.proto.ProtobufKnimeRemoteFileInput.RemoteFileInput;
 import org.knime.python.kernel.proto.ProtobufKnimeSQLInput;
 import org.knime.python.kernel.proto.ProtobufKnimeSQLInput.SQLInput;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command;
@@ -24,15 +21,9 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 	private final String m_inputName;
 	private final DatabaseQueryConnectionSettings m_conn;
 	private final CredentialsProvider m_cp;
-	private final ConnectionInformation m_fileInfo;
 
 	public SQLEditorObjectWriter(final String inputName, final DatabaseQueryConnectionSettings conn,
 			final CredentialsProvider cp) {
-		this(inputName, conn, cp, null);
-	}
-
-	public SQLEditorObjectWriter(final String inputName, final DatabaseQueryConnectionSettings conn,
-			final CredentialsProvider cp, final ConnectionInformation fileInfo) {
 		if (inputName == null || inputName.isEmpty()) {
 			throw new IllegalArgumentException("Empty sql input name found");
 		}
@@ -45,7 +36,6 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 		m_inputName = inputName;
 		m_conn = conn;
 		m_cp = cp;
-		m_fileInfo = fileInfo;
 	}
 
 	@Override
@@ -56,14 +46,10 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 	@Override
 	public byte[] getMessage() throws Exception {
 		final SQLInput sqlMessage = sqlToProtobuf(m_conn, m_cp);
-		final RemoteFileInput fileMessage = remoteFileToProtobuf(m_fileInfo);
 		final Command.Builder commandBuilder = Command.newBuilder();
 		final Builder sqlBuilder = PutSQL.newBuilder();
 		sqlBuilder.setKey(m_inputName);
 		sqlBuilder.setSql(sqlMessage);
-		if (fileMessage != null) {
-			sqlBuilder.setFile(fileMessage);
-		}
 		commandBuilder.setPutSQL(sqlBuilder);
 		final byte[] byteArray = commandBuilder.build().toByteArray();
 		return byteArray;
@@ -96,27 +82,5 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 		}
 		sqlBuilder.addAllJars(jars);
 		return sqlBuilder.build();
-	}
-
-	private RemoteFileInput remoteFileToProtobuf(final ConnectionInformation con) throws IOException {
-		if (con == null) {
-			return null;
-		}
-		final RemoteFileInput.Builder fileBuilder = ProtobufKnimeRemoteFileInput.RemoteFileInput.newBuilder();
-		fileBuilder.setProtocol(con.getProtocol());
-		fileBuilder.setHost(con.getHost());
-		fileBuilder.setPort(con.getPort());
-		fileBuilder.setUser(con.getUser());
-		fileBuilder.setPassword(con.getPassword());
-		final String keyfile = con.getKeyfile();
-		if (keyfile != null) {
-			fileBuilder.setKeyfile(keyfile);
-		}
-		final String hosts = con.getKnownHosts();
-		if (hosts != null) {
-			fileBuilder.setKnownHosts(hosts);
-		}
-		fileBuilder.setTimeout(con.getTimeout());
-		return fileBuilder.build();
 	}
 }

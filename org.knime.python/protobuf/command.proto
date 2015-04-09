@@ -6,7 +6,6 @@ option java_outer_classname = "ProtobufPythonKernelCommand";
 import "table.proto";
 import "sqlInput.proto";
 import "sqlOutput.proto";
-import "remoteFileInput.proto";
 
 message Command {
 	optional Execute execute = 1;
@@ -121,12 +120,10 @@ message Command {
     message PutSQL {
         required string key = 1;
         required SQLInput sql = 2;
-        optional RemoteFileInput file = 3;
     }
     
     message GetSQL {
         required string key = 1;
-        required SQLOutput sql = 2;
     }
     
 }

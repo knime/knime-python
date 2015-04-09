@@ -1,0 +1,15 @@
+package knime;
+
+option java_package = "org.knime.python.kernel.proto";
+option java_outer_classname = "ProtobufKnimeHiveOutput";
+
+message HiveOutput {
+    required string tableName = 1;
+    repeated string columnNames = 2;
+    repeated string columnType = 3;
+    repeated string partitionColumnNames = 4;
+    required string fileName = 5;
+    required bool tableExist = 6;
+    required bool dropTable = 7;
+    required string delimiter = 8;
+}

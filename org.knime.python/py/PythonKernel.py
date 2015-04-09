@@ -285,7 +285,6 @@ def put_sql(command):
     #print("put sql command found")
     name = command.putSQL.key
     sql = command.putSQL.sql
-    file = command.putSQL.file
     #print("SQL object: " + str(sql))
     #print("SQL object: " + sql.query)
     db_util = DBUtil(sql)
