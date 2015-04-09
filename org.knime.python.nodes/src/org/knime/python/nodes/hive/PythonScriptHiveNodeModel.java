@@ -104,7 +104,7 @@ class PythonScriptHiveNodeModel extends ExtToolOutputNodeModel {
 			final CredentialsProvider cp = getCredentialsProvider();
 			final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
-					PythonScriptHiveNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, fileInfo);
+					PythonScriptHiveNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp);
 			kernel.putGeneralObject(sqlObject);
 			final String[] output = kernel.execute(m_config.getSourceCode(), exec);
 			setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));

@@ -112,7 +112,7 @@ class PythonScriptHiveNodeDialog extends NodeDialogPane {
 			final CredentialsProvider cp = getCredentialsProvider();
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
 					PythonScriptHiveNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-					dbSpec.getConnectionSettings(cp), cp, fileSpec.getConnectionInformation());
+					dbSpec.getConnectionSettings(cp), cp);
 			m_sourceCodePanel.updateData(sqlObject);
 		} catch (final InvalidSettingsException e) {
 			throw new NotConfigurableException(e.getMessage(), e);
