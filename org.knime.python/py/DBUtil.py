@@ -114,16 +114,15 @@ class DBUtil(object):
             _output_writer: A new instance of DBWriter.
         
         """
-        self._writer.set_tablename(tablename)
-        self._writer.set_col_specs(col_specs)
-        self._writer.set_drop(drop)
+        self._writer.initialize(tablename=tablename, 
+                                col_specs=col_specs, 
+                                drop=drop)
         
         if isinstance(self._writer, HiveWriter):
-            self._writer.set_hive_output(delimiter=delimiter, 
-                                         partition_columns = partition_columns)
-        elif isinstance(self._writer, GenericWriter):
-            self._writer.check_table()
-        
+            self._writer.set_delimiter_and_partitions(
+                                        delimiter=delimiter, 
+                                        partition_columns = partition_columns)
+
         return self._writer
     
     def write_dataframe(self, tablename, dataframe, drop=False,
@@ -183,7 +182,6 @@ class DBWriter(object):
         self._cursor = self._conn.cursor()
         self._tablename = None
         self._col_specs = None
-        self._drop = None
         
     def has_output_query(self):
         return self._tablename != None
@@ -194,14 +192,11 @@ class DBWriter(object):
         
         return None
     
-    def set_tablename(self, tablename):
+    def _set_tablename(self, tablename):
         if (tablename is None) or (str(tablename).isspace()):
             raise DBUtilError("Enter a valid table name.")
         else:
             self._tablename = tablename
-            
-    def set_drop(self, drop):
-        self._drop = drop
     
     def commit(self):
         if self._conn:
@@ -274,55 +269,112 @@ class DBWriter(object):
     
     def get_type_mapping(self, col_specs):
         if isinstance(col_specs, DataFrame):
-            return self.get_type_mapping_from_dataframe(col_specs)
+            return self._get_type_mapping_from_dataframe(col_specs)
         elif isinstance(col_specs, dict):
-            col_not_in_db = []
-            specs = OrderedDict()
-            for name, ctype in col_specs.iteritems():
-                if not(isinstance(ctype, basestring) or isinstance(ctype, type)):
-                    raise DBUtilError("column type must be either string or " +
-                                      "python data type. Column '" + name + 
-                                      "' has type '" + str(ctype) + "'.")
-                col_name = _quote_column(name.lower())
-                if isinstance(ctype, basestring):
-                    specs[col_name] = ctype
-                elif isinstance(ctype, type):
-                    db_type = python_db_mapping.get(ctype)
-                    if db_type:
-                        specs[col_name] = db_type
-                    else:
-                        specs[col_name] = "varchar(255)"
-                        
-            return specs
+            return self._get_type_mapping_from_dict(col_specs)
         else:
             raise DBUtilError("'col_specs' must be either a DataFrame object or " +
                               "a 'dict' object with 'column names'" +
                               " as keys and 'column types' as values.")
     
-    def get_type_mapping_from_dataframe(self, dataframe):
+    def _get_type_mapping_from_dict(self, col_specs):
+        # Set all column names to lowercase and quote them if necessary
+        for col_name in col_specs.keys():
+            col_specs[_quote_column(str(col_name).lower())] = col_specs.pop(col_name)
+            
+        db_metadata = self._fetch_db_metadata()
+        cols_not_in_db = col_specs.keys()
+        db_cols_not_in_col_specs = []
         specs = OrderedDict()
-        for col in dataframe.columns:
-            col_name = _quote_column(dataframe[col].name.lower())
-            if np.issubclass_(dataframe[col].dtype.type, np.floating):
-                specs[col_name] = "numeric(30.10)"
-            elif np.issubclass_(dataframe[col].dtype.type, np.integer):
-                specs[col_name] = "integer"
-            else:
-                specs[col_name] = "varchar(255)"
+        if db_metadata: # table exist in database
+            for col_name in db_metadata:
+                col_type = col_specs.get(col_name)
+                if col_type:
+                    cols_not_in_db.remove(col_name)
+                    db_type = self._get_db_type(col_type)
+                    if db_type:
+                        specs[col_name] = db_type
+                    else:
+                        raise DBUtilError("column type must be either string or " +
+                                          "python data type. Column '" + col_name + 
+                                          "' has type '" + str(col_type) + "'.")
+                else: # col in DB doesn't exist in col_specs
+                    db_cols_not_in_col_specs.append(col_name)
+                        
+            if len(cols_not_in_db) > 0:
+                raise DBUtilError("Some columns in 'col_specs' do not exist in " +
+                                  "database; Not existing columns: " + 
+                                  str(col_not_in_db) + ".")
+                    
+        else: # table does not exist in database
+            for col_name, col_type in col_specs.iteritems():
+                db_type = self._get_db_type(col_type)
+                if db_type:
+                    specs[col_name] = db_type
+                else:
+                    raise DBUtilError("column type must be either string or " +
+                                      "python data type. Column '" + col_name + 
+                                      "' has type '" + str(col_type) + "'.")
+                        
+        return specs, db_cols_not_in_col_specs
+    
+    def _get_db_type(self, col_type):
+        if not(isinstance(col_type, basestring) or isinstance(col_type, type)):
+            return None
+                        
+        if isinstance(col_type, basestring):
+            return col_type
+        elif isinstance(col_type, type):
+            db_type = python_db_mapping(col_type)
+            if not db_type:
+                return "varchar(255)" # default type if no mapping exists
+            return db_type
+    
+    def _get_type_mapping_from_dataframe(self, dataframe):
+        db_metadata = self._fetch_db_metadata()
+        dataframe.rename(columns=lambda x: _quote_column(str(x).lower()), inplace=True)
+        cols_not_in_db = list(dataframe)
+        specs = OrderedDict()
+        db_cols_not_in_col_specs = []
+        if db_metadata: # table exists in database
+            for col_name in db_metadata:
+                try:
+                    cols_not_in_db.remove(col_name)
+                    specs[col_name] = self._get_db_type_from_dataframe(
+                                                dataframe[col_name].dtype.type)
+                except ValueError:
+                    db_cols_not_in_col_specs.append(col_name)
+                    
+            if len(cols_not_in_db) > 0:
+                raise DBUtilError("Some columns in 'col_specs' do not exist in " +
+                                  "database; Not existing columns: " + 
+                                  str(col_not_in_db) + ".")
+        else: # table does not exist in database
+            for col_name in dataframe:
+                specs[col_name] = self._get_db_type_from_dataframe(
+                                                dataframe[col_name].dtype.type)
         
-        return specs
-
+        return specs, db_cols_not_in_col_specs
+        
+    def _get_db_type_from_dataframe(self, col_type):
+        if np.issubclass_(col_type, np.floating):
+            return "numeric(30,10)"
+        elif np.issubclass_(col_type, np.integer):
+            return "integer"
+        else:
+            return "varchar(255)"
+        
     def verify_row(self, input):
         """ verify that all columns in 'input' exist in 'col_specs'"""
         result = OrderedDict()
         cols_not_in_spec = []
         for col in input:
-            col_name = _quote_column(col.lower())
+            col_name = _quote_column(str(col).lower())
             if self._col_specs.has_key(col_name):
                 if isinstance(input, dict):
-                    result[col] = input[col]
+                    result[col_name] = input[col]
                 elif isinstance(input, (list, tuple)):
-                    result[col] = col
+                    result[col_name] = col
             else:
                 cols_not_in_spec.append(col)
         
@@ -338,29 +390,19 @@ class DBWriter(object):
     def write_many(self, dataframe):
         pass
     
+    def initialize(self, tablename, col_specs, drop):
+        pass
+    
 class GenericWriter(DBWriter):
     def __init__(self, sql):
         super(GenericWriter, self).__init__(sql)
     
-    def set_col_specs(self, col_specs):
-        specs = self.get_type_mapping(col_specs) 
-        db_metadata = self._fetch_db_metadata()
-        if db_metadata:
-            col_not_in_db= []
-            for col_name in specs.keys():
-                if not(col_name in db_metadata):
-                    col_not_in_db.append(col_name)
-                    
-            if len(col_not_in_db) > 0:
-                raise DBUtilError("Some columns in 'col_specs' do not exist in " +
-                                  "database; Not existing columns: " + 
-                                  str(col_not_in_db) + ".")
-        
-        self._col_specs = specs
-           
-    def check_table(self):
-        if self._table_exists() and self._drop:
+    def initialize(self, tablename, col_specs, drop):
+        self._set_tablename(tablename)
+        if self._table_exists() and drop:
             self._drop_table()
+        
+        self._col_specs = self.get_type_mapping(col_specs)[0]
         
         if not self._table_exists():
             self._create_table()
@@ -382,57 +424,86 @@ class GenericWriter(DBWriter):
             self._cursor.executemany(query, dataframe.values)
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
+        
+    
     
 class HiveWriter(DBWriter):
     def __init__(self, sql):
         super(HiveWriter, self).__init__(sql)
         self._hive_output = None
     
-    def set_hive_output(self, delimiter, partition_columns):
-        self._hive_output = {}
-        self._file = tempfile.NamedTemporaryFile(prefix=self._tablename + '_' ,
-                                                suffix='.csv', delete=False,
-                                                mode='w')
-        self._hive_output['tableName'] = self._tablename
-        self._hive_output['columnNames'] = self._col_specs.keys()
-        self._hive_output['columnType'] = self._col_specs.values()
-        self._hive_output['partitionColumnNames'] = partition_columns
-        self._hive_output['fileName'] = self._file.name
-        #self._hive_output['tableExist'] = table_exist
-        self._hive_output['dropTable'] = self._drop
-        self._hive_output['delimiter'] = delimiter
-    
     def get_hive_output(self):
         return self._hive_output
     
     def set_col_specs(self, col_specs):
         self._col_specs = self.get_type_mapping(col_specs)
+        
+    def initialize(self, tablename, col_specs, drop):
+        self._set_tablename(tablename)
+        self._set_col_specs(col_specs)
+        self._hive_output = {}
+        self._file = tempfile.NamedTemporaryFile(prefix=self._tablename + '_' ,
+                                                suffix='.csv', delete=False,
+                                                mode='a')
+        self._hive_output['tableName'] = self._tablename
+        self._hive_output['columnNames'] = self._col_specs.keys()
+        self._hive_output['columnType'] = self._col_specs.values()
+        self._hive_output['fileName'] = self._file.name
+        self._hive_output['tableExist'] = self._table_exists()
+        self._hive_output['dropTable'] = drop
+        
+    def set_delimiter_and_partitions(self, delimiter, partition_columns):
+        self._hive_output['delimiter'] = delimiter
+        self._hive_output['partitionColumnNames'] = partition_columns
+    
+    def _set_col_specs(self, col_specs):
+        specs, db_cols_not_in_col_specs = self.get_type_mapping(col_specs)
+        if db_cols_not_in_col_specs: # some db columns are not in col_specs
+            raise DBUtilError("Hive Error: Some columns in database doesn't " +
+                              "exist in 'col_specs'. Not existing columns: " +
+                              str(db_cols_not_in_col_specs))
+        else:
+            self._col_specs = specs
     
     def write_row(self, row):
         if isinstance(row, dict):
             if len(row) == len(self._col_specs):
                 self.verify_row(row)
-                #file_handler = open(self._hive_output.get('fileName'), 'w')
                 ordered_row = [row.get(col) for col in self._col_specs.keys()]
                 row_text = (self._hive_output.get('delimiter')).join(ordered_row)
-                self._file.write(row_text)
-                #file_handler.close()
+                self._file.write(row_text + "\n")
             else:
-                raise DBUtilError("The input row has " + len(row) + " columns, but " +
-                                  "the 'col_specs' has " + len(self._col_specs) + " columns.")
+                raise DBUtilError("Hive Error: The input row has " + len(row) + 
+                                  " columns, but the 'col_specs' has " + 
+                                  len(self._col_specs) + " columns. The columns " +
+                                  "of the input row must correspond to the columns of " +
+                                  "the 'col_spec'.")
         else:
             raise DBUtilError("'row' must be a 'dict' object with 'column names'"
                         " as keys and 'column values' as values.")
     
     def write_many(self, dataframe):
         if isinstance(dataframe, DataFrame):
-            self.verify_row(list(dataframe))
-            dataframe.to_csv(self._file, index=False, 
-                             sep=self._hive_output.get('delimiter'))
+            if len(dataframe.columns) == len(self._col_specs):
+                result = self.verify_row(list(dataframe))
+                dataframe.columns = result.keys()
+                dataframe.to_csv(self._file.name, index=False, mode='a',
+                                 columns=self._col_specs.keys(), header=False,
+                                 sep=self._hive_output.get('delimiter'))
+            else:
+                raise DBUtilError("Hive Error: The input dataframe has " + 
+                                  len(dataframe.columns) + " columns, but the " +
+                                  "'col_specs' has " + len(self._col_specs) + 
+                                  " columns. The columns of the input dataframe " +
+                                  "must correspond to the columns of the 'col_spec'.")
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
     
     def commit(self):
+        if self._file:
+            self._file.flush()
+            
+    def close_file(self):
         if self._file:
             self._file.close()
 
