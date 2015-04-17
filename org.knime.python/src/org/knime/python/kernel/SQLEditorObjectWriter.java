@@ -2,9 +2,12 @@ package org.knime.python.kernel;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
 import org.knime.core.node.port.database.DatabaseDriverLoader;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
@@ -17,6 +20,7 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.
 
 public class SQLEditorObjectWriter implements EditorObjectWriter {
 
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(SQLEditorObjectWriter.class);
 
 	private final String m_inputName;
 	private final DatabaseQueryConnectionSettings m_conn;
@@ -36,6 +40,21 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 		m_inputName = inputName;
 		m_conn = conn;
 		m_cp = cp;
+	}
+
+	@SuppressWarnings("resource")
+	private String getQuoteIdentifier(final DatabaseQueryConnectionSettings connIn, final CredentialsProvider cp) {
+		try {
+			final Connection conn = connIn.createConnection(cp);
+			final DatabaseMetaData metaData = conn.getMetaData();
+			final String quoteString = metaData.getIdentifierQuoteString();
+			if (quoteString != null && !quoteString.trim().isEmpty()) {
+				return quoteString;
+			}
+		} catch (final Exception e) {
+			LOGGER.debug("Error fetching identifier quote:" + e.getMessage());
+		}
+		return "\"";
 	}
 
 	@Override
@@ -81,6 +100,8 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 			throw new IOException(e);
 		}
 		sqlBuilder.addAllJars(jars);
+		final String identifierQuote = getQuoteIdentifier(conSettings, cp);
+		sqlBuilder.setIdentifierQuote(identifierQuote);
 		return sqlBuilder.build();
 	}
 }

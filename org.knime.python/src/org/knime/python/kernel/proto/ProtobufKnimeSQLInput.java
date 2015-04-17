@@ -155,6 +155,21 @@ public final class ProtobufKnimeSQLInput {
      */
     com.google.protobuf.ByteString
         getJarsBytes(int index);
+
+    // required string identifierQuote = 11;
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    boolean hasIdentifierQuote();
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    java.lang.String getIdentifierQuote();
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    com.google.protobuf.ByteString
+        getIdentifierQuoteBytes();
   }
   /**
    * Protobuf type {@code knime.SQLInput}
@@ -258,6 +273,11 @@ public final class ProtobufKnimeSQLInput {
                 mutable_bitField0_ |= 0x00000200;
               }
               jars_.add(input.readBytes());
+              break;
+            }
+            case 90: {
+              bitField0_ |= 0x00000200;
+              identifierQuote_ = input.readBytes();
               break;
             }
           }
@@ -666,6 +686,49 @@ public final class ProtobufKnimeSQLInput {
       return jars_.getByteString(index);
     }
 
+    // required string identifierQuote = 11;
+    public static final int IDENTIFIERQUOTE_FIELD_NUMBER = 11;
+    private java.lang.Object identifierQuote_;
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    public boolean hasIdentifierQuote() {
+      return ((bitField0_ & 0x00000200) == 0x00000200);
+    }
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    public java.lang.String getIdentifierQuote() {
+      java.lang.Object ref = identifierQuote_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          identifierQuote_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string identifierQuote = 11;</code>
+     */
+    public com.google.protobuf.ByteString
+        getIdentifierQuoteBytes() {
+      java.lang.Object ref = identifierQuote_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        identifierQuote_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private void initFields() {
       driver_ = "";
       jDBCUrl_ = "";
@@ -677,6 +740,7 @@ public final class ProtobufKnimeSQLInput {
       autocommit_ = false;
       timezone_ = "";
       jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      identifierQuote_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -719,6 +783,10 @@ public final class ProtobufKnimeSQLInput {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasIdentifierQuote()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -755,6 +823,9 @@ public final class ProtobufKnimeSQLInput {
       }
       for (int i = 0; i < jars_.size(); i++) {
         output.writeBytes(10, jars_.getByteString(i));
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        output.writeBytes(11, getIdentifierQuoteBytes());
       }
       getUnknownFields().writeTo(output);
     }
@@ -809,6 +880,10 @@ public final class ProtobufKnimeSQLInput {
         }
         size += dataSize;
         size += 1 * getJarsList().size();
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(11, getIdentifierQuoteBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -946,6 +1021,8 @@ public final class ProtobufKnimeSQLInput {
         bitField0_ = (bitField0_ & ~0x00000100);
         jars_ = com.google.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000200);
+        identifierQuote_ = "";
+        bitField0_ = (bitField0_ & ~0x00000400);
         return this;
       }
 
@@ -1016,6 +1093,10 @@ public final class ProtobufKnimeSQLInput {
           bitField0_ = (bitField0_ & ~0x00000200);
         }
         result.jars_ = jars_;
+        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+          to_bitField0_ |= 0x00000200;
+        }
+        result.identifierQuote_ = identifierQuote_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1083,6 +1164,11 @@ public final class ProtobufKnimeSQLInput {
           }
           onChanged();
         }
+        if (other.hasIdentifierQuote()) {
+          bitField0_ |= 0x00000400;
+          identifierQuote_ = other.identifierQuote_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -1121,6 +1207,10 @@ public final class ProtobufKnimeSQLInput {
           return false;
         }
         if (!hasTimezone()) {
+          
+          return false;
+        }
+        if (!hasIdentifierQuote()) {
           
           return false;
         }
@@ -1823,6 +1913,80 @@ public final class ProtobufKnimeSQLInput {
         return this;
       }
 
+      // required string identifierQuote = 11;
+      private java.lang.Object identifierQuote_ = "";
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public boolean hasIdentifierQuote() {
+        return ((bitField0_ & 0x00000400) == 0x00000400);
+      }
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public java.lang.String getIdentifierQuote() {
+        java.lang.Object ref = identifierQuote_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          identifierQuote_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public com.google.protobuf.ByteString
+          getIdentifierQuoteBytes() {
+        java.lang.Object ref = identifierQuote_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          identifierQuote_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public Builder setIdentifierQuote(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000400;
+        identifierQuote_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public Builder clearIdentifierQuote() {
+        bitField0_ = (bitField0_ & ~0x00000400);
+        identifierQuote_ = getDefaultInstance().getIdentifierQuote();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string identifierQuote = 11;</code>
+       */
+      public Builder setIdentifierQuoteBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000400;
+        identifierQuote_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:knime.SQLInput)
     }
 
@@ -1848,13 +2012,14 @@ public final class ProtobufKnimeSQLInput {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\016sqlInput.proto\022\005knime\"\303\001\n\010SQLInput\022\016\n\006" +
+      "\n\016sqlInput.proto\022\005knime\"\334\001\n\010SQLInput\022\016\n\006" +
       "driver\030\001 \002(\t\022\017\n\007JDBCUrl\030\002 \002(\t\022\020\n\010userNam" +
       "e\030\003 \002(\t\022\020\n\010password\030\004 \002(\t\022\r\n\005query\030\005 \002(\t" +
       "\022\024\n\014dbIdentifier\030\006 \002(\t\022\031\n\021connectionTime" +
       "out\030\007 \002(\005\022\022\n\nautocommit\030\010 \002(\010\022\020\n\010timezon" +
-      "e\030\t \002(\t\022\014\n\004jars\030\n \003(\tB6\n\035org.knime.pytho" +
-      "n.kernel.protoB\025ProtobufKnimeSQLInput"
+      "e\030\t \002(\t\022\014\n\004jars\030\n \003(\t\022\027\n\017identifierQuote" +
+      "\030\013 \002(\tB6\n\035org.knime.python.kernel.protoB" +
+      "\025ProtobufKnimeSQLInput"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1866,7 +2031,7 @@ public final class ProtobufKnimeSQLInput {
           internal_static_knime_SQLInput_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_SQLInput_descriptor,
-              new java.lang.String[] { "Driver", "JDBCUrl", "UserName", "Password", "Query", "DbIdentifier", "ConnectionTimeout", "Autocommit", "Timezone", "Jars", });
+              new java.lang.String[] { "Driver", "JDBCUrl", "UserName", "Password", "Query", "DbIdentifier", "ConnectionTimeout", "Autocommit", "Timezone", "Jars", "IdentifierQuote", });
           return null;
         }
       };

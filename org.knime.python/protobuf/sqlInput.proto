@@ -14,4 +14,5 @@ message SQLInput {
     required bool autocommit = 8;
     required string timezone = 9;
     repeated string jars = 10;
+    required string identifierQuote = 11;
 }

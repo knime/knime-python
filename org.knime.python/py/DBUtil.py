@@ -15,17 +15,6 @@ python_db_mapping = {int : 'integer',
                      bool: 'boolean',
                      datetime: 'timestamp'}
 
-def _quote_identifier(identifier):
-    """Quotes identifier if necessary."""
-    if (identifier is None) or (identifier.isspace()):
-        raise DBUtilError("Enter a valid identifier.")
-    else:
-        match = re.search(r"^[\w\d]+$", identifier)
-        if not match:
-            return '"' + identifier + '"'
-        else:
-            return str(identifier)
-
 class DBUtil(object):
     """An utility class to interact with various databases. """
     def __init__(self, sql):
@@ -43,9 +32,63 @@ class DBUtil(object):
         self._input_query = sql.query
         
         if sql.dbIdentifier == 'hive2':
-            self._writer = HiveWriter(self._conn, self._cursor)
+            self._writer = HiveWriter(self)
         else:
-            self._writer = GenericWriter(self._conn, self._cursor)
+            self._writer = GenericWriter(self)
+        self._debug = False
+        self._quote_character = sql.identifierQuote
+        
+    def set_quote_character(self, quote_character):
+        """Set the quote character for table and column names
+            Args:
+                quote_character: The quote character to use.
+        """
+        self._quote_character = quote_character
+
+    def _quote_identifier(self, identifier):
+        """Quotes identifier if necessary."""
+        if (identifier is None) or (identifier.isspace()):
+            raise DBUtilError("Enter a valid identifier.")
+        else:
+            match = re.search(r"^[\w\d]+$", identifier)
+            if not match:
+                return self._quote_character + identifier + self._quote_character
+            else:
+                return str(identifier)
+        
+    def _set_debug(self, debug):
+        """Setting debug to true results in printing of all database queries"""
+        self._debug = debug
+    
+    def _execute_query_savepoint(self, query):
+        """Execute a query, if it fails, return to the savepoint before the execution."""
+        savepoint = None
+        try:
+            savepoint = self._conn.set_savepoint()
+        except:
+            savepoint = None
+        try:
+            self._execute_query(query)
+            if savepoint != None:
+                self._conn.release_savepoint(savepoint)
+            return True
+        except:
+            if savepoint != None:
+                self._conn.rollback(savepoint)
+            return False
+
+    def _execute_query(self, sql, values=None):
+        if self._debug:
+                print sql
+        if values:
+            self._cursor.execute(sql, values)
+        else:
+            self._cursor.execute(sql)
+    
+    def _executemany(self, sql, values):
+        if self._debug:
+            print sql
+        self._cursor.executemany(sql, values)
     
     def get_output_query(self):
         """Gets output query. """
@@ -148,7 +191,6 @@ class DBUtil(object):
                                           delimiter=delimiter, 
                                           partition_columns=partition_columns)
         self._writer.write_many(dataframe)
-        self._writer.commit()
         
     def get_dataframe(self, query=None):
         """Returns the dataframe representation of the input SQL query.
@@ -204,10 +246,9 @@ class DBUtil(object):
 
 class DBWriter(object):
     """A class to write data into database."""
-    def __init__(self, conn, cursor):
+    def __init__(self, db_util):
         """Initialize the writer."""
-        self._conn = conn
-        self._cursor = cursor
+        self._db_util = db_util
         self._tablename = None
         self._col_specs = None
         
@@ -218,7 +259,7 @@ class DBWriter(object):
     def _get_output_query(self):
         """Returns the output query."""
         if self._tablename:
-            return "SELECT * FROM " + _quote_identifier(self._tablename)
+            return "SELECT * FROM " + self._db_util._quote_identifier(self._tablename)
         
         return None
     
@@ -231,57 +272,39 @@ class DBWriter(object):
     
     def commit(self):
         """Commits all changes to the database."""
-        if self._conn:
-            self._conn.commit()
+        conn = self._db_util._conn
+        if conn:
+            conn.commit()
             
     def _fetch_db_metadata(self):
         """Fetch the meta data of a table in the database."""
-        query = "SELECT * FROM (SELECT * FROM " + _quote_identifier(self._tablename) + ") temp WHERE (1 = 0)"
-        success = self._execute_query_savepoint(query)
+        query = "SELECT * FROM (SELECT * FROM " + self._db_util._quote_identifier(self._tablename) + ") temp WHERE (1 = 0)"
+        success = self._db_util._execute_query_savepoint(query)
         if success:
-            return [desc[0] for desc in self._cursor.description]
+            return [desc[0] for desc in self._db_util.get_cursor().description]
         else:
             return []
         
     def _table_exists(self):
         """Checks if table exists in the database."""
-        query = """SELECT 1 AS tmp FROM %s""" % _quote_identifier(self._tablename)
-        return self._execute_query_savepoint(query)
+        query = """SELECT 1 AS tmp FROM %s""" % self._db_util._quote_identifier(self._tablename)
+        return self._db_util._execute_query_savepoint(query)
     
     def _drop_table(self):
         """Drops a table in the database."""
-        query = """DROP TABLE %s""" % _quote_identifier(self._tablename)
-        return self._execute_query_savepoint(query)
-    
-    def _execute_query_savepoint(self, query):
-        """Execute a query, if it fails, return to the savepoint before the execution."""
-        savepoint = None
-        try:
-            savepoint = self._conn.set_savepoint()
-        except:
-            savepoint = None
-        try:
-            self._cursor.execute(query)
-            if savepoint != None:
-                self._conn.release_savepoint(savepoint)
-            return True
-        except:
-            if savepoint != None:
-                self._conn.rollback(savepoint)
-            return False
+        query = """DROP TABLE %s""" % self._db_util._quote_identifier(self._tablename)
+        return self._db_util._execute_query_savepoint(query)
         
     def _create_table(self):
         """Creates a new table in the database."""
         try:
-            col_list = [(_quote_identifier(cname), ctype) for cname, ctype in self._col_specs.iteritems()]
+            col_list = [(self._db_util._quote_identifier(cname), ctype) for cname, ctype in self._col_specs.iteritems()]
 
             columns = (',\n').join('%s %s' % col for col in col_list)
-            query = """CREATE TABLE %(tablename)s (
-                            %(columns)s
-                        );"""
+            query = """CREATE TABLE %(tablename)s (%(columns)s);"""
 
-            query = query % {'tablename' : _quote_identifier(self._tablename), 'columns' : columns}
-            self._cursor.execute(query)
+            query = query % {'tablename' : self._db_util._quote_identifier(self._tablename), 'columns' : columns}
+            self._db_util._execute_query(query)
 
         except AttributeError as ex:
             raise DBUtilError("'col_specs' must be a 'dict' object with " +
@@ -290,9 +313,9 @@ class DBWriter(object):
     def _build_insert_query(self, columns):
         """Build insert query with column names and wildcards."""
         wildcards = (',').join('?' * len(columns))
-        columns = map(_quote_identifier, columns)
+        columns = map(self._db_util._quote_identifier, columns)
         cols = (',').join(columns)
-        query = """INSERT INTO %s (%s) VALUES (%s)""" %(_quote_identifier(self._tablename),
+        query = """INSERT INTO %s (%s) VALUES (%s)""" %(self._db_util._quote_identifier(self._tablename),
                     cols, wildcards)
         return query
     
@@ -444,8 +467,8 @@ class DBWriter(object):
     
 class GenericWriter(DBWriter):
     """A class to write data into various databases."""
-    def __init__(self, conn, cursor):
-        super(GenericWriter, self).__init__(conn, cursor)
+    def __init__(self, db_util):
+        super(GenericWriter, self).__init__(db_util)
     
     def _initialize(self, tablename, col_specs, drop):
         """Do some initialization. 
@@ -474,7 +497,7 @@ class GenericWriter(DBWriter):
         if isinstance(row, dict):
             verified_row = self._verify_row(row)
             query = self._build_insert_query(verified_row.keys())
-            self._cursor.execute(query, verified_row.values())
+            self._db_util._execute_query(query, verified_row.values())
         else:
             raise DBUtilError("'row' must be a 'dict' object with 'column names'"
                         " as keys and 'column values' as values of the 'dict' object.")
@@ -490,7 +513,7 @@ class GenericWriter(DBWriter):
         if isinstance(dataframe, DataFrame):
             verified_row = self._verify_row(list(dataframe))
             query = self._build_insert_query(verified_row.keys())
-            self._cursor.executemany(query, dataframe.values)
+            self._db_util._executemany(query, dataframe.values)
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
         
@@ -498,8 +521,8 @@ class GenericWriter(DBWriter):
     
 class HiveWriter(DBWriter):
     """A class to write data into a hive table."""
-    def __init__(self, conn, cursor):
-        super(HiveWriter, self).__init__(conn, cursor)
+    def __init__(self, db_util):
+        super(HiveWriter, self).__init__(db_util)
         self._hive_output = None
     
     def _get_hive_output(self):

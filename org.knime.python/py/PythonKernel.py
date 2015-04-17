@@ -288,6 +288,8 @@ def put_variable(name, variable):
 def get_sql(command):
     #print("get sql command found")
     db_util = get_variable(command.getSQL.key)
+    #commit all changes
+    db_util._writer.commit()
     sql_out = sqlOutput_pb2.SQLOutput()
     sql_out.query = db_util.get_output_query()
     hive_output = db_util._get_hive_output()
@@ -300,7 +302,6 @@ def get_sql(command):
         sql_out.hive.tableExist = hive_output.get('tableExist')
         sql_out.hive.dropTable = hive_output.get('dropTable')
         sql_out.hive.delimiter = hive_output.get('delimiter')
-    db_util._writer.commit()
     return sql_out
 
 def put_sql(command):

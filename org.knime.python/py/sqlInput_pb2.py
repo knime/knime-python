@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='sqlInput.proto',
   package='knime',
-  serialized_pb='\n\x0esqlInput.proto\x12\x05knime\"\xc3\x01\n\x08SQLInput\x12\x0e\n\x06\x64river\x18\x01 \x02(\t\x12\x0f\n\x07JDBCUrl\x18\x02 \x02(\t\x12\x10\n\x08userName\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x02(\t\x12\r\n\x05query\x18\x05 \x02(\t\x12\x14\n\x0c\x64\x62Identifier\x18\x06 \x02(\t\x12\x19\n\x11\x63onnectionTimeout\x18\x07 \x02(\x05\x12\x12\n\nautocommit\x18\x08 \x02(\x08\x12\x10\n\x08timezone\x18\t \x02(\t\x12\x0c\n\x04jars\x18\n \x03(\tB6\n\x1dorg.knime.python.kernel.protoB\x15ProtobufKnimeSQLInput')
+  serialized_pb='\n\x0esqlInput.proto\x12\x05knime\"\xdc\x01\n\x08SQLInput\x12\x0e\n\x06\x64river\x18\x01 \x02(\t\x12\x0f\n\x07JDBCUrl\x18\x02 \x02(\t\x12\x10\n\x08userName\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x02(\t\x12\r\n\x05query\x18\x05 \x02(\t\x12\x14\n\x0c\x64\x62Identifier\x18\x06 \x02(\t\x12\x19\n\x11\x63onnectionTimeout\x18\x07 \x02(\x05\x12\x12\n\nautocommit\x18\x08 \x02(\x08\x12\x10\n\x08timezone\x18\t \x02(\t\x12\x0c\n\x04jars\x18\n \x03(\t\x12\x17\n\x0fidentifierQuote\x18\x0b \x02(\tB6\n\x1dorg.knime.python.kernel.protoB\x15ProtobufKnimeSQLInput')
 
 
 
@@ -95,6 +95,13 @@ _SQLINPUT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='identifierQuote', full_name='knime.SQLInput.identifierQuote', index=10,
+      number=11, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -105,7 +112,7 @@ _SQLINPUT = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=26,
-  serialized_end=221,
+  serialized_end=246,
 )
 
 DESCRIPTOR.message_types_by_name['SQLInput'] = _SQLINPUT
