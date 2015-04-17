@@ -5,12 +5,14 @@ from pandas import DataFrame
 from collections import OrderedDict
 import inspect
 import tempfile
+from datetime import datetime
 
 python_db_mapping = {int : 'integer',
                      long : 'integer', 
                      str : 'varchar(255)', 
                      float : 'numeric(30,10)',
-                     bool: 'boolean'}
+                     bool: 'boolean',
+                     datetime: 'timestamp'}
 
 def _quote_column(columnname):
     if (columnname is None) or (columnname.isspace()):
@@ -38,14 +40,18 @@ class DBUtil(object):
         Args:
             sql: A SQL object containing informations to connect to database.
         """
-        
-        if sql.dbIdentifier == 'hive2':
-            self._writer = HiveWriter(sql)
-        else:
-            self._writer = GenericWriter(sql)
-        
+        self._conn = jaydebeapi.connect(sql.driver, 
+                                        [sql.JDBCUrl, sql.userName, sql.password],
+                                        sql.jars)
+        self._conn.jconn.setAutoCommit(False)
+        self._cursor = self._conn.cursor()
         self._output_query = None
         self._input_query = sql.query
+        
+        if sql.dbIdentifier == 'hive2':
+            self._writer = HiveWriter(self._cursor)
+        else:
+            self._writer = GenericWriter(self._cursor)
     
     def get_output_query(self):
         """Gets output query.
@@ -58,8 +64,8 @@ class DBUtil(object):
         """
         if self._output_query != None:
             return self._output_query
-        elif self._writer.has_output_query():
-            return self._writer.get_output_query()
+        elif self._writer._has_output_query():
+            return self._writer._get_output_query()
         else:
             return self._input_query
     
@@ -67,23 +73,27 @@ class DBUtil(object):
         """Sets output query."""
         self._output_query = output_query
         
-    def get_hive_output(self):
+    def _get_hive_output(self):
         if isinstance(self._writer, HiveWriter):
-            return self._writer.get_hive_output()
+            return self._writer._get_hive_output()
         else:
             return None
         
     def get_cursor(self):
         """Gets the cursor object."""
-        return self._writer.get_cursor()
+        
+        return self._cursor
  
     def close_cursor(self):
         """Closes the cursor object."""
-        self._writer.close_cursor()
+        self._cursor.close()
 
-    def close_connection(self):
+    def _close_connection(self):
         """ close connection """
-        self._writer.close_connection()
+        self._conn.close()
+        
+    def _destroy(self):
+        self._close_connection()
         
     def get_db_reader(self, query=None):
         """Get a new instance of DBReader.
@@ -93,11 +103,11 @@ class DBUtil(object):
                 None, which means that the _input_query from DBUtil object is used.
         
         Returns:
-            DBReader: A new instance of DBReader.
+            DBReader: A new instance of DBReader._unknownSqlTypeConverter
         """
         if query == None:
-            return DBReader(self._writer.get_cursor(), self._input_query)
-        return DBReader(self._writer.get_cursor(), query)
+            return DBReader(self._cursor, self._input_query)
+        return DBReader(self._cursor, query)
         
     def get_db_writer(self, tablename, col_specs, drop=False, 
                       delimiter="\t", partition_columns=[]):
@@ -114,12 +124,12 @@ class DBUtil(object):
             _output_writer: A new instance of DBWriter.
         
         """
-        self._writer.initialize(tablename=tablename, 
+        self._writer._initialize(tablename=tablename, 
                                 col_specs=col_specs, 
                                 drop=drop)
         
         if isinstance(self._writer, HiveWriter):
-            self._writer.set_delimiter_and_partitions(
+            self._writer._set_delimiter_and_partitions(
                                         delimiter=delimiter, 
                                         partition_columns = partition_columns)
 
@@ -143,7 +153,7 @@ class DBUtil(object):
         str_columns = [] # array to store all columns from type string
         columns = [] # array to store all columns names
 
-        for desc in db_reader.get_cursor().description:
+        for desc in self.get_cursor().description:
             columns.append(desc[0])
             if 'VARCHAR' in desc[1].values:
                 str_columns.append(desc[0]) 
@@ -174,19 +184,15 @@ class DBUtil(object):
 
 class DBWriter(object):
 
-    def __init__(self, sql):
-        self._conn = jaydebeapi.connect(sql.driver, 
-                                        [sql.JDBCUrl, sql.userName, sql.password],
-                                        sql.jars)
-        self._conn.jconn.setAutoCommit(False)
-        self._cursor = self._conn.cursor()
+    def __init__(self, cursor):
+        self._cursor = cursor
         self._tablename = None
         self._col_specs = None
         
-    def has_output_query(self):
+    def _has_output_query(self):
         return self._tablename != None
     
-    def get_output_query(self):
+    def _get_output_query(self):
         if self._tablename:
             return "SELECT * FROM " + self._tablename
         
@@ -201,17 +207,6 @@ class DBWriter(object):
     def commit(self):
         if self._conn:
             self._conn.commit()
-
-    def get_cursor(self):
-        return self._cursor
-
-    def close_cursor(self):
-        if self._cursor:
-            self._cursor.close()
-    
-    def close_connection(self):
-        if self._conn:
-            self._conn.close()
             
     def _fetch_db_metadata(self):
         query = "SELECT * FROM (SELECT * FROM " + self._tablename + ") temp WHERE (1 = 0)"
@@ -254,7 +249,9 @@ class DBWriter(object):
                             %(columns)s
                         );"""
             query = query % {'tablename' : self._tablename, 'columns' : columns}
+            print query
             self._cursor.execute(query)
+            print "HELLO"
 
         except AttributeError as ex:
             raise DBUtilError("'col_specs' must be a 'dict' object with " +
@@ -267,7 +264,7 @@ class DBWriter(object):
                     cols, wildcards)
         return query
     
-    def get_type_mapping(self, col_specs):
+    def _get_type_mapping(self, col_specs):
         if isinstance(col_specs, DataFrame):
             return self._get_type_mapping_from_dataframe(col_specs)
         elif isinstance(col_specs, dict):
@@ -348,7 +345,7 @@ class DBWriter(object):
             if len(cols_not_in_db) > 0:
                 raise DBUtilError("Some columns in 'col_specs' do not exist in " +
                                   "database; Not existing columns: " + 
-                                  str(col_not_in_db) + ".")
+                                  str(cols_not_in_db) + ".")
         else: # table does not exist in database
             for col_name in dataframe:
                 specs[col_name] = self._get_db_type_from_dataframe(
@@ -364,7 +361,7 @@ class DBWriter(object):
         else:
             return "varchar(255)"
         
-    def verify_row(self, input):
+    def _verify_row(self, input):
         """ verify that all columns in 'input' exist in 'col_specs'"""
         result = OrderedDict()
         cols_not_in_spec = []
@@ -390,19 +387,19 @@ class DBWriter(object):
     def write_many(self, dataframe):
         pass
     
-    def initialize(self, tablename, col_specs, drop):
+    def _initialize(self, tablename, col_specs, drop):
         pass
     
 class GenericWriter(DBWriter):
     def __init__(self, sql):
         super(GenericWriter, self).__init__(sql)
     
-    def initialize(self, tablename, col_specs, drop):
+    def _initialize(self, tablename, col_specs, drop):
         self._set_tablename(tablename)
         if self._table_exists() and drop:
             self._drop_table()
         
-        self._col_specs = self.get_type_mapping(col_specs)[0]
+        self._col_specs = self._get_type_mapping(col_specs)[0]
         
         if not self._table_exists():
             self._create_table()
@@ -410,7 +407,7 @@ class GenericWriter(DBWriter):
             
     def write_row(self, row):
         if isinstance(row, dict):
-            verified_row = self.verify_row(row)
+            verified_row = self._verify_row(row)
             query = self._build_insert_query(verified_row.keys())
             self._cursor.execute(query, verified_row.values())
         else:
@@ -419,7 +416,7 @@ class GenericWriter(DBWriter):
     
     def write_many(self, dataframe):
         if isinstance(dataframe, DataFrame):
-            verified_row = self.verify_row(list(dataframe))
+            verified_row = self._verify_row(list(dataframe))
             query = self._build_insert_query(verified_row.keys())
             self._cursor.executemany(query, dataframe.values)
         else:
@@ -432,13 +429,10 @@ class HiveWriter(DBWriter):
         super(HiveWriter, self).__init__(sql)
         self._hive_output = None
     
-    def get_hive_output(self):
+    def _get_hive_output(self):
         return self._hive_output
-    
-    def set_col_specs(self, col_specs):
-        self._col_specs = self.get_type_mapping(col_specs)
-        
-    def initialize(self, tablename, col_specs, drop):
+            
+    def _initialize(self, tablename, col_specs, drop):
         self._set_tablename(tablename)
         self._set_col_specs(col_specs)
         self._hive_output = {}
@@ -452,12 +446,12 @@ class HiveWriter(DBWriter):
         self._hive_output['tableExist'] = self._table_exists()
         self._hive_output['dropTable'] = drop
         
-    def set_delimiter_and_partitions(self, delimiter, partition_columns):
+    def _set_delimiter_and_partitions(self, delimiter, partition_columns):
         self._hive_output['delimiter'] = delimiter
         self._hive_output['partitionColumnNames'] = partition_columns
     
     def _set_col_specs(self, col_specs):
-        specs, db_cols_not_in_col_specs = self.get_type_mapping(col_specs)
+        specs, db_cols_not_in_col_specs = self._get_type_mapping(col_specs)
         if db_cols_not_in_col_specs: # some db columns are not in col_specs
             raise DBUtilError("Hive Error: Some columns in database doesn't " +
                               "exist in 'col_specs'. Not existing columns: " +
@@ -468,7 +462,7 @@ class HiveWriter(DBWriter):
     def write_row(self, row):
         if isinstance(row, dict):
             if len(row) == len(self._col_specs):
-                self.verify_row(row)
+                self._verify_row(row)
                 ordered_row = [row.get(col) for col in self._col_specs.keys()]
                 row_text = (self._hive_output.get('delimiter')).join(ordered_row)
                 self._file.write(row_text + "\n")
@@ -485,7 +479,7 @@ class HiveWriter(DBWriter):
     def write_many(self, dataframe):
         if isinstance(dataframe, DataFrame):
             if len(dataframe.columns) == len(self._col_specs):
-                result = self.verify_row(list(dataframe))
+                result = self._verify_row(list(dataframe))
                 dataframe.columns = result.keys()
                 dataframe.to_csv(self._file.name, index=False, mode='a',
                                  columns=self._col_specs.keys(), header=False,
@@ -503,7 +497,7 @@ class HiveWriter(DBWriter):
         if self._file:
             self._file.flush()
             
-    def close_file(self):
+    def _close_file(self):
         if self._file:
             self._file.close()
 
@@ -525,12 +519,6 @@ class DBReader(object):
     def fetchall(self):
         result = self._cursor.fetchall()
         return result
-
-    def close_cursor(self):
-        self._cursor.close()
-
-    def get_cursor(self):
-        return self._cursor
 
 class DBUtilError(Exception):
     def __init__(self, message):

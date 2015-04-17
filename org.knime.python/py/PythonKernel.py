@@ -279,7 +279,7 @@ def get_sql(command):
     db_util = get_variable(command.getSQL.key)
     sql_out = sqlOutput_pb2.SQLOutput()
     sql_out.query = db_util.get_output_query()
-    hive_output = db_util.get_hive_output()
+    hive_output = db_util._get_hive_output()
     if hive_output != None:
         sql_out.hive.tableName = hive_output.get('tableName')
         sql_out.hive.columnNames.extend(hive_output.get('columnNames'))
@@ -290,6 +290,8 @@ def get_sql(command):
         sql_out.hive.dropTable = hive_output.get('dropTable')
         sql_out.hive.delimiter = hive_output.get('delimiter')
     
+    db_util.commit()
+    db_util._destroy()
     return sql_out
 
 def put_sql(command):
