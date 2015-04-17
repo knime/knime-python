@@ -301,7 +301,7 @@ class DBWriter(object):
             col_list = [(self._db_util._quote_identifier(cname), ctype) for cname, ctype in self._col_specs.iteritems()]
 
             columns = (',\n').join('%s %s' % col for col in col_list)
-            query = """CREATE TABLE %(tablename)s (%(columns)s);"""
+            query = """CREATE TABLE %(tablename)s (%(columns)s)"""
 
             query = query % {'tablename' : self._db_util._quote_identifier(self._tablename), 'columns' : columns}
             self._db_util._execute_query(query)
