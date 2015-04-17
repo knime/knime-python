@@ -821,7 +821,7 @@ public class PythonKernel {
 						writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
 						// Give it some time to shutdown before we force it
 						try {
-							Thread.sleep(1000);
+							Thread.sleep(10000);
 						} catch (final InterruptedException e) {
 							//
 						}

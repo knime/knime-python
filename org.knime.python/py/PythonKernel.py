@@ -87,6 +87,8 @@ if REMOTE_DBG:
 # connect to the server on the localhost at the port given by the argument 1 and listen for commands
 def run():
     global _connection
+    global _cleanup_object_names
+    _cleanup_object_names = []
     _connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     _connection.connect(('localhost', int(sys.argv[1])))
     # First send PID of this process (so it can reliably be killed later)
@@ -215,10 +217,19 @@ def run():
                     _type_extension_manager.add_deserializer(deserializer.id, deserializer.path)
                 write_dummy()
             elif command.HasField('shutdown'):
+                _cleanup()
                 exit()
     finally:
         _connection.close()
 
+def _cleanup():
+    for name in _cleanup_object_names:
+        obj = get_variable(name)
+        if obj:
+            try:
+                obj._cleanup()
+            except Exception as ex:
+                print ex                
 
 # reads 4 bytes from the input stream and interprets them as size
 def read_size():
@@ -289,9 +300,7 @@ def get_sql(command):
         sql_out.hive.tableExist = hive_output.get('tableExist')
         sql_out.hive.dropTable = hive_output.get('dropTable')
         sql_out.hive.delimiter = hive_output.get('delimiter')
-    
-    db_util.commit()
-    db_util._destroy()
+    db_util._writer.commit()
     return sql_out
 
 def put_sql(command):
@@ -302,6 +311,7 @@ def put_sql(command):
     #print("SQL object: " + sql.query)
     db_util = DBUtil(sql)
     _exec_env[name] = db_util
+    _cleanup_object_names.append(name)
 
 # append the given data frame to an existing one
 def append_to_table(name, data_frame):

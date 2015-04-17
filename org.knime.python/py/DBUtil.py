@@ -14,15 +14,15 @@ python_db_mapping = {int : 'integer',
                      bool: 'boolean',
                      datetime: 'timestamp'}
 
-def _quote_column(columnname):
-    if (columnname is None) or (columnname.isspace()):
-        raise DBUtilError("Enter a valid column name.")
+def _quote_identifier(identifier):
+    if (identifier is None) or (identifier.isspace()):
+        raise DBUtilError("Enter a valid identifier.")
     else:
-        match = re.search(r"^[\w\d]+$", columnname)
+        match = re.search(r"^[\w\d]+$", identifier)
         if not match:
-            return '"' + columnname + '"'
+            return '"' + identifier + '"'
         else:
-            return str(columnname)
+            return str(identifier)
 
 class DBUtil(object):
     """ A class used to interact with databases.
@@ -49,9 +49,9 @@ class DBUtil(object):
         self._input_query = sql.query
         
         if sql.dbIdentifier == 'hive2':
-            self._writer = HiveWriter(self._cursor)
+            self._writer = HiveWriter(self._conn, self._cursor)
         else:
-            self._writer = GenericWriter(self._cursor)
+            self._writer = GenericWriter(self._conn, self._cursor)
     
     def get_output_query(self):
         """Gets output query.
@@ -92,18 +92,18 @@ class DBUtil(object):
         """ close connection """
         self._conn.close()
         
-    def _destroy(self):
+    def _cleanup(self):
         self._close_connection()
         
     def get_db_reader(self, query=None):
-        """Get a new instance of DBReader.
+        """Get a new instance of DBReader. For details about DBReader see the DBReader description below
         
         Args:
             query: A sql query to retrieve contents from database. Default is 
                 None, which means that the _input_query from DBUtil object is used.
         
         Returns:
-            DBReader: A new instance of DBReader._unknownSqlTypeConverter
+            DBReader: A new instance of DBReader
         """
         if query == None:
             return DBReader(self._cursor, self._input_query)
@@ -146,7 +146,7 @@ class DBUtil(object):
         self._writer.commit()
         
     def get_dataframe(self, query=None):
-        """ get dataframe """
+        """ returns the dataframe representation of the input sql query """
        
         db_reader = self.get_db_reader(query)
         
@@ -161,30 +161,43 @@ class DBUtil(object):
         df = DataFrame(db_reader.fetchall(), columns=columns)
         df[str_columns] = df[str_columns].astype(np.character)
         return df
-        
+    
     def print_description(self):
+        """ Prints descriptions of this object. """
+        self._print_description(self, "DBUtil")
+        self._print_description(DBReader, "DBReader")
+        self._print_description(DBWriter, "DBWriter")
+                    
+    def _print_description(self, obj, title):
         """ Prints descriptions of this object. """
         # All public instance attributes
         filter_private = lambda x : not(x.startswith('_'))
-        attrs = filter(filter_private, self.__dict__.keys())
-
-        print 'ATTRIBUTES'
-        for at in attrs:
-            print '\t', at
-        
+        attrs = filter(filter_private, obj.__dict__.keys())
+        print title
+        print len(title)*"-"
         print
+        if len(attrs) > 0:
+            print 'ATTRIBUTES'
+            for at in attrs:
+                print '\t', at
+            print
         # All public methods
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        methods = inspect.getmembers(obj, predicate=inspect.ismethod)
         public_methods = filter(filter_private, [m[0] for m in methods])
         print 'METHODS'
         for m in public_methods:
-            print '\t', m, ":"
-            print '\t\t' , '\t\t'.join(inspect.getdoc(getattr(self, m)).splitlines(True))
+            print '  ', m, ":"
+            doc = inspect.getdoc(getattr(obj, m))
+            if not doc:
+                doc = "No description"
+            print '    ' , '    '.join(doc.splitlines(True))
+          
             print        
 
 class DBWriter(object):
 
-    def __init__(self, cursor):
+    def __init__(self, conn, cursor):
+        self._conn = conn
         self._cursor = cursor
         self._tablename = None
         self._col_specs = None
@@ -194,7 +207,7 @@ class DBWriter(object):
     
     def _get_output_query(self):
         if self._tablename:
-            return "SELECT * FROM " + self._tablename
+            return "SELECT * FROM " + _quote_identifier(self._tablename)
         
         return None
     
@@ -205,23 +218,24 @@ class DBWriter(object):
             self._tablename = tablename
     
     def commit(self):
+        """Commit all changes to the db."""
         if self._conn:
             self._conn.commit()
             
     def _fetch_db_metadata(self):
-        query = "SELECT * FROM (SELECT * FROM " + self._tablename + ") temp WHERE (1 = 0)"
+        query = "SELECT * FROM (SELECT * FROM " + _quote_identifier(self._tablename) + ") temp WHERE (1 = 0)"
         success = self._execute_query_savepoint(query)
         if success:
-            return [_quote_column(desc[0].lower()) for desc in self._cursor.description]
+            return [desc[0] for desc in self._cursor.description]
         else:
             return []
         
     def _table_exists(self):
-        query = """SELECT 1 AS tmp FROM %s""" % self._tablename
+        query = """SELECT 1 AS tmp FROM %s""" % _quote_identifier(self._tablename)
         return self._execute_query_savepoint(query)
     
     def _drop_table(self):
-        query = """DROP TABLE %s""" % self._tablename
+        query = """DROP TABLE %s""" % _quote_identifier(self._tablename)
         return self._execute_query_savepoint(query)
     
     def _execute_query_savepoint(self, query):
@@ -242,16 +256,14 @@ class DBWriter(object):
         
     def _create_table(self):
         try:
-            col_list = [(cname, ctype) for cname, ctype in self._col_specs.iteritems()]
+            col_list = [(_quote_identifier(cname), ctype) for cname, ctype in self._col_specs.iteritems()]
 
             columns = (',\n').join('%s %s' % col for col in col_list)
             query = """CREATE TABLE %(tablename)s (
                             %(columns)s
                         );"""
-            query = query % {'tablename' : self._tablename, 'columns' : columns}
-            print query
+            query = query % {'tablename' : _quote_identifier(self._tablename), 'columns' : columns}
             self._cursor.execute(query)
-            print "HELLO"
 
         except AttributeError as ex:
             raise DBUtilError("'col_specs' must be a 'dict' object with " +
@@ -259,8 +271,9 @@ class DBWriter(object):
         
     def _build_insert_query(self, columns):
         wildcards = (',').join('?' * len(columns))
+        columns = map(_quote_identifier, columns)
         cols = (',').join(columns)
-        query = """INSERT INTO %s (%s) VALUES (%s)""" %(self._tablename,
+        query = """INSERT INTO %s (%s) VALUES (%s)""" %(_quote_identifier(self._tablename),
                     cols, wildcards)
         return query
     
@@ -277,7 +290,7 @@ class DBWriter(object):
     def _get_type_mapping_from_dict(self, col_specs):
         # Set all column names to lowercase and quote them if necessary
         for col_name in col_specs.keys():
-            col_specs[_quote_column(str(col_name).lower())] = col_specs.pop(col_name)
+            col_specs[str(col_name)] = col_specs.pop(col_name)
             
         db_metadata = self._fetch_db_metadata()
         cols_not_in_db = col_specs.keys()
@@ -329,7 +342,7 @@ class DBWriter(object):
     
     def _get_type_mapping_from_dataframe(self, dataframe):
         db_metadata = self._fetch_db_metadata()
-        dataframe.rename(columns=lambda x: _quote_column(str(x).lower()), inplace=True)
+        dataframe.rename(columns=lambda x: str(x), inplace=True)
         cols_not_in_db = list(dataframe)
         specs = OrderedDict()
         db_cols_not_in_col_specs = []
@@ -366,7 +379,7 @@ class DBWriter(object):
         result = OrderedDict()
         cols_not_in_spec = []
         for col in input:
-            col_name = _quote_column(str(col).lower())
+            col_name = str(col)
             if self._col_specs.has_key(col_name):
                 if isinstance(input, dict):
                     result[col_name] = input[col]
@@ -391,8 +404,8 @@ class DBWriter(object):
         pass
     
 class GenericWriter(DBWriter):
-    def __init__(self, sql):
-        super(GenericWriter, self).__init__(sql)
+    def __init__(self, conn, cursor):
+        super(GenericWriter, self).__init__(conn, cursor)
     
     def _initialize(self, tablename, col_specs, drop):
         self._set_tablename(tablename)
@@ -403,7 +416,6 @@ class GenericWriter(DBWriter):
         
         if not self._table_exists():
             self._create_table()
-            self.commit()
             
     def write_row(self, row):
         if isinstance(row, dict):
@@ -425,8 +437,8 @@ class GenericWriter(DBWriter):
     
     
 class HiveWriter(DBWriter):
-    def __init__(self, sql):
-        super(HiveWriter, self).__init__(sql)
+    def __init__(self, conn, cursor):
+        super(HiveWriter, self).__init__(conn, cursor)
         self._hive_output = None
     
     def _get_hive_output(self):
@@ -496,6 +508,7 @@ class HiveWriter(DBWriter):
     def commit(self):
         if self._file:
             self._file.flush()
+        self._close_file()
             
     def _close_file(self):
         if self._file:
