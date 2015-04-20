@@ -365,6 +365,13 @@ class Connection(object):
             ex = sys.exc_info()[1]
             _handle_sql_exception(ex)
     
+    def getMetaData(self):
+        try:
+            return self.jconn.getMetaData()
+        except:
+            ex = sys.exc_info()[1]
+            _handle_sql_exception(ex)
+    
     def set_savepoint(self, name=None):
         try:
             if name == None:
@@ -457,7 +464,7 @@ class Cursor(object):
     def execute(self, operation, parameters=None):
         if self._connection._closed:
             raise Error
-        if not parameters:
+        if parameters is None:
             parameters = ()
         self._close_last()
         self._prep = self._connection.jconn.prepareStatement(operation)
@@ -477,7 +484,7 @@ class Cursor(object):
         
     def executemany(self, operation, seq_of_parameters):
         self._close_last()
-        self._prep = self._connection.jconn.prepareStatement(operation)
+        self._prep = self._connection.jconn.prepareStatement(operation) 
         for parameters in seq_of_parameters:
             self._set_stmt_parms(self._prep, parameters)
             self._prep.addBatch()

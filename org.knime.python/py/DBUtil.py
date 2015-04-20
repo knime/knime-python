@@ -26,18 +26,33 @@ class DBUtil(object):
         self._conn = jaydebeapi.connect(sql.driver, 
                                         [sql.JDBCUrl, sql.userName, sql.password],
                                         sql.jars)
+            
         self._conn.jconn.setAutoCommit(False)
+        meta_data = self._conn.getMetaData()
+        self._quote_character = meta_data.getIdentifierQuoteString()
+        if not self._quote_character or len(self._quote_character.strip()) < 1:
+            self._quote_character = "\""
+        #sql_key_words_str = meta_data.getSQLKeywords()
+        #self.sql_key_words = set(sql_key_words_str.split(",")) 
         self._cursor = self._conn.cursor()
         self._output_query = None
         self._input_query = sql.query
+        self._db_identifier = sql.dbIdentifier
         
-        if sql.dbIdentifier == 'hive2':
+        if self._db_identifier == 'hive2':
             self._writer = HiveWriter(self)
         else:
             self._writer = GenericWriter(self)
+        self._quote_all_identifier = True
         self._debug = False
-        self._quote_character = sql.identifierQuote
-        
+    
+    def set_quote_all_identifier(self, quote_all):
+        """By default all identifiers are quote. If set to false only identifier with a space are quoted.
+            Args:
+                quote_all: False if only identifier with a space should be quoted.
+        """
+        self._quote_all_identifier = quote_all
+    
     def set_quote_character(self, quote_character):
         """Set the quote character for table and column names
             Args:
@@ -48,10 +63,9 @@ class DBUtil(object):
     def _quote_identifier(self, identifier):
         """Quotes identifier if necessary."""
         if (identifier is None) or (identifier.isspace()):
-            raise DBUtilError("Enter a valid identifier.")
+            raise DBUtilError("Enter a valid identifier. Use set_quote_character() of DBUtil.")
         else:
-            match = re.search(r"^[\w\d]+$", identifier)
-            if not match:
+            if self._quote_all_identifier or not re.search(r"^[\w\d]+$", identifier):
                 return self._quote_character + identifier + self._quote_character
             else:
                 return str(identifier)
@@ -66,32 +80,49 @@ class DBUtil(object):
         try:
             savepoint = self._conn.set_savepoint()
         except:
+            if self._debug:
+                print "Save points not supported by db"
             savepoint = None
+        query_result = False
         try:
             self._execute_query(query)
+            query_result = True
             if savepoint != None:
-                self._conn.release_savepoint(savepoint)
-            return True
-        except:
+                try:
+                    self._conn.release_savepoint(savepoint)
+                except Exception as e:
+                    if self._debug:
+                        print "Exception when releasing save point"
+        except Exception as e:
+            if self._debug:
+                print "Save point query failed"
             if savepoint != None:
-                self._conn.rollback(savepoint)
-            return False
+                try:
+                    self._conn.rollback(savepoint)
+                except Exception as e:
+                    if self._debug:
+                        print "Save point rollback failed"
+        return query_result
 
     def _execute_query(self, sql, values=None):
         if self._debug:
                 print sql
-        if values:
+        if values is not None:
             self._cursor.execute(sql, values)
         else:
             self._cursor.execute(sql)
     
     def _executemany(self, sql, values):
+        if (self._db_identifier == "oracle"):
+            for value in values:
+                self._execute_query(sql, value)
+            return
         if self._debug:
             print sql
         self._cursor.executemany(sql, values)
     
     def get_output_query(self):
-        """Gets output query. """
+        """Gets the output query that is passed to KNIME and used at the nodes outport. """
         if self._output_query != None:
             return self._output_query
         elif self._writer._has_output_query():
@@ -100,7 +131,7 @@ class DBUtil(object):
             return self._input_query
     
     def set_output_query(self, output_query):
-        """Sets output query."""
+        """Overwrites the output query that is passed to KNIME and used at the nodes outport."""
         self._output_query = output_query
         
     def _get_hive_output(self):
@@ -111,7 +142,7 @@ class DBUtil(object):
             return None
         
     def get_cursor(self):
-        """Gets the cursor object."""
+        """Gets the cursor object (https://www.python.org/dev/peps/pep-0249/#cursor-objects)."""
         return self._cursor
  
     def close_cursor(self):
@@ -124,10 +155,12 @@ class DBUtil(object):
         
     def _cleanup(self):
         """Cleans up."""
+        self.close_cursor()
         self._close_connection()
         
     def get_db_reader(self, query=None):
-        """Gets a new DBReader object. For details about DBReader, see the DBReader description below.
+        """Gets a new DBReader object. The DBReader object is used to retrieve information from the database.
+        For details about DBReader, see the DBReader description below.
         
         Args:
             query: A sql query to retrieve contents from database. Default is 
@@ -142,7 +175,8 @@ class DBUtil(object):
         
     def get_db_writer(self, tablename, col_specs, drop=False, 
                       delimiter="\t", partition_columns=[]):
-        """Gets a new DBWriter object.
+        """Gets a new DBWriter object. THe DBWriter is used to write data to the database.
+        For details about DBWriter, see the DBWriter description below.
         
         Args:
             tablename: Name of a new table or an existing one.
@@ -224,8 +258,7 @@ class DBUtil(object):
         self._print_description(DBWriter, "DBWriter")
                     
     def _print_description(self, obj, title):
-        """Prints descriptions of this object."""
-        
+        """Prints descriptions of this object."""        
         print title
         print len(title) * "-"
         print
@@ -477,12 +510,11 @@ class GenericWriter(DBWriter):
         and a new table will be created.
         """
         self._set_tablename(tablename)
-        if self._table_exists() and drop:
+        table_exists = self._table_exists()
+        if table_exists and drop:
             self._drop_table()
-       
         self._col_specs = self._get_type_mapping(col_specs)[0]
-        
-        if not self._table_exists():
+        if not table_exists or drop:
             self._create_table()
             
     def write_row(self, row):
