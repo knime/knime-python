@@ -1,12 +1,8 @@
 package org.knime.python.kernel;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
-import java.util.LinkedList;
 
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
-import org.knime.core.node.port.database.DatabaseDriverLoader;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.python.kernel.proto.ProtobufKnimeSQLInput;
@@ -20,9 +16,10 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 	private final String m_inputName;
 	private final DatabaseQueryConnectionSettings m_conn;
 	private final CredentialsProvider m_cp;
+	private final Collection<String> m_jars;
 
 	public SQLEditorObjectWriter(final String inputName, final DatabaseQueryConnectionSettings conn,
-			final CredentialsProvider cp) {
+			final CredentialsProvider cp, final Collection<String> jars) {
 		if (inputName == null || inputName.isEmpty()) {
 			throw new IllegalArgumentException("Empty sql input name found");
 		}
@@ -35,6 +32,7 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 		m_inputName = inputName;
 		m_conn = conn;
 		m_cp = cp;
+		m_jars = jars;
 	}
 
 	@Override
@@ -44,7 +42,7 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 
 	@Override
 	public byte[] getMessage() throws Exception {
-		final SQLInput sqlMessage = sqlToProtobuf(m_conn, m_cp);
+		final SQLInput sqlMessage = sqlToProtobuf(m_conn, m_cp, m_jars);
 		final Command.Builder commandBuilder = Command.newBuilder();
 		final Builder sqlBuilder = PutSQL.newBuilder();
 		sqlBuilder.setKey(m_inputName);
@@ -54,8 +52,8 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 		return byteArray;
 	}
 
-	private SQLInput sqlToProtobuf(final DatabaseQueryConnectionSettings conSettings,
-			final CredentialsProvider cp) throws IOException {
+	private static SQLInput sqlToProtobuf(final DatabaseQueryConnectionSettings conSettings,
+			final CredentialsProvider cp, final Collection<String> jars) {
 		final SQLInput.Builder sqlBuilder = ProtobufKnimeSQLInput.SQLInput.newBuilder();
 		final String driver = conSettings.getDriver();
 		sqlBuilder.setDriver(driver);
@@ -68,17 +66,6 @@ public class SQLEditorObjectWriter implements EditorObjectWriter {
 // TK_TODO: get auto commit from connection settings
 		sqlBuilder.setAutocommit(false);
 		sqlBuilder.setQuery(conSettings.getQuery());
-		//locate the jdbc jar files
-		final Collection<String> jars = new LinkedList<>();
-		try {
-			final File driverFile = DatabaseDriverLoader.getDriverFileForDriverClass(driver);
-			if (driverFile != null) {
-				final String absolutePath = driverFile.getAbsolutePath();
-				jars.add(absolutePath);
-			}
-		} catch (final Exception e) {
-			throw new IOException(e);
-		}
 		sqlBuilder.addAllJars(jars);
 		return sqlBuilder.build();
 	}

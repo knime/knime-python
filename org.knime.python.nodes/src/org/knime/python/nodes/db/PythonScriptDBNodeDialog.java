@@ -47,6 +47,9 @@
  */
 package org.knime.python.nodes.db;
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.knime.code.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.code.python.PythonSourceCodePanel;
 import org.knime.core.node.InvalidSettingsException;
@@ -107,11 +110,12 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
 		try {
 			final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
+			final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings.getDriver());
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-					connectionSettings, getCredentialsProvider());
+					connectionSettings, getCredentialsProvider(), jars);
 			m_sourceCodePanel.updateData(sqlObject);
-		} catch (final InvalidSettingsException e) {
+		} catch (final InvalidSettingsException|IOException e) {
 			throw new NotConfigurableException(e.getMessage(), e);
 		}
 	}

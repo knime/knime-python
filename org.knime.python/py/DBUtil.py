@@ -6,12 +6,21 @@ from collections import OrderedDict
 import inspect
 import tempfile
 from datetime import datetime
+from __builtin__ import int
 
 """ Dictionary contains the mapping of python data types to SQL data types. """
 python_db_mapping = {int : 'integer',
                      long : 'integer', 
                      str : 'varchar(255)', 
                      float : 'numeric(30,10)',
+                     bool: 'boolean',
+                     datetime: 'timestamp'}
+
+""" Dictionary contains the mapping of python data types to SQL data types. """
+python_hive_mapping = {int : 'int',
+                     long : 'bigint', 
+                     str : 'string', 
+                     float : 'double',
                      bool: 'boolean',
                      datetime: 'timestamp'}
 
@@ -28,16 +37,24 @@ class DBUtil(object):
                                         sql.jars)
             
         self._conn.jconn.setAutoCommit(False)
-        meta_data = self._conn.getMetaData()
-        self._quote_character = meta_data.getIdentifierQuoteString()
-        if not self._quote_character or len(self._quote_character.strip()) < 1:
-            self._quote_character = "\""
         #sql_key_words_str = meta_data.getSQLKeywords()
         #self.sql_key_words = set(sql_key_words_str.split(",")) 
         self._cursor = self._conn.cursor()
         self._output_query = None
         self._input_query = sql.query
         self._db_identifier = sql.dbIdentifier
+        
+        self._quote_character = None
+        try:
+            meta_data = self._conn.getMetaData()
+            self._quote_character = meta_data.getIdentifierQuoteString()
+        except:
+            pass
+        if not self._quote_character or len(self._quote_character.strip()) < 1:
+            if self._db_identifier == 'hive2':
+                self._quote_character = "`"
+            else:
+                self._quote_character = "\""
         
         if self._db_identifier == 'hive2':
             self._writer = HiveWriter(self)
@@ -279,11 +296,12 @@ class DBUtil(object):
 
 class DBWriter(object):
     """A class to write data into database."""
-    def __init__(self, db_util):
+    def __init__(self, db_util, type_mapping=python_db_mapping):
         """Initialize the writer."""
         self._db_util = db_util
         self._tablename = None
         self._col_specs = None
+        self._type_mapping = type_mapping
         
     def _has_output_query(self):
         """Check if this writer has output query."""
@@ -413,9 +431,9 @@ class DBWriter(object):
         if isinstance(col_type, basestring):
             return col_type
         elif isinstance(col_type, type):
-            db_type = python_db_mapping(col_type)
+            db_type = self._type_mapping[col_type]
             if not db_type:
-                return "varchar(255)" # default type if no mapping exists
+                return self._type_mapping[str] # default type if no mapping exists
             return db_type
     
     def _get_type_mapping_from_dataframe(self, dataframe):
@@ -448,11 +466,11 @@ class DBWriter(object):
     def _get_db_type_from_dataframe(self, col_type):
         """Helper method to get SQL data type from dataframe."""
         if np.issubclass_(col_type, np.floating):
-            return "numeric(30,10)"
+            return self._get_db_type(float)
         elif np.issubclass_(col_type, np.integer):
-            return "integer"
+            return self._get_db_type(int)
         else:
-            return "varchar(255)"
+            return self._get_db_type(str)
         
     def _verify_row(self, input):
         """Verify that all columns in 'input' exist in 'col_specs'"""
@@ -554,9 +572,9 @@ class GenericWriter(DBWriter):
 class HiveWriter(DBWriter):
     """A class to write data into a hive table."""
     def __init__(self, db_util):
-        super(HiveWriter, self).__init__(db_util)
+        super(HiveWriter, self).__init__(db_util, python_hive_mapping)
         self._hive_output = None
-    
+        
     def _get_hive_output(self):
         return self._hive_output
             

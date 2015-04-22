@@ -47,7 +47,10 @@
  */
 package org.knime.python.nodes.db;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
@@ -59,6 +62,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.database.DatabaseDriverLoader;
 import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
@@ -99,8 +103,9 @@ class PythonScriptDBNodeModel extends ExtToolOutputNodeModel {
 					getAvailableFlowVariables().values());
 			final CredentialsProvider cp = getCredentialsProvider();
 			final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
+			final Collection<String> jars = getJars(connIn.getDriver());
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
-					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp);
+					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
 			kernel.putGeneralObject(sqlObject);
 			final String[] output = kernel.execute(m_config.getSourceCode(), exec);
 			setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
@@ -115,6 +120,21 @@ class PythonScriptDBNodeModel extends ExtToolOutputNodeModel {
 			return new PortObject[] { new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut)) };
 		} finally {
 			kernel.close();
+		}
+	}
+
+	static Collection<String> getJars(final String driver) throws IOException {
+		//locate the jdbc jar files
+		try {
+			final Collection<String> jars = new LinkedList<>();
+			final File driverFile = DatabaseDriverLoader.getDriverFileForDriverClass(driver);
+			if (driverFile != null) {
+				final String absolutePath = driverFile.getAbsolutePath();
+				jars.add(absolutePath);
+			}
+			return jars;
+		} catch (final Exception e) {
+			throw new IOException(e);
 		}
 	}
 
