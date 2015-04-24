@@ -571,9 +571,7 @@ class HiveWriter(DBWriter):
     def _verify_col_specs_with_db(self, col_specs, db_metadata):
         
         # Trim 'tablename' from hive column names and convert them to lowercase
-        db_metadata = [(self._tablename + "." + col)for col in db_metadata] # TODELETE
         db_metadata = [col.split('.')[1].lower() for col in db_metadata]
-        
         if isinstance(col_specs, dict):
             return self._verify_dict_col_specs(col_specs, db_metadata)
         elif isinstance(col_specs, DataFrame):
