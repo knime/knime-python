@@ -67,7 +67,7 @@ class DBUtil(object):
     
     def _quote_identifier(self, identifier):
         """Quotes identifier if necessary."""
-        if (identifier is None) or (identifier.isspace()):
+        if (identifier is None) or (len(str(identifier).strip()) < 1):
             raise DBUtilError("Enter a valid identifier. Use set_quote_character() of DBUtil.")
         else:
             if self._quote_all_identifier or not re.search(r"^[\w\d]+$", identifier):
@@ -202,7 +202,7 @@ class DBUtil(object):
             try:
                 specs[col_name] = self._get_db_type(col_type)
             except DBUtilError as ex:
-                raise DBUtilError(str(ex) + " Column '" + col_name + 
+                raise DBUtilError(str(ex) + " Column '" + str(col_name) + 
                                   "' has type '" + str(col_type) + "'.")
                 
         return specs
@@ -227,7 +227,6 @@ class DBUtil(object):
         for col_name in dataframe:
             specs[col_name] = self._get_db_type_from_dataframe(
                                             dataframe[col_name].dtype.type)
-            
         return specs
     
     def _get_db_type_from_dataframe(self, col_type):
@@ -379,42 +378,6 @@ class DBUtil(object):
                                           partition_columns=partition_columns)
         self._writer.write_many(dataframe)
         
-#===============================================================================
-#     def get_dataframe(self, query=None):
-#         """Returns the dataframe representation of the input SQL query.
-#         
-#         Args:
-#             query: A SQL query used to build the dataframe. Default is None, which
-#                 means that the input query of DBUtil object is used.
-#         
-#         Returns:
-#             df: A dataframe representation of the input SQL query.
-#         """
-#         db_reader = self.get_db_reader(query)
-#         
-#         #str_columns = [] # array to store all columns from type string
-#         #columns = [] # array to store all columns names
-#         cols_dict = {'all_cols':[], 'str_cols':[], 'datetime_cols':[]}
-#         pd_series = []
-#         for desc in self.get_cursor().description:
-#             print 'Get dataframe:', desc[0], desc[1]
-#             cols_dict.get('all_cols').append(desc[0])
-#             if desc[1] == jaydebeapi.STRING:
-#                 cols_dict.get('str_cols').append(desc[0])
-#             if desc[1] == jaydebeapi.DATETIME:
-#                 cols_dict.get('datetime_cols').append(desc[0])
-# 
-#         print cols_dict.get('str_cols')
-#         print cols_dict.get('datetime_cols')
-#         df = DataFrame(db_reader.fetchall(), columns=cols_dict.get('all_cols'))
-#         df[cols_dict.get('str_cols')] = df[cols_dict.get('str_cols')].astype(np.character)
-#         #df[cols_dict.get('datetime_cols')] = pd.to_datetime(cols_dict.get('datetime_cols'))
-#         df['timestampcol'] = pd.to_datetime(df['timestampcol'])
-#         print df.dtypes
-#         for c in df.columns:
-#             print 'col_type:', df[c].dtype
-#         return df
-#===============================================================================
     def get_dataframe(self, query=None):
         """Returns the dataframe representation of the input SQL query.
         
@@ -426,22 +389,29 @@ class DBUtil(object):
             df: A dataframe representation of the input SQL query.
         """
         db_reader = self.get_db_reader(query)
-    
+        
+        mapping = {jaydebeapi.NUMBER: np.int,
+                   jaydebeapi.FLOAT: np.float,
+                   jaydebeapi.DECIMAL: np.double,
+                   jaydebeapi.DATETIME: datetime}
+        
         data = db_reader.fetchall()
         data = np.array(data)
         df = DataFrame()
         for idx, desc in enumerate(self.get_cursor().description):
-            if desc[1] == jaydebeapi.NUMBER:
-                df[desc[0]] = pd.Series(data=data[:,idx], dtype=np.int)
-            elif desc[1] == jaydebeapi.FLOAT:
-                df[desc[0]] = pd.Series(data=data[:,idx], dtype=np.float)
-            elif desc[1] == jaydebeapi.DECIMAL:
-                df[desc[0]] = pd.Series(data=data[:,idx], dtype=np.double)
-            elif desc[1] == jaydebeapi.DATETIME:
-                df[desc[0]] = pd.Series(data=data[:,idx], dtype=datetime)
-                df[desc[0]] = df[desc[0]].astype('datetime64[ns]')
+            col_type = mapping.get(desc[1])
+            if not col_type:
+                col_type = np.str
+                
+            if len(data) == 0:
+                contents = None
             else:
-                df[desc[0]] = pd.Series(data=data[:,idx], dtype=np.str)
+                contents = data[:,idx]
+                
+            df[desc[0]] = pd.Series(data=contents, dtype=col_type)
+            
+            if desc[1] == jaydebeapi.DATETIME:
+                df[desc[0]] = df[desc[0]].astype('datetime64[ns]')
 
         return df
     
@@ -475,7 +445,7 @@ class DBWriter(object):
     
     def _set_tablename(self, tablename):
         """Sets table name."""
-        if (tablename is None) or (str(tablename).isspace()):
+        if (tablename is None) or (len(str(tablename).strip()) < 1):
             raise DBUtilError("Enter a valid table name.")
         else:
             self._tablename = tablename
@@ -601,12 +571,13 @@ class HiveWriter(DBWriter):
     def _verify_col_specs_with_db(self, col_specs, db_metadata):
         
         # Trim 'tablename' from hive column names and convert them to lowercase
+        db_metadata = [(self._tablename + "." + col)for col in db_metadata] # TODELETE
         db_metadata = [col.split('.')[1].lower() for col in db_metadata]
         
         if isinstance(col_specs, dict):
-            self._verify_dict_col_specs(col_specs, db_metadata)
+            return self._verify_dict_col_specs(col_specs, db_metadata)
         elif isinstance(col_specs, DataFrame):
-            self._verify_dataframe_col_specs(col_specs, db_metadata)
+            return self._verify_dataframe_col_specs(col_specs, db_metadata)
             
     def _verify_dict_col_specs(self, col_specs, db_metadata):
         # Convert all column names to lowercase
@@ -620,17 +591,17 @@ class HiveWriter(DBWriter):
             col_type = col_specs.get(col_name)
             if col_type:
                 cols_not_in_db.remove(col_name)
-                specs[col_name] = self._get_db_type(col_type)
+                specs[col_name] = self._db_util._get_db_type(col_type)
             else:
                 db_cols_not_in_col_specs.append(col_name)
                     
         if len(cols_not_in_db) > 0:
             raise DBUtilError("Hive Error: Some columns in 'col_specs' " +
                               "do not exist in database; Not existing columns: " +
-                              str(col_not_in_db) + ".")
+                              str(cols_not_in_db) + ".")
             
         if len(db_cols_not_in_col_specs) > 0:
-            raise DBUtilError("Hive Error: Some columns in database doesn't " +
+            raise DBUtilError("Hive Error: Some columns in database do not " +
                               "exist in 'col_specs'. Not existing columns: " +
                               str(db_cols_not_in_col_specs))
                 
@@ -645,7 +616,7 @@ class HiveWriter(DBWriter):
         for col_name in db_metadata:
             try:
                 cols_not_in_db.remove(col_name)
-                specs[col_name] = self._get_db_type_from_dataframe(
+                specs[col_name] = self._db_util._get_db_type_from_dataframe(
                                         dataframe[col_name].dtype.type)
             except ValueError:
                 db_cols_not_in_col_specs.append(col_name)
@@ -653,10 +624,10 @@ class HiveWriter(DBWriter):
         if len(cols_not_in_db) > 0:
             raise DBUtilError("Hive Error: Some columns in 'col_specs' " +
                               "do not exist in database; Not existing columns: " +
-                              str(col_not_in_db) + ".")
+                              str(cols_not_in_db) + ".")
             
         if len(db_cols_not_in_col_specs) > 0:
-            raise DBUtilError("Hive Error: Some columns in database doesn't " +
+            raise DBUtilError("Hive Error: Some columns in database do not " +
                               "exist in 'col_specs'. Not existing columns: " +
                               str(db_cols_not_in_col_specs))
             
@@ -672,7 +643,7 @@ class HiveWriter(DBWriter):
                 
         for col in input_row:
             col_lower = str(col).lower()
-            if col_specs.has_key(col_lower):
+            if self._col_specs.has_key(col_lower):
                 if isinstance(input_row, dict):
                     result[col_lower] = input_row[col]
                 elif isinstance(input_row, (list, tuple)):
@@ -686,16 +657,8 @@ class HiveWriter(DBWriter):
             
         return result
     
-    def _has_special_chars(self, dataframe):
-        pattern = '|'.join(['\t', '\n'])
-        for col in dataframe.columns:
-            if True in dataframe[col].str.contains(pattern).values:
-                return True
-            
-        return False
-    
     def _close_file(self):
-        if self._file:
+        if self._file and not self._file.closed:
             self._file.close()
     
     def write_row(self, row):
@@ -715,12 +678,14 @@ class HiveWriter(DBWriter):
                 row_text = ""
                 for col in self._col_specs.keys():
                     val = verified_row.get(col)
-                    if (delimiter in val) or (newline in val):
-                        raise DBUtilError("Hive Error: Delimiter character '" + 
-                                          delimiter + "' and new line character '" + 
-                                          newline + "' are not allowed.")
-                    else:
-                        row_text += val + delimiter
+                    if isinstance(val, basestring) and newline in val:
+                        raise DBUtilError("Hive Error: Line break characters in cell " + 
+                                          "contents are not supported.")
+                    elif not val:
+                        val = ""
+                    
+                    val = str(val).replace(delimiter, str("\\" + delimiter))
+                    row_text += val + delimiter
                                                 
                 row_text = row_text.rstrip(delimiter) # remote the last delimiter
                 
@@ -728,9 +693,9 @@ class HiveWriter(DBWriter):
                     self._file = open(self._file.name, 'a')
                 self._file.write(row_text + "\n")
             else:
-                raise DBUtilError("Hive Error: The input row has " + len(row) + 
+                raise DBUtilError("Hive Error: The input row has " + str(len(row)) + 
                                   " columns, but the 'col_specs' has " + 
-                                  len(self._col_specs) + " columns. The columns " +
+                                  str(len(self._col_specs)) + " columns. The columns " +
                                   "of the input row must match the columns of " +
                                   "the 'col_specs'.")
         else:
@@ -749,25 +714,28 @@ class HiveWriter(DBWriter):
             if len(dataframe.columns) == len(self._col_specs):
                 result = self._verify_input_row(list(dataframe))
                 dataframe.columns = result.keys()
-                if not self._has_special_chars(dataframe):
-                    dataframe.to_csv(self._file.name, index=False, mode='a',
+                newline = "\n"
+                delimiter = self._hive_output.get('delimiter')
+                for col in dataframe.columns:
+                    if True in dataframe[col].str.contains(newline).values:
+                        raise DBUtilError("Hive Error: Line break characters " + 
+                                          "in cell contents are not supported.")
+                    dataframe[col].str.replace(delimiter, str("\\" + delimiter))    
+                        
+                dataframe.to_csv(self._file.name, index=False, mode='a',
                                  columns=self._col_specs.keys(), header=False,
-                                 sep=self._hive_output.get('delimiter'))
-                else:
-                    raise DBUtilError("Hive Error: Delimiter character '" + 
-                                      delimiter + "' and new line character '" + 
-                                      newline + "' are not allowed.")
+                                 sep=delimiter)
             else:
                 raise DBUtilError("Hive Error: The input dataframe has " + 
-                                  len(dataframe.columns) + " columns, but the " +
-                                  "'col_specs' has " + len(self._col_specs) + 
+                                  str(len(dataframe.columns)) + " columns, but the " +
+                                  "'col_specs' has " + str(len(self._col_specs)) + 
                                   " columns. The columns of the input dataframe " +
                                   "must correspond to the columns of the 'col_spec'.")
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
             
     def commit(self):
-        if self._file:
+        if self._file and not self._file.closed:
             self._file.flush()
         self._close_file()
             
