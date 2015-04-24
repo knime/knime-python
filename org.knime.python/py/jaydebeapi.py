@@ -457,8 +457,17 @@ class Cursor(object):
     __del__ = _close_last
 
     def _set_stmt_parms(self, prep_stmt, parameters):
+        from pandas.tslib import Timestamp
         for i in range(len(parameters)):
-            # print (i, parameters[i], type(parameters[i]))
+            if isinstance(parameters[i], Timestamp):
+                import jpype
+                year, month, day = parameters[i].year, parameters[i].month, parameters[i].day
+                hh, mm, ss = parameters[i].hour, parameters[i].minute, parameters[i].second
+                SSS = parameters[i].microsecond
+                time = (str(year) + "-" + str(month) + "-" + str(day) + " "+ 
+                        str(hh) + ":" + str(mm) + ":" + str(ss) + "." + str(SSS))
+                parameters[i] = jpype.java.sql.Timestamp.valueOf(time)
+            #print (i, parameters[i], type(parameters[i]))
             prep_stmt.setObject(i + 1, parameters[i])
 
     def execute(self, operation, parameters=None):
