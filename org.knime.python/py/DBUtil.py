@@ -137,7 +137,7 @@ class DBUtil(object):
         if success:
             db_metadata = [desc[0] for desc in self.get_cursor().description]
             if isinstance(self._writer, HiveWriter):
-                # Trim 'tablename' from hive column names and convert them to lowercase
+                # Trim 'tablename' from hive column names
                 for idx, col in enumerate(db_metadata):
                     db_metadata[idx] = self._fix_hive_col_name(col)
             return db_metadata;
@@ -420,17 +420,18 @@ class DBUtil(object):
             df: A dataframe representation of the input SQL query.
         """
         db_reader = self.get_db_reader(query)
-        df = DataFrame(db_reader.fetchall())
         col_maps = {'all_columns':[], 'datetime_columns':[]}
+        #Fetch the meta data prior fetching all values because for SQLite  the meta data are invalidated 
+        #after the end of the result set
         for desc in self.get_cursor().description:
             col_name = desc[0]
             if isinstance(self._writer, HiveWriter):
-                # Trim 'tablename' from hive column names and convert them to lowercase
+                # Trim 'tablename' from hive column names
                 col_name = self._fix_hive_col_name(col_name)
             col_maps.get('all_columns').append(col_name)
             if desc[1] == jaydebeapi.DATETIME:
                 col_maps.get('datetime_columns').append(desc[0])
-        
+        df = DataFrame(db_reader.fetchall())
         df.columns = col_maps.get('all_columns')
         df[col_maps.get('datetime_columns')] = df[col_maps.get('datetime_columns')].astype('datetime64[ns]')
         
