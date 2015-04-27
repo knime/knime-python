@@ -6,6 +6,7 @@ import pandas as pd
 from collections import OrderedDict
 import inspect
 import tempfile
+import codecs
 from datetime import datetime
 from __builtin__ import int
 
@@ -134,7 +135,12 @@ class DBUtil(object):
         query = "SELECT * FROM (SELECT * FROM " + self._quote_identifier(tablename) + ") temp WHERE (1 = 0)"
         success = self._execute_query_savepoint(query)
         if success:
-            return [desc[0] for desc in self.get_cursor().description]
+            db_metadata = [desc[0] for desc in self.get_cursor().description]
+            if isinstance(self._writer, HiveWriter):
+                # Trim 'tablename' from hive column names and convert them to lowercase
+                for idx, col in enumerate(db_metadata):
+                    db_metadata[idx] = self._fix_hive_col_name(col)
+            return db_metadata;
         else:
             return []
     
@@ -167,6 +173,11 @@ class DBUtil(object):
                     if self._debug:
                         print "Save point rollback failed"
         return query_result
+    
+    def _use_tez_for_hive(self):
+        '''Sets TEZ as execution engine for Hive which increases the performance. 
+        However not all Hive installations support tez.'''
+        self._execute_query("set hive.execution.engine=tez");
     
     def _execute_query(self, sql, values=None):
         """Execute a SQL query."""
@@ -383,7 +394,21 @@ class DBUtil(object):
                                           delimiter=delimiter, 
                                           partition_columns=partition_columns)
         self._writer.write_many(dataframe)
+
+    def _fix_hive_col_name(self, col_name):
+        """Hive's JDBC drivers always adds the table name to the column names. 
+        This method returns the column name without the table name.
         
+        Args:
+            col_name: The column name as returned by the Hive driver.
+        
+        Returns:
+            cleaned_col_name: The input column name without the table name.
+        """
+        col_name_array = col_name.split('.')
+        cleaned_col_name = col_name_array[len(col_name_array) - 1]
+        return cleaned_col_name
+
     def get_dataframe(self, query=None):
         """Returns the dataframe representation of the input SQL query.
         
@@ -398,7 +423,11 @@ class DBUtil(object):
         df = DataFrame(db_reader.fetchall())
         col_maps = {'all_columns':[], 'datetime_columns':[]}
         for desc in self.get_cursor().description:
-            col_maps.get('all_columns').append(desc[0])
+            col_name = desc[0]
+            if isinstance(self._writer, HiveWriter):
+                # Trim 'tablename' from hive column names and convert them to lowercase
+                col_name = self._fix_hive_col_name(col_name)
+            col_maps.get('all_columns').append(col_name)
             if desc[1] == jaydebeapi.DATETIME:
                 col_maps.get('datetime_columns').append(desc[0])
         
@@ -576,11 +605,6 @@ class HiveWriter(DBWriter):
     def _verify_col_specs_with_db(self, col_specs, db_metadata):
         """Verify that the input col_specs match the column specifications of the
             table in database."""
-        # Trim 'tablename' from hive column names and convert them to lowercase
-        for idx, col in enumerate(db_metadata):
-            s = col.split('.')
-            db_metadata[idx] = s[len(s) - 1].lower()
-            
         if isinstance(col_specs, dict):
             return self._verify_dict_col_specs(col_specs, db_metadata)
         elif isinstance(col_specs, DataFrame):
@@ -693,14 +717,15 @@ class HiveWriter(DBWriter):
                 raise DBUtilError("Hive Error: Line break characters in cell " + 
                                   "contents are not supported.")
             elif not val:
-                val = ""
+                val = "\\N"
                     
             val = str(val).replace(delimiter, str("\\" + delimiter))
             row_text += val + delimiter
-
+        self._file.close()
         if self._file.closed:
-            self._file = open(self._file.name, 'a')
-        self._file.write(row_text + "\n")
+            self._file  = codecs.open(self._file.name,'a',encoding='utf-8')
+        text_2_write = row_text + "\n"
+        self._file.write(text_2_write.encode('utf-8'))
     
     def write_row(self, row):
         """Writes a new row into the database.
@@ -735,17 +760,9 @@ class HiveWriter(DBWriter):
             self._verify_row_length(dataframe.columns)
             result = self._verify_input_row(list(dataframe))
             dataframe.columns = result.keys()
-            newline = "\n"
-            delimiter = self._hive_output.get('delimiter')
-            for col in dataframe.columns:
-                if True in dataframe[col].str.contains(newline).values:
-                    raise DBUtilError("Hive Error: Line break characters " + 
-                                          "in cell contents are not supported.")
-                dataframe[col].str.replace(delimiter, str("\\" + delimiter))    
-                        
-            dataframe.to_csv(self._file.name, index=False, mode='a',
-                            columns=self._col_specs.keys(), header=False,
-                            sep=delimiter)
+            rows = dataframe.to_dict('records')
+            for row in rows:
+                self._write_row_to_file(result, row)
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
             
