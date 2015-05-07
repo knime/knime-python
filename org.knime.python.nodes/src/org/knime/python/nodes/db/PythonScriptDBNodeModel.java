@@ -53,12 +53,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -69,9 +66,11 @@ import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.port.database.DatabaseReaderConnection;
 import org.knime.core.node.port.database.DatabaseUtility;
 import org.knime.core.node.workflow.CredentialsProvider;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.kernel.PythonKernel;
 import org.knime.python.kernel.SQLEditorObjectReader;
 import org.knime.python.kernel.SQLEditorObjectWriter;
+import org.knime.python.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
@@ -79,9 +78,7 @@ import org.knime.python.kernel.SQLEditorObjectWriter;
  *
  * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  */
-class PythonScriptDBNodeModel extends ExtToolOutputNodeModel {
-
-	private PythonScriptDBNodeConfig m_config = new PythonScriptDBNodeConfig();
+class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> {
 
 	/**
 	 * Constructor for the node model.
@@ -107,13 +104,14 @@ class PythonScriptDBNodeModel extends ExtToolOutputNodeModel {
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
 			kernel.putGeneralObject(sqlObject);
-			final String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
 			final SQLEditorObjectReader sqlReader = new SQLEditorObjectReader(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]);
 			kernel.getGeneralObject(sqlReader);
+			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
+	        addNewVariables(variables);
 			final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn, sqlReader.getQuery());
 			final DatabaseReaderConnection dbCon = new DatabaseReaderConnection(connOut);
 			final DataTableSpec resultSpec = dbCon.getDataTableSpec(cp);
@@ -159,32 +157,10 @@ class PythonScriptDBNodeModel extends ExtToolOutputNodeModel {
 			throw new InvalidSettingsException("Database does not support insert or update");
 		}
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
+	
 	@Override
-	protected void saveSettingsTo(final NodeSettingsWO settings) {
-		m_config.saveTo(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		config.loadFrom(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		config.loadFrom(settings);
-		m_config = config;
+	protected PythonScriptDBNodeConfig createConfig() {
+		return new PythonScriptDBNodeConfig();
 	}
 
 }

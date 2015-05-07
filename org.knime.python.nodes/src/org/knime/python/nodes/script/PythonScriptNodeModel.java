@@ -48,17 +48,17 @@
 package org.knime.python.nodes.script;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 
-import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.kernel.PythonKernel;
+import org.knime.python.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
@@ -66,9 +66,7 @@ import org.knime.python.kernel.PythonKernel;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonScriptNodeModel extends ExtToolOutputNodeModel {
-
-	private PythonScriptNodeConfig m_config = new PythonScriptNodeConfig();
+class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
 
 	/**
 	 * Constructor for the node model.
@@ -89,12 +87,14 @@ class PythonScriptNodeModel extends ExtToolOutputNodeModel {
 					getAvailableFlowVariables().values());
 			kernel.putDataTable(PythonScriptNodeConfig.getVariableNames().getInputTables()[0], inData[0],
 					exec.createSubProgress(0.3));
-			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.4).setProgress(1);
+			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScriptNodeConfig.getVariableNames().getFlowVariables());
 			table = kernel.getDataTable(PythonScriptNodeConfig.getVariableNames().getOutputTables()[0], exec,
 					exec.createSubProgress(0.3));
+	        addNewVariables(variables);
 		} finally {
 			kernel.close();
 		}
@@ -109,31 +109,9 @@ class PythonScriptNodeModel extends ExtToolOutputNodeModel {
 		return new DataTableSpec[] { null };
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) {
-		m_config.saveTo(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void validateSettings(NodeSettingsRO settings) throws InvalidSettingsException {
-		PythonScriptNodeConfig config = new PythonScriptNodeConfig();
-		config.loadFrom(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadValidatedSettingsFrom(NodeSettingsRO settings) throws InvalidSettingsException {
-		PythonScriptNodeConfig config = new PythonScriptNodeConfig();
-		config.loadFrom(settings);
-		m_config = config;
+	protected PythonScriptNodeConfig createConfig() {
+		return new PythonScriptNodeConfig();
 	}
 
 }

@@ -45,75 +45,32 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.script2in1out;
+package org.knime.python.nodes.variables;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
+import org.knime.code.generic.SourceCodeConfig;
+import org.knime.code.generic.VariableNames;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortType;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python.kernel.PythonKernel;
-import org.knime.python.nodes.PythonNodeModel;
+class PythonVariablesNodeConfig extends SourceCodeConfig {
 
-/**
- * This is the model implementation.
- * 
- * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
- */
-class PythonScript2In1OutNodeModel extends PythonNodeModel<PythonScript2In1OutNodeConfig> {
-
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonScript2In1OutNodeModel() {
-		super(new PortType[] { BufferedDataTable.TYPE, BufferedDataTable.TYPE }, new PortType[] { BufferedDataTable.TYPE });
-	}
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+			new String[0], new String[0], null, null, null);
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
-		BufferedDataTable table = null;
-		try {
-			kernel.putFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
-					exec.createSubProgress(0.3));
-			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[1], inData[1],
-					exec.createSubProgress(0.3));
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables());
-			table = kernel.getDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new BufferedDataTable[] { table };
+	protected String getDefaultSourceCode() {
+		return "# create flow variable named random with 0 <= value <= 100\n"
+				+ "import random\n"+VARIABLE_NAMES.getFlowVariables()+"['random'] = random.randint(0, 100)";
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Get the variable names for this node
+	 * 
+	 * @return The variable names
 	 */
-	@Override
-	protected DataTableSpec[] configure(DataTableSpec[] inSpecs) throws InvalidSettingsException {
-		return new DataTableSpec[] { null };
-	}
-	
-	@Override
-	protected PythonScript2In1OutNodeConfig createConfig() {
-		return new PythonScript2In1OutNodeConfig();
+	static VariableNames getVariableNames() {
+		return VARIABLE_NAMES;
 	}
 
 }

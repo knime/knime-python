@@ -58,8 +58,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -96,20 +98,22 @@ import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AppendT
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.AutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Deserializer;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute;
+import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetImage;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.HasAutoComplete;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.ListVariables;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable;
-import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutObject;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutTable;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Reset;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Serializer;
 import org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown;
+import org.knime.python.kernel.proto.ProtobufPythonKernelVariables.DoubleVariable;
+import org.knime.python.kernel.proto.ProtobufPythonKernelVariables.IntegerVariable;
+import org.knime.python.kernel.proto.ProtobufPythonKernelVariables.StringVariable;
+import org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables;
 import org.knime.python.kernel.proto.ProtobufSimpleResponse.SimpleResponse;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList;
 import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
@@ -334,6 +338,7 @@ public class PythonKernel {
 	public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables) throws IOException {
 		final Command.Builder commandBuilder = Command.newBuilder();
 		final PutFlowVariables.Builder putFlowVariablesBuilder = PutFlowVariables.newBuilder().setKey(name);
+		final Variables.Builder variablesBuilder = Variables.newBuilder();
 		for (final FlowVariable flowVariable : flowVariables) {
 			final String key = flowVariable.getName();
 			Object value;
@@ -353,15 +358,16 @@ public class PythonKernel {
 			}
 			if (value instanceof Integer) {
 				final IntegerVariable variable = IntegerVariable.newBuilder().setKey(key).setValue((Integer) value).build();
-				putFlowVariablesBuilder.addIntegerVariable(variable);
+				variablesBuilder.addIntegerVariable(variable);
 			} else if (value instanceof Double) {
 				final DoubleVariable variable = DoubleVariable.newBuilder().setKey(key).setValue((Double) value).build();
-				putFlowVariablesBuilder.addDoubleVariable(variable);
+				variablesBuilder.addDoubleVariable(variable);
 			} else if (value instanceof String) {
 				final StringVariable variable = StringVariable.newBuilder().setKey(key).setValue((String) value).build();
-				putFlowVariablesBuilder.addStringVariable(variable);
+				variablesBuilder.addStringVariable(variable);
 			}
 		}
+		putFlowVariablesBuilder.setVariables(variablesBuilder);
 		commandBuilder.setPutFlowVariables(putFlowVariablesBuilder);
 		synchronized (this) {
 			final OutputStream outToServer = m_socket.getOutputStream();
@@ -369,6 +375,51 @@ public class PythonKernel {
 			final InputStream inFromServer = m_socket.getInputStream();
 			readMessageBytes(inFromServer);
 		}
+	}
+	
+	/**
+	 * Returns the list of defined flow variables
+	 * 
+	 * @param name Variable name of the flow variable dict in Python
+	 * @return Collection of flow variables
+	 * @throws IOException If an error occured
+	 */
+	public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
+		Set<FlowVariable> flowVariables = new HashSet<FlowVariable>();
+		final Command.Builder commandBuilder = Command.newBuilder();
+		final GetFlowVariables.Builder getFlowVariablesBuilder = GetFlowVariables.newBuilder().setKey(name);
+		commandBuilder.setGetFlowVariables(getFlowVariablesBuilder);
+		Variables variables;
+		synchronized (this) {
+			final OutputStream outToServer = m_socket.getOutputStream();
+			writeMessageBytes(commandBuilder.build().toByteArray(), outToServer);
+			final InputStream inFromServer = m_socket.getInputStream();
+			variables = Variables.parseFrom(readMessageBytes(inFromServer));
+		}
+		for (IntegerVariable intVar : variables.getIntegerVariableList()) {
+			if (isValidFlowVariableName(intVar.getKey())) {
+				flowVariables.add(new FlowVariable(intVar.getKey(), intVar.getValue()));
+			}
+		}
+		for (DoubleVariable doubleVar : variables.getDoubleVariableList()) {
+			if (isValidFlowVariableName(doubleVar.getKey())) {
+				flowVariables.add(new FlowVariable(doubleVar.getKey(), doubleVar.getValue()));
+			}
+		}
+		for (StringVariable stringVar : variables.getStringVariableList()) {
+			if (isValidFlowVariableName(stringVar.getKey())) {
+				flowVariables.add(new FlowVariable(stringVar.getKey(), stringVar.getValue()));
+			}
+		}
+		return flowVariables;
+	}
+	
+	private boolean isValidFlowVariableName(final String name) {
+		if (name.equals("knime.workspace")) {
+			// knime.workspace is reserved
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -437,7 +488,6 @@ public class PythonKernel {
 	 * @param cp the {@link CredentialsProvider}
 	 * @throws Exception if the object can not be serialised
 	 */
-	@SuppressWarnings("resource")
 	public void putGeneralObject(final EditorObjectWriter object)
 			throws Exception {
 		final byte[] message = object.getMessage();
@@ -486,8 +536,6 @@ public class PythonKernel {
 		}
 	}
 
-
-	@SuppressWarnings("resource")
 	public void getGeneralObject(final EditorObjectReader reader) throws IOException {
 		final Command command = reader.getCommand();
 		synchronized (this) {

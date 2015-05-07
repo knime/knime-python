@@ -6,6 +6,7 @@ option java_outer_classname = "ProtobufPythonKernelCommand";
 import "table.proto";
 import "sqlInput.proto";
 import "sqlOutput.proto";
+import "variables.proto";
 
 message Command {
 	optional Execute execute = 1;
@@ -25,6 +26,7 @@ message Command {
 	optional Shutdown shutdown = 15;
 	optional PutSQL putSQL = 16;
 	optional GetSQL getSQL = 17;
+	optional GetFlowVariables getFlowVariables = 18;
 	
 	message Execute {
 		required string sourceCode = 1;
@@ -32,24 +34,7 @@ message Command {
 	
 	message PutFlowVariables {
 		required string key = 1;
-		repeated IntegerVariable integerVariable = 2;
-		repeated DoubleVariable doubleVariable = 3;
-		repeated StringVariable stringVariable = 4;
-		
-		message IntegerVariable {
-			required string key = 1;
-			required int32 value = 2;
-		}
-		
-		message DoubleVariable {
-			required string key = 1;
-			required double value = 2;
-		}
-		
-		message StringVariable {
-			required string key = 1;
-			required string value = 2;
-		}
+		required Variables variables = 2;
 	}
 	
 	message PutTable {
@@ -124,6 +109,10 @@ message Command {
     
     message GetSQL {
         required string key = 1;
+    }
+    
+    message GetFlowVariables {
+		required string key = 1;
     }
     
 }

@@ -25,6 +25,7 @@ import executeresponse_pb2
 import pickledobject_pb2
 import sqlInput_pb2
 import sqlOutput_pb2
+import variables_pb2
 from DBUtil import *
 
 # check if we are running python 2 or python 3
@@ -104,14 +105,18 @@ def run():
                 write_message(execute_response)
             elif command.HasField('putFlowVariables'):
                 flow_variables = {}
-                for variable in command.putFlowVariables.integerVariable:
+                for variable in command.putFlowVariables.variables.integerVariable:
                     flow_variables[variable.key] = variable.value
-                for variable in command.putFlowVariables.doubleVariable:
+                for variable in command.putFlowVariables.variables.doubleVariable:
                     flow_variables[variable.key] = variable.value
-                for variable in command.putFlowVariables.stringVariable:
+                for variable in command.putFlowVariables.variables.stringVariable:
                     flow_variables[variable.key] = variable.value
-                put_variable('flow_variables', flow_variables)
+                put_variable(command.putFlowVariables.key, flow_variables)
                 write_dummy()
+            elif command.HasField('getFlowVariables'):
+            	currentVariables = get_variable(command.getFlowVariables.key)
+            	variables = dict_to_protobuf_variables(currentVariables)
+            	write_message(variables)
             elif command.HasField('putTable'):
                 try:
                     frame = protobuf_table_to_data_frame(command.putTable.table)
@@ -855,6 +860,25 @@ def data_frame_to_protobuf_table(data_frame):
         table_message.numCols = 0
         table_message.numRows = 0
         return table_message
+
+
+def dict_to_protobuf_variables(var_dict):
+	variables = variables_pb2.Variables()
+	if var_dict is not None and isinstance(var_dict, dict):
+		for key, value in var_dict.iteritems():
+		    if isinstance(value, int) and value >= -2147483648 and value <= 2147483647:
+		    	var = variables.integerVariable.add()
+		    	var.key = key
+		    	var.value = value
+		    elif isinstance(value, int) or isinstance(value, float):
+		    	var = variables.doubleVariable.add()
+		    	var.key = key
+		    	var.value = value
+		    else:
+		    	var = variables.stringVariable.add()
+		    	var.key = key
+		    	var.value = str(value)
+	return variables
 
 
 # get the type of a column (fails if multiple types are found)

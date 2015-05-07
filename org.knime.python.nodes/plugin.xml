@@ -3,7 +3,8 @@
 
 <plugin>
    	<extension point="org.knime.workbench.repository.nodes">
-   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory" id="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.variables.PythonVariablesNodeFactory" id="org.knime.python.nodes.variables.PythonVariablesNodeFactory"/>
+   		<node category-path="/labs/python" factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory" id="org.knime.python.nodes.source.PythonSourceNodeFactory" after="org.knime.python.nodes.variables.PythonVariablesNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory" id="org.knime.python.nodes.script.PythonScriptNodeFactory" after="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory" id="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory" after="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.view.PythonViewNodeFactory" id="org.knime.python.nodes.view.PythonViewNodeFactory" after="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory"/>

@@ -1,0 +1,25 @@
+package knime;
+
+option java_package = "org.knime.python.kernel.proto";
+option java_outer_classname = "ProtobufPythonKernelVariables";
+
+message Variables {
+	repeated IntegerVariable integerVariable = 2;
+	repeated DoubleVariable doubleVariable = 3;
+	repeated StringVariable stringVariable = 4;
+}
+
+message IntegerVariable {
+	required string key = 1;
+	required int32 value = 2;
+}
+
+message DoubleVariable {
+	required string key = 1;
+	required double value = 2;
+}
+
+message StringVariable {
+	required string key = 1;
+	required string value = 2;
+}

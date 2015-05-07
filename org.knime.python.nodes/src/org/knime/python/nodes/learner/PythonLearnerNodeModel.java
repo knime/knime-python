@@ -48,18 +48,18 @@
 package org.knime.python.nodes.learner;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 
-import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.kernel.PythonKernel;
+import org.knime.python.nodes.PythonNodeModel;
 import org.knime.python.port.PickledObject;
 import org.knime.python.port.PickledObjectPortObject;
 
@@ -69,9 +69,7 @@ import org.knime.python.port.PickledObjectPortObject;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonLearnerNodeModel extends ExtToolOutputNodeModel {
-
-	private PythonLearnerNodeConfig m_config = new PythonLearnerNodeConfig();
+class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
 
 	/**
 	 * Constructor for the node model.
@@ -92,12 +90,14 @@ class PythonLearnerNodeModel extends ExtToolOutputNodeModel {
 					getAvailableFlowVariables().values());
 			kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
 					(BufferedDataTable) inData[0], exec.createSubProgress(0.3));
-			String[] output = kernel.execute(m_config.getSourceCode(), exec);
+			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.4).setProgress(1);
+			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
 			object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
 			exec.createSubProgress(0.3).setProgress(1);
+	        addNewVariables(variables);
 		} finally {
 			kernel.close();
 		}
@@ -112,31 +112,9 @@ class PythonLearnerNodeModel extends ExtToolOutputNodeModel {
 		return new PortObjectSpec[] { null };
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) {
-		m_config.saveTo(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void validateSettings(NodeSettingsRO settings) throws InvalidSettingsException {
-		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
-		config.loadFrom(settings);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadValidatedSettingsFrom(NodeSettingsRO settings) throws InvalidSettingsException {
-		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
-		config.loadFrom(settings);
-		m_config = config;
+	protected PythonLearnerNodeConfig createConfig() {
+		return new PythonLearnerNodeConfig();
 	}
 
 }

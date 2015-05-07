@@ -45,22 +45,22 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.nodes.predictor;
+package org.knime.python.nodes.variables;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
+import org.knime.core.node.port.flowvariable.FlowVariablePortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python.kernel.PythonKernel;
 import org.knime.python.nodes.PythonNodeModel;
-import org.knime.python.port.PickledObjectPortObject;
 
 /**
  * This is the model implementation.
@@ -68,43 +68,37 @@ import org.knime.python.port.PickledObjectPortObject;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig> {
+class PythonVariablesNodeModel extends PythonNodeModel<PythonVariablesNodeConfig> {
 
 	/**
 	 * Constructor for the node model.
 	 */
-	protected PythonPredictorNodeModel() {
-		super(new PortType[] { PickledObjectPortObject.TYPE, BufferedDataTable.TYPE },
-				new PortType[] { BufferedDataTable.TYPE });
+	protected PythonVariablesNodeModel() {
+		super(new PortType[] {FlowVariablePortObject.TYPE_OPTIONAL},
+                new PortType[] {FlowVariablePortObject.TYPE});
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
+	protected PortObject[] execute(PortObject[] inObjects, ExecutionContext exec) throws Exception {
 		PythonKernel kernel = new PythonKernel();
-		BufferedDataTable table = null;
 		try {
-			kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),
+			kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
-			kernel.putObject(PythonPredictorNodeConfig.getVariableNames().getInputObjects()[0],
-					((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
 			exec.createSubProgress(0.1).setProgress(1);
-			kernel.putDataTable(PythonPredictorNodeConfig.getVariableNames().getInputTables()[0],
-					(BufferedDataTable) inData[1], exec.createSubProgress(0.2));
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables());
-			table = kernel.getDataTable(PythonPredictorNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
+			exec.createSubProgress(0.8).setProgress(1);
+			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables());
+			exec.createSubProgress(0.1).setProgress(1);
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();
 		}
-		return new BufferedDataTable[] { table };
+		return new PortObject[] { FlowVariablePortObject.INSTANCE };
 	}
 
 	/**
@@ -112,12 +106,12 @@ class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig
 	 */
 	@Override
 	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { null };
+		return new PortObjectSpec[] { FlowVariablePortObjectSpec.INSTANCE };
 	}
-
+	
 	@Override
-	protected PythonPredictorNodeConfig createConfig() {
-		return new PythonPredictorNodeConfig();
+	protected PythonVariablesNodeConfig createConfig() {
+		return new PythonVariablesNodeConfig();
 	}
 
 }

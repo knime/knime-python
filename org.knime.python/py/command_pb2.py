@@ -11,12 +11,13 @@ from google.protobuf import descriptor_pb2
 import table_pb2
 import sqlInput_pb2
 import sqlOutput_pb2
+import variables_pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='command.proto',
   package='knime',
-  serialized_pb='\n\rcommand.proto\x12\x05knime\x1a\x0btable.proto\x1a\x0esqlInput.proto\x1a\x0fsqlOutput.proto\"\x84\x0f\n\x07\x43ommand\x12\'\n\x07\x65xecute\x18\x01 \x01(\x0b\x32\x16.knime.Command.Execute\x12\x39\n\x10putFlowVariables\x18\x02 \x01(\x0b\x32\x1f.knime.Command.PutFlowVariables\x12)\n\x08putTable\x18\x03 \x01(\x0b\x32\x17.knime.Command.PutTable\x12\x33\n\rappendToTable\x18\x04 \x01(\x0b\x32\x1c.knime.Command.AppendToTable\x12)\n\x08getTable\x18\x05 \x01(\x0b\x32\x17.knime.Command.GetTable\x12\x33\n\rlistVariables\x18\x06 \x01(\x0b\x32\x1c.knime.Command.ListVariables\x12#\n\x05reset\x18\x07 \x01(\x0b\x32\x14.knime.Command.Reset\x12\x37\n\x0fhasAutoComplete\x18\x08 \x01(\x0b\x32\x1e.knime.Command.HasAutoComplete\x12\x31\n\x0c\x61utoComplete\x18\t \x01(\x0b\x32\x1b.knime.Command.AutoComplete\x12)\n\x08getImage\x18\n \x01(\x0b\x32\x17.knime.Command.GetImage\x12+\n\tgetObject\x18\x0b \x01(\x0b\x32\x18.knime.Command.GetObject\x12+\n\tputObject\x18\x0c \x01(\x0b\x32\x18.knime.Command.PutObject\x12\x35\n\x0e\x61\x64\x64Serializers\x18\r \x01(\x0b\x32\x1d.knime.Command.AddSerializers\x12\x39\n\x10\x61\x64\x64\x44\x65serializers\x18\x0e \x01(\x0b\x32\x1f.knime.Command.AddDeserializers\x12)\n\x08shutdown\x18\x0f \x01(\x0b\x32\x17.knime.Command.Shutdown\x12%\n\x06putSQL\x18\x10 \x01(\x0b\x32\x15.knime.Command.PutSQL\x12%\n\x06getSQL\x18\x11 \x01(\x0b\x32\x15.knime.Command.GetSQL\x1a\x1d\n\x07\x45xecute\x12\x12\n\nsourceCode\x18\x01 \x02(\t\x1a\x84\x03\n\x10PutFlowVariables\x12\x0b\n\x03key\x18\x01 \x02(\t\x12H\n\x0fintegerVariable\x18\x02 \x03(\x0b\x32/.knime.Command.PutFlowVariables.IntegerVariable\x12\x46\n\x0e\x64oubleVariable\x18\x03 \x03(\x0b\x32..knime.Command.PutFlowVariables.DoubleVariable\x12\x46\n\x0estringVariable\x18\x04 \x03(\x0b\x32..knime.Command.PutFlowVariables.StringVariable\x1a-\n\x0fIntegerVariable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\x05\x1a,\n\x0e\x44oubleVariable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\x01\x1a,\n\x0eStringVariable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\t\x1a\x34\n\x08PutTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1b\n\x05table\x18\x02 \x02(\x0b\x32\x0c.knime.Table\x1a\x39\n\rAppendToTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1b\n\x05table\x18\x02 \x02(\x0b\x32\x0c.knime.Table\x1a*\n\x08GetTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x11\n\tchunkSize\x18\x02 \x02(\x05\x1a\x0f\n\rListVariables\x1a\x07\n\x05Reset\x1a\x11\n\x0fHasAutoComplete\x1a@\n\x0c\x41utoComplete\x12\x12\n\nsourceCode\x18\x01 \x02(\t\x12\x0c\n\x04line\x18\x02 \x02(\x05\x12\x0e\n\x06\x63olumn\x18\x03 \x02(\x05\x1a\x17\n\x08GetImage\x12\x0b\n\x03key\x18\x01 \x02(\t\x1a\x18\n\tGetObject\x12\x0b\n\x03key\x18\x01 \x02(\t\x1a/\n\tPutObject\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x15\n\rpickledObject\x18\x02 \x02(\x0c\x1a?\n\x0e\x41\x64\x64Serializers\x12-\n\nserializer\x18\x01 \x03(\x0b\x32\x19.knime.Command.Serializer\x1a\x34\n\nSerializer\x12\n\n\x02id\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\x0c\n\x04path\x18\x03 \x02(\t\x1a\x45\n\x10\x41\x64\x64\x44\x65serializers\x12\x31\n\x0c\x64\x65serializer\x18\x01 \x03(\x0b\x32\x1b.knime.Command.Deserializer\x1a(\n\x0c\x44\x65serializer\x12\n\n\x02id\x18\x01 \x02(\t\x12\x0c\n\x04path\x18\x02 \x02(\t\x1a\n\n\x08Shutdown\x1a\x33\n\x06PutSQL\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1c\n\x03sql\x18\x02 \x02(\x0b\x32\x0f.knime.SQLInput\x1a\x15\n\x06GetSQL\x12\x0b\n\x03key\x18\x01 \x02(\tB<\n\x1dorg.knime.python.kernel.protoB\x1bProtobufPythonKernelCommand')
+  serialized_pb='\n\rcommand.proto\x12\x05knime\x1a\x0btable.proto\x1a\x0esqlInput.proto\x1a\x0fsqlOutput.proto\x1a\x0fvariables.proto\"\x9f\r\n\x07\x43ommand\x12\'\n\x07\x65xecute\x18\x01 \x01(\x0b\x32\x16.knime.Command.Execute\x12\x39\n\x10putFlowVariables\x18\x02 \x01(\x0b\x32\x1f.knime.Command.PutFlowVariables\x12)\n\x08putTable\x18\x03 \x01(\x0b\x32\x17.knime.Command.PutTable\x12\x33\n\rappendToTable\x18\x04 \x01(\x0b\x32\x1c.knime.Command.AppendToTable\x12)\n\x08getTable\x18\x05 \x01(\x0b\x32\x17.knime.Command.GetTable\x12\x33\n\rlistVariables\x18\x06 \x01(\x0b\x32\x1c.knime.Command.ListVariables\x12#\n\x05reset\x18\x07 \x01(\x0b\x32\x14.knime.Command.Reset\x12\x37\n\x0fhasAutoComplete\x18\x08 \x01(\x0b\x32\x1e.knime.Command.HasAutoComplete\x12\x31\n\x0c\x61utoComplete\x18\t \x01(\x0b\x32\x1b.knime.Command.AutoComplete\x12)\n\x08getImage\x18\n \x01(\x0b\x32\x17.knime.Command.GetImage\x12+\n\tgetObject\x18\x0b \x01(\x0b\x32\x18.knime.Command.GetObject\x12+\n\tputObject\x18\x0c \x01(\x0b\x32\x18.knime.Command.PutObject\x12\x35\n\x0e\x61\x64\x64Serializers\x18\r \x01(\x0b\x32\x1d.knime.Command.AddSerializers\x12\x39\n\x10\x61\x64\x64\x44\x65serializers\x18\x0e \x01(\x0b\x32\x1f.knime.Command.AddDeserializers\x12)\n\x08shutdown\x18\x0f \x01(\x0b\x32\x17.knime.Command.Shutdown\x12%\n\x06putSQL\x18\x10 \x01(\x0b\x32\x15.knime.Command.PutSQL\x12%\n\x06getSQL\x18\x11 \x01(\x0b\x32\x15.knime.Command.GetSQL\x12\x39\n\x10getFlowVariables\x18\x12 \x01(\x0b\x32\x1f.knime.Command.GetFlowVariables\x1a\x1d\n\x07\x45xecute\x12\x12\n\nsourceCode\x18\x01 \x02(\t\x1a\x44\n\x10PutFlowVariables\x12\x0b\n\x03key\x18\x01 \x02(\t\x12#\n\tvariables\x18\x02 \x02(\x0b\x32\x10.knime.Variables\x1a\x34\n\x08PutTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1b\n\x05table\x18\x02 \x02(\x0b\x32\x0c.knime.Table\x1a\x39\n\rAppendToTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1b\n\x05table\x18\x02 \x02(\x0b\x32\x0c.knime.Table\x1a*\n\x08GetTable\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x11\n\tchunkSize\x18\x02 \x02(\x05\x1a\x0f\n\rListVariables\x1a\x07\n\x05Reset\x1a\x11\n\x0fHasAutoComplete\x1a@\n\x0c\x41utoComplete\x12\x12\n\nsourceCode\x18\x01 \x02(\t\x12\x0c\n\x04line\x18\x02 \x02(\x05\x12\x0e\n\x06\x63olumn\x18\x03 \x02(\x05\x1a\x17\n\x08GetImage\x12\x0b\n\x03key\x18\x01 \x02(\t\x1a\x18\n\tGetObject\x12\x0b\n\x03key\x18\x01 \x02(\t\x1a/\n\tPutObject\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x15\n\rpickledObject\x18\x02 \x02(\x0c\x1a?\n\x0e\x41\x64\x64Serializers\x12-\n\nserializer\x18\x01 \x03(\x0b\x32\x19.knime.Command.Serializer\x1a\x34\n\nSerializer\x12\n\n\x02id\x18\x01 \x02(\t\x12\x0c\n\x04type\x18\x02 \x02(\t\x12\x0c\n\x04path\x18\x03 \x02(\t\x1a\x45\n\x10\x41\x64\x64\x44\x65serializers\x12\x31\n\x0c\x64\x65serializer\x18\x01 \x03(\x0b\x32\x1b.knime.Command.Deserializer\x1a(\n\x0c\x44\x65serializer\x12\n\n\x02id\x18\x01 \x02(\t\x12\x0c\n\x04path\x18\x02 \x02(\t\x1a\n\n\x08Shutdown\x1a\x33\n\x06PutSQL\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x1c\n\x03sql\x18\x02 \x02(\x0b\x32\x0f.knime.SQLInput\x1a\x15\n\x06GetSQL\x12\x0b\n\x03key\x18\x01 \x02(\t\x1a\x1f\n\x10GetFlowVariables\x12\x0b\n\x03key\x18\x01 \x02(\tB<\n\x1dorg.knime.python.kernel.protoB\x1bProtobufPythonKernelCommand')
 
 
 
@@ -44,110 +45,8 @@ _COMMAND_EXECUTE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=887,
-  serialized_end=916,
-)
-
-_COMMAND_PUTFLOWVARIABLES_INTEGERVARIABLE = _descriptor.Descriptor(
-  name='IntegerVariable',
-  full_name='knime.Command.PutFlowVariables.IntegerVariable',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='knime.Command.PutFlowVariables.IntegerVariable.key', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='knime.Command.PutFlowVariables.IntegerVariable.value', index=1,
-      number=2, type=5, cpp_type=1, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=1170,
-  serialized_end=1215,
-)
-
-_COMMAND_PUTFLOWVARIABLES_DOUBLEVARIABLE = _descriptor.Descriptor(
-  name='DoubleVariable',
-  full_name='knime.Command.PutFlowVariables.DoubleVariable',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='knime.Command.PutFlowVariables.DoubleVariable.key', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='knime.Command.PutFlowVariables.DoubleVariable.value', index=1,
-      number=2, type=1, cpp_type=5, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=1217,
-  serialized_end=1261,
-)
-
-_COMMAND_PUTFLOWVARIABLES_STRINGVARIABLE = _descriptor.Descriptor(
-  name='StringVariable',
-  full_name='knime.Command.PutFlowVariables.StringVariable',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='knime.Command.PutFlowVariables.StringVariable.key', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='knime.Command.PutFlowVariables.StringVariable.value', index=1,
-      number=2, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=unicode("", "utf-8"),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  extension_ranges=[],
-  serialized_start=1263,
-  serialized_end=1307,
+  serialized_start=963,
+  serialized_end=992,
 )
 
 _COMMAND_PUTFLOWVARIABLES = _descriptor.Descriptor(
@@ -165,37 +64,23 @@ _COMMAND_PUTFLOWVARIABLES = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='integerVariable', full_name='knime.Command.PutFlowVariables.integerVariable', index=1,
-      number=2, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='doubleVariable', full_name='knime.Command.PutFlowVariables.doubleVariable', index=2,
-      number=3, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='stringVariable', full_name='knime.Command.PutFlowVariables.stringVariable', index=3,
-      number=4, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
+      name='variables', full_name='knime.Command.PutFlowVariables.variables', index=1,
+      number=2, type=11, cpp_type=10, label=2,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
   ],
   extensions=[
   ],
-  nested_types=[_COMMAND_PUTFLOWVARIABLES_INTEGERVARIABLE, _COMMAND_PUTFLOWVARIABLES_DOUBLEVARIABLE, _COMMAND_PUTFLOWVARIABLES_STRINGVARIABLE, ],
+  nested_types=[],
   enum_types=[
   ],
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=919,
-  serialized_end=1307,
+  serialized_start=994,
+  serialized_end=1062,
 )
 
 _COMMAND_PUTTABLE = _descriptor.Descriptor(
@@ -228,8 +113,8 @@ _COMMAND_PUTTABLE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1309,
-  serialized_end=1361,
+  serialized_start=1064,
+  serialized_end=1116,
 )
 
 _COMMAND_APPENDTOTABLE = _descriptor.Descriptor(
@@ -262,8 +147,8 @@ _COMMAND_APPENDTOTABLE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1363,
-  serialized_end=1420,
+  serialized_start=1118,
+  serialized_end=1175,
 )
 
 _COMMAND_GETTABLE = _descriptor.Descriptor(
@@ -296,8 +181,8 @@ _COMMAND_GETTABLE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1422,
-  serialized_end=1464,
+  serialized_start=1177,
+  serialized_end=1219,
 )
 
 _COMMAND_LISTVARIABLES = _descriptor.Descriptor(
@@ -316,8 +201,8 @@ _COMMAND_LISTVARIABLES = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1466,
-  serialized_end=1481,
+  serialized_start=1221,
+  serialized_end=1236,
 )
 
 _COMMAND_RESET = _descriptor.Descriptor(
@@ -336,8 +221,8 @@ _COMMAND_RESET = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1483,
-  serialized_end=1490,
+  serialized_start=1238,
+  serialized_end=1245,
 )
 
 _COMMAND_HASAUTOCOMPLETE = _descriptor.Descriptor(
@@ -356,8 +241,8 @@ _COMMAND_HASAUTOCOMPLETE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1492,
-  serialized_end=1509,
+  serialized_start=1247,
+  serialized_end=1264,
 )
 
 _COMMAND_AUTOCOMPLETE = _descriptor.Descriptor(
@@ -397,8 +282,8 @@ _COMMAND_AUTOCOMPLETE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1511,
-  serialized_end=1575,
+  serialized_start=1266,
+  serialized_end=1330,
 )
 
 _COMMAND_GETIMAGE = _descriptor.Descriptor(
@@ -424,8 +309,8 @@ _COMMAND_GETIMAGE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1577,
-  serialized_end=1600,
+  serialized_start=1332,
+  serialized_end=1355,
 )
 
 _COMMAND_GETOBJECT = _descriptor.Descriptor(
@@ -451,8 +336,8 @@ _COMMAND_GETOBJECT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1602,
-  serialized_end=1626,
+  serialized_start=1357,
+  serialized_end=1381,
 )
 
 _COMMAND_PUTOBJECT = _descriptor.Descriptor(
@@ -485,8 +370,8 @@ _COMMAND_PUTOBJECT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1628,
-  serialized_end=1675,
+  serialized_start=1383,
+  serialized_end=1430,
 )
 
 _COMMAND_ADDSERIALIZERS = _descriptor.Descriptor(
@@ -512,8 +397,8 @@ _COMMAND_ADDSERIALIZERS = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1677,
-  serialized_end=1740,
+  serialized_start=1432,
+  serialized_end=1495,
 )
 
 _COMMAND_SERIALIZER = _descriptor.Descriptor(
@@ -553,8 +438,8 @@ _COMMAND_SERIALIZER = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1742,
-  serialized_end=1794,
+  serialized_start=1497,
+  serialized_end=1549,
 )
 
 _COMMAND_ADDDESERIALIZERS = _descriptor.Descriptor(
@@ -580,8 +465,8 @@ _COMMAND_ADDDESERIALIZERS = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1796,
-  serialized_end=1865,
+  serialized_start=1551,
+  serialized_end=1620,
 )
 
 _COMMAND_DESERIALIZER = _descriptor.Descriptor(
@@ -614,8 +499,8 @@ _COMMAND_DESERIALIZER = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1867,
-  serialized_end=1907,
+  serialized_start=1622,
+  serialized_end=1662,
 )
 
 _COMMAND_SHUTDOWN = _descriptor.Descriptor(
@@ -634,8 +519,8 @@ _COMMAND_SHUTDOWN = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1909,
-  serialized_end=1919,
+  serialized_start=1664,
+  serialized_end=1674,
 )
 
 _COMMAND_PUTSQL = _descriptor.Descriptor(
@@ -668,8 +553,8 @@ _COMMAND_PUTSQL = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1921,
-  serialized_end=1972,
+  serialized_start=1676,
+  serialized_end=1727,
 )
 
 _COMMAND_GETSQL = _descriptor.Descriptor(
@@ -695,8 +580,35 @@ _COMMAND_GETSQL = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1974,
-  serialized_end=1995,
+  serialized_start=1729,
+  serialized_end=1750,
+)
+
+_COMMAND_GETFLOWVARIABLES = _descriptor.Descriptor(
+  name='GetFlowVariables',
+  full_name='knime.Command.GetFlowVariables',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='knime.Command.GetFlowVariables.key', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=1752,
+  serialized_end=1783,
 )
 
 _COMMAND = _descriptor.Descriptor(
@@ -825,26 +737,28 @@ _COMMAND = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='getFlowVariables', full_name='knime.Command.getFlowVariables', index=17,
+      number=18, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
-  nested_types=[_COMMAND_EXECUTE, _COMMAND_PUTFLOWVARIABLES, _COMMAND_PUTTABLE, _COMMAND_APPENDTOTABLE, _COMMAND_GETTABLE, _COMMAND_LISTVARIABLES, _COMMAND_RESET, _COMMAND_HASAUTOCOMPLETE, _COMMAND_AUTOCOMPLETE, _COMMAND_GETIMAGE, _COMMAND_GETOBJECT, _COMMAND_PUTOBJECT, _COMMAND_ADDSERIALIZERS, _COMMAND_SERIALIZER, _COMMAND_ADDDESERIALIZERS, _COMMAND_DESERIALIZER, _COMMAND_SHUTDOWN, _COMMAND_PUTSQL, _COMMAND_GETSQL, ],
+  nested_types=[_COMMAND_EXECUTE, _COMMAND_PUTFLOWVARIABLES, _COMMAND_PUTTABLE, _COMMAND_APPENDTOTABLE, _COMMAND_GETTABLE, _COMMAND_LISTVARIABLES, _COMMAND_RESET, _COMMAND_HASAUTOCOMPLETE, _COMMAND_AUTOCOMPLETE, _COMMAND_GETIMAGE, _COMMAND_GETOBJECT, _COMMAND_PUTOBJECT, _COMMAND_ADDSERIALIZERS, _COMMAND_SERIALIZER, _COMMAND_ADDDESERIALIZERS, _COMMAND_DESERIALIZER, _COMMAND_SHUTDOWN, _COMMAND_PUTSQL, _COMMAND_GETSQL, _COMMAND_GETFLOWVARIABLES, ],
   enum_types=[
   ],
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=71,
-  serialized_end=1995,
+  serialized_start=88,
+  serialized_end=1783,
 )
 
 _COMMAND_EXECUTE.containing_type = _COMMAND;
-_COMMAND_PUTFLOWVARIABLES_INTEGERVARIABLE.containing_type = _COMMAND_PUTFLOWVARIABLES;
-_COMMAND_PUTFLOWVARIABLES_DOUBLEVARIABLE.containing_type = _COMMAND_PUTFLOWVARIABLES;
-_COMMAND_PUTFLOWVARIABLES_STRINGVARIABLE.containing_type = _COMMAND_PUTFLOWVARIABLES;
-_COMMAND_PUTFLOWVARIABLES.fields_by_name['integerVariable'].message_type = _COMMAND_PUTFLOWVARIABLES_INTEGERVARIABLE
-_COMMAND_PUTFLOWVARIABLES.fields_by_name['doubleVariable'].message_type = _COMMAND_PUTFLOWVARIABLES_DOUBLEVARIABLE
-_COMMAND_PUTFLOWVARIABLES.fields_by_name['stringVariable'].message_type = _COMMAND_PUTFLOWVARIABLES_STRINGVARIABLE
+_COMMAND_PUTFLOWVARIABLES.fields_by_name['variables'].message_type = variables_pb2._VARIABLES
 _COMMAND_PUTFLOWVARIABLES.containing_type = _COMMAND;
 _COMMAND_PUTTABLE.fields_by_name['table'].message_type = table_pb2._TABLE
 _COMMAND_PUTTABLE.containing_type = _COMMAND;
@@ -868,6 +782,7 @@ _COMMAND_SHUTDOWN.containing_type = _COMMAND;
 _COMMAND_PUTSQL.fields_by_name['sql'].message_type = sqlInput_pb2._SQLINPUT
 _COMMAND_PUTSQL.containing_type = _COMMAND;
 _COMMAND_GETSQL.containing_type = _COMMAND;
+_COMMAND_GETFLOWVARIABLES.containing_type = _COMMAND;
 _COMMAND.fields_by_name['execute'].message_type = _COMMAND_EXECUTE
 _COMMAND.fields_by_name['putFlowVariables'].message_type = _COMMAND_PUTFLOWVARIABLES
 _COMMAND.fields_by_name['putTable'].message_type = _COMMAND_PUTTABLE
@@ -885,6 +800,7 @@ _COMMAND.fields_by_name['addDeserializers'].message_type = _COMMAND_ADDDESERIALI
 _COMMAND.fields_by_name['shutdown'].message_type = _COMMAND_SHUTDOWN
 _COMMAND.fields_by_name['putSQL'].message_type = _COMMAND_PUTSQL
 _COMMAND.fields_by_name['getSQL'].message_type = _COMMAND_GETSQL
+_COMMAND.fields_by_name['getFlowVariables'].message_type = _COMMAND_GETFLOWVARIABLES
 DESCRIPTOR.message_types_by_name['Command'] = _COMMAND
 
 class Command(_message.Message):
@@ -898,24 +814,6 @@ class Command(_message.Message):
 
   class PutFlowVariables(_message.Message):
     __metaclass__ = _reflection.GeneratedProtocolMessageType
-
-    class IntegerVariable(_message.Message):
-      __metaclass__ = _reflection.GeneratedProtocolMessageType
-      DESCRIPTOR = _COMMAND_PUTFLOWVARIABLES_INTEGERVARIABLE
-
-      # @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.IntegerVariable)
-
-    class DoubleVariable(_message.Message):
-      __metaclass__ = _reflection.GeneratedProtocolMessageType
-      DESCRIPTOR = _COMMAND_PUTFLOWVARIABLES_DOUBLEVARIABLE
-
-      # @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.DoubleVariable)
-
-    class StringVariable(_message.Message):
-      __metaclass__ = _reflection.GeneratedProtocolMessageType
-      DESCRIPTOR = _COMMAND_PUTFLOWVARIABLES_STRINGVARIABLE
-
-      # @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.StringVariable)
     DESCRIPTOR = _COMMAND_PUTFLOWVARIABLES
 
     # @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables)
@@ -1021,6 +919,12 @@ class Command(_message.Message):
     DESCRIPTOR = _COMMAND_GETSQL
 
     # @@protoc_insertion_point(class_scope:knime.Command.GetSQL)
+
+  class GetFlowVariables(_message.Message):
+    __metaclass__ = _reflection.GeneratedProtocolMessageType
+    DESCRIPTOR = _COMMAND_GETFLOWVARIABLES
+
+    # @@protoc_insertion_point(class_scope:knime.Command.GetFlowVariables)
   DESCRIPTOR = _COMMAND
 
   # @@protoc_insertion_point(class_scope:knime.Command)

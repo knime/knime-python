@@ -248,6 +248,20 @@ public final class ProtobufPythonKernelCommand {
      * <code>optional .knime.Command.GetSQL getSQL = 17;</code>
      */
     org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQLOrBuilder getGetSQLOrBuilder();
+
+    // optional .knime.Command.GetFlowVariables getFlowVariables = 18;
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    boolean hasGetFlowVariables();
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getGetFlowVariables();
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder getGetFlowVariablesOrBuilder();
   }
   /**
    * Protobuf type {@code knime.Command}
@@ -519,6 +533,19 @@ public final class ProtobufPythonKernelCommand {
                 getSQL_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00010000;
+              break;
+            }
+            case 146: {
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder subBuilder = null;
+              if (((bitField0_ & 0x00020000) == 0x00020000)) {
+                subBuilder = getFlowVariables_.toBuilder();
+              }
+              getFlowVariables_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(getFlowVariables_);
+                getFlowVariables_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00020000;
               break;
             }
           }
@@ -1057,80 +1084,19 @@ public final class ProtobufPythonKernelCommand {
       com.google.protobuf.ByteString
           getKeyBytes();
 
-      // repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;
+      // required .knime.Variables variables = 2;
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> 
-          getIntegerVariableList();
+      boolean hasVariables();
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable getIntegerVariable(int index);
+      org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables getVariables();
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      int getIntegerVariableCount();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-       */
-      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder> 
-          getIntegerVariableOrBuilderList();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-       */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder getIntegerVariableOrBuilder(
-          int index);
-
-      // repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> 
-          getDoubleVariableList();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable getDoubleVariable(int index);
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      int getDoubleVariableCount();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder> 
-          getDoubleVariableOrBuilderList();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder getDoubleVariableOrBuilder(
-          int index);
-
-      // repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> 
-          getStringVariableList();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable getStringVariable(int index);
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      int getStringVariableCount();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder> 
-          getStringVariableOrBuilderList();
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder getStringVariableOrBuilder(
-          int index);
+      org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder getVariablesOrBuilder();
     }
     /**
      * Protobuf type {@code knime.Command.PutFlowVariables}
@@ -1189,27 +1155,16 @@ public final class ProtobufPythonKernelCommand {
                 break;
               }
               case 18: {
-                if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                  integerVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable>();
-                  mutable_bitField0_ |= 0x00000002;
+                org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = variables_.toBuilder();
                 }
-                integerVariable_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.PARSER, extensionRegistry));
-                break;
-              }
-              case 26: {
-                if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-                  doubleVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable>();
-                  mutable_bitField0_ |= 0x00000004;
+                variables_ = input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(variables_);
+                  variables_ = subBuilder.buildPartial();
                 }
-                doubleVariable_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.PARSER, extensionRegistry));
-                break;
-              }
-              case 34: {
-                if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                  stringVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable>();
-                  mutable_bitField0_ |= 0x00000008;
-                }
-                stringVariable_.add(input.readMessage(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.PARSER, extensionRegistry));
+                bitField0_ |= 0x00000002;
                 break;
               }
             }
@@ -1220,15 +1175,6 @@ public final class ProtobufPythonKernelCommand {
           throw new com.google.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
-          if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-            integerVariable_ = java.util.Collections.unmodifiableList(integerVariable_);
-          }
-          if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-            doubleVariable_ = java.util.Collections.unmodifiableList(doubleVariable_);
-          }
-          if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-            stringVariable_ = java.util.Collections.unmodifiableList(stringVariable_);
-          }
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
@@ -1258,1785 +1204,6 @@ public final class ProtobufPythonKernelCommand {
       @java.lang.Override
       public com.google.protobuf.Parser<PutFlowVariables> getParserForType() {
         return PARSER;
-      }
-
-      public interface IntegerVariableOrBuilder
-          extends com.google.protobuf.MessageOrBuilder {
-
-        // required string key = 1;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        boolean hasKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        java.lang.String getKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        com.google.protobuf.ByteString
-            getKeyBytes();
-
-        // required int32 value = 2;
-        /**
-         * <code>required int32 value = 2;</code>
-         */
-        boolean hasValue();
-        /**
-         * <code>required int32 value = 2;</code>
-         */
-        int getValue();
-      }
-      /**
-       * Protobuf type {@code knime.Command.PutFlowVariables.IntegerVariable}
-       */
-      public static final class IntegerVariable extends
-          com.google.protobuf.GeneratedMessage
-          implements IntegerVariableOrBuilder {
-        // Use IntegerVariable.newBuilder() to construct.
-        private IntegerVariable(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-          super(builder);
-          this.unknownFields = builder.getUnknownFields();
-        }
-        private IntegerVariable(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-        private static final IntegerVariable defaultInstance;
-        public static IntegerVariable getDefaultInstance() {
-          return defaultInstance;
-        }
-
-        public IntegerVariable getDefaultInstanceForType() {
-          return defaultInstance;
-        }
-
-        private final com.google.protobuf.UnknownFieldSet unknownFields;
-        @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
-            getUnknownFields() {
-          return this.unknownFields;
-        }
-        private IntegerVariable(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          initFields();
-          int mutable_bitField0_ = 0;
-          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-              com.google.protobuf.UnknownFieldSet.newBuilder();
-          try {
-            boolean done = false;
-            while (!done) {
-              int tag = input.readTag();
-              switch (tag) {
-                case 0:
-                  done = true;
-                  break;
-                default: {
-                  if (!parseUnknownField(input, unknownFields,
-                                         extensionRegistry, tag)) {
-                    done = true;
-                  }
-                  break;
-                }
-                case 10: {
-                  bitField0_ |= 0x00000001;
-                  key_ = input.readBytes();
-                  break;
-                }
-                case 16: {
-                  bitField0_ |= 0x00000002;
-                  value_ = input.readInt32();
-                  break;
-                }
-              }
-            }
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-          } catch (java.io.IOException e) {
-            throw new com.google.protobuf.InvalidProtocolBufferException(
-                e.getMessage()).setUnfinishedMessage(this);
-          } finally {
-            this.unknownFields = unknownFields.build();
-            makeExtensionsImmutable();
-          }
-        }
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor;
-        }
-
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_IntegerVariable_fieldAccessorTable
-              .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder.class);
-        }
-
-        public static com.google.protobuf.Parser<IntegerVariable> PARSER =
-            new com.google.protobuf.AbstractParser<IntegerVariable>() {
-          public IntegerVariable parsePartialFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws com.google.protobuf.InvalidProtocolBufferException {
-            return new IntegerVariable(input, extensionRegistry);
-          }
-        };
-
-        @java.lang.Override
-        public com.google.protobuf.Parser<IntegerVariable> getParserForType() {
-          return PARSER;
-        }
-
-        private int bitField0_;
-        // required string key = 1;
-        public static final int KEY_FIELD_NUMBER = 1;
-        private java.lang.Object key_;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public boolean hasKey() {
-          return ((bitField0_ & 0x00000001) == 0x00000001);
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
-          } else {
-            com.google.protobuf.ByteString bs = 
-                (com.google.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
-            if (bs.isValidUtf8()) {
-              key_ = s;
-            }
-            return s;
-          }
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public com.google.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
-            key_ = b;
-            return b;
-          } else {
-            return (com.google.protobuf.ByteString) ref;
-          }
-        }
-
-        // required int32 value = 2;
-        public static final int VALUE_FIELD_NUMBER = 2;
-        private int value_;
-        /**
-         * <code>required int32 value = 2;</code>
-         */
-        public boolean hasValue() {
-          return ((bitField0_ & 0x00000002) == 0x00000002);
-        }
-        /**
-         * <code>required int32 value = 2;</code>
-         */
-        public int getValue() {
-          return value_;
-        }
-
-        private void initFields() {
-          key_ = "";
-          value_ = 0;
-        }
-        private byte memoizedIsInitialized = -1;
-        public final boolean isInitialized() {
-          byte isInitialized = memoizedIsInitialized;
-          if (isInitialized != -1) return isInitialized == 1;
-
-          if (!hasKey()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          if (!hasValue()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          memoizedIsInitialized = 1;
-          return true;
-        }
-
-        public void writeTo(com.google.protobuf.CodedOutputStream output)
-                            throws java.io.IOException {
-          getSerializedSize();
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            output.writeBytes(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            output.writeInt32(2, value_);
-          }
-          getUnknownFields().writeTo(output);
-        }
-
-        private int memoizedSerializedSize = -1;
-        public int getSerializedSize() {
-          int size = memoizedSerializedSize;
-          if (size != -1) return size;
-
-          size = 0;
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeInt32Size(2, value_);
-          }
-          size += getUnknownFields().getSerializedSize();
-          memoizedSerializedSize = size;
-          return size;
-        }
-
-        private static final long serialVersionUID = 0L;
-        @java.lang.Override
-        protected java.lang.Object writeReplace()
-            throws java.io.ObjectStreamException {
-          return super.writeReplace();
-        }
-
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            com.google.protobuf.ByteString data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            com.google.protobuf.ByteString data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(byte[] data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            byte[] data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseDelimitedFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseDelimitedFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            com.google.protobuf.CodedInputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parseFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-
-        public static Builder newBuilder() { return Builder.create(); }
-        public Builder newBuilderForType() { return newBuilder(); }
-        public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable prototype) {
-          return newBuilder().mergeFrom(prototype);
-        }
-        public Builder toBuilder() { return newBuilder(this); }
-
-        @java.lang.Override
-        protected Builder newBuilderForType(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-          Builder builder = new Builder(parent);
-          return builder;
-        }
-        /**
-         * Protobuf type {@code knime.Command.PutFlowVariables.IntegerVariable}
-         */
-        public static final class Builder extends
-            com.google.protobuf.GeneratedMessage.Builder<Builder>
-           implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder {
-          public static final com.google.protobuf.Descriptors.Descriptor
-              getDescriptor() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor;
-          }
-
-          protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-              internalGetFieldAccessorTable() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_IntegerVariable_fieldAccessorTable
-                .ensureFieldAccessorsInitialized(
-                    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder.class);
-          }
-
-          // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.newBuilder()
-          private Builder() {
-            maybeForceBuilderInitialization();
-          }
-
-          private Builder(
-              com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-            super(parent);
-            maybeForceBuilderInitialization();
-          }
-          private void maybeForceBuilderInitialization() {
-            if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            }
-          }
-          private static Builder create() {
-            return new Builder();
-          }
-
-          public Builder clear() {
-            super.clear();
-            key_ = "";
-            bitField0_ = (bitField0_ & ~0x00000001);
-            value_ = 0;
-            bitField0_ = (bitField0_ & ~0x00000002);
-            return this;
-          }
-
-          public Builder clone() {
-            return create().mergeFrom(buildPartial());
-          }
-
-          public com.google.protobuf.Descriptors.Descriptor
-              getDescriptorForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable getDefaultInstanceForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.getDefaultInstance();
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable build() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable result = buildPartial();
-            if (!result.isInitialized()) {
-              throw newUninitializedMessageException(result);
-            }
-            return result;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable buildPartial() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable(this);
-            int from_bitField0_ = bitField0_;
-            int to_bitField0_ = 0;
-            if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-              to_bitField0_ |= 0x00000001;
-            }
-            result.key_ = key_;
-            if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-              to_bitField0_ |= 0x00000002;
-            }
-            result.value_ = value_;
-            result.bitField0_ = to_bitField0_;
-            onBuilt();
-            return result;
-          }
-
-          public Builder mergeFrom(com.google.protobuf.Message other) {
-            if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable) {
-              return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable)other);
-            } else {
-              super.mergeFrom(other);
-              return this;
-            }
-          }
-
-          public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable other) {
-            if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.getDefaultInstance()) return this;
-            if (other.hasKey()) {
-              bitField0_ |= 0x00000001;
-              key_ = other.key_;
-              onChanged();
-            }
-            if (other.hasValue()) {
-              setValue(other.getValue());
-            }
-            this.mergeUnknownFields(other.getUnknownFields());
-            return this;
-          }
-
-          public final boolean isInitialized() {
-            if (!hasKey()) {
-              
-              return false;
-            }
-            if (!hasValue()) {
-              
-              return false;
-            }
-            return true;
-          }
-
-          public Builder mergeFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws java.io.IOException {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable parsedMessage = null;
-            try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable) e.getUnfinishedMessage();
-              throw e;
-            } finally {
-              if (parsedMessage != null) {
-                mergeFrom(parsedMessage);
-              }
-            }
-            return this;
-          }
-          private int bitField0_;
-
-          // required string key = 1;
-          private java.lang.Object key_ = "";
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public boolean hasKey() {
-            return ((bitField0_ & 0x00000001) == 0x00000001);
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public java.lang.String getKey() {
-            java.lang.Object ref = key_;
-            if (!(ref instanceof java.lang.String)) {
-              java.lang.String s = ((com.google.protobuf.ByteString) ref)
-                  .toStringUtf8();
-              key_ = s;
-              return s;
-            } else {
-              return (java.lang.String) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public com.google.protobuf.ByteString
-              getKeyBytes() {
-            java.lang.Object ref = key_;
-            if (ref instanceof String) {
-              com.google.protobuf.ByteString b = 
-                  com.google.protobuf.ByteString.copyFromUtf8(
-                      (java.lang.String) ref);
-              key_ = b;
-              return b;
-            } else {
-              return (com.google.protobuf.ByteString) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKey(
-              java.lang.String value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder clearKey() {
-            bitField0_ = (bitField0_ & ~0x00000001);
-            key_ = getDefaultInstance().getKey();
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKeyBytes(
-              com.google.protobuf.ByteString value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-
-          // required int32 value = 2;
-          private int value_ ;
-          /**
-           * <code>required int32 value = 2;</code>
-           */
-          public boolean hasValue() {
-            return ((bitField0_ & 0x00000002) == 0x00000002);
-          }
-          /**
-           * <code>required int32 value = 2;</code>
-           */
-          public int getValue() {
-            return value_;
-          }
-          /**
-           * <code>required int32 value = 2;</code>
-           */
-          public Builder setValue(int value) {
-            bitField0_ |= 0x00000002;
-            value_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required int32 value = 2;</code>
-           */
-          public Builder clearValue() {
-            bitField0_ = (bitField0_ & ~0x00000002);
-            value_ = 0;
-            onChanged();
-            return this;
-          }
-
-          // @@protoc_insertion_point(builder_scope:knime.Command.PutFlowVariables.IntegerVariable)
-        }
-
-        static {
-          defaultInstance = new IntegerVariable(true);
-          defaultInstance.initFields();
-        }
-
-        // @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.IntegerVariable)
-      }
-
-      public interface DoubleVariableOrBuilder
-          extends com.google.protobuf.MessageOrBuilder {
-
-        // required string key = 1;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        boolean hasKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        java.lang.String getKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        com.google.protobuf.ByteString
-            getKeyBytes();
-
-        // required double value = 2;
-        /**
-         * <code>required double value = 2;</code>
-         */
-        boolean hasValue();
-        /**
-         * <code>required double value = 2;</code>
-         */
-        double getValue();
-      }
-      /**
-       * Protobuf type {@code knime.Command.PutFlowVariables.DoubleVariable}
-       */
-      public static final class DoubleVariable extends
-          com.google.protobuf.GeneratedMessage
-          implements DoubleVariableOrBuilder {
-        // Use DoubleVariable.newBuilder() to construct.
-        private DoubleVariable(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-          super(builder);
-          this.unknownFields = builder.getUnknownFields();
-        }
-        private DoubleVariable(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-        private static final DoubleVariable defaultInstance;
-        public static DoubleVariable getDefaultInstance() {
-          return defaultInstance;
-        }
-
-        public DoubleVariable getDefaultInstanceForType() {
-          return defaultInstance;
-        }
-
-        private final com.google.protobuf.UnknownFieldSet unknownFields;
-        @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
-            getUnknownFields() {
-          return this.unknownFields;
-        }
-        private DoubleVariable(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          initFields();
-          int mutable_bitField0_ = 0;
-          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-              com.google.protobuf.UnknownFieldSet.newBuilder();
-          try {
-            boolean done = false;
-            while (!done) {
-              int tag = input.readTag();
-              switch (tag) {
-                case 0:
-                  done = true;
-                  break;
-                default: {
-                  if (!parseUnknownField(input, unknownFields,
-                                         extensionRegistry, tag)) {
-                    done = true;
-                  }
-                  break;
-                }
-                case 10: {
-                  bitField0_ |= 0x00000001;
-                  key_ = input.readBytes();
-                  break;
-                }
-                case 17: {
-                  bitField0_ |= 0x00000002;
-                  value_ = input.readDouble();
-                  break;
-                }
-              }
-            }
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-          } catch (java.io.IOException e) {
-            throw new com.google.protobuf.InvalidProtocolBufferException(
-                e.getMessage()).setUnfinishedMessage(this);
-          } finally {
-            this.unknownFields = unknownFields.build();
-            makeExtensionsImmutable();
-          }
-        }
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor;
-        }
-
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_DoubleVariable_fieldAccessorTable
-              .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder.class);
-        }
-
-        public static com.google.protobuf.Parser<DoubleVariable> PARSER =
-            new com.google.protobuf.AbstractParser<DoubleVariable>() {
-          public DoubleVariable parsePartialFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws com.google.protobuf.InvalidProtocolBufferException {
-            return new DoubleVariable(input, extensionRegistry);
-          }
-        };
-
-        @java.lang.Override
-        public com.google.protobuf.Parser<DoubleVariable> getParserForType() {
-          return PARSER;
-        }
-
-        private int bitField0_;
-        // required string key = 1;
-        public static final int KEY_FIELD_NUMBER = 1;
-        private java.lang.Object key_;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public boolean hasKey() {
-          return ((bitField0_ & 0x00000001) == 0x00000001);
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
-          } else {
-            com.google.protobuf.ByteString bs = 
-                (com.google.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
-            if (bs.isValidUtf8()) {
-              key_ = s;
-            }
-            return s;
-          }
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public com.google.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
-            key_ = b;
-            return b;
-          } else {
-            return (com.google.protobuf.ByteString) ref;
-          }
-        }
-
-        // required double value = 2;
-        public static final int VALUE_FIELD_NUMBER = 2;
-        private double value_;
-        /**
-         * <code>required double value = 2;</code>
-         */
-        public boolean hasValue() {
-          return ((bitField0_ & 0x00000002) == 0x00000002);
-        }
-        /**
-         * <code>required double value = 2;</code>
-         */
-        public double getValue() {
-          return value_;
-        }
-
-        private void initFields() {
-          key_ = "";
-          value_ = 0D;
-        }
-        private byte memoizedIsInitialized = -1;
-        public final boolean isInitialized() {
-          byte isInitialized = memoizedIsInitialized;
-          if (isInitialized != -1) return isInitialized == 1;
-
-          if (!hasKey()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          if (!hasValue()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          memoizedIsInitialized = 1;
-          return true;
-        }
-
-        public void writeTo(com.google.protobuf.CodedOutputStream output)
-                            throws java.io.IOException {
-          getSerializedSize();
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            output.writeBytes(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            output.writeDouble(2, value_);
-          }
-          getUnknownFields().writeTo(output);
-        }
-
-        private int memoizedSerializedSize = -1;
-        public int getSerializedSize() {
-          int size = memoizedSerializedSize;
-          if (size != -1) return size;
-
-          size = 0;
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeDoubleSize(2, value_);
-          }
-          size += getUnknownFields().getSerializedSize();
-          memoizedSerializedSize = size;
-          return size;
-        }
-
-        private static final long serialVersionUID = 0L;
-        @java.lang.Override
-        protected java.lang.Object writeReplace()
-            throws java.io.ObjectStreamException {
-          return super.writeReplace();
-        }
-
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            com.google.protobuf.ByteString data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            com.google.protobuf.ByteString data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(byte[] data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            byte[] data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseDelimitedFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseDelimitedFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            com.google.protobuf.CodedInputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parseFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-
-        public static Builder newBuilder() { return Builder.create(); }
-        public Builder newBuilderForType() { return newBuilder(); }
-        public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable prototype) {
-          return newBuilder().mergeFrom(prototype);
-        }
-        public Builder toBuilder() { return newBuilder(this); }
-
-        @java.lang.Override
-        protected Builder newBuilderForType(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-          Builder builder = new Builder(parent);
-          return builder;
-        }
-        /**
-         * Protobuf type {@code knime.Command.PutFlowVariables.DoubleVariable}
-         */
-        public static final class Builder extends
-            com.google.protobuf.GeneratedMessage.Builder<Builder>
-           implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder {
-          public static final com.google.protobuf.Descriptors.Descriptor
-              getDescriptor() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor;
-          }
-
-          protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-              internalGetFieldAccessorTable() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_DoubleVariable_fieldAccessorTable
-                .ensureFieldAccessorsInitialized(
-                    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder.class);
-          }
-
-          // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.newBuilder()
-          private Builder() {
-            maybeForceBuilderInitialization();
-          }
-
-          private Builder(
-              com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-            super(parent);
-            maybeForceBuilderInitialization();
-          }
-          private void maybeForceBuilderInitialization() {
-            if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            }
-          }
-          private static Builder create() {
-            return new Builder();
-          }
-
-          public Builder clear() {
-            super.clear();
-            key_ = "";
-            bitField0_ = (bitField0_ & ~0x00000001);
-            value_ = 0D;
-            bitField0_ = (bitField0_ & ~0x00000002);
-            return this;
-          }
-
-          public Builder clone() {
-            return create().mergeFrom(buildPartial());
-          }
-
-          public com.google.protobuf.Descriptors.Descriptor
-              getDescriptorForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable getDefaultInstanceForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.getDefaultInstance();
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable build() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable result = buildPartial();
-            if (!result.isInitialized()) {
-              throw newUninitializedMessageException(result);
-            }
-            return result;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable buildPartial() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable(this);
-            int from_bitField0_ = bitField0_;
-            int to_bitField0_ = 0;
-            if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-              to_bitField0_ |= 0x00000001;
-            }
-            result.key_ = key_;
-            if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-              to_bitField0_ |= 0x00000002;
-            }
-            result.value_ = value_;
-            result.bitField0_ = to_bitField0_;
-            onBuilt();
-            return result;
-          }
-
-          public Builder mergeFrom(com.google.protobuf.Message other) {
-            if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable) {
-              return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable)other);
-            } else {
-              super.mergeFrom(other);
-              return this;
-            }
-          }
-
-          public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable other) {
-            if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.getDefaultInstance()) return this;
-            if (other.hasKey()) {
-              bitField0_ |= 0x00000001;
-              key_ = other.key_;
-              onChanged();
-            }
-            if (other.hasValue()) {
-              setValue(other.getValue());
-            }
-            this.mergeUnknownFields(other.getUnknownFields());
-            return this;
-          }
-
-          public final boolean isInitialized() {
-            if (!hasKey()) {
-              
-              return false;
-            }
-            if (!hasValue()) {
-              
-              return false;
-            }
-            return true;
-          }
-
-          public Builder mergeFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws java.io.IOException {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable parsedMessage = null;
-            try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable) e.getUnfinishedMessage();
-              throw e;
-            } finally {
-              if (parsedMessage != null) {
-                mergeFrom(parsedMessage);
-              }
-            }
-            return this;
-          }
-          private int bitField0_;
-
-          // required string key = 1;
-          private java.lang.Object key_ = "";
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public boolean hasKey() {
-            return ((bitField0_ & 0x00000001) == 0x00000001);
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public java.lang.String getKey() {
-            java.lang.Object ref = key_;
-            if (!(ref instanceof java.lang.String)) {
-              java.lang.String s = ((com.google.protobuf.ByteString) ref)
-                  .toStringUtf8();
-              key_ = s;
-              return s;
-            } else {
-              return (java.lang.String) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public com.google.protobuf.ByteString
-              getKeyBytes() {
-            java.lang.Object ref = key_;
-            if (ref instanceof String) {
-              com.google.protobuf.ByteString b = 
-                  com.google.protobuf.ByteString.copyFromUtf8(
-                      (java.lang.String) ref);
-              key_ = b;
-              return b;
-            } else {
-              return (com.google.protobuf.ByteString) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKey(
-              java.lang.String value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder clearKey() {
-            bitField0_ = (bitField0_ & ~0x00000001);
-            key_ = getDefaultInstance().getKey();
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKeyBytes(
-              com.google.protobuf.ByteString value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-
-          // required double value = 2;
-          private double value_ ;
-          /**
-           * <code>required double value = 2;</code>
-           */
-          public boolean hasValue() {
-            return ((bitField0_ & 0x00000002) == 0x00000002);
-          }
-          /**
-           * <code>required double value = 2;</code>
-           */
-          public double getValue() {
-            return value_;
-          }
-          /**
-           * <code>required double value = 2;</code>
-           */
-          public Builder setValue(double value) {
-            bitField0_ |= 0x00000002;
-            value_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required double value = 2;</code>
-           */
-          public Builder clearValue() {
-            bitField0_ = (bitField0_ & ~0x00000002);
-            value_ = 0D;
-            onChanged();
-            return this;
-          }
-
-          // @@protoc_insertion_point(builder_scope:knime.Command.PutFlowVariables.DoubleVariable)
-        }
-
-        static {
-          defaultInstance = new DoubleVariable(true);
-          defaultInstance.initFields();
-        }
-
-        // @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.DoubleVariable)
-      }
-
-      public interface StringVariableOrBuilder
-          extends com.google.protobuf.MessageOrBuilder {
-
-        // required string key = 1;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        boolean hasKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        java.lang.String getKey();
-        /**
-         * <code>required string key = 1;</code>
-         */
-        com.google.protobuf.ByteString
-            getKeyBytes();
-
-        // required string value = 2;
-        /**
-         * <code>required string value = 2;</code>
-         */
-        boolean hasValue();
-        /**
-         * <code>required string value = 2;</code>
-         */
-        java.lang.String getValue();
-        /**
-         * <code>required string value = 2;</code>
-         */
-        com.google.protobuf.ByteString
-            getValueBytes();
-      }
-      /**
-       * Protobuf type {@code knime.Command.PutFlowVariables.StringVariable}
-       */
-      public static final class StringVariable extends
-          com.google.protobuf.GeneratedMessage
-          implements StringVariableOrBuilder {
-        // Use StringVariable.newBuilder() to construct.
-        private StringVariable(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-          super(builder);
-          this.unknownFields = builder.getUnknownFields();
-        }
-        private StringVariable(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-        private static final StringVariable defaultInstance;
-        public static StringVariable getDefaultInstance() {
-          return defaultInstance;
-        }
-
-        public StringVariable getDefaultInstanceForType() {
-          return defaultInstance;
-        }
-
-        private final com.google.protobuf.UnknownFieldSet unknownFields;
-        @java.lang.Override
-        public final com.google.protobuf.UnknownFieldSet
-            getUnknownFields() {
-          return this.unknownFields;
-        }
-        private StringVariable(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          initFields();
-          int mutable_bitField0_ = 0;
-          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-              com.google.protobuf.UnknownFieldSet.newBuilder();
-          try {
-            boolean done = false;
-            while (!done) {
-              int tag = input.readTag();
-              switch (tag) {
-                case 0:
-                  done = true;
-                  break;
-                default: {
-                  if (!parseUnknownField(input, unknownFields,
-                                         extensionRegistry, tag)) {
-                    done = true;
-                  }
-                  break;
-                }
-                case 10: {
-                  bitField0_ |= 0x00000001;
-                  key_ = input.readBytes();
-                  break;
-                }
-                case 18: {
-                  bitField0_ |= 0x00000002;
-                  value_ = input.readBytes();
-                  break;
-                }
-              }
-            }
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-          } catch (java.io.IOException e) {
-            throw new com.google.protobuf.InvalidProtocolBufferException(
-                e.getMessage()).setUnfinishedMessage(this);
-          } finally {
-            this.unknownFields = unknownFields.build();
-            makeExtensionsImmutable();
-          }
-        }
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor;
-        }
-
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_StringVariable_fieldAccessorTable
-              .ensureFieldAccessorsInitialized(
-                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder.class);
-        }
-
-        public static com.google.protobuf.Parser<StringVariable> PARSER =
-            new com.google.protobuf.AbstractParser<StringVariable>() {
-          public StringVariable parsePartialFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws com.google.protobuf.InvalidProtocolBufferException {
-            return new StringVariable(input, extensionRegistry);
-          }
-        };
-
-        @java.lang.Override
-        public com.google.protobuf.Parser<StringVariable> getParserForType() {
-          return PARSER;
-        }
-
-        private int bitField0_;
-        // required string key = 1;
-        public static final int KEY_FIELD_NUMBER = 1;
-        private java.lang.Object key_;
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public boolean hasKey() {
-          return ((bitField0_ & 0x00000001) == 0x00000001);
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
-          } else {
-            com.google.protobuf.ByteString bs = 
-                (com.google.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
-            if (bs.isValidUtf8()) {
-              key_ = s;
-            }
-            return s;
-          }
-        }
-        /**
-         * <code>required string key = 1;</code>
-         */
-        public com.google.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
-          if (ref instanceof java.lang.String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
-            key_ = b;
-            return b;
-          } else {
-            return (com.google.protobuf.ByteString) ref;
-          }
-        }
-
-        // required string value = 2;
-        public static final int VALUE_FIELD_NUMBER = 2;
-        private java.lang.Object value_;
-        /**
-         * <code>required string value = 2;</code>
-         */
-        public boolean hasValue() {
-          return ((bitField0_ & 0x00000002) == 0x00000002);
-        }
-        /**
-         * <code>required string value = 2;</code>
-         */
-        public java.lang.String getValue() {
-          java.lang.Object ref = value_;
-          if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
-          } else {
-            com.google.protobuf.ByteString bs = 
-                (com.google.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
-            if (bs.isValidUtf8()) {
-              value_ = s;
-            }
-            return s;
-          }
-        }
-        /**
-         * <code>required string value = 2;</code>
-         */
-        public com.google.protobuf.ByteString
-            getValueBytes() {
-          java.lang.Object ref = value_;
-          if (ref instanceof java.lang.String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
-            value_ = b;
-            return b;
-          } else {
-            return (com.google.protobuf.ByteString) ref;
-          }
-        }
-
-        private void initFields() {
-          key_ = "";
-          value_ = "";
-        }
-        private byte memoizedIsInitialized = -1;
-        public final boolean isInitialized() {
-          byte isInitialized = memoizedIsInitialized;
-          if (isInitialized != -1) return isInitialized == 1;
-
-          if (!hasKey()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          if (!hasValue()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-          memoizedIsInitialized = 1;
-          return true;
-        }
-
-        public void writeTo(com.google.protobuf.CodedOutputStream output)
-                            throws java.io.IOException {
-          getSerializedSize();
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            output.writeBytes(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            output.writeBytes(2, getValueBytes());
-          }
-          getUnknownFields().writeTo(output);
-        }
-
-        private int memoizedSerializedSize = -1;
-        public int getSerializedSize() {
-          int size = memoizedSerializedSize;
-          if (size != -1) return size;
-
-          size = 0;
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(1, getKeyBytes());
-          }
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            size += com.google.protobuf.CodedOutputStream
-              .computeBytesSize(2, getValueBytes());
-          }
-          size += getUnknownFields().getSerializedSize();
-          memoizedSerializedSize = size;
-          return size;
-        }
-
-        private static final long serialVersionUID = 0L;
-        @java.lang.Override
-        protected java.lang.Object writeReplace()
-            throws java.io.ObjectStreamException {
-          return super.writeReplace();
-        }
-
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            com.google.protobuf.ByteString data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            com.google.protobuf.ByteString data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(byte[] data)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            byte[] data,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          return PARSER.parseFrom(data, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseDelimitedFrom(java.io.InputStream input)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseDelimitedFrom(
-            java.io.InputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseDelimitedFrom(input, extensionRegistry);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            com.google.protobuf.CodedInputStream input)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input);
-        }
-        public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parseFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          return PARSER.parseFrom(input, extensionRegistry);
-        }
-
-        public static Builder newBuilder() { return Builder.create(); }
-        public Builder newBuilderForType() { return newBuilder(); }
-        public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable prototype) {
-          return newBuilder().mergeFrom(prototype);
-        }
-        public Builder toBuilder() { return newBuilder(this); }
-
-        @java.lang.Override
-        protected Builder newBuilderForType(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-          Builder builder = new Builder(parent);
-          return builder;
-        }
-        /**
-         * Protobuf type {@code knime.Command.PutFlowVariables.StringVariable}
-         */
-        public static final class Builder extends
-            com.google.protobuf.GeneratedMessage.Builder<Builder>
-           implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder {
-          public static final com.google.protobuf.Descriptors.Descriptor
-              getDescriptor() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor;
-          }
-
-          protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-              internalGetFieldAccessorTable() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_StringVariable_fieldAccessorTable
-                .ensureFieldAccessorsInitialized(
-                    org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder.class);
-          }
-
-          // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.newBuilder()
-          private Builder() {
-            maybeForceBuilderInitialization();
-          }
-
-          private Builder(
-              com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-            super(parent);
-            maybeForceBuilderInitialization();
-          }
-          private void maybeForceBuilderInitialization() {
-            if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            }
-          }
-          private static Builder create() {
-            return new Builder();
-          }
-
-          public Builder clear() {
-            super.clear();
-            key_ = "";
-            bitField0_ = (bitField0_ & ~0x00000001);
-            value_ = "";
-            bitField0_ = (bitField0_ & ~0x00000002);
-            return this;
-          }
-
-          public Builder clone() {
-            return create().mergeFrom(buildPartial());
-          }
-
-          public com.google.protobuf.Descriptors.Descriptor
-              getDescriptorForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable getDefaultInstanceForType() {
-            return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.getDefaultInstance();
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable build() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable result = buildPartial();
-            if (!result.isInitialized()) {
-              throw newUninitializedMessageException(result);
-            }
-            return result;
-          }
-
-          public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable buildPartial() {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable(this);
-            int from_bitField0_ = bitField0_;
-            int to_bitField0_ = 0;
-            if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-              to_bitField0_ |= 0x00000001;
-            }
-            result.key_ = key_;
-            if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-              to_bitField0_ |= 0x00000002;
-            }
-            result.value_ = value_;
-            result.bitField0_ = to_bitField0_;
-            onBuilt();
-            return result;
-          }
-
-          public Builder mergeFrom(com.google.protobuf.Message other) {
-            if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable) {
-              return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable)other);
-            } else {
-              super.mergeFrom(other);
-              return this;
-            }
-          }
-
-          public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable other) {
-            if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.getDefaultInstance()) return this;
-            if (other.hasKey()) {
-              bitField0_ |= 0x00000001;
-              key_ = other.key_;
-              onChanged();
-            }
-            if (other.hasValue()) {
-              bitField0_ |= 0x00000002;
-              value_ = other.value_;
-              onChanged();
-            }
-            this.mergeUnknownFields(other.getUnknownFields());
-            return this;
-          }
-
-          public final boolean isInitialized() {
-            if (!hasKey()) {
-              
-              return false;
-            }
-            if (!hasValue()) {
-              
-              return false;
-            }
-            return true;
-          }
-
-          public Builder mergeFrom(
-              com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws java.io.IOException {
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable parsedMessage = null;
-            try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable) e.getUnfinishedMessage();
-              throw e;
-            } finally {
-              if (parsedMessage != null) {
-                mergeFrom(parsedMessage);
-              }
-            }
-            return this;
-          }
-          private int bitField0_;
-
-          // required string key = 1;
-          private java.lang.Object key_ = "";
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public boolean hasKey() {
-            return ((bitField0_ & 0x00000001) == 0x00000001);
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public java.lang.String getKey() {
-            java.lang.Object ref = key_;
-            if (!(ref instanceof java.lang.String)) {
-              java.lang.String s = ((com.google.protobuf.ByteString) ref)
-                  .toStringUtf8();
-              key_ = s;
-              return s;
-            } else {
-              return (java.lang.String) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public com.google.protobuf.ByteString
-              getKeyBytes() {
-            java.lang.Object ref = key_;
-            if (ref instanceof String) {
-              com.google.protobuf.ByteString b = 
-                  com.google.protobuf.ByteString.copyFromUtf8(
-                      (java.lang.String) ref);
-              key_ = b;
-              return b;
-            } else {
-              return (com.google.protobuf.ByteString) ref;
-            }
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKey(
-              java.lang.String value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder clearKey() {
-            bitField0_ = (bitField0_ & ~0x00000001);
-            key_ = getDefaultInstance().getKey();
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string key = 1;</code>
-           */
-          public Builder setKeyBytes(
-              com.google.protobuf.ByteString value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-            key_ = value;
-            onChanged();
-            return this;
-          }
-
-          // required string value = 2;
-          private java.lang.Object value_ = "";
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public boolean hasValue() {
-            return ((bitField0_ & 0x00000002) == 0x00000002);
-          }
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public java.lang.String getValue() {
-            java.lang.Object ref = value_;
-            if (!(ref instanceof java.lang.String)) {
-              java.lang.String s = ((com.google.protobuf.ByteString) ref)
-                  .toStringUtf8();
-              value_ = s;
-              return s;
-            } else {
-              return (java.lang.String) ref;
-            }
-          }
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public com.google.protobuf.ByteString
-              getValueBytes() {
-            java.lang.Object ref = value_;
-            if (ref instanceof String) {
-              com.google.protobuf.ByteString b = 
-                  com.google.protobuf.ByteString.copyFromUtf8(
-                      (java.lang.String) ref);
-              value_ = b;
-              return b;
-            } else {
-              return (com.google.protobuf.ByteString) ref;
-            }
-          }
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public Builder setValue(
-              java.lang.String value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
-            value_ = value;
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public Builder clearValue() {
-            bitField0_ = (bitField0_ & ~0x00000002);
-            value_ = getDefaultInstance().getValue();
-            onChanged();
-            return this;
-          }
-          /**
-           * <code>required string value = 2;</code>
-           */
-          public Builder setValueBytes(
-              com.google.protobuf.ByteString value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
-            value_ = value;
-            onChanged();
-            return this;
-          }
-
-          // @@protoc_insertion_point(builder_scope:knime.Command.PutFlowVariables.StringVariable)
-        }
-
-        static {
-          defaultInstance = new StringVariable(true);
-          defaultInstance.initFields();
-        }
-
-        // @@protoc_insertion_point(class_scope:knime.Command.PutFlowVariables.StringVariable)
       }
 
       private int bitField0_;
@@ -3083,119 +1250,31 @@ public final class ProtobufPythonKernelCommand {
         }
       }
 
-      // repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;
-      public static final int INTEGERVARIABLE_FIELD_NUMBER = 2;
-      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> integerVariable_;
+      // required .knime.Variables variables = 2;
+      public static final int VARIABLES_FIELD_NUMBER = 2;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables variables_;
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> getIntegerVariableList() {
-        return integerVariable_;
+      public boolean hasVariables() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder> 
-          getIntegerVariableOrBuilderList() {
-        return integerVariable_;
+      public org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables getVariables() {
+        return variables_;
       }
       /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+       * <code>required .knime.Variables variables = 2;</code>
        */
-      public int getIntegerVariableCount() {
-        return integerVariable_.size();
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable getIntegerVariable(int index) {
-        return integerVariable_.get(index);
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder getIntegerVariableOrBuilder(
-          int index) {
-        return integerVariable_.get(index);
-      }
-
-      // repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;
-      public static final int DOUBLEVARIABLE_FIELD_NUMBER = 3;
-      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> doubleVariable_;
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> getDoubleVariableList() {
-        return doubleVariable_;
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder> 
-          getDoubleVariableOrBuilderList() {
-        return doubleVariable_;
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      public int getDoubleVariableCount() {
-        return doubleVariable_.size();
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable getDoubleVariable(int index) {
-        return doubleVariable_.get(index);
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder getDoubleVariableOrBuilder(
-          int index) {
-        return doubleVariable_.get(index);
-      }
-
-      // repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;
-      public static final int STRINGVARIABLE_FIELD_NUMBER = 4;
-      private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> stringVariable_;
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> getStringVariableList() {
-        return stringVariable_;
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder> 
-          getStringVariableOrBuilderList() {
-        return stringVariable_;
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      public int getStringVariableCount() {
-        return stringVariable_.size();
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable getStringVariable(int index) {
-        return stringVariable_.get(index);
-      }
-      /**
-       * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-       */
-      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder getStringVariableOrBuilder(
-          int index) {
-        return stringVariable_.get(index);
+      public org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder getVariablesOrBuilder() {
+        return variables_;
       }
 
       private void initFields() {
         key_ = "";
-        integerVariable_ = java.util.Collections.emptyList();
-        doubleVariable_ = java.util.Collections.emptyList();
-        stringVariable_ = java.util.Collections.emptyList();
+        variables_ = org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -3206,23 +1285,13 @@ public final class ProtobufPythonKernelCommand {
           memoizedIsInitialized = 0;
           return false;
         }
-        for (int i = 0; i < getIntegerVariableCount(); i++) {
-          if (!getIntegerVariable(i).isInitialized()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
+        if (!hasVariables()) {
+          memoizedIsInitialized = 0;
+          return false;
         }
-        for (int i = 0; i < getDoubleVariableCount(); i++) {
-          if (!getDoubleVariable(i).isInitialized()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
-        }
-        for (int i = 0; i < getStringVariableCount(); i++) {
-          if (!getStringVariable(i).isInitialized()) {
-            memoizedIsInitialized = 0;
-            return false;
-          }
+        if (!getVariables().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
         }
         memoizedIsInitialized = 1;
         return true;
@@ -3234,14 +1303,8 @@ public final class ProtobufPythonKernelCommand {
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           output.writeBytes(1, getKeyBytes());
         }
-        for (int i = 0; i < integerVariable_.size(); i++) {
-          output.writeMessage(2, integerVariable_.get(i));
-        }
-        for (int i = 0; i < doubleVariable_.size(); i++) {
-          output.writeMessage(3, doubleVariable_.get(i));
-        }
-        for (int i = 0; i < stringVariable_.size(); i++) {
-          output.writeMessage(4, stringVariable_.get(i));
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeMessage(2, variables_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -3256,17 +1319,9 @@ public final class ProtobufPythonKernelCommand {
           size += com.google.protobuf.CodedOutputStream
             .computeBytesSize(1, getKeyBytes());
         }
-        for (int i = 0; i < integerVariable_.size(); i++) {
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(2, integerVariable_.get(i));
-        }
-        for (int i = 0; i < doubleVariable_.size(); i++) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(3, doubleVariable_.get(i));
-        }
-        for (int i = 0; i < stringVariable_.size(); i++) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(4, stringVariable_.get(i));
+            .computeMessageSize(2, variables_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -3376,9 +1431,7 @@ public final class ProtobufPythonKernelCommand {
         }
         private void maybeForceBuilderInitialization() {
           if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            getIntegerVariableFieldBuilder();
-            getDoubleVariableFieldBuilder();
-            getStringVariableFieldBuilder();
+            getVariablesFieldBuilder();
           }
         }
         private static Builder create() {
@@ -3389,24 +1442,12 @@ public final class ProtobufPythonKernelCommand {
           super.clear();
           key_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
-          if (integerVariableBuilder_ == null) {
-            integerVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000002);
+          if (variablesBuilder_ == null) {
+            variables_ = org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.getDefaultInstance();
           } else {
-            integerVariableBuilder_.clear();
+            variablesBuilder_.clear();
           }
-          if (doubleVariableBuilder_ == null) {
-            doubleVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000004);
-          } else {
-            doubleVariableBuilder_.clear();
-          }
-          if (stringVariableBuilder_ == null) {
-            stringVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000008);
-          } else {
-            stringVariableBuilder_.clear();
-          }
+          bitField0_ = (bitField0_ & ~0x00000002);
           return this;
         }
 
@@ -3439,32 +1480,13 @@ public final class ProtobufPythonKernelCommand {
             to_bitField0_ |= 0x00000001;
           }
           result.key_ = key_;
-          if (integerVariableBuilder_ == null) {
-            if (((bitField0_ & 0x00000002) == 0x00000002)) {
-              integerVariable_ = java.util.Collections.unmodifiableList(integerVariable_);
-              bitField0_ = (bitField0_ & ~0x00000002);
-            }
-            result.integerVariable_ = integerVariable_;
-          } else {
-            result.integerVariable_ = integerVariableBuilder_.build();
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
           }
-          if (doubleVariableBuilder_ == null) {
-            if (((bitField0_ & 0x00000004) == 0x00000004)) {
-              doubleVariable_ = java.util.Collections.unmodifiableList(doubleVariable_);
-              bitField0_ = (bitField0_ & ~0x00000004);
-            }
-            result.doubleVariable_ = doubleVariable_;
+          if (variablesBuilder_ == null) {
+            result.variables_ = variables_;
           } else {
-            result.doubleVariable_ = doubleVariableBuilder_.build();
-          }
-          if (stringVariableBuilder_ == null) {
-            if (((bitField0_ & 0x00000008) == 0x00000008)) {
-              stringVariable_ = java.util.Collections.unmodifiableList(stringVariable_);
-              bitField0_ = (bitField0_ & ~0x00000008);
-            }
-            result.stringVariable_ = stringVariable_;
-          } else {
-            result.stringVariable_ = stringVariableBuilder_.build();
+            result.variables_ = variablesBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
@@ -3487,83 +1509,8 @@ public final class ProtobufPythonKernelCommand {
             key_ = other.key_;
             onChanged();
           }
-          if (integerVariableBuilder_ == null) {
-            if (!other.integerVariable_.isEmpty()) {
-              if (integerVariable_.isEmpty()) {
-                integerVariable_ = other.integerVariable_;
-                bitField0_ = (bitField0_ & ~0x00000002);
-              } else {
-                ensureIntegerVariableIsMutable();
-                integerVariable_.addAll(other.integerVariable_);
-              }
-              onChanged();
-            }
-          } else {
-            if (!other.integerVariable_.isEmpty()) {
-              if (integerVariableBuilder_.isEmpty()) {
-                integerVariableBuilder_.dispose();
-                integerVariableBuilder_ = null;
-                integerVariable_ = other.integerVariable_;
-                bitField0_ = (bitField0_ & ~0x00000002);
-                integerVariableBuilder_ = 
-                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                     getIntegerVariableFieldBuilder() : null;
-              } else {
-                integerVariableBuilder_.addAllMessages(other.integerVariable_);
-              }
-            }
-          }
-          if (doubleVariableBuilder_ == null) {
-            if (!other.doubleVariable_.isEmpty()) {
-              if (doubleVariable_.isEmpty()) {
-                doubleVariable_ = other.doubleVariable_;
-                bitField0_ = (bitField0_ & ~0x00000004);
-              } else {
-                ensureDoubleVariableIsMutable();
-                doubleVariable_.addAll(other.doubleVariable_);
-              }
-              onChanged();
-            }
-          } else {
-            if (!other.doubleVariable_.isEmpty()) {
-              if (doubleVariableBuilder_.isEmpty()) {
-                doubleVariableBuilder_.dispose();
-                doubleVariableBuilder_ = null;
-                doubleVariable_ = other.doubleVariable_;
-                bitField0_ = (bitField0_ & ~0x00000004);
-                doubleVariableBuilder_ = 
-                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                     getDoubleVariableFieldBuilder() : null;
-              } else {
-                doubleVariableBuilder_.addAllMessages(other.doubleVariable_);
-              }
-            }
-          }
-          if (stringVariableBuilder_ == null) {
-            if (!other.stringVariable_.isEmpty()) {
-              if (stringVariable_.isEmpty()) {
-                stringVariable_ = other.stringVariable_;
-                bitField0_ = (bitField0_ & ~0x00000008);
-              } else {
-                ensureStringVariableIsMutable();
-                stringVariable_.addAll(other.stringVariable_);
-              }
-              onChanged();
-            }
-          } else {
-            if (!other.stringVariable_.isEmpty()) {
-              if (stringVariableBuilder_.isEmpty()) {
-                stringVariableBuilder_.dispose();
-                stringVariableBuilder_ = null;
-                stringVariable_ = other.stringVariable_;
-                bitField0_ = (bitField0_ & ~0x00000008);
-                stringVariableBuilder_ = 
-                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                     getStringVariableFieldBuilder() : null;
-              } else {
-                stringVariableBuilder_.addAllMessages(other.stringVariable_);
-              }
-            }
+          if (other.hasVariables()) {
+            mergeVariables(other.getVariables());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
@@ -3574,23 +1521,13 @@ public final class ProtobufPythonKernelCommand {
             
             return false;
           }
-          for (int i = 0; i < getIntegerVariableCount(); i++) {
-            if (!getIntegerVariable(i).isInitialized()) {
-              
-              return false;
-            }
+          if (!hasVariables()) {
+            
+            return false;
           }
-          for (int i = 0; i < getDoubleVariableCount(); i++) {
-            if (!getDoubleVariable(i).isInitialized()) {
-              
-              return false;
-            }
-          }
-          for (int i = 0; i < getStringVariableCount(); i++) {
-            if (!getStringVariable(i).isInitialized()) {
-              
-              return false;
-            }
+          if (!getVariables().isInitialized()) {
+            
+            return false;
           }
           return true;
         }
@@ -3688,724 +1625,121 @@ public final class ProtobufPythonKernelCommand {
           return this;
         }
 
-        // repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;
-        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> integerVariable_ =
-          java.util.Collections.emptyList();
-        private void ensureIntegerVariableIsMutable() {
-          if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-            integerVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable>(integerVariable_);
-            bitField0_ |= 0x00000002;
-           }
-        }
-
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder> integerVariableBuilder_;
-
+        // required .knime.Variables variables = 2;
+        private org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables variables_ = org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.getDefaultInstance();
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder> variablesBuilder_;
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> getIntegerVariableList() {
-          if (integerVariableBuilder_ == null) {
-            return java.util.Collections.unmodifiableList(integerVariable_);
+        public boolean hasVariables() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        /**
+         * <code>required .knime.Variables variables = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables getVariables() {
+          if (variablesBuilder_ == null) {
+            return variables_;
           } else {
-            return integerVariableBuilder_.getMessageList();
+            return variablesBuilder_.getMessage();
           }
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public int getIntegerVariableCount() {
-          if (integerVariableBuilder_ == null) {
-            return integerVariable_.size();
-          } else {
-            return integerVariableBuilder_.getCount();
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable getIntegerVariable(int index) {
-          if (integerVariableBuilder_ == null) {
-            return integerVariable_.get(index);
-          } else {
-            return integerVariableBuilder_.getMessage(index);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public Builder setIntegerVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable value) {
-          if (integerVariableBuilder_ == null) {
+        public Builder setVariables(org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables value) {
+          if (variablesBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureIntegerVariableIsMutable();
-            integerVariable_.set(index, value);
+            variables_ = value;
             onChanged();
           } else {
-            integerVariableBuilder_.setMessage(index, value);
+            variablesBuilder_.setMessage(value);
           }
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public Builder setIntegerVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder builderForValue) {
-          if (integerVariableBuilder_ == null) {
-            ensureIntegerVariableIsMutable();
-            integerVariable_.set(index, builderForValue.build());
+        public Builder setVariables(
+            org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder builderForValue) {
+          if (variablesBuilder_ == null) {
+            variables_ = builderForValue.build();
             onChanged();
           } else {
-            integerVariableBuilder_.setMessage(index, builderForValue.build());
+            variablesBuilder_.setMessage(builderForValue.build());
           }
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public Builder addIntegerVariable(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable value) {
-          if (integerVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
+        public Builder mergeVariables(org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables value) {
+          if (variablesBuilder_ == null) {
+            if (((bitField0_ & 0x00000002) == 0x00000002) &&
+                variables_ != org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.getDefaultInstance()) {
+              variables_ =
+                org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.newBuilder(variables_).mergeFrom(value).buildPartial();
+            } else {
+              variables_ = value;
             }
-            ensureIntegerVariableIsMutable();
-            integerVariable_.add(value);
             onChanged();
           } else {
-            integerVariableBuilder_.addMessage(value);
+            variablesBuilder_.mergeFrom(value);
           }
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public Builder addIntegerVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable value) {
-          if (integerVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureIntegerVariableIsMutable();
-            integerVariable_.add(index, value);
+        public Builder clearVariables() {
+          if (variablesBuilder_ == null) {
+            variables_ = org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.getDefaultInstance();
             onChanged();
           } else {
-            integerVariableBuilder_.addMessage(index, value);
+            variablesBuilder_.clear();
           }
+          bitField0_ = (bitField0_ & ~0x00000002);
           return this;
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public Builder addIntegerVariable(
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder builderForValue) {
-          if (integerVariableBuilder_ == null) {
-            ensureIntegerVariableIsMutable();
-            integerVariable_.add(builderForValue.build());
-            onChanged();
+        public org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder getVariablesBuilder() {
+          bitField0_ |= 0x00000002;
+          onChanged();
+          return getVariablesFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>required .knime.Variables variables = 2;</code>
+         */
+        public org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder getVariablesOrBuilder() {
+          if (variablesBuilder_ != null) {
+            return variablesBuilder_.getMessageOrBuilder();
           } else {
-            integerVariableBuilder_.addMessage(builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public Builder addIntegerVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder builderForValue) {
-          if (integerVariableBuilder_ == null) {
-            ensureIntegerVariableIsMutable();
-            integerVariable_.add(index, builderForValue.build());
-            onChanged();
-          } else {
-            integerVariableBuilder_.addMessage(index, builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public Builder addAllIntegerVariable(
-            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable> values) {
-          if (integerVariableBuilder_ == null) {
-            ensureIntegerVariableIsMutable();
-            super.addAll(values, integerVariable_);
-            onChanged();
-          } else {
-            integerVariableBuilder_.addAllMessages(values);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public Builder clearIntegerVariable() {
-          if (integerVariableBuilder_ == null) {
-            integerVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000002);
-            onChanged();
-          } else {
-            integerVariableBuilder_.clear();
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public Builder removeIntegerVariable(int index) {
-          if (integerVariableBuilder_ == null) {
-            ensureIntegerVariableIsMutable();
-            integerVariable_.remove(index);
-            onChanged();
-          } else {
-            integerVariableBuilder_.remove(index);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder getIntegerVariableBuilder(
-            int index) {
-          return getIntegerVariableFieldBuilder().getBuilder(index);
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder getIntegerVariableOrBuilder(
-            int index) {
-          if (integerVariableBuilder_ == null) {
-            return integerVariable_.get(index);  } else {
-            return integerVariableBuilder_.getMessageOrBuilder(index);
+            return variables_;
           }
         }
         /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
+         * <code>required .knime.Variables variables = 2;</code>
          */
-        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder> 
-             getIntegerVariableOrBuilderList() {
-          if (integerVariableBuilder_ != null) {
-            return integerVariableBuilder_.getMessageOrBuilderList();
-          } else {
-            return java.util.Collections.unmodifiableList(integerVariable_);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder addIntegerVariableBuilder() {
-          return getIntegerVariableFieldBuilder().addBuilder(
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder addIntegerVariableBuilder(
-            int index) {
-          return getIntegerVariableFieldBuilder().addBuilder(
-              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.IntegerVariable integerVariable = 2;</code>
-         */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder> 
-             getIntegerVariableBuilderList() {
-          return getIntegerVariableFieldBuilder().getBuilderList();
-        }
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder> 
-            getIntegerVariableFieldBuilder() {
-          if (integerVariableBuilder_ == null) {
-            integerVariableBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.IntegerVariableOrBuilder>(
-                    integerVariable_,
-                    ((bitField0_ & 0x00000002) == 0x00000002),
+        private com.google.protobuf.SingleFieldBuilder<
+            org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder> 
+            getVariablesFieldBuilder() {
+          if (variablesBuilder_ == null) {
+            variablesBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.Variables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelVariables.VariablesOrBuilder>(
+                    variables_,
                     getParentForChildren(),
                     isClean());
-            integerVariable_ = null;
+            variables_ = null;
           }
-          return integerVariableBuilder_;
-        }
-
-        // repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;
-        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> doubleVariable_ =
-          java.util.Collections.emptyList();
-        private void ensureDoubleVariableIsMutable() {
-          if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-            doubleVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable>(doubleVariable_);
-            bitField0_ |= 0x00000004;
-           }
-        }
-
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder> doubleVariableBuilder_;
-
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> getDoubleVariableList() {
-          if (doubleVariableBuilder_ == null) {
-            return java.util.Collections.unmodifiableList(doubleVariable_);
-          } else {
-            return doubleVariableBuilder_.getMessageList();
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public int getDoubleVariableCount() {
-          if (doubleVariableBuilder_ == null) {
-            return doubleVariable_.size();
-          } else {
-            return doubleVariableBuilder_.getCount();
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable getDoubleVariable(int index) {
-          if (doubleVariableBuilder_ == null) {
-            return doubleVariable_.get(index);
-          } else {
-            return doubleVariableBuilder_.getMessage(index);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder setDoubleVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable value) {
-          if (doubleVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.set(index, value);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.setMessage(index, value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder setDoubleVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder builderForValue) {
-          if (doubleVariableBuilder_ == null) {
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.set(index, builderForValue.build());
-            onChanged();
-          } else {
-            doubleVariableBuilder_.setMessage(index, builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder addDoubleVariable(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable value) {
-          if (doubleVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.add(value);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.addMessage(value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder addDoubleVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable value) {
-          if (doubleVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.add(index, value);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.addMessage(index, value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder addDoubleVariable(
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder builderForValue) {
-          if (doubleVariableBuilder_ == null) {
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.add(builderForValue.build());
-            onChanged();
-          } else {
-            doubleVariableBuilder_.addMessage(builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder addDoubleVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder builderForValue) {
-          if (doubleVariableBuilder_ == null) {
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.add(index, builderForValue.build());
-            onChanged();
-          } else {
-            doubleVariableBuilder_.addMessage(index, builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder addAllDoubleVariable(
-            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable> values) {
-          if (doubleVariableBuilder_ == null) {
-            ensureDoubleVariableIsMutable();
-            super.addAll(values, doubleVariable_);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.addAllMessages(values);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder clearDoubleVariable() {
-          if (doubleVariableBuilder_ == null) {
-            doubleVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000004);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.clear();
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public Builder removeDoubleVariable(int index) {
-          if (doubleVariableBuilder_ == null) {
-            ensureDoubleVariableIsMutable();
-            doubleVariable_.remove(index);
-            onChanged();
-          } else {
-            doubleVariableBuilder_.remove(index);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder getDoubleVariableBuilder(
-            int index) {
-          return getDoubleVariableFieldBuilder().getBuilder(index);
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder getDoubleVariableOrBuilder(
-            int index) {
-          if (doubleVariableBuilder_ == null) {
-            return doubleVariable_.get(index);  } else {
-            return doubleVariableBuilder_.getMessageOrBuilder(index);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder> 
-             getDoubleVariableOrBuilderList() {
-          if (doubleVariableBuilder_ != null) {
-            return doubleVariableBuilder_.getMessageOrBuilderList();
-          } else {
-            return java.util.Collections.unmodifiableList(doubleVariable_);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder addDoubleVariableBuilder() {
-          return getDoubleVariableFieldBuilder().addBuilder(
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder addDoubleVariableBuilder(
-            int index) {
-          return getDoubleVariableFieldBuilder().addBuilder(
-              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.DoubleVariable doubleVariable = 3;</code>
-         */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder> 
-             getDoubleVariableBuilderList() {
-          return getDoubleVariableFieldBuilder().getBuilderList();
-        }
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder> 
-            getDoubleVariableFieldBuilder() {
-          if (doubleVariableBuilder_ == null) {
-            doubleVariableBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.DoubleVariableOrBuilder>(
-                    doubleVariable_,
-                    ((bitField0_ & 0x00000004) == 0x00000004),
-                    getParentForChildren(),
-                    isClean());
-            doubleVariable_ = null;
-          }
-          return doubleVariableBuilder_;
-        }
-
-        // repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;
-        private java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> stringVariable_ =
-          java.util.Collections.emptyList();
-        private void ensureStringVariableIsMutable() {
-          if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-            stringVariable_ = new java.util.ArrayList<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable>(stringVariable_);
-            bitField0_ |= 0x00000008;
-           }
-        }
-
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder> stringVariableBuilder_;
-
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> getStringVariableList() {
-          if (stringVariableBuilder_ == null) {
-            return java.util.Collections.unmodifiableList(stringVariable_);
-          } else {
-            return stringVariableBuilder_.getMessageList();
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public int getStringVariableCount() {
-          if (stringVariableBuilder_ == null) {
-            return stringVariable_.size();
-          } else {
-            return stringVariableBuilder_.getCount();
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable getStringVariable(int index) {
-          if (stringVariableBuilder_ == null) {
-            return stringVariable_.get(index);
-          } else {
-            return stringVariableBuilder_.getMessage(index);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder setStringVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable value) {
-          if (stringVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureStringVariableIsMutable();
-            stringVariable_.set(index, value);
-            onChanged();
-          } else {
-            stringVariableBuilder_.setMessage(index, value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder setStringVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder builderForValue) {
-          if (stringVariableBuilder_ == null) {
-            ensureStringVariableIsMutable();
-            stringVariable_.set(index, builderForValue.build());
-            onChanged();
-          } else {
-            stringVariableBuilder_.setMessage(index, builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder addStringVariable(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable value) {
-          if (stringVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureStringVariableIsMutable();
-            stringVariable_.add(value);
-            onChanged();
-          } else {
-            stringVariableBuilder_.addMessage(value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder addStringVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable value) {
-          if (stringVariableBuilder_ == null) {
-            if (value == null) {
-              throw new NullPointerException();
-            }
-            ensureStringVariableIsMutable();
-            stringVariable_.add(index, value);
-            onChanged();
-          } else {
-            stringVariableBuilder_.addMessage(index, value);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder addStringVariable(
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder builderForValue) {
-          if (stringVariableBuilder_ == null) {
-            ensureStringVariableIsMutable();
-            stringVariable_.add(builderForValue.build());
-            onChanged();
-          } else {
-            stringVariableBuilder_.addMessage(builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder addStringVariable(
-            int index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder builderForValue) {
-          if (stringVariableBuilder_ == null) {
-            ensureStringVariableIsMutable();
-            stringVariable_.add(index, builderForValue.build());
-            onChanged();
-          } else {
-            stringVariableBuilder_.addMessage(index, builderForValue.build());
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder addAllStringVariable(
-            java.lang.Iterable<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable> values) {
-          if (stringVariableBuilder_ == null) {
-            ensureStringVariableIsMutable();
-            super.addAll(values, stringVariable_);
-            onChanged();
-          } else {
-            stringVariableBuilder_.addAllMessages(values);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder clearStringVariable() {
-          if (stringVariableBuilder_ == null) {
-            stringVariable_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000008);
-            onChanged();
-          } else {
-            stringVariableBuilder_.clear();
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public Builder removeStringVariable(int index) {
-          if (stringVariableBuilder_ == null) {
-            ensureStringVariableIsMutable();
-            stringVariable_.remove(index);
-            onChanged();
-          } else {
-            stringVariableBuilder_.remove(index);
-          }
-          return this;
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder getStringVariableBuilder(
-            int index) {
-          return getStringVariableFieldBuilder().getBuilder(index);
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder getStringVariableOrBuilder(
-            int index) {
-          if (stringVariableBuilder_ == null) {
-            return stringVariable_.get(index);  } else {
-            return stringVariableBuilder_.getMessageOrBuilder(index);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public java.util.List<? extends org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder> 
-             getStringVariableOrBuilderList() {
-          if (stringVariableBuilder_ != null) {
-            return stringVariableBuilder_.getMessageOrBuilderList();
-          } else {
-            return java.util.Collections.unmodifiableList(stringVariable_);
-          }
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder addStringVariableBuilder() {
-          return getStringVariableFieldBuilder().addBuilder(
-              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder addStringVariableBuilder(
-            int index) {
-          return getStringVariableFieldBuilder().addBuilder(
-              index, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.getDefaultInstance());
-        }
-        /**
-         * <code>repeated .knime.Command.PutFlowVariables.StringVariable stringVariable = 4;</code>
-         */
-        public java.util.List<org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder> 
-             getStringVariableBuilderList() {
-          return getStringVariableFieldBuilder().getBuilderList();
-        }
-        private com.google.protobuf.RepeatedFieldBuilder<
-            org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder> 
-            getStringVariableFieldBuilder() {
-          if (stringVariableBuilder_ == null) {
-            stringVariableBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariable.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.StringVariableOrBuilder>(
-                    stringVariable_,
-                    ((bitField0_ & 0x00000008) == 0x00000008),
-                    getParentForChildren(),
-                    isClean());
-            stringVariable_ = null;
-          }
-          return stringVariableBuilder_;
+          return variablesBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:knime.Command.PutFlowVariables)
@@ -13771,6 +11105,485 @@ public final class ProtobufPythonKernelCommand {
       // @@protoc_insertion_point(class_scope:knime.Command.GetSQL)
     }
 
+    public interface GetFlowVariablesOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required string key = 1;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      boolean hasKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      java.lang.String getKey();
+      /**
+       * <code>required string key = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getKeyBytes();
+    }
+    /**
+     * Protobuf type {@code knime.Command.GetFlowVariables}
+     */
+    public static final class GetFlowVariables extends
+        com.google.protobuf.GeneratedMessage
+        implements GetFlowVariablesOrBuilder {
+      // Use GetFlowVariables.newBuilder() to construct.
+      private GetFlowVariables(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private GetFlowVariables(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final GetFlowVariables defaultInstance;
+      public static GetFlowVariables getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public GetFlowVariables getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private GetFlowVariables(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetFlowVariables_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetFlowVariables_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<GetFlowVariables> PARSER =
+          new com.google.protobuf.AbstractParser<GetFlowVariables>() {
+        public GetFlowVariables parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new GetFlowVariables(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<GetFlowVariables> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private java.lang.Object key_;
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string key = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      private void initFields() {
+        key_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code knime.Command.GetFlowVariables}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetFlowVariables_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetFlowVariables_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.class, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder.class);
+        }
+
+        // Construct using org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.internal_static_knime_Command_GetFlowVariables_descriptor;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getDefaultInstanceForType() {
+          return org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance();
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables build() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables buildPartial() {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables result = new org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables) {
+            return mergeFrom((org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables other) {
+          if (other == org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            bitField0_ |= 0x00000001;
+            key_ = other.key_;
+            onChanged();
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required string key = 1;
+        private java.lang.Object key_ = "";
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public java.lang.String getKey() {
+          java.lang.Object ref = key_;
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (java.lang.String) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getKeyBytes() {
+          java.lang.Object ref = key_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            key_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKey(
+            java.lang.String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required string key = 1;</code>
+         */
+        public Builder setKeyBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:knime.Command.GetFlowVariables)
+      }
+
+      static {
+        defaultInstance = new GetFlowVariables(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:knime.Command.GetFlowVariables)
+    }
+
     private int bitField0_;
     // optional .knime.Command.Execute execute = 1;
     public static final int EXECUTE_FIELD_NUMBER = 1;
@@ -14146,6 +11959,28 @@ public final class ProtobufPythonKernelCommand {
       return getSQL_;
     }
 
+    // optional .knime.Command.GetFlowVariables getFlowVariables = 18;
+    public static final int GETFLOWVARIABLES_FIELD_NUMBER = 18;
+    private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getFlowVariables_;
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    public boolean hasGetFlowVariables() {
+      return ((bitField0_ & 0x00020000) == 0x00020000);
+    }
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getGetFlowVariables() {
+      return getFlowVariables_;
+    }
+    /**
+     * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+     */
+    public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder getGetFlowVariablesOrBuilder() {
+      return getFlowVariables_;
+    }
+
     private void initFields() {
       execute_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Execute.getDefaultInstance();
       putFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutFlowVariables.getDefaultInstance();
@@ -14164,6 +11999,7 @@ public final class ProtobufPythonKernelCommand {
       shutdown_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.Shutdown.getDefaultInstance();
       putSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.PutSQL.getDefaultInstance();
       getSQL_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetSQL.getDefaultInstance();
+      getFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -14248,6 +12084,12 @@ public final class ProtobufPythonKernelCommand {
           return false;
         }
       }
+      if (hasGetFlowVariables()) {
+        if (!getGetFlowVariables().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -14305,6 +12147,9 @@ public final class ProtobufPythonKernelCommand {
       }
       if (((bitField0_ & 0x00010000) == 0x00010000)) {
         output.writeMessage(17, getSQL_);
+      }
+      if (((bitField0_ & 0x00020000) == 0x00020000)) {
+        output.writeMessage(18, getFlowVariables_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -14382,6 +12227,10 @@ public final class ProtobufPythonKernelCommand {
       if (((bitField0_ & 0x00010000) == 0x00010000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(17, getSQL_);
+      }
+      if (((bitField0_ & 0x00020000) == 0x00020000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(18, getFlowVariables_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -14508,6 +12357,7 @@ public final class ProtobufPythonKernelCommand {
           getShutdownFieldBuilder();
           getPutSQLFieldBuilder();
           getGetSQLFieldBuilder();
+          getGetFlowVariablesFieldBuilder();
         }
       }
       private static Builder create() {
@@ -14618,6 +12468,12 @@ public final class ProtobufPythonKernelCommand {
           getSQLBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00010000);
+        if (getFlowVariablesBuilder_ == null) {
+          getFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance();
+        } else {
+          getFlowVariablesBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00020000);
         return this;
       }
 
@@ -14782,6 +12638,14 @@ public final class ProtobufPythonKernelCommand {
         } else {
           result.getSQL_ = getSQLBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00020000) == 0x00020000)) {
+          to_bitField0_ |= 0x00020000;
+        }
+        if (getFlowVariablesBuilder_ == null) {
+          result.getFlowVariables_ = getFlowVariables_;
+        } else {
+          result.getFlowVariables_ = getFlowVariablesBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -14848,6 +12712,9 @@ public final class ProtobufPythonKernelCommand {
         }
         if (other.hasGetSQL()) {
           mergeGetSQL(other.getGetSQL());
+        }
+        if (other.hasGetFlowVariables()) {
+          mergeGetFlowVariables(other.getGetFlowVariables());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -14928,6 +12795,12 @@ public final class ProtobufPythonKernelCommand {
         }
         if (hasGetSQL()) {
           if (!getGetSQL().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasGetFlowVariables()) {
+          if (!getGetFlowVariables().isInitialized()) {
             
             return false;
           }
@@ -16943,6 +14816,123 @@ public final class ProtobufPythonKernelCommand {
         return getSQLBuilder_;
       }
 
+      // optional .knime.Command.GetFlowVariables getFlowVariables = 18;
+      private org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder> getFlowVariablesBuilder_;
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public boolean hasGetFlowVariables() {
+        return ((bitField0_ & 0x00020000) == 0x00020000);
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables getGetFlowVariables() {
+        if (getFlowVariablesBuilder_ == null) {
+          return getFlowVariables_;
+        } else {
+          return getFlowVariablesBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public Builder setGetFlowVariables(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables value) {
+        if (getFlowVariablesBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          getFlowVariables_ = value;
+          onChanged();
+        } else {
+          getFlowVariablesBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00020000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public Builder setGetFlowVariables(
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder builderForValue) {
+        if (getFlowVariablesBuilder_ == null) {
+          getFlowVariables_ = builderForValue.build();
+          onChanged();
+        } else {
+          getFlowVariablesBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00020000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public Builder mergeGetFlowVariables(org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables value) {
+        if (getFlowVariablesBuilder_ == null) {
+          if (((bitField0_ & 0x00020000) == 0x00020000) &&
+              getFlowVariables_ != org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance()) {
+            getFlowVariables_ =
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.newBuilder(getFlowVariables_).mergeFrom(value).buildPartial();
+          } else {
+            getFlowVariables_ = value;
+          }
+          onChanged();
+        } else {
+          getFlowVariablesBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00020000;
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public Builder clearGetFlowVariables() {
+        if (getFlowVariablesBuilder_ == null) {
+          getFlowVariables_ = org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.getDefaultInstance();
+          onChanged();
+        } else {
+          getFlowVariablesBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00020000);
+        return this;
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder getGetFlowVariablesBuilder() {
+        bitField0_ |= 0x00020000;
+        onChanged();
+        return getGetFlowVariablesFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      public org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder getGetFlowVariablesOrBuilder() {
+        if (getFlowVariablesBuilder_ != null) {
+          return getFlowVariablesBuilder_.getMessageOrBuilder();
+        } else {
+          return getFlowVariables_;
+        }
+      }
+      /**
+       * <code>optional .knime.Command.GetFlowVariables getFlowVariables = 18;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder> 
+          getGetFlowVariablesFieldBuilder() {
+        if (getFlowVariablesBuilder_ == null) {
+          getFlowVariablesBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariables.Builder, org.knime.python.kernel.proto.ProtobufPythonKernelCommand.Command.GetFlowVariablesOrBuilder>(
+                  getFlowVariables_,
+                  getParentForChildren(),
+                  isClean());
+          getFlowVariables_ = null;
+        }
+        return getFlowVariablesBuilder_;
+      }
+
       // @@protoc_insertion_point(builder_scope:knime.Command)
     }
 
@@ -16969,21 +14959,6 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_PutFlowVariables_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_PutFlowVariables_IntegerVariable_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_PutFlowVariables_DoubleVariable_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_knime_Command_PutFlowVariables_StringVariable_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_knime_Command_PutTable_descriptor;
   private static
@@ -17069,6 +15044,11 @@ public final class ProtobufPythonKernelCommand {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_knime_Command_GetSQL_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_knime_Command_GetFlowVariables_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_knime_Command_GetFlowVariables_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -17079,57 +15059,52 @@ public final class ProtobufPythonKernelCommand {
   static {
     java.lang.String[] descriptorData = {
       "\n\rcommand.proto\022\005knime\032\013table.proto\032\016sql" +
-      "Input.proto\032\017sqlOutput.proto\"\204\017\n\007Command" +
-      "\022\'\n\007execute\030\001 \001(\0132\026.knime.Command.Execut" +
-      "e\0229\n\020putFlowVariables\030\002 \001(\0132\037.knime.Comm" +
-      "and.PutFlowVariables\022)\n\010putTable\030\003 \001(\0132\027" +
-      ".knime.Command.PutTable\0223\n\rappendToTable" +
-      "\030\004 \001(\0132\034.knime.Command.AppendToTable\022)\n\010" +
-      "getTable\030\005 \001(\0132\027.knime.Command.GetTable\022" +
-      "3\n\rlistVariables\030\006 \001(\0132\034.knime.Command.L" +
-      "istVariables\022#\n\005reset\030\007 \001(\0132\024.knime.Comm",
-      "and.Reset\0227\n\017hasAutoComplete\030\010 \001(\0132\036.kni" +
-      "me.Command.HasAutoComplete\0221\n\014autoComple" +
-      "te\030\t \001(\0132\033.knime.Command.AutoComplete\022)\n" +
-      "\010getImage\030\n \001(\0132\027.knime.Command.GetImage" +
-      "\022+\n\tgetObject\030\013 \001(\0132\030.knime.Command.GetO" +
-      "bject\022+\n\tputObject\030\014 \001(\0132\030.knime.Command" +
-      ".PutObject\0225\n\016addSerializers\030\r \001(\0132\035.kni" +
-      "me.Command.AddSerializers\0229\n\020addDeserial" +
-      "izers\030\016 \001(\0132\037.knime.Command.AddDeseriali" +
-      "zers\022)\n\010shutdown\030\017 \001(\0132\027.knime.Command.S",
-      "hutdown\022%\n\006putSQL\030\020 \001(\0132\025.knime.Command." +
-      "PutSQL\022%\n\006getSQL\030\021 \001(\0132\025.knime.Command.G" +
-      "etSQL\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032\204\003\n" +
-      "\020PutFlowVariables\022\013\n\003key\030\001 \002(\t\022H\n\017intege" +
-      "rVariable\030\002 \003(\0132/.knime.Command.PutFlowV" +
-      "ariables.IntegerVariable\022F\n\016doubleVariab" +
-      "le\030\003 \003(\0132..knime.Command.PutFlowVariable" +
-      "s.DoubleVariable\022F\n\016stringVariable\030\004 \003(\013" +
-      "2..knime.Command.PutFlowVariables.String" +
-      "Variable\032-\n\017IntegerVariable\022\013\n\003key\030\001 \002(\t",
-      "\022\r\n\005value\030\002 \002(\005\032,\n\016DoubleVariable\022\013\n\003key" +
-      "\030\001 \002(\t\022\r\n\005value\030\002 \002(\001\032,\n\016StringVariable\022" +
-      "\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\0324\n\010PutTable\022" +
-      "\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Tabl" +
-      "e\0329\n\rAppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table" +
-      "\030\002 \002(\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003key\030" +
-      "\001 \002(\t\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariable" +
-      "s\032\007\n\005Reset\032\021\n\017HasAutoComplete\032@\n\014AutoCom" +
-      "plete\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022" +
-      "\016\n\006column\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002(\t",
-      "\032\030\n\tGetObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutObject\022" +
-      "\013\n\003key\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(\014\032?\n\016A" +
-      "ddSerializers\022-\n\nserializer\030\001 \003(\0132\031.knim" +
-      "e.Command.Serializer\0324\n\nSerializer\022\n\n\002id" +
-      "\030\001 \002(\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t\032E\n\020Ad" +
-      "dDeserializers\0221\n\014deserializer\030\001 \003(\0132\033.k" +
-      "nime.Command.Deserializer\032(\n\014Deserialize" +
-      "r\022\n\n\002id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010Shutdown\032" +
-      "3\n\006PutSQL\022\013\n\003key\030\001 \002(\t\022\034\n\003sql\030\002 \002(\0132\017.kn" +
-      "ime.SQLInput\032\025\n\006GetSQL\022\013\n\003key\030\001 \002(\tB<\n\035o",
-      "rg.knime.python.kernel.protoB\033ProtobufPy" +
-      "thonKernelCommand"
+      "Input.proto\032\017sqlOutput.proto\032\017variables." +
+      "proto\"\237\r\n\007Command\022\'\n\007execute\030\001 \001(\0132\026.kni" +
+      "me.Command.Execute\0229\n\020putFlowVariables\030\002" +
+      " \001(\0132\037.knime.Command.PutFlowVariables\022)\n" +
+      "\010putTable\030\003 \001(\0132\027.knime.Command.PutTable" +
+      "\0223\n\rappendToTable\030\004 \001(\0132\034.knime.Command." +
+      "AppendToTable\022)\n\010getTable\030\005 \001(\0132\027.knime." +
+      "Command.GetTable\0223\n\rlistVariables\030\006 \001(\0132" +
+      "\034.knime.Command.ListVariables\022#\n\005reset\030\007",
+      " \001(\0132\024.knime.Command.Reset\0227\n\017hasAutoCom" +
+      "plete\030\010 \001(\0132\036.knime.Command.HasAutoCompl" +
+      "ete\0221\n\014autoComplete\030\t \001(\0132\033.knime.Comman" +
+      "d.AutoComplete\022)\n\010getImage\030\n \001(\0132\027.knime" +
+      ".Command.GetImage\022+\n\tgetObject\030\013 \001(\0132\030.k" +
+      "nime.Command.GetObject\022+\n\tputObject\030\014 \001(" +
+      "\0132\030.knime.Command.PutObject\0225\n\016addSerial" +
+      "izers\030\r \001(\0132\035.knime.Command.AddSerialize" +
+      "rs\0229\n\020addDeserializers\030\016 \001(\0132\037.knime.Com" +
+      "mand.AddDeserializers\022)\n\010shutdown\030\017 \001(\0132",
+      "\027.knime.Command.Shutdown\022%\n\006putSQL\030\020 \001(\013" +
+      "2\025.knime.Command.PutSQL\022%\n\006getSQL\030\021 \001(\0132" +
+      "\025.knime.Command.GetSQL\0229\n\020getFlowVariabl" +
+      "es\030\022 \001(\0132\037.knime.Command.GetFlowVariable" +
+      "s\032\035\n\007Execute\022\022\n\nsourceCode\030\001 \002(\t\032D\n\020PutF" +
+      "lowVariables\022\013\n\003key\030\001 \002(\t\022#\n\tvariables\030\002" +
+      " \002(\0132\020.knime.Variables\0324\n\010PutTable\022\013\n\003ke" +
+      "y\030\001 \002(\t\022\033\n\005table\030\002 \002(\0132\014.knime.Table\0329\n\r" +
+      "AppendToTable\022\013\n\003key\030\001 \002(\t\022\033\n\005table\030\002 \002(" +
+      "\0132\014.knime.Table\032*\n\010GetTable\022\013\n\003key\030\001 \002(\t",
+      "\022\021\n\tchunkSize\030\002 \002(\005\032\017\n\rListVariables\032\007\n\005" +
+      "Reset\032\021\n\017HasAutoComplete\032@\n\014AutoComplete" +
+      "\022\022\n\nsourceCode\030\001 \002(\t\022\014\n\004line\030\002 \002(\005\022\016\n\006co" +
+      "lumn\030\003 \002(\005\032\027\n\010GetImage\022\013\n\003key\030\001 \002(\t\032\030\n\tG" +
+      "etObject\022\013\n\003key\030\001 \002(\t\032/\n\tPutObject\022\013\n\003ke" +
+      "y\030\001 \002(\t\022\025\n\rpickledObject\030\002 \002(\014\032?\n\016AddSer" +
+      "ializers\022-\n\nserializer\030\001 \003(\0132\031.knime.Com" +
+      "mand.Serializer\0324\n\nSerializer\022\n\n\002id\030\001 \002(" +
+      "\t\022\014\n\004type\030\002 \002(\t\022\014\n\004path\030\003 \002(\t\032E\n\020AddDese" +
+      "rializers\0221\n\014deserializer\030\001 \003(\0132\033.knime.",
+      "Command.Deserializer\032(\n\014Deserializer\022\n\n\002" +
+      "id\030\001 \002(\t\022\014\n\004path\030\002 \002(\t\032\n\n\010Shutdown\0323\n\006Pu" +
+      "tSQL\022\013\n\003key\030\001 \002(\t\022\034\n\003sql\030\002 \002(\0132\017.knime.S" +
+      "QLInput\032\025\n\006GetSQL\022\013\n\003key\030\001 \002(\t\032\037\n\020GetFlo" +
+      "wVariables\022\013\n\003key\030\001 \002(\tB<\n\035org.knime.pyt" +
+      "hon.kernel.protoB\033ProtobufPythonKernelCo" +
+      "mmand"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -17141,7 +15116,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_descriptor,
-              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", "PutSQL", "GetSQL", });
+              new java.lang.String[] { "Execute", "PutFlowVariables", "PutTable", "AppendToTable", "GetTable", "ListVariables", "Reset", "HasAutoComplete", "AutoComplete", "GetImage", "GetObject", "PutObject", "AddSerializers", "AddDeserializers", "Shutdown", "PutSQL", "GetSQL", "GetFlowVariables", });
           internal_static_knime_Command_Execute_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(0);
           internal_static_knime_Command_Execute_fieldAccessorTable = new
@@ -17153,25 +15128,7 @@ public final class ProtobufPythonKernelCommand {
           internal_static_knime_Command_PutFlowVariables_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_PutFlowVariables_descriptor,
-              new java.lang.String[] { "Key", "IntegerVariable", "DoubleVariable", "StringVariable", });
-          internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor =
-            internal_static_knime_Command_PutFlowVariables_descriptor.getNestedTypes().get(0);
-          internal_static_knime_Command_PutFlowVariables_IntegerVariable_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_PutFlowVariables_IntegerVariable_descriptor,
-              new java.lang.String[] { "Key", "Value", });
-          internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor =
-            internal_static_knime_Command_PutFlowVariables_descriptor.getNestedTypes().get(1);
-          internal_static_knime_Command_PutFlowVariables_DoubleVariable_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_PutFlowVariables_DoubleVariable_descriptor,
-              new java.lang.String[] { "Key", "Value", });
-          internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor =
-            internal_static_knime_Command_PutFlowVariables_descriptor.getNestedTypes().get(2);
-          internal_static_knime_Command_PutFlowVariables_StringVariable_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_knime_Command_PutFlowVariables_StringVariable_descriptor,
-              new java.lang.String[] { "Key", "Value", });
+              new java.lang.String[] { "Key", "Variables", });
           internal_static_knime_Command_PutTable_descriptor =
             internal_static_knime_Command_descriptor.getNestedTypes().get(2);
           internal_static_knime_Command_PutTable_fieldAccessorTable = new
@@ -17274,6 +15231,12 @@ public final class ProtobufPythonKernelCommand {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_knime_Command_GetSQL_descriptor,
               new java.lang.String[] { "Key", });
+          internal_static_knime_Command_GetFlowVariables_descriptor =
+            internal_static_knime_Command_descriptor.getNestedTypes().get(19);
+          internal_static_knime_Command_GetFlowVariables_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_knime_Command_GetFlowVariables_descriptor,
+              new java.lang.String[] { "Key", });
           return null;
         }
       };
@@ -17283,6 +15246,7 @@ public final class ProtobufPythonKernelCommand {
           org.knime.python.kernel.proto.ProtobufKnimeTable.getDescriptor(),
           org.knime.python.kernel.proto.ProtobufKnimeSQLInput.getDescriptor(),
           org.knime.python.kernel.proto.ProtobufKnimeSQLOutput.getDescriptor(),
+          org.knime.python.kernel.proto.ProtobufPythonKernelVariables.getDescriptor(),
         }, assigner);
   }
 
