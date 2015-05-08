@@ -415,8 +415,8 @@ public class PythonKernel {
 	}
 	
 	private boolean isValidFlowVariableName(final String name) {
-		if (name.equals("knime.workspace")) {
-			// knime.workspace is reserved
+		if (name.startsWith(FlowVariable.Scope.Global.getPrefix()) || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
+			// name is reserved
 			return false;
 		}
 		return true;
