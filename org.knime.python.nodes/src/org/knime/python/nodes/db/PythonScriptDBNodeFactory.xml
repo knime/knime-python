@@ -13,13 +13,13 @@
 			Allows execution of a Python script in a local Python installation. 
 			The path to the Python executable has to be configured in 
 			Preferences → KNIME → Python.
-			<b>NOTICE:</b>
-          	The node uses the <a href="https://pypi.python.org/pypi/JayDeBeApi/">JayDeBeApi</a> 
-          	library to establish a connection to the database via a JDBC connection. 
-          	That is why <a href="http://jpype.sourceforge.net/">JPype</a> needs 
-          	to be installed. Windows precompiled libraries can be downloaded 
-          	from the <a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype">
-          	Unofficial Windows Binaries for Python Extension Packages</a>.
+		<br /><br />
+		<b>NOTICE:</b>
+          The nodes uses the <a href="https://pypi.python.org/pypi/JayDeBeApi/">JayDeBeApi</a> library 
+          to establish a connection to the database via a JDBC connection which his included. However to use JayDeBeApi
+          <a href="http://jpype.sourceforge.net/">JPype</a> needs to be installed. For Windows precompiled
+          libraries can be download from 
+          <a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype">Unofficial Windows Binaries for Python Extension Packages</a>.
 		</intro>
 		<tab name="Script">
 			<option name="Editor">
@@ -40,6 +40,10 @@
 				Lists the currently defined identifiers in the running Python 
 				instance. Reset workspace will remove all definitions and 
 				reinsert only the input data.
+                <br />
+                <br />
+                The result of the input database query is available via the <i>db_util</i> object. For details about the
+                available functions of the db_util object execute <i>db_util.print_description()</i> in the editor.
 			</option>
 			<option name="Console">
 				Displays the standard and error output of the execution as well 
@@ -67,12 +71,12 @@
 			An input database connection that provides all relevant information
 			needed to connect to the database and an input SQL query used to 
 			initially fetch data from the database. In the Python script, it is 
-			available as DBUtil object under the name <b>db_util</b>.
+			available as DBUtil object under the name <i>db_util</i>.
 		</inPort>
 		<outPort name="DB" index="0">
 			A database connection with the result table containing data from the
 			database. The data in the result table is fetched either using the 
-			automatically defined output SQL query by the <b>db_util</b> or using 
+			automatically defined output SQL query by the <i>db_util</i> or using 
 			the output SQL query defined by the user by executing the 
 			<i>db_util.set_output_query()</i> method.
 		</outPort>
