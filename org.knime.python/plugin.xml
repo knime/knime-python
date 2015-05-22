@@ -18,17 +18,33 @@
          point="org.knime.python.typeextension.pythontoknime">
       <type
             id="org.knime.xml"
-            java-deserializer-factory="org.knime.python.typeextension.example.XMLDeserializerFactory"
-            python-serializer="src/org/knime/python/typeextension/example/XMLSerializer.py"
+            java-deserializer-factory="org.knime.python.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="src/org/knime/python/typeextension/builtin/xml/XMLSerializer.py"
             python-type-identifier="xml.dom.minidom.Document">
+      </type>
+      <type
+            id="org.knime.image"
+            java-deserializer-factory="org.knime.python.typeextension.builtin.image.ImageDeserializerFactory"
+            python-serializer="src/org/knime/python/typeextension/builtin/image/ImageSerializer.py"
+            python-type-identifier="PIL.PngImagePlugin.PngImageFile">
       </type>
    </extension>
    <extension
          point="org.knime.python.typeextension.knimetopython">
       <type
             id="org.knime.xml"
-            java-serializer-factory="org.knime.python.typeextension.example.XMLSerializerFactory"
-            python-deserializer="src/org/knime/python/typeextension/example/XMLDeserializer.py">
+            java-serializer-factory="org.knime.python.typeextension.builtin.xml.XMLSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/xml/XMLDeserializer.py">
+      </type>
+      <type
+            id="org.knime.svg"
+            java-serializer-factory="org.knime.python.typeextension.builtin.svg.SVGSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/svg/SVGDeserializer.py">
+      </type>
+      <type
+            id="org.knime.image"
+            java-serializer-factory="org.knime.python.typeextension.builtin.image.ImageSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/image/ImageDeserializer.py">
       </type>
    </extension>
 

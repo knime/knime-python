@@ -184,11 +184,15 @@ public class PythonKernel {
 		final ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
 		// Add all python modules to PYTHONPATH variable
 		String existingPath = pb.environment().get("PYTHONPATH");
-//		existingPath = existingPath == null ? "" : existingPath;
-//		final String externalPythonPath = PythonModuleExtensions.getPythonPath();
-//		if (externalPythonPath != null && !externalPythonPath.isEmpty()) {
-//			existingPath = existingPath + File.pathSeparator + externalPythonPath;
-//		}
+		existingPath = existingPath == null ? "" : existingPath;
+		final String externalPythonPath = PythonModuleExtensions.getPythonPath();
+		if (externalPythonPath != null && !externalPythonPath.isEmpty()) {
+			if (existingPath.isEmpty()) {
+				existingPath = externalPythonPath;
+			} else {
+				existingPath = existingPath + File.pathSeparator + externalPythonPath;
+			}
+		}
 		existingPath = existingPath == null ? "" : existingPath + File.pathSeparator;
 		pb.environment().put("PYTHONPATH", existingPath);
 		// Start python

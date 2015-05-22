@@ -229,7 +229,8 @@ class ProtobufConverter {
 			final DataRow row = rowIterator.next();
 			tableBuilder.addRowId(row.getKey().getString());
 			index = 0;
-			for (final DataCell cell : row) {
+			for (int i = 0; i < row.getNumCells(); i++) {
+				DataCell cell = row.getCell(i);
 				final GeneratedMessage.Builder builder = columnBuilders.get(index);
 				if (builder instanceof BooleanColumn.Builder) {
 					final BooleanColumn.Builder boolColumn = (BooleanColumn.Builder) builder;
@@ -372,7 +373,7 @@ class ProtobufConverter {
 						final CollectionDataValue collectionCell = (CollectionDataValue) cell;
 						for (final DataCell singleCell : collectionCell) {
 							final Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-							final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(singleCell.getType()).getId());
+							final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(table.getDataTableSpec().getColumnSpec(i).getType()).getId());
 							if (!singleCell.isMissing()) {
 								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
 							}
@@ -382,7 +383,7 @@ class ProtobufConverter {
 					objectListColumn.addObjectListValue(objectListValueBuilder.build());
 				} else if (builder instanceof ObjectColumn.Builder) {
 					final ObjectColumn.Builder objectColumn = (ObjectColumn.Builder) builder;
-					final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(cell.getType()).getId());
+					final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(table.getDataTableSpec().getColumnSpec(i).getType()).getId());
 					final Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
 					if (!cell.isMissing()) {
 						objectValue.setValue(ByteString.copyFrom(serializer.serialize(cell)));

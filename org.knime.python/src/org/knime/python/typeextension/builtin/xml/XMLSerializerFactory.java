@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.typeextension.example;
+package org.knime.python.typeextension.builtin.xml;
 
 import java.io.IOException;
 
