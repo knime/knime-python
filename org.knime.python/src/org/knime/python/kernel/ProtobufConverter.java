@@ -373,7 +373,7 @@ class ProtobufConverter {
 						final CollectionDataValue collectionCell = (CollectionDataValue) cell;
 						for (final DataCell singleCell : collectionCell) {
 							final Table.ObjectValue.Builder objectValue = Table.ObjectValue.newBuilder();
-							final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(table.getDataTableSpec().getColumnSpec(i).getType()).getId());
+							final Serializer serializer = knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(table.getDataTableSpec().getColumnSpec(i).getType().getCollectionElementType()).getId());
 							if (!singleCell.isMissing()) {
 								objectValue.setValue(ByteString.copyFrom(serializer.serialize(singleCell)));
 							}
