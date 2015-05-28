@@ -65,9 +65,9 @@ class PythonPredictorNodeConfig extends SourceCodeConfig {
 				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
 				"# Use first column as value\n" +
 				"value_column = data[data.columns[0]]\n" +
-				"# List of predicitions\n" +
+				"# List of predictions\n" +
 				"predictions = []\n" +
-				"# prediciton = value * m + c\n" +
+				"# prediction = value * m + c\n" +
 				"# m is first value in model\n" +
 				"m = " + VARIABLE_NAMES.getInputObjects()[0] + "[0]\n" +
 				"# c is second value in model\n" +
