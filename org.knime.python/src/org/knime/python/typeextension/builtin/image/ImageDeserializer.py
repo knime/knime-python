@@ -13,7 +13,7 @@ def deserialize(bytes):
 	if _works is None:
 		try:
 			from pandas import DataFrame
-			DataFrame([image])
+			DataFrame({'image':[image]})
 			_works = True
 		except:
 			_works = False
