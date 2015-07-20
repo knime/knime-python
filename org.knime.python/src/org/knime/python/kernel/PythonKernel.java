@@ -166,6 +166,7 @@ public class PythonKernel {
 		m_serverSocket = new ServerSocket(0);
 		final int port = m_serverSocket.getLocalPort();
 		m_serverSocket.setSoTimeout(10000);
+		final AtomicReference<IOException> exception = new AtomicReference<IOException>();
 		final Thread thread = new Thread(new Runnable() {
 			@Override
             public void run() {
@@ -173,6 +174,7 @@ public class PythonKernel {
 					m_socket = m_serverSocket.accept();
 				} catch (final IOException e) {
 					m_socket = null;
+					exception.set(e);
 				}
 			}
 		});
@@ -205,7 +207,7 @@ public class PythonKernel {
 		if (m_socket == null) {
 			// Python did not connect this kernel is invalid
 			close();
-			throw new IOException("Could not start python kernel");
+			throw new IOException("Could not start python kernel", exception.get());
 		}
 		// First get PID of Python process
 		m_pid = SimpleResponse.parseFrom(readMessageBytes(m_socket.getInputStream())).getInteger();
@@ -864,6 +866,11 @@ public class PythonKernel {
 			new Thread(new Runnable() {
 				@Override
                 public void run() {
+					// Give it some time to finish writing into the stream
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e1) {
+					}
 					printStreamToLog();
 					// Send shutdown
 					try {
