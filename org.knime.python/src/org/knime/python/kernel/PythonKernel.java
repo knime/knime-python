@@ -165,7 +165,7 @@ public class PythonKernel {
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
 		final int port = m_serverSocket.getLocalPort();
-		m_serverSocket.setSoTimeout(60000);
+		m_serverSocket.setSoTimeout(10000);
 		final AtomicReference<IOException> exception = new AtomicReference<IOException>();
 		final Thread thread = new Thread(new Runnable() {
 			@Override
