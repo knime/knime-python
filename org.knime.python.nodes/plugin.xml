@@ -12,7 +12,7 @@
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" id="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory" after="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.learner.PythonLearnerNodeFactory" id="org.knime.python.nodes.learner.PythonLearnerNodeFactory" after="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python.nodes.predictor.PythonPredictorNodeFactory" id="org.knime.python.nodes.predictor.PythonPredictorNodeFactory" after="org.knime.python.nodes.learner.PythonLearnerNodeFactory"/>
-        <node category-path="/labs/python" expert-flag="false" factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory" id="org.knime.python.nodes.db.PythonScriptDBNodeFactory"/>
+        <node category-path="/labs/python" factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory" id="org.knime.python.nodes.db.PythonScriptDBNodeFactory"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/labs" />
