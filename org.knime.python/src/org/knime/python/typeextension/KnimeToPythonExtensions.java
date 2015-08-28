@@ -100,7 +100,7 @@ public class KnimeToPythonExtensions {
 	public static KnimeToPythonExtension getExtension(final DataType type) {
 		for (KnimeToPythonExtension extension : extensions.values()) {
 			Class<? extends DataValue> preferredValueClass = type.getPreferredValueClass();
-			if (preferredValueClass != null && preferredValueClass.equals(extension.getJavaSerializerFactory().getDataValue())) {
+			if (preferredValueClass.equals(extension.getJavaSerializerFactory().getDataValue())) {
 				return extension;
 			}
 		}
