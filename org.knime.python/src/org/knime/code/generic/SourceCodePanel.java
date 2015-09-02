@@ -447,9 +447,9 @@ abstract public class SourceCodePanel extends JPanel {
 		ac.setParameterAssistanceEnabled(true);
 		ac.install(m_editor);
 		// Configure spell checker
-		String dictPath = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip").getAbsolutePath();
-		if (dictPath != null) {
-			File zip = new File(dictPath);
+		File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
+		if (dictFile != null) {
+			File zip = new File(dictFile.getAbsolutePath());
 			try {
 				SpellingParser parser = SpellingParser.createEnglishSpellingParser(zip, true);
 				if (!USER_DICTIONARY.exists()) {
