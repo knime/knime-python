@@ -47,5 +47,16 @@
             python-deserializer="src/org/knime/python/typeextension/builtin/image/ImageDeserializer.py">
       </type>
    </extension>
+   <extension
+         point="org.knime.core.PortType">
+      <portType
+            color="#1e69af"
+            name="Python"
+            objectClass="org.knime.python.port.PickledObjectPortObject"
+            objectSerializer="org.knime.python.port.PickledObjectPortObject$Serializer"
+            specClass="org.knime.python.port.PickledObjectPortObjectSpec"
+            specSerializer="org.knime.python.port.PickledObjectPortObjectSpec$Serializer">
+      </portType>
+   </extension>
 
 </plugin>

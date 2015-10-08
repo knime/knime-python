@@ -72,6 +72,7 @@ import org.knime.core.node.port.PortType;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public final class PickledObjectPortObject extends AbstractSimplePortObject {
+	public static final class Serializer extends AbstractSimplePortObjectSerializer<PickledObjectPortObject> {}
 
 	private PickledObjectPortObjectSpec m_spec;
 
