@@ -50,7 +50,7 @@
    <extension
          point="org.knime.core.PortType">
       <portType
-            color="#1e69af"
+            color="#1eb9dc"
             name="Python"
             objectClass="org.knime.python.port.PickledObjectPortObject"
             objectSerializer="org.knime.python.port.PickledObjectPortObject$Serializer"
