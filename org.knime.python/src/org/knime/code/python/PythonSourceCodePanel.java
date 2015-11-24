@@ -274,7 +274,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 				}
 			});
 		} else {
-			// If there is no kernel running we can not have variables defined
+			// If there is no kernel running we cannot have variables defined
 			setVariables(new Variable[0]);
 		}
 	}

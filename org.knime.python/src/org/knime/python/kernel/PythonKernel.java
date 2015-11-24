@@ -492,7 +492,7 @@ public class PythonKernel {
 	 * @param name the name of the sql Python variable
 	 * @param object the {@link DatabaseQueryConnectionSettings} to transfer
 	 * @param cp the {@link CredentialsProvider}
-	 * @throws Exception if the object can not be serialised
+	 * @throws Exception if the object cannot be serialised
 	 */
 	public void putGeneralObject(final EditorObjectWriter object)
 			throws Exception {
