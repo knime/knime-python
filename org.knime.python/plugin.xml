@@ -58,5 +58,11 @@
             specSerializer="org.knime.python.port.PickledObjectPortObjectSpec$Serializer">
       </portType>
    </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.knime.python.PythonPreferenceInitializer">
+      </initializer>
+   </extension>
 
 </plugin>

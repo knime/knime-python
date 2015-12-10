@@ -51,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.FileFieldEditor;
@@ -83,11 +84,8 @@ import org.osgi.service.prefs.BackingStoreException;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
-
-	/**
-	 * Use the command 'python' without a specified location as default
-	 */
-	private static final String DEFAULT_PYTHON_PATH = "python";
+	
+	public static final String PYTHON_PATH_CFG = "pythonPath";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferencePage.class);
 
@@ -109,7 +107,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return Path to the python executable
 	 */
 	public static String getPythonPath() {
-		return Platform.getPreferencesService().getString("org.knime.python", "pythonPath", DEFAULT_PYTHON_PATH, null);
+		return Platform.getPreferencesService().getString("org.knime.python", PYTHON_PATH_CFG, getDefaultPythonPath(), null);
 	}
 
 	/**
@@ -142,7 +140,11 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performDefaults() {
-		m_pathEditor.setStringValue(DEFAULT_PYTHON_PATH);
+		m_pathEditor.setStringValue(getDefaultPythonPath());
+	}
+	
+	private static String getDefaultPythonPath() {
+		return DefaultScope.INSTANCE.getNode("org.knime.python").get(PYTHON_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_PATH);
 	}
 
 	/**
@@ -202,7 +204,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_sc.setContent(m_container);
 		m_sc.setExpandHorizontal(true);
 		m_sc.setExpandVertical(true);
-		testPythonInstallation(false);
+		testPythonInstallation();
 		return m_sc;
 	}
 
@@ -224,24 +226,17 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		setInfo("Testing python installation...");
 		setError("");
 		// Test the python installation now so we don't have to do it later
-		testPythonInstallation(true);
+		testPythonInstallation();
 	}
 
 	/**
 	 * Runs the python test in a separate thread.
-	 * 
-	 * If the path has not changed since the last test the test will not be
-	 * rerun unless the force parameter is true.
-	 * 
-	 * @param force
-	 *            If true the python installation will always be newly tested
 	 */
-	private void testPythonInstallation(final boolean force) {
+	private void testPythonInstallation() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				final PythonKernelTestResult result = force ? Activator.retestPythonInstallation()
-						: Activator.testPythonInstallation();
+				final PythonKernelTestResult result = Activator.retestPythonInstallation();
 				m_display.asyncExec(new Runnable() {
 					public void run() {
 						setResult(result);
