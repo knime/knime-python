@@ -75,11 +75,6 @@ public class Activator implements BundleActivator {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	/**
-	 * Command to start python.
-	 */
-	private static String pythonCommand = PythonPreferencePage.getPythonPath();
-
 	private static PythonKernelTestResult pythonTestResult;
 
 	/**
@@ -113,7 +108,7 @@ public class Activator implements BundleActivator {
 	 * @return The command to start python
 	 */
 	public static String getPythonCommand() {
-		return pythonCommand;
+		return PythonPreferencePage.getPythonPath();
 	}
 
 	/**
@@ -128,6 +123,7 @@ public class Activator implements BundleActivator {
 		if (pythonTestResult != null && !pythonTestResult.hasError()) {
 			return pythonTestResult;
 		}
+		String pythonCommand = getPythonCommand();
 		try {
 			// Start python kernel tester script
 			String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
@@ -154,7 +150,6 @@ public class Activator implements BundleActivator {
 	 * @return The new test result
 	 */
 	public static synchronized PythonKernelTestResult retestPythonInstallation() {
-		pythonCommand = PythonPreferencePage.getPythonPath();
 		pythonTestResult = null;
 		return testPythonInstallation();
 	}
