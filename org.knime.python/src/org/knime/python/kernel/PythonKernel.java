@@ -909,7 +909,7 @@ public class PythonKernel {
 						} catch (final IOException e) {
 							//
 						}
-					} else {
+					} else if (m_process != null) {
 						m_process.destroy();
 					}
 					try {
