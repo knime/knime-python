@@ -238,8 +238,11 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			public void run() {
 				final PythonKernelTestResult result = Activator.retestPythonInstallation();
 				m_display.asyncExec(new Runnable() {
+					@Override
 					public void run() {
-						setResult(result);
+						if (!getControl().isDisposed()) {
+							setResult(result);
+						}
 					}
 				});
 			}
