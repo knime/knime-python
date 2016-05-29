@@ -59,7 +59,6 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
-import org.knime.core.node.port.database.DatabaseDriverLoader;
 import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
@@ -100,7 +99,7 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
 					getAvailableFlowVariables().values());
 			final CredentialsProvider cp = getCredentialsProvider();
 			final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
-			final Collection<String> jars = getJars(connIn.getDriver());
+			final Collection<String> jars = getJars(connIn);
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
 			kernel.putGeneralObject(sqlObject);
@@ -110,7 +109,7 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
 			final SQLEditorObjectReader sqlReader = new SQLEditorObjectReader(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]);
 			kernel.getGeneralObject(sqlReader);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
+			final Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
 	        addNewVariables(variables);
 			final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn, sqlReader.getQuery());
 			final DatabaseReaderConnection dbCon = new DatabaseReaderConnection(connOut);
@@ -121,13 +120,15 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
 		}
 	}
 
-	static Collection<String> getJars(final String driver) throws IOException {
+	static Collection<String> getJars(final DatabaseQueryConnectionSettings connectionSettings) throws IOException {
 		//locate the jdbc jar files
 		try {
 			final Collection<String> jars = new LinkedList<>();
-			final File driverFile = DatabaseDriverLoader.getDriverFileForDriverClass(driver);
-			if (driverFile != null) {
-				final String absolutePath = driverFile.getAbsolutePath();
+			final DatabaseUtility utility = connectionSettings.getUtility();
+			final Collection<File> driverFiles =
+					utility.getConnectionFactory().getDriverFactory().getDriverFiles(connectionSettings);
+			for (final File file : driverFiles) {
+				final String absolutePath = file.getAbsolutePath();
 				jars.add(absolutePath);
 			}
 			return jars;

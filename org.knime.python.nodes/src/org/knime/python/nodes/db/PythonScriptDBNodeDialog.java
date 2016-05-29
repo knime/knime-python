@@ -110,7 +110,7 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
 		try {
 			final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
-			final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings.getDriver());
+			final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings);
 			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
 					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
 					connectionSettings, getCredentialsProvider(), jars);
