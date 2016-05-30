@@ -6,16 +6,13 @@
          point="org.knime.workbench.repository.nodes">
       <node
             category-path="/labs/jython"
-            factory-class="org.knime.ext.jython.PythonScript11NodeFactory"
-            id="org.knime.ext.jython.script11"/>
+            factory-class="org.knime.ext.jython.PythonScript11NodeFactory"/>
       <node
             category-path="/labs/jython"
-            factory-class="org.knime.ext.jython.PythonScript21NodeFactory"
-            id="org.knime.ext.jython.script21"/>
+            factory-class="org.knime.ext.jython.PythonScript21NodeFactory"/>
       <node
             category-path="/labs/jython"
-            factory-class="org.knime.ext.jython.PythonFunctionNodeFactory"
-            id="org.knime.ext.jython.expression"/>
+            factory-class="org.knime.ext.jython.PythonFunctionNodeFactory"/>
    </extension>
    
    <extension
@@ -26,6 +23,4 @@
             name="Jython"
             path="/labs"/>
    </extension>
-   
-
 </plugin>
