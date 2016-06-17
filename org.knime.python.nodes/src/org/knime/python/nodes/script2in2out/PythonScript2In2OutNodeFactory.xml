@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
-<knimeNode icon="./pythonscript.png" type="Manipulator">
-	<name>Python Script (1&#8658;1)</name>
+<knimeNode icon="./pythonscript2in2out.png" type="Manipulator">
+	<name>Python Script (2:&#8658;)</name>
 
 	<shortDescription>
 		Allows execution of a Python script in a local Python
@@ -57,7 +57,7 @@
 		</tab>
 		<tab name="Templates">
 			<option name="Create from editor...">
-				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script</i>
+				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script-2in1out</i>
 			</option>
 			<option name="Remove selected">
 				Removes the selected template.<br/><br />Note: Templates provided by plugins can not be removed.
@@ -68,17 +68,32 @@
 		</tab>
 	</fullDescription>
 	<ports>
-		<inPort name="Table" index="0">
+		<inPort name="Table 1" index="0">
 			The input table. In the Python script
 			it is available as
 			pandas.DataFrame under the name
-			<b>input_table</b>
+			<b>input_table_1</b>
 			.
 		</inPort>
-		<outPort name="Table" index="0">
+		<inPort name="Table 2" index="1">
+			The input table. In the Python script
+			it is available as
+			pandas.DataFrame under the name
+			<b>input_table_2</b>
+			.
+		</inPort>
+		<outPort name="Table 1" index="0">
 			The output table. This is the content of the
 			variable
-			<b>output_table</b>
+			<b>output_table_1</b>
+			which has to be defined and has to be of the
+			type pandas.DataFrame for
+			this node to successfully execute.
+		</outPort>
+		<outPort name="Table 2" index="1">
+			The output table. This is the content of the
+			variable
+			<b>output_table_2</b>
 			which has to be defined and has to be of the
 			type pandas.DataFrame for
 			this node to successfully execute.

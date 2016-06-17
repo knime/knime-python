@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
 <knimeNode icon="./pythonscript2in1out.png" type="Manipulator">
-	<name>Python Script (2:1)</name>
+	<name>Python Script (2&#8658;1)</name>
 
 	<shortDescription>
 		Allows execution of a Python script in a local Python
