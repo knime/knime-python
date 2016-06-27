@@ -288,12 +288,6 @@ abstract public class SourceCodePanel extends JPanel {
 	private static final long serialVersionUID = -3216788918504383870L;
 
 	/**
-	 * The maximum length a string that will be added to the console can have
-	 * (everythin else will be truncated).
-	 */
-	private static final int MAX_STRING_LENGTH_IN_CONSOLE = 100000;
-
-	/**
 	 * File containing the users spell checking dictionary.
 	 */
 	private static final File USER_DICTIONARY = new File(ResourcesPlugin.getWorkspace().getRoot().getLocation()
@@ -791,7 +785,7 @@ abstract public class SourceCodePanel extends JPanel {
 				@Override
 				public void run() {
 					StyledDocument doc = m_console.getStyledDocument();
-					String string = shortenString(text);
+					String string = ScriptingNodeUtils.shortenString(text);
 					try {
 						// Messages use normal style
 						doc.insertString(doc.getLength(), string + "\n", m_normalStyle);
@@ -815,7 +809,7 @@ abstract public class SourceCodePanel extends JPanel {
 				@Override
 				public void run() {
 					StyledDocument doc = m_console.getStyledDocument();
-					String string = shortenString(text);
+					String string = ScriptingNodeUtils.shortenString(text);
 					try {
 						// Errors use error style
 						doc.insertString(doc.getLength(), string + "\n", m_errorStyle);
@@ -954,24 +948,6 @@ abstract public class SourceCodePanel extends JPanel {
 		// Automatically suggest after '.'
 		provider.setAutoActivationRules(false, ".");
 		return provider;
-	}
-
-	/**
-	 * Truncate the given string if necessary.
-	 * 
-	 * @param originalString
-	 *            The string that may be to long
-	 * @return The original string or a truncated version if the original's
-	 *         length is bigger than the defined maximum
-	 */
-	private String shortenString(final String originalString) {
-		String string = originalString;
-		if (originalString.length() > MAX_STRING_LENGTH_IN_CONSOLE) {
-			string = originalString.substring(0, MAX_STRING_LENGTH_IN_CONSOLE);
-			string += "\nReached maximum output limit, omitted "
-					+ (originalString.length() - MAX_STRING_LENGTH_IN_CONSOLE) + " characters";
-		}
-		return string;
 	}
 
 	/**

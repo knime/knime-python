@@ -72,6 +72,7 @@ import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.knime.code.generic.ImageContainer;
+import org.knime.code.generic.ScriptingNodeUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.BufferedDataContainer;
@@ -270,7 +271,7 @@ public class PythonKernel {
 			response = ExecuteResponse.parseFrom(readMessageBytes(inFromServer));
 		}
 		if (response.getOutput().length() > 0) {
-			LOGGER.debug(response.getOutput());
+			LOGGER.debug(ScriptingNodeUtils.shortenString(response.getOutput(), 1000));
 		}
 		return new String[] { response.getOutput(), response.getError() };
 	}
