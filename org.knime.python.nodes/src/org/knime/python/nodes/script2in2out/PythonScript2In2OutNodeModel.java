@@ -87,18 +87,18 @@ class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNo
 			kernel.putFlowVariables(PythonScript2In2OutNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
 			kernel.putDataTable(PythonScript2In2OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			kernel.putDataTable(PythonScript2In2OutNodeConfig.getVariableNames().getInputTables()[1], inData[1],
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			exec.createSubProgress(0.4).setProgress(1);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScript2In2OutNodeConfig.getVariableNames().getFlowVariables());
 			table1 = kernel.getDataTable(PythonScript2In2OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			table2 = kernel.getDataTable(PythonScript2In2OutNodeConfig.getVariableNames().getOutputTables()[1], exec,
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();

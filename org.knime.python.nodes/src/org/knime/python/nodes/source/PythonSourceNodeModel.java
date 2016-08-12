@@ -88,10 +88,10 @@ class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.55).setProgress(1);
+			exec.createSubProgress(0.7).setProgress(1);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables());
 			table = kernel.getDataTable(PythonSourceNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.45));
+					exec.createSubProgress(0.3));
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();

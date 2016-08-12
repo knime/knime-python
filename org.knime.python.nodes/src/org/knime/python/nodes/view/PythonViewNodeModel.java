@@ -108,10 +108,10 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
+			exec.createSubProgress(0.6).setProgress(1);
 			image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.3).setProgress(1);
+			exec.createSubProgress(0.1).setProgress(1);
 	        addNewVariables(variables);
 			m_image = image.getBufferedImage();
 		} finally {

@@ -87,12 +87,12 @@ class PythonObjectWriterNodeModel extends PythonNodeModel<PythonObjectWriterNode
 					getAvailableFlowVariables().values());
 			kernel.putObject(PythonObjectWriterNodeConfig.getVariableNames().getInputObjects()[0],
 					((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
-			exec.createSubProgress(0.45).setProgress(1);
+			exec.createSubProgress(0.1).setProgress(1);
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.55).setProgress(1);
+			exec.createSubProgress(0.9).setProgress(1);
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();

@@ -93,10 +93,10 @@ class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
+			exec.createSubProgress(0.6).setProgress(1);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
 			object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
-			exec.createSubProgress(0.3).setProgress(1);
+			exec.createSubProgress(0.1).setProgress(1);
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();
