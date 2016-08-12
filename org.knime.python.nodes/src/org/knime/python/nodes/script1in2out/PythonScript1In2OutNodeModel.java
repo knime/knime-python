@@ -94,9 +94,9 @@ class PythonScript1In2OutNodeModel extends PythonNodeModel<PythonScript1In2OutNo
 			exec.createSubProgress(0.4).setProgress(1);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScript1In2OutNodeConfig.getVariableNames().getFlowVariables());
 			table1 = kernel.getDataTable(PythonScript1In2OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			table2 = kernel.getDataTable(PythonScript1In2OutNodeConfig.getVariableNames().getOutputTables()[1], exec,
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();

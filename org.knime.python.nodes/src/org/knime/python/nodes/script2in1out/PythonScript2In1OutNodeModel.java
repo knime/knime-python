@@ -86,9 +86,9 @@ class PythonScript2In1OutNodeModel extends PythonNodeModel<PythonScript2In1OutNo
 			kernel.putFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
 			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[1], inData[1],
-					exec.createSubProgress(0.3));
+					exec.createSubProgress(0.15));
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));

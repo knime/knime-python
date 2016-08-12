@@ -107,10 +107,10 @@ class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNode
 			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
 			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
 			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.55).setProgress(1);
+			exec.createSubProgress(0.9).setProgress(1);
 			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
 			object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
-			exec.createSubProgress(0.45).setProgress(1);
+			exec.createSubProgress(0.1).setProgress(1);
 	        addNewVariables(variables);
 		} finally {
 			kernel.close();
