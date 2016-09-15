@@ -877,7 +877,10 @@ def dict_to_protobuf_variables(var_dict):
 		    else:
 		    	var = variables.stringVariable.add()
 		    	var.key = key
-		    	var.value = str(value)
+		    	if isinstance(value, unicode) or isinstance(value, str):
+		    		var.value = value
+		    	else:
+					var.value = str(value)
 	return variables
 
 
