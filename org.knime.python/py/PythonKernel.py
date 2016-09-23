@@ -663,7 +663,7 @@ def data_frame_to_protobuf_table(data_frame):
                             long_val = long_col.longValue.add()
                             if not math.isnan(cell):
                                 long_val.value = long(cell)
-                elif data_frame[column].dtype == 'double':
+                elif data_frame[column].dtype == 'double' or column_type(data_frame, column) == float:
                     col_ref.type = 'DoubleColumn'
                     col_ref.indexInType = len(table_message.doubleCol)
                     double_col = table_message.doubleCol.add()
