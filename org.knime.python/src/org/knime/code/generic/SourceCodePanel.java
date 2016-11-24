@@ -121,7 +121,7 @@ import org.knime.python.Activator;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-abstract public class SourceCodePanel extends JPanel {
+public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Represents a variable as it is displayed in the variables table.
@@ -324,7 +324,7 @@ abstract public class SourceCodePanel extends JPanel {
 	
 	private JTable m_vars = new JTable(m_varsModel);
 	private JButton m_exec = new JButton("Execute script");
-	private JButton m_execSelection = new JButton("Execute selection");
+	private JButton m_execSelection = new JButton("Execute selected lines");
 	private JButton m_reset = new JButton("Reset workspace");
 	private JButton m_clearConsole = new JButton();
 	private DefaultListModel<FlowVariable> m_flowVariablesModel = new DefaultListModel<FlowVariable>();
@@ -472,7 +472,7 @@ abstract public class SourceCodePanel extends JPanel {
 		m_execSelection.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String selectedText = m_editor.getSelectedText();
+				String selectedText = getSelectedLines();
 				if (selectedText != null && !selectedText.isEmpty()) {
 					runExec(selectedText);
 				} else {
@@ -538,6 +538,32 @@ abstract public class SourceCodePanel extends JPanel {
 			}
 		});
 		setColumnListEnabled(variableNames.getInputTables().length>0);
+	}
+	
+	private String getSelectedLines() {
+		String text = m_editor.getText();
+		int start = m_editor.getSelectionStart();
+		int end = m_editor.getSelectionEnd();
+		// Check if selection is valid (if no cursor is set start will be bigger than the last index)
+		if (start > text.length()-1) {
+			return null;
+		}
+		// Cut lines before selection
+		int cutStart = 0;
+		for (int i = 0; i < start; i++) {
+			if (text.charAt(i)=='\n') {
+				// +1 because we want to cut the \n also
+				cutStart = i + 1;
+			}
+		}
+		// Cut lines after selection
+		int cutEnd = text.length();
+		for (int i = text.length()-1; i >= end; i--) {
+			if (text.charAt(i)=='\n') {
+				cutEnd = i;
+			}
+		}
+		return text.substring(cutStart, cutEnd);
 	}
 	
 	private int findTableForColumnIndex(final int columnIndex) {
