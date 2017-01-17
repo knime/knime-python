@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: org.knime.serialization.flatbuffers.column
+Bundle-SymbolicName: org.knime.serialization.flatbuffers.column;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)"
+Import-Package: org.apache.commons.lang3,
+ org.apache.xmlbeans.impl.common,
+ org.knime.core.node
+Export-Package: org.knime.flatbuffers

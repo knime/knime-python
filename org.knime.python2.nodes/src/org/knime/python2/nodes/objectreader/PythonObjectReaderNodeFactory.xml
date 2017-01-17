@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode icon="./pythonobjectreader.png" type="Source">
+	<name>Python Object Reader</name>
+
+	<shortDescription>
+		Allows execution of a Python script in a local Python
+		installation.
+	</shortDescription>
+
+	<fullDescription>
+		<intro>
+			Allows execution of a Python script in a local Python
+			installation.
+			The path to the Python executable has to be configured
+			in Preferences
+			→ KNIME → Python.
+		</intro>
+		<tab name="Script">
+			<option name="Editor">
+				The script that will be executed to generate this nodes output.
+				Execute
+				script will execute the full script while execute selection
+				will only
+				execute the currently selected script.
+				<br />
+				<br />
+				The editor optionally provides autocompletion (CTRL + Space) if the
+				Python module <b>jedi</b> is installed.
+			</option>
+			<option name="Flow variables">
+				The list contains the available flow variables. A
+				double click will insert the corresponding identifier
+				at the current
+				cursor position in the editor.
+			</option>
+			<option name="Workspace">
+				Lists the currently defined identifiers in the
+				running Python instance. Reset workspace will remove all definitions
+				and reinsert only the input data.
+			</option>
+			<option name="Console">
+				Displays the standard and error output of the
+				execution as well as other relevant information.
+			</option>
+		</tab>
+		<tab name="Templates">
+			<option name="Create from editor...">
+				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-objectreader</i>
+			</option>
+			<option name="Remove selected">
+				Removes the selected template.<br/><br />Note: Templates provided by plugins can not be removed.
+			</option>
+			<option name="Apply selected">
+				Replaces the script contained in the editor of the script tab with the selected template.
+			</option>
+		</tab>
+	</fullDescription>
+
+	<ports>
+		<outPort name="Object" index="0">
+			The object contained in the variable
+			<b>output_object</b>
+			.
+		</outPort>
+	</ports>
+	<views>
+		<view name="Standard output" index="0">
+			The text sent by Python to the standard output, during the execution of
+			this node.
+		</view>
+		<view name="Error output" index="1">
+			The text sent by Python to the error output, during the execution of
+			this node.
+		</view>
+	</views>
+</knimeNode>
