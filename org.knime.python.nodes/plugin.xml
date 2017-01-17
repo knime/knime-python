@@ -62,9 +62,6 @@
               deprecated="true"
               factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory"/>
 	</extension>
-	<extension point="org.knime.workbench.repository.categories">
-      	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/scripting" />
-   	</extension>
      <extension
            point="org.knime.workbench.repository.registeredFileExtensions">
         <FileExtensionMapping

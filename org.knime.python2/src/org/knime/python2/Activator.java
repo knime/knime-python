@@ -77,6 +77,8 @@ public class Activator implements BundleActivator {
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
 	private static PythonKernelTestResult pythonTestResult;
+	
+	public static final String PLUGIN_ID = "org.knime.python2";
 
 	/**
 	 * {@inheritDoc}
@@ -128,7 +130,7 @@ public class Activator implements BundleActivator {
 		String pythonCommand = getPythonCommand();
 		try {
 			// Start python kernel tester script
-			String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
+			String scriptPath = getFile(Activator.PLUGIN_ID, "py/PythonKernelTester.py").getAbsolutePath();
 			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
 			Process process = pb.start();
 			// Get console output of script

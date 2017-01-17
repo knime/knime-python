@@ -6,15 +6,6 @@
    <extension-point id="org.knime.python.sourcecodetemplates" name="Source code templates extension" schema="schema/sourcecodetemplates.exsd"/>
    <extension-point id="org.knime.python.modules" name="Python modules extension" schema="schema/modules.exsd"/>
    <extension
-         point="org.eclipse.ui.preferencePages">
-      <page
-            category="org.knime.workbench.ui.preferences"
-            class="org.knime.python.PythonPreferencePage"
-            id="org.knime.python.PythonPreferencePage"
-            name="Python">
-      </page>
-   </extension>
-   <extension
          point="org.knime.python.typeextension.pythontoknime">
       <type
             id="org.knime.xml"
@@ -57,12 +48,6 @@
             specClass="org.knime.python.port.PickledObjectPortObjectSpec"
             specSerializer="org.knime.python.port.PickledObjectPortObjectSpec$Serializer">
       </portType>
-   </extension>
-   <extension
-         point="org.eclipse.core.runtime.preferences">
-      <initializer
-            class="org.knime.python.PythonPreferenceInitializer">
-      </initializer>
    </extension>
 
 </plugin>

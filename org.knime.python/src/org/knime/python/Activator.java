@@ -62,6 +62,7 @@ import org.knime.core.util.FileUtil;
 import org.knime.python.kernel.PythonModuleExtensions;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
+import org.knime.python2.PythonPreferencePage;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;

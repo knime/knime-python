@@ -107,7 +107,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return Path to the python executable
 	 */
 	public static String getPythonPath() {
-		return Platform.getPreferencesService().getString("org.knime.python", PYTHON_PATH_CFG, getDefaultPythonPath(), null);
+		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_PATH_CFG, getDefaultPythonPath(), null);
 	}
 
 	/**
@@ -144,7 +144,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	}
 	
 	private static String getDefaultPythonPath() {
-		return DefaultScope.INSTANCE.getNode("org.knime.python").get(PYTHON_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_PATH);
+		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_PATH);
 	}
 
 	/**
@@ -156,7 +156,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_sc = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
 		m_container = new Composite(m_sc, SWT.NONE);
 		m_container.setLayout(new GridLayout());
-		m_pathEditor = new FileFieldEditor("org.knime.python", "Path to Python executable", m_container);
+		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, "Path to Python executable", m_container);
 		m_pathEditor.setStringValue(getPythonPath());
 		GridData gridData = new GridData();
 		gridData.horizontalSpan = 3;
@@ -216,7 +216,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	private void setPythonPath(final String pythonPath) {
 		// If python path has changed retest the underling python installation
-		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode("org.knime.python");
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
 		prefs.put("pythonPath", pythonPath);
 		try {
 			prefs.flush();

@@ -17,7 +17,7 @@ public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 
 	@Override
 	public void initializeDefaultPreferences() {
-		IEclipsePreferences prefs = DefaultScope.INSTANCE.getNode("org.knime.python");
+		IEclipsePreferences prefs = DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
 		prefs.put("pythonPath", DEFAULT_PYTHON_PATH);
 		try {
 			prefs.flush();
