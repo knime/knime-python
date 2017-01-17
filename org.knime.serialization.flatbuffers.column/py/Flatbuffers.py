@@ -78,7 +78,7 @@ def table_to_bytes(table):
     colOffsetList = []
     
     for colIdx in range(0,table.get_number_columns()):
-        nameOffset = builder.CreateString((table.get_name(colIdx).decode('utf-8')))
+        nameOffset = builder.CreateString((table.get_name(colIdx)))
         if table.get_type(colIdx) == _types_.INTEGER:  
             col = table_column(table, colIdx)
             IntColumn.IntColumnStartValuesVector(builder, len(col))

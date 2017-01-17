@@ -169,7 +169,7 @@ public class PythonKernel {
 		// Start listening
 		thread.start();
 		// Get path to python kernel script
-		final String scriptPath = Activator.getFile("org.knime.python", "py/PythonKernel.py").getAbsolutePath();
+		final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		final ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port, serializerPythonPath);
 		// Add all python modules to PYTHONPATH variable

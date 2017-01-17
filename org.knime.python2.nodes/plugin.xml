@@ -4,16 +4,16 @@
 <plugin>
    	<extension point="org.knime.workbench.repository.nodes">
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.variables.PythonVariablesNodeFactory" />
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.source.PythonSourceNodeFactory" after="org.knime.python.nodes.variables.PythonVariablesNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script.PythonScriptNodeFactory" after="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
-        <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script1in2out.PythonScript1In2OutNodeFactory" after="org.knime.python.nodes.script.PythonScriptNodeFactory"/>         
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in1out.PythonScript2In1OutNodeFactory" after="org.knime.python.nodes.script1in2out.PythonScript1In2OutNodeFactory"/>  		
-        <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in2out.PythonScript2In2OutNodeFactory" after="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.view.PythonViewNodeFactory" after="org.knime.python.nodes.script2in2out.PythonScript2In2OutNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectreader.PythonObjectReaderNodeFactory" after="org.knime.python.nodes.view.PythonViewNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectwriter.PythonObjectWriterNodeFactory" after="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner.PythonLearnerNodeFactory" after="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor.PythonPredictorNodeFactory" after="org.knime.python.nodes.learner.PythonLearnerNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.source.PythonSourceNodeFactory" after="org.knime.python2.nodes.variables.PythonVariablesNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script.PythonScriptNodeFactory" after="org.knime.python2.nodes.source.PythonSourceNodeFactory"/>
+        <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script1in2out.PythonScript1In2OutNodeFactory" after="org.knime.python2.nodes.script.PythonScriptNodeFactory"/>         
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in1out.PythonScript2In1OutNodeFactory" after="org.knime.python2.nodes.script1in2out.PythonScript1In2OutNodeFactory"/>  		
+        <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in2out.PythonScript2In2OutNodeFactory" after="org.knime.python2.nodes.script2in1out.PythonScript2In1OutNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.view.PythonViewNodeFactory" after="org.knime.python2.nodes.script2in2out.PythonScript2In2OutNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectreader.PythonObjectReaderNodeFactory" after="org.knime.python2.nodes.view.PythonViewNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectwriter.PythonObjectWriterNodeFactory" after="org.knime.python2.nodes.objectreader.PythonObjectReaderNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner.PythonLearnerNodeFactory" after="org.knime.python2.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
+   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor.PythonPredictorNodeFactory" after="org.knime.python2.nodes.learner.PythonLearnerNodeFactory"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/scripting" />
