@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode icon="./pythonscript1in2out.png" type="Manipulator">
+	<name>Python Script (1&#8658;2)</name>
+
+	<shortDescription>
+		Allows execution of a Python script in a local Python
+		installation.
+	</shortDescription>
+
+	<fullDescription>
+		<intro>
+			Allows execution of a Python script in a local Python
+			installation.
+			The path to the Python executable has to be configured
+			in Preferences
+			→ KNIME → Python.
+		</intro>
+		<tab name="Script">
+			<option name="Editor">
+				The script that will be executed to generate this nodes output.
+				Execute
+				script will execute the full script while execute selection
+				will only
+				execute the currently selected script.
+				<br />
+				<br />
+				The editor optionally provides autocompletion (CTRL + Space) if the
+				Python module <b>jedi</b> is installed.
+			</option>
+			<option name="Columns">
+				The list contains the columns available in the
+				input table. A double click will insert the corresponding identifier
+				at the current cursor position in the editor.
+			</option>
+			<option name="Flow variables">
+				The list contains the available flow variables. A
+				double click will insert the corresponding identifier
+				at the current
+				cursor position in the editor.
+			</option>
+			<option name="Workspace">
+				Lists the currently defined identifiers in the
+				running Python instance. Reset workspace will remove all definitions
+				and reinsert only the input data.
+			</option>
+			<option name="Console">
+				Displays the standard and error output of the
+				execution as well as other relevant information.
+			</option>
+		</tab>
+		<tab name="Options">
+			<option name="Row limit (dialog)">
+				Limits how many rows are loaded in the dialog.
+				Changes only take effect after reseting the workspace.
+			</option>
+		</tab>
+		<tab name="Templates">
+			<option name="Create from editor...">
+				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script-2in1out</i>
+			</option>
+			<option name="Remove selected">
+				Removes the selected template.<br/><br />Note: Templates provided by plugins can not be removed.
+			</option>
+			<option name="Apply selected">
+				Replaces the script contained in the editor of the script tab with the selected template.
+			</option>
+		</tab>
+	</fullDescription>
+	<ports>
+		<inPort name="Table" index="0">
+			The input table. In the Python script
+			it is available as
+			pandas.DataFrame under the name
+			<b>input_table</b>
+			.
+		</inPort>
+		<outPort name="Table 1" index="0">
+			The output table. This is the content of the
+			variable
+			<b>output_table_1</b>
+			which has to be defined and has to be of the
+			type pandas.DataFrame for
+			this node to successfully execute.
+		</outPort>
+		<outPort name="Table 2" index="1">
+			The output table. This is the content of the
+			variable
+			<b>output_table_2</b>
+			which has to be defined and has to be of the
+			type pandas.DataFrame for
+			this node to successfully execute.
+		</outPort>
+	</ports>
+	<views>
+		<view name="Standard output" index="0">
+			The text sent by Python to the standard output, during the execution of
+			this node.
+		</view>
+		<view name="Error output" index="1">
+			The text sent by Python to the error output, during the execution of
+			this node.
+		</view>
+	</views>
+</knimeNode>

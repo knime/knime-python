@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension-point id="org.knime.python2.typeextension.knimetopython" name="Python type extension (KNIME to Python)" schema="schema/typeextension.knimetopython.exsd"/>
+   <extension-point id="org.knime.python2.typeextension.pythontoknime" name="Python type extension (Python to KNIME)" schema="schema/typeextension.pythontoknime.exsd"/>
+   <extension-point id="org.knime.python2.sourcecodetemplates" name="Source code templates extension" schema="schema/sourcecodetemplates.exsd"/>
+   <extension-point id="org.knime.python2.modules" name="Python modules extension" schema="schema/modules.exsd"/>
+   <extension-point id="org.knime.python2.serializationlibrary" name="Python serialization library" schema="schema/serializationlibrary.exsd"/>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.knime.workbench.ui.preferences"
+            class="org.knime.python2.PythonPreferencePage"
+            id="org.knime.python2.PythonPreferencePage"
+            name="Python">
+      </page>
+   </extension>
+   <extension
+         point="org.knime.python2.typeextension.pythontoknime">
+      <type
+            id="org.knime.xml"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="src/org/knime/python/typeextension/builtin/xml/XMLSerializer.py"
+            python-type-identifier="xml.dom.minidom.Document">
+      </type>
+      <type
+            id="org.knime.image"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.ImageDeserializerFactory"
+            python-serializer="src/org/knime/python/typeextension/builtin/image/ImageSerializer.py"
+            python-type-identifier="PIL.PngImagePlugin.PngImageFile">
+      </type>
+   </extension>
+   <extension
+         point="org.knime.python2.typeextension.knimetopython">
+      <type
+            id="org.knime.xml"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.xml.XMLSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/xml/XMLDeserializer.py">
+      </type>
+      <type
+            id="org.knime.svg"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.svg.SVGSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/svg/SVGDeserializer.py">
+      </type>
+      <type
+            id="org.knime.image"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.image.ImageSerializerFactory"
+            python-deserializer="src/org/knime/python/typeextension/builtin/image/ImageDeserializer.py">
+      </type>
+   </extension>
+   <extension
+         point="org.knime.core.PortType">
+      <portType
+            color="#1eb9dc"
+            name="Python"
+            objectClass="org.knime.python2.port.PickledObjectPortObject"
+            objectSerializer="org.knime.python2.port.PickledObjectPortObject$Serializer"
+            specClass="org.knime.python2.port.PickledObjectPortObjectSpec"
+            specSerializer="org.knime.python2.port.PickledObjectPortObjectSpec$Serializer">
+      </portType>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.knime.python2.PythonPreferenceInitializer">
+      </initializer>
+   </extension>
+
+</plugin>
