@@ -65,6 +65,7 @@ import org.knime.code2.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
 import org.knime.python2.kernel.PythonKernelManager;
@@ -77,6 +78,8 @@ import org.knime.python2.port.PickledObject;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonSourceCodePanel extends SourceCodePanel {
+	
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
 
 	private static final long serialVersionUID = -3111905445745421972L;
 
@@ -86,6 +89,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	private final Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
 	private JProgressBarProgressMonitor m_progressMonitor;
+	private boolean m_usePython3 = true;
+	private boolean m_pythonVersionHasChanged = false;
 
 
 	/**
@@ -111,7 +116,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 					// the kernel
 					// This will return immediately if the test result was
 					// positive before
-					final PythonKernelTestResult result = Activator.testPythonInstallation();
+					final PythonKernelTestResult result = m_usePython3 ? Activator.testPython3Installation() : Activator.testPython2Installation();
 					// Display result message (this might just be a warning
 					// about missing optional modules)
 					if (!result.getMessage().isEmpty()) {
@@ -124,7 +129,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						try {
 							// Start kernel manager which will start the actual
 							// kernel
-							m_kernelManager = new PythonKernelManager();
+							m_kernelManager = new PythonKernelManager(m_usePython3);
 							setStatusMessage("Python successfully started");
 							putDataIntoPython();
 							setInteractive(true);
@@ -208,7 +213,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						setRunning(false);
 						// Kernel manager will stop old python
 						// kernel and start a new one
-						m_kernelManager.switchToNewKernel();
+						m_kernelManager.switchToNewKernel(m_usePython3);
 						setStatusMessage("Python successfully restarted");
 						putDataIntoPython();
 						setInteractive(true);
@@ -280,6 +285,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	@Override
 	protected void runReset() {
 		if (m_kernelManager != null) {
+			if (m_pythonVersionHasChanged) {
+				m_pythonVersionHasChanged = false;
+				try {
+					m_kernelManager.switchToNewKernel(m_usePython3);
+				} catch (IOException e) {
+					LOGGER.error(e.getMessage(), e);
+				}
+			}
 			m_kernelManager.resetWorkspace(new PythonKernelResponseHandler<Void>() {
 				@Override
 				public void handleResponse(final Void response, final Exception exception) {
@@ -449,6 +462,17 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	@Override
 	protected String createVariableAccessString(final String variable, final String field) {
 		return variable + "['" + field.replace("\\", "\\\\").replace("'", "\\'") + "']";
+	}
+	
+	public void setUsePython3(final boolean usePython3) {
+		if (usePython3 != m_usePython3) {
+			m_pythonVersionHasChanged = !m_pythonVersionHasChanged;
+		}
+		m_usePython3 = usePython3;
+	}
+	
+	public boolean getUsePython3() {
+		return m_usePython3;
 	}
 
 }

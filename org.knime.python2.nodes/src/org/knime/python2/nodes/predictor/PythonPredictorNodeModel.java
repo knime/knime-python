@@ -83,7 +83,7 @@ class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
+		PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
 		BufferedDataTable table = null;
 		try {
 			kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),

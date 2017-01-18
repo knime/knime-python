@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.variables;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonVariablesNodeConfig extends SourceCodeConfig {
+class PythonVariablesNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
 			new String[0], new String[0], null, null, null);

@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.view;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonViewNodeConfig extends SourceCodeConfig {
+class PythonViewNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames(
 			"flow_variables", new String[] { "input_table" }, null,

@@ -83,7 +83,7 @@ class PythonVariablesNodeModel extends PythonNodeModel<PythonVariablesNodeConfig
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inObjects, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
+		PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
 		try {
 			kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());

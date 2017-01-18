@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.objectreader;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonObjectReaderNodeConfig extends SourceCodeConfig {
+class PythonObjectReaderNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null, null,
 			new String[] { "output_object" });

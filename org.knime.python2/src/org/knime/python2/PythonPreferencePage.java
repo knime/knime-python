@@ -85,7 +85,9 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 	
-	public static final String PYTHON_PATH_CFG = "pythonPath";
+	public static final String PYTHON_2_PATH_CFG = "python2Path";
+	
+	public static final String PYTHON_3_PATH_CFG = "python3Path";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferencePage.class);
 
@@ -95,19 +97,30 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 
 	private Composite m_container;
 
-	private FileFieldEditor m_pathEditor;
+	private FileFieldEditor m_python2PathEditor;
+	
+	private FileFieldEditor m_python3PathEditor;
 
 	private Label m_info;
 
 	private Label m_error;
 
 	/**
-	 * Gets the currently configured python path.
+	 * Gets the currently configured python 2 path.
 	 * 
-	 * @return Path to the python executable
+	 * @return Path to the python 2 executable
 	 */
-	public static String getPythonPath() {
-		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_PATH_CFG, getDefaultPythonPath(), null);
+	public static String getPython2Path() {
+		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_2_PATH_CFG, getDefaultPython2Path(), null);
+	}
+	
+	/**
+	 * Gets the currently configured python 3 path.
+	 * 
+	 * @return Path to the python 3 executable
+	 */
+	public static String getPython3Path() {
+		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_3_PATH_CFG, getDefaultPython3Path(), null);
 	}
 
 	/**
@@ -123,7 +136,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	public boolean performOk() {
-		setPythonPath(m_pathEditor.getStringValue());
+		setPython2Path(m_python2PathEditor.getStringValue());
+		setPython3Path(m_python3PathEditor.getStringValue());
 		return true;
 	}
 
@@ -132,7 +146,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performApply() {
-		setPythonPath(m_pathEditor.getStringValue());
+		setPython2Path(m_python2PathEditor.getStringValue());
+		setPython3Path(m_python3PathEditor.getStringValue());
 	}
 
 	/**
@@ -140,11 +155,16 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performDefaults() {
-		m_pathEditor.setStringValue(getDefaultPythonPath());
+		m_python2PathEditor.setStringValue(getDefaultPython2Path());
+		m_python3PathEditor.setStringValue(getDefaultPython3Path());
 	}
 	
-	private static String getDefaultPythonPath() {
-		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_PATH);
+	private static String getDefaultPython2Path() {
+		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_2_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_2_PATH);
+	}
+	
+	private static String getDefaultPython3Path() {
+		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_3_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_3_PATH);
 	}
 
 	/**
@@ -156,8 +176,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_sc = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
 		m_container = new Composite(m_sc, SWT.NONE);
 		m_container.setLayout(new GridLayout());
-		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, "Path to Python executable", m_container);
-		m_pathEditor.setStringValue(getPythonPath());
+		m_python2PathEditor = new FileFieldEditor(Activator.PLUGIN_ID, "Path to Python executable", m_container);
+		m_python2PathEditor.setStringValue(getPython2Path());
 		GridData gridData = new GridData();
 		gridData.horizontalSpan = 3;
 		Link startScriptInfo = new Link(m_container, SWT.NONE);
@@ -209,23 +229,44 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	}
 
 	/**
-	 * Saves the given python path.
+	 * Saves the given python 2 path.
 	 * 
-	 * @param pythonPath
-	 *            Path to the python executable
+	 * @param python2Path
+	 *            Path to the python 2 executable
 	 */
-	private void setPythonPath(final String pythonPath) {
-		// If python path has changed retest the underling python installation
+	private void setPython2Path(final String python2Path) {
+		// If python 2 path has changed retest the underling python installation
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
-		prefs.put("pythonPath", pythonPath);
+		prefs.put(PYTHON_2_PATH_CFG, python2Path);
 		try {
 			prefs.flush();
 		} catch (BackingStoreException e) {
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
-		setInfo("Testing python installation...");
+		setInfo("Testing Python 2 installation...");
 		setError("");
-		// Test the python installation now so we don't have to do it later
+		// Test the python 2 installation now so we don't have to do it later
+		testPythonInstallation();
+	}
+
+	/**
+	 * Saves the given python 3 path.
+	 * 
+	 * @param python3Path
+	 *            Path to the python 3 executable
+	 */
+	private void setPython3Path(final String python3Path) {
+		// If python 3 path has changed retest the underling python installation
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
+		prefs.put(PYTHON_3_PATH_CFG, python3Path);
+		try {
+			prefs.flush();
+		} catch (BackingStoreException e) {
+			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
+		}
+		setInfo("Testing Python 3 installation...");
+		setError("");
+		// Test the python 3 installation now so we don't have to do it later
 		testPythonInstallation();
 	}
 
@@ -236,12 +277,13 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				final PythonKernelTestResult result = Activator.retestPythonInstallation();
+				final PythonKernelTestResult python2Result = Activator.retestPython2Installation();
+				final PythonKernelTestResult python3Result = Activator.retestPython3Installation();
 				m_display.asyncExec(new Runnable() {
 					@Override
 					public void run() {
 						if (!getControl().isDisposed()) {
-							setResult(result);
+							setResult(python2Result);
 						}
 					}
 				});

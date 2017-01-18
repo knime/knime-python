@@ -83,7 +83,7 @@ class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
+		PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
 		PickledObject object = null;
 		try {
 			kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),

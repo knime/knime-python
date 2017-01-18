@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.script2in1out;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonScript2In1OutNodeConfig extends SourceCodeConfig {
+class PythonScript2In1OutNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
 			new String[] { "input_table_1", "input_table_2" }, new String[] { "output_table" }, null, null, null);

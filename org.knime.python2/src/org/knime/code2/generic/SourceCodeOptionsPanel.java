@@ -63,14 +63,14 @@ import javax.swing.event.ChangeListener;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class SourceCodeOptionsPanel extends JPanel {
+public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extends SourceCodeConfig> extends JPanel {
 
 	private static final long serialVersionUID = 526829042113254402L;
 
 	private JLabel m_rowLimitLabel = new JLabel("Row limit (dialog)");
 	private JSpinner m_rowLimit = new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0,
 			Integer.MAX_VALUE, 100));
-	private SourceCodePanel m_sourceCodePanel;
+	private Panel m_sourceCodePanel;
 
 	/**
 	 * Create a source code options panel.
@@ -78,7 +78,7 @@ public class SourceCodeOptionsPanel extends JPanel {
 	 * @param sourceCodePanel
 	 *            The corresponding source code panel
 	 */
-	public SourceCodeOptionsPanel(final SourceCodePanel sourceCodePanel) {
+	public SourceCodeOptionsPanel(final Panel sourceCodePanel) {
 		m_sourceCodePanel = sourceCodePanel;
 		setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -94,9 +94,14 @@ public class SourceCodeOptionsPanel extends JPanel {
 		gbc.weightx = 1;
 		add(m_rowLimit, gbc);
 		gbc.gridx = 0;
-		gbc.weighty = Double.MIN_NORMAL;
 		gbc.gridy++;
 		gbc.gridwidth = 2;
+		JPanel additionalOptionsPanel = getAdditionalOptionsPanel();
+		if (additionalOptionsPanel != null) {
+			add(additionalOptionsPanel, gbc);
+			gbc.gridy++;
+		}
+		gbc.weighty = Double.MIN_NORMAL;
 		add(new JLabel(), gbc);
 		m_rowLimit.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
@@ -111,7 +116,7 @@ public class SourceCodeOptionsPanel extends JPanel {
 	 * @param config
 	 *            The config
 	 */
-	public void saveSettingsTo(final SourceCodeConfig config) {
+	public void saveSettingsTo(final Config config) {
 		config.setRowLimit((int) m_rowLimit.getValue());
 	}
 
@@ -121,9 +126,17 @@ public class SourceCodeOptionsPanel extends JPanel {
 	 * @param config
 	 *            The config
 	 */
-	public void loadSettingsFrom(final SourceCodeConfig config) {
+	public void loadSettingsFrom(final Config config) {
 		m_rowLimit.setValue(config.getRowLimit());
 		m_sourceCodePanel.setRowLimit(config.getRowLimit());
+	}
+	
+	protected Panel getSourceCodePanel() {
+		return m_sourceCodePanel;
+	}
+	
+	protected JPanel getAdditionalOptionsPanel() {
+		return null;
 	}
 
 }

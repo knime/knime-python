@@ -48,6 +48,7 @@
 package org.knime.python2.nodes.objectwriter;
 
 import org.knime.code2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.code2.python.PythonSourceCodeOptionsPanel;
 import org.knime.code2.python.PythonSourceCodePanel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
@@ -70,6 +71,7 @@ import org.knime.python2.port.PickledObjectPortObject;
 class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
+	PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
 	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
@@ -77,8 +79,10 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 	 */
 	protected PythonObjectWriterNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
+		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
 		addTab("Script", m_sourceCodePanel, false);
+		addTab("Options", m_sourceCodeOptionsPanel, true);
 		addTab("Templates", m_templatesPanel, true);
 	}
 
@@ -89,6 +93,7 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
 		PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
 		m_sourceCodePanel.saveSettingsTo(config);
+		m_sourceCodeOptionsPanel.saveSettingsTo(config);
 		config.saveTo(settings);
 	}
 
@@ -104,6 +109,7 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 				new FlowVariable[getAvailableFlowVariables().size()]));
 		m_sourceCodePanel.updateData(new BufferedDataTable[0],
 				new PickledObject[] { null });
+		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
 	}
 
 	/**

@@ -140,8 +140,8 @@ public class PythonKernel {
 	 *
 	 * @throws IOException
 	 */
-	public PythonKernel() throws IOException {
-		final PythonKernelTestResult testResult = Activator.testPythonInstallation();
+	public PythonKernel(final boolean usePython3) throws IOException {
+		final PythonKernelTestResult testResult = usePython3 ? Activator.testPython3Installation() : Activator.retestPython2Installation();
 		if (testResult.hasError()) {
 			throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
 		}
@@ -171,7 +171,7 @@ public class PythonKernel {
 		// Get path to python kernel script
 		final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
-		final ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port, serializerPythonPath);
+		final ProcessBuilder pb = new ProcessBuilder(usePython3 ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath, "" + port, serializerPythonPath);
 		// Add all python modules to PYTHONPATH variable
 		String existingPath = pb.environment().get("PYTHONPATH");
 		existingPath = existingPath == null ? "" : existingPath;

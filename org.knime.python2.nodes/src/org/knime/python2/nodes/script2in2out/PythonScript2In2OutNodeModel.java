@@ -80,7 +80,7 @@ class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNo
 	 */
 	@Override
 	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
+		PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
 		BufferedDataTable table1 = null;
 		BufferedDataTable table2 = null;
 		try {

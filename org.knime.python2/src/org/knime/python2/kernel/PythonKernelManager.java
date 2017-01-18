@@ -77,9 +77,9 @@ public class PythonKernelManager {
 	 *
 	 * @throws IOException
 	 */
-	public PythonKernelManager() throws IOException {
+	public PythonKernelManager(final boolean usePython3) throws IOException {
 		m_threadPool = new ThreadPool(8);
-		m_kernel = new PythonKernel();
+		m_kernel = new PythonKernel(usePython3);
 	}
 
 	/**
@@ -141,9 +141,9 @@ public class PythonKernelManager {
 	 * @throws IOException
 	 *             If an error occurs during creation of the new python kernel
 	 */
-	public synchronized void switchToNewKernel() throws IOException {
+	public synchronized void switchToNewKernel(final boolean usePython3) throws IOException {
 		m_kernel.close();
-		m_kernel = new PythonKernel();
+		m_kernel = new PythonKernel(usePython3);
 	}
 
 	/**

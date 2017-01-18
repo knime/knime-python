@@ -109,7 +109,7 @@ public class Activator implements BundleActivator {
 	 * @return The command to start python
 	 */
 	public static String getPythonCommand() {
-		return PythonPreferencePage.getPythonPath();
+		return PythonPreferencePage.getPython2Path();
 	}
 
 	/**

@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.objectwriter;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonObjectWriterNodeConfig extends SourceCodeConfig {
+class PythonObjectWriterNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null,
 			new String[] { "input_object" }, null);

@@ -76,7 +76,9 @@ public class Activator implements BundleActivator {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	private static PythonKernelTestResult pythonTestResult;
+	private static PythonKernelTestResult python2TestResult;
+	
+	private static PythonKernelTestResult python3TestResult;
 	
 	public static final String PLUGIN_ID = "org.knime.python2";
 
@@ -89,7 +91,8 @@ public class Activator implements BundleActivator {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				testPythonInstallation();
+				testPython2Installation();
+				testPython3Installation();
 			}
 		}).start();
 		SerializationLibraryExtensions.init();
@@ -107,12 +110,21 @@ public class Activator implements BundleActivator {
 	}
 
 	/**
-	 * Return the command to start python.
+	 * Return the command to start python 2.
 	 * 
-	 * @return The command to start python
+	 * @return The command to start python 2
 	 */
-	public static String getPythonCommand() {
-		return PythonPreferencePage.getPythonPath();
+	public static String getPython2Command() {
+		return PythonPreferencePage.getPython2Path();
+	}
+
+	/**
+	 * Return the command to start python 3.
+	 * 
+	 * @return The command to start python 3
+	 */
+	public static String getPython3Command() {
+		return PythonPreferencePage.getPython3Path();
 	}
 
 	/**
@@ -122,15 +134,10 @@ public class Activator implements BundleActivator {
 	 * @return {@link PythonKernelTestResult} that containes detailed test
 	 *         information
 	 */
-	public static synchronized PythonKernelTestResult testPythonInstallation() {
-		// If python test already succeeded we do not have to run it again
-		if (pythonTestResult != null && !pythonTestResult.hasError()) {
-			return pythonTestResult;
-		}
-		String pythonCommand = getPythonCommand();
+	private static synchronized PythonKernelTestResult testPythonInstallation(final String pythonCommand, final String testScript) {
 		try {
 			// Start python kernel tester script
-			String scriptPath = getFile(Activator.PLUGIN_ID, "py/PythonKernelTester.py").getAbsolutePath();
+			String scriptPath = getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
 			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
 			Process process = pb.start();
 			// Get console output of script
@@ -138,13 +145,28 @@ public class Activator implements BundleActivator {
 			IOUtils.copy(process.getInputStream(), writer);
 			// Create test result with console output as message and error code
 			// != 0 as error
-			pythonTestResult = new PythonKernelTestResult(writer.toString());
-			return pythonTestResult;
+			return new PythonKernelTestResult(writer.toString());
 		} catch (IOException e) {
 			LOGGER.error(e.getMessage(), e);
 			// Python could not be started
-			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
+			return new PythonKernelTestResult("Could not start Python with command '" + pythonCommand + "'");
 		}
+	}
+
+	/**
+	 * Tests if python can be started with the currently configured command and
+	 * if all required modules are installed.
+	 * 
+	 * @return {@link PythonKernelTestResult} that containes detailed test
+	 *         information
+	 */
+	public static synchronized PythonKernelTestResult testPython2Installation() {
+		// If python test already succeeded we do not have to run it again
+		if (python2TestResult != null && !python2TestResult.hasError()) {
+			return python2TestResult;
+		}
+		python2TestResult = testPythonInstallation(getPython2Command(), "Python2KernelTester.py");
+		return python2TestResult;
 	}
 
 	/**
@@ -153,9 +175,36 @@ public class Activator implements BundleActivator {
 	 * 
 	 * @return The new test result
 	 */
-	public static synchronized PythonKernelTestResult retestPythonInstallation() {
-		pythonTestResult = null;
-		return testPythonInstallation();
+	public static synchronized PythonKernelTestResult retestPython2Installation() {
+		python2TestResult = null;
+		return testPython2Installation();
+	}
+
+	/**
+	 * Tests if python can be started with the currently configured command and
+	 * if all required modules are installed.
+	 * 
+	 * @return {@link PythonKernelTestResult} that containes detailed test
+	 *         information
+	 */
+	public static synchronized PythonKernelTestResult testPython3Installation() {
+		// If python test already succeeded we do not have to run it again
+		if (python3TestResult != null && !python3TestResult.hasError()) {
+			return python3TestResult;
+		}
+		python3TestResult = testPythonInstallation(getPython3Command(), "Python3KernelTester.py");
+		return python3TestResult;
+	}
+
+	/**
+	 * Delete the previous python test result and retest the python behind the
+	 * new path.
+	 * 
+	 * @return The new test result
+	 */
+	public static synchronized PythonKernelTestResult retestPython3Installation() {
+		python3TestResult = null;
+		return testPython3Installation();
 	}
 
 	/**

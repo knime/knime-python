@@ -47,10 +47,10 @@
  */
 package org.knime.python2.nodes.predictor;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-class PythonPredictorNodeConfig extends SourceCodeConfig {
+class PythonPredictorNodeConfig extends PythonSourceCodeConfig {
 
 	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
 			new String[] { "input_table" }, new String[] { "output_table" }, null, new String[] { "input_model" }, null);

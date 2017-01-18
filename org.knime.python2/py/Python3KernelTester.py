@@ -3,7 +3,7 @@
 import sys
 
 min_pandas_version = '0.7.0'
-min_python_version = '2.5.0'
+min_python_version = '3.1.0'
 
 _message = ''
 
@@ -12,6 +12,8 @@ _message = ''
 def main():
     python_version = sys.version_info
     print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
+    if python_version[0] != 3:
+        add_to_message('Python is required to have a major version of 3')
     check_required_libs()
     print(_message)
 

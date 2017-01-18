@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
-import org.knime.code2.generic.SourceCodeConfig;
+import org.knime.code2.python.PythonSourceCodeConfig;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -12,7 +12,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
 
-public abstract class PythonNodeModel<Config extends SourceCodeConfig> extends ExtToolOutputNodeModel {
+public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
 	
 	Config m_config = createConfig();
     

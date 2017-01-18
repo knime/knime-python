@@ -48,6 +48,7 @@
 package org.knime.python2.nodes.objectreader;
 
 import org.knime.code2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.code2.python.PythonSourceCodeOptionsPanel;
 import org.knime.code2.python.PythonSourceCodePanel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -66,6 +67,7 @@ import org.knime.core.node.workflow.FlowVariable;
 class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
 	PythonSourceCodePanel m_sourceCodePanel;
+	PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
 	SourceCodeTemplatesPanel m_templatesPanel;
 
 	/**
@@ -73,8 +75,10 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
 	 */
 	protected PythonObjectReaderNodeDialog() {
 		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames());
+		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
 		addTab("Script", m_sourceCodePanel, false);
+		addTab("Options", m_sourceCodeOptionsPanel, true);
 		addTab("Templates", m_templatesPanel, true);
 	}
 
@@ -85,6 +89,7 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
 	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
 		PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
 		m_sourceCodePanel.saveSettingsTo(config);
+		m_sourceCodeOptionsPanel.saveSettingsTo(config);
 		config.saveTo(settings);
 	}
 
@@ -96,6 +101,7 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
 		PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
 		config.loadFromInDialog(settings);
 		m_sourceCodePanel.loadSettingsFrom(config, specs);
+		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
 		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
 				new FlowVariable[getAvailableFlowVariables().size()]));
 	}

@@ -81,7 +81,7 @@ class PythonObjectWriterNodeModel extends PythonNodeModel<PythonObjectWriterNode
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
+		PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
 		try {
 			kernel.putFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables(),
 					getAvailableFlowVariables().values());
