@@ -54,7 +54,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
@@ -69,7 +68,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
@@ -96,14 +94,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	private ScrolledComposite m_sc;
 
 	private Composite m_container;
-
-	private FileFieldEditor m_python2PathEditor;
 	
-	private FileFieldEditor m_python3PathEditor;
-
-	private Label m_info;
-
-	private Label m_error;
+	private PythonPathEditor m_python2;
+	
+	private PythonPathEditor m_python3;
 
 	/**
 	 * Gets the currently configured python 2 path.
@@ -136,8 +130,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	public boolean performOk() {
-		setPython2Path(m_python2PathEditor.getStringValue());
-		setPython3Path(m_python3PathEditor.getStringValue());
+		setPython2Path(m_python2.getPythonPath());
+		setPython3Path(m_python3.getPythonPath());
+		testPythonInstallation();
 		return true;
 	}
 
@@ -146,8 +141,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performApply() {
-		setPython2Path(m_python2PathEditor.getStringValue());
-		setPython3Path(m_python3PathEditor.getStringValue());
+		setPython2Path(m_python2.getPythonPath());
+		setPython3Path(m_python3.getPythonPath());
+		testPythonInstallation();
 	}
 
 	/**
@@ -155,8 +151,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performDefaults() {
-		m_python2PathEditor.setStringValue(getDefaultPython2Path());
-		m_python3PathEditor.setStringValue(getDefaultPython3Path());
+		setPython2Path(getDefaultPython2Path());
+		setPython3Path(getDefaultPython3Path());
+		testPythonInstallation();
 	}
 	
 	private static String getDefaultPython2Path() {
@@ -176,8 +173,6 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_sc = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
 		m_container = new Composite(m_sc, SWT.NONE);
 		m_container.setLayout(new GridLayout());
-		m_python2PathEditor = new FileFieldEditor(Activator.PLUGIN_ID, "Path to Python executable", m_container);
-		m_python2PathEditor.setStringValue(getPython2Path());
 		GridData gridData = new GridData();
 		gridData.horizontalSpan = 3;
 		Link startScriptInfo = new Link(m_container, SWT.NONE);
@@ -204,23 +199,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 				}
 			}
 		});
-		gridData = new GridData();
-		gridData.horizontalSpan = 3;
-		gridData.verticalIndent = 20;
-		m_info = new Label(m_container, SWT.NONE);
-		m_info.setLayoutData(gridData);
-		gridData = new GridData();
-		gridData.horizontalSpan = 3;
-		m_error = new Label(m_container, SWT.NONE);
-		m_error.setLayoutData(gridData);
-		final Color red = new Color(parent.getDisplay(), 255, 0, 0);
-		m_error.setForeground(red);
-		m_error.addDisposeListener(new DisposeListener() {
-			@Override
-			public void widgetDisposed(DisposeEvent e) {
-				red.dispose();
-			}
-		});
+		m_python2 = new PythonPathEditor("Path to Python 2 executable", m_container);
+		m_python2.setPythonPath(getPython2Path());
+		m_python3 = new PythonPathEditor("Path to Python 3 executable", m_container);
+		m_python3.setPythonPath(getPython3Path());
 		m_sc.setContent(m_container);
 		m_sc.setExpandHorizontal(true);
 		m_sc.setExpandVertical(true);
@@ -243,10 +225,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		} catch (BackingStoreException e) {
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
-		setInfo("Testing Python 2 installation...");
-		setError("");
-		// Test the python 2 installation now so we don't have to do it later
-		testPythonInstallation();
+		m_python2.setPythonPath(python2Path);
 	}
 
 	/**
@@ -264,16 +243,17 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		} catch (BackingStoreException e) {
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
-		setInfo("Testing Python 3 installation...");
-		setError("");
-		// Test the python 3 installation now so we don't have to do it later
-		testPythonInstallation();
+		m_python3.setPythonPath(python3Path);
 	}
 
 	/**
 	 * Runs the python test in a separate thread.
 	 */
 	private void testPythonInstallation() {
+		m_python2.setInfo("Testing Python 2 installation...");
+		m_python2.setError("");
+		m_python3.setInfo("Testing Python 3 installation...");
+		m_python3.setError("");
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -283,7 +263,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 					@Override
 					public void run() {
 						if (!getControl().isDisposed()) {
-							setResult(python2Result);
+							setResult(python2Result, m_python2);
+							setResult(python3Result, m_python3);
+							refreshSizes();
 						}
 					}
 				});
@@ -292,36 +274,14 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	}
 
 	/**
-	 * Displays the given message as info.
-	 * 
-	 * @param message
-	 *            The message
-	 */
-	private void setInfo(final String message) {
-		m_info.setText(message);
-		refreshSizes();
-	}
-
-	/**
-	 * Displays the given message as error.
-	 * 
-	 * @param message
-	 *            The message
-	 */
-	private void setError(final String message) {
-		m_error.setText(message);
-		refreshSizes();
-	}
-
-	/**
 	 * Updates the result information.
 	 * 
 	 * @param result
 	 *            The test result
 	 */
-	private void setResult(final PythonKernelTestResult result) {
-		setInfo(result.getVersion() != null ? result.getVersion() : "");
-		setError(result.getMessage());
+	private static void setResult(final PythonKernelTestResult result, final PythonPathEditor pythonPathEditor) {
+		pythonPathEditor.setInfo(result.getVersion() != null ? result.getVersion() : "");
+		pythonPathEditor.setError(result.getMessage());
 	}
 
 	/**
