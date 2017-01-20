@@ -83,6 +83,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
+import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -147,9 +148,8 @@ public class PythonKernel {
 		}
 		// Create serialization library instance
 		m_serializationLibraryExtensions = new SerializationLibraryExtensions();
-		String serializerId = "org.knime.serialization.flatbuffers.column";
-		m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(serializerId);
-		String serializerPythonPath = SerializationLibraryExtensions.getSerializationLibraryPath(serializerId);
+		m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(PythonPreferencePage.getSerializerId());
+		String serializerPythonPath = SerializationLibraryExtensions.getSerializationLibraryPath(PythonPreferencePage.getSerializerId());
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
 		final int port = m_serverSocket.getLocalPort();

@@ -49,6 +49,12 @@ package org.knime.python2;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
@@ -65,15 +71,19 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
+import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtension;
+import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
@@ -86,6 +96,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	public static final String PYTHON_2_PATH_CFG = "python2Path";
 	
 	public static final String PYTHON_3_PATH_CFG = "python3Path";
+	
+	public static final String SERIALIZER_ID_CFG = "serializerId";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferencePage.class);
 
@@ -98,6 +110,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	private PythonPathEditor m_python2;
 	
 	private PythonPathEditor m_python3;
+	
+	private Combo m_serializer;
+	
+	private List<String> m_serializerIds;
 
 	/**
 	 * Gets the currently configured python 2 path.
@@ -116,6 +132,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	public static String getPython3Path() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_3_PATH_CFG, getDefaultPython3Path(), null);
 	}
+	
+	public static String getSerializerId() {
+		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, SERIALIZER_ID_CFG, getDefaultSerializerId(), null);
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -132,6 +152,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	public boolean performOk() {
 		setPython2Path(m_python2.getPythonPath());
 		setPython3Path(m_python3.getPythonPath());
+		setSerializerId(getSelectedSerializer());
 		testPythonInstallation();
 		return true;
 	}
@@ -143,6 +164,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	protected void performApply() {
 		setPython2Path(m_python2.getPythonPath());
 		setPython3Path(m_python3.getPythonPath());
+		setSerializerId(getSelectedSerializer());
 		testPythonInstallation();
 	}
 
@@ -153,6 +175,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	protected void performDefaults() {
 		setPython2Path(getDefaultPython2Path());
 		setPython3Path(getDefaultPython3Path());
+		setSerializerId(getDefaultSerializerId());
 		testPythonInstallation();
 	}
 	
@@ -162,6 +185,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	
 	private static String getDefaultPython3Path() {
 		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_3_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_3_PATH);
+	}
+	
+	private static String getDefaultSerializerId() {
+		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(SERIALIZER_ID_CFG, PythonPreferenceInitializer.DEFAULT_SERIALIZER_ID);
 	}
 
 	/**
@@ -203,11 +230,41 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_python2.setPythonPath(getPython2Path());
 		m_python3 = new PythonPathEditor("Path to Python 3 executable", m_container);
 		m_python3.setPythonPath(getPython3Path());
+		Label serializerLabel = new Label(m_container, SWT.NONE);
+		serializerLabel.setText("Serialization Library");
+		m_serializer = new Combo(m_container, SWT.NONE);
 		m_sc.setContent(m_container);
 		m_sc.setExpandHorizontal(true);
 		m_sc.setExpandVertical(true);
+		initListOfSerializers();
 		testPythonInstallation();
 		return m_sc;
+	}
+	
+	private void initListOfSerializers() {
+		Collection<SerializationLibraryExtension> extensions = SerializationLibraryExtensions.getExtensions();
+		Map<String, String> sortedExtensions = new TreeMap<String, String>();
+		for (SerializationLibraryExtension extension : extensions) {
+			sortedExtensions.put(extension.getJavaSerializationLibraryFactory().getName(), extension.getId());
+		}
+		String[] names = new String[sortedExtensions.size()];
+		m_serializerIds = new ArrayList<String>();
+		int i = 0;
+		for (Entry<String, String> extension : sortedExtensions.entrySet()) {
+			names[i] = extension.getKey();
+			m_serializerIds.add(extension.getValue());
+			i++;
+		}
+		m_serializer.setItems(names);
+		setSelectedSerializer(getSerializerId());
+	}
+	
+	private void setSelectedSerializer(final String serializerId) {
+		m_serializer.select(m_serializerIds.indexOf(serializerId));
+	}
+	
+	private String getSelectedSerializer() {
+		return m_serializerIds.get(m_serializer.getSelectionIndex());
 	}
 
 	/**
@@ -244,6 +301,17 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
 		m_python3.setPythonPath(python3Path);
+	}
+
+	private void setSerializerId(final String serializerId) {
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
+		prefs.put(SERIALIZER_ID_CFG, serializerId);
+		try {
+			prefs.flush();
+		} catch (BackingStoreException e) {
+			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
+		}
+		setSelectedSerializer(serializerId);
 	}
 
 	/**
