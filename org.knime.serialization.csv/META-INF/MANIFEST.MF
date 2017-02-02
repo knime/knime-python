@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: org.knime.serialization.csv
+Bundle-SymbolicName: org.knime.serialization.csv;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)"
+Export-Package: org.knime.serialization.csv

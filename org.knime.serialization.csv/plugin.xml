@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.knime.python2.serializationlibrary">
+      <serializationlibrary
+            id="org.knime.serialization.csv"
+            java-serializationlibrary-factory="org.knime.serialization.csv.CsvSerializationFactory"
+            python-serializationlibrary="py/CsvSerialization.py">
+      </serializationlibrary>
+   </extension>
+
+</plugin>
