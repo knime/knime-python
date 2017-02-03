@@ -7,6 +7,11 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 public class KeyValueTableCreator implements TableCreator {
 	
 	private Row m_row;
+	private TableSpec m_spec;
+	
+	public KeyValueTableCreator(final TableSpec spec) {
+		m_spec = spec;
+	}
 
 	@Override
 	public void addRow(final Row row) {
@@ -15,7 +20,7 @@ public class KeyValueTableCreator implements TableCreator {
 
 	@Override
 	public TableSpec getTableSpec() {
-		return null;
+		return m_spec;
 	}
 	
 	public Row getRow() {

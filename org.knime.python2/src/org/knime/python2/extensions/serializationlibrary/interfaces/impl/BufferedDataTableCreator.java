@@ -119,244 +119,176 @@ public class BufferedDataTableCreator implements TableCreator {
 		DataCell[] cells = new DataCell[row.getNumberCells()];
 		int i = 0;
 		for (Cell cell : row) {
-			switch (cell.getColumnType()) {
-			case BOOLEAN:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
+			if (cell.isMissing()) {
+				cells[i] = new MissingCell(null);
+			} else {
+				switch (cell.getColumnType()) {
+				case BOOLEAN:
 					cells[i] = BooleanCellFactory.create(cell.getBooleanValue());
-				}
-				break;
-			case BOOLEAN_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> listCells = new ArrayList<DataCell>();
+					break;
+				case BOOLEAN_LIST:
+					List<DataCell> booleanListCells = new ArrayList<DataCell>();
 					for (Boolean value : cell.getBooleanArrayValue()) {
 						if (value == null) {
-							listCells.add(new MissingCell(null));
+							booleanListCells.add(new MissingCell(null));
 						} else {
-							listCells.add(BooleanCellFactory.create(value));
+							booleanListCells.add(BooleanCellFactory.create(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case BOOLEAN_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> setCells = new ArrayList<DataCell>();
+					cells[i] = CollectionCellFactory.createListCell(booleanListCells);
+					break;
+				case BOOLEAN_SET:
+					List<DataCell> booleanSetCells = new ArrayList<DataCell>();
 					for (Boolean value : cell.getBooleanArrayValue()) {
 						if (value == null) {
-							setCells.add(new MissingCell(null));
+							booleanSetCells.add(new MissingCell(null));
 						} else {
-							setCells.add(BooleanCellFactory.create(value));
+							booleanSetCells.add(BooleanCellFactory.create(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createSetCell(setCells);
-				}
-				break;
-			case INTEGER:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
+					cells[i] = CollectionCellFactory.createSetCell(booleanSetCells);
+					break;
+				case INTEGER:
 					cells[i] = new IntCell(cell.getIntegerValue());
-				}
-				break;
-			case INTEGER_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> listCells = new ArrayList<DataCell>();
+					break;
+				case INTEGER_LIST:
+					List<DataCell> integerListCells = new ArrayList<DataCell>();
 					for (Integer value : cell.getIntegerArrayValue()) {
 						if (value == null) {
-							listCells.add(new MissingCell(null));
+							integerListCells.add(new MissingCell(null));
 						} else {
-							listCells.add(new IntCell(value));
+							integerListCells.add(new IntCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case INTEGER_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> setCells = new ArrayList<DataCell>();
+					cells[i] = CollectionCellFactory.createListCell(integerListCells);
+					break;
+				case INTEGER_SET:
+					List<DataCell> integerSetCells = new ArrayList<DataCell>();
 					for (Integer value : cell.getIntegerArrayValue()) {
 						if (value == null) {
-							setCells.add(new MissingCell(null));
+							integerSetCells.add(new MissingCell(null));
 						} else {
-							setCells.add(new IntCell(value));
+							integerSetCells.add(new IntCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createSetCell(setCells);
-				}
-				break;
-			case LONG:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
+					cells[i] = CollectionCellFactory.createSetCell(integerSetCells);
+					break;
+				case LONG:
 					cells[i] = new LongCell(cell.getLongValue());
-				}
-				break;
-			case LONG_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> listCells = new ArrayList<DataCell>();
+					break;
+				case LONG_LIST:
+					List<DataCell> longListCells = new ArrayList<DataCell>();
 					for (Long value : cell.getLongArrayValue()) {
 						if (value == null) {
-							listCells.add(new MissingCell(null));
+							longListCells.add(new MissingCell(null));
 						} else {
-							listCells.add(new LongCell(value));
+							longListCells.add(new LongCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case LONG_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> setCells = new ArrayList<DataCell>();
+					cells[i] = CollectionCellFactory.createListCell(longListCells);
+					break;
+				case LONG_SET:
+					List<DataCell> longSetCells = new ArrayList<DataCell>();
 					for (Long value : cell.getLongArrayValue()) {
 						if (value == null) {
-							setCells.add(new MissingCell(null));
+							longSetCells.add(new MissingCell(null));
 						} else {
-							setCells.add(new LongCell(value));
+							longSetCells.add(new LongCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createSetCell(setCells);
-				}
-				break;
-			case DOUBLE:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
+					cells[i] = CollectionCellFactory.createSetCell(longSetCells);
+					break;
+				case DOUBLE:
 					cells[i] = new DoubleCell(cell.getDoubleValue());
-				}
-				break;
-			case DOUBLE_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> listCells = new ArrayList<DataCell>();
+					break;
+				case DOUBLE_LIST:
+					List<DataCell> doubleListCells = new ArrayList<DataCell>();
 					for (Double value : cell.getDoubleArrayValue()) {
 						if (value == null) {
-							listCells.add(new MissingCell(null));
+							doubleListCells.add(new MissingCell(null));
 						} else {
-							listCells.add(new DoubleCell(value));
+							doubleListCells.add(new DoubleCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case DOUBLE_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> setCells = new ArrayList<DataCell>();
+					cells[i] = CollectionCellFactory.createListCell(doubleListCells);
+					break;
+				case DOUBLE_SET:
+					List<DataCell> doubleSetCells = new ArrayList<DataCell>();
 					for (Double value : cell.getDoubleArrayValue()) {
 						if (value == null) {
-							setCells.add(new MissingCell(null));
+							doubleSetCells.add(new MissingCell(null));
 						} else {
-							setCells.add(new DoubleCell(value));
+							doubleSetCells.add(new DoubleCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createSetCell(setCells);
-				}
-				break;
-			case STRING:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
+					cells[i] = CollectionCellFactory.createSetCell(doubleSetCells);
+					break;
+				case STRING:
 					cells[i] = new StringCell(cell.getStringValue());
-				}
-				break;
-			case STRING_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> listCells = new ArrayList<DataCell>();
+					break;
+				case STRING_LIST:
+					List<DataCell> stringListCells = new ArrayList<DataCell>();
 					for (String value : cell.getStringArrayValue()) {
 						if (value == null) {
-							listCells.add(new MissingCell(null));
+							stringListCells.add(new MissingCell(null));
 						} else {
-							listCells.add(new StringCell(value));
+							stringListCells.add(new StringCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case STRING_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					List<DataCell> setCells = new ArrayList<DataCell>();
+					cells[i] = CollectionCellFactory.createListCell(stringListCells);
+					break;
+				case STRING_SET:
+					List<DataCell> stringSetCells = new ArrayList<DataCell>();
 					for (String value : cell.getStringArrayValue()) {
 						if (value == null) {
-							setCells.add(new MissingCell(null));
+							stringSetCells.add(new MissingCell(null));
 						} else {
-							setCells.add(new StringCell(value));
+							stringSetCells.add(new StringCell(value));
 						}
 					}
-					cells[i] = CollectionCellFactory.createSetCell(setCells);
-				}
-				break;
-			case BYTES:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					String typeId = null;
-					Deserializer deserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(typeId).getId());
+					cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
+					break;
+				case BYTES:
+					String bytesTypeId = null;
+					Deserializer bytesDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 					try {
-						cells[i] = deserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
+						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
 					} catch (IllegalStateException | IOException e) {
 						LOGGER.error(e.getMessage(), e);
 						cells[i] = new MissingCell(null);
 					}
-				}
-				break;
-			case BYTES_LIST:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					String typeId = null;
-					Deserializer deserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(typeId).getId());
+					break;
+				case BYTES_LIST:
+					String bytesListTypeId = null;
+					Deserializer bytesListDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
 					List<DataCell> listCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							listCells.add(deserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
+							listCells.add(bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
 							listCells.add(new MissingCell(null));
 						}
 					}
 					cells[i] = CollectionCellFactory.createListCell(listCells);
-				}
-				break;
-			case BYTES_SET:
-				if (cell.isMissing()) {
-					cells[i] = new MissingCell(null);
-				} else {
-					String typeId = null;
-					Deserializer deserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(typeId).getId());
+					break;
+				case BYTES_SET:
+					String bytesSetTypeId = null;
+					Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
 					List<DataCell> setCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							setCells.add(deserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
+							setCells.add(bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
 							setCells.add(new MissingCell(null));
 						}
 					}
 					cells[i] = CollectionCellFactory.createListCell(setCells);
+					break;
+				default:
+					cells[i] = new MissingCell(null);
 				}
-				break;
-			default:
-				cells[i] = new MissingCell(null);
 			}
 			i++;
 		}

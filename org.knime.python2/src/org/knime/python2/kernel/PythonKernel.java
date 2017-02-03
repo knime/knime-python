@@ -348,7 +348,8 @@ public class PythonKernel {
 	}
 	
 	private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) {
-		KeyValueTableCreator tableCreator = new KeyValueTableCreator();
+		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
 		Set<FlowVariable> flowVariables = new HashSet<FlowVariable>();
 		if (tableCreator.getRow() == null)
@@ -516,7 +517,7 @@ public class PythonKernel {
 	public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
 		byte[] bytes = m_commands.getObject(name);
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-		KeyValueTableCreator tableCreator = new KeyValueTableCreator();
+		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
 		Row row = tableCreator.getRow();
 		int bytesIndex = spec.findColumn("bytes");
