@@ -6,90 +6,71 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 public class CellImpl implements Cell {
 	
 	private Type m_type;
-	private String m_columnName;
 	private Object m_value;
 	
-	public CellImpl(final String columnName) {
+	public CellImpl() {
 		m_type = null;
-		m_columnName = columnName;
 		m_value = null;
 	}
 	
-	public CellImpl(final Boolean value, final String columnName) {
+	public CellImpl(final Boolean value) {
 		m_type = Type.BOOLEAN;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Boolean[] value, final String columnName, final boolean isSet) {
+	public CellImpl(final Boolean[] value, final boolean isSet) {
 		m_type = isSet ? Type.BOOLEAN_SET : Type.BOOLEAN_LIST;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Integer value, final String columnName) {
+	public CellImpl(final Integer value) {
 		m_type = Type.INTEGER;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Integer[] value, final String columnName, final boolean isSet) {
+	public CellImpl(final Integer[] value, final boolean isSet) {
 		m_type = isSet ? Type.INTEGER_SET : Type.INTEGER_LIST;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Long value, final String columnName) {
+	public CellImpl(final Long value) {
 		m_type = Type.LONG;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Long[] value, final String columnName, final boolean isSet) {
+	public CellImpl(final Long[] value, final boolean isSet) {
 		m_type = isSet ? Type.LONG_SET : Type.LONG_LIST;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Double value, final String columnName) {
+	public CellImpl(final Double value) {
 		m_type = Type.DOUBLE;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Double[] value, final String columnName, final boolean isSet) {
+	public CellImpl(final Double[] value, final boolean isSet) {
 		m_type = isSet ? Type.DOUBLE_SET : Type.DOUBLE_LIST;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final String value, final String columnName) {
+	public CellImpl(final String value) {
 		m_type = Type.STRING;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final String[] value, final String columnName, final boolean isSet) {
+	public CellImpl(final String[] value, final boolean isSet) {
 		m_type = isSet ? Type.STRING_SET : Type.STRING_LIST;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Byte[] value, final String columnName) {
+	public CellImpl(final Byte[] value) {
 		m_type = Type.BYTES;
 		m_value = value;
-		m_columnName = columnName;
 	}
 	
-	public CellImpl(final Byte[][] value, final String columnName, final boolean isSet) {
+	public CellImpl(final Byte[][] value, final boolean isSet) {
 		m_type = isSet ? Type.BYTES_SET : Type.BYTES_LIST;
 		m_value = value;
-		m_columnName = columnName;
-	}
-
-	@Override
-	public String getColumnName() {
-		return m_columnName;
 	}
 
 	@Override

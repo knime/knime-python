@@ -76,7 +76,7 @@ public class BufferedDataTableIterator implements TableIterator {
 				row.setCell(new CellImpl(columnName), i);
 			} else if (type == Type.BOOLEAN) {
 				Boolean value = ((BooleanValue)dataCell).getBooleanValue();
-				row.setCell(new CellImpl(value, columnName), i);
+				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.BOOLEAN_LIST || type == Type.BOOLEAN_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
 				Boolean[] values = new Boolean[colCell.size()];
@@ -88,10 +88,10 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = ((BooleanValue)innerCell).getBooleanValue();
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.BOOLEAN_SET), i);
+				row.setCell(new CellImpl(values, type == Type.BOOLEAN_SET), i);
 			} else if (type == Type.INTEGER) {
 				Integer value = ((IntValue)dataCell).getIntValue();
-				row.setCell(new CellImpl(value, columnName), i);
+				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.INTEGER_LIST || type == Type.INTEGER_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
 				Integer[] values = new Integer[colCell.size()];
@@ -103,10 +103,10 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = ((IntValue)innerCell).getIntValue();
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.INTEGER_SET), i);
+				row.setCell(new CellImpl(values, type == Type.INTEGER_SET), i);
 			} else if (type == Type.LONG) {
 				Long value = ((LongValue)dataCell).getLongValue();
-				row.setCell(new CellImpl(value, columnName), i);
+				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.LONG_LIST || type == Type.LONG_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
 				Long[] values = new Long[colCell.size()];
@@ -118,10 +118,10 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = ((LongValue)innerCell).getLongValue();
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.LONG_SET), i);
+				row.setCell(new CellImpl(values, type == Type.LONG_SET), i);
 			} else if (type == Type.DOUBLE) {
 				Double value = ((DoubleValue)dataCell).getDoubleValue();
-				row.setCell(new CellImpl(value, columnName), i);
+				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.DOUBLE_LIST || type == Type.DOUBLE_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
 				Double[] values = new Double[colCell.size()];
@@ -133,10 +133,10 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = ((DoubleValue)innerCell).getDoubleValue();
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.DOUBLE_SET), i);
+				row.setCell(new CellImpl(values, type == Type.DOUBLE_SET), i);
 			} else if (type == Type.STRING) {
 				String value = ((StringValue)dataCell).getStringValue();
-				row.setCell(new CellImpl(value, columnName), i);
+				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.STRING_LIST || type == Type.STRING_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
 				String[] values = new String[colCell.size()];
@@ -148,12 +148,12 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = ((StringValue)innerCell).getStringValue();
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.STRING_SET), i);
+				row.setCell(new CellImpl(values, type == Type.STRING_SET), i);
 			} else if (type == Type.BYTES) {
 				Serializer serializer = m_knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(dataCell.getType()).getId());
 				try {
 					Byte[] value = ArrayUtils.toObject(serializer.serialize(dataCell));
-					row.setCell(new CellImpl(value, columnName), i);
+					row.setCell(new CellImpl(value), i);
 				} catch (IOException e) {
 					LOGGER.error(e.getMessage(), e);
 					row.setCell(new CellImpl(columnName), i);
@@ -175,7 +175,7 @@ public class BufferedDataTableIterator implements TableIterator {
 						}
 					}
 				}
-				row.setCell(new CellImpl(values, columnName, type == Type.BYTES_SET), i);
+				row.setCell(new CellImpl(values, type == Type.BYTES_SET), i);
 			}
 		}
 		return row;

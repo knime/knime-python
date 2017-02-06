@@ -359,7 +359,7 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case INTEGER: {
-					r.setCell(new CellImpl((Integer) columns.get(colName).get(rowCount), colName), colCount);
+					r.setCell(new CellImpl((Integer) columns.get(colName).get(rowCount)), colCount);
 					break;
 				}
 				case INTEGER_LIST: {
@@ -378,7 +378,7 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case DOUBLE: {
-					r.setCell(new CellImpl((Double) columns.get(colName).get(rowCount), colName), colCount);
+					r.setCell(new CellImpl((Double) columns.get(colName).get(rowCount)), colCount);
 
 					break;
 				}
@@ -389,7 +389,7 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case STRING: {
-					r.setCell(new CellImpl((String) columns.get(colName).get(rowCount), colName), colCount);
+					r.setCell(new CellImpl((String) columns.get(colName).get(rowCount)), colCount);
 					break;
 				}
 				case STRING_LIST: {

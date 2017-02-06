@@ -322,22 +322,22 @@ public class PythonKernel {
 			case INTEGER:
 				types[i] = Type.INTEGER;
 				int iValue = flowVariable.getIntValue();
-				row.setCell(new CellImpl(iValue, key), i);
+				row.setCell(new CellImpl(iValue), i);
 				break;
 			case DOUBLE:
 				types[i] = Type.DOUBLE;
 				double dValue = flowVariable.getDoubleValue();
-				row.setCell(new CellImpl(dValue, key), i);
+				row.setCell(new CellImpl(dValue), i);
 				break;
 			case STRING:
 				types[i] = Type.STRING;
 				String sValue = flowVariable.getStringValue();
-				row.setCell(new CellImpl(sValue, key), i);
+				row.setCell(new CellImpl(sValue), i);
 				break;
 			default:
 				types[i] = Type.STRING;
 				String defValue = flowVariable.getValueAsString();
-				row.setCell(new CellImpl(defValue, key), i);
+				row.setCell(new CellImpl(defValue), i);
 				break;
 			}
 			i++;
@@ -352,23 +352,26 @@ public class PythonKernel {
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
 		Set<FlowVariable> flowVariables = new HashSet<FlowVariable>();
-		if (tableCreator.getRow() == null)
+		if (tableCreator.getRow() == null) {
 			return flowVariables;
+		}
+		int i = 0;
 		for (Cell cell : tableCreator.getRow()) {
+			String columnName = tableCreator.getTableSpec().getColumnNames()[i++];
 			switch (cell.getColumnType()) {
 			case INTEGER:
-				if (isValidFlowVariableName(cell.getColumnName())) {
-					flowVariables.add(new FlowVariable(cell.getColumnName(), cell.getIntegerValue()));
+				if (isValidFlowVariableName(columnName)) {
+					flowVariables.add(new FlowVariable(columnName, cell.getIntegerValue()));
 				}
 				break;
 			case DOUBLE:
-				if (isValidFlowVariableName(cell.getColumnName())) {
-					flowVariables.add(new FlowVariable(cell.getColumnName(), cell.getDoubleValue()));
+				if (isValidFlowVariableName(columnName)) {
+					flowVariables.add(new FlowVariable(columnName, cell.getDoubleValue()));
 				}
 				break;
 			case STRING:
-				if (isValidFlowVariableName(cell.getColumnName())) {
-					flowVariables.add(new FlowVariable(cell.getColumnName(), cell.getStringValue()));
+				if (isValidFlowVariableName(columnName)) {
+					flowVariables.add(new FlowVariable(columnName, cell.getStringValue()));
 				}
 				break;
 			default:

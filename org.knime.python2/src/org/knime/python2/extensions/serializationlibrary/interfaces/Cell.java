@@ -6,11 +6,6 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
  * @author Patrick Winter
  */
 public interface Cell {
-	
-	/**
-	 * @return Name of the column containing this cell.
-	 */
-	String getColumnName();
 
 	/**
 	 * @return {@link Type} of the column containing this cell.

@@ -104,7 +104,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 					} else {
 						switch(type) {
 						case INTEGER:
-							cell = new CellImpl(Integer.parseInt(value), columnName);
+							cell = new CellImpl(Integer.parseInt(value));
 							break;
 						case DOUBLE:
 							Double doubleValue;
@@ -117,10 +117,10 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							} else {
 								doubleValue = Double.parseDouble(value);
 							}
-							cell = new CellImpl(doubleValue, columnName);
+							cell = new CellImpl(doubleValue);
 							break;
 						case STRING:
-							cell = new CellImpl(value, columnName);
+							cell = new CellImpl(value);
 							break;
 							// TODO more...
 						default:
