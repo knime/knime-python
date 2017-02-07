@@ -14,6 +14,10 @@ from datetime import datetime
 from pandas import DataFrame
 from enum import Enum
 
+# TODO remove, if this isn't useful
+import tempfile
+_via_file = False
+
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
 
@@ -129,6 +133,13 @@ def run():
             elif command == 'putTable':
                 name = read_string()
                 data_bytes = read_bytearray()
+
+                # TODO remove, if this isn't useful
+                if _via_file:
+                    path = data_bytes.decode('utf-8')
+                    data_bytes = bytes_from_file(path)
+                    os.remove(path)
+
                 data_frame = bytes_to_data_frame(data_bytes)
                 put_variable(name, data_frame)
                 write_dummy()
@@ -142,6 +153,13 @@ def run():
                 name = read_string()
                 data_frame = get_variable(name)
                 data_bytes = data_frame_to_bytes(data_frame)
+
+                # TODO remove, if this isn't useful
+                if _via_file:
+                    path = tempfile.mkstemp(suffix='.tmp', prefix='bytes-from-python-', text=False)[1]
+                    open(path, 'wb').write(data_bytes)
+                    data_bytes = bytearray(path, 'utf-8')
+
                 write_bytearray(data_bytes)
             elif command == 'listVariables':
                 variables = list_variables()
@@ -204,6 +222,10 @@ def run():
                 exit()
     finally:
         _connection.close()
+
+
+def bytes_from_file(path):
+    return open(path, 'rb').read()
 
 
 def bytes_to_data_frame(data_bytes):
@@ -600,19 +622,19 @@ class FromPandasTable:
 
     # example: table.get_name(0)
     def get_name(self, column_index):
-        return self._data_frame.columns[column_index]
+        return self._data_frame.columns.astype(str)[column_index]
 
     def get_names(self):
-        return self._data_frame.columns
+        return self._data_frame.columns.astype(str)
 
     # example: table.get_cell(0,0)
     def get_cell(self, column_index, row_index):
-        return value_to_simpletype_value(self._data_frame[self.get_name(column_index)][row_index],
+        return value_to_simpletype_value(self._data_frame[self._data_frame.columns[column_index]][row_index],
                                          self._column_types[column_index])
 
     # example: table.get_rowkey(0)
     def get_rowkey(self, row_index):
-        return self._data_frame.index[row_index]
+        return self._data_frame.index.astype(str)[row_index]
 
     def get_number_columns(self):
         return len(self._data_frame.columns)

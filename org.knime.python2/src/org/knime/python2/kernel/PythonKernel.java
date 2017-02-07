@@ -71,6 +71,7 @@ import javax.imageio.ImageIO;
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.code2.generic.ImageContainer;
 import org.knime.code2.generic.ScriptingNodeUtils;
@@ -112,6 +113,9 @@ import org.w3c.dom.svg.SVGDocument;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernel {
+	
+	// TODO remove, if this isn't useful
+	private static final boolean VIA_FILE = false;
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
@@ -429,6 +433,15 @@ public class PythonKernel {
 		CloseableRowIterator iterator = table.iterator();
 		TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator, table.getRowCount());
 		byte[] bytes = m_serializer.tableToBytes(tableIterator);
+		
+		// TODO remove, if this isn't useful
+		if (VIA_FILE) {
+			File file = File.createTempFile("bytes-to-python-", ".tmp");
+			file.deleteOnExit();
+			FileUtils.writeByteArrayToFile(file, bytes);
+			bytes = file.getAbsolutePath().getBytes();
+		}
+		
 		serializationMonitor.setProgress(1);
 		m_commands.putTable(name, bytes);
 		deserializationMonitor.setProgress(1);
@@ -472,6 +485,15 @@ public class PythonKernel {
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
 		byte[] bytes = m_commands.getTable(name);
 		serializationMonitor.setProgress(1);
+
+		// TODO remove, if this isn't useful
+		if (VIA_FILE) {
+			File file = new File(new String(bytes));
+			file.deleteOnExit();
+			bytes = FileUtils.readFileToByteArray(file);
+			file.delete();
+		}
+		
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		BufferedDataTableCreator tableCreator = new BufferedDataTableCreator(spec, exec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
