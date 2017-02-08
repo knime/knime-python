@@ -1,0 +1,110 @@
+namespace org.knime.flatbuffers.flatc;
+
+// author: Oliver Sampson, University of Konstanz
+
+table KnimeTable {
+	rowIDs	: [string];	
+	colNames : [string]; 
+  	columns : [Column];
+}
+
+table Column {
+	type			: int;
+	byteColumn 		: ByteColumn;
+	byteListColumn 	: ByteCollectionColumn;
+	byteColColumn	: ByteCollectionColumn;
+	booleanColumn 	: BooleanColumn;
+	booleanListColumn : BooleanCollectionColumn;
+	booleanSetColumn : BooleanCollectionColumn;
+	doubleColumn 	: DoubleColumn;
+	doubleListColumn : DoubleCollectionColumn;
+	doubleSetColumn	: DoubleCollectionColumn;
+	intColumn 		: IntColumn;
+	intListColumn 	: IntCollectionColumn;
+	intSetColumn 	: IntCollectionColumn;
+	longColumn		: LongColumn;
+	longListColumn 	: LongCollectionColumn;
+	longSetColumn	: LongCollectionColumn;
+	stringColumn 	: StringColumn;
+	stringListColumn : StringCollectionColumn;
+	stringSetColumn : StringCollectionColumn;
+}
+
+table ByteColumn {
+	values : [byte];
+}
+
+table ByteCollectionColumn {
+	values : [ByteCollectionCell];
+}
+
+table BooleanColumn {
+	values : [bool];
+}
+
+table BooleanCollectionColumn {
+	values : [BooleanCollectionCell];
+}
+
+table DoubleColumn {
+	values : [double];
+}
+
+table DoubleCollectionColumn {
+	values : [DoubleCollectionCell];
+}
+
+table IntColumn {
+	values : [int];
+}
+
+table IntCollectionColumn {
+	values : [IntegerCollectionCell];
+}
+
+table LongColumn {
+	values : [long];
+}
+
+table LongCollectionColumn {
+	values : [LongCollectionCell];
+}
+
+table StringColumn {
+	values : [string];
+}
+
+table StringCollectionColumn {
+	values : [StringCollectionCell];
+}
+
+table ColumnName {
+	name : string; 
+}
+
+table BooleanCollectionCell {
+	value : [bool];
+}
+
+table ByteCollectionCell {
+	value : [byte];
+}
+
+table DoubleCollectionCell {
+	value : [double];
+}
+
+table IntegerCollectionCell {
+	value : [int];
+}
+
+table LongCollectionCell {
+	value : [long];
+}
+
+
+table StringCollectionCell {
+	value : [string];
+}
+
+root_type KnimeTable;
