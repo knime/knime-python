@@ -22,7 +22,10 @@ def column_names_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
-    # TODO use types line to set dtype={'column1':numpy.int32}
+    types = in_file.readline().strip()[2:].split(',')
+    # TODO read column names
+    in_file.seek(0)
+    # TODO use types to set dtype={'column1':numpy.int32}
     data_frame = pandas.read_csv(in_file, index_col=0, skiprows=1, na_values=['MissingCell'])
     table._data_frame = data_frame
     in_file.close()
