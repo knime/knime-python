@@ -9,7 +9,6 @@ from knimetable import Column
 from knimetable import StringColumn
 from knimetable import DoubleColumn
    
-
 _types_ = None
 
 
@@ -26,7 +25,15 @@ def column_names_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
+
+    rowIds = []
+    for idx in range(0, knimeTable.RowIDsLength()):
+        rowIds.append(knimeTable.RowIDs(idx))
+        
+    table.set_rowkeys(rowIds)
+
     colNames = []
+        
     for j in range(0, knimeTable.ColNamesLength()):
         colNames.append(knimeTable.ColNames(j))
             
@@ -59,18 +66,32 @@ def table_to_bytes(table):
    
     builder = flatbuffers.Builder(1024)
     
+    #Row IDs
+    rowIdOffsets = [] 
+    
+    for idx in table.get_number_rows():
+        rowIdOffset = builder.CreateString(str(table.get_rowkey(idx)))
+        rowIdOffsets.append(rowIdOffset)
+        
+    KnimeTable.KnimeTableStartRowIDsVector(builder, len(rowIdOffsets))
+    for idOffset in reverse(rowIdOffsets):
+        builder.PrependUOffsetTRelative(idOffset)
+    rowIdVecOffset = builder.EndVector(len(rowIdOffsets))
+       
+    #Column Names
     colNameOffsets = []
    
     for colName in table.get_names():
         nameOffset = builder.CreateString(str(colName))
         colNameOffsets.append(nameOffset)
-   
-    KnimeTable.KnimeTableStartHeadersVector(builder, len(colNameOffsets))
+                  
+    KnimeTable.KnimeTableStartColNamesVector(builder, len(colNameOffsets))
     for colNameOffset in reversed(colNameOffsets):
         builder.PrependUOffsetTRelative(colNameOffset) 
     colNameVecOffset = builder.EndVector(len(colNameOffsets))
-    
+      
     colOffsetList = []
+    
     
     for colIdx in range(0,table.get_number_columns()):
         if table.get_type(colIdx) == _types_.INTEGER:  
@@ -134,6 +155,8 @@ def table_to_bytes(table):
     knimeTable = KnimeTable.KnimeTableEnd(builder)
     builder.Finish(knimeTable)
             
+    print("Finished KnimeTable")
+    
     return builder.Output()
 
 def table_column(table, col_idx):

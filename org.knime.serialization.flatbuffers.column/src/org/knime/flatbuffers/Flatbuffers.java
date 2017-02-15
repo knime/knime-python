@@ -1,7 +1,6 @@
 package org.knime.flatbuffers;
 
 import java.nio.ByteBuffer;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,7 +10,6 @@ import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.flatbuffers.flatc.BooleanColumn;
 import org.knime.flatbuffers.flatc.Column;
-import org.knime.flatbuffers.flatc.ColumnName;
 import org.knime.flatbuffers.flatc.DoubleColumn;
 import org.knime.flatbuffers.flatc.IntColumn;
 import org.knime.flatbuffers.flatc.KnimeTable;
@@ -46,8 +44,13 @@ public class Flatbuffers implements SerializationLibrary {
 			columns.put(colName, new ArrayList<>());
 		}
 
+		List<Integer> rowIdOffsets = new ArrayList<>();
+
+		// Convert the rows to columns
 		while (tableIterator.hasNext()) {
 			Row row = tableIterator.next();
+			rowIdOffsets.add(builder.createString(row.getRowKey()));
+
 			Iterator<Cell> rowIt = row.iterator();
 			for (String colName : columns.keySet()) {
 				Cell cell = rowIt.next();
@@ -223,19 +226,22 @@ public class Flatbuffers implements SerializationLibrary {
 		List<Integer> colNameOffsets = new ArrayList<>();
 
 		for (String colName : columns.keySet()) {
-			colNameOffsets.add(ColumnName.createColumnName(builder, builder.createString(colName)));
+			colNameOffsets.add(builder.createString(colName));
 		}
 
+		int rowIdVecOffset = KnimeTable.createRowIDsVector(builder,
+				ArrayUtils.toPrimitive(rowIdOffsets.toArray(new Integer[rowIdOffsets.size()])));
+
 		int colNameVecOffset = KnimeTable.createColNamesVector(builder,
-				ArrayUtils.toPrimitive(colNameOffsets.toArray(new Integer[0])));
+				ArrayUtils.toPrimitive(colNameOffsets.toArray(new Integer[colNameOffsets.size()])));
 
 		int colVecOffset = KnimeTable.createColumnsVector(builder,
-				ArrayUtils.toPrimitive(colOffsets.toArray(new Integer[0])));
-		KnimeTable.startKnimeTable(builder);
+				ArrayUtils.toPrimitive(colOffsets.toArray(new Integer[colOffsets.size()])));
 
+		KnimeTable.startKnimeTable(builder);
+		KnimeTable.addRowIDs(builder, rowIdVecOffset);
 		KnimeTable.addColNames(builder, colNameVecOffset);
 		KnimeTable.addColumns(builder, colVecOffset);
-
 		int knimeTable = KnimeTable.endKnimeTable(builder);
 		builder.finish(knimeTable);
 
@@ -247,6 +253,7 @@ public class Flatbuffers implements SerializationLibrary {
 
 		KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
+		List<String> rowIds = new ArrayList<>();
 		List<String> colNames = new ArrayList<>();
 		Map<String, Type> colTypes = new HashMap<>();
 		Map<String, List<Object>> columns = new LinkedHashMap<>();
@@ -258,6 +265,11 @@ public class Flatbuffers implements SerializationLibrary {
 			String colName = table.colNames(h);
 			colNames.add(colName);
 			columns.put(colName, new ArrayList<>());
+		}
+		
+		for (int id = 0; id < table.rowIDsLength(); id++){
+			String rowId = table.rowIDs(id);
+			rowIds.add(rowId);
 		}
 
 		for (int j = 0; j < table.columnsLength(); j++) {
@@ -346,7 +358,7 @@ public class Flatbuffers implements SerializationLibrary {
 		int numRows = columns.get(columns.keySet().iterator().next()).size();
 		for (int rowCount = 0; rowCount < numRows; rowCount++) {
 
-			Row r = new RowImpl("Row" + rowCount, columns.keySet().size());
+			Row r = new RowImpl(rowIds.get(rowCount), columns.keySet().size());
 			int colCount = 0;
 			for (String colName : colNames) {
 				switch (colTypes.get(colName)) {
