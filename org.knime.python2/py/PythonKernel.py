@@ -636,6 +636,9 @@ class FromPandasTable:
     def get_rowkey(self, row_index):
         return self._data_frame.index.astype(str)[row_index]
 
+    def get_rowkeys(self):
+        return self._data_frame.index.astype(str)
+
     def get_number_columns(self):
         return len(self._data_frame.columns)
 

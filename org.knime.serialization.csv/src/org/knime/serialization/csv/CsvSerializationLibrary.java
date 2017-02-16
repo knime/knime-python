@@ -45,8 +45,14 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 						value = "MissingCell";
 					} else {
 						switch(cell.getColumnType()) {
+						case BOOLEAN:
+							value = cell.getBooleanValue() ? "True" : "False";
+							break;
 						case INTEGER:
 							value = cell.getIntegerValue().toString();
+							break;
+						case LONG:
+							value = cell.getLongValue().toString();
 							break;
 						case DOUBLE:
 							Double doubleValue = cell.getDoubleValue();
@@ -103,8 +109,14 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 						cell = new CellImpl(columnName);
 					} else {
 						switch(type) {
+						case BOOLEAN:
+							cell = new CellImpl(value.equals("True") ? true : false);
+							break;
 						case INTEGER:
 							cell = new CellImpl(Integer.parseInt(value));
+							break;
+						case LONG:
+							cell = new CellImpl(Long.parseLong(value));
 							break;
 						case DOUBLE:
 							Double doubleValue;
