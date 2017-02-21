@@ -30,6 +30,7 @@ def bytes_into_table(table, data_bytes):
     table._data_frame = data_frame
     in_file.close()
     os.remove(path)
+    # TODO eval lists and sets with table._data_frame.set_value(i,'colName',ast.literal_eval(table._data_frame['colName'][i]))
 
 
 def table_to_bytes(table):
