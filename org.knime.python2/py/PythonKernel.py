@@ -14,9 +14,6 @@ from datetime import datetime
 from pandas import DataFrame
 from enum import Enum
 
-# TODO remove, if this isn't useful
-import tempfile
-_via_file = False
 
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
@@ -133,13 +130,6 @@ def run():
             elif command == 'putTable':
                 name = read_string()
                 data_bytes = read_bytearray()
-
-                # TODO remove, if this isn't useful
-                if _via_file:
-                    path = data_bytes.decode('utf-8')
-                    data_bytes = bytes_from_file(path)
-                    os.remove(path)
-
                 data_frame = bytes_to_data_frame(data_bytes)
                 put_variable(name, data_frame)
                 write_dummy()
@@ -149,17 +139,21 @@ def run():
                 data_frame = bytes_to_data_frame(data_bytes)
                 append_to_table(name, data_frame)
                 write_dummy()
+            elif command == 'getTableSize':
+                name = read_string()
+                data_frame = get_variable(name)
+                write_integer(len(data_frame))
             elif command == 'getTable':
                 name = read_string()
                 data_frame = get_variable(name)
                 data_bytes = data_frame_to_bytes(data_frame)
-
-                # TODO remove, if this isn't useful
-                if _via_file:
-                    path = tempfile.mkstemp(suffix='.tmp', prefix='bytes-from-python-', text=False)[1]
-                    open(path, 'wb').write(data_bytes)
-                    data_bytes = bytearray(path, 'utf-8')
-
+                write_bytearray(data_bytes)
+            elif command == 'getTableChunk':
+                name = read_string()
+                start = read_integer()
+                end = read_integer()
+                data_frame = get_variable(name)[start:end+1]
+                data_bytes = data_frame_to_bytes(data_frame)
                 write_bytearray(data_bytes)
             elif command == 'listVariables':
                 variables = list_variables()
@@ -285,9 +279,12 @@ def put_variable(name, variable):
     _exec_env[name] = variable
 
 
-# append the given data frame to an existing one
+# append the given data frame to an existing one, if it does not exist put the data frame into the local environment
 def append_to_table(name, data_frame):
-    _exec_env[name] = _exec_env[name].append(data_frame)
+    if _exec_env[name] is None:
+        _exec_env[name] = data_frame
+    else:
+        _exec_env[name] = _exec_env[name].append(data_frame)
 
 
 # get the variable with the given name

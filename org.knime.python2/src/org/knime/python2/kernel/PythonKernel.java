@@ -71,12 +71,12 @@ import javax.imageio.ImageIO;
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.code2.generic.ImageContainer;
 import org.knime.code2.generic.ScriptingNodeUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -113,13 +113,10 @@ import org.w3c.dom.svg.SVGDocument;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernel {
-	
-	// TODO remove, if this isn't useful
-	private static final boolean VIA_FILE = false;
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-	private static final int CHUNK_SIZE = 1000;
+	private static final int CHUNK_SIZE = 500000;
 
 	private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
@@ -420,7 +417,7 @@ public class PythonKernel {
 	 * @param rowLimit
 	 *            The amount of rows that will be transfered
 	 * @throws IOException
-	 *             If an error occured
+	 *             If an error occurred
 	 */
 	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
@@ -431,20 +428,29 @@ public class PythonKernel {
 		final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
 		CloseableRowIterator iterator = table.iterator();
-		TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator, table.getRowCount());
-		byte[] bytes = m_serializer.tableToBytes(tableIterator);
-		
-		// TODO remove, if this isn't useful
-		if (VIA_FILE) {
-			File file = File.createTempFile("bytes-to-python-", ".tmp");
-			file.deleteOnExit();
-			FileUtils.writeByteArrayToFile(file, bytes);
-			bytes = file.getAbsolutePath().getBytes();
+		int numberRows = Math.min(rowLimit, table.getRowCount());
+		int numberChunks = (int)Math.ceil(numberRows / (double)CHUNK_SIZE);
+		int rowsDone = 0;
+		for (int i = 0; i < numberChunks; i++) {
+			int rowsInThisIteration = Math.min(numberRows-rowsDone, CHUNK_SIZE);
+			ExecutionMonitor chunkProgress = serializationMonitor.createSubProgress(rowsInThisIteration/(double)numberRows);
+			TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator, rowsInThisIteration, chunkProgress);
+			byte[] bytes = m_serializer.tableToBytes(tableIterator);
+			chunkProgress.setProgress(1);
+			rowsDone += rowsInThisIteration;
+			serializationMonitor.setProgress(rowsDone / (double)numberRows);
+			if (i == 0) {
+				m_commands.putTable(name, bytes);
+			} else {
+				m_commands.appendToTable(name, bytes);
+			}
+			deserializationMonitor.setProgress(rowsDone / (double)numberRows);
+			try {
+				executionMonitor.checkCanceled();
+			} catch (CanceledExecutionException e) {
+				throw new IOException(e.getMessage(), e);
+			}
 		}
-		
-		serializationMonitor.setProgress(1);
-		m_commands.putTable(name, bytes);
-		deserializationMonitor.setProgress(1);
 		iterator.close();
 	}
 
@@ -460,11 +466,10 @@ public class PythonKernel {
 	 * @param executionMonitor
 	 *            The monitor that will be updated about progress
 	 * @throws IOException
-	 *             If an error occured
+	 *             If an error occurred
 	 */
 	@SuppressWarnings("deprecation")
-	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
-			throws IOException {
+	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor) throws IOException {
 		putDataTable(name, table, executionMonitor, table.getRowCount());
 	}
 
@@ -483,21 +488,21 @@ public class PythonKernel {
 			final ExecutionMonitor executionMonitor) throws IOException {
 		final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-		byte[] bytes = m_commands.getTable(name);
-		serializationMonitor.setProgress(1);
-
-		// TODO remove, if this isn't useful
-		if (VIA_FILE) {
-			File file = new File(new String(bytes));
-			file.deleteOnExit();
-			bytes = FileUtils.readFileToByteArray(file);
-			file.delete();
+		int tableSize = m_commands.getTableSize(name);
+		int numberChunks = (int)Math.ceil(tableSize/(double)CHUNK_SIZE);
+		BufferedDataTableCreator tableCreator = null;
+		for (int i = 0; i < numberChunks; i++) {
+			int start = CHUNK_SIZE * i;
+			int end = Math.min(tableSize, start + CHUNK_SIZE - 1);
+			byte[] bytes = m_commands.getTableChunk(name, start, end);
+			serializationMonitor.setProgress((end+1)/(double)tableSize);
+			if (tableCreator == null) {
+				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+				tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
+			}
+			m_serializer.bytesIntoTable(tableCreator, bytes);
+			deserializationMonitor.setProgress((end+1)/(double)tableSize);
 		}
-		
-		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-		BufferedDataTableCreator tableCreator = new BufferedDataTableCreator(spec, exec);
-		m_serializer.bytesIntoTable(tableCreator, bytes);
-		deserializationMonitor.setProgress(1);
 		return tableCreator.getTable();
 	}
 

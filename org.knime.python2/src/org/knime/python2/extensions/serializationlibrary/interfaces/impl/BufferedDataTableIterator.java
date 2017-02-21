@@ -15,6 +15,8 @@ import org.knime.core.data.StringValue;
 import org.knime.core.data.collection.CollectionDataValue;
 import org.knime.core.data.collection.SetDataValue;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
@@ -28,21 +30,33 @@ public class BufferedDataTableIterator implements TableIterator {
 	
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableIterator.class);
 	
+	private final int m_numberRows;
 	private int m_remainingRows;
 	private CloseableRowIterator m_iterator;
 	private TableSpec m_spec;
 	private KnimeToPythonExtensions m_knimeToPythonExtensions;
+	private final ExecutionMonitor m_executionMonitor;
 	
-	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows) {
+	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor) {
+		m_numberRows = numberRows;
 		m_spec = dataTableSpecToTableSpec(spec);
 		m_remainingRows = numberRows;
 		m_iterator = rowIterator;
 		m_knimeToPythonExtensions = new KnimeToPythonExtensions();
+		m_executionMonitor = monitor;
 	}
 
 	@Override
 	public Row next() {
 		if (m_remainingRows > 0) {
+			if (m_executionMonitor != null) {
+				try {
+					m_executionMonitor.checkCanceled();
+					m_executionMonitor.setProgress((m_numberRows-m_remainingRows)/(double)m_numberRows);
+				} catch (CanceledExecutionException e) {
+					throw new RuntimeException(e.getMessage(), e);
+				}
+			}
 			m_remainingRows--;
 			return dataRowToRow(m_iterator.next());
 		} else {
