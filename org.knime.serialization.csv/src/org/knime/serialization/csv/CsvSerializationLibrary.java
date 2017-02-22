@@ -6,8 +6,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -133,7 +135,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder stringBuilder = new StringBuilder();
 							stringBuilder.append(cell.getColumnType()==Type.STRING_LIST ? "[" : "{");
 							for (int i = 0; i < stringArray.length; i++) {
-								stringBuilder.append(stringArray[i].toString());
+								stringBuilder.append(stringArray[i]);
 								if (i+1 < stringArray.length) {
 									stringBuilder.append(",");
 								}
@@ -141,7 +143,23 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							stringBuilder.append(cell.getColumnType()==Type.STRING_LIST ? "]" : "}");
 							value = stringBuilder.toString();
 							break;
-							// TODO more...
+						case BYTES:
+							value = bytesToBase64(cell.getBytesValue());
+							break;
+						case BYTES_LIST:
+						case BYTES_SET:
+							Byte[][] bytesArray = cell.getBytesArrayValue();
+							StringBuilder bytesBuilder = new StringBuilder();
+							bytesBuilder.append(cell.getColumnType()==Type.BYTES_LIST ? "[" : "{");
+							for (int i = 0; i < bytesArray.length; i++) {
+								bytesBuilder.append(bytesToBase64(bytesArray[i]));
+								if (i+1 < bytesArray.length) {
+									bytesBuilder.append(",");
+								}
+							}
+							bytesBuilder.append(cell.getColumnType()==Type.BYTES_LIST ? "]" : "}");
+							value = bytesBuilder.toString();
+							break;
 						default:
 							break;
 						}
@@ -249,7 +267,18 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							}
 							cell = new CellImpl(stringArray, type==Type.STRING_SET);
 							break;
-							// TODO more...
+						case BYTES:
+							cell = new CellImpl(bytesFromBase64(value));
+							break;
+						case BYTES_LIST:
+						case BYTES_SET:
+							String[] bytesValues = value.substring(1, value.length()-1).split(",");
+							Byte[][] bytesArray = new Byte[bytesValues.length][];
+							for (int j = 0; j < bytesArray.length; j++) {
+								bytesArray[j] = bytesFromBase64(bytesValues[j].trim());
+							}
+							cell = new CellImpl(bytesArray, type==Type.BYTES_SET);
+							break;
 						default:
 							cell = new CellImpl(columnName);
 							break;
@@ -331,6 +360,14 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			value = "\"" + value + "\"";
 		}
 		return value;
+	}
+	
+	private static String bytesToBase64(final Byte[] bytes) {
+		return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
+	}
+	
+	private static Byte[] bytesFromBase64(final String base64) {
+		return ArrayUtils.toObject(Base64.getDecoder().decode(base64.getBytes()));
 	}
 
 }
