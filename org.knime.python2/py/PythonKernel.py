@@ -612,6 +612,7 @@ class FromPandasTable:
         self._column_types = []
         for column in data_frame.columns:
             self._column_types.append(simpletype_for_column(data_frame, column))
+        # TODO serialize objects to bytes
 
     # example: table.get_type(0)
     def get_type(self, column_index):
@@ -663,6 +664,7 @@ class ToPandasTable:
         self._data_frame.index = rowkeys
 
     def get_data_frame(self):
+        # TODO deserialize objects from bytes
         return self._data_frame
 
 
