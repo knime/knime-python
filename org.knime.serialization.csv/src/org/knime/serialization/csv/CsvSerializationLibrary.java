@@ -194,7 +194,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 					Cell cell;
 					String value = values.get(i+1);
 					if (value.equals("MissingCell")) {
-						cell = new CellImpl(columnName);
+						cell = new CellImpl();
 					} else {
 						switch(type) {
 						case BOOLEAN:

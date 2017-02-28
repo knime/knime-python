@@ -83,11 +83,10 @@ public class BufferedDataTableIterator implements TableIterator {
 	private Row dataRowToRow(final DataRow dataRow) {
 		Row row = new RowImpl(dataRow.getKey().getString(), dataRow.getNumCells());
 		for (int i = 0; i < dataRow.getNumCells(); i++) {
-			String columnName = m_spec.getColumnNames()[i];
 			DataCell dataCell = dataRow.getCell(i);
 			Type type = m_spec.getColumnTypes()[i];
 			if (dataCell.isMissing()) {
-				row.setCell(new CellImpl(columnName), i);
+				row.setCell(new CellImpl(), i);
 			} else if (type == Type.BOOLEAN) {
 				Boolean value = ((BooleanValue)dataCell).getBooleanValue();
 				row.setCell(new CellImpl(value), i);
@@ -170,7 +169,7 @@ public class BufferedDataTableIterator implements TableIterator {
 					row.setCell(new CellImpl(value), i);
 				} catch (IOException e) {
 					LOGGER.error(e.getMessage(), e);
-					row.setCell(new CellImpl(columnName), i);
+					row.setCell(new CellImpl(), i);
 				}
 			} else if (type == Type.BYTES_LIST || type == Type.BYTES_SET) {
 				Serializer serializer = m_knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(dataCell.getType().getCollectionElementType()).getId());
