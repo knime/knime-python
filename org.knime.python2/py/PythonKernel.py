@@ -550,6 +550,24 @@ else:
 _type_extension_manager = TypeExtensionManager()
 
 
+def serialize_objects_to_bytes(data_frame, column_serializers):
+    for column in column_serializers:
+        serializer = _type_extension_manager.get_serializer_by_id(column_serializers[column])
+        for i in range(len(data_frame)):
+            value = data_frame[column][i]
+            if value is not None:
+                data_frame[column][i] = serializer.serialize(value)
+
+
+def deserialize_from_bytes(data_frame, column_serializers):
+    for column in column_serializers:
+        deserializer = _type_extension_manager.get_deserializer_by_id(column_serializers[column])
+        for i in range(len(data_frame)):
+            value = data_frame[column][i]
+            if value is not None:
+                data_frame[column][i] = deserializer.deserialize(value)
+
+
 # reads 4 bytes from the input stream and interprets them as size
 def read_size():
     data = bytearray()
@@ -609,12 +627,16 @@ def write_bytearray(data_bytes):
 
 class FromPandasTable:
     def __init__(self, data_frame):
-        self._data_frame = data_frame
+        self._data_frame = data_frame.copy()
+        self._data_frame.columns = self._data_frame.columns.astype(str)
         self._column_types = []
-        for column in data_frame.columns:
-            self._column_types.append(simpletype_for_column(data_frame, column))
-        # TODO serialize objects to bytes
         self._column_serializers = {}
+        for column in self._data_frame.columns:
+            column_type, serializer_id = simpletype_for_column(self._data_frame, column)
+            self._column_types.append(column_type)
+            if serializer_id is not None:
+                self._column_serializers[column] = serializer_id
+        serialize_objects_to_bytes(self._data_frame, self._column_serializers)
 
     # example: table.get_type(0)
     def get_type(self, column_index):
@@ -670,7 +692,7 @@ class ToPandasTable:
         self._data_frame.index = rowkeys
 
     def get_data_frame(self):
-        # TODO deserialize objects from bytes
+        deserialize_from_bytes(self._data_frame, self._column_serializers)
         return self._data_frame
 
 
@@ -696,43 +718,44 @@ class Simpletype(Enum):
 
 
 def simpletype_for_column(data_frame, column_name):
+    column_serializer = None
     if len(data_frame.index) == 0:
         # if table is empty we don't know the types so we make them strings
-        return Simpletype.STRING
+        simple_type = Simpletype.STRING
     else:
         if data_frame[column_name].dtype == 'bool':
-            return Simpletype.BOOLEAN
+            simple_type = Simpletype.BOOLEAN
         elif data_frame[column_name].dtype == 'int64' or data_frame[column_name].dtype == 'int32':
             minvalue = data_frame[column_name][data_frame[column_name].idxmin()]
             maxvalue = data_frame[column_name][data_frame[column_name].idxmax()]
             int32min = -2147483648
             int32max = 2147483647
             if minvalue >= int32min and maxvalue <= int32max:
-                return Simpletype.INTEGER
+                simple_type = Simpletype.INTEGER
             else:
-                return Simpletype.LONG
+                simple_type = Simpletype.LONG
         elif data_frame[column_name].dtype == 'double' or column_type(data_frame, column_name) == float:
-            return Simpletype.DOUBLE
+            simple_type = Simpletype.DOUBLE
         else:
             col_type = column_type(data_frame, column_name)
             if col_type is None:
                 # column with only missing values, make it string
-                return Simpletype.STRING
-            if types_are_equivalent(col_type, bool):
-                return Simpletype.BOOLEAN
+                simple_type = Simpletype.STRING
+            elif types_are_equivalent(col_type, bool):
+                simple_type = Simpletype.BOOLEAN
             elif types_are_equivalent(col_type, str):
-                return Simpletype.STRING
+                simple_type = Simpletype.STRING
             elif col_type is list or col_type is set:
                 is_set = col_type is set
                 list_col_type = list_column_type(data_frame, column_name)
                 if list_col_type is None:
                     # column with only missing values, make it string
-                    return Simpletype.STRING
-                if types_are_equivalent(list_col_type, bool):
+                    simple_type = Simpletype.STRING
+                elif types_are_equivalent(list_col_type, bool):
                     if is_set:
-                        return Simpletype.BOOLEAN_SET
+                        simple_type = Simpletype.BOOLEAN_SET
                     else:
-                        return Simpletype.BOOLEAN_LIST
+                        simple_type = Simpletype.BOOLEAN_LIST
                 elif types_are_equivalent(list_col_type, int):
                     minvalue = 0
                     maxvalue = 0
@@ -746,31 +769,40 @@ def simpletype_for_column(data_frame, column_name):
                     int32max = 2147483647
                     if minvalue >= int32min and maxvalue <= int32max:
                         if is_set:
-                            return Simpletype.INTEGER_SET
+                            simple_type = Simpletype.INTEGER_SET
                         else:
-                            return Simpletype.INTEGER_LIST
+                            simple_type = Simpletype.INTEGER_LIST
                     else:
                         if is_set:
-                            return Simpletype.LONG_SET
+                            simple_type = Simpletype.LONG_SET
                         else:
-                            return Simpletype.LONG_LIST
+                            simple_type = Simpletype.LONG_LIST
                 elif types_are_equivalent(list_col_type, float):
                     if is_set:
-                        return Simpletype.DOUBLE_SET
+                        simple_type = Simpletype.DOUBLE_SET
                     else:
-                        return Simpletype.DOUBLE_LIST
+                        simple_type = Simpletype.DOUBLE_LIST
                 elif types_are_equivalent(list_col_type, str):
                     if is_set:
-                        return Simpletype.STRING_SET
+                        simple_type = Simpletype.STRING_SET
                     else:
-                        return Simpletype.STRING_LIST
+                        simple_type = Simpletype.STRING_LIST
                 else:
+                    type_string = get_type_string(first_valid_list_object(data_frame, column_name))
+                    column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
+                    if (column_serializer is None):
+                        raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
                     if is_set:
-                        return Simpletype.BYTES_SET
+                        simple_type = Simpletype.BYTES_SET
                     else:
-                        return Simpletype.BYTES_LIST
+                        simple_type = Simpletype.BYTES_LIST
             else:
-                return Simpletype.BYTES
+                type_string = get_type_string(first_valid_object(data_frame, column_name))
+                column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
+                if (column_serializer is None):
+                    raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
+                simple_type = Simpletype.BYTES
+    return simple_type, column_serializer
 
 
 def value_to_simpletype_value(value, simpletype):
