@@ -30,6 +30,11 @@ def column_names_from_bytes(data_bytes):
     return data_frame.columns.tolist()
 
 
+def column_serializers_from_bytes(data_bytes):
+    # TODO extract column serializers from bytes
+    return {}
+
+
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')

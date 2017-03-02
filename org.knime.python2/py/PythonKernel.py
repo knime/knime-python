@@ -224,7 +224,8 @@ def bytes_from_file(path):
 
 def bytes_to_data_frame(data_bytes):
     column_names = _serializer.column_names_from_bytes(data_bytes)
-    table = ToPandasTable(column_names)
+    column_serializers = _serializer.column_serializers_from_bytes(data_bytes)
+    table = ToPandasTable(column_names, column_serializers)
     _serializer.bytes_into_table(table, data_bytes)
     return table.get_data_frame()
 
@@ -613,6 +614,7 @@ class FromPandasTable:
         for column in data_frame.columns:
             self._column_types.append(simpletype_for_column(data_frame, column))
         # TODO serialize objects to bytes
+        self._column_serializers = {}
 
     # example: table.get_type(0)
     def get_type(self, column_index):
@@ -643,12 +645,16 @@ class FromPandasTable:
     def get_number_rows(self):
         return len(self._data_frame.index)
 
+    def get_column_serializers(self):
+        return self._column_serializers
+
 
 class ToPandasTable:
     # example: ToPandasTable(('column1','column2'))
-    def __init__(self, column_names):
+    def __init__(self, column_names, column_serializers):
         self._column_names = column_names
         self._data_frame = DataFrame(columns=column_names)
+        self._column_serializers = column_serializers
 
     # example: table.add_row('row1',[1,2])
     def add_row(self, rowkey, values):

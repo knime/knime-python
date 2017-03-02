@@ -24,6 +24,9 @@ def column_names_from_bytes(data_bytes):
     
     return colNames
 
+def column_serializers_from_bytes(data_bytes):
+    return {}
+
 def bytes_into_table(table, data_bytes):
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
