@@ -261,7 +261,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
 					break;
 				case BYTES:
-					String bytesTypeId = null;
+					String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 					try {
 						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
@@ -271,7 +271,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					}
 					break;
 				case BYTES_LIST:
-					String bytesListTypeId = null;
+					String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesListDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
 					List<DataCell> listCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
@@ -285,7 +285,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					cells[i] = CollectionCellFactory.createListCell(listCells);
 					break;
 				case BYTES_SET:
-					String bytesSetTypeId = null;
+					String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
 					List<DataCell> setCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {

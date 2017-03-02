@@ -1,6 +1,8 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.BooleanValue;
@@ -197,6 +199,7 @@ public class BufferedDataTableIterator implements TableIterator {
 	private TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
 		Type[] types = new Type[dataTableSpec.getNumColumns()];
 		String[] names = new String[dataTableSpec.getNumColumns()];
+		Map<String, String> columnSerializers = new HashMap<String, String>();
 		int i = 0;
 		for (DataColumnSpec colSpec : dataTableSpec) {
 			names[i] = colSpec.getName();
@@ -223,6 +226,7 @@ public class BufferedDataTableIterator implements TableIterator {
 								.getCollectionElementType());
 						if (typeExtension != null) {
 							types[i] = Type.BYTES_SET;
+							columnSerializers.put(colSpec.getName(), typeExtension.getId());
 						} else {
 							types[i] = Type.STRING_SET;
 						}
@@ -241,6 +245,7 @@ public class BufferedDataTableIterator implements TableIterator {
 								.getCollectionElementType());
 						if (typeExtension != null) {
 							types[i] = Type.BYTES_LIST;
+							columnSerializers.put(colSpec.getName(), typeExtension.getId());
 						} else {
 							types[i] = Type.STRING_LIST;
 						}
@@ -250,13 +255,14 @@ public class BufferedDataTableIterator implements TableIterator {
 				final KnimeToPythonExtension typeExtension = KnimeToPythonExtensions.getExtension(colSpec.getType());
 				if (typeExtension != null) {
 					types[i] = Type.BYTES;
+					columnSerializers.put(colSpec.getName(), typeExtension.getId());
 				} else {
 					types[i] = Type.STRING;
 				}
 			}
 			i++;
 		}
-		return new TableSpecImpl(types, names);
+		return new TableSpecImpl(types, names, columnSerializers);
 	}
 
 }

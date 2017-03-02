@@ -126,8 +126,6 @@ public class PythonKernel {
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
 	private boolean m_closed = false;
-	private final KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
-	private final PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
 	
 	private final Commands m_commands;
 	private final SerializationLibrary m_serializer;
@@ -343,7 +341,7 @@ public class PythonKernel {
 			}
 			i++;
 		}
-		TableSpec spec = new TableSpecImpl(types, columnNames);
+		TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
 		return m_serializer.tableToBytes(tableIterator);
 	}

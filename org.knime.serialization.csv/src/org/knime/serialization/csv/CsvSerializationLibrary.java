@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -310,7 +311,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 				types[i] = Type.getTypeForId(Integer.parseInt(typeValues.get(i+1)));
 				names[i] = nameValues.get(i+1);
 			}
-			TableSpec spec = new TableSpecImpl(types, names);
+			// TODO add columnSerializers
+			TableSpec spec = new TableSpecImpl(types, names, new HashMap<String, String>());
 			br.close();
 			return spec;
 		} catch (IOException e) {

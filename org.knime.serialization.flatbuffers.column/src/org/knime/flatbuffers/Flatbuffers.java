@@ -504,7 +504,7 @@ public class Flatbuffers implements SerializationLibrary {
 			}
 		}
 		
-		return new TableSpecImpl(types, colNames.toArray(new String[0]));
+		return new TableSpecImpl(types, colNames.toArray(new String[0]), new HashMap<String, String>());
 	}
 
 }
