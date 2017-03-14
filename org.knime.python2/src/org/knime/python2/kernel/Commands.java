@@ -143,10 +143,10 @@ public class Commands {
 		readBytes();
 	}
 	
-	synchronized public byte[] getSql(final String name) throws IOException {
+	synchronized public String getSql(final String name) throws IOException {
 		writeString("getSql");
 		writeString(name);
-		return readBytes();
+		return readString();
 	}
 	
 	private byte[] stringToBytes(final String string) {

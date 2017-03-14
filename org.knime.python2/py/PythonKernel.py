@@ -13,6 +13,7 @@ import types
 from datetime import datetime
 from pandas import DataFrame
 from enum import Enum
+from DBUtil import *
 
 
 # check if we are running python 2 or python 3
@@ -214,6 +215,20 @@ def run():
             elif command == 'shutdown':
                 _cleanup()
                 exit()
+            elif command == 'putSql':
+                name = read_string()
+                data_bytes = read_bytearray()
+                data_frame = bytes_to_data_frame(data_bytes)
+                db_util = DBUtil(data_frame)
+                _exec_env[name] = db_util
+                _cleanup_object_names.append(name)
+                write_dummy()
+            elif command == 'getSql':
+                name = read_string()
+                db_util = get_variable(name)
+                db_util._writer.commit()
+                query = db_util.get_output_query()
+                write_string(query)
     finally:
         _connection.close()
 

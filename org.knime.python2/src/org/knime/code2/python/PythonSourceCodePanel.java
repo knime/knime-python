@@ -91,6 +91,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	private JProgressBarProgressMonitor m_progressMonitor;
 	private boolean m_usePython3 = true;
 	private boolean m_pythonVersionHasChanged = false;
+	private List<WorkspacePreparer> m_workspacePreparers = new ArrayList<WorkspacePreparer>();
 
 
 	/**
@@ -415,6 +416,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 							setRunning(false);
 						}
 					}, new ExecutionMonitor(m_progressMonitor), getRowLimit());
+			for (WorkspacePreparer workspacePreparer : m_workspacePreparers) {
+				workspacePreparer.prepareWorkspace(m_kernelManager.getKernel());
+			}
 		}
 	}
 
@@ -473,6 +477,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	
 	public boolean getUsePython3() {
 		return m_usePython3;
+	}
+	
+	public void registerWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
+		m_workspacePreparers.add(workspacePreparer);
+	}
+
+	public boolean unregisterWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
+		return m_workspacePreparers.remove(workspacePreparer);
 	}
 
 }
