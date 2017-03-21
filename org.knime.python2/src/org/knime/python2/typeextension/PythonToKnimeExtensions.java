@@ -87,6 +87,15 @@ public class PythonToKnimeExtensions {
 		}
 	}
 	
+	public static boolean addExtension(final String id, final String type, final String pythonSerializerPath, final DeserializerFactory javaDeserializer, final boolean force) {
+		if (extensions.containsKey(id) && !force) {
+			return false;
+		} else {
+			extensions.put(id, new PythonToKnimeExtension(id, type, pythonSerializerPath, javaDeserializer));
+			return true;
+		}
+	}
+	
 	public Deserializer getDeserializer(final String id) {
 		if (!m_deserializers.containsKey(id)) {
 			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
