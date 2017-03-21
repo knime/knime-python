@@ -506,7 +506,7 @@ class TypeExtensionManager:
         if index >= len(extensions):
             return None
         type_extension = extensions[index]
-        if type(type_extension).isinstance(types.ModuleType):
+        if type(type_extension) != types.ModuleType:
             path = type_extension
             last_separator = path.rfind(os.sep)
             file_extension_start = path.rfind('.')

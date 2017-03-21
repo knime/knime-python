@@ -9,6 +9,7 @@ import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
 import org.knime.core.data.MissingCell;
 import org.knime.core.data.collection.CollectionCellFactory;
 import org.knime.core.data.collection.ListCell;
@@ -102,16 +103,16 @@ public class BufferedDataTableCreator implements TableCreator {
 				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
 				break;
 			case BYTES:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
+				DataType type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
 				break;
 			case BYTES_LIST:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
+				DataType list_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
 				break;
 			case BYTES_SET:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
+				DataType set_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
 				break;
 			default:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();

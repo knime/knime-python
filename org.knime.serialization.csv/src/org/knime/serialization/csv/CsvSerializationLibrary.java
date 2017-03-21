@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -37,7 +39,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 				types += "," + spec.getColumnTypes()[i].getId();
 				names += "," + spec.getColumnNames()[i];
 			}
+			String serializers = "#";
+			for (Entry<String,String> entry : spec.getColumnSerializers().entrySet()) {
+				serializers += ',' + entry.getKey() + '=' + entry.getValue();
+			}
 			writer.write(types + "\n");
+			writer.write(serializers + "\n");
 			writer.write(names + "\n");
 			while (tableIterator.hasNext()) {
 				Row row = tableIterator.next();
@@ -185,6 +192,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			FileReader reader = new FileReader(file);
 			BufferedReader br = new BufferedReader(reader);
 			List<String> types = parseLine(br);
+			List<String> serializers = parseLine(br);
 			List<String> names = parseLine(br);
 			List<String> values;
 			while ((values = parseLine(br)) != null) {
@@ -304,6 +312,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			FileReader reader = new FileReader(file);
 			BufferedReader br = new BufferedReader(reader);
 			List<String> typeValues = parseLine(br);
+			List<String> serializerValues = parseLine(br);
 			List<String> nameValues = parseLine(br);
 			Type[] types = new Type[typeValues.size() - 1];
 			String[] names = new String[types.length];
@@ -311,8 +320,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 				types[i] = Type.getTypeForId(Integer.parseInt(typeValues.get(i+1)));
 				names[i] = nameValues.get(i+1);
 			}
-			// TODO add columnSerializers
-			TableSpec spec = new TableSpecImpl(types, names, new HashMap<String, String>());
+			Map<String, String> serializers = new HashMap<String, String>();
+			for (int i = 1; i < serializerValues.size(); i++) {
+				String[] keyValuePair = serializerValues.get(i).split("=");
+				serializers.put(keyValuePair[0], keyValuePair[1]);
+			}
+			TableSpec spec = new TableSpecImpl(types, names, serializers);
 			br.close();
 			return spec;
 		} catch (IOException e) {
