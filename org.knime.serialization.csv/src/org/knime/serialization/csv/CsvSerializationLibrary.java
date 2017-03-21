@@ -381,7 +381,10 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 		return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
 	}
 	
-	private static Byte[] bytesFromBase64(final String base64) {
+	private static Byte[] bytesFromBase64(String base64) {
+		if (base64.startsWith("b'")) {
+			base64 = base64.substring(2, base64.length()-1);
+		}
 		return ArrayUtils.toObject(Base64.getDecoder().decode(base64.getBytes()));
 	}
 
