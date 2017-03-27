@@ -30,6 +30,18 @@ def column_names_from_bytes(data_bytes):
     return data_frame.columns.tolist()
 
 
+def column_types_from_bytes(data_bytes):
+    path = data_bytes.decode('utf-8')
+    in_file = open(path, 'r')
+    types = in_file.readline().strip()[2:].split(',')
+    column_types = []
+    for i in range(len(types)):
+        col_type_id = int(types[i])
+        column_types.append(_types_(col_type_id))
+    in_file.close()
+    return column_types
+
+
 def column_serializers_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')

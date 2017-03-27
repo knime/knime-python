@@ -239,8 +239,9 @@ def bytes_from_file(path):
 
 def bytes_to_data_frame(data_bytes):
     column_names = _serializer.column_names_from_bytes(data_bytes)
+    column_types = _serializer.column_types_from_bytes(data_bytes)
     column_serializers = _serializer.column_serializers_from_bytes(data_bytes)
-    table = ToPandasTable(column_names, column_serializers)
+    table = ToPandasTable(column_names, column_types, column_serializers)
     _serializer.bytes_into_table(table, data_bytes)
     return table.get_data_frame()
 
@@ -688,7 +689,22 @@ class FromPandasTable:
 
 class ToPandasTable:
     # example: ToPandasTable(('column1','column2'))
-    def __init__(self, column_names, column_serializers):
+    def __init__(self, column_names, column_types, column_serializers):
+        dtypes = {}
+        for i in range(len(column_names)):
+            name = column_names[i]
+            if column_types[i] == Simpletype.BOOLEAN:
+                col_type = numpy.bool
+            elif column_types[i] == Simpletype.INTEGER:
+                col_type = numpy.int32
+            elif column_types[i] == Simpletype.LONG:
+                col_type = numpy.int64
+            elif column_types[i] == Simpletype.DOUBLE:
+                col_type = numpy.float64
+            else:
+                col_type = numpy.str
+            dtypes[name] = col_type
+        self._dtypes = dtypes
         self._column_names = column_names
         self._data_frame = DataFrame(columns=column_names)
         self._column_serializers = column_serializers
@@ -708,6 +724,9 @@ class ToPandasTable:
 
     def get_data_frame(self):
         deserialize_from_bytes(self._data_frame, self._column_serializers)
+        if len(self._data_frame) > 0:
+            for column in self._data_frame.columns:
+                self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
         return self._data_frame
 
 
@@ -740,7 +759,8 @@ def simpletype_for_column(data_frame, column_name):
     else:
         if data_frame[column_name].dtype == 'bool':
             simple_type = Simpletype.BOOLEAN
-        elif data_frame[column_name].dtype == 'int64' or data_frame[column_name].dtype == 'int32':
+        #elif data_frame[column_name].dtype == 'int64' or data_frame[column_name].dtype == 'int32':
+        elif data_frame[column_name].dtype == 'int32':
             minvalue = data_frame[column_name][data_frame[column_name].idxmin()]
             maxvalue = data_frame[column_name][data_frame[column_name].idxmax()]
             int32min = -2147483648
@@ -749,6 +769,8 @@ def simpletype_for_column(data_frame, column_name):
                 simple_type = Simpletype.INTEGER
             else:
                 simple_type = Simpletype.LONG
+        elif data_frame[column_name].dtype == 'int64':
+            simple_type = Simpletype.LONG
         elif data_frame[column_name].dtype == 'double' or column_type(data_frame, column_name) == float:
             simple_type = Simpletype.DOUBLE
         else:
