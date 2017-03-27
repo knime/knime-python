@@ -85,6 +85,13 @@ public class PythonToKnimeExtensions {
 				LOGGER.error(e.getMessage(), e);
 			}
 		}
+		addExtensionsToPython2();
+	}
+	
+	public static void addExtensionsToPython2() {
+		for (PythonToKnimeExtension extension : extensions.values()) {
+			org.knime.python2.typeextension.PythonToKnimeExtensions.addExtension(extension.getId(), extension.getType(), extension.getPythonSerializerPath(), new DeserializerFactoryWrapper(extension.getJavaDeserializerFactory()), false);
+		}
 	}
 	
 	public Deserializer getDeserializer(final String id) {

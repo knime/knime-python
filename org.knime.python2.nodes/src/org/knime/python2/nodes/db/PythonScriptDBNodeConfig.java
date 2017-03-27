@@ -45,32 +45,40 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.typeextension.builtin.svg;
+package org.knime.python2.nodes.db;
 
-import java.io.IOException;
+import org.knime.code2.generic.VariableNames;
+import org.knime.code2.python.PythonSourceCodeConfig;
 
-import org.knime.base.data.xml.SvgValue;
-import org.knime.python2.typeextension.Serializer;
-import org.knime.python2.typeextension.SerializerFactory;
+class PythonScriptDBNodeConfig extends PythonSourceCodeConfig {
 
-public class SVGSerializerFactory extends SerializerFactory<SvgValue> {
-	
-	public SVGSerializerFactory() {
-		super(SvgValue.class);
-	}
-	
+	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+			null, null, null, null, null, new String[] {"db_util"}, null);
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public Serializer<SvgValue> createSerializer() {
-		return new SVGSerializer();
-	}
-	
-	private class SVGSerializer implements Serializer<SvgValue> {
+	protected String getDefaultSourceCode() {
+		final String var = VARIABLE_NAMES.getGeneralInputObjects()[0];
+		return  "# To prevent changes to the database in the node dialog\n" +
+				"# do NOT call commit() in your script!\n" +
+				"# All changes to the database are automatically\n" +
+				"# committed once the node is executed.\n" +
+				"# To list all functions of the db_util object call\n" +
+				"# " + var + ".print_description()\n\n" +
+				"df = " + var + ".get_dataframe()\n" +
+				var + ".write_dataframe('resultTableName', df)";
 
-		@Override
-		public byte[] serialize(SvgValue value) throws IOException {
-			return value.toString().getBytes();
-		}
-	
+	}
+
+	/**
+	 * Get the variable names for this node
+	 *
+	 * @return The variable names
+	 */
+	static VariableNames getVariableNames() {
+		return VARIABLE_NAMES;
 	}
 
 }

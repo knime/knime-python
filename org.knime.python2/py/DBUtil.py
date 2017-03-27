@@ -8,11 +8,11 @@ import inspect
 import tempfile
 import codecs
 from datetime import datetime
-from __builtin__ import int
+#from __builtin__ import int
 
 """ Dictionary contains the mapping of python data types to SQL data types."""
 python_db_mapping = {int : 'integer',
-                     long : 'numeric(30,10)', 
+                     int : 'numeric(30,10)',
                      str : 'varchar(255)', 
                      float : 'numeric(30,10)',
                      bool: 'boolean',
@@ -20,7 +20,7 @@ python_db_mapping = {int : 'integer',
 
 """ Dictionary contains the mapping of python data types to Hive data types."""
 python_hive_mapping = {int : 'int',
-                     long : 'bigint', 
+                     int : 'bigint',
                      str : 'string', 
                      float : 'double',
                      bool: 'boolean',
@@ -34,17 +34,17 @@ class DBUtil(object):
         Args:
             sql: A SQL object containing informations to connect to the database.
         """
-        self._conn = jaydebeapi.connect(sql.driver, 
-                                        [sql.JDBCUrl, sql.userName, sql.password],
-                                        sql.jars)
+        self._conn = jaydebeapi.connect(sql['driver'][0],
+                                        [sql['jdbcurl'][0], sql['username'][0], sql['password'][0]],
+                                        sql['jars'][0])
             
         self._conn.jconn.setAutoCommit(False)
         #sql_key_words_str = meta_data.getSQLKeywords()
         #self.sql_key_words = set(sql_key_words_str.split(",")) 
         self._cursor = self._conn.cursor()
         self._output_query = None
-        self._input_query = sql.query
-        self._db_identifier = sql.dbIdentifier
+        self._input_query = sql['query'][0]
+        self._db_identifier = sql['dbidentifier'][0]
         self._type_mapping = python_db_mapping
         
         self._quote_character = None
@@ -151,7 +151,7 @@ class DBUtil(object):
             savepoint = self._conn.set_savepoint()
         except:
             if self._debug:
-                print "Save points not supported by db"
+                print("Save points not supported by db")
             savepoint = None
         query_result = False
         try:
@@ -162,16 +162,16 @@ class DBUtil(object):
                     self._conn.release_savepoint(savepoint)
                 except Exception as e:
                     if self._debug:
-                        print "Exception when releasing save point"
+                        print("Exception when releasing save point")
         except Exception as e:
             if self._debug:
-                print "Save point query failed"
+                print("Save point query failed")
             if savepoint != None:
                 try:
                     self._conn.rollback(savepoint)
                 except Exception as e:
                     if self._debug:
-                        print "Save point rollback failed"
+                        print("Save point rollback failed")
         return query_result
     
     def _use_tez_for_hive(self):
@@ -182,7 +182,7 @@ class DBUtil(object):
     def _execute_query(self, sql, values=None):
         """Execute a SQL query."""
         if self._debug:
-                print sql
+                print(sql)
         if values is not None:
             self._cursor.execute(sql, values)
         else:
@@ -195,7 +195,7 @@ class DBUtil(object):
                 self._execute_query(sql, value)
             return
         if self._debug:
-            print sql
+            print(sql)
         self._cursor.executemany(sql, values)
         
     def _get_type_mapping(self, col_specs):
@@ -255,9 +255,9 @@ class DBUtil(object):
         
     def _print_description(self, obj, title, all):
         """Prints descriptions of this object."""        
-        print title
-        print len(title) * "-"
-        print
+        print(title)
+        print(len(title) * "-")
+        print()
         
         filter_private = lambda x : all or not(x.startswith('_'))
 
@@ -270,8 +270,8 @@ class DBUtil(object):
             doc = inspect.getdoc(getattr(obj, m))
             if not doc:
                 doc = "No description"
-            print '    ' , '    '.join(doc.splitlines(True))          
-            print 
+            print('    ' , '    '.join(doc.splitlines(True)))
+            print()
     
     def set_quote_all_identifier(self, quote_all):
         """By default all identifiers are quoted. If set to false only identifier with a space are quoted.

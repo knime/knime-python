@@ -1,5 +1,7 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces;
 
+import java.util.Map;
+
 /**
  * Spec of a table, containing the column names and column types.
  * 
@@ -29,5 +31,10 @@ public interface TableSpec {
 	 * @return Index of the column with the given name, -1 if the column has not been found.
 	 */
 	int findColumn(String name);
+	
+	/**
+	 * @return Map containing the column names as key and the corresponding serializer id as value.
+	 */
+	Map<String, String> getColumnSerializers();
 
 }

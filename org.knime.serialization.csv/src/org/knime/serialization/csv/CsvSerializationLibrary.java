@@ -6,8 +6,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -34,7 +39,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 				types += "," + spec.getColumnTypes()[i].getId();
 				names += "," + spec.getColumnNames()[i];
 			}
+			String serializers = "#";
+			for (Entry<String,String> entry : spec.getColumnSerializers().entrySet()) {
+				serializers += ',' + entry.getKey() + '=' + entry.getValue();
+			}
 			writer.write(types + "\n");
+			writer.write(serializers + "\n");
 			writer.write(names + "\n");
 			while (tableIterator.hasNext()) {
 				Row row = tableIterator.next();
@@ -48,11 +58,53 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 						case BOOLEAN:
 							value = cell.getBooleanValue() ? "True" : "False";
 							break;
+						case BOOLEAN_LIST:
+						case BOOLEAN_SET:
+							Boolean[] booleanArray = cell.getBooleanArrayValue();
+							StringBuilder booleanBuilder = new StringBuilder();
+							booleanBuilder.append(cell.getColumnType()==Type.BOOLEAN_LIST ? "[" : "{");
+							for (int i = 0; i < booleanArray.length; i++) {
+								booleanBuilder.append(booleanArray[i] ? "True" : "False");
+								if (i+1 < booleanArray.length) {
+									booleanBuilder.append(",");
+								}
+							}
+							booleanBuilder.append(cell.getColumnType()==Type.BOOLEAN_LIST ? "]" : "}");
+							value = booleanBuilder.toString();
+							break;
 						case INTEGER:
 							value = cell.getIntegerValue().toString();
 							break;
+						case INTEGER_LIST:
+						case INTEGER_SET:
+							Integer[] integerArray = cell.getIntegerArrayValue();
+							StringBuilder integerBuilder = new StringBuilder();
+							integerBuilder.append(cell.getColumnType()==Type.INTEGER_LIST ? "[" : "{");
+							for (int i = 0; i < integerArray.length; i++) {
+								integerBuilder.append(integerArray[i].toString());
+								if (i+1 < integerArray.length) {
+									integerBuilder.append(",");
+								}
+							}
+							integerBuilder.append(cell.getColumnType()==Type.INTEGER_LIST ? "]" : "}");
+							value = integerBuilder.toString();
+							break;
 						case LONG:
 							value = cell.getLongValue().toString();
+							break;
+						case LONG_LIST:
+						case LONG_SET:
+							Long[] longArray = cell.getLongArrayValue();
+							StringBuilder longBuilder = new StringBuilder();
+							longBuilder.append(cell.getColumnType()==Type.LONG_LIST ? "[" : "{");
+							for (int i = 0; i < longArray.length; i++) {
+								longBuilder.append(longArray[i].toString());
+								if (i+1 < longArray.length) {
+									longBuilder.append(",");
+								}
+							}
+							longBuilder.append(cell.getColumnType()==Type.LONG_LIST ? "]" : "}");
+							value = longBuilder.toString();
 							break;
 						case DOUBLE:
 							Double doubleValue = cell.getDoubleValue();
@@ -68,10 +120,54 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								value = doubleValue.toString();
 							}
 							break;
+						case DOUBLE_LIST:
+						case DOUBLE_SET:
+							Double[] doubleArray = cell.getDoubleArrayValue();
+							StringBuilder doubleBuilder = new StringBuilder();
+							doubleBuilder.append(cell.getColumnType()==Type.DOUBLE_LIST ? "[" : "{");
+							for (int i = 0; i < doubleArray.length; i++) {
+								doubleBuilder.append(doubleArray[i].toString());
+								if (i+1 < doubleArray.length) {
+									doubleBuilder.append(",");
+								}
+							}
+							doubleBuilder.append(cell.getColumnType()==Type.DOUBLE_LIST ? "]" : "}");
+							value = doubleBuilder.toString();
+							break;
 						case STRING:
 							value = cell.getStringValue();
 							break;
-							// TODO more...
+						case STRING_LIST:
+						case STRING_SET:
+							String[] stringArray = cell.getStringArrayValue();
+							StringBuilder stringBuilder = new StringBuilder();
+							stringBuilder.append(cell.getColumnType()==Type.STRING_LIST ? "[" : "{");
+							for (int i = 0; i < stringArray.length; i++) {
+								stringBuilder.append(stringArray[i]);
+								if (i+1 < stringArray.length) {
+									stringBuilder.append(",");
+								}
+							}
+							stringBuilder.append(cell.getColumnType()==Type.STRING_LIST ? "]" : "}");
+							value = stringBuilder.toString();
+							break;
+						case BYTES:
+							value = bytesToBase64(cell.getBytesValue());
+							break;
+						case BYTES_LIST:
+						case BYTES_SET:
+							Byte[][] bytesArray = cell.getBytesArrayValue();
+							StringBuilder bytesBuilder = new StringBuilder();
+							bytesBuilder.append(cell.getColumnType()==Type.BYTES_LIST ? "[" : "{");
+							for (int i = 0; i < bytesArray.length; i++) {
+								bytesBuilder.append(bytesToBase64(bytesArray[i]));
+								if (i+1 < bytesArray.length) {
+									bytesBuilder.append(",");
+								}
+							}
+							bytesBuilder.append(cell.getColumnType()==Type.BYTES_LIST ? "]" : "}");
+							value = bytesBuilder.toString();
+							break;
 						default:
 							break;
 						}
@@ -96,6 +192,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			FileReader reader = new FileReader(file);
 			BufferedReader br = new BufferedReader(reader);
 			List<String> types = parseLine(br);
+			List<String> serializers = parseLine(br);
 			List<String> names = parseLine(br);
 			List<String> values;
 			while ((values = parseLine(br)) != null) {
@@ -106,17 +203,44 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 					Cell cell;
 					String value = values.get(i+1);
 					if (value.equals("MissingCell")) {
-						cell = new CellImpl(columnName);
+						cell = new CellImpl();
 					} else {
 						switch(type) {
 						case BOOLEAN:
 							cell = new CellImpl(value.equals("True") ? true : false);
 							break;
+						case BOOLEAN_LIST:
+						case BOOLEAN_SET:
+							String[] booleanValues = value.substring(1, value.length()-1).split(",");
+							Boolean[] booleanArray = new Boolean[booleanValues.length];
+							for (int j = 0; j < booleanArray.length; j++) {
+								booleanArray[j] = booleanValues[j].trim().equals("True");
+							}
+							cell = new CellImpl(booleanArray, type==Type.BOOLEAN_SET);
+							break;
 						case INTEGER:
 							cell = new CellImpl(Integer.parseInt(value));
 							break;
+						case INTEGER_LIST:
+						case INTEGER_SET:
+							String[] integerValues = value.substring(1, value.length()-1).split(",");
+							Integer[] integerArray = new Integer[integerValues.length];
+							for (int j = 0; j < integerArray.length; j++) {
+								integerArray[j] = Integer.parseInt(integerValues[j].trim());
+							}
+							cell = new CellImpl(integerArray, type==Type.INTEGER_SET);
+							break;
 						case LONG:
 							cell = new CellImpl(Long.parseLong(value));
+							break;
+						case LONG_LIST:
+						case LONG_SET:
+							String[] longValues = value.substring(1, value.length()-1).split(",");
+							Long[] longArray = new Long[longValues.length];
+							for (int j = 0; j < longArray.length; j++) {
+								longArray[j] = Long.parseLong(longValues[j].trim());
+							}
+							cell = new CellImpl(longArray, type==Type.LONG_SET);
 							break;
 						case DOUBLE:
 							Double doubleValue;
@@ -131,10 +255,39 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							}
 							cell = new CellImpl(doubleValue);
 							break;
+						case DOUBLE_LIST:
+						case DOUBLE_SET:
+							String[] doubleValues = value.substring(1, value.length()-1).split(",");
+							Double[] doubleArray = new Double[doubleValues.length];
+							for (int j = 0; j < doubleArray.length; j++) {
+								doubleArray[j] = Double.parseDouble(doubleValues[j].trim());
+							}
+							cell = new CellImpl(doubleArray, type==Type.DOUBLE_SET);
+							break;
 						case STRING:
 							cell = new CellImpl(value);
 							break;
-							// TODO more...
+						case STRING_LIST:
+						case STRING_SET:
+							String[] stringValues = value.substring(1, value.length()-1).split(",");
+							String[] stringArray = new String[stringValues.length];
+							for (int j = 0; j < stringArray.length; j++) {
+								stringArray[j] = stringValues[j].trim();
+							}
+							cell = new CellImpl(stringArray, type==Type.STRING_SET);
+							break;
+						case BYTES:
+							cell = new CellImpl(bytesFromBase64(value));
+							break;
+						case BYTES_LIST:
+						case BYTES_SET:
+							String[] bytesValues = value.substring(1, value.length()-1).split(",");
+							Byte[][] bytesArray = new Byte[bytesValues.length][];
+							for (int j = 0; j < bytesArray.length; j++) {
+								bytesArray[j] = bytesFromBase64(bytesValues[j].trim());
+							}
+							cell = new CellImpl(bytesArray, type==Type.BYTES_SET);
+							break;
 						default:
 							cell = new CellImpl(columnName);
 							break;
@@ -159,6 +312,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			FileReader reader = new FileReader(file);
 			BufferedReader br = new BufferedReader(reader);
 			List<String> typeValues = parseLine(br);
+			List<String> serializerValues = parseLine(br);
 			List<String> nameValues = parseLine(br);
 			Type[] types = new Type[typeValues.size() - 1];
 			String[] names = new String[types.length];
@@ -166,7 +320,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 				types[i] = Type.getTypeForId(Integer.parseInt(typeValues.get(i+1)));
 				names[i] = nameValues.get(i+1);
 			}
-			TableSpec spec = new TableSpecImpl(types, names);
+			Map<String, String> serializers = new HashMap<String, String>();
+			for (int i = 1; i < serializerValues.size(); i++) {
+				String[] keyValuePair = serializerValues.get(i).split("=");
+				serializers.put(keyValuePair[0], keyValuePair[1]);
+			}
+			TableSpec spec = new TableSpecImpl(types, names, serializers);
 			br.close();
 			return spec;
 		} catch (IOException e) {
@@ -216,6 +375,17 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			value = "\"" + value + "\"";
 		}
 		return value;
+	}
+	
+	private static String bytesToBase64(final Byte[] bytes) {
+		return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
+	}
+	
+	private static Byte[] bytesFromBase64(String base64) {
+		if (base64.startsWith("b'")) {
+			base64 = base64.substring(2, base64.length()-1);
+		}
+		return ArrayUtils.toObject(Base64.getDecoder().decode(base64.getBytes()));
 	}
 
 }

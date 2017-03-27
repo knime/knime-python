@@ -45,44 +45,67 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.typeextension.builtin.xml;
+package org.knime.python2.nodes.db;
 
-import java.io.IOException;
+import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
+import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLStreamException;
+/**
+ * <code>NodeFactory</code> for the node.
+ *
+ * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
+public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeModel> {
 
-import org.knime.core.data.DataCell;
-import org.knime.core.data.filestore.FileStoreFactory;
-import org.knime.core.data.xml.XMLCell;
-import org.knime.core.data.xml.XMLCellFactory;
-import org.knime.python2.typeextension.Deserializer;
-import org.knime.python2.typeextension.DeserializerFactory;
-import org.xml.sax.SAXException;
-
-public class XMLDeserializerFactory extends DeserializerFactory {
-	
-	public XMLDeserializerFactory() {
-		super(XMLCell.TYPE);
-	}
-	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public Deserializer createDeserializer() {
-		return new XMLDeserializer();
+	public PythonScriptDBNodeModel createNodeModel() {
+		return new PythonScriptDBNodeModel();
 	}
 
-	private class XMLDeserializer implements Deserializer {
-		
-		@Override
-		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
-			try {
-				return XMLCellFactory.create(new String(bytes));
-			} catch (ParserConfigurationException | SAXException
-					| XMLStreamException e) {
-				throw new IOException(e.getMessage(), e);
-			}
-		}
-		
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int getNrNodeViews() {
+		return 2;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
+        if (viewIndex == 0) {
+            return
+                new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
+        } else if (viewIndex == 1) {
+            return
+                new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
+        }
+        return null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean hasDialog() {
+		return true;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public NodeDialogPane createNodeDialogPane() {
+		return new PythonScriptDBNodeDialog();
 	}
 
 }

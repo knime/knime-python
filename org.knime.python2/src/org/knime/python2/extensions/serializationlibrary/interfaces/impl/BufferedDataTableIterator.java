@@ -1,6 +1,8 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.BooleanValue;
@@ -15,6 +17,8 @@ import org.knime.core.data.StringValue;
 import org.knime.core.data.collection.CollectionDataValue;
 import org.knime.core.data.collection.SetDataValue;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
@@ -28,21 +32,33 @@ public class BufferedDataTableIterator implements TableIterator {
 	
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableIterator.class);
 	
+	private final int m_numberRows;
 	private int m_remainingRows;
 	private CloseableRowIterator m_iterator;
 	private TableSpec m_spec;
 	private KnimeToPythonExtensions m_knimeToPythonExtensions;
+	private final ExecutionMonitor m_executionMonitor;
 	
-	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows) {
+	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor) {
+		m_numberRows = numberRows;
 		m_spec = dataTableSpecToTableSpec(spec);
 		m_remainingRows = numberRows;
 		m_iterator = rowIterator;
 		m_knimeToPythonExtensions = new KnimeToPythonExtensions();
+		m_executionMonitor = monitor;
 	}
 
 	@Override
 	public Row next() {
 		if (m_remainingRows > 0) {
+			if (m_executionMonitor != null) {
+				try {
+					m_executionMonitor.checkCanceled();
+					m_executionMonitor.setProgress((m_numberRows-m_remainingRows)/(double)m_numberRows);
+				} catch (CanceledExecutionException e) {
+					throw new RuntimeException(e.getMessage(), e);
+				}
+			}
 			m_remainingRows--;
 			return dataRowToRow(m_iterator.next());
 		} else {
@@ -69,11 +85,10 @@ public class BufferedDataTableIterator implements TableIterator {
 	private Row dataRowToRow(final DataRow dataRow) {
 		Row row = new RowImpl(dataRow.getKey().getString(), dataRow.getNumCells());
 		for (int i = 0; i < dataRow.getNumCells(); i++) {
-			String columnName = m_spec.getColumnNames()[i];
 			DataCell dataCell = dataRow.getCell(i);
 			Type type = m_spec.getColumnTypes()[i];
 			if (dataCell.isMissing()) {
-				row.setCell(new CellImpl(columnName), i);
+				row.setCell(new CellImpl(), i);
 			} else if (type == Type.BOOLEAN) {
 				Boolean value = ((BooleanValue)dataCell).getBooleanValue();
 				row.setCell(new CellImpl(value), i);
@@ -156,7 +171,7 @@ public class BufferedDataTableIterator implements TableIterator {
 					row.setCell(new CellImpl(value), i);
 				} catch (IOException e) {
 					LOGGER.error(e.getMessage(), e);
-					row.setCell(new CellImpl(columnName), i);
+					row.setCell(new CellImpl(), i);
 				}
 			} else if (type == Type.BYTES_LIST || type == Type.BYTES_SET) {
 				Serializer serializer = m_knimeToPythonExtensions.getSerializer(KnimeToPythonExtensions.getExtension(dataCell.getType().getCollectionElementType()).getId());
@@ -184,6 +199,7 @@ public class BufferedDataTableIterator implements TableIterator {
 	private TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
 		Type[] types = new Type[dataTableSpec.getNumColumns()];
 		String[] names = new String[dataTableSpec.getNumColumns()];
+		Map<String, String> columnSerializers = new HashMap<String, String>();
 		int i = 0;
 		for (DataColumnSpec colSpec : dataTableSpec) {
 			names[i] = colSpec.getName();
@@ -210,6 +226,7 @@ public class BufferedDataTableIterator implements TableIterator {
 								.getCollectionElementType());
 						if (typeExtension != null) {
 							types[i] = Type.BYTES_SET;
+							columnSerializers.put(colSpec.getName(), typeExtension.getId());
 						} else {
 							types[i] = Type.STRING_SET;
 						}
@@ -228,6 +245,7 @@ public class BufferedDataTableIterator implements TableIterator {
 								.getCollectionElementType());
 						if (typeExtension != null) {
 							types[i] = Type.BYTES_LIST;
+							columnSerializers.put(colSpec.getName(), typeExtension.getId());
 						} else {
 							types[i] = Type.STRING_LIST;
 						}
@@ -237,13 +255,14 @@ public class BufferedDataTableIterator implements TableIterator {
 				final KnimeToPythonExtension typeExtension = KnimeToPythonExtensions.getExtension(colSpec.getType());
 				if (typeExtension != null) {
 					types[i] = Type.BYTES;
+					columnSerializers.put(colSpec.getName(), typeExtension.getId());
 				} else {
 					types[i] = Type.STRING;
 				}
 			}
 			i++;
 		}
-		return new TableSpecImpl(types, names);
+		return new TableSpecImpl(types, names, columnSerializers);
 	}
 
 }

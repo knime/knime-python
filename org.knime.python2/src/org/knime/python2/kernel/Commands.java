@@ -55,9 +55,23 @@ public class Commands {
 		readBytes();
 	}
 	
+	synchronized public int getTableSize(final String name) throws IOException {
+		writeString("getTableSize");
+		writeString(name);
+		return readInt();
+	}
+	
 	synchronized public byte[] getTable(final String name) throws IOException {
 		writeString("getTable");
 		writeString(name);
+		return readBytes();
+	}
+	
+	synchronized public byte[] getTableChunk(final String name, final int start, final int end) throws IOException {
+		writeString("getTableChunk");
+		writeString(name);
+		writeInt(start);
+		writeInt(end);
 		return readBytes();
 	}
 	
@@ -129,10 +143,10 @@ public class Commands {
 		readBytes();
 	}
 	
-	synchronized public byte[] getSql(final String name) throws IOException {
+	synchronized public String getSql(final String name) throws IOException {
 		writeString("getSql");
 		writeString(name);
-		return readBytes();
+		return readString();
 	}
 	
 	private byte[] stringToBytes(final String string) {

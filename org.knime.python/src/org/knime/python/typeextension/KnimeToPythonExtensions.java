@@ -88,6 +88,14 @@ public class KnimeToPythonExtensions {
 				LOGGER.error(e.getMessage(), e);
 			}
 		}
+		addExtensionsToPython2();
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void addExtensionsToPython2() {
+		for (KnimeToPythonExtension extension : extensions.values()) {
+			org.knime.python2.typeextension.KnimeToPythonExtensions.addExtension(extension.getId(), extension.getPythonDeserializerPath(), new SerializerFactoryWrapper(extension.getJavaSerializerFactory()), false);
+		}
 	}
 	
 	public Serializer<? extends DataValue> getSerializer(final String id) {

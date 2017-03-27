@@ -9,6 +9,7 @@ import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
 import org.knime.core.data.MissingCell;
 import org.knime.core.data.collection.CollectionCellFactory;
 import org.knime.core.data.collection.ListCell;
@@ -23,7 +24,9 @@ import org.knime.core.data.def.StringCell;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -40,8 +43,13 @@ public class BufferedDataTableCreator implements TableCreator {
 	private final TableSpec m_spec;
 	private final PythonToKnimeExtensions m_pythonToKnimeExtensions;
 	private final FileStoreFactory m_fileStoreFactory;
+	private final ExecutionMonitor m_executionMonitor;
+	private final int m_tableSize;
+	private int m_rowsDone = 0;
 	
-	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context) {
+	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context, final ExecutionMonitor executionMonitor, int tableSize) {
+		m_tableSize = tableSize;
+		m_executionMonitor = executionMonitor;
 		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
 		m_spec = spec;
 		m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
@@ -95,16 +103,16 @@ public class BufferedDataTableCreator implements TableCreator {
 				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
 				break;
 			case BYTES:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
+				DataType type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
 				break;
 			case BYTES_LIST:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
+				DataType list_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
 				break;
 			case BYTES_SET:
-				// TODO we need to figure out the type based on an ID
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
+				DataType set_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
 				break;
 			default:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
@@ -116,6 +124,11 @@ public class BufferedDataTableCreator implements TableCreator {
 
 	@Override
 	public void addRow(final Row row) {
+		try {
+			m_executionMonitor.checkCanceled();
+		} catch (CanceledExecutionException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
 		DataCell[] cells = new DataCell[row.getNumberCells()];
 		int i = 0;
 		for (Cell cell : row) {
@@ -249,7 +262,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
 					break;
 				case BYTES:
-					String bytesTypeId = null;
+					String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 					try {
 						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
@@ -259,7 +272,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					}
 					break;
 				case BYTES_LIST:
-					String bytesListTypeId = null;
+					String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesListDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
 					List<DataCell> listCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
@@ -273,7 +286,7 @@ public class BufferedDataTableCreator implements TableCreator {
 					cells[i] = CollectionCellFactory.createListCell(listCells);
 					break;
 				case BYTES_SET:
-					String bytesSetTypeId = null;
+					String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
 					Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
 					List<DataCell> setCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
@@ -293,6 +306,8 @@ public class BufferedDataTableCreator implements TableCreator {
 			i++;
 		}
 		m_container.addRowToTable(new DefaultRow(row.getRowKey(), cells));
+		m_rowsDone++;
+		m_executionMonitor.setProgress(m_rowsDone/(double)m_tableSize);
 	}
 
 	@Override

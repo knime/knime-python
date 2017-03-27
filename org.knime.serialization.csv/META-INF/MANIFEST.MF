@@ -4,5 +4,6 @@ Bundle-Name: org.knime.serialization.csv
 Bundle-SymbolicName: org.knime.serialization.csv;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)"
+Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)",
+ org.apache.commons.lang3;bundle-version="3.2.1"
 Export-Package: org.knime.serialization.csv

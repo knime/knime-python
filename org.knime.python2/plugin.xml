@@ -18,34 +18,18 @@
    <extension
          point="org.knime.python2.typeextension.pythontoknime">
       <type
-            id="org.knime.xml"
-            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
-            python-serializer="src/org/knime/python/typeextension/builtin/xml/XMLSerializer.py"
-            python-type-identifier="xml.dom.minidom.Document">
-      </type>
-      <type
-            id="org.knime.image"
-            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.ImageDeserializerFactory"
-            python-serializer="src/org/knime/python/typeextension/builtin/image/ImageSerializer.py"
-            python-type-identifier="PIL.PngImagePlugin.PngImageFile">
+            id="org.knime.datetime"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.datetime.DateTimeDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeSerializer.py"
+            python-type-identifier="datetime">
       </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
       <type
-            id="org.knime.xml"
-            java-serializer-factory="org.knime.python2.typeextension.builtin.xml.XMLSerializerFactory"
-            python-deserializer="src/org/knime/python/typeextension/builtin/xml/XMLDeserializer.py">
-      </type>
-      <type
-            id="org.knime.svg"
-            java-serializer-factory="org.knime.python2.typeextension.builtin.svg.SVGSerializerFactory"
-            python-deserializer="src/org/knime/python/typeextension/builtin/svg/SVGDeserializer.py">
-      </type>
-      <type
-            id="org.knime.image"
-            java-serializer-factory="org.knime.python2.typeextension.builtin.image.ImageSerializerFactory"
-            python-deserializer="src/org/knime/python/typeextension/builtin/image/ImageDeserializer.py">
+            id="org.knime.datetime"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.datetime.DateTimeSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeDeserializer.py">
       </type>
    </extension>
    <extension

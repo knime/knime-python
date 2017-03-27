@@ -71,15 +71,18 @@ import javax.imageio.ImageIO;
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.code2.generic.ImageContainer;
 import org.knime.code2.generic.ScriptingNodeUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.port.database.DatabaseConnectionSettings;
+import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.Activator;
@@ -113,13 +116,10 @@ import org.w3c.dom.svg.SVGDocument;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernel {
-	
-	// TODO remove, if this isn't useful
-	private static final boolean VIA_FILE = false;
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-	private static final int CHUNK_SIZE = 1000;
+	private static final int CHUNK_SIZE = 500000;
 
 	private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
@@ -129,9 +129,7 @@ public class PythonKernel {
 	private boolean m_hasAutocomplete = false;
 	private int m_pid = -1;
 	private boolean m_closed = false;
-	private final KnimeToPythonExtensions knimeToPythonExtensions = new KnimeToPythonExtensions();
-	private final PythonToKnimeExtensions pythonToKnimeExtensions = new PythonToKnimeExtensions();
-	
+
 	private final Commands m_commands;
 	private final SerializationLibrary m_serializer;
 	private final SerializationLibraryExtensions m_serializationLibraryExtensions;
@@ -146,14 +144,16 @@ public class PythonKernel {
 	 * @throws IOException
 	 */
 	public PythonKernel(final boolean usePython3) throws IOException {
-		final PythonKernelTestResult testResult = usePython3 ? Activator.testPython3Installation() : Activator.retestPython2Installation();
+		final PythonKernelTestResult testResult = usePython3 ? Activator.testPython3Installation()
+				: Activator.retestPython2Installation();
 		if (testResult.hasError()) {
 			throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
 		}
 		// Create serialization library instance
 		m_serializationLibraryExtensions = new SerializationLibraryExtensions();
 		m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(PythonPreferencePage.getSerializerId());
-		String serializerPythonPath = SerializationLibraryExtensions.getSerializationLibraryPath(PythonPreferencePage.getSerializerId());
+		String serializerPythonPath = SerializationLibraryExtensions
+				.getSerializationLibraryPath(PythonPreferencePage.getSerializerId());
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
 		final int port = m_serverSocket.getLocalPort();
@@ -161,7 +161,7 @@ public class PythonKernel {
 		final AtomicReference<IOException> exception = new AtomicReference<IOException>();
 		final Thread thread = new Thread(new Runnable() {
 			@Override
-            public void run() {
+			public void run() {
 				try {
 					m_socket = m_serverSocket.accept();
 				} catch (final IOException e) {
@@ -175,7 +175,9 @@ public class PythonKernel {
 		// Get path to python kernel script
 		final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
-		final ProcessBuilder pb = new ProcessBuilder(usePython3 ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath, "" + port, serializerPythonPath);
+		final ProcessBuilder pb = new ProcessBuilder(
+				usePython3 ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath, "" + port,
+				serializerPythonPath);
 		// Add all python modules to PYTHONPATH variable
 		String existingPath = pb.environment().get("PYTHONPATH");
 		existingPath = existingPath == null ? "" : existingPath;
@@ -189,11 +191,11 @@ public class PythonKernel {
 		}
 		existingPath = existingPath == null ? "" : existingPath + File.pathSeparator;
 		pb.environment().put("PYTHONPATH", existingPath);
-		
+
 		// TODO remove redirect
 		pb.redirectOutput(Redirect.INHERIT);
 		pb.redirectError(Redirect.INHERIT);
-		
+
 		// Start python
 		m_process = pb.start();
 		try {
@@ -218,7 +220,8 @@ public class PythonKernel {
 		}
 		// Python serializers
 		for (final PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
-			m_commands.addSerializer(typeExtension.getId(), typeExtension.getType(), typeExtension.getPythonSerializerPath());
+			m_commands.addSerializer(typeExtension.getId(), typeExtension.getType(),
+					typeExtension.getPythonSerializerPath());
 		}
 		// Python deserializers
 		for (final KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
@@ -263,7 +266,7 @@ public class PythonKernel {
 		// Thread running the execute
 		ThreadUtils.threadWithContext(new Runnable() {
 			@Override
-            public void run() {
+			public void run() {
 				String[] out;
 				try {
 					out = execute(sourceCode);
@@ -313,7 +316,7 @@ public class PythonKernel {
 		byte[] bytes = flowVariablesToBytes(flowVariables);
 		m_commands.putFlowVariables(name, bytes);
 	}
-	
+
 	private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) {
 		Type[] types = new Type[flowVariables.size()];
 		String[] columnNames = new String[flowVariables.size()];
@@ -346,11 +349,11 @@ public class PythonKernel {
 			}
 			i++;
 		}
-		TableSpec spec = new TableSpecImpl(types, columnNames);
+		TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
 		return m_serializer.tableToBytes(tableIterator);
 	}
-	
+
 	private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) {
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
@@ -384,22 +387,25 @@ public class PythonKernel {
 		}
 		return flowVariables;
 	}
-	
+
 	/**
 	 * Returns the list of defined flow variables
 	 * 
-	 * @param name Variable name of the flow variable dict in Python
+	 * @param name
+	 *            Variable name of the flow variable dict in Python
 	 * @return Collection of flow variables
-	 * @throws IOException If an error occured
+	 * @throws IOException
+	 *             If an error occured
 	 */
 	public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
 		byte[] bytes = m_commands.getFlowVariables(name);
 		Collection<FlowVariable> flowVariables = bytesToFlowVariables(bytes);
 		return flowVariables;
 	}
-	
+
 	private boolean isValidFlowVariableName(final String name) {
-		if (name.startsWith(FlowVariable.Scope.Global.getPrefix()) || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
+		if (name.startsWith(FlowVariable.Scope.Global.getPrefix())
+				|| name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
 			// name is reserved
 			return false;
 		}
@@ -420,7 +426,7 @@ public class PythonKernel {
 	 * @param rowLimit
 	 *            The amount of rows that will be transfered
 	 * @throws IOException
-	 *             If an error occured
+	 *             If an error occurred
 	 */
 	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
@@ -431,20 +437,31 @@ public class PythonKernel {
 		final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
 		CloseableRowIterator iterator = table.iterator();
-		TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator, table.getRowCount());
-		byte[] bytes = m_serializer.tableToBytes(tableIterator);
-		
-		// TODO remove, if this isn't useful
-		if (VIA_FILE) {
-			File file = File.createTempFile("bytes-to-python-", ".tmp");
-			file.deleteOnExit();
-			FileUtils.writeByteArrayToFile(file, bytes);
-			bytes = file.getAbsolutePath().getBytes();
+		int numberRows = Math.min(rowLimit, table.getRowCount());
+		int numberChunks = (int) Math.ceil(numberRows / (double) CHUNK_SIZE);
+		int rowsDone = 0;
+		for (int i = 0; i < numberChunks; i++) {
+			int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
+			ExecutionMonitor chunkProgress = serializationMonitor
+					.createSubProgress(rowsInThisIteration / (double) numberRows);
+			TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator,
+					rowsInThisIteration, chunkProgress);
+			byte[] bytes = m_serializer.tableToBytes(tableIterator);
+			chunkProgress.setProgress(1);
+			rowsDone += rowsInThisIteration;
+			serializationMonitor.setProgress(rowsDone / (double) numberRows);
+			if (i == 0) {
+				m_commands.putTable(name, bytes);
+			} else {
+				m_commands.appendToTable(name, bytes);
+			}
+			deserializationMonitor.setProgress(rowsDone / (double) numberRows);
+			try {
+				executionMonitor.checkCanceled();
+			} catch (CanceledExecutionException e) {
+				throw new IOException(e.getMessage(), e);
+			}
 		}
-		
-		serializationMonitor.setProgress(1);
-		m_commands.putTable(name, bytes);
-		deserializationMonitor.setProgress(1);
 		iterator.close();
 	}
 
@@ -460,7 +477,7 @@ public class PythonKernel {
 	 * @param executionMonitor
 	 *            The monitor that will be updated about progress
 	 * @throws IOException
-	 *             If an error occured
+	 *             If an error occurred
 	 */
 	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
@@ -483,21 +500,21 @@ public class PythonKernel {
 			final ExecutionMonitor executionMonitor) throws IOException {
 		final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-		byte[] bytes = m_commands.getTable(name);
-		serializationMonitor.setProgress(1);
-
-		// TODO remove, if this isn't useful
-		if (VIA_FILE) {
-			File file = new File(new String(bytes));
-			file.deleteOnExit();
-			bytes = FileUtils.readFileToByteArray(file);
-			file.delete();
+		int tableSize = m_commands.getTableSize(name);
+		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
+		BufferedDataTableCreator tableCreator = null;
+		for (int i = 0; i < numberChunks; i++) {
+			int start = CHUNK_SIZE * i;
+			int end = Math.min(tableSize, start + CHUNK_SIZE - 1);
+			byte[] bytes = m_commands.getTableChunk(name, start, end);
+			serializationMonitor.setProgress((end + 1) / (double) tableSize);
+			if (tableCreator == null) {
+				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+				tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
+			}
+			m_serializer.bytesIntoTable(tableCreator, bytes);
+			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
 		}
-		
-		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-		BufferedDataTableCreator tableCreator = new BufferedDataTableCreator(spec, exec);
-		m_serializer.bytesIntoTable(tableCreator, bytes);
-		deserializationMonitor.setProgress(1);
 		return tableCreator.getTable();
 	}
 
@@ -549,7 +566,8 @@ public class PythonKernel {
 		int typeIndex = spec.findColumn("type");
 		int representationIndex = spec.findColumn("representation");
 		byte[] objectBytes = ArrayUtils.toPrimitive(row.getCell(bytesIndex).getBytesValue());
-		return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(), row.getCell(representationIndex).getStringValue());
+		return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
+				row.getCell(representationIndex).getStringValue());
 	}
 
 	public void putObject(final String name, final PickledObject object) throws IOException {
@@ -563,7 +581,7 @@ public class PythonKernel {
 		// Thread running the execute
 		new Thread(new Runnable() {
 			@Override
-            public void run() {
+			public void run() {
 				try {
 					putObject(name, object);
 				} catch (final Exception e) {
@@ -678,7 +696,7 @@ public class PythonKernel {
 			m_closed = true;
 			new Thread(new Runnable() {
 				@Override
-                public void run() {
+				public void run() {
 					// Give it some time to finish writing into the stream
 					try {
 						Thread.sleep(1000);
@@ -705,7 +723,8 @@ public class PythonKernel {
 						m_socket.close();
 					} catch (final Throwable t) {
 					}
-					// If the original process was a script we have to kill the actual
+					// If the original process was a script we have to kill the
+					// actual
 					// Python process by PID
 					if (m_pid >= 0) {
 						try {
@@ -753,7 +772,7 @@ public class PythonKernel {
 	private String readAvailableBytesFromStream(final InputStream stream) throws IOException {
 		final byte[] bytes = new byte[1024];
 		final StringBuilder sb = new StringBuilder();
-		while(stream.available() > 0) {
+		while (stream.available() > 0) {
 			final int read = stream.read(bytes);
 			sb.append(new String(bytes, 0, read));
 		}
@@ -767,5 +786,32 @@ public class PythonKernel {
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();
+	}
+
+	public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
+			final Collection<String> jars) throws IOException {
+		Type[] types = new Type[] { Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
+				Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST };
+		String[] columnNames = new String[] { "driver", "jdbcurl", "username", "password", "query", "dbidentifier",
+				"connectiontimeout", "autocommit", "timezone", "jars" };
+		RowImpl row = new RowImpl("0", 10);
+		row.setCell(new CellImpl(conn.getDriver()), 0);
+		row.setCell(new CellImpl(conn.getJDBCUrl()), 1);
+		row.setCell(new CellImpl(conn.getUserName(cp)), 2);
+		row.setCell(new CellImpl(conn.getPassword(cp)), 3);
+		row.setCell(new CellImpl(conn.getQuery()), 4);
+		row.setCell(new CellImpl(conn.getDatabaseIdentifier()), 5);
+		row.setCell(new CellImpl(DatabaseConnectionSettings.getDatabaseTimeout()), 6);
+		row.setCell(new CellImpl(false), 7);
+		row.setCell(new CellImpl(conn.getTimezone()), 8);
+		row.setCell(new CellImpl(jars.toArray(new String[jars.size()]), false), 9);
+		TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
+		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
+		byte[] bytes = m_serializer.tableToBytes(tableIterator);
+		m_commands.putSql(name, bytes);
+	}
+
+	public String getSql(final String name) throws IOException {
+		return m_commands.getSql(name);
 	}
 }

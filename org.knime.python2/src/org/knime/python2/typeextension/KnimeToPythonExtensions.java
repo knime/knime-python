@@ -90,6 +90,15 @@ public class KnimeToPythonExtensions {
 		}
 	}
 	
+	public static boolean addExtension(final String id, final String pythonDeserializerPath, final SerializerFactory<? extends DataValue> javaSerializer, final boolean force) {
+		if (extensions.containsKey(id) && !force) {
+			return false;
+		} else {
+			extensions.put(id, new KnimeToPythonExtension(id, pythonDeserializerPath, javaSerializer));
+			return true;
+		}
+	}
+	
 	public Serializer<? extends DataValue> getSerializer(final String id) {
 		if (!m_serializers.containsKey(id)) {
 			m_serializers.put(id, extensions.get(id).getJavaSerializerFactory().createSerializer());

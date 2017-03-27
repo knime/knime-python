@@ -383,5 +383,9 @@ public class PythonKernelManager {
 			//
 		}
 	}
+	
+	public PythonKernel getKernel() {
+		return m_kernel;
+	}
 
 }

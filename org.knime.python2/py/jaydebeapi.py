@@ -17,17 +17,50 @@
 # License along with JayDeBeApi.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-__version_info__ = (0, 1, 5)
+__version_info__ = (1, 0, 0)
 __version__ = ".".join(str(i) for i in __version_info__)
 
 import datetime
-import exceptions
 import glob
 import os
 import time
 import re
 import sys
 import warnings
+
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    # Ideas stolen from the six python 2 and 3 compatibility layer
+    def exec_(_code_, _globs_=None, _locs_=None):
+        """Execute code in a namespace."""
+        if _globs_ is None:
+            frame = sys._getframe(1)
+            _globs_ = frame.f_globals
+            if _locs_ is None:
+                _locs_ = frame.f_locals
+            del frame
+        elif _locs_ is None:
+            _locs_ = _globs_
+        exec("""exec _code_ in _globs_, _locs_""")
+
+    exec_("""def reraise(tp, value, tb=None):
+    raise tp, value, tb
+""")
+else:
+    def reraise(tp, value, tb=None):
+        if value is None:
+            value = tp()
+        else:
+            value = tp(value)
+        if tb:
+            raise value.with_traceback(tb)
+        raise value
+
+if PY2:
+    string_type = basestring
+else:
+    string_type = str
 
 # Mapping from java.sql.Types attribute name to attribute value
 _jdbc_name_to_const = None
@@ -41,15 +74,16 @@ _java_array_byte = None
 
 _handle_sql_exception = None
 
-def _handle_sql_exception_jython(ex):
+def _handle_sql_exception_jython():
     from java.sql import SQLException
-    if isinstance(ex, SQLException):
-        # TODO get stacktrace
-        raise Error, ex.getMessage()
+    exc_info = sys.exc_info()
+    if isinstance(exc_info[1], SQLException):
+        exc_type = DatabaseError
     else:
-        raise ex
+        exc_type = InterfaceError
+    reraise(exc_type, exc_info[1], exc_info[2])
 
-def _jdbc_connect_jython(jclassname, jars, libs, *args):
+def _jdbc_connect_jython(jclassname, url, driver_args, jars, libs):
     if _jdbc_name_to_const is None:
         from java.sql import Types
         types = Types
@@ -80,7 +114,15 @@ def _jdbc_connect_jython(jclassname, jars, libs, *args):
         _jython_set_classpath(jars)
         Class.forName(jclassname).newInstance()
     from java.sql import DriverManager
-    return DriverManager.getConnection(*args)
+    if isinstance(driver_args, dict):
+        from java.util import Properties
+        info = Properties()
+        for k, v in driver_args.items():
+            info.setProperty(k, v)
+        dargs = [ info ]
+    else:
+        dargs = driver_args
+    return DriverManager.getConnection(url, *dargs)
 
 def _jython_set_classpath(jars):
     '''
@@ -103,16 +145,17 @@ def _prepare_jython():
     global _handle_sql_exception
     _handle_sql_exception = _handle_sql_exception_jython
 
-def _handle_sql_exception_jpype(ex):
+def _handle_sql_exception_jpype():
     import jpype
     SQLException = jpype.java.sql.SQLException
-    if issubclass(ex.__javaclass__, SQLException):
-        # TODO get stacktrace
-        raise Error, ex.message()
+    exc_info = sys.exc_info()
+    if issubclass(exc_info[1].__javaclass__, SQLException):
+        exc_type = DatabaseError
     else:
-        raise ex
+        exc_type = InterfaceError
+    reraise(exc_type, exc_info[1], exc_info[2])
     
-def _jdbc_connect_jpype(jclassname, jars, libs, *driver_args):
+def _jdbc_connect_jpype(jclassname, url, driver_args, jars, libs):
     import jpype
     if not jpype.isJVMStarted():
         args = []
@@ -145,7 +188,15 @@ def _jdbc_connect_jpype(jclassname, jars, libs, *driver_args):
             return jpype.JArray(jpype.JByte, 1)(data)
     # register driver for DriverManager
     jpype.JClass(jclassname)
-    return jpype.java.sql.DriverManager.getConnection(*driver_args)
+    if isinstance(driver_args, dict):
+        Properties = jpype.java.util.Properties
+        info = Properties()
+        for k, v in driver_args.items():
+            info.setProperty(k, v)
+        dargs = [ info ]
+    else:
+        dargs = driver_args
+    return jpype.java.sql.DriverManager.getConnection(url, *dargs)
 
 def _get_classpath():
     """Extract CLASSPATH from system environment as JPype doesn't seem
@@ -189,7 +240,7 @@ class DBAPITypeObject(object):
         self.values = values
         for type_name in values:
             if type_name in DBAPITypeObject._mappings:
-                raise ValueError, "Non unique mapping for type '%s'" % type_name
+                raise ValueError("Non unique mapping for type '%s'" % type_name)
             DBAPITypeObject._mappings[type_name] = self
     def __cmp__(self, other):
         if other in self.values:
@@ -218,7 +269,7 @@ class DBAPITypeObject(object):
 
 STRING = DBAPITypeObject('CHAR', 'NCHAR', 'NVARCHAR', 'VARCHAR', 'OTHER')
 
-TEXT = DBAPITypeObject('CLOB', 'LONGNVARCHAR', 'LONGNARCHAR', 'NCLOB', 'SQLXML')
+TEXT = DBAPITypeObject('CLOB', 'LONGVARCHAR', 'LONGNVARCHAR', 'NCLOB', 'SQLXML')
 
 BINARY = DBAPITypeObject('BINARY', 'BLOB', 'LONGVARBINARY', 'VARBINARY')
 
@@ -237,10 +288,10 @@ DATETIME = DBAPITypeObject('TIMESTAMP')
 ROWID = DBAPITypeObject('ROWID')
 
 # DB-API 2.0 Module Interface Exceptions
-class Error(exceptions.StandardError):
+class Error(Exception):
     pass
 
-class Warning(exceptions.StandardError):
+class Warning(Exception):
     pass
 
 class InterfaceError(Error):
@@ -295,37 +346,43 @@ def TimestampFromTicks(ticks):
     return apply(Timestamp, time.localtime(ticks)[:6])
 
 # DB-API 2.0 Module Interface connect constructor
-def connect(jclassname, driver_args, jars=None, libs=None):
+def connect(jclassname, url, driver_args=None, jars=None, libs=None):
     """Open a connection to a database using a JDBC driver and return
     a Connection instance.
 
     jclassname: Full qualified Java class name of the JDBC driver.
-    driver_args: Argument or sequence of arguments to be passed to the
-           Java DriverManager.getConnection method. Usually the
-           database URL. See
-           http://docs.oracle.com/javase/6/docs/api/java/sql/DriverManager.html
+    url: Database url as required by the JDBC driver.
+    driver_args: Dictionary or sequence of arguments to be passed to
+           the Java DriverManager.getConnection method. Usually
+           sequence of username and password for the db. Alternatively
+           a dictionary of connection arguments (where `user` and
+           `password` would probably be included). See
+           http://docs.oracle.com/javase/7/docs/api/java/sql/DriverManager.html
            for more details
     jars: Jar filename or sequence of filenames for the JDBC driver
     libs: Dll/so filenames or sequence of dlls/sos used as shared
           library by the JDBC driver
     """
-    if isinstance(driver_args, basestring):
+    if isinstance(driver_args, string_type):
         driver_args = [ driver_args ]
+    if not driver_args:
+       driver_args = []
     if jars:
-        if isinstance(jars, basestring):
+        if isinstance(jars, string_type):
             jars = [ jars ]
     else:
         jars = []
     if libs:
-        if isinstance(libs, basestring):
+        if isinstance(libs, string_type):
             libs = [ libs ]
     else:
         libs = []
-    jconn = _jdbc_connect(jclassname, jars, libs, *driver_args)
+    jconn = _jdbc_connect(jclassname, url, driver_args, jars, libs)
     return Connection(jconn, _converters)
 
 # DB-API 2.0 Connection Object
 class Connection(object):
+
     Error = Error
     Warning = Warning
     InterfaceError = InterfaceError
@@ -344,7 +401,7 @@ class Connection(object):
 
     def close(self):
         if self._closed:
-            raise Error
+            raise Error()
         self.jconn.close()
         self._closed = True
 
@@ -352,46 +409,16 @@ class Connection(object):
         try:
             self.jconn.commit()
         except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
+            _handle_sql_exception()
 
-    def rollback(self, savepoint=None):
+    def rollback(self):
         try:
-            if savepoint == None:
-                self.jconn.rollback()
-            else:
-                self.jconn.rollback(savepoint)
+            self.jconn.rollback()
         except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
-    
-    def getMetaData(self):
-        try:
-            return self.jconn.getMetaData()
-        except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
-    
-    def set_savepoint(self, name=None):
-        try:
-            if name == None:
-                return self.jconn.setSavepoint()
-            return self.jconn.setSavepoint(name)
-        except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
-    
-    def release_savepoint(self, savepoint):
-        try:
-            self.jconn.releaseSavepoint(savepoint)
-        except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
-    
+            _handle_sql_exception()
+
     def cursor(self):
         return Cursor(self, self._converters)
-    
-    
 
 # DB-API 2.0 Cursor Object
 class Cursor(object):
@@ -457,23 +484,14 @@ class Cursor(object):
     __del__ = _close_last
 
     def _set_stmt_parms(self, prep_stmt, parameters):
-        from pandas.tslib import Timestamp
         for i in range(len(parameters)):
-            if isinstance(parameters[i], Timestamp):
-                import jpype
-                year, month, day = parameters[i].year, parameters[i].month, parameters[i].day
-                hh, mm, ss = parameters[i].hour, parameters[i].minute, parameters[i].second
-                SSS = parameters[i].microsecond
-                time = (str(year) + "-" + str(month) + "-" + str(day) + " "+ 
-                        str(hh) + ":" + str(mm) + ":" + str(ss) + "." + str(SSS))
-                parameters[i] = jpype.java.sql.Timestamp.valueOf(time)
-            #print (i, parameters[i], type(parameters[i]))
+            # print (i, parameters[i], type(parameters[i]))
             prep_stmt.setObject(i + 1, parameters[i])
 
     def execute(self, operation, parameters=None):
         if self._connection._closed:
-            raise Error
-        if parameters is None:
+            raise Error()
+        if not parameters:
             parameters = ()
         self._close_last()
         self._prep = self._connection.jconn.prepareStatement(operation)
@@ -481,8 +499,7 @@ class Cursor(object):
         try:
             is_rs = self._prep.execute()
         except:
-            ex = sys.exc_info()[1]
-            _handle_sql_exception(ex)
+            _handle_sql_exception()
         if is_rs:
             self._rs = self._prep.getResultSet()
             self._meta = self._rs.getMetaData()
@@ -490,10 +507,10 @@ class Cursor(object):
         else:
             self.rowcount = self._prep.getUpdateCount()
         # self._prep.getWarnings() ???
-        
+
     def executemany(self, operation, seq_of_parameters):
         self._close_last()
-        self._prep = self._connection.jconn.prepareStatement(operation) 
+        self._prep = self._connection.jconn.prepareStatement(operation)
         for parameters in seq_of_parameters:
             self._set_stmt_parms(self._prep, parameters)
             self._prep.addBatch()
@@ -504,7 +521,7 @@ class Cursor(object):
 
     def fetchone(self):
         if not self._rs:
-            raise Error
+            raise Error()
         if not self._rs.next():
             return None
         row = []
@@ -517,14 +534,14 @@ class Cursor(object):
 
     def fetchmany(self, size=None):
         if not self._rs:
-            raise Error
+            raise Error()
         if size is None:
             size = self.arraysize
         # TODO: handle SQLException if not supported by db
         self._rs.setFetchSize(size)
         rows = []
         row = None
-        for i in xrange(size):
+        for i in range(size):
             row = self.fetchone()
             if row is None:
                 break
@@ -591,7 +608,9 @@ def _java_to_py(java_method):
         java_val = rs.getObject(col)
         if java_val is None:
             return
-        if isinstance(java_val, (basestring, int, long, float, bool)):
+        if PY2 and isinstance(java_val, (string_type, int, long, float, bool)):
+            return java_val
+        elif isinstance(java_val, (string_type, int, float, bool)):
             return java_val
         return getattr(java_val, java_method)()
     return to_py
@@ -604,7 +623,7 @@ def _init_types(types_map):
     global _jdbc_name_to_const
     _jdbc_name_to_const = types_map
     global _jdbc_const_to_name
-    _jdbc_const_to_name = dict((y,x) for x,y in types_map.iteritems())
+    _jdbc_const_to_name = dict((y,x) for x,y in types_map.items())
     _init_converters(types_map)
 
 def _init_converters(types_map):

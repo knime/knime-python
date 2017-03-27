@@ -1,5 +1,7 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
+import java.util.Map;
+
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
@@ -7,10 +9,12 @@ public class TableSpecImpl implements TableSpec {
 	
 	private final Type[] m_types;
 	private final String[] m_names;
+	private final Map<String, String> m_columnSerializers;
 	
-	public TableSpecImpl(final Type[] types, final String[] names) {
+	public TableSpecImpl(final Type[] types, final String[] names, final Map<String, String> columnSerializers) {
 		m_types = types;
 		m_names = names;
+		m_columnSerializers = columnSerializers;
 	}
 
 	@Override
@@ -37,6 +41,11 @@ public class TableSpecImpl implements TableSpec {
 			}
 		}
 		return index;
+	}
+	
+	@Override
+	public Map<String, String> getColumnSerializers() {
+		return m_columnSerializers;
 	}
 
 }
