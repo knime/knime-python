@@ -13,6 +13,7 @@ import org.knime.flatbuffers.flatc.Column;
 import org.knime.flatbuffers.flatc.DoubleColumn;
 import org.knime.flatbuffers.flatc.IntColumn;
 import org.knime.flatbuffers.flatc.KnimeTable;
+import org.knime.flatbuffers.flatc.LongColumn;
 import org.knime.flatbuffers.flatc.StringColumn;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -130,7 +131,7 @@ public class Flatbuffers implements SerializationLibrary {
 			case BOOLEAN: {
 				int valuesOffset = BooleanColumn.createValuesVector(builder,
 						ArrayUtils.toPrimitive(columns.get(colName).toArray(new Boolean[columns.get(colName).size()])));
-				int colOffset = IntColumn.createIntColumn(builder, valuesOffset);
+				int colOffset = BooleanColumn.createBooleanColumn(builder, valuesOffset);
 				Column.startColumn(builder);
 				Column.addType(builder, Type.BOOLEAN.getId());
 				Column.addBooleanColumn(builder, colOffset);
@@ -161,6 +162,13 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case LONG: {
+				int valuesOffset = LongColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(columns.get(colName).toArray(new Long[columns.get(colName).size()])));
+				int colOffset = LongColumn.createLongColumn(builder, valuesOffset);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.LONG.getId());
+				Column.addLongColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case LONG_LIST: {
@@ -277,6 +285,11 @@ public class Flatbuffers implements SerializationLibrary {
 			Column col = table.columns(j);
 			switch (Type.getTypeForId(col.type())) {
 			case BOOLEAN: {
+				BooleanColumn colVec = col.booleanColumn();
+				colTypes.put(table.colNames(j), Type.BOOLEAN);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					columns.get(table.colNames(j)).add(colVec.values(i));
+				}
 				break;
 			}
 			case BOOLEAN_LIST: {
@@ -300,6 +313,11 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case LONG: {
+				LongColumn colVec = col.longColumn();
+				colTypes.put(table.colNames(j), Type.LONG);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					columns.get(table.colNames(j)).add(colVec.values(i));
+				}
 				break;
 			}
 			case LONG_LIST: {
@@ -363,6 +381,7 @@ public class Flatbuffers implements SerializationLibrary {
 			for (String colName : colNames) {
 				switch (colTypes.get(colName)) {
 				case BOOLEAN: {
+					r.setCell(new CellImpl((Boolean) columns.get(colName).get(rowCount)), colCount);
 					break;
 				}
 				case BOOLEAN_LIST: {
@@ -382,6 +401,7 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case LONG: {
+					r.setCell(new CellImpl((Long) columns.get(colName).get(rowCount)), colCount);
 					break;
 				}
 				case LONG_LIST: {
@@ -448,6 +468,8 @@ public class Flatbuffers implements SerializationLibrary {
 			Column col = table.columns(j);
 			switch (Type.getTypeForId(col.type())) {
 			case BOOLEAN: {
+				BooleanColumn colVec = col.booleanColumn();
+				types[j] = Type.BOOLEAN;
 				break;
 			}
 			case BOOLEAN_LIST: {

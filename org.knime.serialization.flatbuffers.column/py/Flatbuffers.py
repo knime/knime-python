@@ -8,6 +8,8 @@ from knimetable import IntColumn
 from knimetable import Column
 from knimetable import StringColumn
 from knimetable import DoubleColumn
+from knimetable import LongColumn
+from knimetable import BooleanColumn
    
 _types_ = None
 
@@ -18,8 +20,7 @@ def column_names_from_bytes(data_bytes):
 
     colNames = []
     for j in range(0, table.ColNamesLength()):
-        colNames.append(table.ColNames(j))
-    
+        colNames.append(table.ColNames(j))       
     return colNames
 
 def column_serializers_from_bytes(data_bytes):
@@ -28,26 +29,38 @@ def column_serializers_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
-
-    rowIds = []
-    for idx in range(0, knimeTable.RowIDsLength()):
-        rowIds.append(knimeTable.RowIDs(idx))
-        
-    table.set_rowkeys(rowIds)
-
     colNames = []
         
     for j in range(0, knimeTable.ColNamesLength()):
         colNames.append(knimeTable.ColNames(j))
             
+    print("Flatbuffers->Python: Column Length() ", knimeTable.ColumnsLength())
+    
     for j in range(0, knimeTable.ColumnsLength()):
         col = knimeTable.Columns(j)
         
+        print("Flatbuffers->Python: Column Type() ", col.Type())
         if col.Type() == _types_.INTEGER.value:
             colVec = col.IntColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
                 colVals.append(colVec.Values(idx))
+            table.add_column(colNames[j], colVals)
+                      
+        elif col.Type() == _types_.BOOLEAN.value:
+            colVec = col.BooleanColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                colVals.append(colVec.Values(idx))
+                print("Flatbuffers -> Python: (Boolean)", colVec.Values(idx))
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.LONG.value:
+            colVec = col.LongColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                colVals.append(colVec.Values(idx))
+                print("Flatbuffers -> Python: (Long)", colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.DOUBLE.value:
@@ -62,7 +75,15 @@ def bytes_into_table(table, data_bytes):
             colVals = []        
             for i in range(0, colVec.ValuesLength()):
                 colVals.append(colVec.Values(i).decode('utf-8'))
-            table.add_column(colNames[j],colVals)
+            table.add_column(colNames[j], colVals)
+            
+    rowIds = []
+        
+    for idx in range(0, knimeTable.RowIDsLength()):
+        rowIds.append(knimeTable.RowIDs(idx))
+        
+    table.set_rowkeys(rowIds)
+
           
 
 def table_to_bytes(table):
@@ -72,12 +93,13 @@ def table_to_bytes(table):
     #Row IDs
     rowIdOffsets = [] 
     
-    for idx in table.get_number_rows():
+    for idx in range(0, table.get_number_rows()):
         rowIdOffset = builder.CreateString(str(table.get_rowkey(idx)))
         rowIdOffsets.append(rowIdOffset)
+        print("Python->Flatbuffers: (RowID)", table.get_rowkey(idx))
         
     KnimeTable.KnimeTableStartRowIDsVector(builder, len(rowIdOffsets))
-    for idOffset in reverse(rowIdOffsets):
+    for idOffset in reversed(rowIdOffsets):
         builder.PrependUOffsetTRelative(idOffset)
     rowIdVecOffset = builder.EndVector(len(rowIdOffsets))
        
@@ -102,6 +124,7 @@ def table_to_bytes(table):
             IntColumn.IntColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
                 builder.PrependInt32(int(col[valIdx]))
+                print("Python->Flatbuffers: (Int)", col[valIdx])
             valVec = builder.EndVector(len(col))          
             IntColumn.IntColumnStart(builder)                             
             IntColumn.IntColumnAddValues(builder, valVec)
@@ -109,6 +132,36 @@ def table_to_bytes(table):
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddIntColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.BOOLEAN:  
+            col = table_column(table, colIdx)
+            BooleanColumn.BooleanColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(col))):
+                builder.PrependBool(bool(col[valIdx]))
+                print("Python->Flatbuffers: (Boolean)", col[valIdx])
+            valVec = builder.EndVector(len(col))          
+            BooleanColumn.BooleanColumnStart(builder)                             
+            BooleanColumn.BooleanColumnAddValues(builder, valVec)
+            colOffset = BooleanColumn.BooleanColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddBooleanColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.LONG:  
+            col = table_column(table, colIdx)
+            LongColumn.LongColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(col))):
+                builder.PrependInt64(long(col[valIdx]))
+                print("Python->Flatbuffers: (Long)", col[valIdx])
+            valVec = builder.EndVector(len(col))          
+            LongColumn.LongColumnStart(builder)                             
+            LongColumn.LongColumnAddValues(builder, valVec)
+            colOffset = LongColumn.LongColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddLongColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
         
         elif table.get_type(colIdx) == _types_.DOUBLE:
@@ -153,12 +206,13 @@ def table_to_bytes(table):
     colVecOffset = builder.EndVector(len(colOffsetList))
                 
     KnimeTable.KnimeTableStart(builder)
+    KnimeTable.KnimeTableAddRowIDs(builder, rowIdVecOffset)
     KnimeTable.KnimeTableAddColNames(builder, colNameVecOffset)
     KnimeTable.KnimeTableAddColumns(builder, colVecOffset)
     knimeTable = KnimeTable.KnimeTableEnd(builder)
     builder.Finish(knimeTable)
             
-    print("Finished KnimeTable")
+    print("Python->Flatbuffers Finished KnimeTable")
     
     return builder.Output()
 
