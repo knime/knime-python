@@ -248,7 +248,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case BOOLEAN_LIST:
 						case BOOLEAN_SET:
-							String[] booleanValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] booleanValues = value.split(",");
 							Boolean[] booleanArray = new Boolean[booleanValues.length];
 							for (int j = 0; j < booleanArray.length; j++) {
 								booleanValues[j] = booleanValues[j].trim();
@@ -265,7 +270,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case INTEGER_LIST:
 						case INTEGER_SET:
-							String[] integerValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] integerValues = value.split(",");
 							Integer[] integerArray = new Integer[integerValues.length];
 							for (int j = 0; j < integerArray.length; j++) {
 								integerValues[j] = integerValues[j].trim();
@@ -282,7 +292,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case LONG_LIST:
 						case LONG_SET:
-							String[] longValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] longValues = value.split(",");
 							Long[] longArray = new Long[longValues.length];
 							for (int j = 0; j < longArray.length; j++) {
 								longValues[j] = longValues[j].trim();
@@ -309,7 +324,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case DOUBLE_LIST:
 						case DOUBLE_SET:
-							String[] doubleValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] doubleValues = value.split(",");
 							Double[] doubleArray = new Double[doubleValues.length];
 							for (int j = 0; j < doubleArray.length; j++) {
 								doubleValues[j] = doubleValues[j].trim();
@@ -335,7 +355,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case STRING_LIST:
 						case STRING_SET:
-							String[] stringValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] stringValues = value.split(",");
 							String[] stringArray = new String[stringValues.length];
 							for (int j = 0; j < stringArray.length; j++) {
 								stringArray[j] = stringValues[j].trim();
@@ -352,7 +377,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							break;
 						case BYTES_LIST:
 						case BYTES_SET:
-							String[] bytesValues = value.substring(1, value.length()-1).split(",");
+							if (value.startsWith("set([")) {
+								value = value.substring(5, value.length()-2);
+							} else {
+								value = value.substring(1, value.length()-1);
+							}
+							String[] bytesValues = value.split(",");
 							Byte[][] bytesArray = new Byte[bytesValues.length][];
 							for (int j = 0; j < bytesArray.length; j++) {
 								bytesValues[j] = bytesValues[j].trim();
