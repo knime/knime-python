@@ -77,7 +77,9 @@ def bytes_into_table(table, data_bytes):
         else:
             col_type = numpy.str
         dtypes[name] = col_type
-    data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
+    # TODO fix or remove, assigning a type if the line contains missing values fails
+    # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
+    data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'])
     for i in range(len(types)):
         col_type_id = int(types[i])
         if col_type_id in _eval_types_:
@@ -87,7 +89,10 @@ def bytes_into_table(table, data_bytes):
         if col_type_id == _types_.BYTES.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
-                data_frame.set_value(index, names[i], base64.b64decode(data_frame[names[i]][index]))
+                if str(data_frame[names[i]][index]) != 'nan':
+                    data_frame.set_value(index, names[i], base64.b64decode(data_frame[names[i]][index]))
+                else:
+                    data_frame.set_value(index, names[i], None)
         elif col_type_id == _types_.BYTES_LIST.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
@@ -136,7 +141,8 @@ def table_to_bytes(table):
         if col_type_id == _types_.BYTES.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
-                data_frame.set_value(index, names[i], base64.b64encode(data_frame[names[i]][index]))
+                if data_frame[names[i]][index] is not None:
+                    data_frame.set_value(index, names[i], base64.b64encode(data_frame[names[i]][index]))
         elif col_type_id == _types_.BYTES_LIST.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]

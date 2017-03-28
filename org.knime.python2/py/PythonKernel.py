@@ -724,9 +724,10 @@ class ToPandasTable:
 
     def get_data_frame(self):
         deserialize_from_bytes(self._data_frame, self._column_serializers)
-        if len(self._data_frame) > 0:
-            for column in self._data_frame.columns:
-                self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
+        # TODO fix or remove, changing the type if the column contains missing values fails
+        # if len(self._data_frame) > 0:
+        #     for column in self._data_frame.columns:
+        #         self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
         return self._data_frame
 
 
