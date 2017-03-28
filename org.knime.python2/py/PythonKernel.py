@@ -815,14 +815,15 @@ def simpletype_for_column(data_frame, column_name):
                 simple_type = Simpletype.STRING
             elif types_are_equivalent(col_type, bool):
                 simple_type = Simpletype.BOOLEAN
-            elif types_are_equivalent(col_type, str):
-                simple_type = Simpletype.STRING
             elif col_type is list or col_type is set:
                 is_set = col_type is set
                 list_col_type = list_column_type(data_frame, column_name)
                 if list_col_type is None:
                     # column with only missing values, make it string
-                    simple_type = Simpletype.STRING
+                    if is_set:
+                        simple_type = Simpletype.STRING_SET
+                    else:
+                        simple_type = Simpletype.STRING_LIST
                 elif types_are_equivalent(list_col_type, bool):
                     if is_set:
                         simple_type = Simpletype.BOOLEAN_SET
@@ -868,6 +869,8 @@ def simpletype_for_column(data_frame, column_name):
                         simple_type = Simpletype.BYTES_SET
                     else:
                         simple_type = Simpletype.BYTES_LIST
+            elif types_are_equivalent(col_type, str):
+                simple_type = Simpletype.STRING
             else:
                 type_string = get_type_string(first_valid_object(data_frame, column_name))
                 column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
