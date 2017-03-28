@@ -297,7 +297,7 @@ public class BufferedDataTableCreator implements TableCreator {
 							setCells.add(new MissingCell(null));
 						}
 					}
-					cells[i] = CollectionCellFactory.createListCell(setCells);
+					cells[i] = CollectionCellFactory.createSetCell(setCells);
 					break;
 				default:
 					cells[i] = new MissingCell(null);

@@ -2,7 +2,6 @@ import pandas
 import tempfile
 import os
 import numpy
-import ast
 import base64
 
 
@@ -85,7 +84,10 @@ def bytes_into_table(table, data_bytes):
         if col_type_id in _eval_types_:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
-                data_frame.set_value(index, names[i], ast.literal_eval(data_frame[names[i]][index]))
+                if str(data_frame[names[i]][index]) != 'nan':
+                    data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
+                else:
+                    data_frame.set_value(index, names[i], None)
         if col_type_id == _types_.BYTES.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
@@ -97,18 +99,20 @@ def bytes_into_table(table, data_bytes):
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 base64_list = data_frame[names[i]][index]
-                bytes_list = []
-                for k in range(len(base64_list)):
-                    bytes_list.append(base64.b64decode(base64_list[i]))
-                data_frame.set_value(index, names[i], bytes_list)
+                if base64_list is not None:
+                    bytes_list = []
+                    for k in range(len(base64_list)):
+                        bytes_list.append(base64.b64decode(base64_list[i]))
+                    data_frame.set_value(index, names[i], bytes_list)
         elif col_type_id == _types_.BYTES_SET.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 base64_set = data_frame[names[i]][index]
-                bytes_set = {}
-                for value in base64_set:
-                    bytes_set.add(base64.b64decode(value))
-                data_frame.set_value(index, names[i], bytes_set)
+                if base64_set is not None:
+                    bytes_set = set()
+                    for value in base64_set:
+                        bytes_set.add(base64.b64decode(value))
+                    data_frame.set_value(index, names[i], bytes_set)
     table._data_frame = data_frame
     in_file.close()
     os.remove(path)
@@ -147,18 +151,20 @@ def table_to_bytes(table):
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 bytes_list = data_frame[names[i]][index]
-                base64_list = []
-                for k in range(len(bytes_list)):
-                    base64_list.append(base64.b64encode(bytes_list[i]))
-                data_frame.set_value(index, names[i], base64_list)
+                if bytes_list is not None:
+                    base64_list = []
+                    for k in range(len(bytes_list)):
+                        base64_list.append(base64.b64encode(bytes_list[i]))
+                    data_frame.set_value(index, names[i], base64_list)
         elif col_type_id == _types_.BYTES_SET.value:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 bytes_set = data_frame[names[i]][index]
-                base64_set = {}
-                for value in bytes_set:
-                    base64_set.add(base64.b64encode(value))
-                data_frame.set_value(index, names[i], base64_set)
+                if bytes_set is not None:
+                    base64_set = set()
+                    for value in bytes_set:
+                        base64_set.add(base64.b64encode(value))
+                    data_frame.set_value(index, names[i], base64_set)
     data_frame.to_csv(out_file, na_rep='MissingCell')
     out_file.close()
     return bytearray(path, 'utf-8')

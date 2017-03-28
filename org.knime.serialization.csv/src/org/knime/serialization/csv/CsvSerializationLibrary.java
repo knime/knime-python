@@ -64,9 +64,13 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder booleanBuilder = new StringBuilder();
 							booleanBuilder.append(cell.getColumnType()==Type.BOOLEAN_LIST ? "[" : "{");
 							for (int i = 0; i < booleanArray.length; i++) {
-								booleanBuilder.append(booleanArray[i] ? "True" : "False");
-								if (i+1 < booleanArray.length) {
-									booleanBuilder.append(",");
+								if (booleanArray[i] == null) {
+									booleanBuilder.append("None");
+								} else {
+									booleanBuilder.append(booleanArray[i] ? "True" : "False");
+									if (i+1 < booleanArray.length) {
+										booleanBuilder.append(",");
+									}
 								}
 							}
 							booleanBuilder.append(cell.getColumnType()==Type.BOOLEAN_LIST ? "]" : "}");
@@ -81,9 +85,13 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder integerBuilder = new StringBuilder();
 							integerBuilder.append(cell.getColumnType()==Type.INTEGER_LIST ? "[" : "{");
 							for (int i = 0; i < integerArray.length; i++) {
-								integerBuilder.append(integerArray[i].toString());
-								if (i+1 < integerArray.length) {
-									integerBuilder.append(",");
+								if (integerArray[i] == null) {
+									integerBuilder.append("None");
+								} else {
+									integerBuilder.append(integerArray[i].toString());
+									if (i+1 < integerArray.length) {
+										integerBuilder.append(",");
+									}
 								}
 							}
 							integerBuilder.append(cell.getColumnType()==Type.INTEGER_LIST ? "]" : "}");
@@ -98,9 +106,13 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder longBuilder = new StringBuilder();
 							longBuilder.append(cell.getColumnType()==Type.LONG_LIST ? "[" : "{");
 							for (int i = 0; i < longArray.length; i++) {
-								longBuilder.append(longArray[i].toString());
-								if (i+1 < longArray.length) {
-									longBuilder.append(",");
+								if (longArray[i] == null) {
+									longBuilder.append("None");
+								} else {
+									longBuilder.append(longArray[i].toString());
+									if (i+1 < longArray.length) {
+										longBuilder.append(",");
+									}
 								}
 							}
 							longBuilder.append(cell.getColumnType()==Type.LONG_LIST ? "]" : "}");
@@ -126,7 +138,19 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder doubleBuilder = new StringBuilder();
 							doubleBuilder.append(cell.getColumnType()==Type.DOUBLE_LIST ? "[" : "{");
 							for (int i = 0; i < doubleArray.length; i++) {
-								doubleBuilder.append(doubleArray[i].toString());
+								if (doubleArray[i] == null) {
+									doubleBuilder.append("None");
+								} else {
+									String doubleVal = doubleArray[i].toString();
+									if (doubleVal.equals("NaN")) {
+										doubleVal = "float('nan')";
+									} else if (doubleVal.equals("-Infinity")) {
+										doubleVal = "float('-inf')";
+									} else if (doubleVal.equals("Infinity")) {
+										doubleVal = "float('inf')";
+									}
+									doubleBuilder.append(doubleVal);
+								}
 								if (i+1 < doubleArray.length) {
 									doubleBuilder.append(",");
 								}
@@ -143,7 +167,15 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder stringBuilder = new StringBuilder();
 							stringBuilder.append(cell.getColumnType()==Type.STRING_LIST ? "[" : "{");
 							for (int i = 0; i < stringArray.length; i++) {
-								stringBuilder.append(stringArray[i]);
+								String stringValue = stringArray[i];
+								if (stringValue == null) {
+									stringBuilder.append("None");
+								} else {
+									stringValue = stringValue.replace("'", "\\'");
+									stringValue = stringValue.replace("\r", "\\r");
+									stringValue = stringValue.replace("\n", "\\n");
+									stringBuilder.append("'" + stringValue + "'");
+								}
 								if (i+1 < stringArray.length) {
 									stringBuilder.append(",");
 								}
@@ -160,7 +192,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							StringBuilder bytesBuilder = new StringBuilder();
 							bytesBuilder.append(cell.getColumnType()==Type.BYTES_LIST ? "[" : "{");
 							for (int i = 0; i < bytesArray.length; i++) {
-								bytesBuilder.append(bytesToBase64(bytesArray[i]));
+								Byte[] bytesValue = bytesArray[i];
+								if (bytesValue == null) {
+									bytesBuilder.append("None");
+								} else {
+									bytesBuilder.append("'" + bytesToBase64(bytesValue) + "'");
+								}
 								if (i+1 < bytesArray.length) {
 									bytesBuilder.append(",");
 								}
@@ -214,7 +251,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] booleanValues = value.substring(1, value.length()-1).split(",");
 							Boolean[] booleanArray = new Boolean[booleanValues.length];
 							for (int j = 0; j < booleanArray.length; j++) {
-								booleanArray[j] = booleanValues[j].trim().equals("True");
+								booleanValues[j] = booleanValues[j].trim();
+								if (booleanValues[j].equals("None")) {
+									booleanArray[j] = null;
+								} else {
+									booleanArray[j] = booleanValues[j].equals("True");
+								}
 							}
 							cell = new CellImpl(booleanArray, type==Type.BOOLEAN_SET);
 							break;
@@ -226,7 +268,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] integerValues = value.substring(1, value.length()-1).split(",");
 							Integer[] integerArray = new Integer[integerValues.length];
 							for (int j = 0; j < integerArray.length; j++) {
-								integerArray[j] = Integer.parseInt(integerValues[j].trim());
+								integerValues[j] = integerValues[j].trim();
+								if (integerValues[j].equals("None")) {
+									integerArray[j] = null;
+								} else {
+									integerArray[j] = Integer.parseInt(integerValues[j]);
+								}
 							}
 							cell = new CellImpl(integerArray, type==Type.INTEGER_SET);
 							break;
@@ -238,7 +285,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] longValues = value.substring(1, value.length()-1).split(",");
 							Long[] longArray = new Long[longValues.length];
 							for (int j = 0; j < longArray.length; j++) {
-								longArray[j] = Long.parseLong(longValues[j].trim());
+								longValues[j] = longValues[j].trim();
+								if (longValues[j].equals("None")) {
+									longArray[j] = null;
+								} else {
+									longArray[j] = Long.parseLong(longValues[j]);
+								}
 							}
 							cell = new CellImpl(longArray, type==Type.LONG_SET);
 							break;
@@ -260,7 +312,21 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] doubleValues = value.substring(1, value.length()-1).split(",");
 							Double[] doubleArray = new Double[doubleValues.length];
 							for (int j = 0; j < doubleArray.length; j++) {
-								doubleArray[j] = Double.parseDouble(doubleValues[j].trim());
+								doubleValues[j] = doubleValues[j].trim();
+								if (doubleValues[j].equals("None")) {
+									doubleArray[j] = null;
+								} else {
+									String doubleVal = doubleValues[j];
+									if (doubleVal.equals("nan")) {
+										doubleArray[j] = Double.NaN;
+									} else if (doubleVal.equals("inf")) {
+										doubleArray[j] = Double.POSITIVE_INFINITY;
+									} else if (doubleVal.equals("-inf")) {
+										doubleArray[j] = Double.NEGATIVE_INFINITY;
+									} else {
+										doubleArray[j] = Double.parseDouble(doubleVal);
+									}
+								}
 							}
 							cell = new CellImpl(doubleArray, type==Type.DOUBLE_SET);
 							break;
@@ -273,6 +339,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] stringArray = new String[stringValues.length];
 							for (int j = 0; j < stringArray.length; j++) {
 								stringArray[j] = stringValues[j].trim();
+								if (stringArray[j].equals("None")) {
+									stringArray[j] = null;
+								} else {
+									stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+								}
 							}
 							cell = new CellImpl(stringArray, type==Type.STRING_SET);
 							break;
@@ -284,7 +355,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							String[] bytesValues = value.substring(1, value.length()-1).split(",");
 							Byte[][] bytesArray = new Byte[bytesValues.length][];
 							for (int j = 0; j < bytesArray.length; j++) {
-								bytesArray[j] = bytesFromBase64(bytesValues[j].trim());
+								bytesValues[j] = bytesValues[j].trim();
+								if (bytesValues[j].equals("None")) {
+									bytesArray[j] = null;
+								} else {
+									bytesArray[j] = bytesFromBase64(bytesValues[j]);
+								}
 							}
 							cell = new CellImpl(bytesArray, type==Type.BYTES_SET);
 							break;

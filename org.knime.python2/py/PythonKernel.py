@@ -572,7 +572,24 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
         for i in range(len(data_frame)):
             value = data_frame[column][i]
             if value is not None:
-                data_frame[column][i] = serializer.serialize(value)
+                if isinstance(value, list):
+                    new_list = []
+                    for inner_value in value:
+                        if inner_value is None:
+                            new_list.append(None)
+                        else:
+                            new_list.append(serializer.serialize(inner_value))
+                    data_frame[column][i] = new_list
+                elif isinstance(value, set):
+                    new_set = set()
+                    for inner_value in value:
+                        if inner_value is None:
+                            new_set.add(None)
+                        else:
+                            new_set.add(serializer.serialize(inner_value))
+                    data_frame[column][i] = new_set
+                else:
+                    data_frame[column][i] = serializer.serialize(value)
 
 
 def deserialize_from_bytes(data_frame, column_serializers):
@@ -581,7 +598,24 @@ def deserialize_from_bytes(data_frame, column_serializers):
         for i in range(len(data_frame)):
             value = data_frame[column][i]
             if value is not None:
-                data_frame[column][i] = deserializer.deserialize(value)
+                if isinstance(value, list):
+                    new_list = []
+                    for inner_value in value:
+                        if inner_value is None:
+                            new_list.append(None)
+                        else:
+                            new_list.append(deserializer.deserialize(inner_value))
+                    data_frame[column][i] = new_list
+                elif isinstance(value, set):
+                    new_set = set()
+                    for inner_value in value:
+                        if inner_value is None:
+                            new_set.add(None)
+                        else:
+                            new_set.add(deserializer.deserialize(inner_value))
+                    data_frame[column][i] = new_set
+                else:
+                    data_frame[column][i] = deserializer.deserialize(value)
 
 
 # reads 4 bytes from the input stream and interprets them as size

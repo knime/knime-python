@@ -183,7 +183,7 @@ public class BufferedDataTableIterator implements TableIterator {
 						values[j++] = null;
 					} else {
 						try {
-							values[j++] = ArrayUtils.toObject(serializer.serialize(dataCell));
+							values[j++] = ArrayUtils.toObject(serializer.serialize(innerCell));
 						} catch (IOException e) {
 							LOGGER.error(e.getMessage(), e);
 							values[j++] = null;
