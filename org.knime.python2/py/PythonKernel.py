@@ -886,49 +886,61 @@ def value_to_simpletype_value(value, simpletype):
     elif simpletype == Simpletype.BOOLEAN_LIST:
         for i in range(0, len(value)):
             value[i] = bool(value[i])
+        return value
     elif simpletype == Simpletype.BOOLEAN_SET:
         for i in range(0, len(value)):
             value[i] = bool(value[i])
+        return value
     elif simpletype == Simpletype.INTEGER:
         return int(value)
     elif simpletype == Simpletype.INTEGER_LIST:
         for i in range(0, len(value)):
             value[i] = int(value[i])
+        return value
     elif simpletype == Simpletype.INTEGER_SET:
         for i in range(0, len(value)):
             value[i] = int(value[i])
+        return value
     elif simpletype == Simpletype.LONG:
         return int(value)
     elif simpletype == Simpletype.LONG_LIST:
         for i in range(0, len(value)):
             value[i] = int(value[i])
+        return value
     elif simpletype == Simpletype.LONG_SET:
         for i in range(0, len(value)):
             value[i] = int(value[i])
+        return value
     elif simpletype == Simpletype.DOUBLE:
         return float(value)
     elif simpletype == Simpletype.DOUBLE_LIST:
         for i in range(0, len(value)):
             value[i] = float(value[i])
+        return value
     elif simpletype == Simpletype.DOUBLE_SET:
         for i in range(0, len(value)):
             value[i] = float(value[i])
+        return value
     elif simpletype == Simpletype.STRING:
         return str(value)
     elif simpletype == Simpletype.STRING_LIST:
         for i in range(0, len(value)):
             value[i] = str(value[i])
+        return value
     elif simpletype == Simpletype.STRING_SET:
         for i in range(0, len(value)):
             value[i] = str(value[i])
+        return value
     elif simpletype == Simpletype.BYTES:
         return bytearray(value)
     elif simpletype == Simpletype.BYTES_LIST:
         for i in range(0, len(value)):
             value[i] = bytearray(value[i])
+        return value
     elif simpletype == Simpletype.BYTES_SET:
         for i in range(0, len(value)):
             value[i] = bytearray(value[i])
+        return value
 
 
 run()
