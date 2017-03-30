@@ -7,5 +7,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)"
 Import-Package: org.apache.commons.lang3,
  org.apache.xmlbeans.impl.common,
+ org.knime.core.data.collection,
  org.knime.core.node
 Export-Package: org.knime.flatbuffers

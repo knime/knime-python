@@ -3,6 +3,7 @@ import os
 import imp
 import importlib
 import inspect
+import sys
 from knimetable import KnimeTable
 from knimetable import IntColumn
 from knimetable import Column
@@ -10,8 +11,18 @@ from knimetable import StringColumn
 from knimetable import DoubleColumn
 from knimetable import LongColumn
 from knimetable import BooleanColumn
+from knimetable import BooleanCollectionColumn
+from knimetable import BooleanCollectionCell
    
 _types_ = None
+
+def column_types_from_bytes(data_bytes):    
+    table = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
+
+    colTypes= []
+    for j in range(0, table.ColumnsLength()):
+        colTypes.append(table.Columns(j).Type())       
+    return colTypes
 
 
 def column_names_from_bytes(data_bytes):
@@ -39,7 +50,7 @@ def bytes_into_table(table, data_bytes):
     for j in range(0, knimeTable.ColumnsLength()):
         col = knimeTable.Columns(j)
         
-        print("Flatbuffers->Python: Column Type() ", col.Type())
+        print("Flatbuffers->Python: Column[",j,"] col.Type() ", col.Type())
         if col.Type() == _types_.INTEGER.value:
             colVec = col.IntColumn()
             colVals = []
@@ -52,7 +63,27 @@ def bytes_into_table(table, data_bytes):
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
                 colVals.append(colVec.Values(idx))
-                print("Flatbuffers -> Python: (Boolean)", colVec.Values(idx))
+                #print("Flatbuffers -> Python: (Boolean)", colVec.Values(idx))
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.BOOLEAN_LIST.value:
+            colVec = col.BooleanListColumn()
+            print("Flatbuffers -> Python: (Boolean List Column) Start")
+            colVals = []
+            print("Flatbuffers -> Python: (Boolean List Column) ValuesLength():", colVec.ValuesLength())
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = []
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.append(cell.Value(cellIdx))
+  #                  print("Flatbuffers -> Python: (Boolean List Element)", cell.Value(cellIdx))
+                    sys.stdout.flush()
+                    
+                    
+                colVals.append(cellVals)
+                print("Flatbuffers -> Python: (Boolean List)[",idx,"]", cellVals)
+                sys.stdout.flush()
+                
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.LONG.value:
@@ -96,7 +127,7 @@ def table_to_bytes(table):
     for idx in range(0, table.get_number_rows()):
         rowIdOffset = builder.CreateString(str(table.get_rowkey(idx)))
         rowIdOffsets.append(rowIdOffset)
-        print("Python->Flatbuffers: (RowID)", table.get_rowkey(idx))
+ #       print("Python->Flatbuffers: (RowID)", table.get_rowkey(idx))
         
     KnimeTable.KnimeTableStartRowIDsVector(builder, len(rowIdOffsets))
     for idOffset in reversed(rowIdOffsets):
@@ -124,7 +155,7 @@ def table_to_bytes(table):
             IntColumn.IntColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
                 builder.PrependInt32(int(col[valIdx]))
-                print("Python->Flatbuffers: (Int)", col[valIdx])
+ #               print("Python->Flatbuffers: (Int)", col[valIdx])
             valVec = builder.EndVector(len(col))          
             IntColumn.IntColumnStart(builder)                             
             IntColumn.IntColumnAddValues(builder, valVec)
@@ -139,7 +170,7 @@ def table_to_bytes(table):
             BooleanColumn.BooleanColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
                 builder.PrependBool(bool(col[valIdx]))
-                print("Python->Flatbuffers: (Boolean)", col[valIdx])
+ #               print("Python->Flatbuffers: (Boolean)", col[valIdx])
             valVec = builder.EndVector(len(col))          
             BooleanColumn.BooleanColumnStart(builder)                             
             BooleanColumn.BooleanColumnAddValues(builder, valVec)
@@ -149,12 +180,46 @@ def table_to_bytes(table):
             Column.ColumnAddBooleanColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
+        elif table.get_type(colIdx) == _types_.BOOLEAN_LIST:  
+            col = table_column(table, colIdx)
+            print("Python->Flatbuffers: (Boolean List Start)")       
+            print("Python->Flatbuffers: (Boolean List Column Length):", len(col))
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+                print("Python->Flatbuffers: (Boolean List Element)[",valIdx,"]", col[valIdx])
+               
+                BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for cellIdx in reversed(range(0, len(col[valIdx]))):
+                    print("Python->Flatbuffers: (Boolean List Element)[",valIdx,",",cellIdx,"]", col[valIdx][cellIdx])
+                    builder.PrependBool(col[valIdx][cellIdx])
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                BooleanCollectionCell.BooleanCollectionCellStart(builder)
+                BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
+                        
+       #     valVec = builder.EndVector(len(cellOffsets))
+                        
+                
+            BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            BooleanCollectionColumn.BooleanCollectionColumnStart(builder)    
+            BooleanCollectionColumn.BooleanCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = BooleanColumn.BooleanColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddBooleanListColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
         elif table.get_type(colIdx) == _types_.LONG:  
             col = table_column(table, colIdx)
             LongColumn.LongColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
                 builder.PrependInt64(long(col[valIdx]))
-                print("Python->Flatbuffers: (Long)", col[valIdx])
+      #          print("Python->Flatbuffers: (Long)", col[valIdx])
             valVec = builder.EndVector(len(col))          
             LongColumn.LongColumnStart(builder)                             
             LongColumn.LongColumnAddValues(builder, valVec)
@@ -220,10 +285,9 @@ def table_column(table, col_idx):
     col = []
     for row_idx in range(0, table.get_number_rows()):
         col.append(table.get_cell(col_idx, row_idx))
-        
+    
+    
     return col
-
-
 
 def init(types):
     global _types_

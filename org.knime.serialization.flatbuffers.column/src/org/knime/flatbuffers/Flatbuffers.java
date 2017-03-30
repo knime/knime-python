@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
+import org.knime.flatbuffers.flatc.BooleanCollectionCell;
+import org.knime.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.flatbuffers.flatc.BooleanColumn;
 import org.knime.flatbuffers.flatc.Column;
 import org.knime.flatbuffers.flatc.DoubleColumn;
@@ -40,7 +42,6 @@ public class Flatbuffers implements SerializationLibrary {
 		FlatBufferBuilder builder = new FlatBufferBuilder();
 		Map<String, List<Object>> columns = new LinkedHashMap<>();
 
-		tableIterator.getTableSpec().getColumnTypes();
 		for (String colName : tableIterator.getTableSpec().getColumnNames()) {
 			columns.put(colName, new ArrayList<>());
 		}
@@ -61,9 +62,11 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case BOOLEAN_LIST: {
+					columns.get(colName).add(cell.getBooleanArrayValue());
 					break;
 				}
 				case BOOLEAN_SET: {
+					columns.get(colName).add(cell.getBooleanArrayValue());
 					break;
 				}
 				case INTEGER: {
@@ -140,6 +143,20 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BOOLEAN_LIST: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+				for (Object o : columns.get(colName)) {
+					int valuesOffset = BooleanCollectionCell.createValueVector(builder, ArrayUtils.toPrimitive((Boolean[]) o));
+					
+					cellOffsets.add(BooleanCollectionCell.createBooleanCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = BooleanCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				int colOffset = BooleanCollectionColumn.createBooleanCollectionColumn(builder, valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.BOOLEAN_LIST.getId());
+				Column.addBooleanListColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case BOOLEAN_SET: {
@@ -274,8 +291,8 @@ public class Flatbuffers implements SerializationLibrary {
 			colNames.add(colName);
 			columns.put(colName, new ArrayList<>());
 		}
-		
-		for (int id = 0; id < table.rowIDsLength(); id++){
+
+		for (int id = 0; id < table.rowIDsLength(); id++) {
 			String rowId = table.rowIDs(id);
 			rowIds.add(rowId);
 		}
@@ -293,6 +310,18 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BOOLEAN_LIST: {
+				BooleanCollectionColumn colVec = col.booleanListColumn();
+				colTypes.put(table.colNames(j), Type.BOOLEAN_LIST);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					BooleanCollectionCell cell = colVec.values(i);
+
+					List<Boolean> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k));
+					}
+					columns.get(table.colNames(j))
+							.add(l.toArray(new Boolean[cell.valueLength()]));
+				}
 				break;
 			}
 			case BOOLEAN_SET: {
@@ -385,9 +414,11 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case BOOLEAN_LIST: {
+					r.setCell(new CellImpl((Boolean[]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case BOOLEAN_SET: {
+					r.setCell(new CellImpl((Boolean[]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				case INTEGER: {
@@ -395,9 +426,11 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case INTEGER_LIST: {
+					r.setCell(new CellImpl((Integer[]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case INTEGER_SET: {
+					r.setCell(new CellImpl((Integer[]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				case LONG: {
@@ -405,20 +438,23 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case LONG_LIST: {
+					r.setCell(new CellImpl((Long[]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case LONG_SET: {
+					r.setCell(new CellImpl((Long[]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				case DOUBLE: {
 					r.setCell(new CellImpl((Double) columns.get(colName).get(rowCount)), colCount);
-
 					break;
 				}
 				case DOUBLE_LIST: {
+					r.setCell(new CellImpl((Double[]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case DOUBLE_SET: {
+					r.setCell(new CellImpl((Double[]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				case STRING: {
@@ -426,18 +462,23 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case STRING_LIST: {
+					r.setCell(new CellImpl((String[]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case STRING_SET: {
+					r.setCell(new CellImpl((String[]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				case BYTES: {
+					r.setCell(new CellImpl((Byte[]) columns.get(colName).get(rowCount)), colCount);
 					break;
 				}
 				case BYTES_LIST: {
+					r.setCell(new CellImpl((Byte[][]) columns.get(colName).get(rowCount), false), colCount);
 					break;
 				}
 				case BYTES_SET: {
+					r.setCell(new CellImpl((Byte[][]) columns.get(colName).get(rowCount), true), colCount);
 					break;
 				}
 				default:
@@ -473,9 +514,11 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BOOLEAN_LIST: {
+				types[j] = Type.BOOLEAN_LIST;
 				break;
 			}
 			case BOOLEAN_SET: {
+				types[j] = Type.BOOLEAN_SET;
 				break;
 			}
 			case INTEGER: {
@@ -484,30 +527,36 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case INTEGER_LIST: {
+				types[j] = Type.INTEGER_LIST;
 				break;
 			}
 			case INTEGER_SET: {
+				types[j] = Type.INTEGER_SET;
 				break;
 			}
 			case LONG: {
+				types[j] = Type.LONG;
 				break;
 			}
 			case LONG_LIST: {
+				types[j] = Type.LONG_LIST;
 				break;
 			}
 			case LONG_SET: {
+				types[j] = Type.LONG_SET;
 				break;
 			}
 			case DOUBLE: {
 				DoubleColumn colVec = col.doubleColumn();
 				types[j] = Type.DOUBLE;
-
 				break;
 			}
 			case DOUBLE_LIST: {
+				types[j] = Type.DOUBLE_LIST;
 				break;
 			}
 			case DOUBLE_SET: {
+				types[j] = Type.DOUBLE_SET;
 				break;
 			}
 			case STRING: {
@@ -516,18 +565,23 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case STRING_LIST: {
+				types[j] = Type.STRING_LIST;
 				break;
 			}
 			case STRING_SET: {
+				types[j] = Type.STRING_SET;
 				break;
 			}
 			case BYTES: {
+				types[j] = Type.BYTES;
 				break;
 			}
 			case BYTES_LIST: {
+				types[j] = Type.BYTES_LIST;
 				break;
 			}
 			case BYTES_SET: {
+				types[j] = Type.BYTES_SET;
 				break;
 			}
 			default:
@@ -535,8 +589,8 @@ public class Flatbuffers implements SerializationLibrary {
 
 			}
 		}
-		
-		return new TableSpecImpl(types, colNames.toArray(new String[0]), new HashMap<String, String>());
+
+		return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), new HashMap<String, String>());
 	}
 
 }
