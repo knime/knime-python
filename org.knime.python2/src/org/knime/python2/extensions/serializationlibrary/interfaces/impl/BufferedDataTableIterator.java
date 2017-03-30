@@ -150,7 +150,12 @@ public class BufferedDataTableIterator implements TableIterator {
 				}
 				row.setCell(new CellImpl(values, type == Type.DOUBLE_SET), i);
 			} else if (type == Type.STRING) {
-				String value = ((StringValue)dataCell).getStringValue();
+				String value;
+				if (dataCell.getType().isCompatible(StringValue.class)) {
+					value = ((StringValue)dataCell).getStringValue();
+				} else {
+					value = dataCell.toString();
+				}
 				row.setCell(new CellImpl(value), i);
 			} else if (type == Type.STRING_LIST || type == Type.STRING_SET) {
 				CollectionDataValue colCell = (CollectionDataValue)dataCell;
@@ -160,7 +165,11 @@ public class BufferedDataTableIterator implements TableIterator {
 					if (innerCell.isMissing()) {
 						values[j++] = null;
 					} else {
-						values[j++] = ((StringValue)innerCell).getStringValue();
+						if (innerCell.getType().isCompatible(StringValue.class)) {
+							values[j++] = ((StringValue)innerCell).getStringValue();
+						} else {
+							values[j++] = innerCell.toString();
+						}
 					}
 				}
 				row.setCell(new CellImpl(values, type == Type.STRING_SET), i);
