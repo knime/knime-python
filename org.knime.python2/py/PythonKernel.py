@@ -888,9 +888,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = bool(value[i])
         return value
     elif simpletype == Simpletype.BOOLEAN_SET:
-        for i in range(0, len(value)):
-            value[i] = bool(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(bool(inner_value))
+        return value_set
     elif simpletype == Simpletype.INTEGER:
         return int(value)
     elif simpletype == Simpletype.INTEGER_LIST:
@@ -898,9 +899,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = int(value[i])
         return value
     elif simpletype == Simpletype.INTEGER_SET:
-        for i in range(0, len(value)):
-            value[i] = int(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(int(inner_value))
+        return value_set
     elif simpletype == Simpletype.LONG:
         return int(value)
     elif simpletype == Simpletype.LONG_LIST:
@@ -908,9 +910,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = int(value[i])
         return value
     elif simpletype == Simpletype.LONG_SET:
-        for i in range(0, len(value)):
-            value[i] = int(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(int(inner_value))
+        return value_set
     elif simpletype == Simpletype.DOUBLE:
         return float(value)
     elif simpletype == Simpletype.DOUBLE_LIST:
@@ -918,9 +921,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = float(value[i])
         return value
     elif simpletype == Simpletype.DOUBLE_SET:
-        for i in range(0, len(value)):
-            value[i] = float(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(float(inner_value))
+        return value_set
     elif simpletype == Simpletype.STRING:
         return str(value)
     elif simpletype == Simpletype.STRING_LIST:
@@ -928,9 +932,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = str(value[i])
         return value
     elif simpletype == Simpletype.STRING_SET:
-        for i in range(0, len(value)):
-            value[i] = str(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(str(inner_value))
+        return value_set
     elif simpletype == Simpletype.BYTES:
         return bytearray(value)
     elif simpletype == Simpletype.BYTES_LIST:
@@ -938,9 +943,10 @@ def value_to_simpletype_value(value, simpletype):
             value[i] = bytearray(value[i])
         return value
     elif simpletype == Simpletype.BYTES_SET:
-        for i in range(0, len(value)):
-            value[i] = bytearray(value[i])
-        return value
+        value_set = set()
+        for inner_value in value:
+            value_set.add(bytearray(inner_value))
+        return value_set
 
 
 run()
