@@ -13,7 +13,9 @@ import org.knime.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.flatbuffers.flatc.BooleanColumn;
 import org.knime.flatbuffers.flatc.Column;
 import org.knime.flatbuffers.flatc.DoubleColumn;
+import org.knime.flatbuffers.flatc.IntCollectionColumn;
 import org.knime.flatbuffers.flatc.IntColumn;
+import org.knime.flatbuffers.flatc.IntegerCollectionCell;
 import org.knime.flatbuffers.flatc.KnimeTable;
 import org.knime.flatbuffers.flatc.LongColumn;
 import org.knime.flatbuffers.flatc.StringColumn;
@@ -74,9 +76,11 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case INTEGER_LIST: {
+					columns.get(colName).add(cell.getIntegerArrayValue());
 					break;
 				}
 				case INTEGER_SET: {
+					columns.get(colName).add(cell.getIntegerArrayValue());
 					break;
 				}
 				case LONG: {
@@ -160,6 +164,20 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BOOLEAN_SET: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+				for (Object o : columns.get(colName)) {
+					int valuesOffset = BooleanCollectionCell.createValueVector(builder, ArrayUtils.toPrimitive((Boolean[]) o));
+					
+					cellOffsets.add(BooleanCollectionCell.createBooleanCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = BooleanCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				int colOffset = BooleanCollectionColumn.createBooleanCollectionColumn(builder, valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.BOOLEAN_SET.getId());
+				Column.addBooleanSetColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case INTEGER: {
@@ -173,9 +191,37 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case INTEGER_LIST: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+				for (Object o : columns.get(colName)) {
+					int valuesOffset = IntegerCollectionCell.createValueVector(builder, ArrayUtils.toPrimitive((Integer[]) o));
+					
+					cellOffsets.add(IntegerCollectionCell.createIntegerCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = IntCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				int colOffset = IntCollectionColumn.createIntCollectionColumn(builder, valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.INTEGER_LIST.getId());
+				Column.addIntListColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case INTEGER_SET: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+				for (Object o : columns.get(colName)) {
+					int valuesOffset = IntegerCollectionCell.createValueVector(builder, ArrayUtils.toPrimitive((Integer[]) o));
+					
+					cellOffsets.add(IntegerCollectionCell.createIntegerCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = IntCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				int colOffset = IntCollectionColumn.createIntCollectionColumn(builder, valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.INTEGER_SET.getId());
+				Column.addIntSetColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case LONG: {
@@ -325,6 +371,18 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BOOLEAN_SET: {
+				BooleanCollectionColumn colVec = col.booleanSetColumn();
+				colTypes.put(table.colNames(j), Type.BOOLEAN_SET);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					BooleanCollectionCell cell = colVec.values(i);
+
+					List<Boolean> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k));
+					}
+					columns.get(table.colNames(j))
+							.add(l.toArray(new Boolean[cell.valueLength()]));
+				}
 				break;
 			}
 			case INTEGER: {
@@ -336,9 +394,33 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case INTEGER_LIST: {
+				IntCollectionColumn colVec = col.intListColumn();
+				colTypes.put(table.colNames(j), Type.INTEGER_LIST);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					IntegerCollectionCell cell = colVec.values(i);
+
+					List<Integer> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k));
+					}
+					columns.get(table.colNames(j))
+							.add(l.toArray(new Integer[cell.valueLength()]));
+				}
 				break;
 			}
 			case INTEGER_SET: {
+				IntCollectionColumn colVec = col.intSetColumn();
+				colTypes.put(table.colNames(j), Type.INTEGER_SET);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					IntegerCollectionCell cell = colVec.values(i);
+
+					List<Integer> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k));
+					}
+					columns.get(table.colNames(j))
+							.add(l.toArray(new Integer[cell.valueLength()]));
+				}
 				break;
 			}
 			case LONG: {
