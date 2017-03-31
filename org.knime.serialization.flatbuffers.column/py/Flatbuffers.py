@@ -119,18 +119,18 @@ def bytes_into_table(table, data_bytes):
             
         elif col.Type() == _types_.BOOLEAN_SET.value:
             colVec = col.BooleanSetColumn()
-            print("Flatbuffers -> Python: (Boolean Set Column) Start")
+ #           print("Flatbuffers -> Python: (Boolean Set Column) Start")
             colVals = []
-            print("Flatbuffers -> Python: (Boolean Set Column) ValuesLength():", colVec.ValuesLength())
+ #           print("Flatbuffers -> Python: (Boolean Set Column) ValuesLength():", colVec.ValuesLength())
             for idx in range(0,colVec.ValuesLength()):
                 cell = colVec.Values(idx)
                 cellVals = set()
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.add(cell.Value(cellIdx))
-                    print("Flatbuffers -> Python: (Boolean Set Element)", cell.Value(cellIdx))
+ #                   print("Flatbuffers -> Python: (Boolean Set Element)", cell.Value(cellIdx))
   
                 colVals.append(cellVals)
-                print("Flatbuffers -> Python: (Boolean Set)[",idx,"]", cellVals)
+ #               print("Flatbuffers -> Python: (Boolean Set)[",idx,"]", cellVals)
                  
             table.add_column(colNames[j], colVals)
 
@@ -143,6 +143,33 @@ def bytes_into_table(table, data_bytes):
  #               print("Flatbuffers -> Python: (Long)", colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
+        elif col.Type() == _types_.LONG_LIST.value:
+            colVec = col.LongListColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = []
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.append(cell.Value(cellIdx))
+
+                colVals.append(cellVals)
+             
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.LONG_SET.value:
+            colVec = col.LongSetColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = set()
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.add(cell.Value(cellIdx))
+  
+                colVals.append(cellVals)
+                 
+            table.add_column(colNames[j], colVals)
+
+            
         elif col.Type() == _types_.DOUBLE.value:
             colVec = col.DoubleColumn()
             colVals = []
@@ -150,11 +177,64 @@ def bytes_into_table(table, data_bytes):
                 colVals.append(colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
+        elif col.Type() == _types_.DOUBLE_LIST.value:
+            colVec = col.DoubleListColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = []
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.append(cell.Value(cellIdx))
+
+                colVals.append(cellVals)
+             
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.DOUBLE_SET.value:
+            colVec = col.DoubleSetColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = set()
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.add(cell.Value(cellIdx))
+  
+                colVals.append(cellVals)
+                 
+            table.add_column(colNames[j], colVals)
+
+            
         elif col.Type() == _types_.STRING.value:
             colVec = col.StringColumn()
             colVals = []        
             for i in range(0, colVec.ValuesLength()):
                 colVals.append(colVec.Values(i).decode('utf-8'))
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.STRING_LIST.value:
+            colVec = col.StringListColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = []
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.append(cell.Value(cellIdx).decode('utf-8'))
+
+                colVals.append(cellVals)
+             
+            table.add_column(colNames[j], colVals)
+            
+        elif col.Type() == _types_.STRING_SET.value:
+            colVec = col.StringSetColumn()
+            colVals = []
+            for idx in range(0,colVec.ValuesLength()):
+                cell = colVec.Values(idx)
+                cellVals = set()
+                for cellIdx in range(0, cell.ValueLength()):
+                    cellVals.add(cell.Value(cellIdx).decode('utf-8'))
+  
+                colVals.append(cellVals)
+                 
             table.add_column(colNames[j], colVals)
             
     rowIds = []
@@ -197,7 +277,7 @@ def table_to_bytes(table):
       
     colOffsetList = []
     
-    print("data_frame", table._data_frame)
+   # print("data_frame", table._data_frame)
     for colIdx in range(0,table.get_number_columns()):
         if table.get_type(colIdx) == _types_.INTEGER:  
             col = table_column(table, colIdx)
@@ -364,6 +444,60 @@ def table_to_bytes(table):
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddLongColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.LONG_LIST:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+               
+                LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for cellIdx in reversed(range(0, len(col[valIdx]))):
+                    builder.PrependInt64(col[valIdx][cellIdx])
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                LongCollectionCell.LongCollectionCellStart(builder)
+                LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
+                        
+            LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            LongCollectionColumn.LongCollectionColumnStart(builder)    
+            LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddLongListColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.LONG_SET:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+               
+                LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for elem in col[valIdx]:
+                    builder.PrependInt64(elem)
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                LongCollectionCell.LongCollectionCellStart(builder)
+                LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
+                        
+            LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            LongCollectionColumn.LongCollectionColumnStart(builder)    
+            LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddLongSetColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
         
         elif table.get_type(colIdx) == _types_.DOUBLE:
             col = table_column(table, colIdx) 
@@ -380,6 +514,60 @@ def table_to_bytes(table):
             Column.ColumnAddDoubleColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
+        elif table.get_type(colIdx) == _types_.DOUBLE_LIST:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+               
+                DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for cellIdx in reversed(range(0, len(col[valIdx]))):
+                    builder.PrependFloat64(col[valIdx][cellIdx])
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                DoubleCollectionCell.DoubleCollectionCellStart(builder)
+                DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
+                        
+            DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
+            DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddDoubleListColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.DOUBLE_SET:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+               
+                DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for elem in col[valIdx]:
+                    builder.PrependFloat64(elem)
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                DoubleCollectionCell.DoubleCollectionCellStart(builder)
+                DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
+                        
+            DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
+            DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddDoubleSetColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+                
         elif table.get_type(colIdx) == _types_.STRING:
           
             col = table_column(table, colIdx) 
@@ -398,6 +586,70 @@ def table_to_bytes(table):
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddStringColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.STRING_LIST:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+                
+                strOffsets = []
+#                print("Python->Flatbuffers: (String List Cell):", col[valIdx])
+                for strIdx in range(0, len(col[valIdx])):
+                    strOffsets.append(builder.CreateString(col[valIdx][strIdx]))
+                   
+               
+                StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
+                for cellIdx in reversed(range(0, len(strOffsets))):
+                    builder.PrependUOffsetTRelative(strOffsets[cellIdx])
+                                     
+                cellVec = builder.EndVector(len(strOffsets))
+                StringCollectionCell.StringCollectionCellStart(builder)
+                StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
+                        
+            StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            StringCollectionColumn.StringCollectionColumnStart(builder)    
+            StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddStringListColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.STRING_SET:  
+            col = table_column(table, colIdx)
+            cellOffsets = []
+            for valIdx in range(0,len(col)):
+#                print("Python->Flatbuffers: (String Set Cell):", col[valIdx])
+                strOffsets = []
+                for elem in col[valIdx]:
+                    strOffsets.append(builder.CreateString(elem))
+               
+                StringCollectionCell.StringCollectionCellStartValueVector(builder, len(col[valIdx]))
+                for cellIdx in reversed(range(0, len(strOffsets))):
+                    builder.PrependUOffsetTRelative(strOffsets[cellIdx])
+                                     
+                cellVec = builder.EndVector(len(col[valIdx]))
+                StringCollectionCell.StringCollectionCellStart(builder)
+                StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
+                        
+            StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+            valVec = builder.EndVector(len(cellOffsets))    
+            
+            StringCollectionColumn.StringCollectionColumnStart(builder)    
+            StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)                                  
+            colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddStringSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
              
     
