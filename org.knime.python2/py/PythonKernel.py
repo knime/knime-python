@@ -795,7 +795,7 @@ def simpletype_for_column(data_frame, column_name):
         if data_frame[column_name].dtype == 'bool':
             simple_type = Simpletype.BOOLEAN
         #elif data_frame[column_name].dtype == 'int64' or data_frame[column_name].dtype == 'int32':
-        elif data_frame[column_name].dtype == 'int32':
+        elif data_frame[column_name].dtype == 'int32' or data_frame[column_name].dtype == 'int64':
             minvalue = data_frame[column_name][data_frame[column_name].idxmin()]
             maxvalue = data_frame[column_name][data_frame[column_name].idxmax()]
             int32min = -2147483648
@@ -804,8 +804,6 @@ def simpletype_for_column(data_frame, column_name):
                 simple_type = Simpletype.INTEGER
             else:
                 simple_type = Simpletype.LONG
-        elif data_frame[column_name].dtype == 'int64':
-            simple_type = Simpletype.LONG
         elif data_frame[column_name].dtype == 'double' or column_type(data_frame, column_name) == float:
             simple_type = Simpletype.DOUBLE
         else:
