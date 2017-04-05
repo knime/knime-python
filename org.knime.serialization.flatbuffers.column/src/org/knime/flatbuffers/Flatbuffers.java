@@ -11,6 +11,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.knime.flatbuffers.flatc.BooleanCollectionCell;
 import org.knime.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.flatbuffers.flatc.BooleanColumn;
+import org.knime.flatbuffers.flatc.ByteCell;
+import org.knime.flatbuffers.flatc.ByteColumn;
 import org.knime.flatbuffers.flatc.Column;
 import org.knime.flatbuffers.flatc.DoubleCollectionCell;
 import org.knime.flatbuffers.flatc.DoubleCollectionColumn;
@@ -395,6 +397,19 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BYTES: {
+				List<Integer> bytesOffsets = new ArrayList<>();
+				for (Object obj : columns.get(colName)) {
+					int byteCellOffset = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) obj));
+					bytesOffsets.add(ByteCell.createByteCell(builder, byteCellOffset));
+				}
+				int valuesOffset = ByteColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(bytesOffsets.toArray(new Integer[columns.get(colName).size()])));
+				int colOffset = StringColumn.createStringColumn(builder, valuesOffset);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.BYTES.getId());
+				Column.addByteColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
+				
 				break;
 			}
 			case BYTES_LIST: {
@@ -645,6 +660,12 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BYTES: {
+				ByteColumn colVec = col.byteColumn();
+				colTypes.put(table.colNames(j), Type.BYTES);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					ByteCell cell = colVec.values(i);					
+					columns.get(table.colNames(j)).add(cell.valueAsByteBuffer().array());
+				}
 				break;
 			}
 			case BYTES_LIST: {

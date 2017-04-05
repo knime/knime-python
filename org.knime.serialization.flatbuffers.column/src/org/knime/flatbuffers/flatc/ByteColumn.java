@@ -14,9 +14,9 @@ public final class ByteColumn extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
   public ByteColumn __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public byte values(int j) { int o = __offset(4); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
+  public ByteCell values(int j) { return values(new ByteCell(), j); }
+  public ByteCell values(ByteCell obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int valuesLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer valuesAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
 
   public static int createByteColumn(FlatBufferBuilder builder,
       int valuesOffset) {
@@ -27,8 +27,8 @@ public final class ByteColumn extends Table {
 
   public static void startByteColumn(FlatBufferBuilder builder) { builder.startObject(1); }
   public static void addValues(FlatBufferBuilder builder, int valuesOffset) { builder.addOffset(0, valuesOffset, 0); }
-  public static int createValuesVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
-  public static void startValuesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
+  public static int createValuesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startValuesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endByteColumn(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

@@ -237,6 +237,18 @@ def bytes_into_table(table, data_bytes):
                  
             table.add_column(colNames[j], colVals)
             
+        elif col.Type() == _types_.BYTES.value:
+            colVec = col.ByteColumn()
+            colVals = []        
+            for i in range(0, colVec.ValuesLength()):
+                cellBytes = []
+                cell = colVec.Values(i)              
+                for j in range(0, cell.ValueLength()):
+                    cellBytes.append(cell.Value(j))
+                 
+                colVals.append(cellBytes)   
+            table.add_column(colNames[j], colVals)
+            
     rowIds = []
         
     for idx in range(0, knimeTable.RowIDsLength()):
@@ -650,6 +662,32 @@ def table_to_bytes(table):
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddStringSetColumn(builder, colOffset)
+            colOffsetList.append(Column.ColumnEnd(builder))
+            
+        elif table.get_type(colIdx) == _types_.BYTES:
+          
+            col = table_column(table, colIdx) 
+          
+            bytesOffsets = []
+            for colIdx in range(0, len(col)):
+                byteOffsets = []
+                ByteCell.ByteCellStart(builder)
+                ByteCell.ByteCellStartValueVector(builder, len(col[colIdx]))
+                for byteIdx in range(reversed(0, len(col[colIdx]))):
+                   ByteCell.ByteCellAddValue(builder, col[colIdx][byteIdx])
+                byteOffsets.append(builder.EndVector(len(col[colIdx])))
+                    
+            
+            ByteColumn.ByteColumnStartValuesVector(builder, len(col))
+            for valIdx in reversed(range(0,len(bytesOffsets))):
+                builder.PrependUOffsetTRelative(bytesOffsets[valIdx])
+            valVec = builder.EndVector(len(col))
+            ByteColumn.ByteColumnStart(builder)        
+            ByteColumn.ByteColumnAddValues(builder, valVec)
+            colOffset = ByteColumn.ByteColumnEnd(builder)
+            Column.ColumnStart(builder)
+            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddByteColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
              
     

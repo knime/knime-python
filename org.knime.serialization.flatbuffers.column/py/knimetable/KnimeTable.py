@@ -68,11 +68,33 @@ class KnimeTable(object):
             return self._tab.VectorLen(o)
         return 0
 
-def KnimeTableStart(builder): builder.StartObject(3)
+    # KnimeTable
+    def Missing(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from .MissingValue import MissingValue
+            obj = MissingValue()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # KnimeTable
+    def MissingLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def KnimeTableStart(builder): builder.StartObject(4)
 def KnimeTableAddRowIDs(builder, rowIDs): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(rowIDs), 0)
 def KnimeTableStartRowIDsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def KnimeTableAddColNames(builder, colNames): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(colNames), 0)
 def KnimeTableStartColNamesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def KnimeTableAddColumns(builder, columns): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(columns), 0)
 def KnimeTableStartColumnsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def KnimeTableAddMissing(builder, missing): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(missing), 0)
+def KnimeTableStartMissingVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def KnimeTableEnd(builder): return builder.EndObject()

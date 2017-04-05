@@ -21,19 +21,24 @@ public final class KnimeTable extends Table {
   public Column columns(int j) { return columns(new Column(), j); }
   public Column columns(Column obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int columnsLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
+  public MissingValue missing(int j) { return missing(new MissingValue(), j); }
+  public MissingValue missing(MissingValue obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public int missingLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createKnimeTable(FlatBufferBuilder builder,
       int rowIDsOffset,
       int colNamesOffset,
-      int columnsOffset) {
-    builder.startObject(3);
+      int columnsOffset,
+      int missingOffset) {
+    builder.startObject(4);
+    KnimeTable.addMissing(builder, missingOffset);
     KnimeTable.addColumns(builder, columnsOffset);
     KnimeTable.addColNames(builder, colNamesOffset);
     KnimeTable.addRowIDs(builder, rowIDsOffset);
     return KnimeTable.endKnimeTable(builder);
   }
 
-  public static void startKnimeTable(FlatBufferBuilder builder) { builder.startObject(3); }
+  public static void startKnimeTable(FlatBufferBuilder builder) { builder.startObject(4); }
   public static void addRowIDs(FlatBufferBuilder builder, int rowIDsOffset) { builder.addOffset(0, rowIDsOffset, 0); }
   public static int createRowIDsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startRowIDsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
@@ -43,6 +48,9 @@ public final class KnimeTable extends Table {
   public static void addColumns(FlatBufferBuilder builder, int columnsOffset) { builder.addOffset(2, columnsOffset, 0); }
   public static int createColumnsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startColumnsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addMissing(FlatBufferBuilder builder, int missingOffset) { builder.addOffset(3, missingOffset, 0); }
+  public static int createMissingVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startMissingVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endKnimeTable(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

@@ -22,9 +22,14 @@ class ByteColumn(object):
     def Values(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            return self._tab.Get(flatbuffers.number_types.Int8Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
-        return 0
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from .ByteCell import ByteCell
+            obj = ByteCell()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
 
     # ByteColumn
     def ValuesLength(self):
@@ -35,5 +40,5 @@ class ByteColumn(object):
 
 def ByteColumnStart(builder): builder.StartObject(1)
 def ByteColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)
-def ByteColumnStartValuesVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def ByteColumnStartValuesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def ByteColumnEnd(builder): return builder.EndObject()

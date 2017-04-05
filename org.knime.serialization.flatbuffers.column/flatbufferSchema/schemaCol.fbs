@@ -6,6 +6,7 @@ table KnimeTable {
 	rowIDs	: [string];	
 	colNames : [string]; 
   	columns : [Column];
+  	missing : [MissingValue];
 }
 
 table Column {
@@ -30,8 +31,25 @@ table Column {
 	stringSetColumn : StringCollectionColumn;
 }
 
+table MissingValue {
+	rowID	: string;
+	colName : string;
+}
+
+table ByteCell {
+	value : [byte];
+}
+
+// yes, these ByteColumn and ByteCollectionCell are  redundant, 
+// but the two different names reflect that one is repeated 
+// horizontally (in a cell) and one is repeated vertically (in a column)
+
 table ByteColumn {
-	values : [byte];
+	values : [ByteCell];
+}
+
+table ByteCollectionCell {
+	value : [ByteCell];
 }
 
 table ByteCollectionColumn {
@@ -40,6 +58,10 @@ table ByteCollectionColumn {
 
 table BooleanColumn {
 	values : [bool];
+}
+
+table BooleanCollectionCell {
+	value : [bool];
 }
 
 table BooleanCollectionColumn {
@@ -82,14 +104,6 @@ table ColumnName {
 	name : string; 
 }
 
-table BooleanCollectionCell {
-	value : [bool];
-}
-
-table ByteCollectionCell {
-	value : [byte];
-}
-
 table DoubleCollectionCell {
 	value : [double];
 }
@@ -101,7 +115,6 @@ table IntegerCollectionCell {
 table LongCollectionCell {
 	value : [long];
 }
-
 
 table StringCollectionCell {
 	value : [string];
