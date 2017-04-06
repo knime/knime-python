@@ -2,4 +2,4 @@ _format = '%Y-%m-%d %H:%M:%S.%f'
 
 
 def serialize(object_value):
-    return bytes(object_value.strftime(_format)[:-3], 'utf-8')
+    return object_value.strftime(_format)[:-3].encode('utf-8')
