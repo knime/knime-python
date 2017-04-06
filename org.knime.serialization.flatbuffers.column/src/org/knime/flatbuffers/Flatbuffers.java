@@ -12,6 +12,8 @@ import org.knime.flatbuffers.flatc.BooleanCollectionCell;
 import org.knime.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.flatbuffers.flatc.BooleanColumn;
 import org.knime.flatbuffers.flatc.ByteCell;
+import org.knime.flatbuffers.flatc.ByteCollectionCell;
+import org.knime.flatbuffers.flatc.ByteCollectionColumn;
 import org.knime.flatbuffers.flatc.ByteColumn;
 import org.knime.flatbuffers.flatc.Column;
 import org.knime.flatbuffers.flatc.DoubleCollectionCell;
@@ -132,9 +134,11 @@ public class Flatbuffers implements SerializationLibrary {
 					break;
 				}
 				case BYTES_LIST: {
+					columns.get(colName).add(cell.getBytesArrayValue());
 					break;
 				}
 				case BYTES_SET: {
+					columns.get(colName).add(cell.getBytesArrayValue());
 					break;
 				}
 				default:
@@ -404,7 +408,9 @@ public class Flatbuffers implements SerializationLibrary {
 				}
 				int valuesOffset = ByteColumn.createValuesVector(builder,
 						ArrayUtils.toPrimitive(bytesOffsets.toArray(new Integer[columns.get(colName).size()])));
-				int colOffset = StringColumn.createStringColumn(builder, valuesOffset);
+				
+				String serializer = tableIterator.getTableSpec().getColumnSerializers().get(colName);				
+				int colOffset = ByteColumn.createByteColumn(builder, builder.createString(serializer), valuesOffset);
 				Column.startColumn(builder);
 				Column.addType(builder, Type.BYTES.getId());
 				Column.addByteColumn(builder, colOffset);
@@ -413,9 +419,55 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BYTES_LIST: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+
+				for (Object o : columns.get(colName)) {
+					List<Integer> bytesCellOffsets = new ArrayList<>();
+					for (Object b : (Byte[][]) o) {
+						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) b));
+						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+					}
+					int valuesOffset = ByteCollectionCell.createValueVector(builder,
+							ArrayUtils.toPrimitive(bytesCellOffsets.toArray(new Integer[bytesCellOffsets.size()])));
+
+					cellOffsets.add(ByteCollectionCell.createByteCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = ByteCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				
+				String serializer = tableIterator.getTableSpec().getColumnSerializers().get(colName);	
+				int colOffset = ByteCollectionColumn.createByteCollectionColumn(builder,  builder.createString(serializer), valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.BYTES_LIST.getId());
+				Column.addByteListColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			case BYTES_SET: {
+				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
+
+				for (Object o : columns.get(colName)) {
+					List<Integer> bytesCellOffsets = new ArrayList<>();
+					for (Object b : (Byte[][]) o) {
+						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) b));
+						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+					}
+					int valuesOffset = ByteCollectionCell.createValueVector(builder,
+							ArrayUtils.toPrimitive(bytesCellOffsets.toArray(new Integer[bytesCellOffsets.size()])));
+
+					cellOffsets.add(ByteCollectionCell.createByteCollectionCell(builder, valuesOffset));
+				}
+
+				int valuesVector = ByteCollectionColumn.createValuesVector(builder,
+						ArrayUtils.toPrimitive(cellOffsets.toArray(new Integer[cellOffsets.size()])));
+				
+				String serializer = tableIterator.getTableSpec().getColumnSerializers().get(colName);	
+				int colOffset = ByteCollectionColumn.createByteCollectionColumn(builder, builder.createString(serializer), valuesVector);
+				Column.startColumn(builder);
+				Column.addType(builder, Type.BYTES_SET.getId());
+				Column.addByteSetColumn(builder, colOffset);
+				colOffsets.add(Column.endColumn(builder));
 				break;
 			}
 			default:
@@ -669,9 +721,31 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 			}
 			case BYTES_LIST: {
+				ByteCollectionColumn colVec = col.byteListColumn();
+				colTypes.put(table.colNames(j), Type.BYTES_LIST);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					ByteCollectionCell cell = colVec.values(i);
+
+					List<byte[]> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k).valueAsByteBuffer().array());
+					}
+					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()]));
+				}
 				break;
 			}
 			case BYTES_SET: {
+				ByteCollectionColumn colVec = col.byteSetColumn();
+				colTypes.put(table.colNames(j), Type.BYTES_SET);
+				for (int i = 0; i < colVec.valuesLength(); i++) {
+					ByteCollectionCell cell = colVec.values(i);
+
+					List<byte[]> l = new ArrayList<>(cell.valueLength());
+					for (int k = 0; k < cell.valueLength(); k++) {
+						l.add(cell.value(k).valueAsByteBuffer().array());
+					}
+					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()]));
+				}
 				break;
 			}
 			default:
@@ -780,6 +854,8 @@ public class Flatbuffers implements SerializationLibrary {
 
 		List<String> colNames = new ArrayList<>();
 		Type[] types = new Type[table.colNamesLength()];
+		
+		Map<String, String> serializers = new HashMap<>();
 
 		for (int h = 0; h < table.colNamesLength(); h++) {
 			String colName = table.colNames(h);
@@ -852,14 +928,17 @@ public class Flatbuffers implements SerializationLibrary {
 			}
 			case BYTES: {
 				types[j] = Type.BYTES;
+				serializers.put(colNames.get(j), col.byteColumn().serializer());
 				break;
 			}
 			case BYTES_LIST: {
 				types[j] = Type.BYTES_LIST;
+				serializers.put(colNames.get(j), col.byteListColumn().serializer());
 				break;
 			}
 			case BYTES_SET: {
 				types[j] = Type.BYTES_SET;
+				serializers.put(colNames.get(j), col.byteSetColumn().serializer());
 				break;
 			}
 			default:
@@ -868,7 +947,7 @@ public class Flatbuffers implements SerializationLibrary {
 			}
 		}
 
-		return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), new HashMap<String, String>());
+		return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), serializers);
 	}
 
 }

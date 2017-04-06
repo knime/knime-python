@@ -48,7 +48,7 @@ class Column(object):
         return None
 
     # Column
-    def ByteColColumn(self):
+    def ByteSetColumn(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
@@ -227,7 +227,7 @@ def ColumnStart(builder): builder.StartObject(19)
 def ColumnAddType(builder, type): builder.PrependInt32Slot(0, type, 0)
 def ColumnAddByteColumn(builder, byteColumn): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(byteColumn), 0)
 def ColumnAddByteListColumn(builder, byteListColumn): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(byteListColumn), 0)
-def ColumnAddByteColColumn(builder, byteColColumn): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(byteColColumn), 0)
+def ColumnAddByteSetColumn(builder, byteSetColumn): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(byteSetColumn), 0)
 def ColumnAddBooleanColumn(builder, booleanColumn): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(booleanColumn), 0)
 def ColumnAddBooleanListColumn(builder, booleanListColumn): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(booleanListColumn), 0)
 def ColumnAddBooleanSetColumn(builder, booleanSetColumn): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(booleanSetColumn), 0)

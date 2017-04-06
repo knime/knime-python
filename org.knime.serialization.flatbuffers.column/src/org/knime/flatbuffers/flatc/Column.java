@@ -19,8 +19,8 @@ public final class Column extends Table {
   public ByteColumn byteColumn(ByteColumn obj) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public ByteCollectionColumn byteListColumn() { return byteListColumn(new ByteCollectionColumn()); }
   public ByteCollectionColumn byteListColumn(ByteCollectionColumn obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public ByteCollectionColumn byteColColumn() { return byteColColumn(new ByteCollectionColumn()); }
-  public ByteCollectionColumn byteColColumn(ByteCollectionColumn obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public ByteCollectionColumn byteSetColumn() { return byteSetColumn(new ByteCollectionColumn()); }
+  public ByteCollectionColumn byteSetColumn(ByteCollectionColumn obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public BooleanColumn booleanColumn() { return booleanColumn(new BooleanColumn()); }
   public BooleanColumn booleanColumn(BooleanColumn obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public BooleanCollectionColumn booleanListColumn() { return booleanListColumn(new BooleanCollectionColumn()); }
@@ -56,7 +56,7 @@ public final class Column extends Table {
       int type,
       int byteColumnOffset,
       int byteListColumnOffset,
-      int byteColColumnOffset,
+      int byteSetColumnOffset,
       int booleanColumnOffset,
       int booleanListColumnOffset,
       int booleanSetColumnOffset,
@@ -88,7 +88,7 @@ public final class Column extends Table {
     Column.addBooleanSetColumn(builder, booleanSetColumnOffset);
     Column.addBooleanListColumn(builder, booleanListColumnOffset);
     Column.addBooleanColumn(builder, booleanColumnOffset);
-    Column.addByteColColumn(builder, byteColColumnOffset);
+    Column.addByteSetColumn(builder, byteSetColumnOffset);
     Column.addByteListColumn(builder, byteListColumnOffset);
     Column.addByteColumn(builder, byteColumnOffset);
     Column.addType(builder, type);
@@ -99,7 +99,7 @@ public final class Column extends Table {
   public static void addType(FlatBufferBuilder builder, int type) { builder.addInt(0, type, 0); }
   public static void addByteColumn(FlatBufferBuilder builder, int byteColumnOffset) { builder.addOffset(1, byteColumnOffset, 0); }
   public static void addByteListColumn(FlatBufferBuilder builder, int byteListColumnOffset) { builder.addOffset(2, byteListColumnOffset, 0); }
-  public static void addByteColColumn(FlatBufferBuilder builder, int byteColColumnOffset) { builder.addOffset(3, byteColColumnOffset, 0); }
+  public static void addByteSetColumn(FlatBufferBuilder builder, int byteSetColumnOffset) { builder.addOffset(3, byteSetColumnOffset, 0); }
   public static void addBooleanColumn(FlatBufferBuilder builder, int booleanColumnOffset) { builder.addOffset(4, booleanColumnOffset, 0); }
   public static void addBooleanListColumn(FlatBufferBuilder builder, int booleanListColumnOffset) { builder.addOffset(5, booleanListColumnOffset, 0); }
   public static void addBooleanSetColumn(FlatBufferBuilder builder, int booleanSetColumnOffset) { builder.addOffset(6, booleanSetColumnOffset, 0); }

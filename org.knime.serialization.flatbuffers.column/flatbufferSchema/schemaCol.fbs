@@ -13,7 +13,7 @@ table Column {
 	type			: int;
 	byteColumn 		: ByteColumn;
 	byteListColumn 	: ByteCollectionColumn;
-	byteColColumn	: ByteCollectionColumn;
+	byteSetColumn	: ByteCollectionColumn;
 	booleanColumn 	: BooleanColumn;
 	booleanListColumn : BooleanCollectionColumn;
 	booleanSetColumn : BooleanCollectionColumn;
@@ -45,6 +45,7 @@ table ByteCell {
 // horizontally (in a cell) and one is repeated vertically (in a column)
 
 table ByteColumn {
+	serializer : string;
 	values : [ByteCell];
 }
 
@@ -53,6 +54,7 @@ table ByteCollectionCell {
 }
 
 table ByteCollectionColumn {
+	serializer : string;
 	values : [ByteCollectionCell];
 }
 

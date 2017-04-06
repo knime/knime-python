@@ -19,8 +19,15 @@ class ByteColumn(object):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # ByteColumn
-    def Values(self, j):
+    def Serializer(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return ""
+
+    # ByteColumn
+    def Values(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
@@ -33,12 +40,13 @@ class ByteColumn(object):
 
     # ByteColumn
     def ValuesLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
-def ByteColumnStart(builder): builder.StartObject(1)
-def ByteColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)
+def ByteColumnStart(builder): builder.StartObject(2)
+def ByteColumnAddSerializer(builder, serializer): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(serializer), 0)
+def ByteColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)
 def ByteColumnStartValuesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def ByteColumnEnd(builder): return builder.EndObject()
