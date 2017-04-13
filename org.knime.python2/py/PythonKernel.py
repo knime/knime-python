@@ -879,7 +879,9 @@ def simpletype_for_column(data_frame, column_name):
 
 
 def value_to_simpletype_value(value, simpletype):
-    if simpletype == Simpletype.BOOLEAN:
+    if value is None:
+        return None
+    elif simpletype == Simpletype.BOOLEAN:
         return bool(value)
     elif simpletype == Simpletype.BOOLEAN_LIST:
         for i in range(0, len(value)):
