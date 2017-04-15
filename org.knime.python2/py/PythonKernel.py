@@ -701,7 +701,10 @@ class FromPandasTable:
 
     # example: table.get_cell(0,0)
     def get_cell(self, column_index, row_index):
-        return value_to_simpletype_value(self._data_frame[self._data_frame.columns[column_index]][row_index],
+        if self._data_frame[self._data_frame.columns[column_index]][row_index] == None:
+            return None
+        else:
+            return value_to_simpletype_value(self._data_frame[self._data_frame.columns[column_index]][row_index],
                                          self._column_types[column_index])
 
     # example: table.get_rowkey(0)

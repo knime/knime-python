@@ -21,6 +21,10 @@ from knimetable import DoubleCollectionColumn
 from knimetable import DoubleCollectionCell
 from knimetable import StringCollectionColumn
 from knimetable import StringCollectionCell
+from knimetable import ByteCell
+from knimetable import ByteColumn
+from knimetable import ByteCollectionColumn
+from xml.dom import xmlbuilder
    
 _types_ = None
 
@@ -62,12 +66,19 @@ def column_serializers_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
+
+    rowIds = []
+        
+    for idx in range(0, knimeTable.RowIDsLength()):
+        rowIds.append(knimeTable.RowIDs(idx))        
+    
     colNames = []
         
     for j in range(0, knimeTable.ColNamesLength()):
         colNames.append(knimeTable.ColNames(j))
             
   #  print("Flatbuffers->Python: Column Length() ", knimeTable.ColumnsLength())
+  
     
     for j in range(0, knimeTable.ColumnsLength()):
         col = knimeTable.Columns(j)
@@ -77,7 +88,10 @@ def bytes_into_table(table, data_bytes):
             colVec = col.IntColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                colVals.append(colVec.Values(idx))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.INTEGER_LIST.value:
@@ -89,7 +103,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.append(cell.Value(cellIdx))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
             
@@ -102,7 +119,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.add(cell.Value(cellIdx))
   
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
 
@@ -110,8 +130,10 @@ def bytes_into_table(table, data_bytes):
             colVec = col.BooleanColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                colVals.append(colVec.Values(idx))
-                #print("Flatbuffers -> Python: (Boolean)", colVec.Values(idx))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.BOOLEAN_LIST.value:
@@ -143,7 +165,10 @@ def bytes_into_table(table, data_bytes):
                     cellVals.add(cell.Value(cellIdx))
  #                   print("Flatbuffers -> Python: (Boolean Set Element)", cell.Value(cellIdx))
   
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
  #               print("Flatbuffers -> Python: (Boolean Set)[",idx,"]", cellVals)
                  
             table.add_column(colNames[j], colVals)
@@ -153,7 +178,10 @@ def bytes_into_table(table, data_bytes):
             colVec = col.LongColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                colVals.append(colVec.Values(idx))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(colVec.Values(idx))
  #               print("Flatbuffers -> Python: (Long)", colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
@@ -166,7 +194,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.append(cell.Value(cellIdx))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
             
@@ -179,7 +210,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.add(cell.Value(cellIdx))
   
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
 
@@ -188,7 +222,10 @@ def bytes_into_table(table, data_bytes):
             colVec = col.DoubleColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                colVals.append(colVec.Values(idx))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(colVec.Values(idx))
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.DOUBLE_LIST.value:
@@ -200,7 +237,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.append(cell.Value(cellIdx))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
             
@@ -213,7 +253,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.add(cell.Value(cellIdx))
   
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
 
@@ -222,7 +265,10 @@ def bytes_into_table(table, data_bytes):
             colVec = col.StringColumn()
             colVals = []        
             for i in range(0, colVec.ValuesLength()):
-                colVals.append(colVec.Values(i).decode('utf-8'))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(colVec.Values(i).decode('utf-8'))
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.STRING_LIST.value:
@@ -234,7 +280,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.append(cell.Value(cellIdx).decode('utf-8'))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
             
@@ -247,7 +296,10 @@ def bytes_into_table(table, data_bytes):
                 for cellIdx in range(0, cell.ValueLength()):
                     cellVals.add(cell.Value(cellIdx).decode('utf-8'))
   
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
             
@@ -264,7 +316,10 @@ def bytes_into_table(table, data_bytes):
                 for byteIdx in range(0,cell.ValueLength()):
                     bytes.append(cell.Value(byteIdx))
                  
-                colVals.append(bytearray(bytes))
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(bytearray(bytes))
                 print("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(bytes))
                 print("Flatbuffers -> Python: (BYTES Column) Cell.Type():", bytes)
                    
@@ -285,7 +340,10 @@ def bytes_into_table(table, data_bytes):
                         bytes.append(cell.Value(byteIdx))
                     cellVals.append(bytearray(bytes))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
                            
@@ -302,19 +360,13 @@ def bytes_into_table(table, data_bytes):
                         bytes.append(cell.Value(byteIdx))
                     cellVals.add(bytearray(bytes))
 
-                colVals.append(cellVals)
+                if colVec.Missing(idx):
+                    colVals.append(None)
+                else:
+                    colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
 
-            
- 
-
-            
-    rowIds = []
-        
-    for idx in range(0, knimeTable.RowIDsLength()):
-        rowIds.append(knimeTable.RowIDs(idx))
-        
     table.set_rowkeys(rowIds)
 
           
@@ -350,17 +402,29 @@ def table_to_bytes(table):
       
     colOffsetList = []
     
+    serializers = table._column_serializers
+    
    # print("data_frame", table._data_frame)
     for colIdx in range(0,table.get_number_columns()):
         if table.get_type(colIdx) == _types_.INTEGER:  
             col = table_column(table, colIdx)
             IntColumn.IntColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
-                builder.PrependInt32(int(col[valIdx]))
+                if col[valIdx] == None:
+                    builder.PrependInt32(-2147483648)
+                else:
+                    builder.PrependInt32(int(col[valIdx]))
  #               print("Python->Flatbuffers: (Int)", col[valIdx])
-            valVec = builder.EndVector(len(col))          
+            valVec = builder.EndVector(len(col))
+            
+            IntColumn.IntColumnStartMissingVector(builder, len(col))
+            for valIdx in reversed(range(0,len(col))):
+                builder.PrependBool(col[valIdx] == None)
+            missingVec = builder.EndVector(len(col))
+                      
             IntColumn.IntColumnStart(builder)                             
             IntColumn.IntColumnAddValues(builder, valVec)
+            IntColumn.IntColumnAddMissing(builder, missingVec)
             colOffset = IntColumn.IntColumnEnd(builder)           
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
@@ -370,13 +434,19 @@ def table_to_bytes(table):
         elif table.get_type(colIdx) == _types_.INTEGER_LIST:  
             col = table_column(table, colIdx)
             cellOffsets = []
+                     
             for valIdx in range(0,len(col)):
-               
-                IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
-                for cellIdx in reversed(range(0, len(col[valIdx]))):
-                    builder.PrependInt32(col[valIdx][cellIdx])
+                cellVec = 0          
+                if col[valIdx] == None:
+                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
+                    builder.PrependInt32(-2147483648)
+                    cellVec = builder.EndVector(1)
+                else:
+                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    for cellIdx in reversed(range(0, len(col[valIdx]))):
+                        builder.PrependInt32(col[valIdx][cellIdx])
+                    cellVec = builder.EndVector(len(col[valIdx]))
                                      
-                cellVec = builder.EndVector(len(col[valIdx]))
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
                 IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
                 cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
@@ -384,10 +454,16 @@ def table_to_bytes(table):
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(cellOffsets))):
                 builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))    
+            valVec = builder.EndVector(len(cellOffsets))
+            
+            IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
+            for missIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependBool(col[valIdx] == None)
+            missVec = builder.EndVector(len(cellOffsets))   
             
             IntCollectionColumn.IntCollectionColumnStart(builder)    
-            IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)                                  
+            IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)
+            IntCollectionColumn.IntCollectionColumnAddMissing(builder, missVec)                                  
             colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
@@ -397,11 +473,15 @@ def table_to_bytes(table):
         elif table.get_type(colIdx) == _types_.INTEGER_SET:  
             col = table_column(table, colIdx)
             cellOffsets = []
+            
             for valIdx in range(0,len(col)):
                
                 IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
-                for elem in col[valIdx]:
-                    builder.PrependInt32(elem)
+                if col[valIdx] == None:
+                    builder.PrependInt32(-2147483648)
+                else:
+                    for elem in col[valIdx]:
+                        builder.PrependInt32(elem)
                                      
                 cellVec = builder.EndVector(len(col[valIdx]))
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
@@ -411,7 +491,13 @@ def table_to_bytes(table):
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(cellOffsets))):
                 builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))    
+            valVec = builder.EndVector(len(cellOffsets))
+            
+            IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
+            for missIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependBool(col[valIdx] == None)
+            missVec = builder.EndVector(len(cellOffsets))   
+    
             
             IntCollectionColumn.IntCollectionColumnStart(builder)    
             IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)                                  
@@ -426,12 +512,23 @@ def table_to_bytes(table):
             col = table_column(table, colIdx)
             BooleanColumn.BooleanColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(col))):
-                builder.PrependBool(bool(col[valIdx]))
+                if col[valIdx] == None:
+                    builder.PrependBool(false)
+                else:
+                    builder.PrependBool(bool(col[valIdx]))
  #               print("Python->Flatbuffers: (Boolean)", col[valIdx])
-            valVec = builder.EndVector(len(col))          
+            valVec = builder.EndVector(len(col))
+            
+            BooleanCollectionColumn.BooleanCollectionColumnStartMissingVector(builder, len(col))
+            for missIdx in reversed(range(0,len(cellOffsets))):
+                builder.PrependBool(col[valIdx] == None)
+            missVec = builder.EndVector(len(cellOffsets))   
+                
             BooleanColumn.BooleanColumnStart(builder)                             
             BooleanColumn.BooleanColumnAddValues(builder, valVec)
-            colOffset = BooleanColumn.BooleanColumnEnd(builder)           
+            BooleanColumn.BooleanColumnAddMissing(builder, missVec)
+            colOffset = BooleanColumn.BooleanColumnEnd(builder)
+                       
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddBooleanColumn(builder, colOffset)
@@ -446,6 +543,8 @@ def table_to_bytes(table):
     #            print("Python->Flatbuffers: (Boolean List Element)[",valIdx,"]", col[valIdx])
                
                 BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                
+                
                 for cellIdx in reversed(range(0, len(col[valIdx]))):
        #             print("Python->Flatbuffers: (Boolean List Element)[",valIdx,",",cellIdx,"]", col[valIdx][cellIdx])
                     builder.PrependBool(col[valIdx][cellIdx])
@@ -642,6 +741,7 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
                 
         elif table.get_type(colIdx) == _types_.STRING:
+            print("Python->Flatbuffers: (String) colIdx", colIdx)
           
             col = table_column(table, colIdx) 
           
@@ -732,19 +832,31 @@ def table_to_bytes(table):
             bytesOffsets = []
             for colIdx in range(0, len(col)):
                 byteOffsets = []
+                cell = bytearray(col[colIdx])
+                print("Python->Flatbuffers: (Bytes) cell:", cell)
+                print("Python->Flatbuffers: (Bytes) len(cell):", len(cell))
+                
+                ByteCell.ByteCellStartValueVector(builder, len(cell))
+                for byteIdx in reversed(range(0, len(cell))):
+                    print("Python->Flatbuffers: (Bytes) byteIdx:", byteIdx)
+                    print("Python->Flatbuffers: (Bytes) cell[byteIdx]:", cell[byteIdx])
+                    builder.PrependByte(cell[byteIdx])
+                bytesVec = builder.EndVector(len(cell))
                 ByteCell.ByteCellStart(builder)
-                ByteCell.ByteCellStartValueVector(builder, len(col[colIdx]))
-                for byteIdx in range(reversed(0, len(col[colIdx]))):
-                   ByteCell.ByteCellAddValue(builder, col[colIdx][byteIdx])
-                byteOffsets.append(builder.EndVector(len(col[colIdx])))
+                ByteCell.ByteCellAddValue(builder, bytesVec)
+                byteOffsets.append(ByteCell.ByteCellEnd(builder))
                     
             
             ByteColumn.ByteColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,len(bytesOffsets))):
                 builder.PrependUOffsetTRelative(bytesOffsets[valIdx])
             valVec = builder.EndVector(len(col))
+            
+            serializer = builder.CreateString(serializers[table.get_names()[colIdx]])
+            
             ByteColumn.ByteColumnStart(builder)        
             ByteColumn.ByteColumnAddValues(builder, valVec)
+            ByteColumn.ByteColumnAddSerializer(builder, serializer)
             colOffset = ByteColumn.ByteColumnEnd(builder)
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)

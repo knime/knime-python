@@ -17,18 +17,26 @@ public final class IntColumn extends Table {
   public int values(int j) { int o = __offset(4); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int valuesLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer valuesAsByteBuffer() { return __vector_as_bytebuffer(4, 4); }
+  public boolean missing(int j) { int o = __offset(6); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
+  public int missingLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer missingAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
 
   public static int createIntColumn(FlatBufferBuilder builder,
-      int valuesOffset) {
-    builder.startObject(1);
+      int valuesOffset,
+      int missingOffset) {
+    builder.startObject(2);
+    IntColumn.addMissing(builder, missingOffset);
     IntColumn.addValues(builder, valuesOffset);
     return IntColumn.endIntColumn(builder);
   }
 
-  public static void startIntColumn(FlatBufferBuilder builder) { builder.startObject(1); }
+  public static void startIntColumn(FlatBufferBuilder builder) { builder.startObject(2); }
   public static void addValues(FlatBufferBuilder builder, int valuesOffset) { builder.addOffset(0, valuesOffset, 0); }
   public static int createValuesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startValuesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addMissing(FlatBufferBuilder builder, int missingOffset) { builder.addOffset(1, missingOffset, 0); }
+  public static int createMissingVector(FlatBufferBuilder builder, boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addBoolean(data[i]); return builder.endVector(); }
+  public static void startMissingVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
   public static int endIntColumn(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

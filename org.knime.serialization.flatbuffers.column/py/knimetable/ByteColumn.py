@@ -45,8 +45,25 @@ class ByteColumn(object):
             return self._tab.VectorLen(o)
         return 0
 
-def ByteColumnStart(builder): builder.StartObject(2)
+    # ByteColumn
+    def Missing(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+        return 0
+
+    # ByteColumn
+    def MissingLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def ByteColumnStart(builder): builder.StartObject(3)
 def ByteColumnAddSerializer(builder, serializer): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(serializer), 0)
 def ByteColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)
 def ByteColumnStartValuesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ByteColumnAddMissing(builder, missing): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(missing), 0)
+def ByteColumnStartMissingVector(builder, numElems): return builder.StartVector(1, numElems, 1)
 def ByteColumnEnd(builder): return builder.EndObject()

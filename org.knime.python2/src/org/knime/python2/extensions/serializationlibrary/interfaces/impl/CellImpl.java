@@ -8,6 +8,9 @@ public class CellImpl implements Cell {
 	private Type m_type;
 	private Object m_value;
 	
+	/**
+	 * Constructor for use with a Missing Value cell.
+	 */
 	public CellImpl() {
 		m_type = null;
 		m_value = null;

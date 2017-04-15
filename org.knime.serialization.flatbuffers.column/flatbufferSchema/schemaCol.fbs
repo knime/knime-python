@@ -6,7 +6,6 @@ table KnimeTable {
 	rowIDs	: [string];	
 	colNames : [string]; 
   	columns : [Column];
-  	missing : [MissingValue];
 }
 
 table Column {
@@ -31,22 +30,15 @@ table Column {
 	stringSetColumn : StringCollectionColumn;
 }
 
-table MissingValue {
-	rowID	: string;
-	colName : string;
-}
-
 table ByteCell {
 	value : [byte];
 }
 
-// yes, these ByteColumn and ByteCollectionCell are  redundant, 
-// but the two different names reflect that one is repeated 
-// horizontally (in a cell) and one is repeated vertically (in a column)
 
 table ByteColumn {
 	serializer : string;
 	values : [ByteCell];
+	missing : [bool];
 }
 
 table ByteCollectionCell {
@@ -56,10 +48,12 @@ table ByteCollectionCell {
 table ByteCollectionColumn {
 	serializer : string;
 	values : [ByteCollectionCell];
+	missing : [bool];
 }
 
 table BooleanColumn {
 	values : [bool];
+	missing : [bool];
 }
 
 table BooleanCollectionCell {
@@ -68,38 +62,47 @@ table BooleanCollectionCell {
 
 table BooleanCollectionColumn {
 	values : [BooleanCollectionCell];
+	missing : [bool];
 }
 
 table DoubleColumn {
 	values : [double];
+	missing : [bool];
 }
 
 table DoubleCollectionColumn {
 	values : [DoubleCollectionCell];
+	missing : [bool];
 }
 
 table IntColumn {
 	values : [int];
+	missing : [bool];
 }
 
 table IntCollectionColumn {
 	values : [IntegerCollectionCell];
+	missing : [bool];
 }
 
 table LongColumn {
 	values : [long];
+	missing : [bool];
 }
 
 table LongCollectionColumn {
 	values : [LongCollectionCell];
+	missing : [bool];
 }
 
 table StringColumn {
 	values : [string];
+	missing : [bool];
 }
 
 table StringCollectionColumn {
 	values : [StringCollectionCell];
+	missing : [bool];
 }
 
 table ColumnName {

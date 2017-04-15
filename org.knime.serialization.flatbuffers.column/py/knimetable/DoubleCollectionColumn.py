@@ -38,7 +38,24 @@ class DoubleCollectionColumn(object):
             return self._tab.VectorLen(o)
         return 0
 
-def DoubleCollectionColumnStart(builder): builder.StartObject(1)
+    # DoubleCollectionColumn
+    def Missing(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+        return 0
+
+    # DoubleCollectionColumn
+    def MissingLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def DoubleCollectionColumnStart(builder): builder.StartObject(2)
 def DoubleCollectionColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)
 def DoubleCollectionColumnStartValuesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def DoubleCollectionColumnAddMissing(builder, missing): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(missing), 0)
+def DoubleCollectionColumnStartMissingVector(builder, numElems): return builder.StartVector(1, numElems, 1)
 def DoubleCollectionColumnEnd(builder): return builder.EndObject()
