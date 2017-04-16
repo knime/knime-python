@@ -92,6 +92,7 @@ def bytes_into_table(table, data_bytes):
                     colVals.append(None)
                 else:
                     colVals.append(colVec.Values(idx))
+                print("Flatbuffers->Python: (Integer) colVals[",idx,"]", colVals[idx])
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.INTEGER_LIST.value:
@@ -222,10 +223,14 @@ def bytes_into_table(table, data_bytes):
             colVec = col.DoubleColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
+                print("Flatbuffers -> Python: (Double) colVec Value[",idx,"]", colVec.Values(idx))
+                print("Flatbuffers -> Python: (Double) missing Value[",idx,"]", colVec.Missing(idx))
                 if colVec.Missing(idx):
                     colVals.append(None)
+                    print("Flatbuffers -> Python: (Double) colVal[",idx,"]", colVals[idx])
                 else:
                     colVals.append(colVec.Values(idx))
+                    print("Flatbuffers -> Python: (Double) colVal[",idx,"]", colVals[idx])
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.DOUBLE_LIST.value:
@@ -605,8 +610,12 @@ def table_to_bytes(table):
         elif table.get_type(colIdx) == _types_.LONG:  
             col = table_column(table, colIdx)
             LongColumn.LongColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(col))):
-                builder.PrependInt64(long(col[valIdx]))
+            if sys.version_info > (3,0):
+                for valIdx in reversed(range(0,len(col))):
+                    builder.PrependInt64(col[valIdx])
+            else:
+                for valIdx in reversed(range(0,len(col))):
+                    builder.PrependInt64(long(col[valIdx]))
       #          print("Python->Flatbuffers: (Long)", col[valIdx])
             valVec = builder.EndVector(len(col))          
             LongColumn.LongColumnStart(builder)                             
@@ -675,6 +684,7 @@ def table_to_bytes(table):
             col = table_column(table, colIdx) 
             DoubleColumn.DoubleColumnStartValuesVector(builder, len(col))
             for valIdx in reversed(range(0,table.get_number_rows())):
+                print("Python->Flatbuffers: (Double) (col)[", valIdx, "]", col[valIdx])       
                 builder.PrependFloat64(col[valIdx])
             valVec = builder.EndVector(len(col))
             DoubleColumn.DoubleColumnStart(builder)           
