@@ -797,7 +797,6 @@ def simpletype_for_column(data_frame, column_name):
     else:
         if data_frame[column_name].dtype == 'bool':
             simple_type = Simpletype.BOOLEAN
-        #elif data_frame[column_name].dtype == 'int64' or data_frame[column_name].dtype == 'int32':
         elif data_frame[column_name].dtype == 'int32' or data_frame[column_name].dtype == 'int64':
             minvalue = data_frame[column_name][data_frame[column_name].idxmin()]
             maxvalue = data_frame[column_name][data_frame[column_name].idxmax()]
@@ -918,15 +917,27 @@ def value_to_simpletype_value(value, simpletype):
             value_set.add(int(inner_value))
         return value_set
     elif simpletype == Simpletype.DOUBLE:
-        return float(value)
+        float_value = float(value)
+        if math.isnan(float_value):
+            return None
+        else:
+            return float_value
     elif simpletype == Simpletype.DOUBLE_LIST:
         for i in range(0, len(value)):
-            value[i] = float(value[i])
+            float_value = float(value[i])
+            if math.isnan(float_value):
+                value[i] = None
+            else:
+                value[i] = float_value
         return value
     elif simpletype == Simpletype.DOUBLE_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(float(inner_value))
+            float_value = float(inner_value)
+            if math.isnan(float_value):
+                value_set.add(float_value)
+            else:
+                value_set.add(float_value)
         return value_set
     elif simpletype == Simpletype.STRING:
         return str(value)

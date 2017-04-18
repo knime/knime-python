@@ -6,7 +6,9 @@
          <meta.schema plugin="org.knime.python" id="org.knime.python.module" name="Python module extension"/>
       </appinfo>
       <documentation>
-         Module loadable with loadModule(&apos;name&apos;) from within a python script node.
+         WARNING: This extension point is deprecated. Please use org.knime.python2.modules instead.
+
+Module loadable with loadModule(&apos;name&apos;) from within a python script node.
       </documentation>
    </annotation>
 
