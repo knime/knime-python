@@ -642,6 +642,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.BOOLEAN);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -656,6 +657,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -670,6 +672,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -678,6 +681,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.INTEGER);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -692,6 +696,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -706,6 +711,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -714,6 +720,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.LONG);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -728,6 +735,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -742,6 +750,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -750,6 +759,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.DOUBLE);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 
 				break;
@@ -765,6 +775,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Double[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -779,6 +790,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Double[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -787,6 +799,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.STRING);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -801,6 +814,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new String[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -815,6 +829,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k));
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new String[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -834,6 +849,7 @@ public class Flatbuffers implements SerializationLibrary {
 				colTypes.put(table.colNames(j), Type.BYTES);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
 					columns.get(table.colNames(j)).add(colVec.values(i).valueAsByteBuffer());
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -848,6 +864,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k).valueAsByteBuffer().array());
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
@@ -862,6 +879,7 @@ public class Flatbuffers implements SerializationLibrary {
 						l.add(cell.value(k).valueAsByteBuffer().array());
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()]));
+					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
 				break;
 			}
