@@ -550,10 +550,10 @@ public class Flatbuffers implements SerializationLibrary {
 			return false;
 		}
 		case BOOLEAN_LIST: {
-			return new boolean[] { false };
+			return new Boolean[] { false };
 		}
 		case BOOLEAN_SET: {
-			return new boolean[] { false };
+			return new Boolean[] { false };
 		}
 		case INTEGER: {
 			return Integer.MIN_VALUE;
