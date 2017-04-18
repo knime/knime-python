@@ -6,7 +6,9 @@
          <meta.schema plugin="org.knime.python" id="org.knime.python.typeextension" name="Python type extension"/>
       </appinfo>
       <documentation>
-         Extension point to serialize and deserialize data from KNIME to Python and back.
+         WARNING: This extension point is deprecated. Please use org.knime.python2.typeextension.knimetopython instead.
+
+Extension point to serialize and deserialize data from KNIME to Python and back.
       </documentation>
    </annotation>
 
