@@ -33,7 +33,32 @@ class IntegerCollectionCell(object):
             return self._tab.VectorLen(o)
         return 0
 
-def IntegerCollectionCellStart(builder): builder.StartObject(1)
+    # IntegerCollectionCell
+    def Missing(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+        return 0
+
+    # IntegerCollectionCell
+    def MissingLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # IntegerCollectionCell
+    def KeepDummy(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos)
+        return 0
+
+def IntegerCollectionCellStart(builder): builder.StartObject(3)
 def IntegerCollectionCellAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 def IntegerCollectionCellStartValueVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def IntegerCollectionCellAddMissing(builder, missing): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(missing), 0)
+def IntegerCollectionCellStartMissingVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def IntegerCollectionCellAddKeepDummy(builder, keepDummy): builder.PrependBoolSlot(2, keepDummy, 0)
 def IntegerCollectionCellEnd(builder): return builder.EndObject()
