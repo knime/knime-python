@@ -181,5 +181,10 @@ public class CellImpl implements Cell {
 		}
 		return (Byte[][])m_value;
 	}
+	
+	@Override
+	public String toString(){
+		return "Type: " + m_type.toString() + ", Value: " + m_value.toString();
+	}
 
 }
