@@ -68,9 +68,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 									booleanBuilder.append("None");
 								} else {
 									booleanBuilder.append(booleanArray[i] ? "True" : "False");
-									if (i+1 < booleanArray.length) {
-										booleanBuilder.append(",");
-									}
+								}
+								if (i+1 < booleanArray.length) {
+									booleanBuilder.append(",");
 								}
 							}
 							booleanBuilder.append(cell.getColumnType()==Type.BOOLEAN_LIST ? "]" : "}");
@@ -89,9 +89,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 									integerBuilder.append("None");
 								} else {
 									integerBuilder.append(integerArray[i].toString());
-									if (i+1 < integerArray.length) {
-										integerBuilder.append(",");
-									}
+								}
+								if (i+1 < integerArray.length) {
+									integerBuilder.append(",");
 								}
 							}
 							integerBuilder.append(cell.getColumnType()==Type.INTEGER_LIST ? "]" : "}");
@@ -110,9 +110,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 									longBuilder.append("None");
 								} else {
 									longBuilder.append(longArray[i].toString());
-									if (i+1 < longArray.length) {
-										longBuilder.append(",");
-									}
+								}
+								if (i+1 < longArray.length) {
+									longBuilder.append(",");
 								}
 							}
 							longBuilder.append(cell.getColumnType()==Type.LONG_LIST ? "]" : "}");
