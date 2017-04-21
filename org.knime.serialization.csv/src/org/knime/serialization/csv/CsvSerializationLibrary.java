@@ -221,6 +221,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes) {
 		try {

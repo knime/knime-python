@@ -142,7 +142,7 @@ public class Activator implements BundleActivator {
 			Process process = pb.start();
 			// Get console output of script
 			StringWriter writer = new StringWriter();
-			IOUtils.copy(process.getInputStream(), writer);
+			IOUtils.copy(process.getInputStream(), writer, "UTF-8");
 			// Create test result with console output as message and error code
 			// != 0 as error
 			return new PythonKernelTestResult(writer.toString());

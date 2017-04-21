@@ -52,7 +52,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.lang.ProcessBuilder.Redirect;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -192,9 +191,9 @@ public class PythonKernel {
 		existingPath = existingPath == null ? "" : existingPath + File.pathSeparator;
 		pb.environment().put("PYTHONPATH", existingPath);
 
-		// TODO remove redirect
-		pb.redirectOutput(Redirect.INHERIT);
-		pb.redirectError(Redirect.INHERIT);
+		// Uncomment for debugging
+		// pb.redirectOutput(Redirect.INHERIT);
+		// pb.redirectError(Redirect.INHERIT);
 
 		// Start python
 		m_process = pb.start();

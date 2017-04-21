@@ -507,7 +507,7 @@ class TypeExtensionManager:
         if index >= len(extensions):
             return None
         type_extension = extensions[index]
-        if type(type_extension) != types.ModuleType:
+        if not isinstance(type_extension, types.ModuleType):
             path = type_extension
             last_separator = path.rfind(os.sep)
             file_extension_start = path.rfind('.')
@@ -701,11 +701,11 @@ class FromPandasTable:
 
     # example: table.get_cell(0,0)
     def get_cell(self, column_index, row_index):
-        if self._data_frame[self._data_frame.columns[column_index]][row_index] == None:
+        if self._data_frame[self._data_frame.columns[column_index]][row_index] is None:
             return None
         else:
             return value_to_simpletype_value(self._data_frame[self._data_frame.columns[column_index]][row_index],
-                                         self._column_types[column_index])
+                                             self._column_types[column_index])
 
     # example: table.get_rowkey(0)
     def get_rowkey(self, row_index):
@@ -761,7 +761,7 @@ class ToPandasTable:
 
     def get_data_frame(self):
         deserialize_from_bytes(self._data_frame, self._column_serializers)
-        # TODO fix or remove, changing the type if the column contains missing values fails
+        # Commented out since changing the type if the column contains missing values fails
         # if len(self._data_frame) > 0:
         #     for column in self._data_frame.columns:
         #         self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
@@ -863,7 +863,7 @@ def simpletype_for_column(data_frame, column_name):
                 else:
                     type_string = get_type_string(first_valid_list_object(data_frame, column_name))
                     column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
-                    if (column_serializer is None):
+                    if column_serializer is None:
                         raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
                     if is_set:
                         simple_type = Simpletype.BYTES_SET
@@ -874,7 +874,7 @@ def simpletype_for_column(data_frame, column_name):
             else:
                 type_string = get_type_string(first_valid_object(data_frame, column_name))
                 column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
-                if (column_serializer is None):
+                if column_serializer is None:
                     raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
                 simple_type = Simpletype.BYTES
     return simple_type, column_serializer

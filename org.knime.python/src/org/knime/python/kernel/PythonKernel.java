@@ -445,6 +445,7 @@ public class PythonKernel {
 	 * @throws IOException
 	 *             If an error occured
 	 */
+	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
 			int rowLimit) throws IOException {
 		if (table == null) {
@@ -568,6 +569,7 @@ public class PythonKernel {
 	 * @throws IOException
 	 *             If an error occured
 	 */
+	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
 			throws IOException {
 		putDataTable(name, table, executionMonitor, table.getRowCount());

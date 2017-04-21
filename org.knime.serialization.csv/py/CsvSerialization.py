@@ -1,7 +1,6 @@
 import pandas
 import tempfile
 import os
-import numpy
 import base64
 
 
@@ -18,7 +17,6 @@ def init(types):
                     _types_.DOUBLE_LIST.value, _types_.DOUBLE_SET.value, _types_.STRING_LIST.value,
                     _types_.STRING_SET.value, _types_.BYTES_LIST.value, _types_.BYTES_SET.value}
     _bytes_types_ = {_types_.BYTES.value, _types_.BYTES_LIST.value, _types_.BYTES_SET.value}
-
 
 
 def column_names_from_bytes(data_bytes):
@@ -71,23 +69,23 @@ def bytes_into_table(table, data_bytes):
     except ValueError:
         names = []
     in_file.seek(0)
-    dtypes = {}
-    for i in range(len(names)):
-        name = names[i]
-        col_type_id = int(types[i])
-        if col_type_id == _types_.BOOLEAN.value:
-            col_type = numpy.bool
-        elif col_type_id == _types_.INTEGER.value:
-            col_type = numpy.int32
-        elif col_type_id == _types_.LONG.value:
-            col_type = numpy.int64
-        elif col_type_id == _types_.DOUBLE.value:
-            col_type = numpy.float64
-        else:
-            col_type = numpy.str
-        dtypes[name] = col_type
+    # this is commented out because assigning types if a column contains missing values will fail
+    # dtypes = {}
+    # for i in range(len(names)):
+    #     name = names[i]
+    #     col_type_id = int(types[i])
+    #     if col_type_id == _types_.BOOLEAN.value:
+    #         col_type = numpy.bool
+    #     elif col_type_id == _types_.INTEGER.value:
+    #         col_type = numpy.int32
+    #     elif col_type_id == _types_.LONG.value:
+    #         col_type = numpy.int64
+    #     elif col_type_id == _types_.DOUBLE.value:
+    #         col_type = numpy.float64
+    #     else:
+    #         col_type = numpy.str
+    #     dtypes[name] = col_type
     try:
-        # TODO fix or remove, assigning a type if the line contains missing values fails
         # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
         data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'])
     except ValueError:
@@ -145,8 +143,8 @@ def table_to_bytes(table):
         types_line += ',' + str(col_type_id)
     serializers_line = '#'
     column_serializers = table.get_column_serializers()
-    for id in column_serializers:
-        serializers_line += ',' + id + '=' + column_serializers[id]
+    for serializer_id in column_serializers:
+        serializers_line += ',' + serializer_id + '=' + column_serializers[serializer_id]
     out_file.write(types_line + '\n')
     out_file.write(serializers_line + '\n')
     data_frame = table._data_frame

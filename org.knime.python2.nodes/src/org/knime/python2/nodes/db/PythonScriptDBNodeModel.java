@@ -75,6 +75,7 @@ import org.knime.python2.nodes.PythonNodeModel;
  *
  * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  */
+@SuppressWarnings("deprecation")
 class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> {
 
 	/**
