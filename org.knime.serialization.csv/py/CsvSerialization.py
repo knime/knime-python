@@ -24,7 +24,10 @@ def init(types):
 def column_names_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
-    data_frame = pandas.read_csv(in_file, index_col=0, nrows=0, skiprows=2)
+    try:
+        data_frame = pandas.read_csv(in_file, index_col=0, nrows=0, skiprows=2)
+    except ValueError:
+        data_frame = pandas.DataFrame()
     in_file.close()
     return data_frame.columns.tolist()
 
@@ -33,6 +36,8 @@ def column_types_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
     types = in_file.readline().strip()[2:].split(',')
+    if types == ['']:
+        types = []
     column_types = []
     for i in range(len(types)):
         col_type_id = int(types[i])
@@ -58,8 +63,13 @@ def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
     types = in_file.readline().strip()[2:].split(',')
+    if types == ['']:
+        types = []
     serializers_line = in_file.readline().strip()[2:].split(',')
-    names = pandas.read_csv(in_file, index_col=0, nrows=0).columns.tolist()
+    try:
+        names = pandas.read_csv(in_file, index_col=0, nrows=0).columns.tolist()
+    except ValueError:
+        names = []
     in_file.seek(0)
     dtypes = {}
     for i in range(len(names)):
@@ -76,9 +86,12 @@ def bytes_into_table(table, data_bytes):
         else:
             col_type = numpy.str
         dtypes[name] = col_type
-    # TODO fix or remove, assigning a type if the line contains missing values fails
-    # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
-    data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'])
+    try:
+        # TODO fix or remove, assigning a type if the line contains missing values fails
+        # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
+        data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'])
+    except ValueError:
+        data_frame = pandas.DataFrame()
     for i in range(len(types)):
         col_type_id = int(types[i])
         if col_type_id in _eval_types_:

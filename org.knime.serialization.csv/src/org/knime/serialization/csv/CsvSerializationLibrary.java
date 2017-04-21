@@ -459,7 +459,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			if (c == '\n' && !escaped) {
 				end = true;
 			} else if (c == '"') {
-				if (previous == '"') {
+				if (previous != null && previous == '"') {
 					sb.append(c);
 				}
 				escaped = !escaped;

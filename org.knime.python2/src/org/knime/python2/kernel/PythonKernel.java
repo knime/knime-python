@@ -439,6 +439,9 @@ public class PythonKernel {
 		CloseableRowIterator iterator = table.iterator();
 		int numberRows = Math.min(rowLimit, table.getRowCount());
 		int numberChunks = (int) Math.ceil(numberRows / (double) CHUNK_SIZE);
+		if (numberChunks == 0) {
+			numberChunks = 1;
+		}
 		int rowsDone = 0;
 		for (int i = 0; i < numberChunks; i++) {
 			int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
@@ -502,6 +505,9 @@ public class PythonKernel {
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
 		int tableSize = m_commands.getTableSize(name);
 		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
+		if (numberChunks == 0) {
+			numberChunks = 1;
+		}
 		BufferedDataTableCreator tableCreator = null;
 		for (int i = 0; i < numberChunks; i++) {
 			int start = CHUNK_SIZE * i;
