@@ -44,7 +44,7 @@ def column_names_from_bytes(data_bytes):
 
     colNames = []
     for j in range(0, table.ColNamesLength()):
-        colNames.append(table.ColNames(j))       
+        colNames.append(table.ColNames(j).decode('utf-8'))       
     return colNames
 
 def column_serializers_from_bytes(data_bytes):
@@ -65,6 +65,9 @@ def column_serializers_from_bytes(data_bytes):
     return serializers
 
 def bytes_into_table(table, data_bytes):
+    print("Starting bytes_into_table()")
+    
+    
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
 
