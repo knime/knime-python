@@ -65,7 +65,7 @@ def column_serializers_from_bytes(data_bytes):
     return serializers
 
 def bytes_into_table(table, data_bytes):
-    print("Starting bytes_into_table()")
+  #  print("Starting bytes_into_table()")
     
     
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
