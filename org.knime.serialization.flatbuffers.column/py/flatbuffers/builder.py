@@ -611,6 +611,8 @@ class Builder(object):
 
         Note: aligns and checks for space.
         """
+	#with open('/home/clemens/pythonkernellog.txt', 'a') as writer:
+        #    writer.write('x: ' + str(x) + '\n')
         self.Prepend(N.Float64Flags, x)
 
 ##############################################################

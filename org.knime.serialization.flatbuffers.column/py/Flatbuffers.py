@@ -61,6 +61,9 @@ def column_serializers_from_bytes(data_bytes):
             serializers[colNames[j]] = table.Columns(j).ByteListColumn().Serializer()
         elif table.Columns(j).Type() == _types_.BYTES_SET.value :
             serializers[colNames[j]] = table.Columns(j).ByteSetColumn().Serializer()
+
+    with open('/home/clemens/pythonkernellog.txt', 'a') as writer:
+        writer.write('Serializers: ' + str(serializers) + '\n')
     
     return serializers
 

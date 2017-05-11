@@ -16,7 +16,6 @@ from . import number_types as N
 from . import packer
 from .compat import memoryview_type
 
-
 def Get(packer_type, buf, head):
     """ Get decodes a value at buf[head:] using `packer_type`. """
     return packer_type.unpack_from(memoryview_type(buf), head)[0]
