@@ -493,8 +493,12 @@ class TypeExtensionManager:
         self._deserializers = []
 
     def get_deserializer_by_id(self, identifier):
+        with open(logfile, 'a') as writer:
+            writer.write('trying to find: ' + str(identifier) + ' in ' + str(self._deserializer_id_to_index) + '\n')
         if identifier not in self._deserializer_id_to_index:
             return None
+        with open(logfile, 'a') as writer:
+            writer.write('found: ' + str(identifier) + '\n')
         return self.get_extension_by_index(self._deserializer_id_to_index[identifier], self._deserializers)
 
     def get_serializer_by_id(self, identifier):
@@ -607,7 +611,7 @@ def deserialize_from_bytes(data_frame, column_serializers):
         writer.write('column_serializers (deserialize_from_bytes): ' + str(column_serializers) + '\n')
     for column in column_serializers:
         with open(logfile, 'a') as writer:
-            writer.write('getting column serializer for column: ' + str(column) + ' as ' + column_serializers[column] + '\n')
+            writer.write('getting column serializer for column: ' + str(column) + ' as ' + str(column_serializers[column]) + '\n')
         deserializer = _type_extension_manager.get_deserializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
             value = data_frame[column][i]

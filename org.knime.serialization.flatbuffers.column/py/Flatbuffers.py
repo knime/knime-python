@@ -56,11 +56,12 @@ def column_serializers_from_bytes(data_bytes):
     serializers = {}
     for j in range(0, table.ColumnsLength()):
         if table.Columns(j).Type() == _types_.BYTES.value:
-            serializers[colNames[j]] = table.Columns(j).ByteColumn().Serializer()
+            serializers[colNames[j]] = table.Columns(j).ByteColumn().Serializer().decode('utf-8') 
         elif table.Columns(j).Type() == _types_.BYTES_LIST.value:
-            serializers[colNames[j]] = table.Columns(j).ByteListColumn().Serializer()
+            serializers[colNames[j]] = table.Columns(j).ByteListColumn().Serializer().decode('utf-8') 
         elif table.Columns(j).Type() == _types_.BYTES_SET.value :
-            serializers[colNames[j]] = table.Columns(j).ByteSetColumn().Serializer()
+            serializers[colNames[j]] = table.Columns(j).ByteSetColumn().Serializer().decode('utf-8') 
+        #serializers[colNames[j]] = table.Columns(j).Serializer()
 
     with open('/home/clemens/pythonkernellog.txt', 'a') as writer:
         writer.write('Serializers: ' + str(serializers) + '\n')
