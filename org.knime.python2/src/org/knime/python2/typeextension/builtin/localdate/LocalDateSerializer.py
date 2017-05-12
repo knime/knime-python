@@ -10,6 +10,4 @@ def serialize(object_value):
         datestr = '00' + datestr
     elif object_value.year < 1000:
         datestr = '0' + datestr
-    with open('/home/clemens/pythonkernellog.txt', 'a') as writer:
-        writer.write('Date string (serialize): ' + datestr + '\n')
     return datestr.encode('utf-8')

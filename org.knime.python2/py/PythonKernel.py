@@ -65,8 +65,6 @@ if not _python3:
 if _tslib_available:
     EQUIVALENT_TYPES.append([datetime, Timestamp])
 
-logfile = '/home/clemens/pythonkernellog.txt'
-
 # ******************************************************
 # Remote debugging section
 # ******************************************************
@@ -104,8 +102,6 @@ def run():
     last_separator = serializer_path.rfind(os.sep)
     serializer_directory_path = serializer_path[0:last_separator + 1]
     sys.path.append(serializer_directory_path)
-    with open(logfile, 'a') as writer:
-        writer.write('Serializer path: ' + serializer_path + '\n')
     _serializer = load_module_from_path(serializer_path)
     _serializer.init(Simpletype)
     # First send PID of this process (so it can reliably be killed later)
@@ -157,8 +153,6 @@ def run():
                 name = read_string()
                 start = read_integer()
                 end = read_integer()
-                #with open(logfile, 'a') as writer:
-                #   writer.write('current variable: ' + str(get_variable(name)))
                 data_frame = get_variable(name)[start:end+1]
                 data_bytes = data_frame_to_bytes(data_frame)
                 write_bytearray(data_bytes)
@@ -211,15 +205,11 @@ def run():
                 s_id = read_string()
                 s_type = read_string()
                 s_path = read_string()
-                with open(logfile, 'a') as writer:
-                   writer.write('serializer added for type: ' + s_type + '\n')
                 _type_extension_manager.add_serializer(s_id, s_type, s_path)
                 write_dummy()
             elif command == 'addDeserializer':
                 d_id = read_string()
                 d_path = read_string()
-                with open(logfile, 'a') as writer:
-                   writer.write('deserializer added for type: ' + d_path + '\n')
                 _type_extension_manager.add_deserializer(d_id, d_path)
                 write_dummy()
             elif command == 'shutdown':
@@ -493,12 +483,8 @@ class TypeExtensionManager:
         self._deserializers = []
 
     def get_deserializer_by_id(self, identifier):
-        with open(logfile, 'a') as writer:
-            writer.write('trying to find: ' + str(identifier) + ' in ' + str(self._deserializer_id_to_index) + '\n')
         if identifier not in self._deserializer_id_to_index:
             return None
-        with open(logfile, 'a') as writer:
-            writer.write('found: ' + str(identifier) + '\n')
         return self.get_extension_by_index(self._deserializer_id_to_index[identifier], self._deserializers)
 
     def get_serializer_by_id(self, identifier):
@@ -607,11 +593,7 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
 
 
 def deserialize_from_bytes(data_frame, column_serializers):
-    with open(logfile, 'a') as writer:
-        writer.write('column_serializers (deserialize_from_bytes): ' + str(column_serializers) + '\n')
     for column in column_serializers:
-        with open(logfile, 'a') as writer:
-            writer.write('getting column serializer for column: ' + str(column) + ' as ' + str(column_serializers[column]) + '\n')
         deserializer = _type_extension_manager.get_deserializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
             value = data_frame[column][i]
@@ -696,8 +678,6 @@ def write_bytearray(data_bytes):
 class FromPandasTable:
     def __init__(self, data_frame):
         self._data_frame = data_frame.copy()
-        #with open(logfile, 'a') as writer:
-        #    writer.write('data frame: ' + str(self._data_frame))
         self._data_frame.columns = self._data_frame.columns.astype(str)
         self._column_types = []
         self._column_serializers = {}
@@ -764,10 +744,6 @@ class ToPandasTable:
         self._dtypes = dtypes
         self._column_names = column_names
         self._data_frame = DataFrame(columns=column_names)
-        with open(logfile, 'a') as writer:
-            writer.write('(ToPandasTable.__init__)\nColumn serializers: ' + str(column_serializers) + '\n')
-        with open(logfile, 'a') as writer:
-            writer.write('data frame: ' + str(self._data_frame) + '\n')
         self._column_serializers = column_serializers
 
     # example: table.add_row('row1',[1,2])
@@ -784,15 +760,11 @@ class ToPandasTable:
         self._data_frame.index = rowkeys
 
     def get_data_frame(self):
-        with open(logfile, 'a') as writer:
-            writer.write('(ToPandasTable.get_data_frame before deserialize) data frame: ' + str(self._data_frame) + '\n')
         deserialize_from_bytes(self._data_frame, self._column_serializers)
         # Commented out since changing the type if the column contains missing values fails
         # if len(self._data_frame) > 0:
         #     for column in self._data_frame.columns:
         #         self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
-        with open(logfile, 'a') as writer:
-            writer.write('data frame: ' + str(self._data_frame) + '\n')
         return self._data_frame
 
 
