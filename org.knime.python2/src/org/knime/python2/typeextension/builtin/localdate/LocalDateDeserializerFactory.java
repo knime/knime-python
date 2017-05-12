@@ -6,7 +6,6 @@ import java.time.format.DateTimeFormatter;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.time.localdate.LocalDateCellFactory;
-import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 
