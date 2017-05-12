@@ -29,6 +29,12 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateSerializer.py"
             python-type-identifier="date">
       </type>
+      <type
+            id="org.knime.python2.localtime"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.localtime.LocalTimeDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/localtime/LocalTimeSerializer.py"
+            python-type-identifier="time">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
@@ -46,6 +52,11 @@
             id="org.knime.python2.localdate"
             java-serializer-factory="org.knime.python2.typeextension.builtin.localdate.LocalDateSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.localtime"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.localtime.LocalTimeSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/localtime/LocalTimeDeserializer.py">
       </type>
    </extension>
    <extension
