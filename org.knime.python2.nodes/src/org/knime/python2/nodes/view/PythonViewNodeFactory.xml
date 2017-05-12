@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
 <knimeNode icon="./pythonview.png" type="Visualizer">
-	<name>Python View</name>
+	<name>Python View (Labs)</name>
 
 	<shortDescription>
 		Allows execution of a Python script in a local Python
