@@ -78,3 +78,5 @@ public class DateTime2SerializerFactory extends SerializerFactory<LocalDateTimeV
 	}
 
 }
+
+//yyyy-MM-dd'T'HH:mm:ss.SSSxxx'['z']'

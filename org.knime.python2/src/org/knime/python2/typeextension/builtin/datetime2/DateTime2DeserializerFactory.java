@@ -51,8 +51,10 @@ import java.time.format.DateTimeFormatter;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
+import org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerializerFactory;
 
 public class DateTime2DeserializerFactory extends DeserializerFactory {
 
@@ -69,9 +71,18 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 
 		@Override
 		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+			//Deserialize to LocalDateTime or ZonedDateTime based on incoming date string
 			String string = new String(bytes, "UTF-8");
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTime2SerializerFactory.FORMAT);
-			return LocalDateTimeCellFactory.create(string, formatter);
+			if(string.length() <= 23)
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTime2SerializerFactory.FORMAT);
+				return LocalDateTimeCellFactory.create(string, formatter);
+			}
+			else
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
+				return ZonedDateTimeCellFactory.create(string, formatter);
+			}
 		}
 
 	}
