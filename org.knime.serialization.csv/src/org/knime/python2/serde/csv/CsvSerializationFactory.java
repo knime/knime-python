@@ -43,12 +43,21 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.code2.python;
+package org.knime.python2.serde.csv;
 
-import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
-public interface WorkspacePreparer {
-	
-	void prepareWorkspace(PythonKernel kernel);
+public class CsvSerializationFactory implements SerializationLibraryFactory {
+
+	@Override
+	public String getName() {
+		return "CSV";
+	}
+
+	@Override
+	public SerializationLibrary createInstance() {
+		return new CsvSerializationLibrary();
+	}
 
 }

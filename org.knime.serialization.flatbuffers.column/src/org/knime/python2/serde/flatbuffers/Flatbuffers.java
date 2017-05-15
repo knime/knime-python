@@ -1,4 +1,49 @@
-package org.knime.flatbuffers;
+/*
+ * ------------------------------------------------------------------------
+ *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Website: http://www.knime.org; Email: contact@knime.org
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License, Version 3, as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ *  Additional permission under GNU GPL version 3 section 7:
+ *
+ *  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
+ *  Hence, KNIME and ECLIPSE are both independent programs and are not
+ *  derived from each other. Should, however, the interpretation of the
+ *  GNU GPL Version 3 ("License") under any applicable laws result in
+ *  KNIME and ECLIPSE being a combined program, KNIME GMBH herewith grants
+ *  you the additional permission to use and propagate KNIME together with
+ *  ECLIPSE with only the license terms in place for ECLIPSE applying to
+ *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
+ *  license terms of ECLIPSE themselves allow for the respective use and
+ *  propagation of ECLIPSE together with KNIME.
+ *
+ *  Additional permission relating to nodes for KNIME that extend the Node
+ *  Extension (and in particular that are based on subclasses of NodeModel,
+ *  NodeDialog, and NodeView) and that only interoperate with KNIME through
+ *  standard APIs ("Nodes"):
+ *  Nodes are deemed to be separate and independent programs and to not be
+ *  covered works.  Notwithstanding anything to the contrary in the
+ *  License, the License does not apply to Nodes, you are not required to
+ *  license Nodes under the License, and you are granted a license to
+ *  prepare and propagate Nodes, in each case even if such Nodes are
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
+ *  may freely choose the license terms applicable to such Node, including
+ *  when such Node is propagated with or for interoperation with KNIME.
+ * ------------------------------------------------------------------------
+ */
+
+package org.knime.python2.serde.flatbuffers;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -8,27 +53,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
-import org.knime.flatbuffers.flatc.BooleanCollectionCell;
-import org.knime.flatbuffers.flatc.BooleanCollectionColumn;
-import org.knime.flatbuffers.flatc.BooleanColumn;
-import org.knime.flatbuffers.flatc.ByteCell;
-import org.knime.flatbuffers.flatc.ByteCollectionCell;
-import org.knime.flatbuffers.flatc.ByteCollectionColumn;
-import org.knime.flatbuffers.flatc.ByteColumn;
-import org.knime.flatbuffers.flatc.Column;
-import org.knime.flatbuffers.flatc.DoubleCollectionCell;
-import org.knime.flatbuffers.flatc.DoubleCollectionColumn;
-import org.knime.flatbuffers.flatc.DoubleColumn;
-import org.knime.flatbuffers.flatc.IntCollectionColumn;
-import org.knime.flatbuffers.flatc.IntColumn;
-import org.knime.flatbuffers.flatc.IntegerCollectionCell;
-import org.knime.flatbuffers.flatc.KnimeTable;
-import org.knime.flatbuffers.flatc.LongCollectionCell;
-import org.knime.flatbuffers.flatc.LongCollectionColumn;
-import org.knime.flatbuffers.flatc.LongColumn;
-import org.knime.flatbuffers.flatc.StringCollectionCell;
-import org.knime.flatbuffers.flatc.StringCollectionColumn;
-import org.knime.flatbuffers.flatc.StringColumn;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -39,6 +63,27 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.BooleanColumn;
+import org.knime.python2.serde.flatbuffers.flatc.ByteCell;
+import org.knime.python2.serde.flatbuffers.flatc.ByteCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.ByteCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.ByteColumn;
+import org.knime.python2.serde.flatbuffers.flatc.Column;
+import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.DoubleColumn;
+import org.knime.python2.serde.flatbuffers.flatc.IntCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.IntColumn;
+import org.knime.python2.serde.flatbuffers.flatc.IntegerCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.KnimeTable;
+import org.knime.python2.serde.flatbuffers.flatc.LongCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.LongCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
+import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
+import org.knime.python2.serde.flatbuffers.flatc.StringCollectionColumn;
+import org.knime.python2.serde.flatbuffers.flatc.StringColumn;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
