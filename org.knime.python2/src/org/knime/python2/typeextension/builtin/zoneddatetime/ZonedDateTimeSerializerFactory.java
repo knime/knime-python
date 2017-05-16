@@ -8,6 +8,12 @@ import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.python2.typeextension.Serializer;
 import org.knime.python2.typeextension.SerializerFactory;
 
+/**
+ * Is used to serialize java8 ZonedTime objects to python datetime objects.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class ZonedDateTimeSerializerFactory extends SerializerFactory<ZonedDateTimeValue> {
 	
 	public static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx'['z']'";

@@ -47,7 +47,14 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import javax.management.loading.MLetContent;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.DataCell;
@@ -59,6 +66,7 @@ import org.knime.core.data.MissingCell;
 import org.knime.core.data.collection.CollectionCellFactory;
 import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.collection.SetCell;
+import org.knime.core.data.container.TableSpecReplacerTable;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.BooleanCell.BooleanCellFactory;
 import org.knime.core.data.def.DefaultRow;
@@ -72,11 +80,14 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.ModelContent;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.config.ConfigWO;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.PythonToKnimeExtensions;
 
@@ -92,11 +103,15 @@ public class BufferedDataTableCreator implements TableCreator {
 	private final int m_tableSize;
 	private int m_rowsDone = 0;
 	
+	private HashMap<Integer,DataTypeContainer> m_columnsToRetype;
+	private DataTableSpec m_dataTableSpec;
+	
 	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context, final ExecutionMonitor executionMonitor, int tableSize) {
 		m_tableSize = tableSize;
 		m_executionMonitor = executionMonitor;
 		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
 		m_spec = spec;
+		m_columnsToRetype = new HashMap<Integer,DataTypeContainer>();
 		m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[m_spec.getNumberColumns()];
 		for (int i = 0; i < colSpecs.length; i++) {
@@ -149,14 +164,20 @@ public class BufferedDataTableCreator implements TableCreator {
 				break;
 			case BYTES:
 				DataType type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				if(type.getCellClass() == null)
+					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
 				colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
 				break;
 			case BYTES_LIST:
 				DataType list_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				if(list_type.getCellClass() == null)
+					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.LIST));
 				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
 				break;
 			case BYTES_SET:
 				DataType set_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
+				if(set_type.getCellClass() == null)
+					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.SET));
 				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
 				break;
 			default:
@@ -164,7 +185,8 @@ public class BufferedDataTableCreator implements TableCreator {
 				break;
 			}
 		}
-		m_container = context.createDataContainer(new DataTableSpec(colSpecs));
+		m_dataTableSpec = new DataTableSpec(colSpecs);
+		m_container = context.createDataContainer(m_dataTableSpec);
 	}
 
 	@Override
@@ -311,6 +333,8 @@ public class BufferedDataTableCreator implements TableCreator {
 					Deserializer bytesDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 					try {
 						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
+						if(m_columnsToRetype.containsKey(i))
+							((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(cells[i].getType());
 					} catch (IllegalStateException | IOException e) {
 						LOGGER.error(e.getMessage(), e);
 						cells[i] = new MissingCell(null);
@@ -322,7 +346,10 @@ public class BufferedDataTableCreator implements TableCreator {
 					List<DataCell> listCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							listCells.add(bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
+							DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
+							if(m_columnsToRetype.containsKey(i))
+								((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(dc.getType());
+							listCells.add(dc);
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
 							listCells.add(new MissingCell(null));
@@ -336,7 +363,10 @@ public class BufferedDataTableCreator implements TableCreator {
 					List<DataCell> setCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							setCells.add(bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory));
+							DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
+							if(m_columnsToRetype.containsKey(i))
+								((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(dc.getType());
+							setCells.add(dc);
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
 							setCells.add(new MissingCell(null));
@@ -360,9 +390,64 @@ public class BufferedDataTableCreator implements TableCreator {
 		return m_spec;
 	}
 	
-	public BufferedDataTable getTable() {
+	private DataType getMostCommonAncestor(HashSet<DataType> types)
+	{
+		Iterator<DataType> iter = types.iterator();
+		DataType mca = iter.next();
+		while(iter.hasNext())
+		{
+			mca = DataType.getCommonSuperType(mca, iter.next());
+		}
+		return mca;
+	}
+	
+	public BufferedDataTable getTable(ExecutionContext executionContext) {
 		m_container.close();
-		return m_container.getTable();
+		DataColumnSpec[] colSpecs = new DataColumnSpec[m_dataTableSpec.getNumColumns()];
+		for(int i=0; i<colSpecs.length; i++)
+		{
+			DataColumnSpec dcs = m_dataTableSpec.getColumnSpec(i);
+			DataColumnSpecCreator dcsc = new DataColumnSpecCreator(dcs);
+			if(m_columnsToRetype.containsKey(i))
+			{
+				DataTypeContainer dtContainer = m_columnsToRetype.get(i);
+				DataType elementType = getMostCommonAncestor(dtContainer.dataTypes);
+				if(dtContainer.resultType == ResultType.PRIMITIVE)
+					dcsc.setType(elementType);
+				else if(dtContainer.resultType == ResultType.LIST)
+					dcsc.setType(ListCell.getCollectionType(elementType));
+				else if(dtContainer.resultType == ResultType.SET)
+					dcsc.setType(SetCell.getCollectionType(elementType));
+			}
+			colSpecs[i] = dcsc.createSpec();
+		}
+		DataTableSpec correctedSpec = new DataTableSpec(m_dataTableSpec.getName(), colSpecs);
+		return executionContext.createSpecReplacerTable(m_container.getTable(), correctedSpec);
+	}
+	
+	/**
+	 * Enum for distinguishing if a cell contains primitives or collections (either lists or sets).
+	 * 
+	 * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+	 */
+	private enum ResultType {
+		PRIMITIVE, LIST, SET;
+	}
+	
+	/**
+	 * Container class used for storing all data types present in a certain column.
+	 * Also indicates if the objects in the column have a primitive or a collection type.
+	 * 
+	 * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+	 */
+	private class DataTypeContainer {
+		public ResultType resultType;
+		public HashSet<DataType> dataTypes;
+		
+		public DataTypeContainer(ResultType type) {
+			resultType = type;
+			dataTypes = new HashSet<DataType>();
+		}
 	}
 
 }

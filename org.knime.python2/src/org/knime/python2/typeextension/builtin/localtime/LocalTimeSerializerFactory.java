@@ -8,6 +8,12 @@ import org.knime.core.data.time.localtime.LocalTimeValue;
 import org.knime.python2.typeextension.Serializer;
 import org.knime.python2.typeextension.SerializerFactory;
 
+/**
+ * Is used to serialitze java8 LocalTime objects to python time objects.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class LocalTimeSerializerFactory extends SerializerFactory<LocalTimeValue> {
 	
 	static final String FORMAT = "HH:mm:ss.SSS";

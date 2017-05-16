@@ -3,7 +3,7 @@ from dateutil import tz
 
 _format = '%Y-%m-%d %H:%M:%S.%f'
 
-
+#Deserializes LocalDateTime, ZonedDateTime and legacy DateTime
 def deserialize(data_bytes):
     datestr = data_bytes.decode('utf-8')
     dt = datetime.strptime(datestr[:23] + '000', _format)

@@ -520,7 +520,7 @@ public class PythonKernel {
 			m_serializer.bytesIntoTable(tableCreator, bytes);
 			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
 		}
-		return tableCreator.getTable();
+		return tableCreator.getTable(exec);
 	}
 
 	/**

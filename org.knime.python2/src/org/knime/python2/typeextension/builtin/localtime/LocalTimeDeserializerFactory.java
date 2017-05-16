@@ -9,6 +9,12 @@ import org.knime.core.data.time.localtime.LocalTimeCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 
+/**
+ * Is used to deserialize python time objects to java8 LocalTime objects.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class LocalTimeDeserializerFactory extends DeserializerFactory {
 
 	public LocalTimeDeserializerFactory() {
