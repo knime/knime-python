@@ -47,14 +47,10 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-
-import javax.management.loading.MLetContent;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.DataCell;
@@ -66,7 +62,6 @@ import org.knime.core.data.MissingCell;
 import org.knime.core.data.collection.CollectionCellFactory;
 import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.collection.SetCell;
-import org.knime.core.data.container.TableSpecReplacerTable;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.BooleanCell.BooleanCellFactory;
 import org.knime.core.data.def.DefaultRow;
@@ -80,14 +75,11 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.ModelContent;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.config.ConfigWO;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.PythonToKnimeExtensions;
 
