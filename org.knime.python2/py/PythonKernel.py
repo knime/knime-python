@@ -757,7 +757,10 @@ class ToPandasTable:
 
     # example: table.set_rowkeys(['row1','row2','row3'])
     def set_rowkeys(self, rowkeys):
-        self._data_frame.index = rowkeys
+        if len(self._data_frame.columns) == 0:
+            self._data_frame = DataFrame(index=rowkeys)
+        else:
+            self._data_frame.index = rowkeys
 
     def get_data_frame(self):
         deserialize_from_bytes(self._data_frame, self._column_serializers)
