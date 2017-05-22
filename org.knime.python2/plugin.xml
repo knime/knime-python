@@ -41,6 +41,18 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/datetime2/DateTimeSerializer.py"
             python-type-identifier="org.knime.python2.zoneddatetime">
       </type>
+      <type
+            id="org.knime.python2.image"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.ImageDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/image/ImageSerializer.py"
+            python-type-identifier="PIL.PngImagePlugin.PngImageFile">
+      </type>
+      <type
+            id="org.knime.python2.duration"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.duration.DurationDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/duration/DurationSerializer.py"
+            python-type-identifier="timedelta">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
@@ -68,6 +80,16 @@
             id="org.knime.python2.zoneddatetime"
             java-serializer-factory="org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.image"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.image.ImageSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/image/ImageDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.duration"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.duration.DurationSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/duration/DurationDeserializer.py">
       </type>
    </extension>
    <extension
