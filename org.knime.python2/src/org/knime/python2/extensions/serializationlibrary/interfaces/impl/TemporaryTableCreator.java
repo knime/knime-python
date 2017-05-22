@@ -52,7 +52,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
-public class TemporaryTableCreator implements TableCreator {
+public class TemporaryTableCreator implements TableCreator<List<Row>> {
 	
 	private final List<Row> m_rows;
 	private final TableSpec m_spec;
@@ -71,8 +71,9 @@ public class TemporaryTableCreator implements TableCreator {
 	public TableSpec getTableSpec() {
 		return m_spec;
 	}
-	
-	public List<Row> getRows() {
+
+	@Override
+	public List<Row> getTable() {
 		return m_rows;
 	}
 

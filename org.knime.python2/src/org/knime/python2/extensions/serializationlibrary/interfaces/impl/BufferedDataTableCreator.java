@@ -83,7 +83,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.PythonToKnimeExtensions;
 
-public class BufferedDataTableCreator implements TableCreator {
+public class BufferedDataTableCreator implements TableCreator<BufferedDataTable> {
 	
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableCreator.class);
 	
@@ -97,12 +97,14 @@ public class BufferedDataTableCreator implements TableCreator {
 	
 	private HashMap<Integer,DataTypeContainer> m_columnsToRetype;
 	private DataTableSpec m_dataTableSpec;
+	private ExecutionContext m_exec;
 	
 	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context, final ExecutionMonitor executionMonitor, int tableSize) {
 		m_tableSize = tableSize;
 		m_executionMonitor = executionMonitor;
 		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
 		m_spec = spec;
+		m_exec = context;
 		m_columnsToRetype = new HashMap<Integer,DataTypeContainer>();
 		m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[m_spec.getNumberColumns()];
@@ -393,7 +395,7 @@ public class BufferedDataTableCreator implements TableCreator {
 		return mca;
 	}
 	
-	public BufferedDataTable getTable(ExecutionContext executionContext) {
+	public BufferedDataTable getTable() {
 		m_container.close();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[m_dataTableSpec.getNumColumns()];
 		for(int i=0; i<colSpecs.length; i++)
@@ -414,7 +416,7 @@ public class BufferedDataTableCreator implements TableCreator {
 			colSpecs[i] = dcsc.createSpec();
 		}
 		DataTableSpec correctedSpec = new DataTableSpec(m_dataTableSpec.getName(), colSpecs);
-		return executionContext.createSpecReplacerTable(m_container.getTable(), correctedSpec);
+		return m_exec.createSpecReplacerTable(m_container.getTable(), correctedSpec);
 	}
 	
 	/**

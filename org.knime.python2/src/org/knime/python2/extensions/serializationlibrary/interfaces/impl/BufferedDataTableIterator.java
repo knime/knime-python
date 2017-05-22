@@ -83,14 +83,20 @@ public class BufferedDataTableIterator implements TableIterator {
 	private TableSpec m_spec;
 	private KnimeToPythonExtensions m_knimeToPythonExtensions;
 	private final ExecutionMonitor m_executionMonitor;
+	private final BufferedDataTableChunker.IterationProperties m_iterIterationProperties;
 	
-	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor) {
+	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
+		this(dataTableSpecToTableSpec(spec), rowIterator, numberRows, monitor, ip);
+	}
+	
+	public BufferedDataTableIterator(final TableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
 		m_numberRows = numberRows;
-		m_spec = dataTableSpecToTableSpec(spec);
+		m_spec = spec;
 		m_remainingRows = numberRows;
 		m_iterator = rowIterator;
 		m_knimeToPythonExtensions = new KnimeToPythonExtensions();
 		m_executionMonitor = monitor;
+		m_iterIterationProperties = ip;
 	}
 
 	@Override
@@ -105,6 +111,7 @@ public class BufferedDataTableIterator implements TableIterator {
 				}
 			}
 			m_remainingRows--;
+			m_iterIterationProperties.m_remainingRows--;
 			return dataRowToRow(m_iterator.next());
 		} else {
 			return null;
@@ -124,6 +131,14 @@ public class BufferedDataTableIterator implements TableIterator {
 	@Override
 	public TableSpec getTableSpec() {
 		return m_spec;
+	}
+	
+	/**
+	 * Close this iterator
+	 */
+	public void close()
+	{
+		m_remainingRows = 0;
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -250,7 +265,7 @@ public class BufferedDataTableIterator implements TableIterator {
 		return row;
 	}
 	
-	private TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
+	static TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
 		Type[] types = new Type[dataTableSpec.getNumColumns()];
 		String[] names = new String[dataTableSpec.getNumColumns()];
 		Map<String, String> columnSerializers = new HashMap<String, String>();
@@ -318,5 +333,4 @@ public class BufferedDataTableIterator implements TableIterator {
 		}
 		return new TableSpecImpl(types, names, columnSerializers);
 	}
-
 }

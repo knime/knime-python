@@ -49,7 +49,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
-public class KeyValueTableCreator implements TableCreator {
+public class KeyValueTableCreator implements TableCreator<Row> {
 	
 	private Row m_row;
 	private TableSpec m_spec;
@@ -67,8 +67,9 @@ public class KeyValueTableCreator implements TableCreator {
 	public TableSpec getTableSpec() {
 		return m_spec;
 	}
-	
-	public Row getRow() {
+
+	@Override
+	public Row getTable() {
 		return m_row;
 	}
 
