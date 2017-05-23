@@ -212,13 +212,22 @@ public class Flatbuffers implements SerializationLibrary {
 			case BOOLEAN_SET: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					
+					boolean addMissingValue = false;
+					List<Boolean> l = new ArrayList<>();
+					for (Boolean c : (Boolean[]) o) {
+						if (c == null) {
+							addMissingValue = true; 
+						} else {
+							l.add(c);
+						}					
+					}
 					int valuesOffset = BooleanCollectionCell.createValueVector(builder,
-							ArrayUtils.toPrimitive((Boolean[]) o));
-
+							ArrayUtils.toPrimitive(l.toArray(new Boolean[l.size()])));
 					boolean[] missingCells = new boolean[((Boolean[]) o).length];
 					int missingCellsOffset = BooleanCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(BooleanCollectionCell.createBooleanCollectionCell(builder, valuesOffset,
-							missingCellsOffset, false));
+							missingCellsOffset, addMissingValue));
 				}
 
 				int valuesVector = BooleanCollectionColumn.createValuesVector(builder,
@@ -769,6 +778,9 @@ public class Flatbuffers implements SerializationLibrary {
 					for (int k = 0; k < cell.valueLength(); k++) {
 						l.add(cell.value(k));
 					}
+					if (cell.keepDummy()) {
+						l.add(null);
+					}
 					columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
@@ -854,6 +866,9 @@ public class Flatbuffers implements SerializationLibrary {
 					for (int k = 0; k < cell.valueLength(); k++) {
 						l.add(cell.value(k));
 					}
+					if (cell.keepDummy()) {
+						l.add(null);
+					}
 					columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
@@ -894,6 +909,9 @@ public class Flatbuffers implements SerializationLibrary {
 					for (int k = 0; k < cell.valueLength(); k++) {
 						l.add(cell.value(k));
 					}
+					if (cell.keepDummy()) {
+						l.add(null);
+					}
 					columns.get(table.colNames(j)).add(l.toArray(new Double[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
 				}
@@ -932,6 +950,9 @@ public class Flatbuffers implements SerializationLibrary {
 					List<String> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
 						l.add(cell.value(k));
+					}
+					if (cell.keepDummy()) {
+						l.add(null);
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new String[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
