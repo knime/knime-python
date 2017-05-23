@@ -874,6 +874,8 @@ def simpletype_for_column(data_frame, column_name):
                         simple_type = Simpletype.BYTES_LIST
             elif types_are_equivalent(col_type, str):
                 simple_type = Simpletype.STRING
+            elif types_are_equivalent(col_type, bytes):
+                simple_type = Simpletype.BYTES
             else:
                 type_string = get_type_string(first_valid_object(data_frame, column_name))
                 column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
