@@ -53,6 +53,12 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/duration/DurationSerializer.py"
             python-type-identifier="timedelta">
       </type>
+      <type
+            id="org.knime.python2.xml"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
+            python-type-identifier="xml.dom.minidom.Document">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
@@ -90,6 +96,11 @@
             id="org.knime.python2.duration"
             java-serializer-factory="org.knime.python2.typeextension.builtin.duration.DurationSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/duration/DurationDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.xml"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.xml.XMLSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/xml/XMLDeserializer.py">
       </type>
    </extension>
    <extension
