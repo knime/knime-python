@@ -554,13 +554,15 @@ def table_to_bytes(table):
                     builder.PrependBool(False)
                     cellVec = builder.EndVector(1)
                 else: 
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))                
+                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    numElems = 0                
                     for elem in col[valIdx]:
                         if elem == None:
                             addMissingValue = True
                         else:
                             builder.PrependBool(elem)
-                    cellVec = builder.EndVector(len(col[valIdx]))
+                            numElems += 1
+                    cellVec = builder.EndVector(numElems)
   
                 BooleanCollectionCell.BooleanCollectionCellStart(builder)
                 BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
@@ -685,12 +687,14 @@ def table_to_bytes(table):
                 else: 
                     addMissingValue = False
                     LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    numElems = 0
                     for elem in col[valIdx]:
                         if elem == None:
                             addMissingValue = True
                         else:
-                            builder.PrependInt64(elem)                 
-                    cellVec = builder.EndVector(len(col[valIdx]))
+                            builder.PrependInt64(elem)
+                            numElems += 1                 
+                    cellVec = builder.EndVector(numElems)
                     
                 LongCollectionCell.LongCollectionCellStart(builder)
                 LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
@@ -755,12 +759,25 @@ def table_to_bytes(table):
                     cellVec = builder.EndVector(1)
                 else:
                     DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    cellMissing = []
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        builder.PrependFloat64(col[valIdx][cellIdx])                     
+                        if col[valIdx][cellIdx] == None:
+                            col[valIdx][cellIdx] = float('NaN')
+                            cellMissing.append(True)
+                        else:
+                            builder.PrependFloat64(col[valIdx][cellIdx])
+                            cellMissing.append(False)                     
                     cellVec = builder.EndVector(len(col[valIdx]))
-                
+                    
+                    # the missing vector is already in reversed order
+                    DoubleCollectionCell.DoubleCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                    for cellIdx in range(0, len(col[valIdx])):
+                        builder.PrependBool(cellMissing[cellIdx])
+                    cellMissingVec = builder.EndVector(len(col[valIdx]))
+                                   
                 DoubleCollectionCell.DoubleCollectionCellStart(builder)
                 DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                DoubleCollectionCell.DoubleCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
                         
             DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
@@ -786,19 +803,25 @@ def table_to_bytes(table):
             col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
-               
+                addMissingValue = False
                 if col[valIdx] == None:
                     DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
                     builder.PrependFloat64(float('NaN'))                     
                     cellVec = builder.EndVector(1)
                 else:
                     DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    numElems = 0;
                     for elem in col[valIdx]:
-                        builder.PrependFloat64(elem)                 
-                    cellVec = builder.EndVector(len(col[valIdx]))
+                        if elem == None:
+                            addMissingValue = True
+                        else:
+                            builder.PrependFloat64(elem)  
+                            numElems += 1               
+                    cellVec = builder.EndVector(numElems)
                     
                 DoubleCollectionCell.DoubleCollectionCellStart(builder)
                 DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                DoubleCollectionCell.DoubleCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
                         
             DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
