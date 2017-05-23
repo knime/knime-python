@@ -418,23 +418,26 @@ def table_to_bytes(table):
             cellOffsets = []
             
             for valIdx in range(0,len(col)):
-                     
+                addMissingValue = False;     
                 if col[valIdx] == None:
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
                     builder.PrependInt32(-2147483648)
                     cellVec = builder.EndVector(1)
                 else:
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    numElems = 0
                     for elem in col[valIdx]:
                         if elem == None:
-                            IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, True)
+                            addMissingValue = True
                         else:                            
                             builder.PrependInt32(elem)
-                    cellVec = builder.EndVector(len(col[valIdx])) 
+                            numElems += 1
+                    cellVec = builder.EndVector(numElems) 
 #                    print("Python->Flatbuffers: (Integer Set)", col[valIdx])                   
                 
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
                 IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
+                IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                         
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
@@ -495,7 +498,7 @@ def table_to_bytes(table):
                 else: 
                     BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
                     cellMissing = []
-                    print("Python->Flatbuffers: (Boolean List) cell", col[valIdx])                 
+                 #   print("Python->Flatbuffers: (Boolean List) cell", col[valIdx])                 
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
                         if col[valIdx][cellIdx] == None:
                             builder.PrependBool(False)
@@ -504,7 +507,7 @@ def table_to_bytes(table):
                             builder.PrependBool(col[valIdx][cellIdx])
                             cellMissing.append(False)
                     cellVec = builder.EndVector(len(col[valIdx]))
-                    print("Python->Flatbuffers: (Boolean List) missing", cellMissing) 
+                #    print("Python->Flatbuffers: (Boolean List) missing", cellMissing) 
                     # the missing vector is already in reversed order
                     BooleanCollectionCell.BooleanCollectionCellStartMissingVector(builder, len(col[valIdx]))
                     for cellIdx in range(0, len(col[valIdx])):
@@ -544,7 +547,8 @@ def table_to_bytes(table):
 #            print("Python->Flatbuffers: (Boolean Set Column Length):", len(col))
             cellOffsets = []
             for valIdx in range(0,len(col)):
-#                print("Python->Flatbuffers: (Boolean Set) col [", valIdx,"]", col[valIdx]) 
+                addMissingValue = False
+
                 if col[valIdx] == None:
                     BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
                     builder.PrependBool(False)
@@ -553,13 +557,14 @@ def table_to_bytes(table):
                     BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))                
                     for elem in col[valIdx]:
                         if elem == None:
-                            BooleanCollectionCell.BooleanCollectionCellAddKeepDummy(builder, True)
+                            addMissingValue = True
                         else:
                             builder.PrependBool(elem)
                     cellVec = builder.EndVector(len(col[valIdx]))
   
                 BooleanCollectionCell.BooleanCollectionCellStart(builder)
                 BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
+                BooleanCollectionCell.BooleanCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
                                        
             BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
