@@ -18,10 +18,16 @@
    <extension
          point="org.knime.python2.typeextension.pythontoknime">
       <type
-            id="org.knime.datetime"
-            java-deserializer-factory="org.knime.python2.typeextension.builtin.datetime.DateTimeDeserializerFactory"
-            python-serializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeSerializer.py"
+            id="org.knime.datetime2"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.datetime2.DateTime2DeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/datetime2/DateTimeSerializer.py"
             python-type-identifier="datetime">
+      </type>
+      <type
+            id="org.knime.localdate"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.localdate.LocalDateDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateSerializer.py"
+            python-type-identifier="date">
       </type>
    </extension>
    <extension
@@ -30,6 +36,16 @@
             id="org.knime.datetime"
             java-serializer-factory="org.knime.python2.typeextension.builtin.datetime.DateTimeSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeDeserializer.py">
+      </type>
+      <type
+            id="org.knime.datetime2"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.datetime2.DateTime2SerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.localdate"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.localdate.LocalDateSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateDeserializer.py">
       </type>
    </extension>
    <extension

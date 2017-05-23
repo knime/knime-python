@@ -5,7 +5,7 @@
          point="org.knime.python2.serializationlibrary">
       <serializationlibrary
             id="org.knime.serialization.csv"
-            java-serializationlibrary-factory="org.knime.serialization.csv.CsvSerializationFactory"
+            java-serializationlibrary-factory="org.knime.python2.serde.csv.CsvSerializationFactory"
             python-serializationlibrary="py/CsvSerialization.py">
       </serializationlibrary>
    </extension>

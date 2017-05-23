@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>org.knime.serialization.flatbuffers.column</name>
+	<name>org.knime.python2.serde.flatbuffers</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -33,7 +33,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1486566055632</id>
+			<id>0</id>
 			<name>py/knimetable</name>
 			<type>6</type>
 			<matcher>

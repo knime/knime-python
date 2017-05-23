@@ -5,7 +5,7 @@
          point="org.knime.python2.serializationlibrary">
       <serializationlibrary
             id="org.knime.serialization.flatbuffers.column"
-            java-serializationlibrary-factory="org.knime.flatbuffers.FlatbuffersColumnSerializationFactory"
+            java-serializationlibrary-factory="org.knime.python2.serde.flatbuffers.FlatbuffersColumnSerializationFactory"
             python-serializationlibrary="py/Flatbuffers.py">
       </serializationlibrary>
    </extension>
