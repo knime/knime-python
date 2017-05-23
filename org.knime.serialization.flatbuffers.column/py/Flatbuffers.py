@@ -153,30 +153,35 @@ def bytes_into_table(table, data_bytes):
             colVec = col.StringListColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = []
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.append(cell.Value(cellIdx).decode('utf-8'))
-
+                
                 if colVec.Missing(idx):
                     colVals.append(None)
                 else:
+                    cell = colVec.Values(idx)
+                    cellVals = []
+                    for cellIdx in range(0, cell.ValueLength()):
+                        if cell.Missing(cellIdx):
+                            cellVals.append(None)
+                        else:
+                            cellVals.append(cell.Value(cellIdx).decode('utf-8'))
                     colVals.append(cellVals)
-             
+
             table.add_column(colNames[j], colVals)
             
         elif col.Type() == _types_.STRING_SET.value:
             colVec = col.StringSetColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.add(cell.Value(cellIdx).decode('utf-8'))
-  
+                
                 if colVec.Missing(idx):
                     colVals.append(None)
                 else:
+                    cell = colVec.Values(idx)
+                    cellVals = set()
+                    for cellIdx in range(0, cell.ValueLength()):
+                        cellVals.add(cell.Value(cellIdx).decode('utf-8'))
+                    if cell.KeepDummy():
+                        cellVals.add(None)
                     colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
@@ -878,19 +883,27 @@ def table_to_bytes(table):
             col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
-                
+               
                 strOffsets = []
                 if col[valIdx] == None:
                     strOffsets.append(builder.CreateString("Missing Value"))
                 
 #                print("Python->Flatbuffers: (String List Cell):", col[valIdx])
                 else:
+                    cellMissing = []
                     for strIdx in range(0, len(col[valIdx])):
                         if col[valIdx][strIdx] == None:
                             strOffsets.append(builder.CreateString("Missing Value"))
+                            cellMissing.append(True);
                         else:
                             strOffsets.append(builder.CreateString(col[valIdx][strIdx]))
-                   
+                            cellMissing.append(False)
+                            
+                     # the missing vector is *not* already in reversed order
+                    StringCollectionCell.StringCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                    for cellIdx in reversed(range(0, len(col[valIdx]))):
+                        builder.PrependBool(cellMissing[cellIdx])
+                    cellMissingVec = builder.EndVector(len(col[valIdx]))                
                
                 StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
                 for cellIdx in reversed(range(0, len(strOffsets))):
@@ -899,6 +912,7 @@ def table_to_bytes(table):
                 cellVec = builder.EndVector(len(strOffsets))
                 StringCollectionCell.StringCollectionCellStart(builder)
                 StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                StringCollectionCell.StringCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
                         
             StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
@@ -929,9 +943,10 @@ def table_to_bytes(table):
                 if col[valIdx] == None:
                     strOffsets.append(builder.CreateString("Missing Value"))
                 else:
+                    addMissingValue = False
                     for elem in col[valIdx]:
                         if elem == None:
-                            strOffsets.append(builder.CreateString("Missing Value"))
+                            addMissingValue = True
                         else:
                             strOffsets.append(builder.CreateString(elem))
                
@@ -942,6 +957,7 @@ def table_to_bytes(table):
                 
                 StringCollectionCell.StringCollectionCellStart(builder)
                 StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                StringCollectionCell.StringCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
                         
             StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
