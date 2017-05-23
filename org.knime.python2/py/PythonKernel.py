@@ -941,18 +941,12 @@ def value_to_simpletype_value(value, simpletype):
         return value_set
     elif simpletype == Simpletype.DOUBLE:
         float_value = float(value)
-        if math.isnan(float_value):
-            return None
-        else:
-            return float_value
+        return float_value
     elif simpletype == Simpletype.DOUBLE_LIST:
         for i in range(0, len(value)):
             if value[i] is not None:
                 float_value = float(value[i])
-                if math.isnan(float_value):
-                    value[i] = None
-                else:
-                    value[i] = float_value
+                value[i] = float_value
         return value
     elif simpletype == Simpletype.DOUBLE_SET:
         value_set = set()
@@ -961,10 +955,7 @@ def value_to_simpletype_value(value, simpletype):
                 value_set.add(None)
             else:
                 float_value = float(inner_value)
-                if math.isnan(float_value):
-                    value_set.add(float_value)
-                else:
-                    value_set.add(float_value)
+                value_set.add(float_value)
         return value_set
     elif simpletype == Simpletype.STRING:
         return str(value)
