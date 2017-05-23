@@ -181,10 +181,16 @@ def run():
             elif command == 'getImage':
                 name = read_string()
                 image = get_variable(name)
-                if type(image) is str:
-                    data_bytes = image
+                if _python3:
+                    if type(image) is bytes:
+                        data_bytes = image
+                    else:
+                        data_bytes = bytearray()
                 else:
-                    data_bytes = ''
+                    if type(image) is str:
+                        data_bytes = image
+                    else:
+                        data_bytes = ''
                 write_bytearray(data_bytes)
             elif command == 'getObject':
                 name = read_string()
