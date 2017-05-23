@@ -603,9 +603,9 @@ def table_to_bytes(table):
             valVec = builder.EndVector(len(col))  
             
             LongColumn.LongColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
+            for missIdx in reversed(range(0,len(col))):
                 builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
+            missVec = builder.EndVector(len(col))   
         
             LongColumn.LongColumnStart(builder)                             
             LongColumn.LongColumnAddValues(builder, valVec)
