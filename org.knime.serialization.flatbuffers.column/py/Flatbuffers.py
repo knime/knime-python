@@ -90,187 +90,52 @@ def bytes_into_table(table, data_bytes):
      #   print("Flatbuffers->Python: Column[",j,"] col.Type() ", col.Type())
         if col.Type() == _types_.INTEGER.value:
             colVec = col.IntColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(colVec.Values(idx))
-             #   print("Flatbuffers->Python: (Integer) colVals[",idx,"]", colVals[idx])
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_single_column(colVec))
             
         elif col.Type() == _types_.INTEGER_LIST.value:
-            colVec = col.IntListColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = []
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.append(cell.Value(cellIdx))
-
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-             
-            table.add_column(colNames[j], colVals)
+            colVec = col.IntListColumn()                       
+            table.add_column(colNames[j], get_list_column(colVec))
             
         elif col.Type() == _types_.INTEGER_SET.value:
-            colVec = col.IntSetColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.add(cell.Value(cellIdx))
-  
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-                 
-            table.add_column(colNames[j], colVals)
+            colVec = col.IntSetColumn()                 
+            table.add_column(colNames[j], get_set_column(colVec))
 
         elif col.Type() == _types_.BOOLEAN.value:
             colVec = col.BooleanColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(colVec.Values(idx))
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_single_column(colVec))
             
         elif col.Type() == _types_.BOOLEAN_LIST.value:
-            colVec = col.BooleanListColumn()
-      #      print("Flatbuffers -> Python: (Boolean List Column) Start")
-            colVals = []
-     #       print("Flatbuffers -> Python: (Boolean List Column) ValuesLength():", colVec.ValuesLength())
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = []
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.append(cell.Value(cellIdx))
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-      #          print("Flatbuffers -> Python: (Boolean List)[",idx,"]", cellVals)
-             
-            table.add_column(colNames[j], colVals)
+            colVec = col.BooleanListColumn()            
+            table.add_column(colNames[j], get_list_column(colVec))
             
         elif col.Type() == _types_.BOOLEAN_SET.value:
-            colVec = col.BooleanSetColumn()
- #           print("Flatbuffers -> Python: (Boolean Set Column) Start")
-            colVals = []
- #           print("Flatbuffers -> Python: (Boolean Set Column) ValuesLength():", colVec.ValuesLength())
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.add(cell.Value(cellIdx))
- #                   print("Flatbuffers -> Python: (Boolean Set Element)", cell.Value(cellIdx))
-  
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
- #               print("Flatbuffers -> Python: (Boolean Set)[",idx,"]", cellVals)
-                 
-            table.add_column(colNames[j], colVals)
-
-            
+            colVec = col.BooleanSetColumn()                
+            table.add_column(colNames[j], get_set_column(colVec))
+         
         elif col.Type() == _types_.LONG.value:
             colVec = col.LongColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(colVec.Values(idx))
- #               print("Flatbuffers -> Python: (Long)", colVec.Values(idx))
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_single_column(colVec))
             
         elif col.Type() == _types_.LONG_LIST.value:
             colVec = col.LongListColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = []
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.append(cell.Value(cellIdx))
-
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-             
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_list_column(colVec))
             
         elif col.Type() == _types_.LONG_SET.value:
             colVec = col.LongSetColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.add(cell.Value(cellIdx))
-  
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-                 
-            table.add_column(colNames[j], colVals)
-
-            
+            table.add_column(colNames[j], get_set_column(colVec))
+         
         elif col.Type() == _types_.DOUBLE.value:
             colVec = col.DoubleColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-       #         print("Flatbuffers -> Python: (Double) colVec Value[",idx,"]", colVec.Values(idx))
-       #         print("Flatbuffers -> Python: (Double) missing Value[",idx,"]", colVec.Missing(idx))
-                if colVec.Missing(idx):
-                    colVals.append(None)
-        #            print("Flatbuffers -> Python: (Double) colVal[",idx,"]", colVals[idx])
-                else:
-                    colVals.append(colVec.Values(idx))
-        #            print("Flatbuffers -> Python: (Double) colVal[",idx,"]", colVals[idx])
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_single_column(colVec))
             
         elif col.Type() == _types_.DOUBLE_LIST.value:
             colVec = col.DoubleListColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = []
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.append(cell.Value(cellIdx))
-
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-             
-            table.add_column(colNames[j], colVals)
+            table.add_column(colNames[j], get_list_column(colVec))
             
         elif col.Type() == _types_.DOUBLE_SET.value:
             colVec = col.DoubleSetColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                for cellIdx in range(0, cell.ValueLength()):
-                    cellVals.add(cell.Value(cellIdx))
-  
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(cellVals)
-                 
-            table.add_column(colNames[j], colVals)
-
-            
+            table.add_column(colNames[j], get_set_column(colVec))
+                       
         elif col.Type() == _types_.STRING.value:
             colVec = col.StringColumn()
             colVals = []        
@@ -315,6 +180,7 @@ def bytes_into_table(table, data_bytes):
                     colVals.append(cellVals)
                  
             table.add_column(colNames[j], colVals)
+
             
         elif col.Type() == _types_.BYTES.value:
           #  print("Flatbuffers -> Python: (BYTES Column) Start")
@@ -391,7 +257,49 @@ def bytes_into_table(table, data_bytes):
 
     table.set_rowkeys(rowIds)
 
-          
+def get_single_column(colVec):
+    colVals = []
+    for idx in range(0,colVec.ValuesLength()):
+        if colVec.Missing(idx):
+            colVals.append(None)
+        else:
+            colVals.append(colVec.Values(idx))
+    return colVals
+
+def get_list_column(colVec):
+    colVals = []
+    for idx in range(0,colVec.ValuesLength()):        
+        if colVec.Missing(idx):
+            colVals.append(None)
+        else:
+            cell = colVec.Values(idx)
+            cellVals = []
+            for cellIdx in range(0, cell.ValueLength()):
+                if cell.Missing(cellIdx):
+                    cellVals.append(None)
+                else:
+                    cellVals.append(cell.Value(cellIdx))
+
+            colVals.append(cellVals)
+    return colVals
+
+def get_set_column(colVec):
+    colVals = []
+    for idx in range(0,colVec.ValuesLength()):              
+        if colVec.Missing(idx):
+            colVals.append(None)
+        else:
+            cell = colVec.Values(idx)
+            cellVals = set()
+            for cellIdx in range(0, cell.ValueLength()):
+                cellVals.add(cell.Value(cellIdx))
+  
+            if cell.KeepDummy():
+                cellVals.add(None)
+                        
+            colVals.append(cellVals)
+        
+    return colVals
 
 def table_to_bytes(table):
    
@@ -464,13 +372,26 @@ def table_to_bytes(table):
                     builder.PrependInt32(-2147483648)
                     cellVec = builder.EndVector(1)
                 else:
+                    cellMissing = []
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        builder.PrependInt32(col[valIdx][cellIdx])
+                        if col[valIdx][cellIdx] == None:
+                            builder.PrependInt32(-2147483648)
+                            cellMissing.append(True)
+                        else:
+                            builder.PrependInt32(col[valIdx][cellIdx])
+                            cellMissing.append(False)
                     cellVec = builder.EndVector(len(col[valIdx]))
-                                     
+                    
+                                    # the missing vector is already in reversed order
+                    IntegerCollectionCell.IntegerCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                    for cellIdx in range(0, len(col[valIdx])):
+                        builder.PrependBool(cellMissing[cellIdx])
+                    cellMissingVec = builder.EndVector(len(col[valIdx]))
+                                 
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
                 IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
+                IntegerCollectionCell.IntegerCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                         
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
@@ -505,7 +426,10 @@ def table_to_bytes(table):
                 else:
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
                     for elem in col[valIdx]:
-                        builder.PrependInt32(elem)
+                        if elem == None:
+                            IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, True)
+                        else:                            
+                            builder.PrependInt32(elem)
                     cellVec = builder.EndVector(len(col[valIdx])) 
 #                    print("Python->Flatbuffers: (Integer Set)", col[valIdx])                   
                 
@@ -545,9 +469,9 @@ def table_to_bytes(table):
             valVec = builder.EndVector(len(col))
             
             BooleanColumn.BooleanColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
+            for missIdx in reversed(range(0,len(col))):
                 builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
+            missVec = builder.EndVector(len(col))   
                 
             BooleanColumn.BooleanColumnStart(builder)                             
             BooleanColumn.BooleanColumnAddValues(builder, valVec)
@@ -569,13 +493,27 @@ def table_to_bytes(table):
                     builder.PrependBool(True)
                     cellVec = builder.EndVector(1)
                 else: 
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))                
+                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    cellMissing = []
+                    print("Python->Flatbuffers: (Boolean List) cell", col[valIdx])                 
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        builder.PrependBool(col[valIdx][cellIdx])
+                        if col[valIdx][cellIdx] == None:
+                            builder.PrependBool(False)
+                            cellMissing.append(True)
+                        else:
+                            builder.PrependBool(col[valIdx][cellIdx])
+                            cellMissing.append(False)
                     cellVec = builder.EndVector(len(col[valIdx]))
+                    print("Python->Flatbuffers: (Boolean List) missing", cellMissing) 
+                    # the missing vector is already in reversed order
+                    BooleanCollectionCell.BooleanCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                    for cellIdx in range(0, len(col[valIdx])):
+                        builder.PrependBool(cellMissing[cellIdx])
+                    cellMissingVec = builder.EndVector(len(col[valIdx]))
                     
                 BooleanCollectionCell.BooleanCollectionCellStart(builder)
                 BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
+                BooleanCollectionCell.BooleanCollectionCellAddMissing(builder,cellMissingVec)
                 cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
                         
        #     valVec = builder.EndVector(len(cellOffsets))
@@ -614,7 +552,10 @@ def table_to_bytes(table):
                 else: 
                     BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))                
                     for elem in col[valIdx]:
-                        builder.PrependBool(elem)
+                        if elem == None:
+                            BooleanCollectionCell.BooleanCollectionCellAddKeepDummy(builder, True)
+                        else:
+                            builder.PrependBool(elem)
                     cellVec = builder.EndVector(len(col[valIdx]))
   
                 BooleanCollectionCell.BooleanCollectionCellStart(builder)

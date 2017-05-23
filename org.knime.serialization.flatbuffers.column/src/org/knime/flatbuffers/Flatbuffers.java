@@ -178,10 +178,21 @@ public class Flatbuffers implements SerializationLibrary {
 			case BOOLEAN_LIST: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					boolean[] missingCells = new boolean[((Boolean[]) o).length];
+
+					int cIdx = 0;
+					for (Boolean c : (Boolean[]) o) {
+						if (c == null) {
+							((Boolean[]) o)[cIdx] = false; // change to boolean
+															// missing
+							missingCells[cIdx] = true;
+						}
+						cIdx++;
+					}
+
 					int valuesOffset = BooleanCollectionCell.createValueVector(builder,
 							ArrayUtils.toPrimitive((Boolean[]) o));
 
-					boolean[] missingCells = new boolean[((Boolean[]) o).length];
 					int missingCellsOffset = BooleanCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(BooleanCollectionCell.createBooleanCollectionCell(builder, valuesOffset,
 							missingCellsOffset, false));
@@ -235,9 +246,21 @@ public class Flatbuffers implements SerializationLibrary {
 			case INTEGER_LIST: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					boolean[] missingCells = new boolean[((Integer[]) o).length];
+					int cIdx = 0;
+					for (Integer c : (Integer[]) o) {
+						if (c == null) {
+							((Integer[]) o)[cIdx] = Integer.MIN_VALUE; // change
+																		// to
+																		// boolean
+																		// missing
+							missingCells[cIdx] = true;
+						}
+						cIdx++;
+					}
+
 					int valuesOffset = IntegerCollectionCell.createValueVector(builder,
 							ArrayUtils.toPrimitive((Integer[]) o));
-					boolean[] missingCells = new boolean[((Integer[]) o).length];
 					int missingCellsOffset = IntegerCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(IntegerCollectionCell.createIntegerCollectionCell(builder, valuesOffset,
 							missingCellsOffset, false));
@@ -716,7 +739,11 @@ public class Flatbuffers implements SerializationLibrary {
 
 					List<Boolean> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
-						l.add(cell.value(k));
+						if (cell.missing(k)) {
+							l.add(null);
+						} else {
+							l.add(cell.value(k));
+						}
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -755,7 +782,11 @@ public class Flatbuffers implements SerializationLibrary {
 
 					List<Integer> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
-						l.add(cell.value(k));
+						if (cell.missing(k)) {
+							l.add(null);
+						} else {
+							l.add(cell.value(k));
+						}
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -1075,79 +1106,18 @@ public class Flatbuffers implements SerializationLibrary {
 
 		for (int j = 0; j < table.columnsLength(); j++) {
 			Column col = table.columns(j);
+			types[j] = Type.getTypeForId(col.type());
+
 			switch (Type.getTypeForId(col.type())) {
-			case BOOLEAN: {
-				types[j] = Type.BOOLEAN;
-				break;
-			}
-			case BOOLEAN_LIST: {
-				types[j] = Type.BOOLEAN_LIST;
-				break;
-			}
-			case BOOLEAN_SET: {
-				types[j] = Type.BOOLEAN_SET;
-				break;
-			}
-			case INTEGER: {
-				types[j] = Type.INTEGER;
-				break;
-			}
-			case INTEGER_LIST: {
-				types[j] = Type.INTEGER_LIST;
-				break;
-			}
-			case INTEGER_SET: {
-				types[j] = Type.INTEGER_SET;
-				break;
-			}
-			case LONG: {
-				types[j] = Type.LONG;
-				break;
-			}
-			case LONG_LIST: {
-				types[j] = Type.LONG_LIST;
-				break;
-			}
-			case LONG_SET: {
-				types[j] = Type.LONG_SET;
-				break;
-			}
-			case DOUBLE: {
-				types[j] = Type.DOUBLE;
-				break;
-			}
-			case DOUBLE_LIST: {
-				types[j] = Type.DOUBLE_LIST;
-				break;
-			}
-			case DOUBLE_SET: {
-				types[j] = Type.DOUBLE_SET;
-				break;
-			}
-			case STRING: {
-				types[j] = Type.STRING;
-				break;
-			}
-			case STRING_LIST: {
-				types[j] = Type.STRING_LIST;
-				break;
-			}
-			case STRING_SET: {
-				types[j] = Type.STRING_SET;
-				break;
-			}
 			case BYTES: {
-				types[j] = Type.BYTES;
 				serializers.put(colNames.get(j), col.byteColumn().serializer());
 				break;
 			}
 			case BYTES_LIST: {
-				types[j] = Type.BYTES_LIST;
 				serializers.put(colNames.get(j), col.byteListColumn().serializer());
 				break;
 			}
 			case BYTES_SET: {
-				types[j] = Type.BYTES_SET;
 				serializers.put(colNames.get(j), col.byteSetColumn().serializer());
 				break;
 			}
@@ -1155,6 +1125,7 @@ public class Flatbuffers implements SerializationLibrary {
 				break;
 
 			}
+
 		}
 
 		return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), serializers);
