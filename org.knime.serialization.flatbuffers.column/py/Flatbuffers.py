@@ -383,7 +383,7 @@ def table_to_bytes(table):
                             cellMissing.append(False)
                     cellVec = builder.EndVector(len(col[valIdx]))
                     
-                                    # the missing vector is already in reversed order
+                    # the missing vector is already in reversed order
                     IntegerCollectionCell.IntegerCollectionCellStartMissingVector(builder, len(col[valIdx]))
                     for cellIdx in range(0, len(col[valIdx])):
                         builder.PrependBool(cellMissing[cellIdx])
@@ -632,15 +632,25 @@ def table_to_bytes(table):
                     cellVec = builder.EndVector(1)
                 else: 
                     LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    cellMissing = []
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
                         if col[valIdx][cellIdx] == None:
                             builder.PrependInt64(-9223372036854775808)
+                            cellMissing.append(True)
                         else:
-                            builder.PrependInt64(col[valIdx][cellIdx])                 
+                            builder.PrependInt64(col[valIdx][cellIdx])
+                            cellMissing.append(False)                 
                     cellVec = builder.EndVector(len(col[valIdx]))
+                    
+                    # the missing vector is already in reversed order
+                    LongCollectionCell.LongCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                    for cellIdx in range(0, len(col[valIdx])):
+                        builder.PrependBool(cellMissing[cellIdx])
+                    cellMissingVec = builder.EndVector(len(col[valIdx]))
                     
                 LongCollectionCell.LongCollectionCellStart(builder)
                 LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                LongCollectionCell.LongCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
                         
             LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
@@ -673,16 +683,18 @@ def table_to_bytes(table):
                     builder.PrependInt64(-9223372036854775808)
                     cellVec = builder.EndVector(1)
                 else: 
+                    addMissingValue = False
                     LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
                     for elem in col[valIdx]:
                         if elem == None:
-                            builder.PrependInt64(-9223372036854775808)
+                            addMissingValue = True
                         else:
                             builder.PrependInt64(elem)                 
                     cellVec = builder.EndVector(len(col[valIdx]))
                     
                 LongCollectionCell.LongCollectionCellStart(builder)
                 LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                LongCollectionCell.LongCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
                         
             LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))

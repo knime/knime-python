@@ -212,15 +212,15 @@ public class Flatbuffers implements SerializationLibrary {
 			case BOOLEAN_SET: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
-					
+
 					boolean addMissingValue = false;
 					List<Boolean> l = new ArrayList<>();
 					for (Boolean c : (Boolean[]) o) {
 						if (c == null) {
-							addMissingValue = true; 
+							addMissingValue = true;
 						} else {
 							l.add(c);
-						}					
+						}
 					}
 					int valuesOffset = BooleanCollectionCell.createValueVector(builder,
 							ArrayUtils.toPrimitive(l.toArray(new Boolean[l.size()])));
@@ -259,10 +259,7 @@ public class Flatbuffers implements SerializationLibrary {
 					int cIdx = 0;
 					for (Integer c : (Integer[]) o) {
 						if (c == null) {
-							((Integer[]) o)[cIdx] = Integer.MIN_VALUE; // change
-																		// to
-																		// boolean
-																		// missing
+							((Integer[]) o)[cIdx] = Integer.MIN_VALUE;
 							missingCells[cIdx] = true;
 						}
 						cIdx++;
@@ -290,8 +287,8 @@ public class Flatbuffers implements SerializationLibrary {
 				for (Object o : columns.get(colName)) {
 					boolean addMissingValue = false;
 					List<Integer> l = new ArrayList<>();
-					for (Integer c : (Integer[])o) {
-						if(c == null) {
+					for (Integer c : (Integer[]) o) {
+						if (c == null) {
 							addMissingValue = true;
 						} else {
 							l.add(c);
@@ -330,10 +327,19 @@ public class Flatbuffers implements SerializationLibrary {
 			case LONG_LIST: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					boolean[] missingCells = new boolean[((Long[]) o).length];
+					int cIdx = 0;
+					for (Long c : (Long[]) o) {
+						if (c == null) {
+							((Long[]) o)[cIdx] = Long.MIN_VALUE;
+							missingCells[cIdx] = true;
+						}
+						cIdx++;
+					}
+
 					int valuesOffset = LongCollectionCell.createValueVector(builder,
 							ArrayUtils.toPrimitive((Long[]) o));
 
-					boolean[] missingCells = new boolean[((Long[]) o).length];
 					int missingCellsOffset = LongCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(LongCollectionCell.createLongCollectionCell(builder, valuesOffset,
 							missingCellsOffset, false));
@@ -352,13 +358,23 @@ public class Flatbuffers implements SerializationLibrary {
 			case LONG_SET: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					List<Long> l = new ArrayList<>();
+					boolean addMissingValue = false;
+					for (Long c : (Long[])o){
+						if (c == null) {
+							addMissingValue = true;
+						} else {
+							l.add(c);
+						}
+					}
+					
 					int valuesOffset = LongCollectionCell.createValueVector(builder,
-							ArrayUtils.toPrimitive((Long[]) o));
+							ArrayUtils.toPrimitive(l.toArray(new Long[l.size()])));
 
 					boolean[] missingCells = new boolean[((Long[]) o).length];
 					int missingCellsOffset = LongCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(LongCollectionCell.createLongCollectionCell(builder, valuesOffset,
-							missingCellsOffset, false));
+							missingCellsOffset, addMissingValue));
 				}
 
 				int valuesVector = LongCollectionColumn.createValuesVector(builder,
@@ -849,7 +865,11 @@ public class Flatbuffers implements SerializationLibrary {
 
 					List<Long> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
-						l.add(cell.value(k));
+						if (cell.missing(k)) {
+							l.add(null);
+						} else {
+							l.add(cell.value(k));
+						}
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -1164,4 +1184,3 @@ public class Flatbuffers implements SerializationLibrary {
 		return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), serializers);
 	}
 }
- 
