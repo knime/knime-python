@@ -67,9 +67,11 @@ import org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerial
 public class DateTime2DeserializerFactory extends DeserializerFactory {
 
 	public DateTime2DeserializerFactory() {
+		//Set the type of the resulting column to the conjunction of the LocalDateTimeType and ZonedDateTimeType. (non-native)
+		//While the table is created the types included in the resulting columns are tracked and the column type is replaced with
+		//the most common super type of all included cells after all cells have been inserted. This means that if only cells of a 
+		//single data type are present the type will be native.
 		super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
-/*		DataType type = DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE);
-		Class<?> co = type.getCellClass(); */
 	}
 
 	@Override

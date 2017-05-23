@@ -6,6 +6,8 @@ _format = '%Y-%m-%d %H:%M:%S.%f'
 #Deserializes LocalDateTime, ZonedDateTime and legacy DateTime
 def deserialize(data_bytes):
     datestr = data_bytes.decode('utf-8')
+    #with open('/home/clemens/pythonlog.txt', 'a') as writer:
+    #    writer.write(datestr + '\n')
     dt = datetime.strptime(datestr[:23] + '000', _format)
     #Timezone information available ?
     if len(datestr) > 23:

@@ -84,9 +84,9 @@ import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.PythonToKnimeExtensions;
 
 public class BufferedDataTableCreator implements TableCreator<BufferedDataTable> {
-	
+
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableCreator.class);
-	
+
 	private final BufferedDataContainer m_container;
 	private final TableSpec m_spec;
 	private final PythonToKnimeExtensions m_pythonToKnimeExtensions;
@@ -94,18 +94,19 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 	private final ExecutionMonitor m_executionMonitor;
 	private final int m_tableSize;
 	private int m_rowsDone = 0;
-	
-	private HashMap<Integer,DataTypeContainer> m_columnsToRetype;
+
+	private HashMap<Integer, DataTypeContainer> m_columnsToRetype;
 	private DataTableSpec m_dataTableSpec;
 	private ExecutionContext m_exec;
-	
-	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context, final ExecutionMonitor executionMonitor, int tableSize) {
+
+	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
+			final ExecutionMonitor executionMonitor, int tableSize) {
 		m_tableSize = tableSize;
 		m_executionMonitor = executionMonitor;
 		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
 		m_spec = spec;
 		m_exec = context;
-		m_columnsToRetype = new HashMap<Integer,DataTypeContainer>();
+		m_columnsToRetype = new HashMap<Integer, DataTypeContainer>();
 		m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[m_spec.getNumberColumns()];
 		for (int i = 0; i < colSpecs.length; i++) {
@@ -115,63 +116,79 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 				colSpecs[i] = new DataColumnSpecCreator(columnName, BooleanCell.TYPE).createSpec();
 				break;
 			case BOOLEAN_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(BooleanCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(BooleanCell.TYPE))
+						.createSpec();
 				break;
 			case BOOLEAN_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE))
+						.createSpec();
 				break;
 			case INTEGER:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, IntCell.TYPE).createSpec();
 				break;
 			case INTEGER_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE))
+						.createSpec();
 				break;
 			case INTEGER_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE))
+						.createSpec();
 				break;
 			case LONG:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, LongCell.TYPE).createSpec();
 				break;
 			case LONG_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE))
+						.createSpec();
 				break;
 			case LONG_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE))
+						.createSpec();
 				break;
 			case DOUBLE:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, DoubleCell.TYPE).createSpec();
 				break;
 			case DOUBLE_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE))
+						.createSpec();
 				break;
 			case DOUBLE_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE))
+						.createSpec();
 				break;
 			case STRING:
 				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
 				break;
 			case STRING_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE))
+						.createSpec();
 				break;
 			case STRING_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
+				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE))
+						.createSpec();
 				break;
 			case BYTES:
-				DataType type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
-				if(type.getCellClass() == null)
+				DataType type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName))
+						.getJavaDeserializerFactory().getDataType();
+				if (type.getCellClass() == null) {
 					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
+				}
 				colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
 				break;
 			case BYTES_LIST:
-				DataType list_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
-				if(list_type.getCellClass() == null)
+				DataType list_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName))
+						.getJavaDeserializerFactory().getDataType();
+				if (list_type.getCellClass() == null) {
 					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.LIST));
+				}
 				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
 				break;
 			case BYTES_SET:
-				DataType set_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName)).getJavaDeserializerFactory().getDataType();
-				if(set_type.getCellClass() == null)
+				DataType set_type = PythonToKnimeExtensions.getExtension(spec.getColumnSerializers().get(columnName))
+						.getJavaDeserializerFactory().getDataType();
+				if (set_type.getCellClass() == null) {
 					m_columnsToRetype.put(i, new DataTypeContainer(ResultType.SET));
+				}
 				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
 				break;
 			default:
@@ -324,11 +341,15 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 					break;
 				case BYTES:
 					String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					Deserializer bytesDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
+					Deserializer bytesDeserializer = m_pythonToKnimeExtensions
+							.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 					try {
-						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
-						if(m_columnsToRetype.containsKey(i))
-							((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(cells[i].getType());
+						cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()),
+								m_fileStoreFactory);
+						DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+						if (dataTypeContainer != null) {
+							dataTypeContainer.m_dataTypes.add(cells[i].getType());
+						}
 					} catch (IllegalStateException | IOException e) {
 						LOGGER.error(e.getMessage(), e);
 						cells[i] = new MissingCell(null);
@@ -336,13 +357,17 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 					break;
 				case BYTES_LIST:
 					String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					Deserializer bytesListDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
+					Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
+							.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
 					List<DataCell> listCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
-							if(m_columnsToRetype.containsKey(i))
-								((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(dc.getType());
+							DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value),
+									m_fileStoreFactory);
+							DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+							if (dataTypeContainer != null) {
+								dataTypeContainer.m_dataTypes.add(dc.getType());
+							}
 							listCells.add(dc);
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
@@ -353,13 +378,17 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 					break;
 				case BYTES_SET:
 					String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
+					Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
+							.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
 					List<DataCell> setCells = new ArrayList<DataCell>();
 					for (Byte[] value : cell.getBytesArrayValue()) {
 						try {
-							DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
-							if(m_columnsToRetype.containsKey(i))
-								((DataTypeContainer) m_columnsToRetype.get(i)).dataTypes.add(dc.getType());
+							DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value),
+									m_fileStoreFactory);
+							DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+							if (dataTypeContainer != null) {
+								dataTypeContainer.m_dataTypes.add(dc.getType());
+							}
 							setCells.add(dc);
 						} catch (IllegalStateException | IOException e) {
 							LOGGER.error(e.getMessage(), e);
@@ -376,71 +405,66 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 		}
 		m_container.addRowToTable(new DefaultRow(row.getRowKey(), cells));
 		m_rowsDone++;
-		m_executionMonitor.setProgress(m_rowsDone/(double)m_tableSize);
+		m_executionMonitor.setProgress(m_rowsDone / (double) m_tableSize);
 	}
 
 	@Override
 	public TableSpec getTableSpec() {
 		return m_spec;
 	}
-	
-	private DataType getMostCommonAncestor(HashSet<DataType> types)
-	{
+
+	private DataType getMostCommonAncestor(HashSet<DataType> types) {
 		Iterator<DataType> iter = types.iterator();
 		DataType mca = iter.next();
-		while(iter.hasNext())
-		{
+		while (iter.hasNext()) {
 			mca = DataType.getCommonSuperType(mca, iter.next());
 		}
 		return mca;
 	}
-	
+
 	public BufferedDataTable getTable() {
 		m_container.close();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[m_dataTableSpec.getNumColumns()];
-		for(int i=0; i<colSpecs.length; i++)
-		{
+		for (int i = 0; i < colSpecs.length; i++) {
 			DataColumnSpec dcs = m_dataTableSpec.getColumnSpec(i);
 			DataColumnSpecCreator dcsc = new DataColumnSpecCreator(dcs);
-			if(m_columnsToRetype.containsKey(i))
-			{
+			if (m_columnsToRetype.containsKey(i)) {
 				DataTypeContainer dtContainer = m_columnsToRetype.get(i);
-				DataType elementType = getMostCommonAncestor(dtContainer.dataTypes);
-				if(dtContainer.resultType == ResultType.PRIMITIVE)
+				DataType elementType = getMostCommonAncestor(dtContainer.m_dataTypes);
+				if (dtContainer.m_resultType == ResultType.PRIMITIVE) {
 					dcsc.setType(elementType);
-				else if(dtContainer.resultType == ResultType.LIST)
+				} else if (dtContainer.m_resultType == ResultType.LIST) {
 					dcsc.setType(ListCell.getCollectionType(elementType));
-				else if(dtContainer.resultType == ResultType.SET)
+				} else if (dtContainer.m_resultType == ResultType.SET) {
 					dcsc.setType(SetCell.getCollectionType(elementType));
+				}
 			}
 			colSpecs[i] = dcsc.createSpec();
 		}
 		DataTableSpec correctedSpec = new DataTableSpec(m_dataTableSpec.getName(), colSpecs);
 		return m_exec.createSpecReplacerTable(m_container.getTable(), correctedSpec);
 	}
-	
+
 	/**
-	 * Enum for distinguishing if a cell contains primitives or collections (either lists or sets).
-	 * 
-	 * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+	 * Enum for distinguishing if a cell contains primitives or collections
+	 * (either lists or sets).
 	 */
 	private enum ResultType {
 		PRIMITIVE, LIST, SET;
 	}
-	
+
 	/**
-	 * Container class used for storing all data types present in a certain column.
-	 * Also indicates if the objects in the column have a primitive or a collection type.
-	 * 
-	 * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+	 * Container class used for storing all data types present in a certain
+	 * column. Also indicates if the objects in the column have a primitive or a
+	 * collection type.
 	 */
 	private class DataTypeContainer {
-		public ResultType resultType;
-		public HashSet<DataType> dataTypes;
-		
+		ResultType m_resultType;
+		HashSet<DataType> m_dataTypes;
+
 		public DataTypeContainer(ResultType type) {
-			resultType = type;
-			dataTypes = new HashSet<DataType>();
+			m_resultType = type;
+			m_dataTypes = new HashSet<DataType>();
 		}
 	}
 
