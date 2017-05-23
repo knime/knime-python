@@ -41,29 +41,36 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
+ *
+ * History
+ *   Sep 25, 2014 (Patrick Winter): created
  */
+package org.knime.python2.typeextension.builtin.xml;
 
-package org.knime.python2.extensions.serializationlibrary.interfaces;
+import java.io.IOException;
 
-/**
- * Used to create a table by adding rows.
- * 
- * @author Patrick Winter
- */
-public interface TableCreator<T> {
+import org.knime.core.data.xml.XMLValue;
+import org.knime.python2.typeextension.Serializer;
+import org.knime.python2.typeextension.SerializerFactory;
+
+public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
-	/**
-	 * @param row The row to add to the table.
-	 */
-	void addRow(Row row);
+	public XMLSerializerFactory() {
+		super(XMLValue.class);
+	}
 	
-	/**
-	 * @return The {@link TableSpec}.
-	 */
-	TableSpec getTableSpec();
+	@Override
+	public Serializer<XMLValue> createSerializer() {
+		return new XMLSerializer();
+	}
 	
-	/**
-	 * @return The object to create
-	 */
-	T getTable();
+	private class XMLSerializer implements Serializer<XMLValue> {
+
+		@Override
+		public byte[] serialize(XMLValue value) throws IOException {
+			return value.toString().getBytes();
+		}
+	
+	}
+
 }

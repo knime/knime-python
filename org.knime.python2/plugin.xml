@@ -29,6 +29,36 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateSerializer.py"
             python-type-identifier="date">
       </type>
+      <type
+            id="org.knime.python2.localtime"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.localtime.LocalTimeDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/localtime/LocalTimeSerializer.py"
+            python-type-identifier="time">
+      </type>
+      <type
+            id="org.knime.python2.zoneddatetime"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.datetime2.DateTime2DeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/datetime2/DateTimeSerializer.py"
+            python-type-identifier="org.knime.python2.zoneddatetime">
+      </type>
+      <type
+            id="org.knime.python2.image"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.ImageDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/image/ImageSerializer.py"
+            python-type-identifier="PIL.PngImagePlugin.PngImageFile">
+      </type>
+      <type
+            id="org.knime.python2.duration"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.duration.DurationDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/duration/DurationSerializer.py"
+            python-type-identifier="timedelta">
+      </type>
+      <type
+            id="org.knime.python2.xml"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
+            python-type-identifier="xml.dom.minidom.Document">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
@@ -46,6 +76,31 @@
             id="org.knime.python2.localdate"
             java-serializer-factory="org.knime.python2.typeextension.builtin.localdate.LocalDateSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/localdate/LocalDateDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.localtime"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.localtime.LocalTimeSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/localtime/LocalTimeDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.zoneddatetime"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/datetime/DateTimeDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.image"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.image.ImageSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/image/ImageDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.duration"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.duration.DurationSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/duration/DurationDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.xml"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.xml.XMLSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/xml/XMLDeserializer.py">
       </type>
    </extension>
    <extension

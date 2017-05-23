@@ -49,15 +49,29 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 
 import org.knime.core.data.DataCell;
+import org.knime.core.data.DataType;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
+import org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerializerFactory;
+
+/**
+ * Is used to deserialize python datetime objects to either LocalDateTime objects if no timezoneinfo is given
+ * or ZonedDateTime objects if said info is given.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class DateTime2DeserializerFactory extends DeserializerFactory {
 
 	public DateTime2DeserializerFactory() {
-		super(LocalDateTimeCellFactory.TYPE);
+		//Set the type of the resulting column to the conjunction of the LocalDateTimeType and ZonedDateTimeType. (non-native)
+		//While the table is created the types included in the resulting columns are tracked and the column type is replaced with
+		//the most common super type of all included cells after all cells have been inserted. This means that if only cells of a 
+		//single data type are present the type will be native.
+		super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
 	}
 
 	@Override
@@ -69,9 +83,18 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 
 		@Override
 		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+			//Deserialize to LocalDateTime or ZonedDateTime based on incoming date string
 			String string = new String(bytes, "UTF-8");
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTime2SerializerFactory.FORMAT);
-			return LocalDateTimeCellFactory.create(string, formatter);
+			if(string.length() <= 23)
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTime2SerializerFactory.FORMAT);
+				return LocalDateTimeCellFactory.create(string, formatter);
+			}
+			else
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
+				return ZonedDateTimeCellFactory.create(string, formatter);
+			}
 		}
 
 	}

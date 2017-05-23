@@ -91,9 +91,13 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableChunker;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreatorFactory;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableChunker;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -358,11 +362,11 @@ public class PythonKernel {
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
 		Set<FlowVariable> flowVariables = new HashSet<FlowVariable>();
-		if (tableCreator.getRow() == null) {
+		if (tableCreator.getTable() == null) {
 			return flowVariables;
 		}
 		int i = 0;
-		for (Cell cell : tableCreator.getRow()) {
+		for (Cell cell : tableCreator.getTable()) {
 			String columnName = tableCreator.getTableSpec().getColumnNames()[i++];
 			switch (cell.getColumnType()) {
 			case INTEGER:
@@ -442,12 +446,13 @@ public class PythonKernel {
 			numberChunks = 1;
 		}
 		int rowsDone = 0;
+		TableChunker tableChunker = new BufferedDataTableChunker(table.getDataTableSpec(), iterator,
+				table.getRowCount());
 		for (int i = 0; i < numberChunks; i++) {
 			int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
 			ExecutionMonitor chunkProgress = serializationMonitor
 					.createSubProgress(rowsInThisIteration / (double) numberRows);
-			TableIterator tableIterator = new BufferedDataTableIterator(table.getDataTableSpec(), iterator,
-					rowsInThisIteration, chunkProgress);
+			TableIterator tableIterator = ((BufferedDataTableChunker) tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
 			byte[] bytes = m_serializer.tableToBytes(tableIterator);
 			chunkProgress.setProgress(1);
 			rowsDone += rowsInThisIteration;
@@ -486,6 +491,41 @@ public class PythonKernel {
 			throws IOException {
 		putDataTable(name, table, executionMonitor, table.getRowCount());
 	}
+	
+	/**
+	 * Put the data underlying the given {@link TableChunker} into the workspace.
+	 *
+	 * The data will be available as a pandas.DataFrame.
+	 *
+	 * @param name
+	 *            The name of the table
+	 * @param tableChunker
+	 *            A {@link TableChunker}
+	 * @param rowsPerChunk
+	 * 			  The number of rows to send per chunk
+	 * @throws IOException
+	 *             If an error occurred
+	 */
+	public void putData(final String name, final TableChunker tableChunker, int rowsPerChunk)
+		throws IOException {
+		int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
+		int numberChunks = (int) Math.ceil(numberRows / (double) CHUNK_SIZE);
+		if (numberChunks == 0) {
+			numberChunks = 1;
+		}
+		int rowsDone = 0;
+		for (int i = 0; i < numberChunks; i++) {
+			int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
+			TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
+			byte[] bytes = m_serializer.tableToBytes(tableIterator);
+			rowsDone += rowsInThisIteration;
+			if (i == 0) {
+				m_commands.putTable(name, bytes);
+			} else {
+				m_commands.appendToTable(name, bytes);
+			}
+		}
+	}
 
 	/**
 	 * Get a {@link BufferedDataTable} from the workspace.
@@ -521,6 +561,38 @@ public class PythonKernel {
 			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
 		}
 		return tableCreator.getTable();
+	}
+	
+	/**
+	 * Get an object from the workspace.
+	 *
+	 * @param name
+	 *            The name of the object to get
+	 * @return The object
+	 * @param tcf
+	 * 			A {@link TableCreatorFactory} that can be used to create the requested {@link TableCreator}
+	 * @throws IOException
+	 *             If an error occured
+	 */
+	public TableCreator<?> getData(final String name, TableCreatorFactory tcf)
+			throws IOException {
+		int tableSize = m_commands.getTableSize(name);
+		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
+		if (numberChunks == 0) {
+			numberChunks = 1;
+		}
+		TableCreator<?> tableCreator = null;
+		for (int i = 0; i < numberChunks; i++) {
+			int start = CHUNK_SIZE * i;
+			int end = Math.min(tableSize, start + CHUNK_SIZE - 1);
+			byte[] bytes = m_commands.getTableChunk(name, start, end);
+			if (tableCreator == null) {
+				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+				tableCreator = tcf.createTableCreator(spec, tableSize);
+			}
+			m_serializer.bytesIntoTable(tableCreator, bytes);
+		}
+		return tableCreator;	
 	}
 
 	/**
@@ -566,7 +638,7 @@ public class PythonKernel {
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
 		m_serializer.bytesIntoTable(tableCreator, bytes);
-		Row row = tableCreator.getRow();
+		Row row = tableCreator.getTable();
 		int bytesIndex = spec.findColumn("bytes");
 		int typeIndex = spec.findColumn("type");
 		int representationIndex = spec.findColumn("representation");
@@ -632,7 +704,7 @@ public class PythonKernel {
 		int typeIndex = spec.findColumn("type");
 		int valueIndex = spec.findColumn("value");
 		final List<Map<String, String>> variables = new ArrayList<Map<String, String>>();
-		for (Row variable : tableCreator.getRows()) {
+		for (Row variable : tableCreator.getTable()) {
 			final Map<String, String> map = new HashMap<String, String>();
 			map.put("name", variable.getCell(nameIndex).getStringValue());
 			map.put("type", variable.getCell(typeIndex).getStringValue());
@@ -679,7 +751,7 @@ public class PythonKernel {
 			int nameIndex = spec.findColumn("name");
 			int typeIndex = spec.findColumn("type");
 			int docIndex = spec.findColumn("doc");
-			for (Row suggestion : tableCreator.getRows()) {
+			for (Row suggestion : tableCreator.getTable()) {
 				final Map<String, String> map = new HashMap<String, String>();
 				map.put("name", suggestion.getCell(nameIndex).getStringValue());
 				map.put("type", suggestion.getCell(typeIndex).getStringValue());

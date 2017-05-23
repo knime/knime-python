@@ -54,6 +54,12 @@ import org.knime.core.data.time.localdate.LocalDateCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 
+/**
+ * Is used to deserialize python date objects to java8 LocalDate objects.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class LocalDateDeserializerFactory extends DeserializerFactory {
 
 	public LocalDateDeserializerFactory() {

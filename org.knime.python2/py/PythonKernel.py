@@ -78,7 +78,7 @@ if REMOTE_DBG:
         import pydevd  # with the addon script.module.pydevd, only use `import pydevd`
 
         # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
-        pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+        pydevd.settrace('localhost', port=5678, suspend=False, stdoutToServer=True, stderrToServer=True)
     except ImportError as e:
         sys.stderr.write("Error: " +
                          "You must add org.python.pydev.debug.pysrc to your PYTHONPATH. ".format(e))
@@ -111,6 +111,8 @@ def run():
             command = read_string()
             if command == 'execute':
                 source_code = read_string()
+                if REMOTE_DBG:
+                    print('executing: ' + source_code + '\n')
                 output, error = execute(source_code)
                 write_string(output)
                 write_string(error)
@@ -145,16 +147,24 @@ def run():
                 data_frame = get_variable(name)
                 write_integer(len(data_frame))
             elif command == 'getTable':
+                if REMOTE_DBG:
+                    print('getTable\n')
                 name = read_string()
                 data_frame = get_variable(name)
                 data_bytes = data_frame_to_bytes(data_frame)
                 write_bytearray(data_bytes)
             elif command == 'getTableChunk':
+                if REMOTE_DBG:
+                    print('getTableChunk\n')
                 name = read_string()
                 start = read_integer()
                 end = read_integer()
-                data_frame = get_variable(name)[start:end+1]
-                data_bytes = data_frame_to_bytes(data_frame)
+                data_frame = get_variable(name)
+                import pandas
+                if type(data_frame) != pandas.core.frame.DataFrame:
+                    raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
+                data_frame_chunk = data_frame[start:end+1]
+                data_bytes = data_frame_to_bytes(data_frame_chunk)
                 write_bytearray(data_bytes)
             elif command == 'listVariables':
                 variables = list_variables()
@@ -287,13 +297,15 @@ def _cleanup():
 def execute(source_code):
     output = StringIO()
     error = StringIO()
-    sys.stdout = output
+    if not REMOTE_DBG:
+        sys.stdout = output
     # run execute with the provided source code
     try:
         exec(source_code, _exec_env, _exec_env)
     except Exception:
         traceback.print_exc(file=error)
-    sys.stdout = sys.__stdout__
+    if not REMOTE_DBG:
+        sys.stdout = sys.__stdout__
     return [output.getvalue(), error.getvalue()]
 
 
@@ -576,6 +588,11 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
     for column in column_serializers:
         serializer = _type_extension_manager.get_serializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
+            if REMOTE_DBG:
+                lastp = -1
+                if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
+                    print(str(i * 100/len(data_frame)) + ' percent done (serialize)')
+                    lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
             if value is not None:
                 if isinstance(value, list):
@@ -599,9 +616,15 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
 
 
 def deserialize_from_bytes(data_frame, column_serializers):
+    #print('Data frame: ' + str(data_frame) + '\nserializers: ' + str(column_serializers) + '\n')
     for column in column_serializers:
         deserializer = _type_extension_manager.get_deserializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
+            if REMOTE_DBG:
+                lastp = -1
+                if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
+                    print(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
+                    lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
             if value is not None:
                 if isinstance(value, list):

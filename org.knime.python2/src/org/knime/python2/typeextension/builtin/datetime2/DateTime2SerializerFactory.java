@@ -53,6 +53,11 @@ import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
 import org.knime.python2.typeextension.Serializer;
 import org.knime.python2.typeextension.SerializerFactory;
 
+/**
+ * Is used to serialize java8 LocalDateTime objects
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ */
 public class DateTime2SerializerFactory extends SerializerFactory<LocalDateTimeValue> {
 	
 	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";

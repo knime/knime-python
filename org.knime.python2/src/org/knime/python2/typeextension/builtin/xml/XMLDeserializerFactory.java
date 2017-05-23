@@ -41,29 +41,48 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
+ *
+ * History
+ *   Sep 25, 2014 (Patrick Winter): created
  */
+package org.knime.python2.typeextension.builtin.xml;
 
-package org.knime.python2.extensions.serializationlibrary.interfaces;
+import java.io.IOException;
 
-/**
- * Used to create a table by adding rows.
- * 
- * @author Patrick Winter
- */
-public interface TableCreator<T> {
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
+
+import org.knime.core.data.DataCell;
+import org.knime.core.data.filestore.FileStoreFactory;
+import org.knime.core.data.xml.XMLCell;
+import org.knime.core.data.xml.XMLCellFactory;
+import org.knime.python2.typeextension.Deserializer;
+import org.knime.python2.typeextension.DeserializerFactory;
+import org.xml.sax.SAXException;
+
+public class XMLDeserializerFactory extends DeserializerFactory {
 	
-	/**
-	 * @param row The row to add to the table.
-	 */
-	void addRow(Row row);
+	public XMLDeserializerFactory() {
+		super(XMLCell.TYPE);
+	}
 	
-	/**
-	 * @return The {@link TableSpec}.
-	 */
-	TableSpec getTableSpec();
-	
-	/**
-	 * @return The object to create
-	 */
-	T getTable();
+	@Override
+	public Deserializer createDeserializer() {
+		return new XMLDeserializer();
+	}
+
+	private class XMLDeserializer implements Deserializer {
+		
+		@Override
+		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
+			try {
+				return XMLCellFactory.create(new String(bytes));
+			} catch (ParserConfigurationException | SAXException
+					| XMLStreamException e) {
+				throw new IOException(e.getMessage(), e);
+			}
+		}
+		
+	}
+
 }
