@@ -418,23 +418,26 @@ def table_to_bytes(table):
             cellOffsets = []
             
             for valIdx in range(0,len(col)):
-                     
+                addMissingValue = False;     
                 if col[valIdx] == None:
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
                     builder.PrependInt32(-2147483648)
                     cellVec = builder.EndVector(1)
                 else:
                     IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
+                    numElems = 0
                     for elem in col[valIdx]:
                         if elem == None:
-                            IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, True)
+                            addMissingValue = True
                         else:                            
                             builder.PrependInt32(elem)
-                    cellVec = builder.EndVector(len(col[valIdx])) 
+                            numElems += 1
+                    cellVec = builder.EndVector(numElems) 
 #                    print("Python->Flatbuffers: (Integer Set)", col[valIdx])                   
                 
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
                 IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
+                IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, addMissingValue)
                 cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                         
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))

@@ -279,13 +279,22 @@ public class Flatbuffers implements SerializationLibrary {
 			case INTEGER_SET: {
 				List<Integer> cellOffsets = new ArrayList<>(columns.get(colName).size());
 				for (Object o : columns.get(colName)) {
+					boolean addMissingValue = false;
+					List<Integer> l = new ArrayList<>();
+					for (Integer c : (Integer[])o) {
+						if(c == null) {
+							addMissingValue = true;
+						} else {
+							l.add(c);
+						}
+					}
 					int valuesOffset = IntegerCollectionCell.createValueVector(builder,
-							ArrayUtils.toPrimitive((Integer[]) o));
+							ArrayUtils.toPrimitive(l.toArray(new Integer[l.size()])));
 
 					boolean[] missingCells = new boolean[((Integer[]) o).length];
 					int missingCellsOffset = IntegerCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(IntegerCollectionCell.createIntegerCollectionCell(builder, valuesOffset,
-							missingCellsOffset, false));
+							missingCellsOffset, addMissingValue));
 				}
 
 				int valuesVector = IntCollectionColumn.createValuesVector(builder,
@@ -802,6 +811,9 @@ public class Flatbuffers implements SerializationLibrary {
 					List<Integer> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
 						l.add(cell.value(k));
+					}
+					if (cell.keepDummy()) {
+						l.add(null);
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
