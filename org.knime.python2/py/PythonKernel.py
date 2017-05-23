@@ -890,34 +890,46 @@ def value_to_simpletype_value(value, simpletype):
         return bool(value)
     elif simpletype == Simpletype.BOOLEAN_LIST:
         for i in range(0, len(value)):
-            value[i] = bool(value[i])
+            if value[i] is not None:
+                value[i] = bool(value[i])
         return value
     elif simpletype == Simpletype.BOOLEAN_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(bool(inner_value))
+            if inner_value is None:
+                value_set.add(None)
+            else:
+                value_set.add(bool(inner_value))
         return value_set
     elif simpletype == Simpletype.INTEGER:
         return int(value)
     elif simpletype == Simpletype.INTEGER_LIST:
         for i in range(0, len(value)):
-            value[i] = int(value[i])
+            if value[i] is not None:
+                value[i] = int(value[i])
         return value
     elif simpletype == Simpletype.INTEGER_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(int(inner_value))
+            if inner_value is None:
+                value_set.add(None)
+            else:
+                value_set.add(int(inner_value))
         return value_set
     elif simpletype == Simpletype.LONG:
         return int(value)
     elif simpletype == Simpletype.LONG_LIST:
         for i in range(0, len(value)):
-            value[i] = int(value[i])
+            if value[i] is not None:
+                value[i] = int(value[i])
         return value
     elif simpletype == Simpletype.LONG_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(int(inner_value))
+            if inner_value is None:
+                value_set.add(None)
+            else:
+                value_set.add(int(inner_value))
         return value_set
     elif simpletype == Simpletype.DOUBLE:
         float_value = float(value)
@@ -927,42 +939,54 @@ def value_to_simpletype_value(value, simpletype):
             return float_value
     elif simpletype == Simpletype.DOUBLE_LIST:
         for i in range(0, len(value)):
-            float_value = float(value[i])
-            if math.isnan(float_value):
-                value[i] = None
-            else:
-                value[i] = float_value
+            if value[i] is not None:
+                float_value = float(value[i])
+                if math.isnan(float_value):
+                    value[i] = None
+                else:
+                    value[i] = float_value
         return value
     elif simpletype == Simpletype.DOUBLE_SET:
         value_set = set()
         for inner_value in value:
-            float_value = float(inner_value)
-            if math.isnan(float_value):
-                value_set.add(float_value)
+            if inner_value is None:
+                value_set.add(None)
             else:
-                value_set.add(float_value)
+                float_value = float(inner_value)
+                if math.isnan(float_value):
+                    value_set.add(float_value)
+                else:
+                    value_set.add(float_value)
         return value_set
     elif simpletype == Simpletype.STRING:
         return str(value)
     elif simpletype == Simpletype.STRING_LIST:
         for i in range(0, len(value)):
-            value[i] = str(value[i])
+            if value[i] is not None:
+                value[i] = str(value[i])
         return value
     elif simpletype == Simpletype.STRING_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(str(inner_value))
+            if inner_value is None:
+                value_set.add(None)
+            else:
+                value_set.add(str(inner_value))
         return value_set
     elif simpletype == Simpletype.BYTES:
         return bytearray(value)
     elif simpletype == Simpletype.BYTES_LIST:
         for i in range(0, len(value)):
-            value[i] = bytearray(value[i])
+            if value[i] is not None:
+                value[i] = bytearray(value[i])
         return value
     elif simpletype == Simpletype.BYTES_SET:
         value_set = set()
         for inner_value in value:
-            value_set.add(bytearray(inner_value))
+            if inner_value is None:
+                value_set.add(None)
+            else:
+                value_set.add(bytearray(inner_value))
         return value_set
 
 
