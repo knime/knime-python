@@ -1082,12 +1082,19 @@ def table_to_bytes(table):
                 builder.PrependBool(col[missIdx] == None)
             missVec = builder.EndVector(len(col))                      
             
-            serializer = builder.CreateString(serializers[table.get_names()[colIdx]])
+            serializerstr = ''
+            try:
+                serializerstr = serializers[table.get_names()[colIdx]]
+            except:
+                pass
+            if serializerstr != '':
+                serializer = builder.CreateString(serializerstr)
 
             ByteCollectionColumn.ByteCollectionColumnStart(builder)    
             ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
-            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec)   
-            ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
+            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec)
+            if serializerstr != '':   
+                ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
             colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
                     
             Column.ColumnStart(builder)
@@ -1139,12 +1146,19 @@ def table_to_bytes(table):
                 builder.PrependBool(col[missIdx] == None)
             missVec = builder.EndVector(len(col))                      
             
-            serializer = builder.CreateString(serializers[table.get_names()[colIdx]])
+            serializerstr = ''
+            try:
+                serializerstr = serializers[table.get_names()[colIdx]]
+            except:
+                pass
+            if serializerstr != '':
+                serializer = builder.CreateString(serializerstr)
 
             ByteCollectionColumn.ByteCollectionColumnStart(builder)    
             ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
-            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec)   
-            ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
+            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec) 
+            if serializerstr != '':  
+                ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
             colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
                     
             Column.ColumnStart(builder)
