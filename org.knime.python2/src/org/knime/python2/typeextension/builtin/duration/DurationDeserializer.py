@@ -5,7 +5,7 @@ def deserialize(bytes):
     hidx = durationstr.find('H');
     hours = 0
     if hidx >= 0:
-        hours = long(durationstr[:hidx])
+        hours = int(durationstr[:hidx])
         durationstr = durationstr[hidx+1:]
     midx = durationstr.find('M')
     minutes = 0
