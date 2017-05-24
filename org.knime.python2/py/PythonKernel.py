@@ -205,7 +205,7 @@ def run():
             elif command == 'getObject':
                 name = read_string()
                 data_object = get_variable(name)
-                o_bytes = pickle.dumps(data_object)
+                o_bytes = bytearray(pickle.dumps(data_object))
                 o_type = type(data_object).__name__
                 o_representation = object_to_string(data_object)
                 data_frame = DataFrame([{'bytes': o_bytes, 'type': o_type, 'representation': o_representation}])
@@ -903,7 +903,7 @@ def simpletype_for_column(data_frame, column_name):
                         simple_type = Simpletype.BYTES_LIST
             elif types_are_equivalent(col_type, str):
                 simple_type = Simpletype.STRING
-            elif types_are_equivalent(col_type, bytes):
+            elif types_are_equivalent(col_type, bytes) or types_are_equivalent(col_type, bytearray):
                 simple_type = Simpletype.BYTES
             else:
                 type_string = get_type_string(first_valid_object(data_frame, column_name))
