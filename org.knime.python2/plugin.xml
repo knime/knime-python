@@ -43,8 +43,8 @@
       </type>
       <type
             id="org.knime.python2.image"
-            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.ImageDeserializerFactory"
-            python-serializer="src/org/knime/python2/typeextension/builtin/image/ImageSerializer.py"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.image.PngDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/image/PngSerializer.py"
             python-type-identifier="PIL.PngImagePlugin.PngImageFile">
       </type>
       <type
@@ -89,8 +89,8 @@
       </type>
       <type
             id="org.knime.python2.image"
-            java-serializer-factory="org.knime.python2.typeextension.builtin.image.ImageSerializerFactory"
-            python-deserializer="src/org/knime/python2/typeextension/builtin/image/ImageDeserializer.py">
+            java-serializer-factory="org.knime.python2.typeextension.builtin.image.PngSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/image/PngDeserializer.py">
       </type>
       <type
             id="org.knime.python2.duration"
