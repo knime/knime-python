@@ -198,7 +198,10 @@ def bytes_into_table(table, data_bytes):
                 
                  #   print("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(cell.Value(cellIdx)))
                 for byteIdx in range(0,cell.ValueLength()):
-                    byteVals.append(cell.Value(byteIdx))
+                    val = cell.Value(byteIdx)
+                    if val < 0:
+                        val += 256
+                    byteVals.append(val)
                  
                 if colVec.Missing(idx):
                     colVals.append(None)
@@ -338,6 +341,7 @@ def table_to_bytes(table):
     colOffsetList = []
     
     serializers = table._column_serializers
+
     
    # print("data_frame", table._data_frame)
     for colIdx in range(0,table.get_number_columns()):
@@ -1013,12 +1017,19 @@ def table_to_bytes(table):
                 builder.PrependBool(col[missIdx] == None)
             missVec = builder.EndVector(len(col))                        
             
-            serializer = builder.CreateString(serializers[table.get_names()[colIdx]])
+            serializerstr = ''
+            try:
+                serializerstr = serializers[table.get_names()[colIdx]]
+            except:
+                pass
+            if serializerstr != '':
+                serializer = builder.CreateString(serializerstr)
             
             ByteColumn.ByteColumnStart(builder)        
             ByteColumn.ByteColumnAddValues(builder, valVec)
             ByteColumn.ByteColumnAddMissing(builder, missVec)
-            ByteColumn.ByteColumnAddSerializer(builder, serializer)
+            if serializerstr != '':
+                ByteColumn.ByteColumnAddSerializer(builder, serializer)
             colOffset = ByteColumn.ByteColumnEnd(builder)
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
