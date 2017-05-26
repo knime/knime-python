@@ -626,25 +626,33 @@ def deserialize_from_bytes(data_frame, column_serializers):
                     print(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
                     lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
-            if value is not None:
+            if isinstance(value, numpy.float64) and numpy.isnan(value):
+                value = None
+            if value:
                 if isinstance(value, list):
                     new_list = []
                     for inner_value in value:
-                        if inner_value is None:
-                            new_list.append(None)
-                        else:
+                        if isinstance(inner_value, numpy.float64) and numpy.isnan(inner_value):
+                            inner_value = None
+                        if inner_value:
                             new_list.append(deserializer.deserialize(inner_value))
+                        else:
+                            new_list.append(None)
                     data_frame[column][i] = new_list
                 elif isinstance(value, set):
                     new_set = set()
                     for inner_value in value:
-                        if inner_value is None:
-                            new_set.add(None)
-                        else:
+                        if isinstance(inner_value, numpy.float64) and numpy.isnan(inner_value):
+                            inner_value = None
+                        if inner_value:
                             new_set.add(deserializer.deserialize(inner_value))
+                        else:
+                            new_set.add(None)
                     data_frame[column][i] = new_set
                 else:
                     data_frame[column][i] = deserializer.deserialize(value)
+            else:
+                data_frame[column][i] = None
 
 
 # reads 4 bytes from the input stream and interprets them as size
@@ -996,11 +1004,11 @@ def value_to_simpletype_value(value, simpletype):
                 value_set.add(str(inner_value))
         return value_set
     elif simpletype == Simpletype.BYTES:
-        return bytearray(value)
+        return bytes(value)
     elif simpletype == Simpletype.BYTES_LIST:
         for i in range(0, len(value)):
             if value[i] is not None:
-                value[i] = bytearray(value[i])
+                value[i] = bytes(value[i])
         return value
     elif simpletype == Simpletype.BYTES_SET:
         value_set = set()
@@ -1008,7 +1016,7 @@ def value_to_simpletype_value(value, simpletype):
             if inner_value is None:
                 value_set.add(None)
             else:
-                value_set.add(bytearray(inner_value))
+                value_set.add(bytes(inner_value))
         return value_set
 
 

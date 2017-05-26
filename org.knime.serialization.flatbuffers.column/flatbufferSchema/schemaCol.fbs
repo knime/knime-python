@@ -1,4 +1,4 @@
-namespace org.knime.flatbuffers.flatc;
+namespace org.knime.python2.serde.flatbuffers.flatc;
 
 // author: Oliver Sampson, University of Konstanz
 
@@ -31,7 +31,7 @@ table Column {
 }
 
 table ByteCell {
-	value : [byte];
+	value : [ubyte];
 }
 
 

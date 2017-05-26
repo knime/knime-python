@@ -486,7 +486,7 @@ public class Flatbuffers implements SerializationLibrary {
 					int cIdx = 0;
 					for (String s : (String[]) o) {
 						if (s == null) {
-							strOffsets.add(builder.createString((String)getMissingValue(Type.STRING)));
+							strOffsets.add(builder.createString((String) getMissingValue(Type.STRING)));
 							missingCells[cIdx] = true;
 						} else {
 							strOffsets.add(builder.createString(s));
@@ -579,25 +579,31 @@ public class Flatbuffers implements SerializationLibrary {
 
 				for (Object o : columns.get(colName)) {
 					List<Integer> bytesCellOffsets = new ArrayList<>();
+					boolean[] missingCells = new boolean[((Byte[][])o).length];
 					if (o.getClass().getComponentType().getComponentType() == null) {
 						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) o));
 						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
 					} else {
+
+						int cIdx = 0;
 						for (Object b : (Byte[][]) o) {
-							int bytesCellValVec = ByteCell.createValueVector(builder,
-									ArrayUtils.toPrimitive((Byte[]) b));
-							bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+							if (b == null) {
+								int bytesCellValVec = ByteCell.createValueVector(builder,
+										ArrayUtils.toPrimitive((Byte[])getMissingValue(Type.BYTES_LIST)));
+								bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+								missingCells[cIdx] = true;
+							} else {
+								int bytesCellValVec = ByteCell.createValueVector(builder,
+										ArrayUtils.toPrimitive((Byte[]) b));
+								bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+								missingCells[cIdx] = false;
+							}
+							cIdx++;
 						}
 					}
 					int valuesOffset = ByteCollectionCell.createValueVector(builder,
 							ArrayUtils.toPrimitive(bytesCellOffsets.toArray(new Integer[bytesCellOffsets.size()])));
 
-					boolean[] missingCells = null;
-					if (o.getClass().getComponentType().getComponentType() == null) {
-						missingCells = new boolean[((Byte[]) o).length];
-					} else {
-						missingCells = new boolean[((Byte[][]) o).length];
-					}
 					int missingCellsOffset = ByteCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(ByteCollectionCell.createByteCollectionCell(builder, valuesOffset,
 							missingCellsOffset, false));
@@ -622,14 +628,19 @@ public class Flatbuffers implements SerializationLibrary {
 
 				for (Object o : columns.get(colName)) {
 					List<Integer> bytesCellOffsets = new ArrayList<>();
+					boolean addMissingValue = false;
 					if (o.getClass().getComponentType().getComponentType() == null) {
 						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) o));
 						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
 					} else {
 						for (Object b : (Byte[][]) o) {
-							int bytesCellValVec = ByteCell.createValueVector(builder,
-									ArrayUtils.toPrimitive((Byte[]) b));
-							bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+							if (b == null) {
+								addMissingValue = true;
+							} else {
+								int bytesCellValVec = ByteCell.createValueVector(builder,
+										ArrayUtils.toPrimitive((Byte[]) b));
+								bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
+							}
 						}
 					}
 					int valuesOffset = ByteCollectionCell.createValueVector(builder,
@@ -643,7 +654,7 @@ public class Flatbuffers implements SerializationLibrary {
 					}
 					int missingCellsOffset = ByteCollectionCell.createMissingVector(builder, missingCells);
 					cellOffsets.add(ByteCollectionCell.createByteCollectionCell(builder, valuesOffset,
-							missingCellsOffset, false));
+							missingCellsOffset, addMissingValue));
 				}
 
 				int valuesVector = ByteCollectionColumn.createValuesVector(builder,
@@ -1028,7 +1039,7 @@ public class Flatbuffers implements SerializationLibrary {
 					ByteCell bc = colVec.values(i);
 					Byte[] byteArray = new Byte[bc.valueLength()];
 					for (int k = 0; k < bc.valueLength(); k++) {
-						byteArray[k] = bc.value(k);
+						byteArray[k] = (byte) bc.value(k);
 					}
 					columns.get(table.colNames(j)).add(byteArray);
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -1044,11 +1055,15 @@ public class Flatbuffers implements SerializationLibrary {
 
 					List<Byte[]> l = new ArrayList<>(cell.valueLength());
 					for (int k = 0; k < cell.valueLength(); k++) {
-						Byte[] bb = new Byte[cell.value(k).valueLength()];
-						for (int b = 0; b < cell.value(k).valueLength(); b++) {
-							bb[b] = cell.value(k).value(b);
+						if (cell.missing(k)) {
+							l.add(null);
+						} else {
+							Byte[] bb = new Byte[cell.value(k).valueLength()];
+							for (int b = 0; b < cell.value(k).valueLength(); b++) {
+								bb[b] = (byte) cell.value(k).value(b);
+							}
+							l.add(bb);
 						}
-						l.add(bb);
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()][]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -1065,9 +1080,12 @@ public class Flatbuffers implements SerializationLibrary {
 					for (int k = 0; k < cell.valueLength(); k++) {
 						Byte[] bb = new Byte[cell.value(k).valueLength()];
 						for (int b = 0; b < cell.value(k).valueLength(); b++) {
-							bb[b] = cell.value(k).value(b);
+							bb[b] = (byte) cell.value(k).value(b);
 						}
 						l.add(bb);
+						if (cell.keepDummy()) {
+							l.add(null);
+						}
 					}
 					columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()][]));
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
