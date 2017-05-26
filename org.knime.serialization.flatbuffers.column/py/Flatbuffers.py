@@ -224,10 +224,13 @@ def bytes_into_table(table, data_bytes):
                     cellVals = []
                     # units in the List
                     for cellIdx in range(0, cell.ValueLength()):
-                        byteVals = []           
+                        if cell.Missing(cellIdx):
+                            byteVals.append(None)
+                        else: 
+                            byteVals = []           
                 
-                        for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
-                            byteVals.append(cell.Value(cellIdx).Value(byteIdx))
+                            for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
+                                byteVals.append(cell.Value(cellIdx).Value(byteIdx))
                     
                #     print("Flatbuffers -> Python: (BYTES LIST Column) Cell.Type():", type(byteVals))
                #     print("Flatbuffers -> Python: (BYTES LIST Column) Cell", byteVals)
