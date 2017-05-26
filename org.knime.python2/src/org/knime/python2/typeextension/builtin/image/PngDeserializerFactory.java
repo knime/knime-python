@@ -8,9 +8,9 @@ import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 
-public class ImageDeserializerFactory extends DeserializerFactory {
+public class PngDeserializerFactory extends DeserializerFactory {
 
-	public ImageDeserializerFactory() {
+	public PngDeserializerFactory() {
 		super(PNGImageContent.TYPE);
 	}
 
