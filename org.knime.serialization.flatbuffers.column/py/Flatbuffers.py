@@ -264,7 +264,6 @@ def bytes_into_table(table, data_bytes):
                                   
                     colVals.append(cellVals)
             
-            print("Col vals: " + str(colVals)) 
             table.add_column(colNames[j], colVals)
 
     table.set_rowkeys(rowIds)
@@ -989,7 +988,7 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.BYTES:
-            print("Python->Flatbuffers: Starting BYTES")
+            #print("Python->Flatbuffers: Starting BYTES")
             col = table_column(table, colIdx) 
           
             bytesOffsets = []
@@ -1004,8 +1003,8 @@ def table_to_bytes(table):
                     cell = bytearray(col[idx])
                     bytesOffsets.append(get_ByteCell(builder, cell))
                     missing.append(False)
-                    print("Python->Flatbuffers: (Bytes) cell:", cell)
-                    print("Python->Flatbuffers: (Bytes) len(cell):", len(cell))
+                    #print("Python->Flatbuffers: (Bytes) cell:", cell)
+                    #print("Python->Flatbuffers: (Bytes) len(cell):", len(cell))
                 
                             
             ByteColumn.ByteColumnStartValuesVector(builder, len(bytesOffsets))
@@ -1036,7 +1035,7 @@ def table_to_bytes(table):
             Column.ColumnAddType(builder, table.get_type(colIdx).value)
             Column.ColumnAddByteColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
-            print("Python->Flatbuffers: Ending BYTES")
+            #print("Python->Flatbuffers: Ending BYTES")
             
         elif table.get_type(colIdx) == _types_.BYTES_LIST:  
             col = table_column(table, colIdx)
@@ -1046,11 +1045,11 @@ def table_to_bytes(table):
                 if col[valIdx] == None:                                                              
                     collOffsets.append(get_empty_ByteCell(builder))                 
                 else:                 
-                    print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                    #print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
                     cellMissing = []
                     for cellIdx in range(0, len(col[valIdx])):
                         cell = col[valIdx][cellIdx]
-                        print("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
+                        #print("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
                         if cell == None:
                             collOffsets.append(get_empty_ByteCell(builder))
                             cellMissing.append(True)
@@ -1058,7 +1057,7 @@ def table_to_bytes(table):
                             collOffsets.append(get_ByteCell(builder, bytearray(cell)))
                             cellMissing.append(False)
                     
-                    print("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
+                    #print("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
                             
                     ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
                     for cellIdx in reversed(range(0, len(cellMissing))):
@@ -1111,8 +1110,10 @@ def table_to_bytes(table):
             cellOffsets = []
             for valIdx in range(0,len(col)):
                 collOffsets = []
-                if col[valIdx] == None:                                                              
-                    collOffsets.append(get_empty_ByteCellEnd(builder))                  
+                if col[valIdx] == None:
+                    #TODO create get_empty_ByteCellEnd method                                                             
+                    #collOffsets.append(get_empty_ByteCellEnd(builder))
+                    collOffsets.append(get_empty_ByteCell(builder))                   
                 else:                 
              #       print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
                     addMissingValue = False

@@ -255,6 +255,8 @@ def bytes_from_file(path):
 
 def bytes_to_data_frame(data_bytes):
     column_names = _serializer.column_names_from_bytes(data_bytes)
+    if len(column_names) == 0:
+        return DataFrame()
     column_types = _serializer.column_types_from_bytes(data_bytes)
     column_serializers = _serializer.column_serializers_from_bytes(data_bytes)
     table = ToPandasTable(column_names, column_types, column_serializers)

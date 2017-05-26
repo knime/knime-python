@@ -48,6 +48,7 @@ package org.knime.python2.typeextension.builtin.datetime;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.python2.typeextension.Serializer;
@@ -78,6 +79,7 @@ public class DateTimeSerializerFactory extends SerializerFactory<DateAndTimeValu
 		public byte[] serialize(DateAndTimeValue value) throws IOException {
 			Date date = value.getUTCCalendarClone().getTime();
 			SimpleDateFormat sdf = new SimpleDateFormat(FORMAT);
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			return sdf.format(date).getBytes("UTF-8");
 		}
 		
