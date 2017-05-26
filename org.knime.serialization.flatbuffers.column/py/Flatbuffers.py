@@ -1111,8 +1111,6 @@ def table_to_bytes(table):
             for valIdx in range(0,len(col)):
                 collOffsets = []
                 if col[valIdx] == None:
-                    #TODO create get_empty_ByteCellEnd method                                                             
-                    #collOffsets.append(get_empty_ByteCellEnd(builder))
                     collOffsets.append(get_empty_ByteCell(builder))                   
                 else:                 
              #       print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
