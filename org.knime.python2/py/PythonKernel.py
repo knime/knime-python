@@ -996,11 +996,11 @@ def value_to_simpletype_value(value, simpletype):
                 value_set.add(str(inner_value))
         return value_set
     elif simpletype == Simpletype.BYTES:
-        return bytearray(value)
+        return bytes(value)
     elif simpletype == Simpletype.BYTES_LIST:
         for i in range(0, len(value)):
             if value[i] is not None:
-                value[i] = bytearray(value[i])
+                value[i] = bytes(value[i])
         return value
     elif simpletype == Simpletype.BYTES_SET:
         value_set = set()
@@ -1008,7 +1008,7 @@ def value_to_simpletype_value(value, simpletype):
             if inner_value is None:
                 value_set.add(None)
             else:
-                value_set.add(bytearray(inner_value))
+                value_set.add(bytes(inner_value))
         return value_set
 
 
