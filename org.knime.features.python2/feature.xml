@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="org.knime.features.python"
-      label="KNIME Python Integration"
+      id="org.knime.features.python2"
+      label="KNIME Python Integration (serializer for choosing)"
       version="3.3.0.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany">
 
    <description>
       This plugin contains nodes that integrate Python into KNIME.
+The serialization library for transferring data between KNIME
+and python can be choosen in the preferences.
 The scripts run in a local Python installation (not included).
    </description>
 
@@ -357,15 +359,30 @@ Public License instead of this License.
    </license>
 
    <plugin
-         id="org.knime.python"
+         id="org.knime.python2"
          download-size="0"
          install-size="0"
          version="0.0.0"/>
 
    <plugin
-         id="org.knime.python.nodes"
+         id="org.knime.python2.nodes"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.knime.python2.serde.csv"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.knime.python2.serde.flatbuffers"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
 
 </feature>
