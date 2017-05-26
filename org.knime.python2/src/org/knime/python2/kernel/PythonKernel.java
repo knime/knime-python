@@ -99,7 +99,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableChunker;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableCreator;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.BufferedDataTableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.KeyValueTableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.KeyValueTableIterator;

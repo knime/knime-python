@@ -367,8 +367,12 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 						Deserializer bytesDeserializer = m_pythonToKnimeExtensions
 								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
 						try {
-							cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()),
-									m_fileStoreFactory);
+							if (cell.getBytesValue() == null) {
+								cells[i] = new MissingCell(null);
+							} else {
+								cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()),
+										m_fileStoreFactory);
+							}
 							DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
 							if (dataTypeContainer != null) {
 								dataTypeContainer.m_dataTypes.add(cells[i].getType());
@@ -379,8 +383,12 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 						}
 					} else {
 						try {
-							cells[i] = new DenseByteVectorCellFactory(new DenseByteVector(
-									ArrayUtils.toPrimitive(cell.getBytesValue()))).createDataCell();
+							if (cell.getBytesValue() == null) {
+								cells[i] = new MissingCell(null);
+							} else {
+								cells[i] = new DenseByteVectorCellFactory(new DenseByteVector(
+										ArrayUtils.toPrimitive(cell.getBytesValue()))).createDataCell();
+							}
 						} catch (IllegalStateException e) {
 							LOGGER.error(e.getMessage(), e);
 							cells[i] = new MissingCell(null);
@@ -394,32 +402,48 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 						Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
 								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
 						List<DataCell> listCells = new ArrayList<DataCell>();
-						for (Byte[] value : cell.getBytesArrayValue()) {
-							try {
-								DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value),
-										m_fileStoreFactory);
-								DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
-								if (dataTypeContainer != null) {
-									dataTypeContainer.m_dataTypes.add(dc.getType());
-								}
-								listCells.add(dc);
-							} catch (IllegalStateException | IOException e) {
-								LOGGER.error(e.getMessage(), e);
-								listCells.add(new MissingCell(null));
-							}
-						}
-						cells[i] = CollectionCellFactory.createListCell(listCells);
-					} else {
-						List<DataCell> listCells = new ArrayList<DataCell>();
-						try {
+						if (cell.getBytesArrayValue() == null) {
+							cells[i] = new MissingCell(null);
+						} else {
 							for (Byte[] value : cell.getBytesArrayValue()) {
-								listCells.add(new StringCell(value.toString()));
+								if (value == null) {
+									listCells.add(new MissingCell(null));
+								} else {
+									try {
+										DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value),
+													m_fileStoreFactory);
+										DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+										if (dataTypeContainer != null) {
+											dataTypeContainer.m_dataTypes.add(dc.getType());
+										}
+										listCells.add(dc);
+									} catch (IllegalStateException | IOException e) {
+										LOGGER.error(e.getMessage(), e);
+										listCells.add(new MissingCell(null));
+									}
+								}
 							}
-						} catch (IllegalStateException e) {
-							LOGGER.error(e.getMessage(), e);
-							listCells.add(new MissingCell(null));
+							cells[i] = CollectionCellFactory.createListCell(listCells);
 						}
-						cells[i] = CollectionCellFactory.createListCell(listCells);
+					} else {
+						if (cell.getBytesArrayValue() == null) {
+							cells[i] = new MissingCell(null);
+						} else {
+							List<DataCell> listCells = new ArrayList<DataCell>();
+							for (Byte[] value : cell.getBytesArrayValue()) {
+								if (value == null) {
+									listCells.add(new MissingCell(null));
+								} else {
+									try {
+										listCells.add(new StringCell(value.toString()));
+									} catch (IllegalStateException e) {
+										LOGGER.error(e.getMessage(), e);
+										listCells.add(new MissingCell(null));
+									}
+								}
+							}
+							cells[i] = CollectionCellFactory.createListCell(listCells);
+						}
 					}
 					break;
 				case BYTES_SET:
@@ -429,32 +453,48 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 						Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
 								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
 						List<DataCell> setCells = new ArrayList<DataCell>();
-						for (Byte[] value : cell.getBytesArrayValue()) {
-							try {
-								DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value),
-										m_fileStoreFactory);
-								DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
-								if (dataTypeContainer != null) {
-									dataTypeContainer.m_dataTypes.add(dc.getType());
+						if (cell.getBytesArrayValue() == null) {
+							cells[i] = new MissingCell(null);
+						} else {
+							for (Byte[] value : cell.getBytesArrayValue()) {
+								if (value == null) {
+									setCells.add(new MissingCell(null));
+								} else {
+									try {
+										DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value),
+												m_fileStoreFactory);
+										DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+										if (dataTypeContainer != null) {
+											dataTypeContainer.m_dataTypes.add(dc.getType());
+										}
+										setCells.add(dc);
+									} catch (IllegalStateException | IOException e) {
+										LOGGER.error(e.getMessage(), e);
+										setCells.add(new MissingCell(null));
+									}
 								}
-								setCells.add(dc);
-							} catch (IllegalStateException | IOException e) {
-								LOGGER.error(e.getMessage(), e);
-								setCells.add(new MissingCell(null));
 							}
+							cells[i] = CollectionCellFactory.createSetCell(setCells);
 						}
-						cells[i] = CollectionCellFactory.createSetCell(setCells);
 					} else {
 						List<DataCell> setCells = new ArrayList<DataCell>();
-						try {
+						if (cell.getBytesArrayValue() == null) {
+							cells[i] = new MissingCell(null);
+						} else {
 							for (Byte[] value : cell.getBytesArrayValue()) {
-								setCells.add(new StringCell(value.toString()));
+								if (value == null) {
+									setCells.add(new MissingCell(null));
+								} else {
+									try {
+										setCells.add(new StringCell(value.toString()));
+									} catch (IllegalStateException e) {
+										LOGGER.error(e.getMessage(), e);
+										setCells.add(new MissingCell(null));
+									}
+								}
 							}
-						} catch (IllegalStateException e) {
-							LOGGER.error(e.getMessage(), e);
-							setCells.add(new MissingCell(null));
+							cells[i] = CollectionCellFactory.createSetCell(setCells);
 						}
-						cells[i] = CollectionCellFactory.createSetCell(setCells);
 					}
 					break;
 				default:

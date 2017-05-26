@@ -113,7 +113,11 @@ def bytes_into_table(table, data_bytes):
                 if base64_list is not None:
                     bytes_list = []
                     for k in range(len(base64_list)):
-                        bytes_list.append(base64.b64decode(base64_list[i]))
+                        bytes_value = base64_list[k]
+                        if bytes_value:
+                            bytes_list.append(base64.b64decode(bytes_value))
+                        else:
+                            bytes_list.append(None)
                     data_frame.set_value(index, names[i], bytes_list)
         elif col_type_id == _types_.BYTES_SET.value:
             for j in range(len(data_frame)):
@@ -122,7 +126,10 @@ def bytes_into_table(table, data_bytes):
                 if base64_set is not None:
                     bytes_set = set()
                     for value in base64_set:
-                        bytes_set.add(base64.b64decode(value))
+                        if value:
+                            bytes_set.add(base64.b64decode(value))
+                        else:
+                            bytes_set.add(None)
                     data_frame.set_value(index, names[i], bytes_set)
     table._data_frame = data_frame
     in_file.close()
@@ -165,7 +172,11 @@ def table_to_bytes(table):
                 if bytes_list is not None:
                     base64_list = []
                     for k in range(len(bytes_list)):
-                        base64_list.append(base64.b64encode(bytes_list[i]))
+                        bytes_value = bytes_list[k]
+                        if bytes_value:
+                            base64_list.append(base64.b64encode(bytes_value))
+                        else:
+                            base64_list.append(None)
                     data_frame.set_value(index, names[i], base64_list)
         elif col_type_id == _types_.BYTES_SET.value:
             for j in range(len(data_frame)):
@@ -174,7 +185,10 @@ def table_to_bytes(table):
                 if bytes_set is not None:
                     base64_set = set()
                     for value in bytes_set:
-                        base64_set.add(base64.b64encode(value))
+                        if value:
+                            base64_set.add(base64.b64encode(value))
+                        else:
+                            base64_set.add(None)
                     data_frame.set_value(index, names[i], base64_set)
     data_frame.to_csv(out_file, na_rep='MissingCell')
     out_file.close()

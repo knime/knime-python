@@ -626,25 +626,33 @@ def deserialize_from_bytes(data_frame, column_serializers):
                     print(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
                     lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
-            if value is not None:
+            if isinstance(value, numpy.float64) and numpy.isnan(value):
+                value = None
+            if value:
                 if isinstance(value, list):
                     new_list = []
                     for inner_value in value:
-                        if inner_value is None:
-                            new_list.append(None)
-                        else:
+                        if isinstance(inner_value, numpy.float64) and numpy.isnan(inner_value):
+                            inner_value = None
+                        if inner_value:
                             new_list.append(deserializer.deserialize(inner_value))
+                        else:
+                            new_list.append(None)
                     data_frame[column][i] = new_list
                 elif isinstance(value, set):
                     new_set = set()
                     for inner_value in value:
-                        if inner_value is None:
-                            new_set.add(None)
-                        else:
+                        if isinstance(inner_value, numpy.float64) and numpy.isnan(inner_value):
+                            inner_value = None
+                        if inner_value:
                             new_set.add(deserializer.deserialize(inner_value))
+                        else:
+                            new_set.add(None)
                     data_frame[column][i] = new_set
                 else:
                     data_frame[column][i] = deserializer.deserialize(value)
+            else:
+                data_frame[column][i] = None
 
 
 # reads 4 bytes from the input stream and interprets them as size
