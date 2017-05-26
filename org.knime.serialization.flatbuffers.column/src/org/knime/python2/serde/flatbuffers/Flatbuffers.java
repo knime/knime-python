@@ -1039,7 +1039,7 @@ public class Flatbuffers implements SerializationLibrary {
 					ByteCell bc = colVec.values(i);
 					Byte[] byteArray = new Byte[bc.valueLength()];
 					for (int k = 0; k < bc.valueLength(); k++) {
-						byteArray[k] = bc.value(k);
+						byteArray[k] = (byte) bc.value(k);
 					}
 					columns.get(table.colNames(j)).add(byteArray);
 					missing.get(table.colNames(j))[i] = colVec.missing(i);
@@ -1060,7 +1060,7 @@ public class Flatbuffers implements SerializationLibrary {
 						} else {
 							Byte[] bb = new Byte[cell.value(k).valueLength()];
 							for (int b = 0; b < cell.value(k).valueLength(); b++) {
-								bb[b] = cell.value(k).value(b);
+								bb[b] = (byte) cell.value(k).value(b);
 							}
 							l.add(bb);
 						}
@@ -1080,7 +1080,7 @@ public class Flatbuffers implements SerializationLibrary {
 					for (int k = 0; k < cell.valueLength(); k++) {
 						Byte[] bb = new Byte[cell.value(k).valueLength()];
 						for (int b = 0; b < cell.value(k).valueLength(); b++) {
-							bb[b] = cell.value(k).value(b);
+							bb[b] = (byte) cell.value(k).value(b);
 						}
 						l.add(bb);
 						if (cell.keepDummy()) {
