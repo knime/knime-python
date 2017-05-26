@@ -240,22 +240,24 @@ def bytes_into_table(table, data_bytes):
             colVals = []
             # Rows in the column
             for idx in range(0,colVec.ValuesLength()):
-                cell = colVec.Values(idx)
-                cellVals = set()
-                # units in the Set
-                for cellIdx in range(0, cell.ValueLength()):
-                    byteVals = []           
                 
-                    for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
-                        byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                    
-                #    print("Flatbuffers -> Python: (BYTES SET Column) Cell.Type():", type(byteVals))
-                #    print("Flatbuffers -> Python: (BYTES SET Column) Cell", byteVals)
-                    cellVals.add(bytes(byteVals))
-
                 if colVec.Missing(idx):
                     colVals.append(None)
                 else:
+                    cell = colVec.Values(idx)
+                    cellVals = set()
+                # units in the Set
+                    for cellIdx in range(0, cell.ValueLength()):
+                        byteVals = []           
+                        for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
+                            byteVals.append(cell.Value(cellIdx).Value(byteIdx))
+                        cellVals.add(bytes(byteVals))
+                        if cell.KeepDummy():
+                            cellVals.add(None)
+                    
+                #    print("Flatbuffers -> Python: (BYTES SET Column) Cell.Type():", type(byteVals))
+                #    print("Flatbuffers -> Python: (BYTES SET Column) Cell", byteVals)
+                                  
                     colVals.append(cellVals)
              
             table.add_column(colNames[j], colVals)
@@ -1031,26 +1033,33 @@ def table_to_bytes(table):
             for valIdx in range(0,len(col)):
                 collOffsets = []
                 if col[valIdx] == None:                                                              
-                    ByteCell.ByteCellStartValueVector(builder, 1)
-                    ByteCell.ByteCellAddValue(builder, 0)
-                    bytesVec = builder.EndVector(1)
-                    ByteCell.ByteCellStart(builder)
-                    ByteCell.ByteCellAddValue(builder, bytesVec)
-                    collOffsets.append(ByteCell.ByteCellEnd(builder))                  
+                    collOffsets.append(get_empty_ByteCell(builder))                 
                 else:                 
-                    print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                 #   print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                    cellMissing = []
                     for bytesListIdx in range(0, len(col[valIdx])):
                         cell = col[valIdx][bytesListIdx]
                  #       print("Python->Flatbuffers: (BYTES List Cell): cell", cell)
-                        ByteCell.ByteCellStartValueVector(builder, len(cell))
-                        for byteIdx in reversed(range(0, len(cell))):
+                        if cell == None:
+                            cellOffsets.append(get_empty_ByteCell(builder))
+                            cellMissing.append(True)
+                        else:
+                            ByteCell.ByteCellStartValueVector(builder, len(cell))
+                            for byteIdx in reversed(range(0, len(cell))):
                  #           print("Python->Flatbuffers: (BYTES List Cell): cell[", byteIdx, "]", cell[byteIdx]) 
-                            builder.PrependByte(cell[byteIdx])                           
-                        bytesVec = builder.EndVector(len(cell))
+                                builder.PrependByte(cell[byteIdx])                           
+                            bytesVec = builder.EndVector(len(cell))
                 
-                        ByteCell.ByteCellStart(builder)
-                        ByteCell.ByteCellAddValue(builder, bytesVec)
-                        collOffsets.append(ByteCell.ByteCellEnd(builder))
+                            ByteCell.ByteCellStart(builder)
+                            ByteCell.ByteCellAddValue(builder, bytesVec)
+                            collOffsets.append(ByteCell.ByteCellEnd(builder))
+                            cellMissing.append(False)
+                            
+                    ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
+                    for cellIdx in reversed(range(0, len(cellMissing))):
+                         builder.PrependBool(cellMissing[cellIdx])                                    
+                    cellMissingVec = builder.EndVector(len(cellMissing))       
+                        
                                  
                 ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
                 for collIdx in reversed(range(0, len(collOffsets))):
@@ -1059,6 +1068,7 @@ def table_to_bytes(table):
                 
                 ByteCollectionCell.ByteCollectionCellStart(builder)
                 ByteCollectionCell.ByteCollectionCellAddValue(builder,cellVec)
+                ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
                         
             ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
@@ -1090,24 +1100,23 @@ def table_to_bytes(table):
             for valIdx in range(0,len(col)):
                 collOffsets = []
                 if col[valIdx] == None:                                                              
-                    ByteCell.ByteCellStartValueVector(builder, 1)
-                    ByteCell.ByteCellAddValue(builder, 0)
-                    bytesVec = builder.EndVector(1)
-                    ByteCell.ByteCellStart(builder)
-                    ByteCell.ByteCellAddValue(builder, bytesVec)
-                    collOffsets.append(ByteCell.ByteCellEnd(builder))                  
+                    collOffsets.append(get_empty_ByteCellEnd(builder))                  
                 else:                 
              #       print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                    addMissingValue = False
                     for cell in col[valIdx]:
-                        ByteCell.ByteCellStartValueVector(builder, len(cell))
-                        for byteIdx in reversed(range(0, len(cell))):
+                        if cell == None:
+                            addMissingValue = True
+                        else:
+                            ByteCell.ByteCellStartValueVector(builder, len(cell))
+                            for byteIdx in reversed(range(0, len(cell))):
             #                print("Python->Flatbuffers: (BYTES List Cell): cell[", byteIdx, "]", cell[byteIdx]) 
-                            builder.PrependByte(cell[byteIdx])                           
-                        bytesVec = builder.EndVector(len(cell))
+                                builder.PrependByte(cell[byteIdx])                           
+                            bytesVec = builder.EndVector(len(cell))
                 
-                        ByteCell.ByteCellStart(builder)
-                        ByteCell.ByteCellAddValue(builder, bytesVec)
-                        collOffsets.append(ByteCell.ByteCellEnd(builder))
+                            ByteCell.ByteCellStart(builder)
+                            ByteCell.ByteCellAddValue(builder, bytesVec)
+                            collOffsets.append(ByteCell.ByteCellEnd(builder))
                                  
                 ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
                 for collIdx in reversed(range(0, len(collOffsets))):
@@ -1116,6 +1125,7 @@ def table_to_bytes(table):
                 
                 ByteCollectionCell.ByteCollectionCellStart(builder)
                 ByteCollectionCell.ByteCollectionCellAddValue(builder,cellVec)
+                ByteCollectionCell.ByteCollectionCellAddKeepDummy(builder,addMissingValue)
                 cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
                         
             ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
@@ -1159,6 +1169,15 @@ def table_to_bytes(table):
   #  print("Python->Flatbuffers Finished KnimeTable")
     
     return builder.Output()
+
+def get_empty_ByteCell(builder):
+    ByteCell.ByteCellStartValueVector(builder, 1)
+    ByteCell.ByteCellAddValue(builder, 0)
+    bytesVec = builder.EndVector(1)
+    ByteCell.ByteCellStart(builder)
+    ByteCell.ByteCellAddValue(builder, bytesVec)
+    return ByteCell.ByteCellEnd(builder)
+    
 
 def table_column(table, col_idx):
     col = []
