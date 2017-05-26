@@ -1046,15 +1046,17 @@ def table_to_bytes(table):
                 else:                 
                     print("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
                     cellMissing = []
-                    for bytesListIdx in range(0, len(col[valIdx])):
-                        cell = col[valIdx][bytesListIdx]
-                 #       print("Python->Flatbuffers: (BYTES List Cell): cell", cell)
+                    for cellIdx in range(0, len(col[valIdx])):
+                        cell = col[valIdx][cellIdx]
+                        print("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
                         if cell == None:
-                            cellOffsets.append(get_empty_ByteCell(builder))
+                            collOffsets.append(get_empty_ByteCell(builder))
                             cellMissing.append(True)
                         else:
                             collOffsets.append(get_ByteCell(builder, cell))
                             cellMissing.append(False)
+                    
+                    print("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
                             
                     ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
                     for cellIdx in reversed(range(0, len(cellMissing))):
@@ -1062,13 +1064,13 @@ def table_to_bytes(table):
                     cellMissingVec = builder.EndVector(len(cellMissing))       
                         
                                  
-                ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
-                for collIdx in reversed(range(0, len(collOffsets))):
-                    builder.PrependUOffsetTRelative(collOffsets[collIdx])                                    
-                cellVec = builder.EndVector(len(collOffsets))                   
+                    ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
+                    for cellIdx in reversed(range(0, len(collOffsets))):
+                        builder.PrependUOffsetTRelative(collOffsets[cellIdx])                                    
+                    cellVec = builder.EndVector(len(collOffsets))                   
                 
                 ByteCollectionCell.ByteCollectionCellStart(builder)
-                ByteCollectionCell.ByteCollectionCellAddValue(builder,cellVec)
+                ByteCollectionCell.ByteCollectionCellAddValue(builder, cellVec)
                 ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
                         
