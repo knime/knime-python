@@ -81,6 +81,7 @@ import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.def.BooleanCell.BooleanCellFactory;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
@@ -571,7 +572,7 @@ class ProtobufConverter {
 			if (colType.equals("BooleanColumn")) {
 				final BooleanColumn column = table.getBooleanCol(colRefList.get(i).getIndexInType());
 				final Table.BooleanValue value = column.getBooleanValue(index);
-				cells[i] = value.hasValue() ? BooleanCell.get(value.getValue()) : new MissingCell(null);
+				cells[i] = value.hasValue() ? BooleanCellFactory.create(value.getValue()) : new MissingCell(null);
 			} else if (colType.equals("IntegerColumn")) {
 				final IntegerColumn column = table.getIntegerCol(colRefList.get(i).getIndexInType());
 				final Table.IntegerValue value = column.getIntegerValue(index);
@@ -600,7 +601,7 @@ class ProtobufConverter {
 				} else {
 					final List<DataCell> singleCells = new ArrayList<DataCell>();
 					for (final Table.BooleanValue singleValue : value.getValueList()) {
-						singleCells.add(singleValue.hasValue() ? BooleanCell.get(singleValue.getValue())
+						singleCells.add(singleValue.hasValue() ? BooleanCellFactory.create(singleValue.getValue())
 								: new MissingCell(null));
 					}
 					cells[i] = column.getIsSet() ? CollectionCellFactory.createSetCell(singleCells)

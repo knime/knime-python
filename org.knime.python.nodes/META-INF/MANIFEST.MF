@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python nodes
+Bundle-Name: KNIME Python nodes (Labs)
 Bundle-SymbolicName: org.knime.python.nodes;singleton:=true
 Bundle-Version: 3.4.0.qualifier
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
@@ -10,4 +10,4 @@ Require-Bundle: org.knime.base;bundle-version="[3.0.0,4.0.0)",
  org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
  org.knime.ext.svg;bundle-version="[3.0.0,4.0.0)"
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

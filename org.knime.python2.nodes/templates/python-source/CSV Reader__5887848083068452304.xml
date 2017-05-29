@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="CSV Reader__5887848083068452304.xml">
+<entry key="category" type="xstring" value="IO"/>
+<entry key="title" type="xstring" value="CSV Reader"/>
+<entry key="description" type="xstring" value="Use the pandas csv reader to read data directly into the python environment.  "/>
+<entry key="sourcecode" type="xstring" value="from pandas.io.parsers import read_csv%%00010%%00010# Path to csv file%%00010filepath = &quot;&lt;path to csv&gt;&quot;%%00010%%00010# Read csv file into output table.%%00010output_table = read_csv(filepath)"/>
+</config>

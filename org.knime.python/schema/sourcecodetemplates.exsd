@@ -6,7 +6,9 @@
          <meta.schema plugin="org.knime.python" id="org.knime.python.sourcecodetemplates" name="Source code templates extension"/>
       </appinfo>
       <documentation>
-         Extension point to add predefined source code templates.
+         WARNING: This extension point is deprecated. Please use org.knime.python2.sourcecodetemplates instead.
+
+Extension point to add predefined source code templates.
       </documentation>
    </annotation>
 

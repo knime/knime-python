@@ -62,6 +62,7 @@ import org.knime.core.util.FileUtil;
 import org.knime.python.kernel.PythonModuleExtensions;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
+import org.knime.python2.PythonPreferencePage;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -108,7 +109,7 @@ public class Activator implements BundleActivator {
 	 * @return The command to start python
 	 */
 	public static String getPythonCommand() {
-		return PythonPreferencePage.getPythonPath();
+		return PythonPreferencePage.getPython2Path();
 	}
 
 	/**
@@ -131,7 +132,7 @@ public class Activator implements BundleActivator {
 			Process process = pb.start();
 			// Get console output of script
 			StringWriter writer = new StringWriter();
-			IOUtils.copy(process.getInputStream(), writer);
+			IOUtils.copy(process.getInputStream(), writer, "UTF-8");
 			// Create test result with console output as message and error code
 			// != 0 as error
 			pythonTestResult = new PythonKernelTestResult(writer.toString());

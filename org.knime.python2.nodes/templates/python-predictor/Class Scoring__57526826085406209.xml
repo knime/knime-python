@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Class Scoring__57526826085406209.xml">
+<entry key="category" type="xstring" value="scikit learn"/>
+<entry key="title" type="xstring" value="Class Scoring"/>
+<entry key="description" type="xstring" value="Predicts classes from any scikit learn classifier."/>
+<entry key="sourcecode" type="xstring" value="# Choose features from the model%%00010new_data = input_table.iloc[:,0:10]%%00010%%00010# Copy input table to output%%00010output_table = input_table.copy()%%00010%%00010# Predict using existing model + new data%%00010output_table['Prediction'] = input_model.predict(new_data)"/>
+</config>
