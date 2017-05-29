@@ -775,13 +775,16 @@ def table_to_bytes(table):
                     cellMissing = []
                     for cellIdx in reversed(range(0, len(col[valIdx]))):
                         if col[valIdx][cellIdx] == None:
-                            col[valIdx][cellIdx] = float('NaN')
+                            builder.PrependFloat64(float('NaN'))
                             cellMissing.append(True)
+                            print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
                         else:
                             builder.PrependFloat64(col[valIdx][cellIdx])
-                            cellMissing.append(False)                     
+                            cellMissing.append(False)    
+                            print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])                 
                     cellVec = builder.EndVector(len(col[valIdx]))
                     
+                #    print("Python->Flatbuffers: (Double List Cell):", col[valIdx])
                     # the missing vector is already in reversed order
                     DoubleCollectionCell.DoubleCollectionCellStartMissingVector(builder, len(col[valIdx]))
                     for cellIdx in range(0, len(col[valIdx])):
