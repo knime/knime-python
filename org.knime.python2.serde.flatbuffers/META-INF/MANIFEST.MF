@@ -1,10 +1,11 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: org.knime.serialization.flatbuffers.column
+Bundle-Name: KNIME Python Serialization - Flatbuffers
 Bundle-SymbolicName: org.knime.python2.serde.flatbuffers;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 3.4.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)",
  org.knime.core;bundle-version="3.4.0",
  org.apache.commons.lang3;bundle-version="3.2.1"
 Export-Package: org.knime.python2.serde.flatbuffers
+Bundle-Vendor: KNIME GmbH, Konstanz, Germany
