@@ -314,7 +314,7 @@ def get_set_column(colVec):
 
 def table_to_bytes(table):
    
-    print("Python->Flatbuffers: Starting table_to_bytes()")
+    #print("Python->Flatbuffers: Starting table_to_bytes()")
     builder = flatbuffers.Builder(1024)
     
     #Row IDs
@@ -777,11 +777,11 @@ def table_to_bytes(table):
                         if col[valIdx][cellIdx] == None:
                             builder.PrependFloat64(float('NaN'))
                             cellMissing.append(True)
-                            print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
+                            #print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
                         else:
                             builder.PrependFloat64(col[valIdx][cellIdx])
                             cellMissing.append(False)    
-                            print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])                 
+                            #print("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])                 
                     cellVec = builder.EndVector(len(col[valIdx]))
                     
                 #    print("Python->Flatbuffers: (Double List Cell):", col[valIdx])
