@@ -68,22 +68,10 @@ if _tslib_available:
 # ******************************************************
 # Remote debugging section
 # ******************************************************
-REMOTE_DBG = False
-# append pydev remote debugger
-if REMOTE_DBG:
-    try:
-        # for infos see http://pydev.org/manual_adv_remote_debugger.html
-        # you have to create a new environment variable PYTHONPATH that points to the psrc folder
-        # located in ECLIPSE\plugins\org.python.pydev_xxx
-        import pydevd  # with the addon script.module.pydevd, only use `import pydevd`
 
-        # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
-        pydevd.settrace('localhost', port=5678, suspend=False, stdoutToServer=True, stderrToServer=True)
-    except ImportError as e:
-        sys.stderr.write("Error: " +
-                         "You must add org.python.pydev.debug.pysrc to your PYTHONPATH. ".format(e))
-        pydevd = None
-        sys.exit(1)
+import debug_util
+#debug_util.init_debug()
+debug_util.debug_msg('Python Kernel enabled debugging!')
 
 
 # ******************************************************
@@ -111,8 +99,7 @@ def run():
             command = read_string()
             if command == 'execute':
                 source_code = read_string()
-                if REMOTE_DBG:
-                    print('executing: ' + source_code + '\n')
+                debug_util.debug_msg('executing: ' + source_code + '\n')
                 output, error = execute(source_code)
                 write_string(output)
                 write_string(error)
@@ -147,15 +134,13 @@ def run():
                 data_frame = get_variable(name)
                 write_integer(len(data_frame))
             elif command == 'getTable':
-                if REMOTE_DBG:
-                    print('getTable\n')
+                debug_util.debug_msg('getTable\n')
                 name = read_string()
                 data_frame = get_variable(name)
                 data_bytes = data_frame_to_bytes(data_frame)
                 write_bytearray(data_bytes)
             elif command == 'getTableChunk':
-                if REMOTE_DBG:
-                    print('getTableChunk\n')
+                debug_util.debug_msg('getTableChunk\n')
                 name = read_string()
                 start = read_integer()
                 end = read_integer()
@@ -299,14 +284,14 @@ def _cleanup():
 def execute(source_code):
     output = StringIO()
     error = StringIO()
-    if not REMOTE_DBG:
+    if not debug_util.is_debug_enabled():
         sys.stdout = output
     # run execute with the provided source code
     try:
         exec(source_code, _exec_env, _exec_env)
     except Exception:
         traceback.print_exc(file=error)
-    if not REMOTE_DBG:
+    if not debug_util.is_debug_enabled():
         sys.stdout = sys.__stdout__
     return [output.getvalue(), error.getvalue()]
 
@@ -590,10 +575,10 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
     for column in column_serializers:
         serializer = _type_extension_manager.get_serializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
-            if REMOTE_DBG:
+            if debug_util.is_debug_enabled():
                 lastp = -1
                 if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
-                    print(str(i * 100/len(data_frame)) + ' percent done (serialize)')
+                    debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (serialize)')
                     lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
             if value is not None:
@@ -622,10 +607,10 @@ def deserialize_from_bytes(data_frame, column_serializers):
     for column in column_serializers:
         deserializer = _type_extension_manager.get_deserializer_by_id(column_serializers[column])
         for i in range(len(data_frame)):
-            if REMOTE_DBG:
+            if debug_util.is_debug_enabled():
                 lastp = -1
                 if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
-                    print(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
+                    debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
                     lastp = int(i * 100/len(data_frame))
             value = data_frame[column][i]
             if isinstance(value, numpy.float64) and numpy.isnan(value):
