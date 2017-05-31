@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -72,7 +73,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSp
 public class CsvSerializationLibrary implements SerializationLibrary {
 
 	@Override
-	public byte[] tableToBytes(TableIterator tableIterator) {
+	public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
 		try {
 			File file = File.createTempFile("java-to-python-", ".csv");
 			file.deleteOnExit();
@@ -91,13 +92,20 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			writer.write(types + "\n");
 			writer.write(serializers + "\n");
 			writer.write(names + "\n");
+			int ctr;
 			while (tableIterator.hasNext()) {
 				Row row = tableIterator.next();
 				String line = row.getRowKey();
+				ctr = 0;
 				for (Cell cell : row) {
 					String value = "";
 					if (cell.isMissing()) {
 						value = "MissingCell";
+						Type type = spec.getColumnTypes()[ctr];
+						if(serializationOptions.getConvertMissingToPython() &&
+								(type == Type.INTEGER || type == Type.LONG)) {
+							value = Long.toString(serializationOptions.getSentinelForType(type));
+						}
 					} else {
 						switch(cell.getColumnType()) {
 						case BOOLEAN:
@@ -256,6 +264,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 					}
 					value = escapeValue(value);
 					line += "," + value;
+					ctr++;
 				}
 				writer.write(line + "\n");
 			}
@@ -268,7 +277,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 
 	@SuppressWarnings("unused")
 	@Override
-	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes) {
+	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
 		try {
 			File file = new File(new String(bytes));
 			file.deleteOnExit();
@@ -312,7 +321,14 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							cell = new CellImpl(booleanArray, type==Type.BOOLEAN_SET);
 							break;
 						case INTEGER:
-							cell = new CellImpl(Integer.parseInt(value));
+							int intVal = Integer.parseInt(value);
+							if(serializationOptions.getConvertMissingFromPython()
+									&& serializationOptions.isSentinel(Type.INTEGER, intVal))
+							{
+								cell = new CellImpl();
+							} else {
+								cell = new CellImpl(intVal);
+							}
 							break;
 						case INTEGER_LIST:
 						case INTEGER_SET:
@@ -334,7 +350,14 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							cell = new CellImpl(integerArray, type==Type.INTEGER_SET);
 							break;
 						case LONG:
-							cell = new CellImpl(Long.parseLong(value));
+							long longVal = Long.parseLong(value);
+							if(serializationOptions.getConvertMissingFromPython()
+									&& serializationOptions.isSentinel(Type.LONG, longVal))
+							{
+								cell = new CellImpl();
+							} else {
+								cell = new CellImpl(longVal);
+							}
 							break;
 						case LONG_LIST:
 						case LONG_SET:

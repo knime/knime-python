@@ -68,7 +68,9 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
+import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.kernel.PythonKernelManager;
+import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
 
@@ -89,8 +91,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	private final Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
 	private JProgressBarProgressMonitor m_progressMonitor;
-	private boolean m_usePython3 = true;
-	private boolean m_pythonVersionHasChanged = false;
+	private PythonKernelOptions m_kernelOptions;
+	private boolean m_pythonOptionsHaveChanged = false;
 	private List<WorkspacePreparer> m_workspacePreparers = new ArrayList<WorkspacePreparer>();
 
 
@@ -99,6 +101,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 */
 	public PythonSourceCodePanel(final VariableNames variableNames) {
 		super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
+		m_kernelOptions = new PythonKernelOptions();
 	}
 
 	/**
@@ -117,7 +120,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 					// the kernel
 					// This will return immediately if the test result was
 					// positive before
-					final PythonKernelTestResult result = m_usePython3 ? Activator.testPython3Installation() : Activator.testPython2Installation();
+					final PythonKernelTestResult result = m_kernelOptions.getUsePython3() ? Activator.testPython3Installation() : Activator.testPython2Installation();
 					// Display result message (this might just be a warning
 					// about missing optional modules)
 					if (!result.getMessage().isEmpty()) {
@@ -130,7 +133,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						try {
 							// Start kernel manager which will start the actual
 							// kernel
-							m_kernelManager = new PythonKernelManager(m_usePython3);
+							m_kernelManager = new PythonKernelManager(m_kernelOptions);
 							setStatusMessage("Python successfully started");
 							putDataIntoPython();
 							setInteractive(true);
@@ -214,7 +217,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 						setRunning(false);
 						// Kernel manager will stop old python
 						// kernel and start a new one
-						m_kernelManager.switchToNewKernel(m_usePython3);
+						m_kernelManager.switchToNewKernel(m_kernelOptions);
 						setStatusMessage("Python successfully restarted");
 						putDataIntoPython();
 						setInteractive(true);
@@ -286,10 +289,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	@Override
 	protected void runReset() {
 		if (m_kernelManager != null) {
-			if (m_pythonVersionHasChanged) {
-				m_pythonVersionHasChanged = false;
+			if (m_pythonOptionsHaveChanged) {
+				m_pythonOptionsHaveChanged = false;
 				try {
-					m_kernelManager.switchToNewKernel(m_usePython3);
+					m_kernelManager.switchToNewKernel(m_kernelOptions);
 				} catch (IOException e) {
 					LOGGER.error(e.getMessage(), e);
 				}
@@ -468,23 +471,23 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		return variable + "['" + field.replace("\\", "\\\\").replace("'", "\\'") + "']";
 	}
 	
-	public void setUsePython3(final boolean usePython3) {
-		if (usePython3 != m_usePython3) {
-			m_pythonVersionHasChanged = !m_pythonVersionHasChanged;
-		}
-		m_usePython3 = usePython3;
-	}
-	
-	public boolean getUsePython3() {
-		return m_usePython3;
-	}
-	
 	public void registerWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
 		m_workspacePreparers.add(workspacePreparer);
 	}
 
 	public boolean unregisterWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
 		return m_workspacePreparers.remove(workspacePreparer);
+	}
+	
+	public void setKernelOptions(final boolean usePython3, final boolean convertToPython, final boolean convertFromPython, 
+			final SentinelOption sentinelOption, final int sentinelValue) {
+		PythonKernelOptions pko = new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
+		if(pko.equals(m_kernelOptions)) {
+			m_pythonOptionsHaveChanged = false;
+		} else {
+			m_kernelOptions = pko;
+			m_pythonOptionsHaveChanged = true;
+		}
 	}
 
 }

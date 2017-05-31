@@ -135,6 +135,8 @@ public class PythonKernel {
 	private final Commands m_commands;
 	private final SerializationLibrary m_serializer;
 	private final SerializationLibraryExtensions m_serializationLibraryExtensions;
+	
+	private final PythonKernelOptions m_kernelOptions;
 
 	/**
 	 * Creates a python kernel by starting a python process and connecting to
@@ -145,8 +147,9 @@ public class PythonKernel {
 	 *
 	 * @throws IOException
 	 */
-	public PythonKernel(final boolean usePython3) throws IOException {
-		final PythonKernelTestResult testResult = usePython3 ? Activator.testPython3Installation()
+	public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
+		m_kernelOptions = kernelOptions;
+		final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3() ? Activator.testPython3Installation()
 				: Activator.retestPython2Installation();
 		if (testResult.hasError()) {
 			throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
@@ -178,7 +181,7 @@ public class PythonKernel {
 		final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
 		// Start python kernel that listens to the given port
 		final ProcessBuilder pb = new ProcessBuilder(
-				usePython3 ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath, "" + port,
+				m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath, "" + port,
 				serializerPythonPath);
 		// Add all python modules to PYTHONPATH variable
 		String existingPath = pb.environment().get("PYTHONPATH");
@@ -353,13 +356,13 @@ public class PythonKernel {
 		}
 		TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
-		return m_serializer.tableToBytes(tableIterator);
+		return m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 	}
 
 	private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) {
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
-		m_serializer.bytesIntoTable(tableCreator, bytes);
+		m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 		Set<FlowVariable> flowVariables = new HashSet<FlowVariable>();
 		if (tableCreator.getTable() == null) {
 			return flowVariables;
@@ -452,7 +455,7 @@ public class PythonKernel {
 			ExecutionMonitor chunkProgress = serializationMonitor
 					.createSubProgress(rowsInThisIteration / (double) numberRows);
 			TableIterator tableIterator = ((BufferedDataTableChunker) tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
-			byte[] bytes = m_serializer.tableToBytes(tableIterator);
+			byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 			chunkProgress.setProgress(1);
 			rowsDone += rowsInThisIteration;
 			serializationMonitor.setProgress(rowsDone / (double) numberRows);
@@ -516,7 +519,7 @@ public class PythonKernel {
 		for (int i = 0; i < numberChunks; i++) {
 			int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
 			TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
-			byte[] bytes = m_serializer.tableToBytes(tableIterator);
+			byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 			rowsDone += rowsInThisIteration;
 			if (i == 0) {
 				m_commands.putTable(name, bytes);
@@ -556,7 +559,7 @@ public class PythonKernel {
 				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 				tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
 			}
-			m_serializer.bytesIntoTable(tableCreator, bytes);
+			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
 		}
 		return tableCreator.getTable();
@@ -589,7 +592,7 @@ public class PythonKernel {
 				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 				tableCreator = tcf.createTableCreator(spec, tableSize);
 			}
-			m_serializer.bytesIntoTable(tableCreator, bytes);
+			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 		}
 		return tableCreator;	
 	}
@@ -636,7 +639,7 @@ public class PythonKernel {
 		byte[] bytes = m_commands.getObject(name);
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
-		m_serializer.bytesIntoTable(tableCreator, bytes);
+		m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 		Row row = tableCreator.getTable();
 		int bytesIndex = spec.findColumn("bytes");
 		int typeIndex = spec.findColumn("type");
@@ -698,7 +701,7 @@ public class PythonKernel {
 		byte[] bytes = m_commands.listVariables();
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 		TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
-		m_serializer.bytesIntoTable(tableCreator, bytes);
+		m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 		int nameIndex = spec.findColumn("name");
 		int typeIndex = spec.findColumn("type");
 		int valueIndex = spec.findColumn("value");
@@ -746,7 +749,7 @@ public class PythonKernel {
 			byte[] bytes = m_commands.autoComplete(sourceCode, line, column);
 			TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
 			TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
-			m_serializer.bytesIntoTable(tableCreator, bytes);
+			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 			int nameIndex = spec.findColumn("name");
 			int typeIndex = spec.findColumn("type");
 			int docIndex = spec.findColumn("doc");
@@ -883,7 +886,7 @@ public class PythonKernel {
 		row.setCell(new CellImpl(jars.toArray(new String[jars.size()]), false), 9);
 		TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
-		byte[] bytes = m_serializer.tableToBytes(tableIterator);
+		byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 		m_commands.putSql(name, bytes);
 	}
 

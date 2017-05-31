@@ -90,7 +90,7 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
 	 */
 	@Override
 	protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getUsePython3());
+		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
 		final DatabasePortObject dbObj = (DatabasePortObject) inData[0];
 		checkDBConnection(dbObj.getSpec());
 		try {

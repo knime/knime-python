@@ -29,6 +29,7 @@ import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
 import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.StringCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.StringColumn;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -49,7 +50,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 public class Flatbuffers implements SerializationLibrary {
 
 	@Override
-	public byte[] tableToBytes(TableIterator tableIterator) {
+	public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
 
 		FlatBufferBuilder builder = new FlatBufferBuilder();
 		Map<String, List<Object>> columns = new LinkedHashMap<>();
@@ -59,23 +60,36 @@ public class Flatbuffers implements SerializationLibrary {
 			columns.put(colName, new ArrayList<>());
 			missing.put(colName, new boolean[tableIterator.getNumberRemainingRows()]);
 		}
+		
+		Type[] colTypes = tableIterator.getTableSpec().getColumnTypes();
 
 		List<Integer> rowIdOffsets = new ArrayList<>();
 
 		int rowIdx = 0;
+		int ctr = 0;
 		// Convert the rows to columns
 		while (tableIterator.hasNext()) {
 			Row row = tableIterator.next();
 			rowIdOffsets.add(builder.createString(row.getRowKey()));
 
 			Iterator<Cell> rowIt = row.iterator();
+			ctr = 0;
 			for (String colName : columns.keySet()) {
 				Cell cell = rowIt.next();
 
 				if (cell.isMissing()) {
-					columns.get(colName).add(getMissingValue(tableIterator.getTableSpec().getColumnTypes()[tableIterator
-							.getTableSpec().findColumn(colName)]));
-					missing.get(colName)[rowIdx] = true;
+					Type type = colTypes[ctr];
+					if(serializationOptions.getConvertMissingToPython()) {
+						if(type == Type.INTEGER) {
+							columns.get(colName).add(new Integer((int) serializationOptions.getSentinelForType(type)));
+						} else if(type == Type.LONG) {
+							columns.get(colName).add(new Long(serializationOptions.getSentinelForType(type)));
+						}
+					} else {
+						columns.get(colName).add(getMissingValue(tableIterator.getTableSpec().getColumnTypes()[tableIterator
+								.getTableSpec().findColumn(colName)]));
+						missing.get(colName)[rowIdx] = true;
+					}
 				} else {
 					switch (cell.getColumnType()) {
 					case BOOLEAN: {
@@ -154,13 +168,14 @@ public class Flatbuffers implements SerializationLibrary {
 						break;
 					}
 				}
+				ctr++;
 			}
 			rowIdx++;
 		}
 		List<Integer> colOffsets = new ArrayList<>();
 
 		int i = 0;
-		Type[] colTypes = tableIterator.getTableSpec().getColumnTypes();
+
 		for (String colName : columns.keySet()) {
 			switch (colTypes[i]) {
 			case BOOLEAN: {
@@ -767,7 +782,7 @@ public class Flatbuffers implements SerializationLibrary {
 	}
 
 	@Override
-	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes) {
+	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
 
 		KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
@@ -846,8 +861,13 @@ public class Flatbuffers implements SerializationLibrary {
 				IntColumn colVec = col.intColumn();
 				colTypes.put(table.colNames(j), Type.INTEGER);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
-					columns.get(table.colNames(j)).add(colVec.values(i));
-					missing.get(table.colNames(j))[i] = colVec.missing(i);
+					if(serializationOptions.getConvertMissingFromPython()
+							&& serializationOptions.isSentinel(Type.INTEGER, colVec.values(i))) {
+						missing.get(table.colNames(j))[i] = true;
+					} else {
+						missing.get(table.colNames(j))[i] = colVec.missing(i);
+					}
+					columns.get(table.colNames(j)).add(colVec.values(i));	
 				}
 				break;
 			}
@@ -892,8 +912,13 @@ public class Flatbuffers implements SerializationLibrary {
 				LongColumn colVec = col.longColumn();
 				colTypes.put(table.colNames(j), Type.LONG);
 				for (int i = 0; i < colVec.valuesLength(); i++) {
-					columns.get(table.colNames(j)).add(colVec.values(i));
-					missing.get(table.colNames(j))[i] = colVec.missing(i);
+					if(serializationOptions.getConvertMissingFromPython()
+							&& serializationOptions.isSentinel(Type.LONG, colVec.values(i))) {
+						missing.get(table.colNames(j))[i] = true;
+					} else {
+						missing.get(table.colNames(j))[i] = colVec.missing(i);
+					}
+					columns.get(table.colNames(j)).add(colVec.values(i));	
 				}
 				break;
 			}
