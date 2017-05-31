@@ -49,39 +49,70 @@ import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.kernel.PythonKernelOptions;
+
+/**
+ * A basic config for every node concerned with python scripting.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ *
+ */
 
 public class PythonSourceCodeConfig extends SourceCodeConfig {
 	
 	private static final String CFG_USE_PYTHON3 = "usePython3";
-	private static final boolean DEFAULT_USE_PYTHON3 = true;
-	private boolean m_usePython3 = DEFAULT_USE_PYTHON3;
+	private static final String CFG_CONVERT_MISSING_TO_PYTHON = "convertMissingToPython";
+	private static final String CFG_CONVERT_MISSING_FROM_PYTHON = "convertMissingFromPython";
+	private static final String CFG_SENTINEL_OPTION = "sentinelOption";
+	private static final String CFG_SENTINEL_VALUE = "sentinelValue";
+	
+	private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
 	
 	@Override
 	public void saveTo(NodeSettingsWO settings) {
 		super.saveTo(settings);
-		settings.addBoolean(CFG_USE_PYTHON3, m_usePython3);
+		settings.addBoolean(CFG_USE_PYTHON3, m_kernelOptions.getUsePython3());
+		settings.addBoolean(CFG_CONVERT_MISSING_TO_PYTHON, m_kernelOptions.getConvertMissingToPython());
+		settings.addBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, m_kernelOptions.getConvertMissingFromPython());
+		settings.addString(CFG_SENTINEL_OPTION, m_kernelOptions.getSentinelOption().name());
+		settings.addInt(CFG_SENTINEL_VALUE, m_kernelOptions.getSentinelValue());
 	}
 	
 	@Override
 	public void loadFrom(NodeSettingsRO settings) throws InvalidSettingsException {
 		super.loadFrom(settings);
-		m_usePython3 = settings.getBoolean(CFG_USE_PYTHON3);
+		m_kernelOptions.setUsePython3(settings.getBoolean(CFG_USE_PYTHON3, PythonKernelOptions.DEFAULT_USE_PYTHON3));
+		m_kernelOptions.setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_TO_PYTHON));
+		m_kernelOptions.setConvertMissingFromPython(settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_FROM_PYTHON));
+		m_kernelOptions.setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
+		m_kernelOptions.setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
 	}
 	
 	@Override
 	public void loadFromInDialog(NodeSettingsRO settings) {
 		super.loadFromInDialog(settings);
-		m_usePython3 = settings.getBoolean(CFG_USE_PYTHON3, DEFAULT_USE_PYTHON3);
+		m_kernelOptions.setUsePython3(settings.getBoolean(CFG_USE_PYTHON3, PythonKernelOptions.DEFAULT_USE_PYTHON3));
+		m_kernelOptions.setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_TO_PYTHON));
+		m_kernelOptions.setConvertMissingFromPython(settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_FROM_PYTHON));
+		m_kernelOptions.setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
+		m_kernelOptions.setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
+	}
+	
+	public void setKernelOptions(final boolean usePython3, final boolean convertToPython, final boolean convertFromPython, 
+			final SentinelOption sentinelOption, final int sentinelValue)
+	{
+		m_kernelOptions = new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
+	}
+	
+	public PythonKernelOptions getKernelOptions()
+	{
+		return new PythonKernelOptions(m_kernelOptions);
 	}
 	
 	public boolean getUsePython3() {
-		return m_usePython3;
+		return m_kernelOptions.getUsePython3();
 	}
-	
-	public void setUsePython3(final boolean usePython3) {
-		m_usePython3 = usePython3;
-	}
-	
-	
 
 }

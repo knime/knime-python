@@ -43,41 +43,88 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.extensions.serializationlibrary.interfaces;
+package org.knime.python2.kernel;
 
+import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 
 /**
- * A serialization library used to encode and decode tables for data transfer between java and python.
+ * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version
+ * that should be used.
  * 
- * @author Patrick Winter
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ *
  */
-public interface SerializationLibrary {
+
+public class PythonKernelOptions {
 	
-	/**
-	 * Converts the given table into bytes for transfer to python.
-	 * 
-	 * @param rowIterator 			Iterator for the table that should be converted.
-	 * @param serializationOptions	All options that control the serialization process.
-	 * @return The bytes that should be send to python.
-	 */
-	byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions);
+	public final static boolean DEFAULT_USE_PYTHON3 = true;
+		
+	private boolean m_usePython3 = DEFAULT_USE_PYTHON3;
 	
-	/**
-	 * Adds the rows contained in the bytes to the given {@link tableCreator}.
-	 * 
-	 * @param tableCreator 			The {@link TableCreator} that the rows should be added to.
-	 * @param serializationOptions	All options that control the serialization process.
-	 * @param bytes The bytes containing the encoded table.
-	 */
-	void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions);
+	private SerializationOptions m_serializationOptions = new SerializationOptions();
 	
-	/**
-	 * Extracts the {@link TableSpec} of the given table.
-	 * 
-	 * @param bytes The encoded table.
-	 * @return The {@link TableSpec} of the encoded table.
-	 */
-	TableSpec tableSpecFromBytes(byte[] bytes);
+	public PythonKernelOptions() {
+		
+	}
+	
+	public PythonKernelOptions(boolean usePython3, boolean convertMissingToPython, 
+			boolean convertMissingFromPython, SentinelOption sentinelOption, int sentinelValue) {
+		m_usePython3 = usePython3;
+		m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
+		m_serializationOptions.setConvertMissingToPython(convertMissingToPython);
+		m_serializationOptions.setSentinelOption(sentinelOption);
+		m_serializationOptions.setSentinelValue(sentinelValue);
+	}
+	
+	public PythonKernelOptions(PythonKernelOptions other)
+	{
+		this(other.getUsePython3(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(), 
+				other.getSentinelOption(), other.getSentinelValue());
+	}
+
+	public boolean getUsePython3() {
+		return m_usePython3;
+	}
+
+	public void setUsePython3(boolean m_usePython3) {
+		this.m_usePython3 = m_usePython3;
+	}
+
+	public boolean getConvertMissingToPython() {
+		return m_serializationOptions.getConvertMissingToPython();
+	}
+
+	public void setConvertMissingToPython(boolean m_convertMissingToPython) {
+		this.m_serializationOptions.setConvertMissingToPython(m_convertMissingToPython);
+	}
+
+	public boolean getConvertMissingFromPython() {
+		return m_serializationOptions.getConvertMissingFromPython();
+	}
+
+	public void setConvertMissingFromPython(boolean m_convertMissingFromPython) {
+		this.m_serializationOptions.setConvertMissingFromPython(m_convertMissingFromPython);
+	}
+
+	public SentinelOption getSentinelOption() {
+		return m_serializationOptions.getSentinelOption();
+	}
+
+	public void setSentinelOption(SentinelOption m_sentinelOption) {
+		this.m_serializationOptions.setSentinelOption(m_sentinelOption);
+	}
+
+	public int getSentinelValue() {
+		return m_serializationOptions.getSentinelValue();
+	}
+
+	public void setSentinelValue(int m_sentinelValue) {
+		this.m_serializationOptions.setSentinelValue( m_sentinelValue);
+	}
+	
+	public SerializationOptions getSerializationOptions() {
+		return m_serializationOptions;
+	}
 
 }

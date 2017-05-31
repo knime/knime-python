@@ -41,76 +41,18 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
- *
- * History
- *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.objectwriter;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.nodes.PythonNodeModel;
-import org.knime.python2.port.PickledObjectPortObject;
+package org.knime.python2.extensions.serializationlibrary;
 
 /**
- * This is the model implementation.
+ * Enum reflecting the different options allowed for sentinel values.
+ * Sentinel values replace missing values (in java) in an Int or Long column in python.
  * 
- * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ *
  */
-class PythonObjectWriterNodeModel extends PythonNodeModel<PythonObjectWriterNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonObjectWriterNodeModel() {
-		super(new PortType[] { PickledObjectPortObject.TYPE }, new PortType[0]);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
-		try {
-			kernel.putFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putObject(PythonObjectWriterNodeConfig.getVariableNames().getInputObjects()[0],
-					((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
-			exec.createSubProgress(0.1).setProgress(1);
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.9).setProgress(1);
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new PortObject[0];
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[0];
-	}
-	
-	@Override
-	protected PythonObjectWriterNodeConfig createConfig() {
-		return new PythonObjectWriterNodeConfig();
-	}
-
+public enum SentinelOption {
+	MIN_VAL, MAX_VAL, CUSTOM;
 }
