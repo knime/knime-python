@@ -1,4 +1,5 @@
 import datetime
+import debug_util
 
 def deserialize(bytes):
     durationstr = bytes.decode("utf-8")
@@ -27,5 +28,5 @@ def deserialize(bytes):
                 millis *= -1
         else:
             seconds = int(durationstr[:sidx])
-    print('Decoded: ' + bytes.decode("utf-8") + ' to ' + str(datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds, milliseconds=millis)))
+    debug_util.debug_msg('Decoded: ' + bytes.decode("utf-8") + ' to ' + str(datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds, milliseconds=millis)))
     return datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds, milliseconds=millis)
