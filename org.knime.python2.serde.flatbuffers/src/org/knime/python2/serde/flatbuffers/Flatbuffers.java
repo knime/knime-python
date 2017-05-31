@@ -598,12 +598,15 @@ public class Flatbuffers implements SerializationLibrary {
 
 				for (Object o : columns.get(colName)) {
 					List<Integer> bytesCellOffsets = new ArrayList<>();
-					boolean[] missingCells = new boolean[((Byte[])o).length];
+					boolean[] missingCells = null;
 					if (o.getClass().getComponentType().getComponentType() == null) {
+						missingCells = new boolean[0];
 						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) o));
 						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
 					} else {
-
+						
+						missingCells = new boolean[((Byte[][])o).length];
+						
 						int cIdx = 0;
 						for (Object b : (Byte[][]) o) {
 							if (b == null) {
