@@ -524,9 +524,10 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 
 	public BufferedDataTable getTable() {
 		m_container.close();
-		DataColumnSpec[] colSpecs = new DataColumnSpec[m_dataTableSpec.getNumColumns()];
+		DataTableSpec tableSpec = m_container.getTableSpec();
+		DataColumnSpec[] colSpecs = new DataColumnSpec[tableSpec.getNumColumns()];
 		for (int i = 0; i < colSpecs.length; i++) {
-			DataColumnSpec dcs = m_dataTableSpec.getColumnSpec(i);
+			DataColumnSpec dcs = tableSpec.getColumnSpec(i);
 			DataColumnSpecCreator dcsc = new DataColumnSpecCreator(dcs);
 			if (m_columnsToRetype.containsKey(i)) {
 				DataTypeContainer dtContainer = m_columnsToRetype.get(i);
@@ -541,7 +542,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 			}
 			colSpecs[i] = dcsc.createSpec();
 		}
-		DataTableSpec correctedSpec = new DataTableSpec(m_dataTableSpec.getName(), colSpecs);
+		DataTableSpec correctedSpec = new DataTableSpec(tableSpec.getName(), colSpecs);
 		return m_exec.createSpecReplacerTable(m_container.getTable(), correctedSpec);
 	}
 
