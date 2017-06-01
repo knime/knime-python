@@ -50,11 +50,28 @@
 			</option>
 		</tab>
 		<tab name="Options">
-			<option name="Row limit (dialog)">
-				Limits how many rows are loaded in the dialog.
-				Changes only take effect after reseting the workspace.
-			</option>
-		</tab>
+            <option name="Row limit (dialog)">
+                Limits how many rows are loaded in the dialog.
+                Changes only take effect after reseting the workspace.
+            </option>
+            <option name="Use python version">
+                Allows to choose the python version that should be used for
+                executing the kernel. Available installations can be checked
+                under Preferences → KNIME → Python.
+            </option>
+            <option name="Missing values (Int, Long)">
+                Per default Int and Long columns containing missing values are converted to double
+                in python, beacause its the only numeric type containing a builtin missing value type
+                (NaN). The conversion may be avoided by selecting "convert missing values to sentinel 
+                value (to python)". In that case every missing value is replaced by the specified sentinel
+                value. For the sentinel value 3 options exist. MIN_VAL represents the smallest possible value
+                for a cloumn's datatype and MAX_VAL the correspondent largest possible value. Using the 
+                text field option an arbitrary sentinel value in Integer-range may be chosen.
+                On the way back from python to java the sentinel values may either be replaced by missing values
+                or left in place which is controlled through the "convert sentinel values to missing value 
+                (from python)" option.
+            </option>
+        </tab>
 		<tab name="Templates">
 			<option name="Create from editor...">
 				Create a new template based on the script contained in the editor of the script tab.<br/><br />Note: User defined templates can be found in the folder: <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script</i>
