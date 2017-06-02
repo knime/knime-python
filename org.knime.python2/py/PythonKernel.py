@@ -14,6 +14,10 @@ from datetime import datetime
 from pandas import DataFrame
 from DBUtil import *
 
+# suppress FutureWarnings
+import warnings
+warnings.filterwarnings(action='ignore', category=FutureWarning)
+
 
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
