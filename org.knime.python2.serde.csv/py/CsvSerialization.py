@@ -12,11 +12,11 @@ _bytes_types_ = None
 def init(types):
     global _types_, _eval_types_, _bytes_types_
     _types_ = types
-    _eval_types_ = {_types_.BOOLEAN_LIST.value, _types_.BOOLEAN_SET.value, _types_.INTEGER_LIST.value,
-                    _types_.INTEGER_SET.value, _types_.LONG_LIST.value, _types_.LONG_SET.value,
-                    _types_.DOUBLE_LIST.value, _types_.DOUBLE_SET.value, _types_.STRING_LIST.value,
-                    _types_.STRING_SET.value, _types_.BYTES_LIST.value, _types_.BYTES_SET.value}
-    _bytes_types_ = {_types_.BYTES.value, _types_.BYTES_LIST.value, _types_.BYTES_SET.value}
+    _eval_types_ = {_types_.BOOLEAN_LIST, _types_.BOOLEAN_SET, _types_.INTEGER_LIST,
+                    _types_.INTEGER_SET, _types_.LONG_LIST, _types_.LONG_SET,
+                    _types_.DOUBLE_LIST, _types_.DOUBLE_SET, _types_.STRING_LIST,
+                    _types_.STRING_SET, _types_.BYTES_LIST, _types_.BYTES_SET}
+    _bytes_types_ = {_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET}
 
 
 def column_names_from_bytes(data_bytes):
@@ -39,7 +39,7 @@ def column_types_from_bytes(data_bytes):
     column_types = []
     for i in range(len(types)):
         col_type_id = int(types[i])
-        column_types.append(_types_(col_type_id))
+        column_types.append(col_type_id)
     in_file.close()
     return column_types
 
@@ -74,13 +74,13 @@ def bytes_into_table(table, data_bytes):
     # for i in range(len(names)):
     #     name = names[i]
     #     col_type_id = int(types[i])
-    #     if col_type_id == _types_.BOOLEAN.value:
+    #     if col_type_id == _types_.BOOLEAN:
     #         col_type = numpy.bool
-    #     elif col_type_id == _types_.INTEGER.value:
+    #     elif col_type_id == _types_.INTEGER:
     #         col_type = numpy.int32
-    #     elif col_type_id == _types_.LONG.value:
+    #     elif col_type_id == _types_.LONG:
     #         col_type = numpy.int64
-    #     elif col_type_id == _types_.DOUBLE.value:
+    #     elif col_type_id == _types_.DOUBLE:
     #         col_type = numpy.float64
     #     else:
     #         col_type = numpy.str
@@ -99,14 +99,14 @@ def bytes_into_table(table, data_bytes):
                     data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
                 else:
                     data_frame.set_value(index, names[i], None)
-        if col_type_id == _types_.BYTES.value:
+        if col_type_id == _types_.BYTES:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 if str(data_frame[names[i]][index]) != 'nan':
                     data_frame.set_value(index, names[i], base64.b64decode(data_frame[names[i]][index]))
                 else:
                     data_frame.set_value(index, names[i], None)
-        elif col_type_id == _types_.BYTES_LIST.value:
+        elif col_type_id == _types_.BYTES_LIST:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 base64_list = data_frame[names[i]][index]
@@ -119,7 +119,7 @@ def bytes_into_table(table, data_bytes):
                         else:
                             bytes_list.append(None)
                     data_frame.set_value(index, names[i], bytes_list)
-        elif col_type_id == _types_.BYTES_SET.value:
+        elif col_type_id == _types_.BYTES_SET:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 base64_set = data_frame[names[i]][index]
@@ -143,7 +143,7 @@ def table_to_bytes(table):
     needs_copy = False
     types = []
     for i in range(table.get_number_columns()):
-        col_type_id = table.get_type(i).value
+        col_type_id = table.get_type(i)
         types.append(col_type_id)
         if col_type_id in _bytes_types_:
             needs_copy = True
@@ -160,12 +160,12 @@ def table_to_bytes(table):
     names = data_frame.columns.tolist()
     for i in range(len(types)):
         col_type_id = int(types[i])
-        if col_type_id == _types_.BYTES.value:
+        if col_type_id == _types_.BYTES:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 if data_frame[names[i]][index] is not None:
                     data_frame.set_value(index, names[i], base64.b64encode(data_frame[names[i]][index]))
-        elif col_type_id == _types_.BYTES_LIST.value:
+        elif col_type_id == _types_.BYTES_LIST:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 bytes_list = data_frame[names[i]][index]
@@ -178,7 +178,7 @@ def table_to_bytes(table):
                         else:
                             base64_list.append(None)
                     data_frame.set_value(index, names[i], base64_list)
-        elif col_type_id == _types_.BYTES_SET.value:
+        elif col_type_id == _types_.BYTES_SET:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 bytes_set = data_frame[names[i]][index]

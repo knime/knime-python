@@ -12,7 +12,6 @@ import pickle
 import types
 from datetime import datetime
 from pandas import DataFrame
-from enum import Enum
 from DBUtil import *
 
 
@@ -795,7 +794,7 @@ class ToPandasTable:
         return self._data_frame
 
 
-class Simpletype(Enum):
+class Simpletype():
     BOOLEAN = 1
     BOOLEAN_LIST = 2
     BOOLEAN_SET = 3

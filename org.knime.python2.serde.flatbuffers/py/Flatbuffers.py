@@ -66,11 +66,11 @@ def column_serializers_from_bytes(data_bytes):
     
     serializers = {}
     for j in range(0, table.ColumnsLength()):
-        if table.Columns(j).Type() == _types_.BYTES.value:
+        if table.Columns(j).Type() == _types_.BYTES:
             serializers[colNames[j]] = table.Columns(j).ByteColumn().Serializer().decode('utf-8') 
-        elif table.Columns(j).Type() == _types_.BYTES_LIST.value:
+        elif table.Columns(j).Type() == _types_.BYTES_LIST:
             serializers[colNames[j]] = table.Columns(j).ByteListColumn().Serializer().decode('utf-8') 
-        elif table.Columns(j).Type() == _types_.BYTES_SET.value :
+        elif table.Columns(j).Type() == _types_.BYTES_SET:
             serializers[colNames[j]] = table.Columns(j).ByteSetColumn().Serializer().decode('utf-8')
     
     return serializers
@@ -99,55 +99,55 @@ def bytes_into_table(table, data_bytes):
         col = knimeTable.Columns(j)
         
     #debug_util.debug_msg("Flatbuffers->Python: Column[",j,"] col.Type() ", col.Type())
-        if col.Type() == _types_.INTEGER.value:
+        if col.Type() == _types_.INTEGER:
             colVec = col.IntColumn()
             table.add_column(colNames[j], get_single_column(colVec))
             
-        elif col.Type() == _types_.INTEGER_LIST.value:
+        elif col.Type() == _types_.INTEGER_LIST:
             colVec = col.IntListColumn()                       
             table.add_column(colNames[j], get_list_column(colVec))
             
-        elif col.Type() == _types_.INTEGER_SET.value:
+        elif col.Type() == _types_.INTEGER_SET:
             colVec = col.IntSetColumn()                 
             table.add_column(colNames[j], get_set_column(colVec))
 
-        elif col.Type() == _types_.BOOLEAN.value:
+        elif col.Type() == _types_.BOOLEAN:
             colVec = col.BooleanColumn()
             table.add_column(colNames[j], get_single_column(colVec))
             
-        elif col.Type() == _types_.BOOLEAN_LIST.value:
+        elif col.Type() == _types_.BOOLEAN_LIST:
             colVec = col.BooleanListColumn()            
             table.add_column(colNames[j], get_list_column(colVec))
             
-        elif col.Type() == _types_.BOOLEAN_SET.value:
+        elif col.Type() == _types_.BOOLEAN_SET:
             colVec = col.BooleanSetColumn()                
             table.add_column(colNames[j], get_set_column(colVec))
          
-        elif col.Type() == _types_.LONG.value:
+        elif col.Type() == _types_.LONG:
             colVec = col.LongColumn()
             table.add_column(colNames[j], get_single_column(colVec))
             
-        elif col.Type() == _types_.LONG_LIST.value:
+        elif col.Type() == _types_.LONG_LIST:
             colVec = col.LongListColumn()
             table.add_column(colNames[j], get_list_column(colVec))
             
-        elif col.Type() == _types_.LONG_SET.value:
+        elif col.Type() == _types_.LONG_SET:
             colVec = col.LongSetColumn()
             table.add_column(colNames[j], get_set_column(colVec))
          
-        elif col.Type() == _types_.DOUBLE.value:
+        elif col.Type() == _types_.DOUBLE:
             colVec = col.DoubleColumn()
             table.add_column(colNames[j], get_single_column(colVec))
             
-        elif col.Type() == _types_.DOUBLE_LIST.value:
+        elif col.Type() == _types_.DOUBLE_LIST:
             colVec = col.DoubleListColumn()
             table.add_column(colNames[j], get_list_column(colVec))
             
-        elif col.Type() == _types_.DOUBLE_SET.value:
+        elif col.Type() == _types_.DOUBLE_SET:
             colVec = col.DoubleSetColumn()
             table.add_column(colNames[j], get_set_column(colVec))
                        
-        elif col.Type() == _types_.STRING.value:
+        elif col.Type() == _types_.STRING:
             colVec = col.StringColumn()
             colVals = []        
             for idx in range(0, colVec.ValuesLength()):
@@ -160,7 +160,7 @@ def bytes_into_table(table, data_bytes):
             
             table.add_column(colNames[j], colVals)
             
-        elif col.Type() == _types_.STRING_LIST.value:
+        elif col.Type() == _types_.STRING_LIST:
             colVec = col.StringListColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
@@ -179,7 +179,7 @@ def bytes_into_table(table, data_bytes):
 
             table.add_column(colNames[j], colVals)
             
-        elif col.Type() == _types_.STRING_SET.value:
+        elif col.Type() == _types_.STRING_SET:
             colVec = col.StringSetColumn()
             colVals = []
             for idx in range(0,colVec.ValuesLength()):
@@ -198,7 +198,7 @@ def bytes_into_table(table, data_bytes):
             table.add_column(colNames[j], colVals)
 
             
-        elif col.Type() == _types_.BYTES.value:
+        elif col.Type() == _types_.BYTES:
           #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Start")
             colVec = col.ByteColumn()
             colVals = []
@@ -224,7 +224,7 @@ def bytes_into_table(table, data_bytes):
                  
             table.add_column(colNames[j], colVals)
             
-        elif col.Type() == _types_.BYTES_LIST.value:
+        elif col.Type() == _types_.BYTES_LIST:
             colVec = col.ByteListColumn()
             colVals = []
             # Rows in the column
@@ -250,7 +250,7 @@ def bytes_into_table(table, data_bytes):
              
             table.add_column(colNames[j], colVals)
                            
-        elif col.Type() == _types_.BYTES_SET.value:
+        elif col.Type() == _types_.BYTES_SET:
             colVec = col.ByteSetColumn()
             colVals = []
             # Rows in the column
@@ -381,7 +381,7 @@ def table_to_bytes(table):
             IntColumn.IntColumnAddMissing(builder, missVec)
             colOffset = IntColumn.IntColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddIntColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -433,7 +433,7 @@ def table_to_bytes(table):
             IntCollectionColumn.IntCollectionColumnAddMissing(builder, missVec)                                  
             colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddIntListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -479,7 +479,7 @@ def table_to_bytes(table):
             IntCollectionColumn.IntCollectionColumnAddMissing(builder,missVec)                                
             colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddIntSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
 
@@ -506,7 +506,7 @@ def table_to_bytes(table):
             colOffset = BooleanColumn.BooleanColumnEnd(builder)
                        
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddBooleanColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -561,7 +561,7 @@ def table_to_bytes(table):
             BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                                  
             colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddBooleanListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -608,7 +608,7 @@ def table_to_bytes(table):
             BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                               
             colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddBooleanSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
 
@@ -643,7 +643,7 @@ def table_to_bytes(table):
             LongColumn.LongColumnAddMissing(builder, missVec)
             colOffset = LongColumn.LongColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddLongColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -695,7 +695,7 @@ def table_to_bytes(table):
             LongCollectionColumn.LongCollectionColumnAddMissing(builder,missVec)                                 
             colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddLongListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -741,7 +741,7 @@ def table_to_bytes(table):
             colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder) 
                       
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddLongSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
         
@@ -768,7 +768,7 @@ def table_to_bytes(table):
             colOffset = DoubleColumn.DoubleColumnEnd(builder)
             
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddDoubleColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -822,7 +822,7 @@ def table_to_bytes(table):
             DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                 
             colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddDoubleListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -866,7 +866,7 @@ def table_to_bytes(table):
             DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                                                
             colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddDoubleSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
                 
@@ -897,7 +897,7 @@ def table_to_bytes(table):
             StringColumn.StringColumnAddMissing(builder, missVec)
             colOffset = StringColumn.StringColumnEnd(builder)
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddStringColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -952,7 +952,7 @@ def table_to_bytes(table):
             StringCollectionColumn.StringCollectionColumnAddMissing(builder,missingVec)                                  
             colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddStringListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -997,7 +997,7 @@ def table_to_bytes(table):
             StringCollectionColumn.StringCollectionColumnAddMissing(builder, missingVec)                                
             colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddStringSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -1046,7 +1046,7 @@ def table_to_bytes(table):
                 ByteColumn.ByteColumnAddSerializer(builder, serializer)
             colOffset = ByteColumn.ByteColumnEnd(builder)
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddByteColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             #debug_util.debug_msg("Python->Flatbuffers: Ending BYTES")
@@ -1115,7 +1115,7 @@ def table_to_bytes(table):
             colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
                     
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddByteListColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
             
@@ -1171,7 +1171,7 @@ def table_to_bytes(table):
             colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
                     
             Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx).value)
+            Column.ColumnAddType(builder, table.get_type(colIdx))
             Column.ColumnAddByteSetColumn(builder, colOffset)
             colOffsetList.append(Column.ColumnEnd(builder))
 
