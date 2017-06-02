@@ -79,13 +79,17 @@ public class Flatbuffers implements SerializationLibrary {
 
 				if (cell.isMissing()) {
 					Type type = colTypes[ctr];
+					boolean appended = false;
 					if(serializationOptions.getConvertMissingToPython()) {
 						if(type == Type.INTEGER) {
 							columns.get(colName).add(new Integer((int) serializationOptions.getSentinelForType(type)));
+							appended = true;
 						} else if(type == Type.LONG) {
 							columns.get(colName).add(new Long(serializationOptions.getSentinelForType(type)));
+							appended = true;
 						}
-					} else {
+					} 
+					if(!appended) {
 						columns.get(colName).add(getMissingValue(tableIterator.getTableSpec().getColumnTypes()[tableIterator
 								.getTableSpec().findColumn(colName)]));
 						missing.get(colName)[rowIdx] = true;
