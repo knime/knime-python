@@ -583,7 +583,10 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
                 if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
                     debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (serialize)')
                     lastp = int(i * 100/len(data_frame))
-            value = data_frame[column][i]
+            col_idx = data_frame.columns.get_loc(column)
+            # Using bracket acessor is necessary here for ensuring that there are
+            # no unwanted type conversions
+            value = data_frame[column][i] 
             if value is not None:
                 if isinstance(value, list):
                     new_list = []
@@ -592,7 +595,7 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
                             new_list.append(None)
                         else:
                             new_list.append(serializer.serialize(inner_value))
-                    data_frame[column][i] = new_list
+                    data_frame.iat[i,col_idx] = new_list
                 elif isinstance(value, set):
                     new_set = set()
                     for inner_value in value:
@@ -600,9 +603,9 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
                             new_set.add(None)
                         else:
                             new_set.add(serializer.serialize(inner_value))
-                    data_frame[column][i] = new_set
+                    data_frame.iat[i,col_idx] = new_set
                 else:
-                    data_frame[column][i] = serializer.serialize(value)
+                    data_frame.iat[i,col_idx] = serializer.serialize(value)
 
 
 def deserialize_from_bytes(data_frame, column_serializers):
@@ -615,7 +618,8 @@ def deserialize_from_bytes(data_frame, column_serializers):
                 if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
                     debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
                     lastp = int(i * 100/len(data_frame))
-            value = data_frame[column][i]
+            col_idx = data_frame.columns.get_loc(column)
+            value = data_frame.iat[i,col_idx]
             if isinstance(value, numpy.float64) and numpy.isnan(value):
                 value = None
             if value:
@@ -628,7 +632,7 @@ def deserialize_from_bytes(data_frame, column_serializers):
                             new_list.append(deserializer.deserialize(inner_value))
                         else:
                             new_list.append(None)
-                    data_frame[column][i] = new_list
+                    data_frame.iat[i,col_idx] = new_list
                 elif isinstance(value, set):
                     new_set = set()
                     for inner_value in value:
@@ -638,11 +642,11 @@ def deserialize_from_bytes(data_frame, column_serializers):
                             new_set.add(deserializer.deserialize(inner_value))
                         else:
                             new_set.add(None)
-                    data_frame[column][i] = new_set
+                    data_frame.iat[i,col_idx] = new_set
                 else:
-                    data_frame[column][i] = deserializer.deserialize(value)
+                    data_frame.iat[i,col_idx] = deserializer.deserialize(value)
             else:
-                data_frame[column][i] = None
+                data_frame.iat[i,col_idx] = None
 
 
 # reads 4 bytes from the input stream and interprets them as size
@@ -714,6 +718,7 @@ class FromPandasTable:
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
         serialize_objects_to_bytes(self._data_frame, self._column_serializers)
+        self._row_indices = self._data_frame.index.astype(str)
 
     # example: table.get_type(0)
     def get_type(self, column_index):
@@ -728,15 +733,16 @@ class FromPandasTable:
 
     # example: table.get_cell(0,0)
     def get_cell(self, column_index, row_index):
-        if self._data_frame[self._data_frame.columns[column_index]][row_index] is None:
+        value = self._data_frame.iat[row_index, column_index]
+        if value is None:
             return None
         else:
-            return value_to_simpletype_value(self._data_frame[self._data_frame.columns[column_index]][row_index],
+            return value_to_simpletype_value(value,
                                              self._column_types[column_index])
 
     # example: table.get_rowkey(0)
     def get_rowkey(self, row_index):
-        return self._data_frame.index.astype(str)[row_index]
+        return self._row_indices[row_index]
 
     def get_rowkeys(self):
         return self._data_frame.index.astype(str)
@@ -1009,5 +1015,8 @@ def value_to_simpletype_value(value, simpletype):
                 value_set.add(bytes(inner_value))
         return value_set
 
-
+# Uncomment below and comment the run() call for profiling
+# See https://docs.python.org/3/library/profile.html on how to interpet the result
+#import cProfile
+#cProfile.run('run()', filename='~/debugres.txt')
 run()
