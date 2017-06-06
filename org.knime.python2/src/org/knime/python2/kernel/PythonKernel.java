@@ -87,6 +87,7 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
 import org.knime.python2.PythonPreferencePage;
+import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -232,6 +233,14 @@ public class PythonKernel {
 		for (final KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
 			m_commands.addDeserializer(typeExtension.getId(), typeExtension.getPythonDeserializerPath());
 		}
+		//Add sentinel constants
+		if(m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL)
+			m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");
+		else if(m_kernelOptions.getSentinelOption() == SentinelOption.MIN_VAL)
+			m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63");
+		else
+			m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + 
+					"; LONG_SENTINEL = " + m_kernelOptions.getSentinelValue());
 	}
 
 	/**
