@@ -224,6 +224,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								if (stringValue == null) {
 									stringBuilder.append("None");
 								} else {
+									if(stringValue.contains("74B8EVKYR9M4N4AVNWDIAS880")) {
+										System.out.println("Sending: " + stringValue);
+									}
 									stringValue = stringValue.replace("'", "\\'");
 									stringValue = stringValue.replace("\r", "\\r");
 									stringValue = stringValue.replace("\n", "\\n");
@@ -295,7 +298,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 					Cell cell;
 					String value = values.get(i+1);
 					if (value.equals("MissingCell")) {
-						cell = new CellImpl();
+						if(type == Type.DOUBLE) {
+							cell = new CellImpl(Double.NaN);
+						} else {
+							cell = new CellImpl();
+						}
 					} else {
 						switch(type) {
 						case BOOLEAN:
@@ -384,7 +391,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								doubleValue = Double.POSITIVE_INFINITY;
 							} else if (value.equals("-inf")) {
 								doubleValue = Double.NEGATIVE_INFINITY;
-							} else if (value.equals("NaN")) {
+							} else if (value.equals("NaN") || value.contentEquals("nan")) {
 								doubleValue = Double.NaN;
 							} else {
 								doubleValue = Double.parseDouble(value);
@@ -437,6 +444,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 									stringArray[j] = null;
 								} else {
 									stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+									if(stringArray[j].contains("74B8EVKYR9M4N4AVNWDIAS880")) {
+										System.out.println("Getting: " + stringArray[j]);
+									}
 								}
 							}
 							cell = new CellImpl(stringArray, type==Type.STRING_SET);

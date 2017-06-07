@@ -2,6 +2,7 @@ import pandas
 import tempfile
 import os
 import base64
+#import debug_util
 
 
 _types_ = None
@@ -131,6 +132,8 @@ def bytes_into_table(table, data_bytes):
                         else:
                             bytes_set.add(None)
                     data_frame.set_value(index, names[i], bytes_set)
+        elif col_type_id == _types_.DOUBLE:
+            data_frame.iloc[:,i] = data_frame.iloc[:,i].astype('float', copy=False)
     table._data_frame = data_frame
     in_file.close()
     os.remove(path)
@@ -190,6 +193,11 @@ def table_to_bytes(table):
                         else:
                             base64_set.add(None)
                     data_frame.set_value(index, names[i], base64_set)
+        elif col_type_id == _types_.DOUBLE:
+            str_list = []
+            for j in range(len(data_frame)):
+                str_list.append("%.17g" % data_frame.iloc[j,i])
+            data_frame.iloc[:,i] = str_list
     data_frame.to_csv(out_file, na_rep='MissingCell')
     out_file.close()
     return bytearray(path, 'utf-8')
