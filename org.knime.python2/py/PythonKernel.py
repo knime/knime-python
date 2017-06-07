@@ -619,7 +619,9 @@ def deserialize_from_bytes(data_frame, column_serializers):
                     debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (deserialize)')
                     lastp = int(i * 100/len(data_frame))
             col_idx = data_frame.columns.get_loc(column)
-            value = data_frame.iat[i,col_idx]
+            # Using bracket acessor is necessary here for ensuring that there are
+            # no unwanted type conversions
+            value = data_frame[column][i] 
             if isinstance(value, numpy.float64) and numpy.isnan(value):
                 value = None
             if value:

@@ -224,9 +224,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								if (stringValue == null) {
 									stringBuilder.append("None");
 								} else {
-									if(stringValue.contains("74B8EVKYR9M4N4AVNWDIAS880")) {
-										System.out.println("Sending: " + stringValue);
-									}
+									stringValue = stringValue.replace("\\", "\\\\");
 									stringValue = stringValue.replace("'", "\\'");
 									stringValue = stringValue.replace("\r", "\\r");
 									stringValue = stringValue.replace("\n", "\\n");
@@ -436,17 +434,24 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							} else {
 								value = value.substring(1, value.length()-1);
 							}
-							String[] stringValues = value.split(",");
+							String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
 							String[] stringArray = new String[stringValues.length];
 							for (int j = 0; j < stringArray.length; j++) {
-								stringArray[j] = stringValues[j].trim();
+								stringArray[j] = stringValues[j];
+								if(j == 0) {
+									stringArray[j] = stringArray[j].substring(1);
+								} else if (j == stringArray.length - 1) {
+									stringArray[j] = stringArray[j].substring(0,stringArray[j].length() - 1);
+								}
 								if (stringArray[j].equals("None")) {
 									stringArray[j] = null;
 								} else {
-									stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
-									if(stringArray[j].contains("74B8EVKYR9M4N4AVNWDIAS880")) {
-										System.out.println("Getting: " + stringArray[j]);
-									}
+									//stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+									stringArray[j] = stringArray[j].replace("\\\\", "\\");
+									stringArray[j] = stringArray[j].replace("\\'", "'");
+									stringArray[j] = stringArray[j].replace("\\r", "\r");
+									stringArray[j] = stringArray[j].replace("\\n", "\n");
+									stringArray[j] = stringArray[j].replace("\\t", "\t");
 								}
 							}
 							cell = new CellImpl(stringArray, type==Type.STRING_SET);

@@ -2,7 +2,7 @@ import pandas
 import tempfile
 import os
 import base64
-#import debug_util
+import debug_util
 
 
 _types_ = None
@@ -88,7 +88,7 @@ def bytes_into_table(table, data_bytes):
     #     dtypes[name] = col_type
     try:
         # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
-        data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'])
+        data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], keep_default_na=False)
     except ValueError:
         data_frame = pandas.DataFrame()
     for i in range(len(types)):
@@ -97,6 +97,7 @@ def bytes_into_table(table, data_bytes):
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 if str(data_frame[names[i]][index]) != 'nan':
+                    #debug_util.breakpoint()
                     data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
                 else:
                     data_frame.set_value(index, names[i], None)
@@ -200,4 +201,5 @@ def table_to_bytes(table):
             data_frame.iloc[:,i] = str_list
     data_frame.to_csv(out_file, na_rep='MissingCell')
     out_file.close()
+    debug_util.debug_msg('file: ' + path)
     return bytearray(path, 'utf-8')
