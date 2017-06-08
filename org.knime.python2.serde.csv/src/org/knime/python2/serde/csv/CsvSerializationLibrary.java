@@ -378,7 +378,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								if (longValues[j].equals("None")) {
 									longArray[j] = null;
 								} else {
-									longArray[j] = Long.parseLong(longValues[j]);
+									longArray[j] = Long.parseLong(longValues[j].replaceAll("L", ""));
 								}
 							}
 							cell = new CellImpl(longArray, type==Type.LONG_SET);
