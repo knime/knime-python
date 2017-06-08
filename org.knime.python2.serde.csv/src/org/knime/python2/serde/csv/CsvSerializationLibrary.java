@@ -441,7 +441,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 								stringArray[j] = stringValues[j];
 								if(j == 0) {
 									stringArray[j] = stringArray[j].substring(1);
-								} else if (j == stringArray.length - 1) {
+								}
+								if (j == stringArray.length - 1) {
 									stringArray[j] = stringArray[j].substring(0,stringArray[j].length() - 1);
 								}
 								if (stringArray[j].equals("None")) {
