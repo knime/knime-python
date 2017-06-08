@@ -434,6 +434,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 							} else {
 								value = value.substring(1, value.length()-1);
 							}
+							value = value.replaceAll("None", "'None'");
 							String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
 							String[] stringArray = new String[stringValues.length];
 							for (int j = 0; j < stringArray.length; j++) {
