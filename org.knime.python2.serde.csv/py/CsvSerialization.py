@@ -2,6 +2,10 @@ import pandas
 import tempfile
 import os
 import base64
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import debug_util
 
 
@@ -61,10 +65,10 @@ def column_serializers_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'rb')
-    types = in_file.readline().strip()[2:].split(',')
+    types = in_file.readline().decode('utf-8').strip()[2:].split(',')
     if types == ['']:
         types = []
-    serializers_line = in_file.readline().strip()[2:].split(',')
+    serializers_line = in_file.readline().decode('utf-8').strip()[2:].split(',')
     try:
         names = pandas.read_csv(in_file, index_col=0, nrows=0).columns.tolist()
     except ValueError:
@@ -156,12 +160,13 @@ def table_to_bytes(table):
     column_serializers = table.get_column_serializers()
     for serializer_id in column_serializers:
         serializers_line += ',' + serializer_id + '=' + column_serializers[serializer_id]
-    out_file.write(types_line + '\n')
-    out_file.write(serializers_line + '\n')
+    out_file.write((types_line + '\n').encode('utf-8'))
+    out_file.write((serializers_line + '\n').encode('utf-8'))
     data_frame = table._data_frame
     if needs_copy:
         data_frame = data_frame.copy()
     names = data_frame.columns.tolist()
+    out_buffer = StringIO()
     for i in range(len(types)):
         col_type_id = int(types[i])
         if col_type_id == _types_.BYTES:
@@ -199,7 +204,8 @@ def table_to_bytes(table):
             for j in range(len(data_frame)):
                 str_list.append("%.17g" % data_frame.iloc[j,i])
             data_frame.iloc[:,i] = str_list
-    data_frame.to_csv(out_file, na_rep='MissingCell')
+    data_frame.to_csv(out_buffer, na_rep='MissingCell')
+    out_file.write(out_buffer.getvalue().encode('utf-8'))
     out_file.close()
     debug_util.debug_msg('file: ' + path)
     return bytearray(path, 'utf-8')
