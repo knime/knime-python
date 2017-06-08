@@ -99,7 +99,7 @@ class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNode
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
+		final PythonKernel kernel = new PythonKernel(getKernelOptions());
 		PickledObject object = null;
 		try {
 			kernel.putFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables(),

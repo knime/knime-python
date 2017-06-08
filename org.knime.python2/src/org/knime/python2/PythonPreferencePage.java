@@ -113,7 +113,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	
 	private Combo m_serializer;
 	
-	private List<String> m_serializerIds;
+	private static List<String> m_serializerIds;
+	
+	private static String[] m_serializerNames;
 
 	/**
 	 * Gets the currently configured python 2 path.
@@ -135,6 +137,11 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	
 	public static String getSerializerId() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, SERIALIZER_ID_CFG, getDefaultSerializerId(), null);
+	}
+	
+	public static List<String> getAvailableSerializerIds() {
+		initListOfSerializers(false);
+		return m_serializerIds;
 	}
 
 	/**
@@ -257,27 +264,29 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		m_sc.setContent(m_container);
 		m_sc.setExpandHorizontal(true);
 		m_sc.setExpandVertical(true);
-		initListOfSerializers();
+		initListOfSerializers(false);
+		m_serializer.setItems(m_serializerNames);
+		setSelectedSerializer(getSerializerId());
 		testPythonInstallation();
 		return m_sc;
 	}
 	
-	private void initListOfSerializers() {
-		Collection<SerializationLibraryExtension> extensions = SerializationLibraryExtensions.getExtensions();
-		Map<String, String> sortedExtensions = new TreeMap<String, String>();
-		for (SerializationLibraryExtension extension : extensions) {
-			sortedExtensions.put(extension.getJavaSerializationLibraryFactory().getName(), extension.getId());
+	private static void initListOfSerializers(boolean forceReinit) {
+		if(m_serializerIds == null || forceReinit) {
+			Collection<SerializationLibraryExtension> extensions = SerializationLibraryExtensions.getExtensions();
+			Map<String, String> sortedExtensions = new TreeMap<String, String>();
+			for (SerializationLibraryExtension extension : extensions) {
+				sortedExtensions.put(extension.getJavaSerializationLibraryFactory().getName(), extension.getId());
+			}
+			m_serializerNames = new String[sortedExtensions.size()];
+			m_serializerIds = new ArrayList<String>();
+			int i = 0;
+			for (Entry<String, String> extension : sortedExtensions.entrySet()) {
+				m_serializerNames[i] = extension.getKey();
+				m_serializerIds.add(extension.getValue());
+				i++;
+			}
 		}
-		String[] names = new String[sortedExtensions.size()];
-		m_serializerIds = new ArrayList<String>();
-		int i = 0;
-		for (Entry<String, String> extension : sortedExtensions.entrySet()) {
-			names[i] = extension.getKey();
-			m_serializerIds.add(extension.getValue());
-			i++;
-		}
-		m_serializer.setItems(names);
-		setSelectedSerializer(getSerializerId());
 	}
 	
 	private void setSelectedSerializer(final String serializerId) {

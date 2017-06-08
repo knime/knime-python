@@ -58,6 +58,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * <code>NodeDialog</code> for the node.
@@ -75,7 +76,8 @@ class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
 	 * Create the dialog for this node.
 	 */
 	protected PythonLearnerNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames());
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames(), 
+				FlowVariableOptions.parse(getAvailableFlowVariables()));
 		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
 		addTab("Script", m_sourceCodePanel, false);

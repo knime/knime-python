@@ -62,6 +62,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
@@ -79,7 +80,8 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
 	 * Create the dialog for this node.
 	 */
 	protected PythonScriptDBNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames());
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames(), 
+				FlowVariableOptions.parse(getAvailableFlowVariables()));
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
 		addTab("Script", m_sourceCodePanel, false);
 		addTab("Templates", m_templatesPanel, true);

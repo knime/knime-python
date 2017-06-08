@@ -57,6 +57,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * <code>NodeDialog</code> for the node.
@@ -74,7 +75,8 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
 	 * Create the dialog for this node.
 	 */
 	protected PythonObjectReaderNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames());
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames(), 
+				FlowVariableOptions.parse(getAvailableFlowVariables()));
 		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
 		addTab("Script", m_sourceCodePanel, false);

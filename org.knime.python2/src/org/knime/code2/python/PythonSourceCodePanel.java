@@ -69,6 +69,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelResponseHandler;
@@ -91,6 +92,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	private final Lock m_lock = new ReentrantLock();
 	private int m_kernelRestarts = 0;
 	private JProgressBarProgressMonitor m_progressMonitor;
+	private FlowVariableOptions m_flowVariableOptions;
 	private PythonKernelOptions m_kernelOptions;
 	private boolean m_pythonOptionsHaveChanged = false;
 	private List<WorkspacePreparer> m_workspacePreparers = new ArrayList<WorkspacePreparer>();
@@ -99,9 +101,11 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	/**
 	 * Create a python source code panel.
 	 */
-	public PythonSourceCodePanel(final VariableNames variableNames) {
+	public PythonSourceCodePanel(final VariableNames variableNames, FlowVariableOptions options) {
 		super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
+		m_flowVariableOptions = options;
 		m_kernelOptions = new PythonKernelOptions();
+		m_kernelOptions.setFlowVariableOptions(m_flowVariableOptions);
 	}
 
 	/**
@@ -482,6 +486,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	public void setKernelOptions(final boolean usePython3, final boolean convertToPython, final boolean convertFromPython, 
 			final SentinelOption sentinelOption, final int sentinelValue) {
 		PythonKernelOptions pko = new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
+		pko.setFlowVariableOptions(m_flowVariableOptions);
 		if(pko.equals(m_kernelOptions)) {
 			m_pythonOptionsHaveChanged = false;
 		} else {

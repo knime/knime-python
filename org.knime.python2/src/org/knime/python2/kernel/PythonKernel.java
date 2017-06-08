@@ -157,9 +157,9 @@ public class PythonKernel {
 		}
 		// Create serialization library instance
 		m_serializationLibraryExtensions = new SerializationLibraryExtensions();
-		m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(PythonPreferencePage.getSerializerId());
+		m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(getSerializerId());
 		String serializerPythonPath = SerializationLibraryExtensions
-				.getSerializationLibraryPath(PythonPreferencePage.getSerializerId());
+				.getSerializationLibraryPath(getSerializerId());
 		// Create socket to listen on
 		m_serverSocket = new ServerSocket(0);
 		final int port = m_serverSocket.getLocalPort();
@@ -901,5 +901,13 @@ public class PythonKernel {
 
 	public String getSql(final String name) throws IOException {
 		return m_commands.getSql(name);
+	}
+	
+	private String getSerializerId()
+	{
+		if(m_kernelOptions.getOverrulePreferencePage()) {
+			return m_kernelOptions.getSerializerId();
+		}
+		return PythonPreferencePage.getSerializerId();
 	}
 }

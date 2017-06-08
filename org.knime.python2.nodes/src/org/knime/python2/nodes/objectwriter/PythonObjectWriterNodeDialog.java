@@ -59,6 +59,7 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectPortObject;
 
@@ -78,7 +79,8 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 	 * Create the dialog for this node.
 	 */
 	protected PythonObjectWriterNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames(), 
+				FlowVariableOptions.parse(getAvailableFlowVariables()));
 		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
 		addTab("Script", m_sourceCodePanel, false);

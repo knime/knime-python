@@ -98,7 +98,7 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
 	 */
 	@Override
 	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
+		final PythonKernel kernel = new PythonKernel(getKernelOptions());
 		ImageContainer image = null;
 		try {
 			kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),

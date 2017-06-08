@@ -64,6 +64,8 @@ public class PythonKernelOptions {
 	
 	private SerializationOptions m_serializationOptions = new SerializationOptions();
 	
+	private FlowVariableOptions m_flowVariableOptions = new FlowVariableOptions();
+	
 	public PythonKernelOptions() {
 		
 	}
@@ -125,6 +127,30 @@ public class PythonKernelOptions {
 	
 	public SerializationOptions getSerializationOptions() {
 		return m_serializationOptions;
+	}
+	
+	public boolean getOverrulePreferencePage() {
+		return m_flowVariableOptions.getOverrulePreferencePage();
+	}
+
+	public void setOverrulePreferencePage(boolean overrulePreferencePage) {
+		m_flowVariableOptions.setOverrulePreferencePage(overrulePreferencePage);
+	}
+
+	public String getSerializerId() {
+		return m_flowVariableOptions.getSerializerId();
+	}
+
+	public void setSerializerId(String serializerId) {
+		m_flowVariableOptions.setSerializerId(serializerId);
+	}
+	
+	public FlowVariableOptions getFlowVariableOptions() {
+		return m_flowVariableOptions;
+	}
+	
+	public void setFlowVariableOptions(FlowVariableOptions options) {
+		m_flowVariableOptions = options;
 	}
 
 }

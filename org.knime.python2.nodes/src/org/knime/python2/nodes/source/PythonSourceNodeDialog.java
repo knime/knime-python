@@ -57,6 +57,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * <code>NodeDialog</code> for the node.
@@ -74,7 +75,8 @@ class PythonSourceNodeDialog extends NodeDialogPane {
 	 * Create the dialog for this node.
 	 */
 	protected PythonSourceNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonSourceNodeConfig.getVariableNames());
+		m_sourceCodePanel = new PythonSourceCodePanel(PythonSourceNodeConfig.getVariableNames(), 
+				FlowVariableOptions.parse(getAvailableFlowVariables()));
 		m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
 		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-source");
 		addTab("Script", m_sourceCodePanel, false);

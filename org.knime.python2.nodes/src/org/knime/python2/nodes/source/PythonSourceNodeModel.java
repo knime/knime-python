@@ -80,7 +80,7 @@ class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
 	 */
 	@Override
 	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
+		final PythonKernel kernel = new PythonKernel(getKernelOptions());
 		BufferedDataTable table = null;
 		try {
 			kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),

@@ -57,7 +57,9 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
 
 /**
@@ -80,7 +82,7 @@ class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
 	 */
 	@Override
 	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getConfig().getKernelOptions());
+		final PythonKernel kernel = new PythonKernel(getKernelOptions());
 		BufferedDataTable table = null;
 		try {
 			kernel.putFlowVariables(PythonScriptNodeConfig.getVariableNames().getFlowVariables(),
