@@ -60,7 +60,7 @@ def column_serializers_from_bytes(data_bytes):
 
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
-    in_file = open(path, 'r')
+    in_file = open(path, 'rb')
     types = in_file.readline().strip()[2:].split(',')
     if types == ['']:
         types = []
@@ -142,7 +142,7 @@ def bytes_into_table(table, data_bytes):
 
 def table_to_bytes(table):
     path = tempfile.mkstemp(suffix='.csv', prefix='python-to-java-', text=True)[1]
-    out_file = open(path, 'w')
+    out_file = open(path, 'wb')
     types_line = '#'
     needs_copy = False
     types = []
