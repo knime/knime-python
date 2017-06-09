@@ -13,7 +13,7 @@ def main():
     python_version = sys.version_info
     print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
     if python_version[0] != 2:
-        add_to_message('Python is required to have a major version of 2')
+        add_to_message('Python is required to have a major version of 2. Use the options tab to choose the major version to use.')
     check_required_libs()
     print(_message)
 

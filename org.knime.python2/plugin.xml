@@ -59,6 +59,12 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
             python-type-identifier="xml.dom.minidom.Document">
       </type>
+      <type
+            id="org.knime.python2.svg"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
+            python-type-identifier="xml.dom.minidom.Document">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
@@ -101,6 +107,11 @@
             id="org.knime.python2.xml"
             java-serializer-factory="org.knime.python2.typeextension.builtin.xml.XMLSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/xml/XMLDeserializer.py">
+      </type>
+      <type
+            id="org.knime.python2.svg"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.image.SvgSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/image/SvgDeserializer.py">
       </type>
    </extension>
    <extension
