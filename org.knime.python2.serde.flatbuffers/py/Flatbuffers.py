@@ -263,7 +263,7 @@ def bytes_into_table(table, data_bytes):
                         byteVals = bytearray()           
                         for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
                             byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                        cellVals.append(bytes(byteVals))
+                        cellVals.add(bytes(byteVals))
                         if cell.KeepDummy():
                             cellVals.add(None)
                     
