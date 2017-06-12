@@ -4,7 +4,6 @@ import imp
 import importlib
 import inspect
 import sys
-import struct
 from knimetable import KnimeTable
 from knimetable import IntColumn
 from knimetable import Column
@@ -205,20 +204,18 @@ def bytes_into_table(table, data_bytes):
           #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) ValuesLength():", colVec.ValuesLength())        
             for idx in range(0, colVec.ValuesLength()):
                 cell = colVec.Values(idx)   
-                byteVals = []           
+                byteVals = bytearray()          
                 
                  #   debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(cell.Value(cellIdx)))
                 for byteIdx in range(0,cell.ValueLength()):
                     val = cell.Value(byteIdx)
-                 #   if val < 0:
-                 #       val += 256
                     byteVals.append(val)
                  
                 if colVec.Missing(idx):
                     colVals.append(None)
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) col Missing", colVec.Missing(idx)) 
                 else:
-                    colVals.append(bytearray(byteVals))
+                    colVals.append(bytes(byteVals))
               #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(byteVals))
               #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", byteVals)
                  
@@ -236,13 +233,13 @@ def bytes_into_table(table, data_bytes):
                     cellVals = []
                     # units in the List
                     for cellIdx in range(0, cell.ValueLength()):
-                        byteVals = []
+                        byteVals = bytearray()
                         if cell.Missing(cellIdx):
                             cellVals.append(None)
                         else:           
                             for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
                                 byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                            cellVals.append(bytes(struct.pack("b"*len(byteVals),*byteVals))) 
+                            cellVals.append(bytes(byteVals)) 
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell.Type():", type(byteVals))
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell", byteVals)      
 
@@ -263,10 +260,10 @@ def bytes_into_table(table, data_bytes):
                     cellVals = set()
                     # units in the Set
                     for cellIdx in range(0, cell.ValueLength()):
-                        byteVals = []           
+                        byteVals = bytearray()           
                         for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
                             byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                        cellVals.add(bytes(struct.pack("b"*len(byteVals),*byteVals)))
+                        cellVals.append(bytes(byteVals))
                         if cell.KeepDummy():
                             cellVals.add(None)
                     
@@ -754,7 +751,6 @@ def table_to_bytes(table):
                 else:
                     builder.PrependFloat64(col[valIdx])
              #   debug_util.debug_msg("Python->Flatbuffers: (Double) (col)[", valIdx, "]", col[valIdx])   
-                
             valVec = builder.EndVector(len(col))
                 
             DoubleColumn.DoubleColumnStartMissingVector(builder, len(col))
