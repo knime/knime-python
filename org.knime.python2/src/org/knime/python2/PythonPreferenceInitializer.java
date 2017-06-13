@@ -64,6 +64,8 @@ public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 	public static final String DEFAULT_PYTHON_3_PATH = "python3";
 	
 	public static final String DEFAULT_SERIALIZER_ID = "org.knime.serialization.flatbuffers.column";
+	
+	public static final String DEFAULT_DEFAULT_PYTHON_OPTION_CFG = "python3";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferenceInitializer.class);
 
@@ -73,6 +75,7 @@ public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 		prefs.put(PythonPreferencePage.PYTHON_2_PATH_CFG, DEFAULT_PYTHON_2_PATH);
 		prefs.put(PythonPreferencePage.PYTHON_3_PATH_CFG, DEFAULT_PYTHON_3_PATH);
 		prefs.put(PythonPreferencePage.SERIALIZER_ID_CFG, DEFAULT_SERIALIZER_ID);
+		prefs.put(PythonPreferencePage.DEFAULT_PYTHON_OPTION_CFG, DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
 		try {
 			prefs.flush();
 		} catch (BackingStoreException e) {

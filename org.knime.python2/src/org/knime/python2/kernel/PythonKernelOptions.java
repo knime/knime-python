@@ -45,6 +45,7 @@
 
 package org.knime.python2.kernel;
 
+import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 
@@ -58,9 +59,9 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 
 public class PythonKernelOptions {
 	
-	public final static boolean DEFAULT_USE_PYTHON3 = true;
+	public final static PythonVersionOption DEFAULT_PYTHON_VERSION_OPTION = PythonVersionOption.DEFAULT;
 		
-	private boolean m_usePython3 = DEFAULT_USE_PYTHON3;
+	private PythonVersionOption m_usePython3 = DEFAULT_PYTHON_VERSION_OPTION;
 	
 	private SerializationOptions m_serializationOptions = new SerializationOptions();
 	
@@ -70,7 +71,7 @@ public class PythonKernelOptions {
 		
 	}
 	
-	public PythonKernelOptions(boolean usePython3, boolean convertMissingToPython, 
+	public PythonKernelOptions(PythonVersionOption usePython3, boolean convertMissingToPython, 
 			boolean convertMissingFromPython, SentinelOption sentinelOption, int sentinelValue) {
 		m_usePython3 = usePython3;
 		m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
@@ -81,15 +82,15 @@ public class PythonKernelOptions {
 	
 	public PythonKernelOptions(PythonKernelOptions other)
 	{
-		this(other.getUsePython3(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(), 
+		this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(), 
 				other.getSentinelOption(), other.getSentinelValue());
 	}
 
-	public boolean getUsePython3() {
+	public PythonVersionOption getPythonVersionOption() {
 		return m_usePython3;
 	}
 
-	public void setUsePython3(boolean m_usePython3) {
+	public void setPythonVersionOption(PythonVersionOption m_usePython3) {
 		this.m_usePython3 = m_usePython3;
 	}
 
@@ -151,6 +152,18 @@ public class PythonKernelOptions {
 	
 	public void setFlowVariableOptions(FlowVariableOptions options) {
 		m_flowVariableOptions = options;
+	}
+	
+	public static enum PythonVersionOption {
+		PYHTON2, PYHTON3, DEFAULT;
+	}
+	
+	public boolean getUsePython3() {
+		if(m_usePython3 == PythonVersionOption.PYHTON3 || 
+				m_usePython3 == PythonVersionOption.DEFAULT && PythonPreferencePage.getDefaultPythonOption() == "python3") {
+			return true;
+		}
+		return false;
 	}
 
 }

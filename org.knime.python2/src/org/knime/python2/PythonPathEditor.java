@@ -45,20 +45,27 @@
 
 package org.knime.python2;
 
+
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
-public class PythonPathEditor extends Composite {
+public class PythonPathEditor extends Composite implements DefaultPythonVersionOption {
 	
 	private FileFieldEditor m_pathEditor;
 	private Label m_info;
 	private Label m_error;
+	private Button m_defaultBtn;
+	
+	private DefaultPythonVersionObserver m_observer;
 
 	public PythonPathEditor(final String label, final Composite parent) {
 		super(parent, SWT.NONE);
@@ -73,12 +80,12 @@ public class PythonPathEditor extends Composite {
 		gridData = new GridData();
 		gridData.horizontalSpan = 3;
 		gridData = new GridData();
-		gridData.horizontalSpan = 3;
+		gridData.horizontalSpan = 2;
 		gridData.verticalIndent = 20;
 		m_info = new Label(this, SWT.NONE);
 		m_info.setLayoutData(gridData);
 		gridData = new GridData();
-		gridData.horizontalSpan = 3;
+		gridData.horizontalSpan = 2;
 		m_error = new Label(this, SWT.NONE);
 		m_error.setLayoutData(gridData);
 		final Color red = new Color(parent.getDisplay(), 255, 0, 0);
@@ -87,6 +94,24 @@ public class PythonPathEditor extends Composite {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				red.dispose();
+			}
+		});
+		gridData = new GridData();
+		gridData.horizontalSpan = 1;
+		m_defaultBtn = new Button(this, SWT.TOGGLE);
+		m_defaultBtn.setText( "Use as default" );
+		m_defaultBtn.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				notifyChange();
+				
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				
 			}
 		});
 	}
@@ -114,6 +139,35 @@ public class PythonPathEditor extends Composite {
 	 */
 	private void refreshSizes() {
 		layout();
+	}
+
+	@Override
+	public boolean isSelected() {
+		return m_defaultBtn.getSelection();
+		
+	}
+
+	@Override
+	public void updateDefaultPythonVersion(DefaultPythonVersionOption option) {
+		if(this == option) {
+			if(!m_defaultBtn.getSelection()) {
+				m_defaultBtn.setSelection(true);
+			}
+		} else {
+			m_defaultBtn.setSelection(false);
+		}
+		
+	}
+
+	@Override
+	public void setObserver(DefaultPythonVersionObserver observer)
+	{
+		m_observer = observer;
+	}
+
+	@Override
+	public void notifyChange() {
+		m_observer.notifyChange(this);
 	}
 
 }

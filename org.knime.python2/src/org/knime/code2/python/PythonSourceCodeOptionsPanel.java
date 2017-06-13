@@ -81,6 +81,7 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 	private ButtonGroup m_pythonVersion;
 	private JRadioButton m_python2;
 	private JRadioButton m_python3;
+	private JRadioButton m_defaultPython;
 	
 	private JCheckBox m_convertToPython;
 	private JCheckBox m_convertFromPython;
@@ -101,11 +102,14 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		m_pythonVersion = new ButtonGroup();
 		m_python2 = new JRadioButton("Python 2");
 		m_python3 = new JRadioButton("Python 3");
+		m_defaultPython = new JRadioButton("Default");
 		m_pythonVersion.add(m_python2);
 		m_pythonVersion.add(m_python3);
+		m_pythonVersion.add(m_defaultPython);
 		PythonKernelOptionsListener pkol = new PythonKernelOptionsListener();
 		m_python2.addActionListener(pkol);
 		m_python3.addActionListener(pkol);
+		m_defaultPython.addActionListener(pkol);
 		JPanel panel = new JPanel(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.insets = new Insets(5, 5, 5, 5);
@@ -119,6 +123,7 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		versionPanel.setBorder(BorderFactory.createTitledBorder("Use Python Version"));
 		versionPanel.add(m_python2);
 		versionPanel.add(m_python3);
+		versionPanel.add(m_defaultPython);
 		panel.add(versionPanel, gbc);
 		//Missing value handling for Int and Long
 		JPanel missingPanel = new JPanel(new GridLayout(0,1));
@@ -151,14 +156,14 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 			@Override
 			public void removeUpdate(DocumentEvent e) {
 				updateSentinelValue();
-				getSourceCodePanel().setKernelOptions(m_python3.isSelected(), m_convertToPython.isSelected(),
+				getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
 						m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 			}
 			
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				updateSentinelValue();
-				getSourceCodePanel().setKernelOptions(m_python3.isSelected(), m_convertToPython.isSelected(),
+				getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
 						m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 			}
 			
@@ -186,10 +191,12 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 	public void loadSettingsFrom(PythonSourceCodeConfig config) {
 		super.loadSettingsFrom(config);
 		PythonKernelOptions kopts = config.getKernelOptions();
-		if (kopts.getUsePython3()) {
+		if (kopts.getPythonVersionOption() == PythonKernelOptions.PythonVersionOption.PYHTON3) {
 			m_python3.setSelected(true);
-		} else {
+		} else if (kopts.getPythonVersionOption() == PythonKernelOptions.PythonVersionOption.PYHTON2) {
 			m_python2.setSelected(true);
+		} else {
+			m_defaultPython.setSelected(true);
 		}
 		//Missing value handling
 		m_convertToPython.setSelected(kopts.getConvertMissingToPython());
@@ -203,14 +210,14 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		}
 		m_sentinelInput.setText(kopts.getSentinelValue() + "");
 		m_sentinelValue = kopts.getSentinelValue();
-		getSourceCodePanel().setKernelOptions(m_python3.isSelected(), m_convertToPython.isSelected(),
+		getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
 				m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 	}
 	
 	@Override
 	public void saveSettingsTo(PythonSourceCodeConfig config) {
 		super.saveSettingsTo(config);
-		config.setKernelOptions(m_python3.isSelected(), m_convertToPython.isSelected(),
+		config.setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
 					m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 	}
 	
@@ -243,11 +250,21 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			
-			getSourceCodePanel().setKernelOptions(m_python3.isSelected(), m_convertToPython.isSelected(),
+			getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
 					m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 			
 		}
 		
+	}
+	
+	private PythonKernelOptions.PythonVersionOption getSelectedPythonVersion() {
+		if(m_python2.isSelected()) {
+			return PythonKernelOptions.PythonVersionOption.PYHTON2;
+		} else if(m_python3.isSelected()) {
+			return PythonKernelOptions.PythonVersionOption.PYHTON3;
+		} else {
+			return PythonKernelOptions.PythonVersionOption.DEFAULT;
+		}
 	}
 
 }
