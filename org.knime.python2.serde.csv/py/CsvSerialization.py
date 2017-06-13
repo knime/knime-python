@@ -199,12 +199,7 @@ def table_to_bytes(table):
                         else:
                             base64_set.add(None)
                     data_frame.set_value(index, names[i], base64_set)
-        elif col_type_id == _types_.DOUBLE:
-            str_list = []
-            for j in range(len(data_frame)):
-                str_list.append("%.17g" % data_frame.iloc[j,i])
-            data_frame.iloc[:,i] = str_list
-    data_frame.to_csv(out_buffer, na_rep='MissingCell')
+    data_frame.to_csv(out_buffer, na_rep='MissingCell', float_format="%.17g")
     out_file.write(out_buffer.getvalue().encode('utf-8'))
     out_file.close()
     debug_util.debug_msg('file: ' + path)
