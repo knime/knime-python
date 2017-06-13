@@ -104,6 +104,7 @@ def run():
                 source_code = read_string()
                 debug_util.debug_msg('executing: ' + source_code + '\n')
                 output, error = execute(source_code)
+                debug_util.debug_msg('executing done!')
                 write_string(output)
                 write_string(error)
             elif command == 'putFlowVariables':
@@ -670,7 +671,10 @@ def read_data():
 
 # writes the given size as 4 byte integer to the output stream
 def write_size(size):
-    _connection.sendall(struct.pack('>L', size))
+    writer = _connection.makefile('wb', 4)
+    writer.write(struct.pack('>L', size))
+    writer.flush()
+    #_connection.sendall(struct.pack('>L', size))
 
 
 # writes the given data to the output stream
@@ -1020,5 +1024,6 @@ def value_to_simpletype_value(value, simpletype):
 # Uncomment below and comment the run() call for profiling
 # See https://docs.python.org/3/library/profile.html on how to interpet the result
 #import cProfile
-#cProfile.run('run()', filename='~/debugres.txt')
+#profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
+#cProfile.run('run()', filename=profilepath)
 run()

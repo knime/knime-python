@@ -45,19 +45,28 @@
 
 package org.knime.python2.kernel;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import org.knime.core.node.NodeLogger;
 
 public class Commands {
 	
 	private final OutputStream m_outToServer;
 	private final InputStream m_inFromServer;
 	
+	private final DataInputStream m_bufferedInFromServer;
+	private final DataOutputStream m_bufferedOutToServer;
+	
 	public Commands(final OutputStream outToServer, final InputStream inFromServer) {
 		m_outToServer = outToServer;
 		m_inFromServer = inFromServer;
+		m_bufferedInFromServer = new DataInputStream(m_inFromServer);
+		m_bufferedOutToServer = new DataOutputStream(m_outToServer);
 	}
 	
 	synchronized public int getPid() throws IOException {
@@ -211,27 +220,27 @@ public class Commands {
 	}
 	
 	private void writeString(final String string) throws IOException {
-		writeMessageBytes(stringToBytes(string), m_outToServer);
+		writeMessageBytes(stringToBytes(string), m_bufferedOutToServer);
 	}
 	
 	private String readString() throws IOException {
-		return stringFromBytes(readMessageBytes(m_inFromServer));
+		return stringFromBytes(readMessageBytes(m_bufferedInFromServer));
 	}
 	
 	private void writeInt(final int integer) throws IOException {
-		writeMessageBytes(intToBytes(integer), m_outToServer);
+		writeMessageBytes(intToBytes(integer), m_bufferedOutToServer);
 	}
 	
 	private int readInt() throws IOException {
-		return intFromBytes(readMessageBytes(m_inFromServer));
+		return intFromBytes(readMessageBytes(m_bufferedInFromServer));
 	}
 	
 	private void writeBytes(final byte[] bytes) throws IOException {
-		writeMessageBytes(bytes, m_outToServer);
+		writeMessageBytes(bytes, m_bufferedOutToServer);
 	}
 	
 	private byte[] readBytes() throws IOException {
-		return readMessageBytes(m_inFromServer);
+		return readMessageBytes(m_bufferedInFromServer);
 	}
 
 	/**
@@ -244,8 +253,9 @@ public class Commands {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	private static void writeSize(final int size, final OutputStream outputStream) throws IOException {
+	private static void writeSize(final int size, final DataOutputStream outputStream) throws IOException {
 		outputStream.write(ByteBuffer.allocate(4).putInt(size).array());
+		outputStream.flush();
 	}
 
 	/**
@@ -258,27 +268,27 @@ public class Commands {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	private static void writeMessageBytes(final byte[] bytes, final OutputStream outputStream) throws IOException {
+	private static void writeMessageBytes(final byte[] bytes, final DataOutputStream outputStream) throws IOException {
 		writeSize(bytes.length, outputStream);
 		outputStream.write(bytes);
+		outputStream.flush();
 	}
 
 	/**
 	 * Reads the next 32 bit from the input stream and interprets them as
 	 * integer.
 	 *
-	 * @param inputStream
+	 * @param inputReader
 	 *            The stream to read from
 	 * @return The read size
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	private static int readSize(final InputStream inputStream) throws IOException {
+	private static int readSize(final DataInputStream inputStream) throws IOException {
 		final byte[] bytes = new byte[4];
-		int bytesRead = 0;
-		while (bytesRead < bytes.length) {
-			bytesRead += inputStream.read(bytes, bytesRead, bytes.length - bytesRead);
-		}
+		//long millis = System.currentTimeMillis();
+		inputStream.readFully(bytes);
+		//NodeLogger.getLogger("readSize").warn("Spent " + (System.currentTimeMillis() - millis) + "ms in readSize().");
 		return ByteBuffer.wrap(bytes).getInt();
 	}
 
@@ -291,13 +301,11 @@ public class Commands {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	private static byte[] readMessageBytes(final InputStream inputStream) throws IOException {
+	private static byte[] readMessageBytes(final DataInputStream inputStream) throws IOException {
 		final int size = readSize(inputStream);
 		final byte[] bytes = new byte[size];
-		int bytesRead = 0;
-		while (bytesRead < bytes.length) {
-			bytesRead += inputStream.read(bytes, bytesRead, bytes.length - bytesRead);
-		}
+		//NodeLogger.getLogger("readMessageBytes").warn("Received " + size + " bytes.");
+		inputStream.readFully(bytes);
 		return bytes;
 	}
 
