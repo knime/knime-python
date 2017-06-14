@@ -578,13 +578,15 @@ _type_extension_manager = TypeExtensionManager()
 def serialize_objects_to_bytes(data_frame, column_serializers):
     for column in column_serializers:
         serializer = _type_extension_manager.get_serializer_by_id(column_serializers[column])
+        col_idx = data_frame.columns.get_loc(column)
+        if data_frame[column].dtype != 'object':
+            data_frame[column] = data_frame[column].astype('object')
         for i in range(len(data_frame)):
             if debug_util.is_debug_enabled():
                 lastp = -1
                 if (i * 100/len(data_frame)) % 5 == 0 and int(i * 100/len(data_frame)) != lastp:
                     debug_util.debug_msg(str(i * 100/len(data_frame)) + ' percent done (serialize)')
                     lastp = int(i * 100/len(data_frame))
-            col_idx = data_frame.columns.get_loc(column)
             # Using bracket acessor is necessary here for ensuring that there are
             # no unwanted type conversions
             value = data_frame[column][i] 
@@ -723,8 +725,10 @@ class FromPandasTable:
             self._column_types.append(column_type)
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
+        #debug_util.breakpoint()
         serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self._row_indices = self._data_frame.index.astype(str)
+
 
     # example: table.get_type(0)
     def get_type(self, column_index):

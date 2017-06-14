@@ -65,6 +65,12 @@
             python-serializer="src/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
             python-type-identifier="xml.dom.minidom.Document">
       </type>
+      <type
+            id="org.knime.python2.pandasTimestamp"
+            java-deserializer-factory="org.knime.python2.typeextension.builtin.datetime2.DateTime2DeserializerFactory"
+            python-serializer="src/org/knime/python2/typeextension/builtin/datetime2/DateTimeSerializer.py"
+            python-type-identifier="pandas._libs.tslib.Timestamp">
+      </type>
    </extension>
    <extension
          point="org.knime.python2.typeextension.knimetopython">
