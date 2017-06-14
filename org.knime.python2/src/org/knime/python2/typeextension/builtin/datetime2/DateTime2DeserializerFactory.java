@@ -92,7 +92,7 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 			}
 			else
 			{
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.DESERIALIZE_FORMAT);
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
 				return ZonedDateTimeCellFactory.create(string, formatter);
 			}
 		}
