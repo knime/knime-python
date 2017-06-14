@@ -16,7 +16,8 @@ import org.knime.python2.typeextension.SerializerFactory;
 
 public class ZonedDateTimeSerializerFactory extends SerializerFactory<ZonedDateTimeValue> {
 	
-	public static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx'['z']'";
+	public static final String SERIZALIZE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx";
+	public static final String DESERIALIZE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx'['z']'";
 	
 	public ZonedDateTimeSerializerFactory() {
 		super(ZonedDateTimeValue.class);
@@ -32,8 +33,10 @@ public class ZonedDateTimeSerializerFactory extends SerializerFactory<ZonedDateT
 		@Override
 		public byte[] serialize(ZonedDateTimeValue value) throws IOException {
 			ZonedDateTime date = value.getZonedDateTime();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
-			return date.format(formatter).getBytes("UTF-8");
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(SERIZALIZE_FORMAT);
+			String datestr = date.format(formatter);
+			datestr += "[" + date.getZone() + "]";
+			return datestr.getBytes("UTF-8");
 		}
 		
 	}
