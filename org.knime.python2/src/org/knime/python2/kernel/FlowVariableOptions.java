@@ -38,6 +38,8 @@ public class FlowVariableOptions {
 		if( serLib != null && PythonPreferencePage.getAvailableSerializerIds().contains(serLib) ) {
 			options.setOverrulePreferencePage(true);
 			options.setSerializerId(serLib);
+		} else if(serLib != null) {
+			throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
 		}
 		return options;
 	}
