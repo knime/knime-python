@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.objectwriter;
+package org.knime.python2.nodes.learner;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWriterNodeModel> {
+public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonObjectWriterNodeModel createNodeModel() {
-		return new PythonObjectWriterNodeModel();
+	public PythonLearnerNodeModel createNodeModel() {
+		return new PythonLearnerNodeModel();
 	}
 
 	/**
@@ -81,14 +81,13 @@ public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWrite
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonObjectWriterNodeModel> createNodeView(final int viewIndex,
-			final PythonObjectWriterNodeModel nodeModel) {
+	public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex, final PythonLearnerNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonObjectWriterNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonObjectWriterNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
         }
 		return null;
 	}
@@ -106,7 +105,7 @@ public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWrite
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonObjectWriterNodeDialog();
+		return new PythonLearnerNodeDialog();
 	}
 
 }

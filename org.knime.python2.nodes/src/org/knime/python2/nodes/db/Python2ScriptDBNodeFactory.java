@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.db;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -55,18 +55,18 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonLearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+public class Python2ScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonLearnerNodeModel createNodeModel() {
-		return new PythonLearnerNodeModel();
+	public PythonScriptDBNodeModel createNodeModel() {
+		return new PythonScriptDBNodeModel();
 	}
 
 	/**
@@ -81,15 +81,15 @@ public class PythonLearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex, final PythonLearnerNodeModel nodeModel) {
+	public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
         }
-		return null;
+        return null;
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class PythonLearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonLearnerNodeDialog();
+		return new PythonScriptDBNodeDialog();
 	}
 
 }

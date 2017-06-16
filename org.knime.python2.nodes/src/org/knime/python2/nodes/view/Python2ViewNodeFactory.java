@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.predictor;
+package org.knime.python2.nodes.view;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonPredictorNodeFactory extends NodeFactory<PythonPredictorNodeModel> {
+public class Python2ViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonPredictorNodeModel createNodeModel() {
-		return new PythonPredictorNodeModel();
+	public PythonViewNodeModel createNodeModel() {
+		return new PythonViewNodeModel();
 	}
 
 	/**
@@ -74,21 +74,23 @@ public class PythonPredictorNodeFactory extends NodeFactory<PythonPredictorNodeM
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 2;
+		return 3;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonPredictorNodeModel> createNodeView(final int viewIndex,
-			final PythonPredictorNodeModel nodeModel) {
+	public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
         if (viewIndex == 0) {
-            return
-                new ExtToolStdoutNodeView<PythonPredictorNodeModel>(nodeModel);
+        	return new PythonViewNodeView(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonPredictorNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
+        } else if (viewIndex == 2) {
+            return
+                    new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
+        	
         }
 		return null;
 	}
@@ -106,7 +108,7 @@ public class PythonPredictorNodeFactory extends NodeFactory<PythonPredictorNodeM
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonPredictorNodeDialog();
+		return new PythonViewNodeDialog();
 	}
 
 }

@@ -45,13 +45,12 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.objectreader;
+package org.knime.python2.nodes.script2in1out;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
-import org.knime.core.node.ContextAwareNodeFactory;
-import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
@@ -60,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<PythonObjectReaderNodeModel> {
+public class Python2Script2In1OutNodeFactory extends NodeFactory<PythonScript2In1OutNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonObjectReaderNodeModel createNodeModel() {
-		return new PythonObjectReaderNodeModel();
+	public PythonScript2In1OutNodeModel createNodeModel() {
+		return new PythonScript2In1OutNodeModel();
 	}
 
 	/**
@@ -82,16 +81,15 @@ public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<Pytho
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonObjectReaderNodeModel> createNodeView(final int viewIndex,
-			final PythonObjectReaderNodeModel nodeModel) {
+	public NodeView<PythonScript2In1OutNodeModel> createNodeView(final int viewIndex, final PythonScript2In1OutNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonObjectReaderNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonScript2In1OutNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonObjectReaderNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonScript2In1OutNodeModel>(nodeModel);
         }
-		return null;
+        return null;
 	}
 
 	/**
@@ -107,12 +105,7 @@ public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<Pytho
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonObjectReaderNodeDialog();
-	}
-
-	@Override
-	public PythonObjectReaderNodeModel createNodeModel(NodeCreationContext context) {
-		return new PythonObjectReaderNodeModel(context);
+		return new PythonScript2In1OutNodeDialog();
 	}
 
 }

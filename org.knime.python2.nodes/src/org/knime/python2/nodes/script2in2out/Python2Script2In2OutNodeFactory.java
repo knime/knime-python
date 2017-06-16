@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.script1in2out;
+package org.knime.python2.nodes.script2in2out;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonScript1In2OutNodeFactory extends NodeFactory<PythonScript1In2OutNodeModel> {
+public class Python2Script2In2OutNodeFactory extends NodeFactory<PythonScript2In2OutNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonScript1In2OutNodeModel createNodeModel() {
-		return new PythonScript1In2OutNodeModel();
+	public PythonScript2In2OutNodeModel createNodeModel() {
+		return new PythonScript2In2OutNodeModel();
 	}
 
 	/**
@@ -81,13 +81,13 @@ public class PythonScript1In2OutNodeFactory extends NodeFactory<PythonScript1In2
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonScript1In2OutNodeModel> createNodeView(final int viewIndex, final PythonScript1In2OutNodeModel nodeModel) {
+	public NodeView<PythonScript2In2OutNodeModel> createNodeView(final int viewIndex, final PythonScript2In2OutNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScript1In2OutNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonScript2In2OutNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScript1In2OutNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonScript2In2OutNodeModel>(nodeModel);
         }
         return null;
 	}
@@ -105,7 +105,7 @@ public class PythonScript1In2OutNodeFactory extends NodeFactory<PythonScript1In2
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScript1In2OutNodeDialog();
+		return new PythonScript2In2OutNodeDialog();
 	}
 
 }

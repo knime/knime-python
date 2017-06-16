@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.view;
+package org.knime.python2.nodes.script1in2out;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
+public class Python2Script1In2OutNodeFactory extends NodeFactory<PythonScript1In2OutNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonViewNodeModel createNodeModel() {
-		return new PythonViewNodeModel();
+	public PythonScript1In2OutNodeModel createNodeModel() {
+		return new PythonScript1In2OutNodeModel();
 	}
 
 	/**
@@ -74,25 +74,22 @@ public class PythonViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 	 */
 	@Override
 	public int getNrNodeViews() {
-		return 3;
+		return 2;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
+	public NodeView<PythonScript1In2OutNodeModel> createNodeView(final int viewIndex, final PythonScript1In2OutNodeModel nodeModel) {
         if (viewIndex == 0) {
-        	return new PythonViewNodeView(nodeModel);
+            return
+                new ExtToolStdoutNodeView<PythonScript1In2OutNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                    new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
-        } else if (viewIndex == 2) {
-            return
-                    new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
-        	
+                new ExtToolStderrNodeView<PythonScript1In2OutNodeModel>(nodeModel);
         }
-		return null;
+        return null;
 	}
 
 	/**
@@ -108,7 +105,7 @@ public class PythonViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonViewNodeDialog();
+		return new PythonScript1In2OutNodeDialog();
 	}
 
 }

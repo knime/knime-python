@@ -45,28 +45,29 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.db;
+package org.knime.python2.nodes.objectreader;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
+import org.knime.core.node.ContextAwareNodeFactory;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- *
- * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
+ * 
+ * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeModel> {
+public class Python2ObjectReaderNodeFactory extends ContextAwareNodeFactory<PythonObjectReaderNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonScriptDBNodeModel createNodeModel() {
-		return new PythonScriptDBNodeModel();
+	public PythonObjectReaderNodeModel createNodeModel() {
+		return new PythonObjectReaderNodeModel();
 	}
 
 	/**
@@ -81,15 +82,16 @@ public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeMod
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
+	public NodeView<PythonObjectReaderNodeModel> createNodeView(final int viewIndex,
+			final PythonObjectReaderNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonObjectReaderNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonObjectReaderNodeModel>(nodeModel);
         }
-        return null;
+		return null;
 	}
 
 	/**
@@ -105,7 +107,12 @@ public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeMod
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScriptDBNodeDialog();
+		return new PythonObjectReaderNodeDialog();
+	}
+
+	@Override
+	public PythonObjectReaderNodeModel createNodeModel(NodeCreationContext context) {
+		return new PythonObjectReaderNodeModel(context);
 	}
 
 }

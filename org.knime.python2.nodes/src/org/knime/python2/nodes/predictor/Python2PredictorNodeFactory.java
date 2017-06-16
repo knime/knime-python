@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.source;
+package org.knime.python2.nodes.predictor;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonSourceNodeFactory extends NodeFactory<PythonSourceNodeModel> {
+public class Python2PredictorNodeFactory extends NodeFactory<PythonPredictorNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonSourceNodeModel createNodeModel() {
-		return new PythonSourceNodeModel();
+	public PythonPredictorNodeModel createNodeModel() {
+		return new PythonPredictorNodeModel();
 	}
 
 	/**
@@ -81,13 +81,14 @@ public class PythonSourceNodeFactory extends NodeFactory<PythonSourceNodeModel> 
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonSourceNodeModel> createNodeView(final int viewIndex, final PythonSourceNodeModel nodeModel) {
+	public NodeView<PythonPredictorNodeModel> createNodeView(final int viewIndex,
+			final PythonPredictorNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonSourceNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonPredictorNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonSourceNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonPredictorNodeModel>(nodeModel);
         }
 		return null;
 	}
@@ -105,7 +106,7 @@ public class PythonSourceNodeFactory extends NodeFactory<PythonSourceNodeModel> 
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonSourceNodeDialog();
+		return new PythonPredictorNodeDialog();
 	}
 
 }

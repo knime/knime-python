@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.script2in1out;
+package org.knime.python2.nodes.script;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonScript2In1OutNodeFactory extends NodeFactory<PythonScript2In1OutNodeModel> {
+public class Python2ScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonScript2In1OutNodeModel createNodeModel() {
-		return new PythonScript2In1OutNodeModel();
+	public PythonScriptNodeModel createNodeModel() {
+		return new PythonScriptNodeModel();
 	}
 
 	/**
@@ -81,13 +81,13 @@ public class PythonScript2In1OutNodeFactory extends NodeFactory<PythonScript2In1
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonScript2In1OutNodeModel> createNodeView(final int viewIndex, final PythonScript2In1OutNodeModel nodeModel) {
+	public NodeView<PythonScriptNodeModel> createNodeView(final int viewIndex, final PythonScriptNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScript2In1OutNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonScriptNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScript2In1OutNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonScriptNodeModel>(nodeModel);
         }
         return null;
 	}
@@ -105,7 +105,7 @@ public class PythonScript2In1OutNodeFactory extends NodeFactory<PythonScript2In1
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScript2In1OutNodeDialog();
+		return new PythonScriptNodeDialog();
 	}
 
 }

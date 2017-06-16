@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.variables;
+package org.knime.python2.nodes.objectwriter;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonVariablesNodeFactory extends NodeFactory<PythonVariablesNodeModel> {
+public class Python2ObjectWriterNodeFactory extends NodeFactory<PythonObjectWriterNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonVariablesNodeModel createNodeModel() {
-		return new PythonVariablesNodeModel();
+	public PythonObjectWriterNodeModel createNodeModel() {
+		return new PythonObjectWriterNodeModel();
 	}
 
 	/**
@@ -81,15 +81,16 @@ public class PythonVariablesNodeFactory extends NodeFactory<PythonVariablesNodeM
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonVariablesNodeModel> createNodeView(final int viewIndex, final PythonVariablesNodeModel nodeModel) {
+	public NodeView<PythonObjectWriterNodeModel> createNodeView(final int viewIndex,
+			final PythonObjectWriterNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonVariablesNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonObjectWriterNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonVariablesNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonObjectWriterNodeModel>(nodeModel);
         }
-        return null;
+		return null;
 	}
 
 	/**
@@ -105,7 +106,7 @@ public class PythonVariablesNodeFactory extends NodeFactory<PythonVariablesNodeM
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonVariablesNodeDialog();
+		return new PythonObjectWriterNodeDialog();
 	}
 
 }

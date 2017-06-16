@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.script;
+package org.knime.python2.nodes.variables;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> {
+public class Python2VariablesNodeFactory extends NodeFactory<PythonVariablesNodeModel> {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PythonScriptNodeModel createNodeModel() {
-		return new PythonScriptNodeModel();
+	public PythonVariablesNodeModel createNodeModel() {
+		return new PythonVariablesNodeModel();
 	}
 
 	/**
@@ -81,13 +81,13 @@ public class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> 
 	 * {@inheritDoc}
 	 */
 	@Override
-	public NodeView<PythonScriptNodeModel> createNodeView(final int viewIndex, final PythonScriptNodeModel nodeModel) {
+	public NodeView<PythonVariablesNodeModel> createNodeView(final int viewIndex, final PythonVariablesNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScriptNodeModel>(nodeModel);
+                new ExtToolStdoutNodeView<PythonVariablesNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScriptNodeModel>(nodeModel);
+                new ExtToolStderrNodeView<PythonVariablesNodeModel>(nodeModel);
         }
         return null;
 	}
@@ -105,7 +105,7 @@ public class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> 
 	 */
 	@Override
 	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScriptNodeDialog();
+		return new PythonVariablesNodeDialog();
 	}
 
 }
