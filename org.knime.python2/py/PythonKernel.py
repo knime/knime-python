@@ -10,6 +10,7 @@ import numpy
 import os
 import pickle
 import types
+import collections
 from datetime import datetime
 from pandas import DataFrame
 from DBUtil import *
@@ -108,7 +109,7 @@ def run():
                 write_string(output)
                 write_string(error)
             elif command == 'putFlowVariables':
-                flow_variables = {}
+                flow_variables = collections.OrderedDict()
                 name = read_string()
                 data_bytes = read_bytearray()
                 data_frame = bytes_to_data_frame(data_bytes)
