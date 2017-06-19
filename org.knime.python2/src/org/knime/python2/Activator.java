@@ -147,7 +147,8 @@ public class Activator implements BundleActivator {
 			// != 0 as error
 			return new PythonKernelTestResult(writer.toString());
 		} catch (IOException e) {
-			LOGGER.error(e.getMessage(), e);
+			//Error should be processed by calling method using PythonKernelTestResult
+			//LOGGER.error(e.getMessage(), e);
 			// Python could not be started
 			return new PythonKernelTestResult("Could not start Python with command '" + pythonCommand + "'");
 		}

@@ -76,7 +76,7 @@ public class PythonKernelTestResult {
 		m_version = firstLine.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? firstLine : null;
 		if (m_version == null) {
 			m_error = true;
-			m_message = "Could not detect python version";
+			m_message = "Could not find python executable at the given location.";
 		}
 		if (!m_message.isEmpty()) {
 			m_error = true;

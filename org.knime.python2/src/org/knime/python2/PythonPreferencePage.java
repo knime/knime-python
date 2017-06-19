@@ -259,7 +259,7 @@ public class PythonPreferencePage extends PreferencePage
 				}
 			}
 		});
-		m_python2 = new PythonPathEditor("Path to Python 2 executable", m_container);
+		m_python2 = new PythonPathEditor("Python 2", "Path to Python 2 executable", m_container);
 		m_python2.setPythonPath(getPython2Path());
 		gridData = new GridData();
 		gridData.horizontalSpan = 2;
@@ -268,7 +268,7 @@ public class PythonPreferencePage extends PreferencePage
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.verticalAlignment = SWT.FILL;
 		m_python2.setLayoutData(gridData);
-		m_python3 = new PythonPathEditor("Path to Python 3 executable", m_container);
+		m_python3 = new PythonPathEditor("Python 3", "Path to Python 3 executable", m_container);
 		m_python3.setPythonPath(getPython3Path());
 		addOption(m_python2);
 		addOption(m_python3);

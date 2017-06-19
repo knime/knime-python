@@ -47,6 +47,7 @@ package org.knime.python2;
 
 
 import org.eclipse.jface.preference.FileFieldEditor;
+import org.eclipse.jface.resource.FontDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -63,11 +64,12 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 	private FileFieldEditor m_pathEditor;
 	private Label m_info;
 	private Label m_error;
+	private Label m_header;
 	private Button m_defaultBtn;
 	
 	private DefaultPythonVersionObserver m_observer;
 
-	public PythonPathEditor(final String label, final Composite parent) {
+	public PythonPathEditor(final String header, final String label, final Composite parent) {
 		super(parent, SWT.NONE);
 		GridData gridData = new GridData();
 		gridData.grabExcessHorizontalSpace = true;
@@ -75,10 +77,18 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.verticalAlignment = SWT.FILL;
 		setLayoutData(gridData);
-		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, label, this);
-		m_pathEditor.setStringValue(getPythonPath());
 		gridData = new GridData();
 		gridData.horizontalSpan = 3;
+		m_header = new Label(this, SWT.NONE);
+		FontDescriptor descriptor = FontDescriptor.createFrom(m_header.getFont());
+		descriptor = descriptor.setStyle(SWT.BOLD);
+		m_header.setFont(descriptor.createFont(m_header.getDisplay()));
+		m_header.setText(header);
+		m_header.setLayoutData(gridData);
+		/*gridData = new GridData();
+		gridData.horizontalSpan = 3;*/
+		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, label, this);
+		m_pathEditor.setStringValue(getPythonPath());
 		gridData = new GridData();
 		gridData.horizontalSpan = 2;
 		gridData.verticalIndent = 20;
@@ -153,10 +163,17 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 			if(!m_defaultBtn.getSelection()) {
 				m_defaultBtn.setSelection(true);
 			}
+			if(!m_header.getText().contains(" (Default)")) {
+				m_header.setText(m_header.getText() + " (Default)");
+			}
 		} else {
 			m_defaultBtn.setSelection(false);
+			String txt = m_header.getText();
+			if(txt.contains(" (Default)")) {
+				m_header.setText(txt.substring(0,txt.indexOf(" (Default)")));
+			}
 		}
-		
+		this.layout();
 	}
 
 	@Override
