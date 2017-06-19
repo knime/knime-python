@@ -54,15 +54,25 @@ public class SerializationLibraryExtension {
 	private String m_id;
 	private String m_pythonSerializationLibraryPath;
 	private SerializationLibraryFactory m_javaSerializationLibraryFactory;
+	private boolean m_hidden;
 	
 	public SerializationLibraryExtension(String id, String pythonSerializationLibraryPath, SerializationLibraryFactory javaSerializationLibraryFactory) {
+		this(id, pythonSerializationLibraryPath, javaSerializationLibraryFactory, false);
+	}
+	
+	public SerializationLibraryExtension(String id, String pythonSerializationLibraryPath, SerializationLibraryFactory javaSerializationLibraryFactory, boolean hidden) {
 		m_id = id;
 		m_pythonSerializationLibraryPath = pythonSerializationLibraryPath;
 		m_javaSerializationLibraryFactory = javaSerializationLibraryFactory;
+		m_hidden = hidden;
 	}
 	
 	public String getId() {
 		return m_id;
+	}
+	
+	public boolean isHidden() {
+		return m_hidden;
 	}
 	
 	public String getPythonSerializationLibraryPath() {

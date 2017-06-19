@@ -294,7 +294,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			Collection<SerializationLibraryExtension> extensions = SerializationLibraryExtensions.getExtensions();
 			Map<String, String> sortedExtensions = new TreeMap<String, String>();
 			for (SerializationLibraryExtension extension : extensions) {
-				sortedExtensions.put(extension.getJavaSerializationLibraryFactory().getName(), extension.getId());
+				if(!extension.isHidden()) {
+					sortedExtensions.put(extension.getJavaSerializationLibraryFactory().getName(), extension.getId());
+				}
 			}
 			m_serializerNames = new String[sortedExtensions.size()];
 			m_serializerIds = new ArrayList<String>();
