@@ -43,64 +43,49 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python.typeextension.builtin.image;
+package org.knime.python2.typeextension.builtin.datetime2;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-import org.apache.batik.transcoder.TranscoderException;
-import org.apache.batik.transcoder.TranscoderInput;
-import org.apache.batik.transcoder.TranscoderOutput;
-import org.apache.batik.transcoder.image.PNGTranscoder;
-import org.knime.base.data.xml.SvgCell;
-import org.knime.base.data.xml.SvgImageContent;
-import org.knime.core.data.image.ImageContent;
-import org.knime.core.data.image.ImageValue;
-import org.knime.core.data.image.png.PNGImageContent;
-import org.knime.python.typeextension.Serializer;
-import org.knime.python.typeextension.SerializerFactory;
-import org.w3c.dom.svg.SVGDocument;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.python2.typeextension.Serializer;
+import org.knime.python2.typeextension.SerializerFactory;
 
 /**
- * Serialize {@link PNGImageContent} from KNIME to python.
+ * Is used to serialize java8 LocalDateTime objects
  * 
- * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-
-public class ImageSerializerFactory extends SerializerFactory<ImageValue> {
-
-	public ImageSerializerFactory() {
-		super(ImageValue.class);
+public class LocalDateTimeSerializerFactory extends SerializerFactory<LocalDateTimeValue> {
+	
+	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
+	
+	public LocalDateTimeSerializerFactory() {
+		super(LocalDateTimeValue.class);
 	}
-
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Serializer<? extends ImageValue> createSerializer() {
-		return new Serializer<ImageValue>() {
-
-			@Override
-			public byte[] serialize(ImageValue value) throws IOException {
-				ImageContent content = value.getImageContent();
-				if (content instanceof PNGImageContent) {
-					return ((PNGImageContent)content).getByteArray();
-				} else if (content instanceof SvgImageContent) {
-					SvgImageContent svgContent = (SvgImageContent)content;
-					SVGDocument svg = ((SvgCell)svgContent.toImageCell()).getDocument();
-					TranscoderInput input = new TranscoderInput(svg);
-					ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-					TranscoderOutput output = new TranscoderOutput(ostream);
-					PNGTranscoder converter = new PNGTranscoder();
-					try {
-						converter.transcode(input, output);
-						return ostream.toByteArray();
-					} catch (TranscoderException e) {
-						throw new IOException(e);
-					}
-				}
-				return null;
-			}
-		};
+	public Serializer<? extends LocalDateTimeValue> createSerializer() {
+		return new DateAndTimeSerializer();
 	}
+	
+	private class DateAndTimeSerializer implements Serializer<LocalDateTimeValue> {
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public byte[] serialize(LocalDateTimeValue value) throws IOException {
+			LocalDateTime date = value.getLocalDateTime();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
+			return date.format(formatter).getBytes("UTF-8");
+		}
+		
+	}
+
 }

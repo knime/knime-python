@@ -97,6 +97,9 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		super(sourceCodePanel);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected JPanel getAdditionalOptionsPanel() {
 		m_pythonVersion = new ButtonGroup();
@@ -187,6 +190,9 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		return panel;
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void loadSettingsFrom(PythonSourceCodeConfig config) {
 		super.loadSettingsFrom(config);
@@ -214,6 +220,9 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 				m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void saveSettingsTo(PythonSourceCodeConfig config) {
 		super.saveSettingsTo(config);
@@ -221,6 +230,9 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 					m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
 	}
 	
+	/**
+	 * Read the sentinel value from its input component. Show warning if it cannot be parsed.
+	 */
 	private void updateSentinelValue()
 	{
 		try {
@@ -231,6 +243,31 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 			m_missingWarningLabel.setText("<html><font color=\"red\"><b>Sentinel value cannot be parsed. <br /> Default value 0 is used instead!</b></font></html>");
 		}
 	}
+	
+	
+	
+	/**
+	 * Internal ActionListener used for most components. On change the {@link PythonKernelOptions} in the 
+	 * {@link PythonSourceCodePanel} are updated.
+	 * 
+	 * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+	 *
+	 */
+	private class PythonKernelOptionsListener implements ActionListener {
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			
+			getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
+					m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+			
+		}
+		
+	}
+	
+	/**
+	 * @return the {@link SentinelOption} associated with the current radio button selection
+	 */
 	
 	private SentinelOption getSelectedSentinelOption()
 	{
@@ -245,18 +282,9 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 		return so;
 	}
 	
-	private class PythonKernelOptionsListener implements ActionListener {
-
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			
-			getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-					m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
-			
-		}
-		
-	}
-	
+	/**
+	 * @return the {@link PythonVersionOption} associated with the current radio button selection
+	 */
 	private PythonKernelOptions.PythonVersionOption getSelectedPythonVersion() {
 		if(m_python2.isSelected()) {
 			return PythonKernelOptions.PythonVersionOption.PYHTON2;

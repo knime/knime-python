@@ -53,12 +53,21 @@ import org.knime.core.data.xml.XMLValue;
 import org.knime.python.typeextension.Serializer;
 import org.knime.python.typeextension.SerializerFactory;
 
+/**
+ * Serialize {@link PNGImageContent} from KNIME to python.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
+
 public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
 	public XMLSerializerFactory() {
 		super(XMLValue.class);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Serializer<XMLValue> createSerializer() {
 		return new XMLSerializer();
@@ -66,6 +75,9 @@ public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
 	private class XMLSerializer implements Serializer<XMLValue> {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public byte[] serialize(XMLValue value) throws IOException {
 			return value.toString().getBytes();

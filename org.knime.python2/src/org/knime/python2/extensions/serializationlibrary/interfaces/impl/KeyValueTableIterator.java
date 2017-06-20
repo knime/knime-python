@@ -49,6 +49,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
+//TODO comment
+
 public class KeyValueTableIterator implements TableIterator {
 	
 	private TableSpec m_spec;

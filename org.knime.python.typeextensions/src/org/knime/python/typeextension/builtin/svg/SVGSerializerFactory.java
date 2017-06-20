@@ -53,12 +53,21 @@ import org.knime.base.data.xml.SvgValue;
 import org.knime.python.typeextension.Serializer;
 import org.knime.python.typeextension.SerializerFactory;
 
+/**
+ * Serialize {@link SvgValue}s from KNIME to python as XML documents.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
+
 public class SVGSerializerFactory extends SerializerFactory<SvgValue> {
 	
 	public SVGSerializerFactory() {
 		super(SvgValue.class);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Serializer<SvgValue> createSerializer() {
 		return new SVGSerializer();
@@ -66,6 +75,9 @@ public class SVGSerializerFactory extends SerializerFactory<SvgValue> {
 	
 	private class SVGSerializer implements Serializer<SvgValue> {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public byte[] serialize(SvgValue value) throws IOException {
 			return value.toString().getBytes();

@@ -60,12 +60,21 @@ import org.knime.python.typeextension.Deserializer;
 import org.knime.python.typeextension.DeserializerFactory;
 import org.xml.sax.SAXException;
 
+/**
+ * Deserialize {@link XMLCell} from python to KNIME.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
+
 public class XMLDeserializerFactory extends DeserializerFactory {
 	
 	public XMLDeserializerFactory() {
 		super(XMLCell.TYPE);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Deserializer createDeserializer() {
 		return new XMLDeserializer();
@@ -73,6 +82,9 @@ public class XMLDeserializerFactory extends DeserializerFactory {
 
 	private class XMLDeserializer implements Deserializer {
 		
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
 			try {

@@ -47,6 +47,12 @@
  */
 package org.knime.code2.generic;
 
+/**
+ * Stores the names of the "magic variables" in the python workspace.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class VariableNames {
 
 	private final String m_flowVariables;

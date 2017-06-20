@@ -51,6 +51,12 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.knime.core.node.NodeLogger;
 import org.osgi.service.prefs.BackingStoreException;
 
+/**
+ * Preference Initializer for the org.knime.python2 plugin.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
+
 public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 
 	/**

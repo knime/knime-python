@@ -60,6 +60,7 @@ import org.knime.python2.typeextension.SerializerFactory;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 
+@SuppressWarnings("deprecation")
 public class DateTimeSerializerFactory extends SerializerFactory<DateAndTimeValue> {
 	
 	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";

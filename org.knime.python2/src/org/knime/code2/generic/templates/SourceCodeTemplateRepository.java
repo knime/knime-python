@@ -61,6 +61,8 @@ import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 
+//TODO comment
+
 public class SourceCodeTemplateRepository {
 
 	private static final String CATEGORY_CFG = "category";

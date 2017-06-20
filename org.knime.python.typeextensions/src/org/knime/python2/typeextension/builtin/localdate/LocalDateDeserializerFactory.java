@@ -66,6 +66,9 @@ public class LocalDateDeserializerFactory extends DeserializerFactory {
 		super(LocalDateCellFactory.TYPE);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Deserializer createDeserializer() {
 		return new LocalDateDeserializer();
@@ -73,6 +76,9 @@ public class LocalDateDeserializerFactory extends DeserializerFactory {
 
 	private class LocalDateDeserializer implements Deserializer {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
 			String string = new String(bytes, "UTF-8");

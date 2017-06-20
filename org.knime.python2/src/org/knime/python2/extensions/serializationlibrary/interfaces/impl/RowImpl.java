@@ -50,6 +50,8 @@ import java.util.Iterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 
+//TODO comment
+
 public class RowImpl implements Row {
 	
 	private String m_key;

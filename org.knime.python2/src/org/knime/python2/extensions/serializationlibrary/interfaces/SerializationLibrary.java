@@ -70,7 +70,7 @@ public interface SerializationLibrary {
 	 * @param serializationOptions	All options that control the serialization process.
 	 * @param bytes The bytes containing the encoded table.
 	 */
-	void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions);
+	void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions);
 	
 	/**
 	 * Extracts the {@link TableSpec} of the given table.

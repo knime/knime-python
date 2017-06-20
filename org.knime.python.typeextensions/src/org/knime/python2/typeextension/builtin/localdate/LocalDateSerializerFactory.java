@@ -67,6 +67,9 @@ public class LocalDateSerializerFactory extends SerializerFactory<LocalDateValue
 		super(LocalDateValue.class);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Serializer<? extends LocalDateValue> createSerializer() {
 		return new LocalDateSerializer();
@@ -74,6 +77,9 @@ public class LocalDateSerializerFactory extends SerializerFactory<LocalDateValue
 	
 	private class LocalDateSerializer implements Serializer<LocalDateValue> {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public byte[] serialize(LocalDateValue value) throws IOException {
 			LocalDate date = value.getLocalDate();

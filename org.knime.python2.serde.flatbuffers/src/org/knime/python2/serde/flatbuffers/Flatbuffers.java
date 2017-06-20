@@ -789,7 +789,7 @@ public class Flatbuffers implements SerializationLibrary {
 	}
 
 	@Override
-	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
+	public void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
 
 		KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 

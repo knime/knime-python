@@ -56,9 +56,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
+import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python2.Activator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
+
+/**
+ * Class administrating all {@link SerializationLibraryExtension}s.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class SerializationLibraryExtensions {
 	
@@ -67,6 +74,9 @@ public class SerializationLibraryExtensions {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(SerializationLibraryExtensions.class);
 		
+	/**
+	 * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
+	 */
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
 				"org.knime.python2.serializationlibrary");

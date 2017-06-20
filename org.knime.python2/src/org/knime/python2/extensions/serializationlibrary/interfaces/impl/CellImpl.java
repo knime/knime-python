@@ -48,6 +48,8 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
+//TODO comment
+
 public class CellImpl implements Cell {
 	
 	private Type m_type;

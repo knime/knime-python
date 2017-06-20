@@ -61,8 +61,6 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.kernel.PythonModuleExtensions;
-import org.knime.python2.typeextension.KnimeToPythonExtensions;
-import org.knime.python2.typeextension.PythonToKnimeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -96,8 +94,6 @@ public class Activator implements BundleActivator {
 			}
 		}).start();
 		SerializationLibraryExtensions.init();
-		KnimeToPythonExtensions.init();
-		PythonToKnimeExtensions.init();
 		SourceCodeTemplatesExtensions.init();
 		PythonModuleExtensions.init();
 	}

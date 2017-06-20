@@ -50,6 +50,8 @@ import java.util.Map;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
+//TODO comment
+
 public class TableSpecImpl implements TableSpec {
 	
 	private final Type[] m_types;

@@ -85,6 +85,8 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.knime.code2.generic.SourceCodePanel;
 
+//TODO comment
+
 public class SourceCodeTemplatesPanel extends JPanel {
 
 	private static final long serialVersionUID = -9069745257910008324L;

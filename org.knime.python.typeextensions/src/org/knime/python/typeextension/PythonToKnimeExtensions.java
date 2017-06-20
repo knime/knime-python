@@ -58,6 +58,12 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.python.typeextensions.Activator;
 
+
+/**
+ * Class for administering all {@link PythonToKnimeExtension}s defined as extension points. 
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 public class PythonToKnimeExtensions {
 
 	private static Map<String, PythonToKnimeExtension> extensions = new HashMap<String, PythonToKnimeExtension>();
@@ -65,6 +71,10 @@ public class PythonToKnimeExtensions {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonToKnimeExtensions.class);
 
+	/**
+	 * Initialize the internal map of all registered {@link PythonToKnimeExtension}s.
+	 * Also wrap them up and add them as available {@link PythonToKnimeExtension}s for org.knime.python2.
+	 */
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
 				"org.knime.python.typeextension.pythontoknime");
@@ -88,12 +98,21 @@ public class PythonToKnimeExtensions {
 		addExtensionsToPython2();
 	}
 	
+	/**
+	 * Wrap up all {@link PythonToKnimeExtension}s and make them available to the org.knime.python2 implementation.
+	 */
 	public static void addExtensionsToPython2() {
 		for (PythonToKnimeExtension extension : extensions.values()) {
 			org.knime.python2.typeextension.PythonToKnimeExtensions.addExtension(extension.getId(), extension.getType(), extension.getPythonSerializerPath(), new DeserializerFactoryWrapper(extension.getJavaDeserializerFactory()), false);
 		}
 	}
 	
+	/**
+	 * Return the {@link Deserializer} for the given id. The {@link Deserializer} instance is saved and returned on every
+	 * successive call.
+	 * @param id 	the {@link Deserializer}'s id
+	 * @throws NullPointerException		if the id is not found
+	 */
 	public Deserializer getDeserializer(final String id) {
 		if (!m_deserializers.containsKey(id)) {
 			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
@@ -101,10 +120,18 @@ public class PythonToKnimeExtensions {
 		return m_deserializers.get(id);
 	}
 	
+	/**
+	 * Get the extension with the given id.
+	 * @param id	an id
+	 * @return a {@PythonToKnimeExtension} or null if id is not found
+	 */
 	public static PythonToKnimeExtension getExtension(final String id) {
 		return extensions.get(id);
 	}
 	
+	/**
+	 * @return a list of all registered {@link PythonToKnimeExtension}s
+	 */
 	public static Collection<PythonToKnimeExtension> getExtensions() {
 		return extensions.values();
 	}

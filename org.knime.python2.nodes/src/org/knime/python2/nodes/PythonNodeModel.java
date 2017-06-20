@@ -56,7 +56,6 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
-import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelOptions;
 

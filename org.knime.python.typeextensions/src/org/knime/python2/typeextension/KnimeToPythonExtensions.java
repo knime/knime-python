@@ -58,15 +58,25 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
 import org.knime.core.node.NodeLogger;
+import org.knime.python2.typeextension.KnimeToPythonExtension;
+import org.knime.python2.typeextension.Serializer;
 import org.knime.python.typeextensions.Activator;
 
+/**
+ * Class for administering all {@link KnimeToPythonExtension}s defined as extension points. 
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 public class KnimeToPythonExtensions {
 	
 	private static Map<String, KnimeToPythonExtension> extensions = new HashMap<String, KnimeToPythonExtension>();
 	private Map<String, Serializer<? extends DataValue>> m_serializers = new HashMap<String, Serializer<? extends DataValue>>();
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(KnimeToPythonExtensions.class);
-		
+	
+	/**
+	 * Initialize the internal map of all registered {@link KnimeToPythonExtension}s.
+	 */
 	@SuppressWarnings({ "unchecked" })
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
@@ -90,6 +100,14 @@ public class KnimeToPythonExtensions {
 		}
 	}
 	
+	/**
+	 * Add an extension from an external source.
+	 * @param id	the extensions id
+	 * @param pythonDeserializerPath	path to the file defining the deserializer function for python
+	 * @param javaSerializer	{@link SerializerFactory} defining functionallity to serialize a KNIME type
+	 * @param force	flag indicating if extension should even be added if the id already exists
+	 * @return success
+	 */
 	public static boolean addExtension(final String id, final String pythonDeserializerPath, final SerializerFactory<? extends DataValue> javaSerializer, final boolean force) {
 		if (extensions.containsKey(id) && !force) {
 			return false;
@@ -99,6 +117,12 @@ public class KnimeToPythonExtensions {
 		}
 	}
 	
+	/**
+	 * Return the {@link Serializer} for the given id. The {@link Serializer} instance is saved and returned on every
+	 * successive call.
+	 * @param id 	the {@link Serializer}'s id
+	 * @throws NullPointerException		if the id is not found
+	 */
 	public Serializer<? extends DataValue> getSerializer(final String id) {
 		if (!m_serializers.containsKey(id)) {
 			m_serializers.put(id, extensions.get(id).getJavaSerializerFactory().createSerializer());
@@ -106,6 +130,11 @@ public class KnimeToPythonExtensions {
 		return m_serializers.get(id);
 	}
 	
+	/**
+	 * Return the extension handeling the given KNIME-{@link DataType}. 
+	 * @param type 	a KNIME-{@link DataType}
+	 * @return an extension or null if no suitable one was found
+	 */
 	public static KnimeToPythonExtension getExtension(final DataType type) {
 		for (KnimeToPythonExtension extension : extensions.values()) {
 			Class<? extends DataValue> preferredValueClass = type.getPreferredValueClass();
@@ -121,6 +150,9 @@ public class KnimeToPythonExtensions {
 		return null;
 	}
 	
+	/**
+	 * @return a list of all registered {@link KnimeToPythonExtension}s
+	 */
 	public static Collection<KnimeToPythonExtension> getExtensions() {
 		return extensions.values();
 	}

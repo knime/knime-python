@@ -55,6 +55,11 @@ import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.ImageTranscoder;
 import org.w3c.dom.svg.SVGDocument;
 
+/**
+ * Used as container class for images received from the python workspace.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 public class ImageContainer {
 	
 	private BufferedImage m_bufferedImage;

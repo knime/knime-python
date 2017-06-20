@@ -53,12 +53,21 @@ import org.knime.core.data.xml.XMLValue;
 import org.knime.python2.typeextension.Serializer;
 import org.knime.python2.typeextension.SerializerFactory;
 
+/**
+ * Is used to serialize XMLValue objects to xml.dom.minidom.Document objects in python.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
 	public XMLSerializerFactory() {
 		super(XMLValue.class);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Serializer<XMLValue> createSerializer() {
 		return new XMLSerializer();
@@ -66,6 +75,9 @@ public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
 	
 	private class XMLSerializer implements Serializer<XMLValue> {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public byte[] serialize(XMLValue value) throws IOException {
 			return value.toString().getBytes();

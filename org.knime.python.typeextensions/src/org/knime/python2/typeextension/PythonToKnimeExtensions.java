@@ -56,8 +56,15 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
+import org.knime.python2.typeextension.Deserializer;
+import org.knime.python2.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextensions.Activator;
 
+/**
+ * Class for administering all {@link PythonToKnimeExtension}s defined as extension points. 
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 public class PythonToKnimeExtensions {
 
 	private static Map<String, PythonToKnimeExtension> extensions = new HashMap<String, PythonToKnimeExtension>();
@@ -65,6 +72,9 @@ public class PythonToKnimeExtensions {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonToKnimeExtensions.class);
 
+	/**
+	 * Initialize the internal map of all registered {@link PythonToKnimeExtension}s.
+	 */
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
 				"org.knime.python2.typeextension.pythontoknime");
@@ -87,6 +97,14 @@ public class PythonToKnimeExtensions {
 		}
 	}
 	
+	/**
+	 * Add an extension from an external source.
+	 * @param id	the extensions id
+	 * @param pythonDeserializerPath	path to the file defining the deserializer function for python
+	 * @param javaDeserializer	{@link DeserializerFactory} defining functionallity to serialize a KNIME type
+	 * @param force	flag indicating if extension should even be added if the id already exists
+	 * @return success
+	 */
 	public static boolean addExtension(final String id, final String type, final String pythonSerializerPath, final DeserializerFactory javaDeserializer, final boolean force) {
 		if (extensions.containsKey(id) && !force) {
 			return false;
@@ -96,6 +114,12 @@ public class PythonToKnimeExtensions {
 		}
 	}
 	
+	/**
+	 * Return the {@link Deserializer} for the given id. The {@link Deserializer} instance is saved and returned on every
+	 * successive call.
+	 * @param id 	the {@link Deserializer}'s id
+	 * @throws NullPointerException		if the id is not found
+	 */
 	public Deserializer getDeserializer(final String id) {
 		if (!m_deserializers.containsKey(id)) {
 			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
@@ -103,10 +127,18 @@ public class PythonToKnimeExtensions {
 		return m_deserializers.get(id);
 	}
 	
+	/**
+	 * Get the extension with the given id.
+	 * @param id	an id
+	 * @return a {@PythonToKnimeExtension} or null if id is not found
+	 */
 	public static PythonToKnimeExtension getExtension(final String id) {
 		return extensions.get(id);
 	}
 	
+	/**
+	 * @return a list of all registered {@link PythonToKnimeExtension}s
+	 */
 	public static Collection<PythonToKnimeExtension> getExtensions() {
 		return extensions.values();
 	}

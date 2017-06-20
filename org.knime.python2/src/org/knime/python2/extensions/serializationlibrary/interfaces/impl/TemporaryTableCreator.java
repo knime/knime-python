@@ -52,6 +52,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
+//TODO comment
+
 public class TemporaryTableCreator implements TableCreator<List<Row>> {
 	
 	private final List<Row> m_rows;

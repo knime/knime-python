@@ -47,6 +47,8 @@
  */
 package org.knime.code2.generic.templates;
 
+//TODO comment
+
 public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 
 	private String m_fileName;

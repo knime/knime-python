@@ -60,12 +60,21 @@ import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 import org.xml.sax.SAXException;
 
+/**
+ * Is used to deserialize xml.dom.minidom.Document objects to XMLValue objects.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class XMLDeserializerFactory extends DeserializerFactory {
 	
 	public XMLDeserializerFactory() {
 		super(XMLCell.TYPE);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Deserializer createDeserializer() {
 		return new XMLDeserializer();
@@ -73,6 +82,9 @@ public class XMLDeserializerFactory extends DeserializerFactory {
 
 	private class XMLDeserializer implements Deserializer {
 		
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
 			try {

@@ -55,8 +55,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python.typeextension.KnimeToPythonExtensions;
-import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -64,20 +62,23 @@ import org.osgi.framework.BundleContext;
 /**
  * Activator for this plugin.
  * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 public class Activator implements BundleActivator {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
 	/**
-	 * {@inheritDoc}
+	 * Initialize administration for extension points on startup.
 	 */
 	@Override
 	public void start(BundleContext bundleContext) throws Exception {
 		// When this plugin is loaded test the python installation
-		KnimeToPythonExtensions.init();
-		PythonToKnimeExtensions.init();
+		org.knime.python.typeextension.KnimeToPythonExtensions.init();
+		org.knime.python.typeextension.PythonToKnimeExtensions.init();
+		
+		org.knime.python2.typeextension.KnimeToPythonExtensions.init();
+		org.knime.python2.typeextension.PythonToKnimeExtensions.init();
 	}
 
 	/**

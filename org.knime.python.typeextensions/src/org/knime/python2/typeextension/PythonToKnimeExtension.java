@@ -47,7 +47,11 @@
  */
 package org.knime.python2.typeextension;
 
-
+/**
+ * An extension point providing classes for serializing data from the python workspace and deserializing it in KNIME.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 public class PythonToKnimeExtension {
 
 	private String m_id;

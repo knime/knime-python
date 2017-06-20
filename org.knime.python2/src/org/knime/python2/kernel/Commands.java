@@ -52,8 +52,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.knime.core.node.NodeLogger;
-
 public class Commands {
 	
 	private final OutputStream m_outToServer;
@@ -69,10 +67,21 @@ public class Commands {
 		m_bufferedOutToServer = new DataOutputStream(m_outToServer);
 	}
 	
+	/**
+	 * Get the python kernel's process id.
+	 * @return the process id
+	 * @throws IOException
+	 */
 	synchronized public int getPid() throws IOException {
 		return readInt();
 	}
 	
+	/**
+	 * Execute a source code snippet in the python kernel.
+	 * @param sourceCode	the snippet to execute
+	 * @return warning or errormessages that were emitted during execution
+	 * @throws IOException
+	 */
 	synchronized public String[] execute(final String sourceCode) throws IOException {
 		writeString("execute");
 		writeString(sourceCode);

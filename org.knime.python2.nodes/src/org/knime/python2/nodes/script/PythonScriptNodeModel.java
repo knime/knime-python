@@ -57,9 +57,7 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
 
 /**

@@ -55,7 +55,6 @@ import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
 import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
-import org.knime.python2.typeextension.builtin.zoneddatetime.ZonedDateTimeSerializerFactory;
 
 /**
  * Is used to deserialize python datetime objects to either LocalDateTime objects if no timezoneinfo is given
@@ -74,6 +73,9 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 		super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Deserializer createDeserializer() {
 		return new DateTimeDeserializer();
@@ -81,13 +83,16 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 
 	private class DateTimeDeserializer implements Deserializer {
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
 		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
 			//Deserialize to LocalDateTime or ZonedDateTime based on incoming date string
 			String string = new String(bytes, "UTF-8");
 			if(string.length() <= 23)
 			{
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTime2SerializerFactory.FORMAT);
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalDateTimeSerializerFactory.FORMAT);
 				return LocalDateTimeCellFactory.create(string, formatter);
 			}
 			else

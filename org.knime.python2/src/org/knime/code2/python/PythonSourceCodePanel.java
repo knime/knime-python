@@ -483,6 +483,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		return m_workspacePreparers.remove(workspacePreparer);
 	}
 	
+	/**
+	 * Update the internal PythonKernelOptions object with the current configuration.
+	 * @param usePython3
+	 * @param convertToPython
+	 * @param convertFromPython
+	 * @param sentinelOption
+	 * @param sentinelValue
+	 */
 	public void setKernelOptions(final PythonKernelOptions.PythonVersionOption usePython3, final boolean convertToPython, 
 			final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
 		PythonKernelOptions pko = new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);

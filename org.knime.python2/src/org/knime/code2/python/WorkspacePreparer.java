@@ -47,6 +47,8 @@ package org.knime.code2.python;
 
 import org.knime.python2.kernel.PythonKernel;
 
+//TODO comment
+
 public interface WorkspacePreparer {
 	
 	void prepareWorkspace(PythonKernel kernel);

@@ -278,7 +278,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 
 	@SuppressWarnings("unused")
 	@Override
-	public void bytesIntoTable(TableCreator tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
+	public void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
 		try {
 			File file = new File(new String(bytes));
 			file.deleteOnExit();

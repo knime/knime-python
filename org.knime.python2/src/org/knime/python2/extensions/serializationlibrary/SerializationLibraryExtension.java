@@ -49,6 +49,12 @@ package org.knime.python2.extensions.serializationlibrary;
 
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
+/**
+ * Extension for plugins implementing a serialization library for transmitting data between KNIME and python.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
+
 public class SerializationLibraryExtension {
 	private String m_id;
 	private String m_pythonSerializationLibraryPath;

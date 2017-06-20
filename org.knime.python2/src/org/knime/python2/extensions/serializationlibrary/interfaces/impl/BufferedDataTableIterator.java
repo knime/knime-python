@@ -62,6 +62,7 @@ import org.knime.core.data.StringValue;
 import org.knime.core.data.collection.CollectionDataValue;
 import org.knime.core.data.collection.SetDataValue;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -72,6 +73,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.typeextension.KnimeToPythonExtension;
 import org.knime.python2.typeextension.KnimeToPythonExtensions;
 import org.knime.python2.typeextension.Serializer;
+
+/**
+ * Iterates over a chunk of a {@link BufferedDataTable}.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class BufferedDataTableIterator implements TableIterator {
 	
@@ -99,6 +106,9 @@ public class BufferedDataTableIterator implements TableIterator {
 		m_iterIterationProperties = ip;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Row next() {
 		if (m_remainingRows > 0) {
@@ -118,16 +128,25 @@ public class BufferedDataTableIterator implements TableIterator {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean hasNext() {
 		return m_remainingRows > 0;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getNumberRemainingRows() {
 		return m_remainingRows;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public TableSpec getTableSpec() {
 		return m_spec;
@@ -141,6 +160,11 @@ public class BufferedDataTableIterator implements TableIterator {
 		m_remainingRows = 0;
 	}
 	
+	/**
+	 * Convert a {@link DataRow} to a {@link Row}
+	 * @param dataRow	a {@link DataRow}
+	 * @return a {@link Row}
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Row dataRowToRow(final DataRow dataRow) {
 		Row row = new RowImpl(dataRow.getKey().getString(), dataRow.getNumCells());
@@ -264,6 +288,12 @@ public class BufferedDataTableIterator implements TableIterator {
 		}
 		return row;
 	}
+	
+	/**
+	 * Convert a {@link DataTableSpec} to a {@link TableSpec}
+	 * @param dataRow	a {@link DataTableSpec}
+	 * @return a {@link TableSpec}
+	 */
 	
 	static TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
 		Type[] types = new Type[dataTableSpec.getNumColumns()];

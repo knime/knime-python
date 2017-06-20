@@ -120,6 +120,13 @@ public class SerializationOptions {
 		this.m_sentinelValue = m_sentinelValue;
 	}
 	
+	/**
+	 * Return the sentinel value for the given type.
+	 * @param type	a {@Type} (either INTEGER or LONG)
+	 * @return	the sentinel value based on the stored options
+	 * @throws IllegalArgumentException if type cannot be processed
+	 */
+	
 	public long getSentinelForType(Type type) throws IllegalArgumentException {
 		if(m_sentinelOption == SentinelOption.CUSTOM)
 			return m_sentinelValue;
@@ -139,6 +146,12 @@ public class SerializationOptions {
 		throw new IllegalArgumentException("Sentinel does not exist for type " + type.toString());
 	}
 	
+	/**
+	 * Indicate if the given value equals the sentinel value for the given type.
+	 * @param type 	a {@Type} (INTEGER or LONG)
+	 * @param value	the value to check
+	 * @return	value == sentinel based on the stored options and the type
+	 */
 	public boolean isSentinel(Type type, long value) {
 		if(m_sentinelOption == SentinelOption.CUSTOM)
 			return value == m_sentinelValue;

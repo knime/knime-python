@@ -46,38 +46,51 @@
 package org.knime.python2.typeextension.builtin.datetime2;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.python2.typeextension.Serializer;
 import org.knime.python2.typeextension.SerializerFactory;
 
 /**
- * Is used to serialize java8 LocalDateTime objects
+ * Is used to serialize java8 ZonedTime objects to python datetime objects.
  * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-public class DateTime2SerializerFactory extends SerializerFactory<LocalDateTimeValue> {
-	
-	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
-	
-	public DateTime2SerializerFactory() {
-		super(LocalDateTimeValue.class);
-	}
-	
-	@Override
-	public Serializer<? extends LocalDateTimeValue> createSerializer() {
-		return new DateAndTimeSerializer();
-	}
-	
-	private class DateAndTimeSerializer implements Serializer<LocalDateTimeValue> {
 
+public class ZonedDateTimeSerializerFactory extends SerializerFactory<ZonedDateTimeValue> {
+	
+	//public static final String SERIZALIZE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx";
+	//public static final String DESERIALIZE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx'['VV']'";
+	public static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSSxxx'['VV']'";
+	
+	public ZonedDateTimeSerializerFactory() {
+		super(ZonedDateTimeValue.class);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Serializer<? extends ZonedDateTimeValue> createSerializer() {
+		return new ZonedDateTimeSerializer();
+	}
+	
+	private class ZonedDateTimeSerializer implements Serializer<ZonedDateTimeValue> {
+
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
-		public byte[] serialize(LocalDateTimeValue value) throws IOException {
-			LocalDateTime date = value.getLocalDateTime();
+		public byte[] serialize(ZonedDateTimeValue value) throws IOException {
+			ZonedDateTime date = value.getZonedDateTime();
+			/*DateTimeFormatter formatter = DateTimeFormatter.ofPattern(SERIZALIZE_FORMAT);
+			String datestr = date.format(formatter);
+			datestr += "[" + date.getZone() + "]"; */
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
-			return date.format(formatter).getBytes("UTF-8");
+			String datestr = date.format(formatter);
+			return datestr.getBytes("UTF-8");
 		}
 		
 	}

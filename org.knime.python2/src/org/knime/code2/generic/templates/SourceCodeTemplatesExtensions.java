@@ -56,6 +56,8 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 
+//TODO comment
+
 public class SourceCodeTemplatesExtensions {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);

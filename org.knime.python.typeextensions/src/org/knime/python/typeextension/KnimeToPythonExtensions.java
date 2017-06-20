@@ -60,13 +60,22 @@ import org.knime.core.data.DataValue;
 import org.knime.core.node.NodeLogger;
 import org.knime.python.typeextensions.Activator;
 
+/**
+ * Class for administering all {@link KnimeToPythonExtension}s defined as extension points. 
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 public class KnimeToPythonExtensions {
 	
 	private static Map<String, KnimeToPythonExtension> extensions = new HashMap<String, KnimeToPythonExtension>();
 	private Map<String, Serializer<? extends DataValue>> m_serializers = new HashMap<String, Serializer<? extends DataValue>>();
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(KnimeToPythonExtensions.class);
-		
+	
+	/**
+	 * Initialize the internal map of all registered {@link KnimeToPythonExtension}s.
+	 * Also wrap them up and add them as available {@link KnimeToPythonExtension}s for org.knime.python2.
+	 */
 	@SuppressWarnings({ "unchecked" })
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
@@ -91,6 +100,9 @@ public class KnimeToPythonExtensions {
 		addExtensionsToPython2();
 	}
 	
+	/**
+	 * Wrap up all {@link KnimeToPythonExtension}s and make them available to the org.knime.python2 implementation.
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void addExtensionsToPython2() {
 		for (KnimeToPythonExtension extension : extensions.values()) {
@@ -98,6 +110,12 @@ public class KnimeToPythonExtensions {
 		}
 	}
 	
+	/**
+	 * Return the {@link Serializer} for the given id. The {@link Serializer} instance is saved and returned on every
+	 * successive call.
+	 * @param id 	the {@link Serializer}'s id
+	 * @throws NullPointerException		if the id is not found
+	 */
 	public Serializer<? extends DataValue> getSerializer(final String id) {
 		if (!m_serializers.containsKey(id)) {
 			m_serializers.put(id, extensions.get(id).getJavaSerializerFactory().createSerializer());
@@ -105,6 +123,11 @@ public class KnimeToPythonExtensions {
 		return m_serializers.get(id);
 	}
 	
+	/**
+	 * Return the extension handeling the given KNIME-{@link DataType}. 
+	 * @param type 	a KNIME-{@link DataType}
+	 * @return an extension or null if no suitable one was found
+	 */
 	public static KnimeToPythonExtension getExtension(final DataType type) {
 		for (KnimeToPythonExtension extension : extensions.values()) {
 			Class<? extends DataValue> preferredValueClass = type.getPreferredValueClass();
@@ -120,6 +143,9 @@ public class KnimeToPythonExtensions {
 		return null;
 	}
 	
+	/**
+	 * @return a list of all registered {@link KnimeToPythonExtension}s
+	 */
 	public static Collection<KnimeToPythonExtension> getExtensions() {
 		return extensions.values();
 	}

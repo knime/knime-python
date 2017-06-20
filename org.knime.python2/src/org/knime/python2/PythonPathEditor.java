@@ -59,6 +59,12 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
+/**
+ * Dialog component for selecting an executable for a specific python version. This python version may be selected
+ * as the default one.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 public class PythonPathEditor extends Composite implements DefaultPythonVersionOption {
 	
 	private FileFieldEditor m_pathEditor;
@@ -151,12 +157,19 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		layout();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isSelected() {
 		return m_defaultBtn.getSelection();
 		
 	}
 
+	/**
+	 * Adjust the header text and "Use as default" toggle button according to what the currently selected 
+	 * {@link DefaultPythonVersionOption} is.
+	 */
 	@Override
 	public void updateDefaultPythonVersion(DefaultPythonVersionOption option) {
 		if(this == option) {
@@ -176,12 +189,18 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		this.layout();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void setObserver(DefaultPythonVersionObserver observer)
 	{
 		m_observer = observer;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void notifyChange() {
 		m_observer.notifyChange(this);
