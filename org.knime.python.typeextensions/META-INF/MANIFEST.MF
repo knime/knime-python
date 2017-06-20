@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Python API - Typeextensions
+Bundle-SymbolicName: org.knime.python.typeextensions;singleton:=true
+Bundle-Version: 3.4.0.qualifier
+Bundle-ClassPath: knime-python-typeextensions.jar
+Bundle-Activator: org.knime.python.typeextensions.Activator
+Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Export-Package: org.knime.python.typeextension,
+ org.knime.python2.typeextension
+Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
+ org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
+ org.apache.commons.io;bundle-version="[2.4.0,3.0.0)",
+ org.knime.core;bundle-version="[3.0.0,4.0.0)",
+ org.eclipse.ui;bundle-version="[3.7.0,4.0.0)",
+ org.eclipse.core.resources;bundle-version="[3.7.101,4.0.0)",
+ org.knime.ext.svg;bundle-version="[3.0.0,4.0.0)",
+ org.knime.base.filehandling;bundle-version="[3.0.0,4.0.0)",
+ org.eclipse.osgi,
+ org.knime.time;bundle-version="3.4.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy

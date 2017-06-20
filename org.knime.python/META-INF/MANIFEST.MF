@@ -12,8 +12,7 @@ Export-Package: org.knime.code.generic,
  org.knime.python,
  org.knime.python.kernel,
  org.knime.python.kernel.proto,
- org.knime.python.port,
- org.knime.python.typeextension
+ org.knime.python.port
 Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
  org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
  org.apache.commons.io;bundle-version="[2.4.0,3.0.0)",
@@ -28,6 +27,7 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
  com.fifesoft.rstaui;bundle-version="[2.5.7,3.0.0)",
  com.fifesoft.rsyntaxtextarea;bundle-version="[2.5.7,3.0.0)",
  com.fifesoft.spellchecker;bundle-version="[2.5.7,3.0.0)",
- org.knime.python2;bundle-version="[3.3.0,4.0.0)"
+ org.knime.python2;bundle-version="[3.3.0,4.0.0)",
+ org.knime.python.typeextensions;bundle-version="3.4.0";visibility:=reexport
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy

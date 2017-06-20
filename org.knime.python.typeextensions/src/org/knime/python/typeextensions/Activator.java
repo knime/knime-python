@@ -45,22 +45,18 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python;
+package org.knime.python.typeextensions;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URL;
 
-import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
-import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python.kernel.PythonModuleExtensions;
-import org.knime.python2.PythonPreferencePage;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -74,22 +70,14 @@ public class Activator implements BundleActivator {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	private static PythonKernelTestResult pythonTestResult;
-
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public void start(BundleContext bundleContext) throws Exception {
 		// When this plugin is loaded test the python installation
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				testPythonInstallation();
-			}
-		}).start();
-		SourceCodeTemplatesExtensions.init();
-		PythonModuleExtensions.init();
+		KnimeToPythonExtensions.init();
+		PythonToKnimeExtensions.init();
 	}
 
 	/**
@@ -98,59 +86,7 @@ public class Activator implements BundleActivator {
 	@Override
 	public void stop(BundleContext bundleContext) throws Exception {
 	}
-
-	/**
-	 * Return the command to start python.
-	 * 
-	 * @return The command to start python
-	 */
-	public static String getPythonCommand() {
-		return PythonPreferencePage.getPython2Path();
-	}
-
-	/**
-	 * Tests if python can be started with the currently configured command and
-	 * if all required modules are installed.
-	 * 
-	 * @return {@link PythonKernelTestResult} that containes detailed test
-	 *         information
-	 */
-	public static synchronized PythonKernelTestResult testPythonInstallation() {
-		// If python test already succeeded we do not have to run it again
-		if (pythonTestResult != null && !pythonTestResult.hasError()) {
-			return pythonTestResult;
-		}
-		String pythonCommand = getPythonCommand();
-		try {
-			// Start python kernel tester script
-			String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
-			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
-			Process process = pb.start();
-			// Get console output of script
-			StringWriter writer = new StringWriter();
-			IOUtils.copy(process.getInputStream(), writer, "UTF-8");
-			// Create test result with console output as message and error code
-			// != 0 as error
-			pythonTestResult = new PythonKernelTestResult(writer.toString());
-			return pythonTestResult;
-		} catch (IOException e) {
-			LOGGER.error(e.getMessage(), e);
-			// Python could not be started
-			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
-		}
-	}
-
-	/**
-	 * Delete the previous python test result and retest the python behind the
-	 * new path.
-	 * 
-	 * @return The new test result
-	 */
-	public static synchronized PythonKernelTestResult retestPythonInstallation() {
-		pythonTestResult = null;
-		return testPythonInstallation();
-	}
-
+	
 	/**
 	 * Returns the file contained in the plugin with the given ID.
 	 * 
@@ -170,5 +106,4 @@ public class Activator implements BundleActivator {
 			return null;
 		}
 	}
-
 }

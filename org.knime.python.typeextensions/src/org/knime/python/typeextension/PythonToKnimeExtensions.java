@@ -55,33 +55,30 @@ import java.util.Map;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
-import org.knime.core.data.DataType;
-import org.knime.core.data.DataValue;
 import org.knime.core.node.NodeLogger;
-import org.knime.python.Activator;
+import org.knime.python.typeextensions.Activator;
 
-public class KnimeToPythonExtensions {
-	
-	private static Map<String, KnimeToPythonExtension> extensions = new HashMap<String, KnimeToPythonExtension>();
-	private Map<String, Serializer<? extends DataValue>> m_serializers = new HashMap<String, Serializer<? extends DataValue>>();
+public class PythonToKnimeExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(KnimeToPythonExtensions.class);
-		
-	@SuppressWarnings({ "unchecked" })
+	private static Map<String, PythonToKnimeExtension> extensions = new HashMap<String, PythonToKnimeExtension>();
+	private Map<String, Deserializer> m_deserializers = new HashMap<String, Deserializer>();
+
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonToKnimeExtensions.class);
+
 	public static void init() {
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.typeextension.knimetopython");
+				"org.knime.python.typeextension.pythontoknime");
 		for (IConfigurationElement config : configs) {
 			try {
-				Object o = config.createExecutableExtension("java-serializer-factory");
-				if (o instanceof SerializerFactory) {
+				Object o = config.createExecutableExtension("java-deserializer-factory");
+				if (o instanceof DeserializerFactory) {
 					String contributer = config.getContributor().getName();
-					String filePath = config.getAttribute("python-deserializer");
+					String filePath = config.getAttribute("python-serializer");
 					File file = Activator.getFile(contributer, filePath);
 					if (file != null) {
-						SerializerFactory<? extends DataValue> serializer = (SerializerFactory<? extends DataValue>) o;
+						DeserializerFactory deserializer = (DeserializerFactory) o;
 						String id = config.getAttribute("id");
-						extensions.put(id, new KnimeToPythonExtension(id, file.getAbsolutePath(), serializer));
+						extensions.put(id, new PythonToKnimeExtension(id, config.getAttribute("python-type-identifier"), file.getAbsolutePath(), deserializer));
 					}
 				}
 			} catch (CoreException e) {
@@ -91,37 +88,25 @@ public class KnimeToPythonExtensions {
 		addExtensionsToPython2();
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void addExtensionsToPython2() {
-		for (KnimeToPythonExtension extension : extensions.values()) {
-			org.knime.python2.typeextension.KnimeToPythonExtensions.addExtension(extension.getId(), extension.getPythonDeserializerPath(), new SerializerFactoryWrapper(extension.getJavaSerializerFactory()), false);
+		for (PythonToKnimeExtension extension : extensions.values()) {
+			org.knime.python2.typeextension.PythonToKnimeExtensions.addExtension(extension.getId(), extension.getType(), extension.getPythonSerializerPath(), new DeserializerFactoryWrapper(extension.getJavaDeserializerFactory()), false);
 		}
 	}
 	
-	public Serializer<? extends DataValue> getSerializer(final String id) {
-		if (!m_serializers.containsKey(id)) {
-			m_serializers.put(id, extensions.get(id).getJavaSerializerFactory().createSerializer());
+	public Deserializer getDeserializer(final String id) {
+		if (!m_deserializers.containsKey(id)) {
+			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
 		}
-		return m_serializers.get(id);
+		return m_deserializers.get(id);
 	}
 	
-	public static KnimeToPythonExtension getExtension(final DataType type) {
-		for (KnimeToPythonExtension extension : extensions.values()) {
-			Class<? extends DataValue> preferredValueClass = type.getPreferredValueClass();
-			if (preferredValueClass.equals(extension.getJavaSerializerFactory().getDataValue())) {
-				return extension;
-			}
-		}
-		for (KnimeToPythonExtension extension : extensions.values()) {
-			if (extension.getJavaSerializerFactory().isCompatible(type)) {
-				return extension;
-			}
-		}
-		return null;
+	public static PythonToKnimeExtension getExtension(final String id) {
+		return extensions.get(id);
 	}
 	
-	public static Collection<KnimeToPythonExtension> getExtensions() {
+	public static Collection<PythonToKnimeExtension> getExtensions() {
 		return extensions.values();
 	}
-
+	
 }

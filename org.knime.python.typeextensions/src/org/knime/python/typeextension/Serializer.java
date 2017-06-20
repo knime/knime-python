@@ -45,70 +45,28 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.typeextension;
+package org.knime.python.typeextension;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
-import org.knime.python2.Activator;
+import org.knime.core.data.DataValue;
 
-public class PythonToKnimeExtensions {
-
-	private static Map<String, PythonToKnimeExtension> extensions = new HashMap<String, PythonToKnimeExtension>();
-	private Map<String, Deserializer> m_deserializers = new HashMap<String, Deserializer>();
-
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonToKnimeExtensions.class);
-
-	public static void init() {
-		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python2.typeextension.pythontoknime");
-		for (IConfigurationElement config : configs) {
-			try {
-				Object o = config.createExecutableExtension("java-deserializer-factory");
-				if (o instanceof DeserializerFactory) {
-					String contributer = config.getContributor().getName();
-					String filePath = config.getAttribute("python-serializer");
-					File file = Activator.getFile(contributer, filePath);
-					if (file != null) {
-						DeserializerFactory deserializer = (DeserializerFactory) o;
-						String id = config.getAttribute("id");
-						extensions.put(id, new PythonToKnimeExtension(id, config.getAttribute("python-type-identifier"), file.getAbsolutePath(), deserializer));
-					}
-				}
-			} catch (CoreException e) {
-				LOGGER.error(e.getMessage(), e);
-			}
-		}
-	}
+/**
+ * Serializes a KNIME value to bytes that can be interpreted by the corresponding Python deserializer.
+ * 
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ *
+ * @param <Value> The value type that can be handled by this serializer.
+ */
+public interface Serializer<Value extends DataValue> {
 	
-	public static boolean addExtension(final String id, final String type, final String pythonSerializerPath, final DeserializerFactory javaDeserializer, final boolean force) {
-		if (extensions.containsKey(id) && !force) {
-			return false;
-		} else {
-			extensions.put(id, new PythonToKnimeExtension(id, type, pythonSerializerPath, javaDeserializer));
-			return true;
-		}
-	}
-	
-	public Deserializer getDeserializer(final String id) {
-		if (!m_deserializers.containsKey(id)) {
-			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
-		}
-		return m_deserializers.get(id);
-	}
-	
-	public static PythonToKnimeExtension getExtension(final String id) {
-		return extensions.get(id);
-	}
-	
-	public static Collection<PythonToKnimeExtension> getExtensions() {
-		return extensions.values();
-	}
-	
+	/**
+	 * Serializes the given value to a byte array.
+	 * 
+	 * @param value The value to serialize
+	 * @return The byte representation of the given value
+	 * @throws IOException If the given value could not be serialized
+	 */
+	public byte[] serialize(final Value value) throws IOException;
+
 }

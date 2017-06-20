@@ -45,68 +45,32 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python.typeextension;
+package org.knime.python.typeextension.builtin.xml;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
-import org.knime.python.Activator;
+import org.knime.core.data.xml.XMLValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
-public class PythonToKnimeExtensions {
+public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
+	
+	public XMLSerializerFactory() {
+		super(XMLValue.class);
+	}
+	
+	@Override
+	public Serializer<XMLValue> createSerializer() {
+		return new XMLSerializer();
+	}
+	
+	private class XMLSerializer implements Serializer<XMLValue> {
 
-	private static Map<String, PythonToKnimeExtension> extensions = new HashMap<String, PythonToKnimeExtension>();
-	private Map<String, Deserializer> m_deserializers = new HashMap<String, Deserializer>();
-
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonToKnimeExtensions.class);
-
-	public static void init() {
-		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.typeextension.pythontoknime");
-		for (IConfigurationElement config : configs) {
-			try {
-				Object o = config.createExecutableExtension("java-deserializer-factory");
-				if (o instanceof DeserializerFactory) {
-					String contributer = config.getContributor().getName();
-					String filePath = config.getAttribute("python-serializer");
-					File file = Activator.getFile(contributer, filePath);
-					if (file != null) {
-						DeserializerFactory deserializer = (DeserializerFactory) o;
-						String id = config.getAttribute("id");
-						extensions.put(id, new PythonToKnimeExtension(id, config.getAttribute("python-type-identifier"), file.getAbsolutePath(), deserializer));
-					}
-				}
-			} catch (CoreException e) {
-				LOGGER.error(e.getMessage(), e);
-			}
+		@Override
+		public byte[] serialize(XMLValue value) throws IOException {
+			return value.toString().getBytes();
 		}
-		addExtensionsToPython2();
-	}
 	
-	public static void addExtensionsToPython2() {
-		for (PythonToKnimeExtension extension : extensions.values()) {
-			org.knime.python2.typeextension.PythonToKnimeExtensions.addExtension(extension.getId(), extension.getType(), extension.getPythonSerializerPath(), new DeserializerFactoryWrapper(extension.getJavaDeserializerFactory()), false);
-		}
 	}
-	
-	public Deserializer getDeserializer(final String id) {
-		if (!m_deserializers.containsKey(id)) {
-			m_deserializers.put(id, extensions.get(id).getJavaDeserializerFactory().createDeserializer());
-		}
-		return m_deserializers.get(id);
-	}
-	
-	public static PythonToKnimeExtension getExtension(final String id) {
-		return extensions.get(id);
-	}
-	
-	public static Collection<PythonToKnimeExtension> getExtensions() {
-		return extensions.values();
-	}
-	
+
 }
