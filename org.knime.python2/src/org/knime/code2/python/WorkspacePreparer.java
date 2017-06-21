@@ -47,10 +47,19 @@ package org.knime.code2.python;
 
 import org.knime.python2.kernel.PythonKernel;
 
-//TODO comment
+/**
+ * Interface allowing to do some work in the python workspace before the user code is executed.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 
 public interface WorkspacePreparer {
 	
+	/**
+	 * Prepare the python workspace by doing something in the {@link PythonKernel} before the user
+	 * code is executed.
+	 * @param kernel	the {@link PythonKernel}
+	 */
 	void prepareWorkspace(PythonKernel kernel);
 
 }

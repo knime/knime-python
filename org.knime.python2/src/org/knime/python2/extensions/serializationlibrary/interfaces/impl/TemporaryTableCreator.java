@@ -52,7 +52,11 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
-//TODO comment
+/**
+ * Provides a table as a list of {@link Row}s.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class TemporaryTableCreator implements TableCreator<List<Row>> {
 	

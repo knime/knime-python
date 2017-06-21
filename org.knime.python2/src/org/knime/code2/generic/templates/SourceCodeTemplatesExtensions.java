@@ -56,7 +56,12 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 
-//TODO comment
+/**
+ * Class managing source code templates that are made available via the org.knime.python2.sourcecodetemplates extension
+ * point.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class SourceCodeTemplatesExtensions {
 
@@ -64,10 +69,14 @@ public class SourceCodeTemplatesExtensions {
 	
 	private static List<File> templateFolders;
 	
+	/**
+	 * Read the paths to all folders containing source code templates available via the extension point
+	 * and store them internally.
+	 */
 	public static void init() {
 		templateFolders = new ArrayList<File>();
 		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.sourcecodetemplates");
+				"org.knime.python2.sourcecodetemplates");
 		for (IConfigurationElement config : configs) {
 			String pluginId = config.getContributor().getName();
 			String path = config.getAttribute("path");
@@ -80,6 +89,10 @@ public class SourceCodeTemplatesExtensions {
 		}
 	}
 	
+	/**
+	 * Provide a list of all folders containing source code templates available via the extension point
+	 * @return list of template folders
+	 */
 	public static List<File> getTemplateFolders() {
 		return templateFolders;
 	}

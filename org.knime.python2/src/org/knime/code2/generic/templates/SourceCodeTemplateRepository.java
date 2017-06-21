@@ -61,7 +61,12 @@ import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 
-//TODO comment
+/**
+ * Class for managing all source code templates that are stored in the template repository or 
+ * are available via extension points.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class SourceCodeTemplateRepository {
 
@@ -89,10 +94,19 @@ public class SourceCodeTemplateRepository {
 		loadTemplates(m_templatesFolder, false);
 	}
 
+	/**
+	 * Get all template categories present in the managed folder.
+	 * @return set of categories
+	 */
 	public Set<String> getCategories() {
 		return m_categorizedTemplates.keySet();
 	}
 
+	/**
+	 * Get all {@link SourceCodeTemplate}s belonging to a certain category.
+	 * @param category	a template category
+	 * @return set of categories
+	 */
 	public Set<SourceCodeTemplate> getTemplatesForCategory(final String category) {
 		if (category == null) {
 			return new TreeSet<SourceCodeTemplate>();
@@ -100,6 +114,15 @@ public class SourceCodeTemplateRepository {
 		return m_categorizedTemplates.get(category);
 	}
 
+	/**
+	 * Create a new template in the managed repository
+	 * @param category	the template category
+	 * @param title		a title used for identifying the template
+	 * @param description	a description of what the template code attempts to do
+	 * @param sourceCode	the actual template's source code
+	 * @throws IOException	if template cannot be written as a file
+	 * @throws IllegalArgumentException	if an empty category or title is provided
+	 */
 	public void createTemplate(final String category, final String title,
 			final String description, final String sourceCode)
 			throws IOException, IllegalArgumentException {
@@ -115,11 +138,20 @@ public class SourceCodeTemplateRepository {
 		putIntoMap(template);
 	}
 
+	/**
+	 * Remove a template in the managed repository.
+	 * @param template	the template to remove
+	 */
 	public void removeTemplate(final SourceCodeTemplate template) {
 		deleteTemplateFile(template);
 		removeFromMap(template);
 	}
 
+	/**
+	 * Write a {@link SourceCodeTemplate} to the disc as an XML File in the managed repository. 
+	 * @param template	the template to write
+	 * @throws IOException
+	 */
 	private void saveTemplateFile(final SourceCodeTemplate template)
 			throws IOException {
 		File file = new File(m_templatesFolder, template.getFileName());
@@ -131,15 +163,29 @@ public class SourceCodeTemplateRepository {
 		settings.saveToXML(new FileOutputStream(file));
 	}
 
+	/**
+	 * Delete a template file from the disc.
+	 * @param template a {@link SourceCodeTemplate}
+	 */
 	private void deleteTemplateFile(final SourceCodeTemplate template) {
 		new File(m_templatesFolder, template.getFileName()).delete();
 	}
 
+	/**
+	 * Generate a {@link SourceCodeTemplate}s filename based on its title.
+	 * @param title	the title to generate the filename from
+	 * @return	a filename
+	 * @throws IOException
+	 */
 	private String generateFileName(final String title) throws IOException {
 		return File.createTempFile(title + "__", ".xml", m_templatesFolder)
 				.getName();
 	}
 
+	/**
+	 * Remove a {@link SourceCodeTemplate} from the map of managed templates.
+	 * @param template	the template to remove
+	 */
 	private void removeFromMap(final SourceCodeTemplate template) {
 		Set<SourceCodeTemplate> categoryTemplates = m_categorizedTemplates
 				.get(template.getCategory());
@@ -149,6 +195,10 @@ public class SourceCodeTemplateRepository {
 		}
 	}
 
+	/**
+	 * Add a {@link SourceCodeTemplate} to the map of managed templates.
+	 * @param template	the template to add
+	 */
 	private void putIntoMap(final SourceCodeTemplate template) {
 		if (m_categorizedTemplates.containsKey(template.getCategory())) {
 			m_categorizedTemplates.get(template.getCategory()).add(template);
@@ -159,6 +209,11 @@ public class SourceCodeTemplateRepository {
 		}
 	}
 
+	/**
+	 * Load all template files in the passed folder.
+	 * @param folder	a folder containing template files
+	 * @param predefined	flag the loaded {@link SourceCodeTemplate}s as predefined
+	 */
 	private void loadTemplates(final File folder, final boolean predefined) {
 		if (folder.isDirectory()) {
 			for (File file : folder.listFiles()) {

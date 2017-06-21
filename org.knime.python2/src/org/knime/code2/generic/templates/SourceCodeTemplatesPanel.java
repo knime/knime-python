@@ -85,7 +85,11 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.knime.code2.generic.SourceCodePanel;
 
-//TODO comment
+/**
+ * View definition for the panel visible in the 'Templates' tab in some python nodes.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 
 public class SourceCodeTemplatesPanel extends JPanel {
 

@@ -50,7 +50,11 @@ import java.util.Map;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
-//TODO comment
+/**
+ * The spec of a table iterable by a {@link TableIterator}.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class TableSpecImpl implements TableSpec {
 	

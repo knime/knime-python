@@ -48,7 +48,11 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
-//TODO comment
+/**
+ * A cell implementation holding an object of any Type that is natively serializable via a {@link SerializationLibrary}.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 
 public class CellImpl implements Cell {
 	

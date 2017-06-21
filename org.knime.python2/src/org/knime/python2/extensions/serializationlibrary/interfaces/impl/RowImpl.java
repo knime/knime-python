@@ -50,7 +50,11 @@ import java.util.Iterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 
-//TODO comment
+/**
+ * An iterable row provided by a {@link TableIterator}.
+ * 
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ */
 
 public class RowImpl implements Row {
 	

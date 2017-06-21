@@ -48,7 +48,7 @@
 package org.knime.code2.generic.templates;
 
 /**
- * Container class for a source code template.
+ * Container class for a source code template. The actual contents are stored in a file.
  * 
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
