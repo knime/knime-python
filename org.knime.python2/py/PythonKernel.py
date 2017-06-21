@@ -274,7 +274,7 @@ def fill_flow_variables_from_data_frame(flow_variables, data_frame):
 def dict_to_data_frame(dictionary):
     df = DataFrame()
     for key in dictionary:
-        df[key] = dictionary[key]
+        df[key] = [dictionary[key]]
     return df
 
 
