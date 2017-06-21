@@ -142,6 +142,11 @@
             java-serializer-factory="org.knime.python2.typeextension.builtin.image.SvgSerializerFactory"
             python-deserializer="src/org/knime/python2/typeextension/builtin/image/SvgDeserializer.py">
       </type>
+      <type
+            id="org.knime.python2.bytevector"
+            java-serializer-factory="org.knime.python2.typeextension.builtin.bytevector.ByteVectorSerializerFactory"
+            python-deserializer="src/org/knime/python2/typeextension/builtin/bytevector/ByteVectorDeserializer.py">
+      </type>
    </extension>
 
 </plugin>
