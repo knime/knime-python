@@ -272,7 +272,10 @@ def fill_flow_variables_from_data_frame(flow_variables, data_frame):
 
 
 def dict_to_data_frame(dictionary):
-    return DataFrame([dictionary.values()], columns=dictionary.keys())
+    df = DataFrame()
+    for key in dictionary:
+        df[key] = dictionary[key]
+    return df
 
 
 def _cleanup():

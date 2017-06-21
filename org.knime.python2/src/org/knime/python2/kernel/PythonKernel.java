@@ -331,6 +331,11 @@ public class PythonKernel {
 		m_commands.putFlowVariables(name, bytes);
 	}
 
+	/**
+	 * Serialize a collection of flow variables to a {@link Row}.
+	 * @param flowVariables
+	 * @return
+	 */
 	private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) {
 		Type[] types = new Type[flowVariables.size()];
 		String[] columnNames = new String[flowVariables.size()];
