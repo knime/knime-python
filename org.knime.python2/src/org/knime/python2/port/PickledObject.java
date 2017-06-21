@@ -53,6 +53,13 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
 
+/**
+ * Container for a pickled python object consisting of the object's byte representation, python type and a 
+ * string representation.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
+
 public class PickledObject {
 
 	private static final String CFG_PICKLED_OBJECT = "pickledObject";

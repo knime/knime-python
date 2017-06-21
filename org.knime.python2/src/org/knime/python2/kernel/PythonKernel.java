@@ -631,6 +631,12 @@ public class PythonKernel {
 		}
 	}
 
+	/**
+	 * Convert a string containing the XML content of a svg image to a {@link SVGDocument}.
+	 * @param svgString	a string containing the XML content of a svg image
+	 * @return a {@link SVGDocument}
+	 * @throws IOException
+	 */
 	private SVGDocument stringToSVG(final String svgString) throws IOException {
 		SVGDocument doc = null;
 		final StringReader reader = new StringReader(svgString);
@@ -644,6 +650,14 @@ public class PythonKernel {
 		return doc;
 	}
 
+	/**
+	 * Get a {@link PickeledObject} from the python workspace. 
+	 * @param name	the name of the variable in the python workspace
+	 * @param exec	the {@link ExecutionContext} of the calling KNIME node
+	 * @return 	a {@link PickeledObject} containing the pickled object representation, the objects type 
+	 * 			and a string representation of the object
+	 * @throws IOException
+	 */
 	public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
 		byte[] bytes = m_commands.getObject(name);
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
@@ -658,10 +672,23 @@ public class PythonKernel {
 				row.getCell(representationIndex).getStringValue());
 	}
 
+	/**
+	 * Put a {@link PickledObject} into the python workspace.
+	 * @param name	the name of the variable in the python workspace
+	 * @param object	the {@link PickledObject}
+	 * @throws IOException
+	 */
 	public void putObject(final String name, final PickledObject object) throws IOException {
 		m_commands.putObject(name, object.getPickledObject());
 	}
 
+	/**
+	 * Put a {@link PickledObject} into the python workspace in an extra thread and monitor the progress.
+	 * @param name	the name of the variable in the python workspace
+	 * @param object	the {@link PickledObject}
+	 * @param exec		the {@link ExecutionContext} of the calling node
+	 * @throws IOException
+	 */
 	public void putObject(final String name, final PickledObject object, final ExecutionContext exec) throws Exception {
 		final AtomicBoolean done = new AtomicBoolean(false);
 		final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
@@ -690,7 +717,7 @@ public class PythonKernel {
 			}
 			exec.checkCanceled();
 		}
-		// If their was an exception in the execution thread throw it here
+		// If there was an exception in the execution thread throw it here
 		if (exception.get() != null) {
 			throw exception.get();
 		}
@@ -840,6 +867,9 @@ public class PythonKernel {
 		}
 	}
 
+	/**
+	 * Print the contents of the python kernel's stdout and stderror to the KNIME console
+	 */
 	private void printStreamToLog() {
 		if (m_process != null) {
 			try {
@@ -857,6 +887,12 @@ public class PythonKernel {
 		}
 	}
 
+	/**
+	 * Read available information from an {@link InputStream}.
+	 * @param stream an {@link InputStream}
+	 * @return the incoming bytes as a string
+	 * @throws IOException
+	 */
 	private String readAvailableBytesFromStream(final InputStream stream) throws IOException {
 		final byte[] bytes = new byte[1024];
 		final StringBuilder sb = new StringBuilder();
@@ -876,6 +912,14 @@ public class PythonKernel {
 		super.finalize();
 	}
 
+	/**
+	 * Send a "SQL-Table" to the python workspace that is used to connect to a database.
+	 * @param name	the name of the variable in the python workspace
+	 * @param conn	the database connection to use
+	 * @param cp	a credential provider for username and password
+	 * @param jars	a list of jar files needed for invoking the jdbc driver on pyhton side
+	 * @throws IOException
+	 */
 	public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
 			final Collection<String> jars) throws IOException {
 		Type[] types = new Type[] { Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
@@ -903,6 +947,10 @@ public class PythonKernel {
 		return m_commands.getSql(name);
 	}
 	
+	/**
+	 * Get the id of the configured serialization library.
+	 * @return a serialization library id
+	 */
 	private String getSerializerId()
 	{
 		if(m_kernelOptions.getOverrulePreferencePage()) {

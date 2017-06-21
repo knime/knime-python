@@ -79,7 +79,7 @@ public class Commands {
 	/**
 	 * Execute a source code snippet in the python kernel.
 	 * @param sourceCode	the snippet to execute
-	 * @return warning or errormessages that were emitted during execution
+	 * @return warning or error messages that were emitted during execution
 	 * @throws IOException
 	 */
 	synchronized public String[] execute(final String sourceCode) throws IOException {
@@ -91,6 +91,13 @@ public class Commands {
 		return output;
 	}
 	
+	/**
+	 * Put some serialized flow variables into the python workspace. The flow variables should be serialized
+	 * using the currently active serialization library.
+	 * @param name	the name of the variable in the python workspace
+	 * @param variables	the serialized variables table as bytearray
+	 * @throws IOException
+	 */
 	synchronized public void putFlowVariables(final String name, final byte[] variables) throws IOException {
 		writeString("putFlowVariables");
 		writeString(name);
@@ -98,12 +105,25 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Get some serialized flow variables from the python workspace.
+	 * @param name	the variable name in the python workspace
+	 * @return	the serialized variables table as bytearray	
+	 * @throws IOException
+	 */
 	synchronized public byte[] getFlowVariables(final String name) throws IOException {
 		writeString("getFlowVariables");
 		writeString(name);
 		return readBytes();
 	}
 	
+	/**
+	 * Put a serialized KNIME table into the python workspace (as pandas.DataFrame). The table should be serialized
+	 * using the currently active serialization library.
+	 * @param name	the name of the variable in pyhton workspace
+	 * @param table	the serialized KNIME table as bytearray
+	 * @throws IOException
+	 */
 	synchronized public void putTable(final String name, final byte[] table) throws IOException {
 		writeString("putTable");
 		writeString(name);
@@ -111,6 +131,13 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Append a chunk of table rows to a table represented as pandas.DataFrame in the python workspace. The table chunk
+	 * should be serialized using the currently active serialization library.
+	 * @param name	the name of the variable in the python workspace
+	 * @param table	the serialized table chunk as bytearray
+	 * @throws IOException
+	 */
 	synchronized public void appendToTable(final String name, final byte[] table) throws IOException {
 		writeString("appendToTable");
 		writeString(name);
@@ -118,18 +145,38 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Get the size in bytes of a serialized table from the python workspace. 
+	 * @param name	the variable name
+	 * @return the size in bytes
+	 * @throws IOException
+	 */
 	synchronized public int getTableSize(final String name) throws IOException {
 		writeString("getTableSize");
 		writeString(name);
 		return readInt();
 	}
 	
+	/**
+	 * Get a serialized KNIME table from the python workspace.
+	 * @param name	the name of the variable in the python workspace
+	 * @return the serialized table as bytearray
+	 * @throws IOException
+	 */
 	synchronized public byte[] getTable(final String name) throws IOException {
 		writeString("getTable");
 		writeString(name);
 		return readBytes();
 	}
 	
+	/**
+	 * Get a chunk of a serialized KNIME table from the python workspace.
+	 * @param name	the name of the variable in the python workspace
+	 * @param start the starting row of the chunk
+	 * @param end	the last row of the chunk
+	 * @return the serialized table as bytearray
+	 * @throws IOException
+	 */
 	synchronized public byte[] getTableChunk(final String name, final int start, final int end) throws IOException {
 		writeString("getTableChunk");
 		writeString(name);
@@ -138,21 +185,43 @@ public class Commands {
 		return readBytes();
 	}
 	
+	/**
+	 * Get a list of the variable names in the python workspace.
+	 * @return the serialized list of variable names
+	 * @throws IOException
+	 */
 	synchronized public byte[] listVariables() throws IOException {
 		writeString("listVariables");
 		return readBytes();
 	}
 	
+	/**
+	 * Reset the python workspace by emptying the variable definitions.
+	 * @throws IOException
+	 */
 	synchronized public void reset() throws IOException {
 		writeString("reset");
 		readBytes();
 	}
 	
+	/**
+	 * Indicates if python supports autocompletion.
+	 * @return
+	 * @throws IOException
+	 */
 	synchronized public boolean hasAutoComplete() throws IOException {
 		writeString("hasAutoComplete");
 		return readInt() > 0;
 	}
 	
+	/**
+	 * Get a list of autocompletion suggestions for the given source code snippet.
+	 * @param sourceCode	the source code snippet in which the auto completion should be done 
+	 * @param line			the line number in the snippet for which auto completion is requested
+	 * @param column		the cursor position in the line 
+	 * @return serialized list of autocompletion suggestions
+	 * @throws IOException
+	 */
 	synchronized public byte[] autoComplete(final String sourceCode, final int line, final int column) throws IOException {
 		writeString("autoComplete");
 		writeString(sourceCode);
@@ -161,18 +230,38 @@ public class Commands {
 		return readBytes();
 	}
 	
+	/**
+	 * Get an image from the python workspace
+	 * @param name the name of the variable in the python workspace
+	 * @return a serialized image
+	 * @throws IOException
+	 */
 	synchronized public byte[] getImage(final String name) throws IOException {
 		writeString("getImage");
 		writeString(name);
 		return readBytes();
 	}
 	
+	/**
+	 * Get a python object from the python workspace. The object consists of a pickled representation, 
+	 * a type and a string representation.
+	 * @param name the name of the variable in the python workspace
+	 * @return a serialized python object
+	 * @throws IOException
+	 */
 	synchronized public byte[] getObject(final String name) throws IOException {
 		writeString("getObject");
 		writeString(name);
 		return readBytes();
 	}
 	
+	/**
+	 * Put a python object into the python workspace. The object consists of a pickled representation, a type and a string 
+	 * representation.
+	 * @param name the name of the variable in the python workspace
+	 * @param object	a serialized python object
+	 * @throws IOException
+	 */
 	synchronized public void putObject(final String name, final byte[] object) throws IOException {
 		writeString("putObject");
 		writeString(name);
@@ -180,6 +269,13 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Add a serializer for an extension type to the python workspace.
+	 * @param id	the extension id (in java)
+	 * @param type	the python type identifier
+	 * @param path	the path to the code file containing the serializer function
+	 * @throws IOException
+	 */	
 	synchronized public void addSerializer(final String id, final String type, final String path) throws IOException {
 		writeString("addSerializer");
 		writeString(id);
@@ -188,6 +284,13 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Add a deserializer for an extension type to the python workspace.
+	 * @param id	the extension id (in java)
+	 * @param type	the python type identifier
+	 * @param path	the path to the code file containing the deserializer function
+	 * @throws IOException
+	 */
 	synchronized public void addDeserializer(final String id, final String path) throws IOException {
 		writeString("addDeserializer");
 		writeString(id);
@@ -195,10 +298,21 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Shut down the python kernel to properly end the connection.
+	 * @throws IOException
+	 */
 	synchronized public void shutdown() throws IOException {
 		writeString("shutdown");
 	}
 	
+	/**
+	 * Send information on how to connect to a specific SQL database alongside a query to the python workspace.
+	 * @param name the name of the variable in the python workspace
+	 * @param sql	the serialized table containing the the entries: driver, jdbcurl, username, password, jars, query,
+	 * 				dbidentifier
+	 * @throws IOException
+	 */
 	synchronized public void putSql(final String name, final byte[] sql) throws IOException {
 		writeString("putSql");
 		writeString(name);
@@ -206,6 +320,12 @@ public class Commands {
 		readBytes();
 	}
 	
+	/**
+	 * Gets a SQL query from the python workspace.
+	 * @param name	the name of the variable in the python workspace
+	 * @return the SQL query
+	 * @throws IOException
+	 */
 	synchronized public String getSql(final String name) throws IOException {
 		writeString("getSql");
 		writeString(name);

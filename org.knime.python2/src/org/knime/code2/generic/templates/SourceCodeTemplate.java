@@ -47,7 +47,11 @@
  */
 package org.knime.code2.generic.templates;
 
-//TODO comment
+/**
+ * Container class for a source code template.
+ * 
+ * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ */
 
 public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 
