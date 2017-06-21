@@ -372,6 +372,12 @@ public class PythonKernel {
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
 		return m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 	}
+	
+	/**
+	 * Deserialize a collection of flow variables received from the python workspace.
+	 * @param bytes	the serialized representation of the flow variables
+	 * @return a collection of {@link FlowVariable}s
+	 */
 
 	private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) {
 		TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
@@ -422,6 +428,11 @@ public class PythonKernel {
 		return flowVariables;
 	}
 
+	/**
+	 * Check if input is a valid flow variable name.
+	 * @param name	a potential flow variable name
+	 * @return	valid
+	 */
 	private boolean isValidFlowVariableName(final String name) {
 		if (name.startsWith(FlowVariable.Scope.Global.getPrefix())
 				|| name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
@@ -884,7 +895,17 @@ public class PythonKernel {
 					LOGGER.info(out);
 				}
 				if (!error.isEmpty()) {
-					LOGGER.error(error);
+					//Only show the error message to the user, push full error with stacktrace to log
+					String[] lines = error.split("\n");
+					StringBuilder errorMessage = new StringBuilder();
+					for(String line:lines) {
+						if(!line.startsWith("Traceback") && !line.startsWith(" "))
+						{
+							errorMessage.append(line + "\n");
+						}
+					}
+					LOGGER.debug("Python error with stacktrace:\n\n" + error);
+					LOGGER.error(errorMessage);
 				}
 			} catch (final IOException e) {
 				// ignore
