@@ -46,13 +46,18 @@
 package org.knime.python2.typeextension.builtin.datetime2;
 
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataType;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
 import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
+import org.knime.core.node.NodeLogger;
 import org.knime.python2.typeextension.Deserializer;
 import org.knime.python2.typeextension.DeserializerFactory;
 
@@ -82,6 +87,8 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 	}
 
 	private class DateTimeDeserializer implements Deserializer {
+		
+		ArrayList<ZoneId> tzWithChangedOffset = new ArrayList<ZoneId>();
 
 		/**
 		 * {@inheritDoc}
@@ -98,6 +105,14 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
 			else
 			{
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
+				ZonedDateTime dt = ZonedDateTime.parse(string, formatter);
+				if(!tzWithChangedOffset.contains(dt.getZone()) && !dt.getOffset().equals(ZoneOffset.of(string.substring(23,29)))) {
+					//warn
+					NodeLogger.getLogger("ZonedDateTime deserialization").warn("Offset " + string.substring(23,29) + 
+							" was changed automatically to the stored offset for timezone " + dt.getZone() +
+							". Multiple entries may be affected!");
+					tzWithChangedOffset.add(dt.getZone());
+				}
 				return ZonedDateTimeCellFactory.create(string, formatter);
 			}
 		}
