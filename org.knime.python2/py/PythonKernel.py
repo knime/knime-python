@@ -262,7 +262,7 @@ def data_frame_to_bytes(data_frame):
 
 def fill_flow_variables_from_data_frame(flow_variables, data_frame):
     for column in data_frame.columns:
-        simpletype = simpletype_for_column(data_frame, column)
+        simpletype = simpletype_for_column(data_frame, column)[0]
         if simpletype == Simpletype.INTEGER:
             flow_variables[column] = int(data_frame[column][0])
         elif simpletype == Simpletype.DOUBLE:

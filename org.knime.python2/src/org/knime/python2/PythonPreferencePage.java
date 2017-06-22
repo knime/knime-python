@@ -88,17 +88,17 @@ import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Preference page for python related configurations.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage, DefaultPythonVersionObserver {
-	
+
 	public static final String PYTHON_2_PATH_CFG = "python2Path";
-	
+
 	public static final String PYTHON_3_PATH_CFG = "python3Path";
-	
+
 	public static final String SERIALIZER_ID_CFG = "serializerId";
-	
+
 	public static final String DEFAULT_PYTHON_OPTION_CFG = "defaultPythonOption";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferencePage.class);
@@ -108,55 +108,55 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	private ScrolledComposite m_sc;
 
 	private Composite m_container;
-	
+
 	private PythonPathEditor m_python2;
-	
+
 	private PythonPathEditor m_python3;
-	
+
 	private Combo m_serializer;
-	
+
 	private static List<String> m_serializerIds;
-	
+
 	private static String[] m_serializerNames;
-	
+
 	private List<DefaultPythonVersionOption> m_defaultPythonVersionOptions = new ArrayList<DefaultPythonVersionOption>();
 
 	/**
 	 * Gets the currently configured python 2 path.
-	 * 
+	 *
 	 * @return Path to the python 2 executable
 	 */
 	public static String getPython2Path() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_2_PATH_CFG, getDefaultPython2Path(), null);
 	}
-	
+
 	/**
 	 * Gets the currently configured python 3 path.
-	 * 
+	 *
 	 * @return Path to the python 3 executable
 	 */
 	public static String getPython3Path() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_3_PATH_CFG, getDefaultPython3Path(), null);
 	}
-	
+
 	/**
 	 * Gets the currently configured serializatin library id.
-	 * 
+	 *
 	 * @return serializatin library id
 	 */
 	public static String getSerializerId() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, SERIALIZER_ID_CFG, getDefaultSerializerId(), null);
 	}
-	
+
 	/**
 	 * Gets the currently configured default python version.
-	 * 
+	 *
 	 * @return the default python version
 	 */
 	public static String getDefaultPythonOption() {
 		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, DEFAULT_PYTHON_OPTION_CFG, getDefaultDefaultPythonOption(), null);
 	}
-	
+
 	/**
 	 * @return a list of the ids of all serialization libraries which are available to the user
 	 */
@@ -169,7 +169,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void init(IWorkbench workbench) {
+	public void init(final IWorkbench workbench) {
 		//
 	}
 
@@ -209,19 +209,19 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		setDefaultPythonOption(getSelectedDefaultPythonOption());
 		testPythonInstallation();
 	}
-	
+
 	private static String getDefaultPython2Path() {
 		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_2_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_2_PATH);
 	}
-	
+
 	private static String getDefaultPython3Path() {
 		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_3_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_3_PATH);
 	}
-	
+
 	private static String getDefaultSerializerId() {
 		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(SERIALIZER_ID_CFG, PythonPreferenceInitializer.DEFAULT_SERIALIZER_ID);
 	}
-	
+
 	private static String getDefaultDefaultPythonOption() {
 		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(DEFAULT_PYTHON_OPTION_CFG, PythonPreferenceInitializer.DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
 	}
@@ -230,7 +230,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected Control createContents(Composite parent) {
+	protected Control createContents(final Composite parent) {
 		m_display = parent.getDisplay();
 		m_sc = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
 		m_container = new Composite(m_sc, SWT.NONE);
@@ -301,14 +301,14 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		testPythonInstallation();
 		return m_sc;
 	}
-	
+
 	/**
 	 * Initialize the list of available serialization libraries using the "serializationLibrary" extension point.
 	 * Hidden serialization libraries are not added.
-	 * 
+	 *
 	 * @param forceReinit - flag indicating if a reinitailization should be forced if the list is already initialized
 	 */
-	private static void initListOfSerializers(boolean forceReinit) {
+	private static void initListOfSerializers(final boolean forceReinit) {
 		if(m_serializerIds == null || forceReinit) {
 			Collection<SerializationLibraryExtension> extensions = SerializationLibraryExtensions.getExtensions();
 			Map<String, String> sortedExtensions = new TreeMap<String, String>();
@@ -327,18 +327,18 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			}
 		}
 	}
-	
+
 	private void setSelectedSerializer(final String serializerId) {
 		m_serializer.select(m_serializerIds.indexOf(serializerId));
 	}
-	
+
 	private String getSelectedSerializer() {
 		return m_serializerIds.get(m_serializer.getSelectionIndex());
 	}
 
 	/**
 	 * Saves the given python 2 path.
-	 * 
+	 *
 	 * @param python2Path
 	 *            Path to the python 2 executable
 	 */
@@ -356,7 +356,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 
 	/**
 	 * Saves the given python 3 path.
-	 * 
+	 *
 	 * @param python3Path
 	 *            Path to the python 3 executable
 	 */
@@ -374,7 +374,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 
 	/**
 	 * Saves the selected serialization library's id.
-	 * 
+	 *
 	 * @param serializerId
 	 *            the id of the selected serialization library
 	 */
@@ -388,10 +388,10 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		}
 		setSelectedSerializer(serializerId);
 	}
-	
+
 	/**
 	 * Saves the selected default python version.
-	 * 
+	 *
 	 * @param option
 	 *            either "python2" or "python3"
 	 */
@@ -404,14 +404,6 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
 		}
 		setSelectedDefaultPythonOption(option);
-	}
-
-	private void setSelectedDefaultPythonOption(String option) {
-		if(option.contentEquals("python2")) {
-			notifyChange(m_python2);
-		} else if (option.contentEquals("python3")){
-			notifyChange(m_python3);
-		}
 	}
 
 	/**
@@ -448,7 +440,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 
 	/**
 	 * Updates the result information.
-	 * 
+	 *
 	 * @param result
 	 *            The test result
 	 */
@@ -469,32 +461,33 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void notifyChange(DefaultPythonVersionOption option) {
+	public void notifyChange(final DefaultPythonVersionOption option) {
 		for(DefaultPythonVersionOption anoption:m_defaultPythonVersionOptions)
 		{
 			anoption.updateDefaultPythonVersion(option);
 		}
-		
+
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void addOption(DefaultPythonVersionOption option) {
+	public void addOption(final DefaultPythonVersionOption option) {
 		m_defaultPythonVersionOptions.add(option);
 		option.setObserver(this);
 	}
-	
+
 	private String getSelectedDefaultPythonOption() {
-		if(m_python2.isSelected())
-			return "python2";
-		else if(m_python3.isSelected())
-			return "python3";
+		if(m_python2.isSelected()) {
+            return "python2";
+        } else if(m_python3.isSelected()) {
+            return "python3";
+        }
 		return "undefined";
 	}
-	
-	private void setSelectedDefaultPythonOption(String option) {
+
+	private void setSelectedDefaultPythonOption(final String option) {
 		if(option.contentEquals("python2")) {
 			notifyChange(m_python2);
 		} else if (option.contentEquals("python3")){
