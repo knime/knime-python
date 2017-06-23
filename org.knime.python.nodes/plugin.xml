@@ -84,7 +84,7 @@
               icon="icons/python.png"
               level-id="python"
               locked="false"
-              name="Python (legacy)"
+              name="Python (major version 2)"
               path="/scripting">
         </category>
      </extension>

@@ -16,7 +16,7 @@
    		<node category-path="/labs/python" factory-class="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory" after="org.knime.python2.nodes.learner.Python2LearnerNodeFactory"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
-      	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/labs" />
+      	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python (major versions 2 &amp; 3)" path="/labs" />
    	</extension>
      <extension
            point="org.knime.workbench.repository.registeredFileExtensions">
