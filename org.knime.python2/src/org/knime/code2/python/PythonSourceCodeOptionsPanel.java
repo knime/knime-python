@@ -82,7 +82,6 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 	private ButtonGroup m_pythonVersion;
 	private JRadioButton m_python2;
 	private JRadioButton m_python3;
-	//private JRadioButton m_defaultPython;
 
 	private JCheckBox m_convertToPython;
 	private JCheckBox m_convertFromPython;

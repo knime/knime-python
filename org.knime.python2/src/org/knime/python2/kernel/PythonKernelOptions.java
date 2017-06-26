@@ -59,9 +59,7 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 
 public class PythonKernelOptions {
 
-	//public final static PythonVersionOption DEFAULT_PYTHON_VERSION_OPTION = PythonVersionOption.DEFAULT;
-
-	private PythonVersionOption m_usePython3; // = DEFAULT_PYTHON_VERSION_OPTION;
+	private PythonVersionOption m_usePython3;
 
 	private SerializationOptions m_serializationOptions = new SerializationOptions();
 
@@ -155,15 +153,10 @@ public class PythonKernelOptions {
 	}
 
 	public static enum PythonVersionOption {
-		PYTHON2, PYTHON3; //, DEFAULT;
+		PYTHON2, PYTHON3;
 	}
 
 	public boolean getUsePython3() {
-		/*if(m_usePython3 == PythonVersionOption.PYHTON3 ||
-				m_usePython3 == PythonVersionOption.DEFAULT && PythonPreferencePage.getDefaultPythonOption() == "python3") {
-			return true;
-		}
-		return false; */
 	    if(m_usePython3 == PythonVersionOption.PYTHON3) {
 	        return true;
 	    } else {
