@@ -204,18 +204,12 @@ def bytes_into_table(table, data_bytes):
           #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) ValuesLength():", colVec.ValuesLength())        
             for idx in range(0, colVec.ValuesLength()):
                 cell = colVec.Values(idx)   
-                byteVals = bytearray()          
-                
-                 #   debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(cell.Value(cellIdx)))
-                for byteIdx in range(0,cell.ValueLength()):
-                    val = cell.Value(byteIdx)
-                    byteVals.append(val)
                  
                 if colVec.Missing(idx):
                     colVals.append(None)
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) col Missing", colVec.Missing(idx)) 
                 else:
-                    colVals.append(bytes(byteVals))
+                    colVals.append(bytes(cell.GetAllBytes()))
               #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(byteVals))
               #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", byteVals)
                  
@@ -237,9 +231,7 @@ def bytes_into_table(table, data_bytes):
                         if cell.Missing(cellIdx):
                             cellVals.append(None)
                         else:           
-                            for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
-                                byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                            cellVals.append(bytes(byteVals)) 
+                            cellVals.append(bytes(cell.Value(cellIdx).GetAllBytes())) 
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell.Type():", type(byteVals))
                #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell", byteVals)      
 
@@ -259,11 +251,8 @@ def bytes_into_table(table, data_bytes):
                     cell = colVec.Values(idx)
                     cellVals = set()
                     # units in the Set
-                    for cellIdx in range(0, cell.ValueLength()):
-                        byteVals = bytearray()           
-                        for byteIdx in range(0,cell.Value(cellIdx).ValueLength()):
-                            byteVals.append(cell.Value(cellIdx).Value(byteIdx))
-                        cellVals.add(bytes(byteVals))
+                    for cellIdx in range(0, cell.ValueLength()):          
+                        cellVals.add(bytes(cell.Value(cellIdx).GetAllBytes()))
                         if cell.KeepDummy():
                             cellVals.add(None)
                     
@@ -1192,8 +1181,10 @@ def table_to_bytes(table):
 
 def get_ByteCell(builder, cell):
     ByteCell.ByteCellStartValueVector(builder, len(cell))
+    builder.Prep(len(cell), 0)
+    flags = flatbuffers.number_types.Uint8Flags
     for byteIdx in reversed(range(0, len(cell))):
-        builder.PrependUint8(cell[byteIdx])                           
+        builder.Place(cell[byteIdx],flatbuffers.number_types.Uint8Flags)               
     bytesVec = builder.EndVector(len(cell))
                 
     ByteCell.ByteCellStart(builder)
