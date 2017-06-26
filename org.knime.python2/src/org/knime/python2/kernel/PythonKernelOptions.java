@@ -52,37 +52,37 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 /**
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version
  * that should be used.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public class PythonKernelOptions {
-	
-	public final static PythonVersionOption DEFAULT_PYTHON_VERSION_OPTION = PythonVersionOption.DEFAULT;
-		
-	private PythonVersionOption m_usePython3 = DEFAULT_PYTHON_VERSION_OPTION;
-	
+
+	//public final static PythonVersionOption DEFAULT_PYTHON_VERSION_OPTION = PythonVersionOption.DEFAULT;
+
+	private PythonVersionOption m_usePython3; // = DEFAULT_PYTHON_VERSION_OPTION;
+
 	private SerializationOptions m_serializationOptions = new SerializationOptions();
-	
+
 	private FlowVariableOptions m_flowVariableOptions = new FlowVariableOptions();
-	
+
 	public PythonKernelOptions() {
-		
+	    m_usePython3 = getPreferencePythonVersion();
 	}
-	
-	public PythonKernelOptions(PythonVersionOption usePython3, boolean convertMissingToPython, 
-			boolean convertMissingFromPython, SentinelOption sentinelOption, int sentinelValue) {
+
+	public PythonKernelOptions(final PythonVersionOption usePython3, final boolean convertMissingToPython,
+			final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
 		m_usePython3 = usePython3;
 		m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
 		m_serializationOptions.setConvertMissingToPython(convertMissingToPython);
 		m_serializationOptions.setSentinelOption(sentinelOption);
 		m_serializationOptions.setSentinelValue(sentinelValue);
 	}
-	
-	public PythonKernelOptions(PythonKernelOptions other)
+
+	public PythonKernelOptions(final PythonKernelOptions other)
 	{
-		this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(), 
+		this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(),
 				other.getSentinelOption(), other.getSentinelValue());
 	}
 
@@ -90,7 +90,7 @@ public class PythonKernelOptions {
 		return m_usePython3;
 	}
 
-	public void setPythonVersionOption(PythonVersionOption m_usePython3) {
+	public void setPythonVersionOption(final PythonVersionOption m_usePython3) {
 		this.m_usePython3 = m_usePython3;
 	}
 
@@ -98,7 +98,7 @@ public class PythonKernelOptions {
 		return m_serializationOptions.getConvertMissingToPython();
 	}
 
-	public void setConvertMissingToPython(boolean m_convertMissingToPython) {
+	public void setConvertMissingToPython(final boolean m_convertMissingToPython) {
 		this.m_serializationOptions.setConvertMissingToPython(m_convertMissingToPython);
 	}
 
@@ -106,7 +106,7 @@ public class PythonKernelOptions {
 		return m_serializationOptions.getConvertMissingFromPython();
 	}
 
-	public void setConvertMissingFromPython(boolean m_convertMissingFromPython) {
+	public void setConvertMissingFromPython(final boolean m_convertMissingFromPython) {
 		this.m_serializationOptions.setConvertMissingFromPython(m_convertMissingFromPython);
 	}
 
@@ -114,7 +114,7 @@ public class PythonKernelOptions {
 		return m_serializationOptions.getSentinelOption();
 	}
 
-	public void setSentinelOption(SentinelOption m_sentinelOption) {
+	public void setSentinelOption(final SentinelOption m_sentinelOption) {
 		this.m_serializationOptions.setSentinelOption(m_sentinelOption);
 	}
 
@@ -122,19 +122,19 @@ public class PythonKernelOptions {
 		return m_serializationOptions.getSentinelValue();
 	}
 
-	public void setSentinelValue(int m_sentinelValue) {
+	public void setSentinelValue(final int m_sentinelValue) {
 		this.m_serializationOptions.setSentinelValue( m_sentinelValue);
 	}
-	
+
 	public SerializationOptions getSerializationOptions() {
 		return m_serializationOptions;
 	}
-	
+
 	public boolean getOverrulePreferencePage() {
 		return m_flowVariableOptions.getOverrulePreferencePage();
 	}
 
-	public void setOverrulePreferencePage(boolean overrulePreferencePage) {
+	public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
 		m_flowVariableOptions.setOverrulePreferencePage(overrulePreferencePage);
 	}
 
@@ -142,28 +142,50 @@ public class PythonKernelOptions {
 		return m_flowVariableOptions.getSerializerId();
 	}
 
-	public void setSerializerId(String serializerId) {
+	public void setSerializerId(final String serializerId) {
 		m_flowVariableOptions.setSerializerId(serializerId);
 	}
-	
+
 	public FlowVariableOptions getFlowVariableOptions() {
 		return m_flowVariableOptions;
 	}
-	
-	public void setFlowVariableOptions(FlowVariableOptions options) {
+
+	public void setFlowVariableOptions(final FlowVariableOptions options) {
 		m_flowVariableOptions = options;
 	}
-	
+
 	public static enum PythonVersionOption {
-		PYHTON2, PYHTON3, DEFAULT;
+		PYTHON2, PYTHON3; //, DEFAULT;
 	}
-	
+
 	public boolean getUsePython3() {
-		if(m_usePython3 == PythonVersionOption.PYHTON3 || 
+		/*if(m_usePython3 == PythonVersionOption.PYHTON3 ||
 				m_usePython3 == PythonVersionOption.DEFAULT && PythonPreferencePage.getDefaultPythonOption() == "python3") {
 			return true;
 		}
-		return false;
+		return false; */
+	    if(m_usePython3 == PythonVersionOption.PYTHON3) {
+	        return true;
+	    } else {
+	        return false;
+	    }
 	}
+
+	/**
+	 * Get the default python version set in the preference page
+	 * @return the default python version
+	 */
+	public PythonVersionOption getPreferencePythonVersion() {
+        String defaultPythonVersion = PythonPreferencePage.getDefaultPythonOption();
+        if (defaultPythonVersion.contentEquals("python3")) {
+            return PythonVersionOption.PYTHON3;
+        } else if (defaultPythonVersion.contentEquals("python2")) {
+            return PythonVersionOption.PYTHON2;
+        } else {
+            throw new IllegalStateException("No default python version available from preference page!");
+        }
+	}
+
+
 
 }

@@ -56,23 +56,23 @@ import org.knime.python2.kernel.PythonKernelOptions.PythonVersionOption;
 
 /**
  * A basic config for every node concerned with python scripting.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public class PythonSourceCodeConfig extends SourceCodeConfig {
-	
+
 	private static final String CFG_PYTHON_VERSION_OPTION = "pythonVersionOption";
 	private static final String CFG_CONVERT_MISSING_TO_PYTHON = "convertMissingToPython";
 	private static final String CFG_CONVERT_MISSING_FROM_PYTHON = "convertMissingFromPython";
 	private static final String CFG_SENTINEL_OPTION = "sentinelOption";
 	private static final String CFG_SENTINEL_VALUE = "sentinelValue";
-	
+
 	private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
-	
+
 	@Override
-	public void saveTo(NodeSettingsWO settings) {
+	public void saveTo(final NodeSettingsWO settings) {
 		super.saveTo(settings);
 		settings.addString(CFG_PYTHON_VERSION_OPTION, m_kernelOptions.getPythonVersionOption().name());
 		settings.addBoolean(CFG_CONVERT_MISSING_TO_PYTHON, m_kernelOptions.getConvertMissingToPython());
@@ -80,38 +80,38 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 		settings.addString(CFG_SENTINEL_OPTION, m_kernelOptions.getSentinelOption().name());
 		settings.addInt(CFG_SENTINEL_VALUE, m_kernelOptions.getSentinelValue());
 	}
-	
+
 	@Override
-	public void loadFrom(NodeSettingsRO settings) throws InvalidSettingsException {
+	public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 		super.loadFrom(settings);
-		m_kernelOptions.setPythonVersionOption(PythonVersionOption.valueOf(settings.getString(CFG_PYTHON_VERSION_OPTION, PythonKernelOptions.DEFAULT_PYTHON_VERSION_OPTION.name())));
+		m_kernelOptions.setPythonVersionOption(PythonVersionOption.valueOf(settings.getString(CFG_PYTHON_VERSION_OPTION, m_kernelOptions.getPreferencePythonVersion().name())));
 		m_kernelOptions.setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_TO_PYTHON));
 		m_kernelOptions.setConvertMissingFromPython(settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_FROM_PYTHON));
 		m_kernelOptions.setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
 		m_kernelOptions.setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
 	}
-	
+
 	@Override
-	public void loadFromInDialog(NodeSettingsRO settings) {
+	public void loadFromInDialog(final NodeSettingsRO settings) {
 		super.loadFromInDialog(settings);
-		m_kernelOptions.setPythonVersionOption(PythonVersionOption.valueOf(settings.getString(CFG_PYTHON_VERSION_OPTION, PythonKernelOptions.DEFAULT_PYTHON_VERSION_OPTION.name())));
+		m_kernelOptions.setPythonVersionOption(PythonVersionOption.valueOf(settings.getString(CFG_PYTHON_VERSION_OPTION, m_kernelOptions.getPreferencePythonVersion().name())));
 		m_kernelOptions.setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_TO_PYTHON));
 		m_kernelOptions.setConvertMissingFromPython(settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, SerializationOptions.DEFAULT_CONVERT_MISSING_FROM_PYTHON));
 		m_kernelOptions.setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
 		m_kernelOptions.setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
 	}
-	
-	public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython, final boolean convertFromPython, 
+
+	public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython, final boolean convertFromPython,
 			final SentinelOption sentinelOption, final int sentinelValue)
 	{
 		m_kernelOptions = new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption, sentinelValue);
 	}
-	
+
 	public PythonKernelOptions getKernelOptions()
 	{
 		return new PythonKernelOptions(m_kernelOptions);
 	}
-	
+
 	public boolean getUsePython3() {
 		return m_kernelOptions.getUsePython3();
 	}

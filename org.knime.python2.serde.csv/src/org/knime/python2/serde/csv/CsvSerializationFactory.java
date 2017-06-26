@@ -52,7 +52,7 @@ public class CsvSerializationFactory implements SerializationLibraryFactory {
 
 	@Override
 	public String getName() {
-		return "CSV";
+		return "CSV (Experimental)";
 	}
 
 	@Override

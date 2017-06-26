@@ -2,7 +2,7 @@
 
 import sys
 
-min_pandas_version = '0.7.0'
+min_pandas_version = '0.20.0'
 min_python_version = '2.7.0'
 
 _message = ''
