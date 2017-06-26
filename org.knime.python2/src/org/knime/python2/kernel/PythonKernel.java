@@ -48,6 +48,7 @@
 package org.knime.python2.kernel;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,7 +137,7 @@ public class PythonKernel {
 	private final Commands m_commands;
 	private final SerializationLibrary m_serializer;
 	private final SerializationLibraryExtensions m_serializationLibraryExtensions;
-	
+
 	private final PythonKernelOptions m_kernelOptions;
 
 	/**
@@ -234,13 +235,14 @@ public class PythonKernel {
 			m_commands.addDeserializer(typeExtension.getId(), typeExtension.getPythonDeserializerPath());
 		}
 		//Add sentinel constants
-		if(m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL)
-			m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");
-		else if(m_kernelOptions.getSentinelOption() == SentinelOption.MIN_VAL)
-			m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63");
-		else
-			m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + 
+		if(m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL) {
+            m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");
+        } else if(m_kernelOptions.getSentinelOption() == SentinelOption.MIN_VAL) {
+            m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63");
+        } else {
+            m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() +
 					"; LONG_SENTINEL = " + m_kernelOptions.getSentinelValue());
+        }
 	}
 
 	/**
@@ -372,7 +374,7 @@ public class PythonKernel {
 		TableIterator tableIterator = new KeyValueTableIterator(spec, row);
 		return m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
 	}
-	
+
 	/**
 	 * Deserialize a collection of flow variables received from the python workspace.
 	 * @param bytes	the serialized representation of the flow variables
@@ -415,7 +417,7 @@ public class PythonKernel {
 
 	/**
 	 * Returns the list of defined flow variables
-	 * 
+	 *
 	 * @param name
 	 *            Variable name of the flow variable dict in Python
 	 * @return Collection of flow variables
@@ -460,7 +462,7 @@ public class PythonKernel {
 	 */
 	@SuppressWarnings("deprecation")
 	public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
-			int rowLimit) throws IOException {
+			final int rowLimit) throws IOException {
 		if (table == null) {
 			throw new IOException("Table " + name + " is not available.");
 		}
@@ -518,7 +520,7 @@ public class PythonKernel {
 			throws IOException {
 		putDataTable(name, table, executionMonitor, table.getRowCount());
 	}
-	
+
 	/**
 	 * Put the data underlying the given {@link TableChunker} into the workspace.
 	 *
@@ -533,7 +535,7 @@ public class PythonKernel {
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public void putData(final String name, final TableChunker tableChunker, int rowsPerChunk)
+	public void putData(final String name, final TableChunker tableChunker, final int rowsPerChunk)
 		throws IOException {
 		int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
 		int numberChunks = (int) Math.ceil(numberRows / (double) CHUNK_SIZE);
@@ -562,34 +564,39 @@ public class PythonKernel {
 	 * @return The table
 	 * @param executionMonitor
 	 *            The monitor that will be updated about progress
-	 * @throws IOException
+	 * @throws Exception
 	 *             If an error occured
+	 *
 	 */
 	public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
-			final ExecutionMonitor executionMonitor) throws IOException {
+			final ExecutionMonitor executionMonitor) throws Exception {
 		final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
 		final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-		int tableSize = m_commands.getTableSize(name);
-		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
-		if (numberChunks == 0) {
-			numberChunks = 1;
+		try {
+    		int tableSize = m_commands.getTableSize(name);
+    		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
+    		if (numberChunks == 0) {
+    			numberChunks = 1;
+    		}
+    		BufferedDataTableCreator tableCreator = null;
+    		for (int i = 0; i < numberChunks; i++) {
+    			int start = CHUNK_SIZE * i;
+    			int end = Math.min(tableSize, start + CHUNK_SIZE - 1);
+    			byte[] bytes = m_commands.getTableChunk(name, start, end);
+    			serializationMonitor.setProgress((end + 1) / (double) tableSize);
+    			if (tableCreator == null) {
+    				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+    				tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
+    			}
+    			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+    			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
+    		}
+    		return tableCreator.getTable();
+		} catch(EOFException ex) {
+		    throw new Exception("An exception occured while running the python kernel.");
 		}
-		BufferedDataTableCreator tableCreator = null;
-		for (int i = 0; i < numberChunks; i++) {
-			int start = CHUNK_SIZE * i;
-			int end = Math.min(tableSize, start + CHUNK_SIZE - 1);
-			byte[] bytes = m_commands.getTableChunk(name, start, end);
-			serializationMonitor.setProgress((end + 1) / (double) tableSize);
-			if (tableCreator == null) {
-				TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-				tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
-			}
-			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
-		}
-		return tableCreator.getTable();
 	}
-	
+
 	/**
 	 * Get an object from the workspace.
 	 *
@@ -601,7 +608,7 @@ public class PythonKernel {
 	 * @throws IOException
 	 *             If an error occured
 	 */
-	public TableCreator<?> getData(final String name, TableCreatorFactory tcf)
+	public TableCreator<?> getData(final String name, final TableCreatorFactory tcf)
 			throws IOException {
 		int tableSize = m_commands.getTableSize(name);
 		int numberChunks = (int) Math.ceil(tableSize / (double) CHUNK_SIZE);
@@ -619,7 +626,7 @@ public class PythonKernel {
 			}
 			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
 		}
-		return tableCreator;	
+		return tableCreator;
 	}
 
 	/**
@@ -667,10 +674,10 @@ public class PythonKernel {
 	}
 
 	/**
-	 * Get a {@link PickeledObject} from the python workspace. 
+	 * Get a {@link PickeledObject} from the python workspace.
 	 * @param name	the name of the variable in the python workspace
 	 * @param exec	the {@link ExecutionContext} of the calling KNIME node
-	 * @return 	a {@link PickeledObject} containing the pickled object representation, the objects type 
+	 * @return 	a {@link PickeledObject} containing the pickled object representation, the objects type
 	 * 			and a string representation of the object
 	 * @throws IOException
 	 */
@@ -972,7 +979,7 @@ public class PythonKernel {
 	public String getSql(final String name) throws IOException {
 		return m_commands.getSql(name);
 	}
-	
+
 	/**
 	 * Get the id of the configured serialization library.
 	 * @return a serialization library id

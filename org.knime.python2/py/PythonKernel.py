@@ -322,7 +322,7 @@ def get_variable(name):
     if name in _exec_env:
         return _exec_env[name]
     else:
-        return None
+        raise NameError(name + ' is not defined.')
 
 
 # list all currently loaded modules and defined classes, functions and variables
