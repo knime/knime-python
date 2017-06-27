@@ -253,8 +253,8 @@ def bytes_into_table(table, data_bytes):
                     # units in the Set
                     for cellIdx in range(0, cell.ValueLength()):          
                         cellVals.add(bytes(cell.Value(cellIdx).GetAllBytes()))
-                        if cell.KeepDummy():
-                            cellVals.add(None)
+                    if cell.KeepDummy():
+                        cellVals.add(None)
                     
                 #    debug_util.debug_msg("Flatbuffers -> Python: (BYTES SET Column) Cell.Type():", type(byteVals))
                 #    debug_util.debug_msg("Flatbuffers -> Python: (BYTES SET Column) Cell", byteVals)
@@ -1182,7 +1182,6 @@ def table_to_bytes(table):
 def get_ByteCell(builder, cell):
     ByteCell.ByteCellStartValueVector(builder, len(cell))
     builder.Prep(len(cell), 0)
-    flags = flatbuffers.number_types.Uint8Flags
     for byteIdx in reversed(range(0, len(cell))):
         builder.Place(cell[byteIdx],flatbuffers.number_types.Uint8Flags)               
     bytesVec = builder.EndVector(len(cell))
@@ -1202,11 +1201,7 @@ def get_empty_ByteCell(builder):
     
 
 def table_column(table, col_idx):
-    col = []
-    for row_idx in range(0, table.get_number_rows()):
-        col.append(table.get_cell(col_idx, row_idx))
-    
-    
+    col = [table.get_cell(col_idx, row_idx) for row_idx in range(table.get_number_rows())]
     return col
 
 def init(types):

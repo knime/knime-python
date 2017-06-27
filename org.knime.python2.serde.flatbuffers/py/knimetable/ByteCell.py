@@ -35,13 +35,11 @@ class ByteCell(object):
     
     # custom method
     def GetAllBytes(self):
-        l = self.ValueLength()
-        buff = bytearray()
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             a = self._tab.Vector(o)
-            for j in range(0,l):
-                buff.append(self._tab.Get(flatbuffers.number_types.Uint8Flags, a + j))
+            l = self.ValueLength()
+            buff = bytearray(self._tab.Get(flatbuffers.number_types.Uint8Flags, a + j) for j in range(l))
             return buff
         return 0
 
