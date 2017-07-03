@@ -243,6 +243,9 @@ def bytes_from_file(path):
     return open(path, 'rb').read()
 
 
+# Converts data_bytes into a pandas DataFrame using the configured serialization library.
+# For extension types appropriate deserializers are requested from the _type_extension_manager.
+# @param data_bytes    a bytearray containing a serialized KNIME table
 def bytes_to_data_frame(data_bytes):
     column_names = _serializer.column_names_from_bytes(data_bytes)
     if len(column_names) == 0:
@@ -254,12 +257,19 @@ def bytes_to_data_frame(data_bytes):
     return table.get_data_frame()
 
 
+# Converts data_frame into a bytearray using the configured serialization library.
+# For extension types appropriate serializers are requested from the _type_extension_manager.
+# @param data_frame    a pandas DataFrame containing the table to serialize
 def data_frame_to_bytes(data_frame):
     table = FromPandasTable(data_frame)
     data_bytes = _serializer.table_to_bytes(table)
     return data_bytes
 
-
+# Fill the flow variable dict using a pandas DataFrame. The DataFrame is expected
+# to contain only a single row. Each column name corresponds to a flow variable
+# name and each cell to the respective flow variable's value.
+# @param flow_variables    the flow variable dict to fill
+# @param data_frame        the pandas DataFrame to fill from
 def fill_flow_variables_from_data_frame(flow_variables, data_frame):
     for column in data_frame.columns:
         simpletype = simpletype_for_column(data_frame, column)[0]
@@ -271,6 +281,10 @@ def fill_flow_variables_from_data_frame(flow_variables, data_frame):
             flow_variables[column] = str(data_frame[column][0])
 
 
+# Convert a python dict to a pandas DataFrame in which each dict key represents
+# a column and each dict value a cell in the respective column. Thus the resulting
+# DataFrame will contain a single row.
+# @param dictionary    a python dictionary
 def dict_to_data_frame(dictionary):
     df = DataFrame()
     for key in dictionary:
@@ -417,14 +431,16 @@ def list_column_type(data_frame, column_name):
                         col_type = type(cell)
     return col_type
 
-
+# Returns the first object in a pandas DataFrame column that does not represent
+# a missing type (None, NaN or NaT)
 def first_valid_object(data_frame, column_name):
     for cell in data_frame[column_name]:
         if not is_missing(cell):
             return cell
     return None
 
-
+# Returns the first object contained in a list in a pandas DataFrame column that 
+# does not represent a missing type (None, NaN or NaT)
 def first_valid_list_object(data_frame, column_name):
     for list_cell in data_frame[column_name]:
         if list_cell is not None:
@@ -465,6 +481,7 @@ def is_missing(value):
     return value is None or is_nat(value) or is_nan(value)
 
 
+# checks if the given value is NaT
 def is_nat(value):
     if _tslib_available:
         return value is NaT
