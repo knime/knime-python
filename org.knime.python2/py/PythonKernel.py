@@ -12,7 +12,7 @@ import pickle
 import types
 import collections
 from datetime import datetime
-from pandas import DataFrame
+from pandas import DataFrame, Index
 from DBUtil import *
 
 # suppress FutureWarnings
@@ -731,8 +731,25 @@ class FromPandasTable:
                 self._column_serializers[column] = serializer_id
         #debug_util.breakpoint()
         serialize_objects_to_bytes(self._data_frame, self._column_serializers)
+        self.standardize_default_indices()
         self._row_indices = self._data_frame.index.astype(str)
 
+
+    # Replace default numeric indices with the KNIME standard row indices.
+    # This means that if an index value is equal to the numeric index of
+    # a row (N) it is replaced by 'RowN'.
+    def standardize_default_indices(self):
+        row_indices = []
+        for i in range(len(self._data_frame.index)):
+            #debug_util.breakpoint()
+            try:
+                if int(self._data_frame.index[i]) == i:
+                    row_indices.append(u'Row' + str(i))
+                else:
+                    row_indices.append(str(self._data_frame.index[i]))
+            except:
+                row_indices.append(str(self._data_frame.index[i]))
+        self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
     # example: table.get_type(0)
     def get_type(self, column_index):
