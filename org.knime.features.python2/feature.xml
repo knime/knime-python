@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.python2"
-      label="KNIME Python Integration (Labs)"
+      label="KNIME Python Integration (Labs, supports Python 2 &amp; 3)"
       version="3.4.0.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany">
 
@@ -10,6 +10,7 @@
 The serialization library for transferring data between KNIME
 and python can be choosen in the preferences.
 The scripts run in a local Python installation (not included).
+Supports Python 2 and 3.
    </description>
 
    <copyright>

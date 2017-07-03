@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python nodes (Labs)
+Bundle-Name: KNIME Python nodes
 Bundle-SymbolicName: org.knime.python.nodes;singleton:=true
 Bundle-Version: 3.4.0.qualifier
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany

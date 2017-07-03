@@ -14,7 +14,7 @@
 			installation.
 			The path to the Python executable has to be configured
 			in Preferences
-			→ KNIME → Python.
+			→ KNIME → Python. This node supports Python 2 and 3.
 		</intro>
 		<tab name="Script">
 			<option name="Editor">
