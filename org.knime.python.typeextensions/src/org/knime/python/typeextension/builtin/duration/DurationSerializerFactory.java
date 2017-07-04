@@ -41,41 +41,48 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
- *
- * History
- *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.typeextension;
 
-import org.knime.core.data.DataValue;
+package org.knime.python.typeextension.builtin.duration;
+
+import java.io.IOException;
+import java.time.Duration;
+
+import org.knime.core.data.time.duration.DurationValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
- * An extension point providing classes for serializing data in KNIME and deserializing it in the python workspace.
+ * Is used to serialize java8 Duration objects to python timedelta objects.
  * 
- * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-public class KnimeToPythonExtension {
 
-	private String m_id;
-	private String m_pythonDeserializerPath;
-	private SerializerFactory<? extends DataValue> m_javaSerializerFactory;
+public class DurationSerializerFactory extends SerializerFactory<DurationValue> {
 	
-	public KnimeToPythonExtension(String id, String pythonDeserializerPath, SerializerFactory<? extends DataValue> javaSerializer) {
-		m_id = id;
-		m_pythonDeserializerPath = pythonDeserializerPath;
-		m_javaSerializerFactory = javaSerializer;
+	public DurationSerializerFactory() {
+		super(DurationValue.class);
 	}
 	
-	public String getId() {
-		return m_id;
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Serializer<? extends DurationValue> createSerializer() {
+		return new DurationSerializer();
+	}
+	
+	private class DurationSerializer implements Serializer<DurationValue> {
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public byte[] serialize(DurationValue value) throws IOException {
+			Duration duration = value.getDuration();
+			return duration.toString().substring(2).getBytes("UTF-8");
+		}
+		
 	}
 
-	public String getPythonDeserializerPath() {
-		return m_pythonDeserializerPath;
-	}
-	
-	public SerializerFactory<? extends DataValue> getJavaSerializerFactory() {
-		return m_javaSerializerFactory;
-	}
-	
 }

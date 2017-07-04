@@ -1,10 +1,10 @@
-package org.knime.python2.typeextension.builtin.bytevector;
+package org.knime.python.typeextension.builtin.bytevector;
 
 import java.io.IOException;
 
 import org.knime.core.data.vector.bytevector.ByteVectorValue;
-import org.knime.python2.typeextension.Serializer;
-import org.knime.python2.typeextension.SerializerFactory;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
  * Serialize DenseByteVector to bytearray in python.

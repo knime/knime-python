@@ -66,24 +66,24 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.Serializer;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
-import org.knime.python2.typeextension.KnimeToPythonExtension;
-import org.knime.python2.typeextension.KnimeToPythonExtensions;
-import org.knime.python2.typeextension.Serializer;
 
 /**
  * Iterates over a chunk of a {@link BufferedDataTable}.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class BufferedDataTableIterator implements TableIterator {
-	
+
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableIterator.class);
-	
+
 	private final int m_numberRows;
 	private int m_remainingRows;
 	private CloseableRowIterator m_iterator;
@@ -91,11 +91,11 @@ public class BufferedDataTableIterator implements TableIterator {
 	private KnimeToPythonExtensions m_knimeToPythonExtensions;
 	private final ExecutionMonitor m_executionMonitor;
 	private final BufferedDataTableChunker.IterationProperties m_iterIterationProperties;
-	
+
 	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
 		this(dataTableSpecToTableSpec(spec), rowIterator, numberRows, monitor, ip);
 	}
-	
+
 	public BufferedDataTableIterator(final TableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
 		m_numberRows = numberRows;
 		m_spec = spec;
@@ -151,7 +151,7 @@ public class BufferedDataTableIterator implements TableIterator {
 	public TableSpec getTableSpec() {
 		return m_spec;
 	}
-	
+
 	/**
 	 * Close this iterator
 	 */
@@ -159,7 +159,7 @@ public class BufferedDataTableIterator implements TableIterator {
 	{
 		m_remainingRows = 0;
 	}
-	
+
 	/**
 	 * Convert a {@link DataRow} to a {@link Row}
 	 * @param dataRow	a {@link DataRow}
@@ -288,13 +288,13 @@ public class BufferedDataTableIterator implements TableIterator {
 		}
 		return row;
 	}
-	
+
 	/**
 	 * Convert a {@link DataTableSpec} to a {@link TableSpec}
 	 * @param dataRow	a {@link DataTableSpec}
 	 * @return a {@link TableSpec}
 	 */
-	
+
 	static TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
 		Type[] types = new Type[dataTableSpec.getNumColumns()];
 		String[] names = new String[dataTableSpec.getNumColumns()];

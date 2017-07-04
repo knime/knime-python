@@ -79,12 +79,12 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
-import org.knime.python2.typeextension.Deserializer;
-import org.knime.python2.typeextension.PythonToKnimeExtensions;
 
 public class BufferedDataTableCreator implements TableCreator<BufferedDataTable> {
 
@@ -103,7 +103,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 	private ExecutionContext m_exec;
 
 	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
-			final ExecutionMonitor executionMonitor, int tableSize) {
+			final ExecutionMonitor executionMonitor, final int tableSize) {
 		m_tableSize = tableSize;
 		m_executionMonitor = executionMonitor;
 		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
@@ -181,9 +181,9 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 						m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
 					}
 					colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
-				}
-				else
-					colSpecs[i] = new DataColumnSpecCreator(columnName, DenseByteVectorCell.TYPE).createSpec(); 
+				} else {
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, DenseByteVectorCell.TYPE).createSpec();
+                }
 				break;
 			case BYTES_LIST:
 				key = spec.getColumnSerializers().get(columnName);
@@ -196,7 +196,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 					}
 					colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
 				} else {
-					colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec(); 
+					colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
 				}
 				break;
 			case BYTES_SET:
@@ -210,7 +210,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 					}
 					colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
 				} else {
-					colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec(); 
+					colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
 				}
 				break;
 			default:
@@ -373,7 +373,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 								cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()),
 										m_fileStoreFactory);
 							}
-							DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+							DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
 							if (dataTypeContainer != null) {
 								dataTypeContainer.m_dataTypes.add(cells[i].getType());
 							}
@@ -412,7 +412,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 									try {
 										DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value),
 													m_fileStoreFactory);
-										DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+										DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
 										if (dataTypeContainer != null) {
 											dataTypeContainer.m_dataTypes.add(dc.getType());
 										}
@@ -463,7 +463,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 									try {
 										DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value),
 												m_fileStoreFactory);
-										DataTypeContainer dataTypeContainer = (DataTypeContainer) m_columnsToRetype.get(i);
+										DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
 										if (dataTypeContainer != null) {
 											dataTypeContainer.m_dataTypes.add(dc.getType());
 										}
@@ -513,7 +513,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 		return m_spec;
 	}
 
-	private DataType getMostCommonAncestor(HashSet<DataType> types) {
+	private DataType getMostCommonAncestor(final HashSet<DataType> types) {
 		Iterator<DataType> iter = types.iterator();
 		DataType mca = iter.next();
 		while (iter.hasNext()) {
@@ -522,7 +522,8 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 		return mca;
 	}
 
-	public BufferedDataTable getTable() {
+	@Override
+    public BufferedDataTable getTable() {
 		m_container.close();
 		DataTableSpec tableSpec = m_container.getTableSpec();
 		DataColumnSpec[] colSpecs = new DataColumnSpec[tableSpec.getNumColumns()];
@@ -563,7 +564,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 		ResultType m_resultType;
 		HashSet<DataType> m_dataTypes;
 
-		public DataTypeContainer(ResultType type) {
+		public DataTypeContainer(final ResultType type) {
 			m_resultType = type;
 			m_dataTypes = new HashSet<DataType>();
 		}

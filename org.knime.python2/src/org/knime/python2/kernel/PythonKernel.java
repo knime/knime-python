@@ -85,6 +85,10 @@ import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
+import org.knime.python.typeextension.KnimeToPythonExtension;
+import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonToKnimeExtension;
+import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
 import org.knime.python2.PythonPreferencePage;
@@ -108,10 +112,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TemporaryTableCreator;
 import org.knime.python2.port.PickledObject;
-import org.knime.python2.typeextension.KnimeToPythonExtension;
-import org.knime.python2.typeextension.KnimeToPythonExtensions;
-import org.knime.python2.typeextension.PythonToKnimeExtension;
-import org.knime.python2.typeextension.PythonToKnimeExtensions;
 import org.w3c.dom.svg.SVGDocument;
 
 /**

@@ -43,40 +43,80 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.typeextension.builtin.image;
+package org.knime.python.typeextension.builtin.datetime2;
 
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 import org.knime.core.data.DataCell;
+import org.knime.core.data.DataType;
 import org.knime.core.data.filestore.FileStoreFactory;
-import org.knime.core.data.image.png.PNGImageContent;
-import org.knime.python2.typeextension.Deserializer;
-import org.knime.python2.typeextension.DeserializerFactory;
+import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
+import org.knime.core.node.NodeLogger;
+import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.DeserializerFactory;
 
 /**
- * Is used to deserialize python PIL.PngImagePlugin.PngImageFile objects to PNGImageContent.
+ * Is used to deserialize python datetime objects to either LocalDateTime objects if no timezoneinfo is given
+ * or ZonedDateTime objects if said info is given.
  * 
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
-public class PngDeserializerFactory extends DeserializerFactory {
+public class DateTime2DeserializerFactory extends DeserializerFactory {
 
-	public PngDeserializerFactory() {
-		super(PNGImageContent.TYPE);
+	public DateTime2DeserializerFactory() {
+		//Set the type of the resulting column to the conjunction of the LocalDateTimeType and ZonedDateTimeType. (non-native)
+		//While the table is created the types included in the resulting columns are tracked and the column type is replaced with
+		//the most common super type of all included cells after all cells have been inserted. This means that if only cells of a 
+		//single data type are present the type will be native.
+		super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Deserializer createDeserializer() {
-
-		return new Deserializer() {
-
-			@Override
-			public DataCell deserialize(byte[] bytes,
-					FileStoreFactory fileStoreFactory) throws IOException {
-
-				return new PNGImageContent(bytes).toImageCell();
-			}
-
-		};
+		return new DateTimeDeserializer();
 	}
+
+	private class DateTimeDeserializer implements Deserializer {
+		
+		ArrayList<ZoneId> tzWithChangedOffset = new ArrayList<ZoneId>();
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+			//Deserialize to LocalDateTime or ZonedDateTime based on incoming date string
+			String string = new String(bytes, "UTF-8");
+			if(string.length() <= 23)
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalDateTimeSerializerFactory.FORMAT);
+				return LocalDateTimeCellFactory.create(string, formatter);
+			}
+			else
+			{
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
+				ZonedDateTime dt = ZonedDateTime.parse(string, formatter);
+				if(!tzWithChangedOffset.contains(dt.getZone()) && !dt.getOffset().equals(ZoneOffset.of(string.substring(23,29)))) {
+					//warn
+					NodeLogger.getLogger("ZonedDateTime deserialization").warn("Offset " + string.substring(23,29) + 
+							" was changed automatically to the stored offset for timezone " + dt.getZone() +
+							". Multiple entries may be affected!");
+					tzWithChangedOffset.add(dt.getZone());
+				}
+				return ZonedDateTimeCellFactory.create(string, formatter);
+			}
+		}
+
+	}
+
 }

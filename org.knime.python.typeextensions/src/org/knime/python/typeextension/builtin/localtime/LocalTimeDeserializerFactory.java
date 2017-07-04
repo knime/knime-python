@@ -43,44 +43,49 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.typeextension.builtin.image;
+package org.knime.python.typeextension.builtin.localtime;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
-import org.knime.base.data.xml.SvgValue;
-import org.knime.python2.typeextension.Serializer;
-import org.knime.python2.typeextension.SerializerFactory;
+import org.knime.core.data.DataCell;
+import org.knime.core.data.filestore.FileStoreFactory;
+import org.knime.core.data.time.localtime.LocalTimeCellFactory;
+import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.DeserializerFactory;
 
 /**
- * Is used to serialize SvgValue objects to xml.dom.minidom.Document objects in python.
+ * Is used to deserialize python time objects to java8 LocalTime objects.
  * 
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
-public class SvgSerializerFactory extends SerializerFactory<SvgValue> {
-	
-	public SvgSerializerFactory() {
-		super(SvgValue.class);
+public class LocalTimeDeserializerFactory extends DeserializerFactory {
+
+	public LocalTimeDeserializerFactory() {
+		super(LocalTimeCellFactory.TYPE);
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Serializer<? extends SvgValue> createSerializer() {
-		return new SVGSerializer();
+	public Deserializer createDeserializer() {
+		return new LocalTimeDeserializer();
 	}
-	
-	private class SVGSerializer implements Serializer<SvgValue> {
+
+	private class LocalTimeDeserializer implements Deserializer {
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public byte[] serialize(SvgValue value) throws IOException {
-			return value.toString().getBytes();
+		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+			String string = new String(bytes, "UTF-8");
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalTimeSerializerFactory.FORMAT);
+			return LocalTimeCellFactory.create(string, formatter);
 		}
-	
+
 	}
 
 }

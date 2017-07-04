@@ -43,32 +43,47 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python.typeextension;
+package org.knime.python.typeextension.builtin.datetime;
 
-import org.knime.python2.typeextension.Deserializer;
-import org.knime.python2.typeextension.DeserializerFactory;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
+import org.knime.core.data.date.DateAndTimeValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
- * Wraps up an org.knime.python.DeserializerFactory to be used as an org.knime.python2.DeserializerFactory
+ * Is used to serialize legacy Date&Time objects
  * 
- * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 
-public class DeserializerFactoryWrapper extends DeserializerFactory {
+@SuppressWarnings("deprecation")
+public class DateTimeSerializerFactory extends SerializerFactory<DateAndTimeValue> {
 	
-	private final org.knime.python.typeextension.DeserializerFactory m_deserializerFactory;
+	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
 	
-	public DeserializerFactoryWrapper(org.knime.python.typeextension.DeserializerFactory deserializerFactory) {
-		super(deserializerFactory.getDataType());
-		m_deserializerFactory = deserializerFactory;
+	public DateTimeSerializerFactory() {
+		super(DateAndTimeValue.class);
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
+	
 	@Override
-	public Deserializer createDeserializer() {
-		return new DeserializerWrapper(m_deserializerFactory.createDeserializer());
+	public Serializer<? extends DateAndTimeValue> createSerializer() {
+		return new DateAndTimeSerializer();
+	}
+	
+	private class DateAndTimeSerializer implements Serializer<DateAndTimeValue> {
+
+		@Override
+		public byte[] serialize(DateAndTimeValue value) throws IOException {
+			Date date = value.getUTCCalendarClone().getTime();
+			SimpleDateFormat sdf = new SimpleDateFormat(FORMAT);
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			return sdf.format(date).getBytes("UTF-8");
+		}
+		
 	}
 
 }

@@ -43,15 +43,15 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.typeextension.builtin.localdate;
+package org.knime.python.typeextension.builtin.localdate;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import org.knime.core.data.time.localdate.LocalDateValue;
-import org.knime.python2.typeextension.Serializer;
-import org.knime.python2.typeextension.SerializerFactory;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
  * Is used to serialize java8 LocalDate objects to a pyhton date object.

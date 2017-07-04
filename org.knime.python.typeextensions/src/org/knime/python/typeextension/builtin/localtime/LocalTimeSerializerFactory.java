@@ -43,47 +43,50 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.typeextension.builtin.duration;
+package org.knime.python.typeextension.builtin.localtime;
 
 import java.io.IOException;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
-import org.knime.core.data.DataCell;
-import org.knime.core.data.filestore.FileStoreFactory;
-import org.knime.core.data.time.duration.DurationCellFactory;
-import org.knime.python2.typeextension.Deserializer;
-import org.knime.python2.typeextension.DeserializerFactory;
+import org.knime.core.data.time.localtime.LocalTimeValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
- * Is used to deserialize python timedelta objects to DurationCells.
+ * Is used to serialitze java8 LocalTime objects to python time objects.
  * 
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
-public class DurationDeserializerFactory extends DeserializerFactory {
-
-	public DurationDeserializerFactory() {
-		super(DurationCellFactory.TYPE);
+public class LocalTimeSerializerFactory extends SerializerFactory<LocalTimeValue> {
+	
+	static final String FORMAT = "HH:mm:ss.SSS";
+	
+	public LocalTimeSerializerFactory() {
+		super(LocalTimeValue.class);
 	}
-
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Deserializer createDeserializer() {
-		return new DurationDeserializer();
+	public Serializer<? extends LocalTimeValue> createSerializer() {
+		return new LocalTimeSerializer();
 	}
-
-	private class DurationDeserializer implements Deserializer {
+	
+	private class LocalTimeSerializer implements Serializer<LocalTimeValue> {
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
-			String string = new String(bytes, "UTF-8");
-			return DurationCellFactory.create(string);
+		public byte[] serialize(LocalTimeValue value) throws IOException {
+			LocalTime time = value.getLocalTime();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
+			return time.format(formatter).getBytes("UTF-8");
 		}
-
+		
 	}
 
 }

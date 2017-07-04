@@ -41,32 +41,51 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
- *
- * History
- *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.typeextension;
+
+package org.knime.python.typeextension.builtin.localdate;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.filestore.FileStoreFactory;
+import org.knime.core.data.time.localdate.LocalDateCellFactory;
+import org.knime.python.typeextension.Deserializer;
+import org.knime.python.typeextension.DeserializerFactory;
 
 /**
- * Creates a KNIME value by deserializing a byte array created by the corresponding Python serializer.
+ * Is used to deserialize python date objects to java8 LocalDate objects.
  * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-public interface Deserializer {
-	
+
+public class LocalDateDeserializerFactory extends DeserializerFactory {
+
+	public LocalDateDeserializerFactory() {
+		super(LocalDateCellFactory.TYPE);
+	}
+
 	/**
-	 * Deserialize the given byte array to a DataCell.
-	 * 
-	 * @param bytes The bytes to deserialize
-	 * @param fileStoreFactory A factory used to create file store cells
-	 * @return DataCell representation of the given bytes
-	 * @throws IOException If the given bytes could not be deserialized
+	 * {@inheritDoc}
 	 */
-	public DataCell deserialize(final byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException;
+	@Override
+	public Deserializer createDeserializer() {
+		return new LocalDateDeserializer();
+	}
+
+	private class LocalDateDeserializer implements Deserializer {
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+			String string = new String(bytes, "UTF-8");
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalDateSerializerFactory.FORMAT);
+			return LocalDateCellFactory.create(string, formatter);
+		}
+
+	}
 
 }

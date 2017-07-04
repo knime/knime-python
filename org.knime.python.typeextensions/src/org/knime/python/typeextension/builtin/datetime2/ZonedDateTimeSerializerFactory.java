@@ -43,15 +43,15 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.typeextension.builtin.datetime2;
+package org.knime.python.typeextension.builtin.datetime2;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
-import org.knime.python2.typeextension.Serializer;
-import org.knime.python2.typeextension.SerializerFactory;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
  * Is used to serialize java8 ZonedTime objects to python datetime objects.

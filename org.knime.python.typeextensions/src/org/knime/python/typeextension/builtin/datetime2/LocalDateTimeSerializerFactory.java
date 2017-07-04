@@ -43,32 +43,49 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python.typeextension;
+package org.knime.python.typeextension.builtin.datetime2;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-import org.knime.core.data.DataValue;
-import org.knime.python2.typeextension.Serializer;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.python.typeextension.Serializer;
+import org.knime.python.typeextension.SerializerFactory;
 
 /**
- * Wraps up an org.knime.python.Serializer to be used as an org.knime.python2.Serializer
+ * Is used to serialize java8 LocalDateTime objects
  * 
- * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-
-public class SerializerWrapper<Value extends DataValue> implements Serializer<Value> {
+public class LocalDateTimeSerializerFactory extends SerializerFactory<LocalDateTimeValue> {
 	
-	private final org.knime.python.typeextension.Serializer<Value> m_serializer;
+	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
 	
-	public SerializerWrapper(org.knime.python.typeextension.Serializer<Value> serializer) {
-		m_serializer = serializer;
+	public LocalDateTimeSerializerFactory() {
+		super(LocalDateTimeValue.class);
 	}
-
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public byte[] serialize(Value value) throws IOException {
-		return m_serializer.serialize(value);
+	public Serializer<? extends LocalDateTimeValue> createSerializer() {
+		return new DateAndTimeSerializer();
 	}
+	
+	private class DateAndTimeSerializer implements Serializer<LocalDateTimeValue> {
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public byte[] serialize(LocalDateTimeValue value) throws IOException {
+			LocalDateTime date = value.getLocalDateTime();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
+			return date.format(formatter).getBytes("UTF-8");
+		}
+		
+	}
+
 }

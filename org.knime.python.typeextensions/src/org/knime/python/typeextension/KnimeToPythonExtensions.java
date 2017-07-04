@@ -97,17 +97,6 @@ public class KnimeToPythonExtensions {
 				LOGGER.error(e.getMessage(), e);
 			}
 		}
-		addExtensionsToPython2();
-	}
-	
-	/**
-	 * Wrap up all {@link KnimeToPythonExtension}s and make them available to the org.knime.python2 implementation.
-	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void addExtensionsToPython2() {
-		for (KnimeToPythonExtension extension : extensions.values()) {
-			org.knime.python2.typeextension.KnimeToPythonExtensions.addExtension(extension.getId(), extension.getPythonDeserializerPath(), new SerializerFactoryWrapper(extension.getJavaSerializerFactory()), false);
-		}
 	}
 	
 	/**

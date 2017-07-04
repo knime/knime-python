@@ -76,9 +76,6 @@ public class Activator implements BundleActivator {
 		// When this plugin is loaded test the python installation
 		org.knime.python.typeextension.KnimeToPythonExtensions.init();
 		org.knime.python.typeextension.PythonToKnimeExtensions.init();
-		
-		org.knime.python2.typeextension.KnimeToPythonExtensions.init();
-		org.knime.python2.typeextension.PythonToKnimeExtensions.init();
 	}
 
 	/**
