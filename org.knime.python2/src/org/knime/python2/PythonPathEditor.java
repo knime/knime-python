@@ -48,6 +48,8 @@ package org.knime.python2;
 
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.resource.FontDescriptor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -57,25 +59,28 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 
 /**
  * Dialog component for selecting an executable for a specific python version. This python version may be selected
  * as the default one.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-public class PythonPathEditor extends Composite implements DefaultPythonVersionOption {
-	
+public class PythonPathEditor extends Composite implements DefaultPythonVersionOption, ExecutableObservable {
+
 	private FileFieldEditor m_pathEditor;
 	private Label m_info;
 	private Label m_error;
 	private Label m_header;
 	private Button m_defaultBtn;
-	
-	private DefaultPythonVersionObserver m_observer;
 
-	public PythonPathEditor(final String header, final String label, final Composite parent) {
+	private DefaultPythonVersionObserver m_observer;
+	private ExecutableObserver m_execObserver;
+
+	public PythonPathEditor(final PythonVersionId id, final String label, final Composite parent) {
 		super(parent, SWT.NONE);
 		GridData gridData = new GridData();
 		gridData.grabExcessHorizontalSpace = true;
@@ -89,12 +94,29 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		FontDescriptor descriptor = FontDescriptor.createFrom(m_header.getFont());
 		descriptor = descriptor.setStyle(SWT.BOLD);
 		m_header.setFont(descriptor.createFont(m_header.getDisplay()));
-		m_header.setText(header);
+		m_header.setText(id.getId());
 		m_header.setLayoutData(gridData);
 		/*gridData = new GridData();
 		gridData.horizontalSpan = 3;*/
 		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, label, this);
 		m_pathEditor.setStringValue(getPythonPath());
+		m_pathEditor.getTextControl(this).addListener(SWT.Traverse, new Listener() {
+
+            @Override
+            public void handleEvent(final Event event) {
+                notifyExecutableChange();
+                if (event.detail == SWT.TRAVERSE_RETURN) {
+                    event.doit = false;
+                }
+            }
+        });
+		m_pathEditor.setPropertyChangeListener(new IPropertyChangeListener() {
+
+            @Override
+            public void propertyChange(final PropertyChangeEvent event) {
+                notifyExecutableChange();
+            }
+        });
 		gridData = new GridData();
 		gridData.horizontalSpan = 2;
 		gridData.verticalIndent = 20;
@@ -108,7 +130,7 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		m_error.setForeground(red);
 		m_error.addDisposeListener(new DisposeListener() {
 			@Override
-			public void widgetDisposed(DisposeEvent e) {
+			public void widgetDisposed(final DisposeEvent e) {
 				red.dispose();
 			}
 		});
@@ -117,34 +139,34 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		m_defaultBtn = new Button(this, SWT.TOGGLE);
 		m_defaultBtn.setText( "Use as default" );
 		m_defaultBtn.addSelectionListener(new SelectionListener() {
-			
+
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				notifyChange();
-				
+
 			}
-			
+
 			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
-				
+			public void widgetDefaultSelected(final SelectionEvent e) {
+				// do nothing
+
 			}
 		});
 	}
-	
+
 	public void setPythonPath(final String pythonPath) {
 		m_pathEditor.setStringValue(pythonPath);
 	}
-	
+
 	public String getPythonPath() {
 		return m_pathEditor.getStringValue();
 	}
-	
+
 	public void setInfo(final String info) {
 		m_info.setText(info);
 		refreshSizes();
 	}
-	
+
 	public void setError(final String error) {
 		m_error.setText(error);
 		refreshSizes();
@@ -163,15 +185,15 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 	@Override
 	public boolean isSelected() {
 		return m_defaultBtn.getSelection();
-		
+
 	}
 
 	/**
-	 * Adjust the header text and "Use as default" toggle button according to what the currently selected 
+	 * Adjust the header text and "Use as default" toggle button according to what the currently selected
 	 * {@link DefaultPythonVersionOption} is.
 	 */
 	@Override
-	public void updateDefaultPythonVersion(DefaultPythonVersionOption option) {
+	public void updateDefaultPythonVersion(final DefaultPythonVersionOption option) {
 		if(this == option) {
 			if(!m_defaultBtn.getSelection()) {
 				m_defaultBtn.setSelection(true);
@@ -193,7 +215,7 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setObserver(DefaultPythonVersionObserver observer)
+	public void setObserver(final DefaultPythonVersionObserver observer)
 	{
 		m_observer = observer;
 	}
@@ -205,5 +227,40 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 	public void notifyChange() {
 		m_observer.notifyChange(this);
 	}
+
+	/**
+	 * Ids for different python versions. The string representations are used as header text.
+	 */
+	enum PythonVersionId {
+	    PYTHON2("Python 2"),
+	    PYTHON3("Python 3");
+
+	    private String m_id;
+        private PythonVersionId(final String id) {
+            this.m_id = id;
+        }
+
+        public String getId() {
+            return m_id;
+        }
+	}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void notifyExecutableChange() {
+        if(m_execObserver != null) {
+            m_execObserver.executableUpdated();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setExecutableObserver(final ExecutableObserver obs) {
+        m_execObserver = obs;
+    }
 
 }

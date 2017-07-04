@@ -82,6 +82,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
+import org.knime.python2.PythonPathEditor.PythonVersionId;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtension;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.osgi.service.prefs.BackingStoreException;
@@ -91,7 +92,8 @@ import org.osgi.service.prefs.BackingStoreException;
  *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage, DefaultPythonVersionObserver {
+public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage,
+    DefaultPythonVersionObserver, ExecutableObserver {
 
 	public static final String PYTHON_2_PATH_CFG = "python2Path";
 
@@ -178,11 +180,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	public boolean performOk() {
-		setPython2Path(m_python2.getPythonPath());
-		setPython3Path(m_python3.getPythonPath());
-		setSerializerId(getSelectedSerializer());
-		setDefaultPythonOption(getSelectedDefaultPythonOption());
-		testPythonInstallation();
+	    applyOptions();
 		return true;
 	}
 
@@ -191,11 +189,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 */
 	@Override
 	protected void performApply() {
-		setPython2Path(m_python2.getPythonPath());
-		setPython3Path(m_python3.getPythonPath());
-		setSerializerId(getSelectedSerializer());
-		setDefaultPythonOption(getSelectedDefaultPythonOption());
-		testPythonInstallation();
+		applyOptions();
 	}
 
 	/**
@@ -208,6 +202,17 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		setSerializerId(getDefaultSerializerId());
 		setDefaultPythonOption(getSelectedDefaultPythonOption());
 		testPythonInstallation();
+	}
+
+	/**
+	 * Set the configuration according to the dialog state and test the python installation.
+	 */
+	public void applyOptions() {
+	    setPython2Path(m_python2.getPythonPath());
+        setPython3Path(m_python3.getPythonPath());
+        setSerializerId(getSelectedSerializer());
+        setDefaultPythonOption(getSelectedDefaultPythonOption());
+        testPythonInstallation();
 	}
 
 	private static String getDefaultPython2Path() {
@@ -263,8 +268,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 				}
 			}
 		});
-		m_python2 = new PythonPathEditor("Python 2", "Path to Python 2 executable", m_container);
+		m_python2 = new PythonPathEditor(PythonVersionId.PYTHON2, "Path to Python 2 executable", m_container);
 		m_python2.setPythonPath(getPython2Path());
+		m_python2.setExecutableObserver(this);
 		gridData = new GridData();
 		gridData.horizontalSpan = 2;
 		gridData.grabExcessHorizontalSpace = true;
@@ -272,8 +278,9 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.verticalAlignment = SWT.FILL;
 		m_python2.setLayoutData(gridData);
-		m_python3 = new PythonPathEditor("Python 3", "Path to Python 3 executable", m_container);
+		m_python3 = new PythonPathEditor(PythonVersionId.PYTHON3, "Path to Python 3 executable", m_container);
 		m_python3.setPythonPath(getPython3Path());
+		m_python3.setExecutableObserver(this);
 		addOption(m_python2);
 		addOption(m_python3);
 		setSelectedDefaultPythonOption(getDefaultPythonOption());
@@ -494,5 +501,14 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 			notifyChange(m_python3);
 		}
 	}
+
+    /**
+     * Validate if the executable paths point to correct python executables as
+     * soon as one of those paths is changed.
+     */
+    @Override
+    public void executableUpdated() {
+        applyOptions();
+    }
 
 }
