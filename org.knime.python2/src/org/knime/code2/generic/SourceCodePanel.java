@@ -118,14 +118,14 @@ import org.knime.python2.Activator;
 /**
  * Abstract source code panel as basis for source code panels for a specific
  * programming language.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Represents a variable as it is displayed in the variables table.
-	 * 
+	 *
 	 * @author Patrick Winter, KNIME.com, Zurich, Switzerland
 	 */
 	public static class Variable {
@@ -136,7 +136,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Creates a variable.
-		 * 
+		 *
 		 * @param name
 		 *            The name of the variable
 		 * @param type
@@ -152,7 +152,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Return the name of the variable.
-		 * 
+		 *
 		 * @return the name
 		 */
 		public String getName() {
@@ -161,7 +161,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Return the type of the variable.
-		 * 
+		 *
 		 * @return the type
 		 */
 		public String getType() {
@@ -170,7 +170,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Return the value of the variable.
-		 * 
+		 *
 		 * @return the value
 		 */
 		public String getValue() {
@@ -182,7 +182,7 @@ public abstract class SourceCodePanel extends JPanel {
 	/**
 	 * A status bar containing a status message, a progress bar for running
 	 * processes and a stop button.
-	 * 
+	 *
 	 * @author Patrick Winter, KNIME.com, Zurich, Switzerland
 	 */
 	private static class StatusBar extends JPanel {
@@ -227,7 +227,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Sets the status message.
-		 * 
+		 *
 		 * @param statusMessage
 		 *            The current status message
 		 */
@@ -237,7 +237,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Sets the progress bar and stop button visible / invisible.
-		 * 
+		 *
 		 * @param running
 		 *            true if the process is currently running, false otherwise
 		 */
@@ -248,10 +248,10 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Sets a callback to be called if the stop button is pressed
-		 * 
+		 *
 		 * Note: the callback will be executed in an extra thread and not block
 		 * the UI thread.
-		 * 
+		 *
 		 * @param callback
 		 *            The callback to execute when the stop button is pressed
 		 */
@@ -264,7 +264,7 @@ public abstract class SourceCodePanel extends JPanel {
 			// Add new listener
 			m_stopButton.addActionListener(new ActionListener() {
 				@Override
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(final ActionEvent e) {
 					if (callback != null) {
 						// Run callback in extra thread and don't block UI
 						// thread
@@ -276,7 +276,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 		/**
 		 * Return the progress bar
-		 * 
+		 *
 		 * @return The progress bar
 		 */
 		JProgressBar getProgressBar() {
@@ -314,14 +314,14 @@ public abstract class SourceCodePanel extends JPanel {
 		private static final long serialVersionUID = -8702103117733835073L;
 
 		@Override
-		public boolean isCellEditable(int row, int column) {
+		public boolean isCellEditable(final int row, final int column) {
 			// No cell is editable
 			return false;
 		};
 	};
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodePanel.class);
-	
+
 	private JTable m_vars = new JTable(m_varsModel);
 	private JButton m_exec = new JButton("Execute script");
 	private JButton m_execSelection = new JButton("Execute selected lines");
@@ -341,7 +341,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Create a source code panel for the given language style.
-	 * 
+	 *
 	 * @param syntaxStyle
 	 *            One of the language styles defined in {@link SyntaxConstants}
 	 * @param flowVariablesName
@@ -456,7 +456,7 @@ public abstract class SourceCodePanel extends JPanel {
 				LOGGER.warn(e1.getMessage(), e1);
 			}
 		} else {
-			LOGGER.warn("Could not locate org.fife.rsyntaxtextarea/res/english_dic.zip");
+			//LOGGER.warn("Could not locate org.fife.rsyntaxtextarea/res/english_dic.zip");
 		}
 		// Configure console
 		m_console.setEditable(false);
@@ -465,13 +465,13 @@ public abstract class SourceCodePanel extends JPanel {
 		// Add listeners to buttons
 		m_exec.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				runExec(m_editor.getText());
 			}
 		});
 		m_execSelection.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				String selectedText = getSelectedLines();
 				if (selectedText != null && !selectedText.isEmpty()) {
 					runExec(selectedText);
@@ -482,25 +482,27 @@ public abstract class SourceCodePanel extends JPanel {
 		});
 		m_reset.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				runReset();
 			}
 		});
 		m_clearConsole.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				m_console.setText("");
 			}
 		});
 		m_vars.addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent me) {
+			@Override
+            public void mousePressed(final MouseEvent me) {
 				JTable table = (JTable) me.getSource();
 				Point p = me.getPoint();
 				int row = table.rowAtPoint(p);
 				if (me.getClickCount() == 2) {
 					String value = m_varsModel.getValueAt(row, 2).toString();
-					if (!value.isEmpty())
-						messageToConsole(m_varsModel.getValueAt(row, 0).toString() + ":\n" + value);
+					if (!value.isEmpty()) {
+                        messageToConsole(m_varsModel.getValueAt(row, 0).toString() + ":\n" + value);
+                    }
 				}
 			}
 		});
@@ -517,7 +519,8 @@ public abstract class SourceCodePanel extends JPanel {
 		setInteractive(m_interactive);
 		setPreferredSize(new Dimension(1000, 600));
 		m_flowVariables.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent evt) {
+			@Override
+            public void mouseClicked(final MouseEvent evt) {
 				if (evt.getClickCount() == 2) {
 					int index = m_flowVariables.locationToIndex(evt.getPoint());
 					FlowVariable flowVariable = m_flowVariablesModel.get(index);
@@ -527,7 +530,8 @@ public abstract class SourceCodePanel extends JPanel {
 			}
 		});
 		m_columns.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent evt) {
+			@Override
+            public void mouseClicked(final MouseEvent evt) {
 				if (evt.getClickCount() == 2) {
 					int index = m_columns.locationToIndex(evt.getPoint());
 					DataColumnSpec column = m_columnsModel.get(index);
@@ -539,7 +543,7 @@ public abstract class SourceCodePanel extends JPanel {
 		});
 		setColumnListEnabled(variableNames.getInputTables().length>0);
 	}
-	
+
 	private String getSelectedLines() {
 		String text = m_editor.getText();
 		int start = m_editor.getSelectionStart();
@@ -565,7 +569,7 @@ public abstract class SourceCodePanel extends JPanel {
 		}
 		return text.substring(cutStart, cutEnd);
 	}
-	
+
 	private int findTableForColumnIndex(final int columnIndex) {
 		for (int i = 0; i < m_tableEnds.length; i++) {
 			if (columnIndex < m_tableEnds[i]) {
@@ -580,7 +584,8 @@ public abstract class SourceCodePanel extends JPanel {
 	 */
 	private void initShowImages() {
 		m_showImages.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			@Override
+            public void actionPerformed(final ActionEvent e) {
 				final JFrame window = new JFrame();
 				window.setTitle("Python image");
 				Container contentPane = window.getContentPane();
@@ -598,14 +603,16 @@ public abstract class SourceCodePanel extends JPanel {
 					final JComboBox<String> imageSelection = new JComboBox<String>(m_variableNames.getOutputImages());
 					contentPane.add(imageSelection, BorderLayout.NORTH);
 					imageSelection.addActionListener(new ActionListener() {
-						public void actionPerformed(ActionEvent e) {
+						@Override
+                        public void actionPerformed(final ActionEvent e) {
 							setImage(imageLabel, (String) imageSelection.getSelectedItem());
 							window.pack();
 						}
 					});
 				}
 				closeButton.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
+					@Override
+                    public void actionPerformed(final ActionEvent e) {
 						window.setVisible(false);
 					}
 				});
@@ -618,7 +625,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Sets the image that will be shown in the show image window.
-	 * 
+	 *
 	 * @param label
 	 *            The label to put the image into
 	 * @param imageName
@@ -656,7 +663,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Save settings to the given {@link SourceCodeConfig}.
-	 * 
+	 *
 	 * @param config
 	 *            The config to save to
 	 * @throws InvalidSettingsException
@@ -668,7 +675,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Loads settings from the given {@link SourceCodeConfig}.
-	 * 
+	 *
 	 * @param config
 	 *            The config to load from
 	 * @param specs
@@ -676,7 +683,7 @@ public abstract class SourceCodePanel extends JPanel {
 	 * @throws NotConfigurableException
 	 *             If the panel is not configurable
 	 */
-	public void loadSettingsFrom(final SourceCodeConfig config, PortObjectSpec[] specs) throws NotConfigurableException {
+	public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs) throws NotConfigurableException {
 		m_editor.setText(config.getSourceCode());
 		List<DataTableSpec> tableSpecs = new ArrayList<DataTableSpec>();
 		for (PortObjectSpec spec : specs) {
@@ -689,7 +696,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Updates the input data tables.
-	 * 
+	 *
 	 * @param inputData
 	 *            The input data tables
 	 */
@@ -703,7 +710,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Updates the spec of the input tables.
-	 * 
+	 *
 	 * @param specs
 	 *            The input table specs
 	 */
@@ -724,7 +731,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Updates the available flow variables.
-	 * 
+	 *
 	 * @param flowVariables
 	 *            The flow variables
 	 */
@@ -737,16 +744,16 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Gets the flow variables in the current workspace.
-	 * 
+	 *
 	 * @return The flow variables
 	 */
 	protected List<FlowVariable> getFlowVariables() {
-		return (List<FlowVariable>) Collections.list(m_flowVariablesModel.elements());
+		return Collections.list(m_flowVariablesModel.elements());
 	}
 
 	/**
 	 * Sets whether the column list is shown or not
-	 * 
+	 *
 	 * @param enabled
 	 *            If true the column list will be shown in the upper left, if
 	 *            false it will be hidden
@@ -758,7 +765,7 @@ public abstract class SourceCodePanel extends JPanel {
 	/**
 	 * Sets this panel to be interactive (can execute code, inspect variables,
 	 * ...) or not.
-	 * 
+	 *
 	 * @param interactive
 	 *            true if the panel is interactive
 	 */
@@ -779,7 +786,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Sets this panel to display that it is running code.
-	 * 
+	 *
 	 * @param running
 	 *            true if code is currently executing, false otherwise
 	 */
@@ -801,7 +808,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Appends the given message to the console.
-	 * 
+	 *
 	 * @param text
 	 *            The text to append
 	 */
@@ -825,7 +832,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Appends the given error to the console
-	 * 
+	 *
 	 * @param text
 	 *            The error to append
 	 */
@@ -849,7 +856,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Sets the given status message as new status in the status bar.
-	 * 
+	 *
 	 * @param statusMessage
 	 *            The new status
 	 */
@@ -865,7 +872,7 @@ public abstract class SourceCodePanel extends JPanel {
 	/**
 	 * Sets the runnable that will be called when the stop button in the status
 	 * bar is clicked.
-	 * 
+	 *
 	 * @param runnable
 	 *            The runnable to call when stop is clicked
 	 */
@@ -875,7 +882,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Returns the progress bar of the status bar.
-	 * 
+	 *
 	 * @return The progress bar
 	 */
 	protected JProgressBar getProgressBar() {
@@ -884,9 +891,9 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Executes the given source code.
-	 * 
+	 *
 	 * This method should add the output to the console.
-	 * 
+	 *
 	 * @param sourceCode
 	 *            The source code to execute
 	 */
@@ -894,7 +901,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Initiates an update of the listed variables.
-	 * 
+	 *
 	 * This method should call {@link #setVariables(Variable[])} once the
 	 * variables have been retrieved.
 	 */
@@ -902,7 +909,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Sets the variables displayed in the variable table
-	 * 
+	 *
 	 * @param variables
 	 *            The variables to display
 	 */
@@ -926,7 +933,7 @@ public abstract class SourceCodePanel extends JPanel {
 	/**
 	 * Retrieves possible completions for the given source code at the given
 	 * cursor position
-	 * 
+	 *
 	 * @param provider
 	 *            {@link CompletionProvider} for creation of the
 	 *            {@link Completion} objects
@@ -943,17 +950,17 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Creates a completion provider that will be used to suggest completions.
-	 * 
+	 *
 	 * The created provider will utilize
 	 * {@link #getCompletionsFor(CompletionProvider, String, int, int)} to
 	 * retrieve possible completions.
-	 * 
+	 *
 	 * @return The {@link CompletionProvider}
 	 */
 	private CompletionProvider createCompletionProvider() {
 		DefaultCompletionProvider provider = new DefaultCompletionProvider() {
 			@Override
-			public List<Completion> getCompletions(JTextComponent comp) {
+			public List<Completion> getCompletions(final JTextComponent comp) {
 				List<Completion> completions = super.getCompletions(comp);
 				// Get source code from editor
 				String sourceCode = comp.getText();
@@ -978,7 +985,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Runs the given runnable in the UI thread.
-	 * 
+	 *
 	 * @param runnable
 	 *            The runnable to run in the UI thread
 	 */
@@ -994,7 +1001,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Gets the output image with the given name
-	 * 
+	 *
 	 * @param name
 	 *            The variable name in the workspace
 	 * @return The image
@@ -1005,7 +1012,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Sets the row limit used to put tables into the workspace.
-	 * 
+	 *
 	 * @param rowLimit
 	 *            The maximum number of rows per table
 	 */
@@ -1015,7 +1022,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Gets the row limit used to put tables into the workspace.
-	 * 
+	 *
 	 * @return The maximum number of rows per table
 	 */
 	protected int getRowLimit() {
@@ -1024,7 +1031,7 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Creates the string used to access a variable in the source code.
-	 * 
+	 *
 	 * @param variable
 	 *            The variable name
 	 * @param field
@@ -1035,17 +1042,17 @@ public abstract class SourceCodePanel extends JPanel {
 
 	/**
 	 * Get the name for the flow variables variable.
-	 * 
+	 *
 	 * @return The name
 	 */
 	protected VariableNames getVariableNames() {
 		return m_variableNames;
 	}
-	
+
 	public RSyntaxTextArea getEditor() {
 		return m_editor;
 	}
-	
+
 	public static RSyntaxTextArea createEditor(final String syntaxStyle) {
 		RSyntaxTextArea editor = new RSyntaxTextArea();
 		editor.setSyntaxEditingStyle(syntaxStyle);
