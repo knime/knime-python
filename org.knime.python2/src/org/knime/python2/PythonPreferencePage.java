@@ -207,7 +207,7 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	/**
 	 * Set the configuration according to the dialog state and test the python installation.
 	 */
-	public void applyOptions() {
+	private void applyOptions() {
 	    setPython2Path(m_python2.getPythonPath());
         setPython3Path(m_python3.getPythonPath());
         setSerializerId(getSelectedSerializer());
