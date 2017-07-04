@@ -129,7 +129,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return Path to the python 2 executable
 	 */
 	public static String getPython2Path() {
-		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_2_PATH_CFG, getDefaultPython2Path(), null);
+        return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_2_PATH_CFG,
+            getDefaultPython2Path(), null);
 	}
 
 	/**
@@ -138,7 +139,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return Path to the python 3 executable
 	 */
 	public static String getPython3Path() {
-		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_3_PATH_CFG, getDefaultPython3Path(), null);
+        return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, PYTHON_3_PATH_CFG,
+            getDefaultPython3Path(), null);
 	}
 
 	/**
@@ -147,7 +149,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return serializatin library id
 	 */
 	public static String getSerializerId() {
-		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, SERIALIZER_ID_CFG, getDefaultSerializerId(), null);
+        return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, SERIALIZER_ID_CFG,
+            getDefaultSerializerId(), null);
 	}
 
 	/**
@@ -156,7 +159,8 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	 * @return the default python version
 	 */
 	public static String getDefaultPythonOption() {
-		return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, DEFAULT_PYTHON_OPTION_CFG, getDefaultDefaultPythonOption(), null);
+        return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, DEFAULT_PYTHON_OPTION_CFG,
+            getDefaultDefaultPythonOption(), null);
 	}
 
 	/**
@@ -216,19 +220,23 @@ public class PythonPreferencePage extends PreferencePage implements IWorkbenchPr
 	}
 
 	private static String getDefaultPython2Path() {
-		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_2_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_2_PATH);
+        return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_2_PATH_CFG,
+            PythonPreferenceInitializer.DEFAULT_PYTHON_2_PATH);
 	}
 
 	private static String getDefaultPython3Path() {
-		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_3_PATH_CFG, PythonPreferenceInitializer.DEFAULT_PYTHON_3_PATH);
+        return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(PYTHON_3_PATH_CFG,
+            PythonPreferenceInitializer.DEFAULT_PYTHON_3_PATH);
 	}
 
 	private static String getDefaultSerializerId() {
-		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(SERIALIZER_ID_CFG, PythonPreferenceInitializer.DEFAULT_SERIALIZER_ID);
+        return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(SERIALIZER_ID_CFG,
+            PythonPreferenceInitializer.DEFAULT_SERIALIZER_ID);
 	}
 
 	private static String getDefaultDefaultPythonOption() {
-		return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(DEFAULT_PYTHON_OPTION_CFG, PythonPreferenceInitializer.DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
+        return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID).get(DEFAULT_PYTHON_OPTION_CFG,
+            PythonPreferenceInitializer.DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
 	}
 
 	/**
