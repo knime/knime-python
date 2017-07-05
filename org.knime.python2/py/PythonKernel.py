@@ -291,7 +291,8 @@ def dict_to_data_frame(dictionary):
         df[key] = [dictionary[key]]
     return df
 
-
+# Is called on shutdown to clean up all variables that names are registered in 
+# _cleanup_object_names.
 def _cleanup():
     for name in _cleanup_object_names:
         obj = get_variable(name)
@@ -496,14 +497,20 @@ def is_nan(value):
     except BaseException:
         return False
 
-
+# gets the name of an object's type.
+# NOTE: the name of an object's type is not the fully qualified one returned by the type()
+# function but just the last pice of it (e.g. 'time' instead of 'datetime.time')
 def get_type_string(data_object):
     if hasattr(data_object, '__module__'):
         return data_object.__module__ + '.' + data_object.__class__.__name__
     else:
         return data_object.__class__.__name__
 
-
+# Used for managing all registered serializers and deserializers.
+# Serializers and deserializers can be accessed using the identifier,
+# which is the id of the java extension point or the type_string corresponding
+# to the python type. This type string is set in the extension point's specification
+# in plugin.xml.
 class TypeExtensionManager:
     def __init__(self):
         self._serializer_id_to_index = {}
@@ -512,26 +519,43 @@ class TypeExtensionManager:
         self._deserializer_id_to_index = {}
         self._deserializers = []
 
+    # Get the deserializer associated with the given id
+    # @param identifier    the java extension point id (string)
+    # @return deserializer module (implementing the deserialize(bytes) method) or None on miss
     def get_deserializer_by_id(self, identifier):
         if identifier not in self._deserializer_id_to_index:
             return None
         return self.get_extension_by_index(self._deserializer_id_to_index[identifier], self._deserializers)
 
+    # Get the serializer associated with the given id
+    # @param identifier    the java extension point id (string)
+    # @return serializer module (implementing the serialize(object) method) or None on miss
     def get_serializer_by_id(self, identifier):
         if identifier not in self._serializer_id_to_index:
             return None
         return self.get_extension_by_index(self._serializer_id_to_index[identifier], self._serializers)
 
+    # Get the serializer associated with the given type
+    # @param identifier    a python type
+    # @return serializer module (implementing the serialize(object) method) or None on miss
     def get_serializer_by_type(self, type_string):
         if type_string not in self._serializer_type_to_id:
             return None
         return self.get_serializer_by_id(self._serializer_type_to_id[type_string])
 
+    # Get the java extension point id associated with the given python type
+    # @param type_string    a python type
+    # @return java extension point id (string)
     def get_serializer_id_by_type(self, type_string):
         if type_string not in self._serializer_type_to_id:
             return None
         return self._serializer_type_to_id[type_string]
 
+    # Get the path to a module at position index in the passed lists of paths 
+    # (extensions) and load it. Return the loaded module.
+    # @param index         a position in the extensions array
+    # @param extensions    a list of paths to python modules (usually self._serializers or self._deserializers)
+    # @return the module loaded from the specified path
     @staticmethod
     def get_extension_by_index(index, extensions):
         if index >= len(extensions):
@@ -552,18 +576,27 @@ class TypeExtensionManager:
             extensions[index] = type_extension
         return type_extension
 
+    # Add a serializer for a python type.
+    # @param identifier     the java extension point id (string)
+    # @param type_string    a python type
+    # @param path           the path to the file containing the serializer module
     def add_serializer(self, identifier, type_string, path):
         index = len(self._serializers)
         self._serializers.append(path)
         self._serializer_id_to_index[identifier] = index
         self._serializer_type_to_id[type_string] = identifier
 
+    # Add a deserializer for a python type.
+    # @param identifier     the java extension point id (string)
+    # @param path           the path to the file containing the deserializer module
     def add_deserializer(self, identifier, path):
         index = len(self._deserializers)
         self._deserializers.append(path)
         self._deserializer_id_to_index[identifier] = index
 
-
+# Load a python module from a source file.
+# @param path    the path to the source file (string)
+# @return the module loaded from the specified path
 def load_module_from_path(path):
     last_separator = path.rfind(os.sep)
     file_extension_start = path.rfind('.')
@@ -595,7 +628,12 @@ else:
 
 _type_extension_manager = TypeExtensionManager()
 
-
+# Serialize all cells in the provided data frame to a bytes representation (inplace).
+# @param data_frame          a pandas.DataFrame containing columns to serialize
+# @param column_serializers  dict containing column names present in data_frame as keys and serializer_ids as values.
+#                            A serializer_id should be the id of the java extension point on which the serializer is
+#                            registered. Each column identified by the dict keys is serialized using the serializer
+#                            provided by the TypeExtensionManager for the given serializer_id.
 def serialize_objects_to_bytes(data_frame, column_serializers):
     for column in column_serializers:
         serializer = _type_extension_manager.get_serializer_by_id(column_serializers[column])
@@ -632,6 +670,12 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
                     data_frame.iat[i,col_idx] = serializer.serialize(value)
 
 
+# Deserialize all cells in the provided data frame from a bytes representation (inplace).
+# @param data_frame          a pandas.DataFrame containing columns to deserialize
+# @param column_serializers  dict containing column names present in data_frame as keys and deserializer_ids as values.
+#                            A deserializer_id should be the id of the java extension point on which the deserializer is
+#                            registered. Each column identified by the dict keys is deserialized using the deserializer
+#                            provided by the TypeExtensionManager for the given deserializer_id.
 def deserialize_from_bytes(data_frame, column_serializers):
     #print('Data frame: ' + str(data_frame) + '\nserializers: ' + str(column_serializers) + '\n')
     for column in column_serializers:
@@ -735,7 +779,15 @@ def write_bytearray(data_bytes):
     write_data(data_bytes)
 
 
+# Wrapper class for data that should be serialized using the serialization library. 
+# Manages the serialization of extension types to bytes before using the 
+# registered serialization library for serializing primitive types.
 class FromPandasTable:
+    
+    # Constructor.
+    # Serializes objects having a type that is registered via the knimetopython
+    # extension point to a bytes representation and adjusts the dataframe index
+    # to reflect KNIME standard row indexing if necessary.
     def __init__(self, data_frame):
         self._data_frame = data_frame.copy()
         self._data_frame.columns = self._data_frame.columns.astype(str)
@@ -768,18 +820,30 @@ class FromPandasTable:
                 row_indices.append(str(self._data_frame.index[i]))
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
+    # Get the type of the column at the provided index in the internal data_frame.
     # example: table.get_type(0)
+    # @param column_index    numeric column index
+    # @return a datatype
     def get_type(self, column_index):
         return self._column_types[column_index]
 
+    # Get the name of the column at the provided index in the internal data_frame.
     # example: table.get_name(0)
+    # @param column_index    numeric column index
+    # @return a column name (string)
     def get_name(self, column_index):
         return self._data_frame.columns.astype(str)[column_index]
 
+    # Get a list of all column names in the internal dataframe.
+    # @return a list of column names (string)
     def get_names(self):
         return self._data_frame.columns.astype(str)
 
+    # Get the cell content at the specified position.
     # example: table.get_cell(0,0)
+    # @param column_index    the column index
+    # @param row_index       the row index
+    # @return the cell content
     def get_cell(self, column_index, row_index):
         value = self._data_frame.iat[row_index, column_index]
         if value is None:
@@ -801,12 +865,26 @@ class FromPandasTable:
     def get_number_rows(self):
         return len(self._data_frame.index)
 
+    # Get the column serializers.
+    # @return a dict containing column names of the internal dataframe as keys
+    #         and serializer_ids as values. A serializer_id is the id of the
+    #         java extension point the serializer is registered at.
     def get_column_serializers(self):
         return self._column_serializers
 
 
+# Wrapper class for data that should be deserialized using the serialization library. 
+# Manages the deserialization of bytes to extension type objects after the 
+# registered serialization library has been used for deserializing primitive types.
 class ToPandasTable:
+    
+    # Constructor.
     # example: ToPandasTable(('column1','column2'))
+    # @param column_names        list of names for the columns to deserialize
+    # @param column_types        datatypes of the columns to deserialize
+    # @param column_serializers  dict containing column names as keys and deserializer_ids
+    #                            as values. A deserializer_id is the id of the
+    #                            java extension point the deserializer is registered at.
     def __init__(self, column_names, column_types, column_serializers):
         dtypes = {}
         for i in range(len(column_names)):
@@ -827,15 +905,20 @@ class ToPandasTable:
         self._data_frame = DataFrame(columns=column_names)
         self._column_serializers = column_serializers
 
+    # Append a row to the internal dataframe.
     # example: table.add_row('row1',[1,2])
+    # NOTE: use with caution -> slow, the preferred way is using add_column
+    # or directly setting the internal data_frame
     def add_row(self, rowkey, values):
         row = DataFrame([values], index=[rowkey], columns=self._column_names)
         self._data_frame = self._data_frame.append(row)
 
+    # Append a column to the internal dataframe.
     # example: table.add_column('column1', [1,2,3])
     def add_column(self, column_name, values):
         self._data_frame[column_name] = values
 
+    # Set the index of the internal dataframe to rowkeys.
     # example: table.set_rowkeys(['row1','row2','row3'])
     def set_rowkeys(self, rowkeys):
         if len(self._data_frame.columns) == 0:
@@ -843,15 +926,14 @@ class ToPandasTable:
         else:
             self._data_frame.index = rowkeys
 
+    # Deserialize bytes in columns having an extension type and returns a 
+    # pandas.DataFrame containing the deserialized KNIME table.
     def get_data_frame(self):
         deserialize_from_bytes(self._data_frame, self._column_serializers)
-        # Commented out since changing the type if the column contains missing values fails
-        # if len(self._data_frame) > 0:
-        #     for column in self._data_frame.columns:
-        #         self._data_frame[column] = self._data_frame[column].astype(self._dtypes[column])
         return self._data_frame
 
-
+# Enum containing ids for all simple tpyes, i.e. types that can be serialized
+# directly using the serialization library.
 class Simpletype():
     BOOLEAN = 1
     BOOLEAN_LIST = 2
@@ -873,6 +955,11 @@ class Simpletype():
     BYTES_SET = 18
 
 
+# Get the {@link Simpletype} of a column in the passed dataframe and the serializer_id
+# if available (only interesting for extension types that are transferred as bytes).
+# @param data_frame    the dataframe containing the columns to evaluate
+# @param column_name   the name of the column in data_frame to evaluate
+# @return tuple containing the {@link SimpleType} and the serializer_id (or None) of the column
 def simpletype_for_column(data_frame, column_name):
     column_serializer = None
     if len(data_frame.index) == 0:
@@ -896,7 +983,7 @@ def simpletype_for_column(data_frame, column_name):
             col_type = column_type(data_frame, column_name)
             if col_type is None:
                 # column with only missing values, make it string
-                simple_type = Simpletype.STRING
+             simpletype   simple_type = Simpletype.STRING
             elif types_are_equivalent(col_type, bool):
                 simple_type = Simpletype.BOOLEAN
             elif col_type is list or col_type is set:
@@ -965,7 +1052,9 @@ def simpletype_for_column(data_frame, column_name):
                 simple_type = Simpletype.BYTES
     return simple_type, column_serializer
 
-
+# Convert a value to a given {@link Simpletype}.
+# @param value        a value
+# @param simpletype   the {@link Simpletype} to convert to
 def value_to_simpletype_value(value, simpletype):
     if value is None:
         return None
