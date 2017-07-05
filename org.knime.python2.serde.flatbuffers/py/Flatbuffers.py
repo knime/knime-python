@@ -26,6 +26,7 @@ from knimetable import ByteColumn
 from knimetable import ByteCollectionCell
 from knimetable import ByteCollectionColumn
 from pandas import DataFrame
+from flatbuffers import compat
 
 
 # ******************************************************
@@ -859,7 +860,6 @@ def table_to_bytes(table):
             for idx in range(0, len(col)):
                 
                 if col[idx] == None:
-                    cell = bytes(0)
                     bytesOffsets.append(get_empty_ByteCell(builder))
                     missing.append(True)
                 else:
@@ -1044,11 +1044,7 @@ def table_to_bytes(table):
     return builder.Output()
 
 def get_ByteCell(builder, cell):
-    ByteCell.ByteCellStartValueVector(builder, len(cell))
-    builder.Prep(len(cell), 0)
-    for byteIdx in reversed(range(0, len(cell))):
-        builder.Place(cell[byteIdx],flatbuffers.number_types.Uint8Flags)               
-    bytesVec = builder.EndVector(len(cell))
+    bytesVec = builder.CreateByteArray(cell)
                 
     ByteCell.ByteCellStart(builder)
     ByteCell.ByteCellAddValue(builder, bytesVec)

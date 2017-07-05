@@ -80,7 +80,7 @@ class BooleanCollectionCell(object):
                 buff = set(self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1)) for j in range(l))
                 # Handle missing values
                 if self.KeepDummy():
-                    buff.append(None)
+                    buff.add(None)
                 return buff
         return 0
 

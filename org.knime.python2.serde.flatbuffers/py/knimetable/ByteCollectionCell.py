@@ -99,7 +99,7 @@ class ByteCollectionCell(object):
                     buff.add(obj.GetAllBytes())
                 # Handle missing values
                 if self.KeepDummy():
-                    buff.append(None)
+                    buff.add(None)
                 return buff
         return None
 

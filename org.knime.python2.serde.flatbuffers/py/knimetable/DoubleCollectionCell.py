@@ -79,7 +79,7 @@ class DoubleCollectionCell(object):
                 buff = set(self._tab.Get(flatbuffers.number_types.Float64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8)) for j in range(l))
                 # Handle missing values
                 if self.KeepDummy():
-                    buff.append(None)
+                    buff.add(None)
                 return buff
         return 0
 

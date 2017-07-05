@@ -79,7 +79,7 @@ class IntegerCollectionCell(object):
                 buff = set(self._tab.Get(flatbuffers.number_types.Int32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4)) for j in range(l))
                 # Handle missing values
                 if self.KeepDummy():
-                    buff.append(None)
+                    buff.add(None)
                 return buff
         return 0
 
