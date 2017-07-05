@@ -1048,7 +1048,7 @@ def value_to_simpletype_value(value, simpletype):
 
 # Uncomment below and comment the run() call for profiling
 # See https://docs.python.org/3/library/profile.html on how to interpet the result
-#import cProfile
-#profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
-#cProfile.run('run()', filename=profilepath)
-run()
+import cProfile
+profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
+cProfile.run('run()', filename=profilepath)
+#run()

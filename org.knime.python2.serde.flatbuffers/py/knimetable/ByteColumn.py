@@ -59,6 +59,37 @@ class ByteColumn(object):
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
+    
+    # custom method
+    # Puts all values in this flatbuffers-column into a dataframe column.
+    # @param df        a dataframe (preinitialized)
+    # @param colidx    the index of the column to set (in the dataframe)
+    def AddValuesAsColumn(self, df, colidx):
+        #import debug_util
+        #debug_util.breakpoint()
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            l = self.ValuesLength()
+            # Add values
+            from .ByteCell import ByteCell
+            for j in range(l):
+                x = self._tab.Vector(o)
+                x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+                x = self._tab.Indirect(x)
+                obj = ByteCell()
+                obj.Init(self._tab.Bytes, x)
+                df.iat[j, colidx] = obj.GetAllBytes()
+            # Handle missing values
+            o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+            if o2 != 0:
+                a2 = self._tab.Vector(o2)
+                m = self.MissingLength()
+                for j in range(m):
+                    if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                        df.iat[j, colidx] = None
+                return True
+            return False
+        return False
 
 def ByteColumnStart(builder): builder.StartObject(3)
 def ByteColumnAddSerializer(builder, serializer): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(serializer), 0)

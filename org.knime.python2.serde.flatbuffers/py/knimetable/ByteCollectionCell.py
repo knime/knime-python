@@ -59,6 +59,49 @@ class ByteCollectionCell(object):
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos)
         return 0
+    
+    # custom method
+    # Returns all values as collection. All strings are decoded (utf-8).
+    # @pram islist    true - returns a list, false - returns a set
+    def GetAllValues(self, islist):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            from .ByteCell import ByteCell
+            l = self.ValueLength()
+            # Add values
+            if islist:
+                buff = []
+                for j in range(l):
+                    x = self._tab.Vector(o)
+                    x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+                    x = self._tab.Indirect(x)
+                    obj = ByteCell()
+                    obj.Init(self._tab.Bytes, x)
+                    buff.append(obj.GetAllBytes())
+                # Handle missing values
+                o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+                if o2 != 0:
+                    a2 = self._tab.Vector(o2)
+                    m = self.MissingLength()
+                    for j in range(m):
+                        if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                            buff[j] = None
+                    return buff
+                return None
+            else:
+                buff = set()
+                for j in range(l):
+                    x = self._tab.Vector(o)
+                    x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+                    x = self._tab.Indirect(x)
+                    obj = ByteCell()
+                    obj.Init(self._tab.Bytes, x)
+                    buff.add(obj.GetAllBytes())
+                # Handle missing values
+                if self.KeepDummy():
+                    buff.append(None)
+                return buff
+        return None
 
 def ByteCollectionCellStart(builder): builder.StartObject(3)
 def ByteCollectionCellAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)

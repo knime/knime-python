@@ -25,6 +25,7 @@ from knimetable import ByteCell
 from knimetable import ByteColumn
 from knimetable import ByteCollectionCell
 from knimetable import ByteCollectionColumn
+from pandas import DataFrame
 
 
 # ******************************************************
@@ -92,222 +93,85 @@ def bytes_into_table(table, data_bytes):
         colNames.append(knimeTable.ColNames(j).decode('utf-8'))
             
     #debug_util.debug_msg("Flatbuffers->Python: Column Length() ", knimeTable.ColumnsLength())
-  
+    df = DataFrame(columns=colNames, index=rowIds)
     
     for j in range(0, knimeTable.ColumnsLength()):
         col = knimeTable.Columns(j)
         
-    #debug_util.debug_msg("Flatbuffers->Python: Column[",j,"] col.Type() ", col.Type())
         if col.Type() == _types_.INTEGER:
             colVec = col.IntColumn()
-            table.add_column(colNames[j], get_single_column(colVec))
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.INTEGER_LIST:
             colVec = col.IntListColumn()                       
-            table.add_column(colNames[j], get_list_column(colVec))
+            colVec.AddValuesAsColumn(df, j, True)        
             
         elif col.Type() == _types_.INTEGER_SET:
             colVec = col.IntSetColumn()                 
-            table.add_column(colNames[j], get_set_column(colVec))
+            colVec.AddValuesAsColumn(df, j, False)
 
         elif col.Type() == _types_.BOOLEAN:
             colVec = col.BooleanColumn()
-            table.add_column(colNames[j], get_single_column(colVec))
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.BOOLEAN_LIST:
             colVec = col.BooleanListColumn()            
-            table.add_column(colNames[j], get_list_column(colVec))
+            colVec.AddValuesAsColumn(df, j, True)        
             
         elif col.Type() == _types_.BOOLEAN_SET:
             colVec = col.BooleanSetColumn()                
-            table.add_column(colNames[j], get_set_column(colVec))
+            colVec.AddValuesAsColumn(df, j, False)
          
         elif col.Type() == _types_.LONG:
             colVec = col.LongColumn()
-            table.add_column(colNames[j], get_single_column(colVec))
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.LONG_LIST:
             colVec = col.LongListColumn()
-            table.add_column(colNames[j], get_list_column(colVec))
+            colVec.AddValuesAsColumn(df, j, True)        
             
         elif col.Type() == _types_.LONG_SET:
             colVec = col.LongSetColumn()
-            table.add_column(colNames[j], get_set_column(colVec))
+            colVec.AddValuesAsColumn(df, j, False)        
          
         elif col.Type() == _types_.DOUBLE:
             colVec = col.DoubleColumn()
-            table.add_column(colNames[j], get_single_column(colVec))
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.DOUBLE_LIST:
             colVec = col.DoubleListColumn()
-            table.add_column(colNames[j], get_list_column(colVec))
+            colVec.AddValuesAsColumn(df, j, True)
             
         elif col.Type() == _types_.DOUBLE_SET:
             colVec = col.DoubleSetColumn()
-            table.add_column(colNames[j], get_set_column(colVec))
+            colVec.AddValuesAsColumn(df, j, False)
                        
         elif col.Type() == _types_.STRING:
             colVec = col.StringColumn()
-            colVals = []        
-            for idx in range(0, colVec.ValuesLength()):
-         #       debug_util.debug_msg("Flatbuffers -> Python: (String) Value[", idx, "]", colVec.Values(idx))
-         #       debug_util.debug_msg("Flatbuffers -> Python: (String) Missing[", idx, "]",  colVec.Missing(idx))
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    colVals.append(colVec.Values(idx).decode('utf-8'))
-            
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.STRING_LIST:
             colVec = col.StringListColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    cell = colVec.Values(idx)
-                    cellVals = []
-                    for cellIdx in range(0, cell.ValueLength()):
-                        if cell.Missing(cellIdx):
-                            cellVals.append(None)
-                        else:
-                            cellVals.append(cell.Value(cellIdx).decode('utf-8'))
-                    colVals.append(cellVals)
-
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j, True)
             
         elif col.Type() == _types_.STRING_SET:
             colVec = col.StringSetColumn()
-            colVals = []
-            for idx in range(0,colVec.ValuesLength()):
-                
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    cell = colVec.Values(idx)
-                    cellVals = set()
-                    for cellIdx in range(0, cell.ValueLength()):
-                        cellVals.add(cell.Value(cellIdx).decode('utf-8'))
-                    if cell.KeepDummy():
-                        cellVals.add(None)
-                    colVals.append(cellVals)
-                 
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j, False)
 
             
         elif col.Type() == _types_.BYTES:
-          #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Start")
             colVec = col.ByteColumn()
-            colVals = []
-          #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) ValuesLength():", colVec.ValuesLength())        
-            for idx in range(0, colVec.ValuesLength()):
-                cell = colVec.Values(idx)   
-                 
-                if colVec.Missing(idx):
-                    colVals.append(None)
-               #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) col Missing", colVec.Missing(idx)) 
-                else:
-                    colVals.append(bytes(cell.GetAllBytes()))
-              #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", type(byteVals))
-              #  debug_util.debug_msg("Flatbuffers -> Python: (BYTES Column) Cell.Type():", byteVals)
-                 
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j)
             
         elif col.Type() == _types_.BYTES_LIST:
             colVec = col.ByteListColumn()
-            colVals = []
-            # Rows in the column
-            for idx in range(0,colVec.ValuesLength()):
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:   
-                    cell = colVec.Values(idx)
-                    cellVals = []
-                    # units in the List
-                    for cellIdx in range(0, cell.ValueLength()):
-                        byteVals = bytearray()
-                        if cell.Missing(cellIdx):
-                            cellVals.append(None)
-                        else:           
-                            cellVals.append(bytes(cell.Value(cellIdx).GetAllBytes())) 
-               #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell.Type():", type(byteVals))
-               #     debug_util.debug_msg("Flatbuffers -> Python: (BYTES LIST Column) Cell", byteVals)      
-
-                    colVals.append(cellVals)
-             
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j, True)
                            
         elif col.Type() == _types_.BYTES_SET:
             colVec = col.ByteSetColumn()
-            colVals = []
-            # Rows in the column
-            for idx in range(0,colVec.ValuesLength()):
-                
-                if colVec.Missing(idx):
-                    colVals.append(None)
-                else:
-                    cell = colVec.Values(idx)
-                    cellVals = set()
-                    # units in the Set
-                    for cellIdx in range(0, cell.ValueLength()):          
-                        cellVals.add(bytes(cell.Value(cellIdx).GetAllBytes()))
-                    if cell.KeepDummy():
-                        cellVals.add(None)
-                    
-                #    debug_util.debug_msg("Flatbuffers -> Python: (BYTES SET Column) Cell.Type():", type(byteVals))
-                #    debug_util.debug_msg("Flatbuffers -> Python: (BYTES SET Column) Cell", byteVals)
-                                  
-                    colVals.append(cellVals)
-            
-            table.add_column(colNames[j], colVals)
+            colVec.AddValuesAsColumn(df, j, False)
 
-    table.set_rowkeys(rowIds)
-
-def get_single_column(colVec):
-    colVals = []
-    for idx in range(0,colVec.ValuesLength()):
-        if colVec.Missing(idx):
-            colVals.append(None)
-        else:
-            colVals.append(colVec.Values(idx))
-    return colVals
-
-def get_list_column(colVec):
-    colVals = []
-    for idx in range(0,colVec.ValuesLength()):        
-        if colVec.Missing(idx):
-            colVals.append(None)
-        else:
-            cell = colVec.Values(idx)
-            cellVals = []
-            for cellIdx in range(0, cell.ValueLength()):
-                if cell.Missing(cellIdx):
-                    cellVals.append(None)
-                else:
-                    cellVals.append(cell.Value(cellIdx))
-
-            colVals.append(cellVals)
-    return colVals
-
-def get_set_column(colVec):
-    colVals = []
-    for idx in range(0,colVec.ValuesLength()):              
-        if colVec.Missing(idx):
-            colVals.append(None)
-        else:
-            cell = colVec.Values(idx)
-            cellVals = set()
-            for cellIdx in range(0, cell.ValueLength()):
-                cellVals.add(cell.Value(cellIdx))
-  
-            if cell.KeepDummy():
-                cellVals.add(None)
-                        
-            colVals.append(cellVals)
-        
-    return colVals
+    table._data_frame = df
 
 def table_to_bytes(table):
    

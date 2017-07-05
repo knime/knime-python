@@ -3,6 +3,7 @@
 # namespace: flatc
 
 import flatbuffers
+import pandas
 
 class DoubleColumn(object):
     __slots__ = ['_tab']
@@ -47,6 +48,29 @@ class DoubleColumn(object):
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
+    
+    # custom method
+    # Puts all values in this flatbuffers-column into a dataframe column.
+    # @param df        a dataframe (preinitialized)
+    # @param colidx    the index of the column to set (in the dataframe)
+    def AddValuesAsColumn(self, df, colidx):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            a = self._tab.Vector(o)
+            l = self.ValuesLength()
+            vals = list(self._tab.Get(flatbuffers.number_types.Float64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8)) for j in range(l))
+            # Handle missing values
+            o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+            if o2 != 0:
+                a2 = self._tab.Vector(o2)
+                m = self.MissingLength()
+                for j in range(m):
+                    if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                        vals[j] = float('NaN')
+                df.iloc[:,colidx] = vals
+                return True
+            return False
+        return False
 
 def DoubleColumnStart(builder): builder.StartObject(2)
 def DoubleColumnAddValues(builder, values): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(values), 0)

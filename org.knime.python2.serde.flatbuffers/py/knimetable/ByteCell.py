@@ -40,7 +40,7 @@ class ByteCell(object):
             a = self._tab.Vector(o)
             l = self.ValueLength()
             buff = bytearray(self._tab.Get(flatbuffers.number_types.Uint8Flags, a + j) for j in range(l))
-            return buff
+            return bytes(buff)
         return 0
 
 def ByteCellStart(builder): builder.StartObject(1)

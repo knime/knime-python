@@ -54,6 +54,34 @@ class LongCollectionCell(object):
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos)
         return 0
+    
+    # custom method
+    # Returns all values as collection.
+    # @pram islist    true - returns a list, false - returns a set
+    def GetAllValues(self, islist):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            a = self._tab.Vector(o)
+            l = self.ValueLength()
+            if islist:
+                buff = list(self._tab.Get(flatbuffers.number_types.Int64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8)) for j in range(l))
+                # Handle missing values
+                o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+                if o2 != 0:
+                    a2 = self._tab.Vector(o2)
+                    m = self.MissingLength()
+                    for j in range(m):
+                        if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                            buff[j] = None
+                    return buff
+                return 0
+            else:
+                buff = set(self._tab.Get(flatbuffers.number_types.Int64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8)) for j in range(l))
+                # Handle missing values
+                if self.KeepDummy():
+                    buff.append(None)
+                return buff
+        return 0
 
 def LongCollectionCellStart(builder): builder.StartObject(3)
 def LongCollectionCellAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
