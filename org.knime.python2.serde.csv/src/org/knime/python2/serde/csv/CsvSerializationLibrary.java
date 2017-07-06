@@ -70,10 +70,23 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 
+/**
+ * Used for (de)serializing KNIME tables via CSV files.
+ *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ */
 public class CsvSerializationLibrary implements SerializationLibrary {
 
+    /**
+     * Writes a table to a temporary CSV file and serializes the file path as bytes.
+     * The file path is sent to python where the data is read from the CSV file which is deleted afterwards.
+     *
+     * @param tableIterator             Iterator for the table that should be converted.
+     * @param serializationOptions  All options that control the serialization process.
+     * @return The bytes that should be send to python.
+     */
 	@Override
-	public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
+	public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
 		try {
 			File file = File.createTempFile("java-to-python-", ".csv");
 			file.deleteOnExit();
@@ -276,9 +289,17 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 		}
 	}
 
+	/**
+     * Reads a table from a temporary CSV file which is deleted afterwards.
+     * The file path is received as bytes from python.
+     *
+     * @param tableCreator          The {@link TableCreator} that the rows should be added to.
+     * @param serializationOptions  All options that control the serialization process.
+     * @param bytes The bytes containing the encoded table.
+     */
 	@SuppressWarnings("unused")
 	@Override
-	public void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
+	public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes, final SerializationOptions serializationOptions) {
 		try {
 			File file = new File(new String(bytes));
 			file.deleteOnExit();
@@ -497,7 +518,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 	}
 
 	@Override
-	public TableSpec tableSpecFromBytes(byte[] bytes) {
+	public TableSpec tableSpecFromBytes(final byte[] bytes) {
 		try {
 			File file = new File(new String(bytes));
 			file.deleteOnExit();
@@ -524,7 +545,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	private static List<String> parseLine(final BufferedReader reader) throws IOException {
 		List<String> values = new ArrayList<String>();
 		StringBuilder sb = new StringBuilder();
@@ -560,7 +581,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 		values.add(sb.toString());
 		return values;
 	}
-	
+
 	private static String escapeValue(String value) {
 		value = value.replace("\"", "\"\"");
 		if (value.contains("\"") || value.contains("\n") || value.contains(",") || value.contains("\r")) {
@@ -568,11 +589,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
 		}
 		return value;
 	}
-	
+
 	private static String bytesToBase64(final Byte[] bytes) {
 		return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
 	}
-	
+
 	private static Byte[] bytesFromBase64(String base64) {
 		if (base64.startsWith("b'")) {
 			base64 = base64.substring(2, base64.length()-1);

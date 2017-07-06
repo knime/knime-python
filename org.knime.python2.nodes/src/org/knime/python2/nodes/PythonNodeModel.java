@@ -59,35 +59,62 @@ import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelOptions;
 
+/**
+ * Base model for all python related nodes. Provides methods for loading and saving settings and
+ * for pushing a collection of {@link FlowVariable}s to the stack.
+ *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @param <Config> a configuration type
+ */
 public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
-	
+
 	Config m_config = createConfig();
-    
+
+	/**
+	 * Constructor.
+	 * @param inPortTypes      the input port types
+	 * @param outPortTypes     the output port types
+	 */
 	public PythonNodeModel(final PortType[] inPortTypes,
             final PortType[] outPortTypes) {
         super(inPortTypes, outPortTypes);
     }
-	
+
+	/**
+	 * Creates the config.
+	 *
+	 * @return the config
+	 */
 	protected abstract Config createConfig();
-	
+
+	/**
+	 * Gets the config.
+	 *
+	 * @return the config
+	 */
 	protected final Config getConfig() {
 		return m_config;
 	}
-	
+
+	/**
+	 * Gets the kernel specific options.
+	 *
+	 * @return the kernel specific options
+	 */
 	protected PythonKernelOptions getKernelOptions() {
 		PythonKernelOptions options = getConfig().getKernelOptions();
 		options.setFlowVariableOptions(FlowVariableOptions.parse(getAvailableFlowVariables()));
 		return options;
 	}
-	
+
 	/**
 	 * Push new variables to the stack.
-	 * 
+	 *
 	 * Only pushes new variables to the stack if they are new or changed in type or value.
-	 * 
+	 *
 	 * @param newVariables The flow variables to push
 	 */
-	protected void addNewVariables(Collection<FlowVariable> newVariables) {
+	protected void addNewVariables(final Collection<FlowVariable> newVariables) {
 		Map<String, FlowVariable> flowVariables = getAvailableFlowVariables();
         for (FlowVariable variable : newVariables) {
         	// Only push if variable is new or has changed type or value

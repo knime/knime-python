@@ -48,6 +48,11 @@ package org.knime.python2.serde.csv;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
+/**
+ * Creates the {@link SerializationLibrary}.
+ *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ */
 public class CsvSerializationFactory implements SerializationLibraryFactory {
 
 	@Override

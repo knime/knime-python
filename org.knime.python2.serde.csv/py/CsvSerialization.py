@@ -14,6 +14,8 @@ _eval_types_ = None
 _bytes_types_ = None
 
 
+# Initialize the enum of known type ids
+# @param types     the enum of known type ids
 def init(types):
     global _types_, _eval_types_, _bytes_types_
     _types_ = types
@@ -24,6 +26,8 @@ def init(types):
     _bytes_types_ = {_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET}
 
 
+# Get the column names of the table to create from the serialized data.
+# @param data_bytes    the serialized path to the temporary CSV file
 def column_names_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
@@ -35,6 +39,8 @@ def column_names_from_bytes(data_bytes):
     return data_frame.columns.tolist()
 
 
+# Get the column types of the table to create from the serialized data.
+# @param data_bytes    the serialized path to the temporary CSV file
 def column_types_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
@@ -49,6 +55,9 @@ def column_types_from_bytes(data_bytes):
     return column_types
 
 
+# Get the serializer ids (meaning the java extension point id of the serializer)
+# of the table to create from the serialized data.
+# @param data_bytes    the serialized path to the temporary CSV file
 def column_serializers_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'r')
@@ -61,7 +70,11 @@ def column_serializers_from_bytes(data_bytes):
             serializers[key_value[0]] = key_value[1]
     return serializers
 
-
+# Read the CSV serialized data into a pandas.DataFrame.
+# Delete the temporary CSV file afterwards.
+# @param table        a {@link ToPandasTable} wrapping the data frame and 
+#                     managing the deserialization of extension types
+# @param data_bytes   the serialized path to the temporary CSV file
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
     in_file = open(path, 'rb')
@@ -143,7 +156,10 @@ def bytes_into_table(table, data_bytes):
     in_file.close()
     os.remove(path)
 
-
+# Serialize a pandas.DataFrame into a temporary CSV file.
+# Return the path to the created file as bytearray.
+# @param table    a {@link FromPandasTable} wrapping the data frame and 
+#                 managing the serialization of extension types 
 def table_to_bytes(table):
     path = tempfile.mkstemp(suffix='.csv', prefix='python-to-java-', text=True)[1]
     out_file = open(path, 'wb')
