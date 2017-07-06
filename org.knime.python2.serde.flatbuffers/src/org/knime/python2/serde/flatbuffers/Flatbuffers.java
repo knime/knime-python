@@ -1,3 +1,48 @@
+/*
+ * ------------------------------------------------------------------------
+ *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Website: http://www.knime.org; Email: contact@knime.org
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License, Version 3, as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ *  Additional permission under GNU GPL version 3 section 7:
+ *
+ *  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
+ *  Hence, KNIME and ECLIPSE are both independent programs and are not
+ *  derived from each other. Should, however, the interpretation of the
+ *  GNU GPL Version 3 ("License") under any applicable laws result in
+ *  KNIME and ECLIPSE being a combined program, KNIME GMBH herewith grants
+ *  you the additional permission to use and propagate KNIME together with
+ *  ECLIPSE with only the license terms in place for ECLIPSE applying to
+ *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
+ *  license terms of ECLIPSE themselves allow for the respective use and
+ *  propagation of ECLIPSE together with KNIME.
+ *
+ *  Additional permission relating to nodes for KNIME that extend the Node
+ *  Extension (and in particular that are based on subclasses of NodeModel,
+ *  NodeDialog, and NodeView) and that only interoperate with KNIME through
+ *  standard APIs ("Nodes"):
+ *  Nodes are deemed to be separate and independent programs and to not be
+ *  covered works.  Notwithstanding anything to the contrary in the
+ *  License, the License does not apply to Nodes, you are not required to
+ *  license Nodes under the License, and you are granted a license to
+ *  prepare and propagate Nodes, in each case even if such Nodes are
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
+ *  may freely choose the license terms applicable to such Node, including
+ *  when such Node is propagated with or for interoperation with KNIME.
+ * ------------------------------------------------------------------------
+ */
+
 package org.knime.python2.serde.flatbuffers;
 
 import java.nio.ByteBuffer;
@@ -7,7 +52,19 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.commons.lang3.ArrayUtils;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanColumn;
@@ -29,28 +86,20 @@ import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
 import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.StringCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.StringColumn;
-import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
-import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
-import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
-import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
-import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
+ * Serializes KNIME tables using the google flatbuffers library according to the shema found in:
+ * flatbuffersSchema/schemaCol.fbs
+ *
  * @author Oliver Sampson, University of Konstanz
  *
  */
 public class Flatbuffers implements SerializationLibrary {
 
 	@Override
-	public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
+	public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
 
 		FlatBufferBuilder builder = new FlatBufferBuilder();
 		Map<String, List<Object>> columns = new LinkedHashMap<>();
@@ -60,7 +109,7 @@ public class Flatbuffers implements SerializationLibrary {
 			columns.put(colName, new ArrayList<>());
 			missing.put(colName, new boolean[tableIterator.getNumberRemainingRows()]);
 		}
-		
+
 		Type[] colTypes = tableIterator.getTableSpec().getColumnTypes();
 
 		List<Integer> rowIdOffsets = new ArrayList<>();
@@ -88,7 +137,7 @@ public class Flatbuffers implements SerializationLibrary {
 							columns.get(colName).add(new Long(serializationOptions.getSentinelForType(type)));
 							appended = true;
 						}
-					} 
+					}
 					if(!appended) {
 						columns.get(colName).add(getMissingValue(tableIterator.getTableSpec().getColumnTypes()[tableIterator
 								.getTableSpec().findColumn(colName)]));
@@ -604,9 +653,9 @@ public class Flatbuffers implements SerializationLibrary {
 						int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive((Byte[]) o));
 						bytesCellOffsets.add(ByteCell.createByteCell(builder, bytesCellValVec));
 					} else {
-						
+
 						missingCells = new boolean[((Byte[][])o).length];
-						
+
 						int cIdx = 0;
 						for (Object b : (Byte[][]) o) {
 							if (b == null) {
@@ -725,7 +774,7 @@ public class Flatbuffers implements SerializationLibrary {
 		return builder.sizedByteArray();
 	}
 
-	private static Object getMissingValue(Type type) {
+	private static Object getMissingValue(final Type type) {
 		switch (type) {
 		case BOOLEAN: {
 			return false;
@@ -789,7 +838,7 @@ public class Flatbuffers implements SerializationLibrary {
 	}
 
 	@Override
-	public void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) {
+	public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes, final SerializationOptions serializationOptions) {
 
 		KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
@@ -799,8 +848,9 @@ public class Flatbuffers implements SerializationLibrary {
 		Map<String, List<Object>> columns = new LinkedHashMap<>();
 		Map<String, boolean[]> missing = new HashMap<>();
 
-		if (table.colNamesLength() == 0)
-			return;
+		if (table.colNamesLength() == 0) {
+            return;
+        }
 
 		for (int id = 0; id < table.rowIDsLength(); id++) {
 			String rowId = table.rowIDs(id);
@@ -874,7 +924,7 @@ public class Flatbuffers implements SerializationLibrary {
 					} else {
 						missing.get(table.colNames(j))[i] = colVec.missing(i);
 					}
-					columns.get(table.colNames(j)).add(colVec.values(i));	
+					columns.get(table.colNames(j)).add(colVec.values(i));
 				}
 				break;
 			}
@@ -925,7 +975,7 @@ public class Flatbuffers implements SerializationLibrary {
 					} else {
 						missing.get(table.colNames(j))[i] = colVec.missing(i);
 					}
-					columns.get(table.colNames(j)).add(colVec.values(i));	
+					columns.get(table.colNames(j)).add(colVec.values(i));
 				}
 				break;
 			}
@@ -1130,8 +1180,9 @@ public class Flatbuffers implements SerializationLibrary {
 			}
 		}
 
-		if (columns.isEmpty())
-			return;
+		if (columns.isEmpty()) {
+            return;
+        }
 
 		int numRows = columns.get(columns.keySet().iterator().next()).size();
 		for (int rowCount = 0; rowCount < numRows; rowCount++) {
@@ -1231,7 +1282,7 @@ public class Flatbuffers implements SerializationLibrary {
 	}
 
 	@Override
-	public TableSpec tableSpecFromBytes(byte[] bytes) {
+	public TableSpec tableSpecFromBytes(final byte[] bytes) {
 		KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
 		List<String> colNames = new ArrayList<>();

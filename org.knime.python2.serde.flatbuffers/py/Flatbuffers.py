@@ -41,6 +41,9 @@ debug_util.debug_msg('Flatbuffers enabled debugging!')
    
 _types_ = None
 
+
+# Get the column types of the table to create from the serialized data.
+# @param data_bytes    the data_bytes
 def column_types_from_bytes(data_bytes):    
     table = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
@@ -49,7 +52,8 @@ def column_types_from_bytes(data_bytes):
         colTypes.append(table.Columns(j).Type())       
     return colTypes
 
-
+# Get the column names of the table to create from the serialized data.
+# @param data_bytes    the data_bytes
 def column_names_from_bytes(data_bytes):
     
     table = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
@@ -59,6 +63,9 @@ def column_names_from_bytes(data_bytes):
         colNames.append(table.ColNames(j).decode('utf-8'))       
     return colNames
 
+# Get the serializer ids (meaning the java extension point id of the serializer)
+# of the table to create from the serialized data.
+# @param data_bytes    the data_bytes
 def column_serializers_from_bytes(data_bytes):
     
     table = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
@@ -76,6 +83,10 @@ def column_serializers_from_bytes(data_bytes):
     
     return serializers
 
+# Deserialize the data_bytes into a pandas.DataFrame.
+# @param table        a {@link ToPandasTable} wrapping the data frame and 
+#                     managing the deserialization of extension types
+# @param data_bytes   the data_bytes
 def bytes_into_table(table, data_bytes):
     #debug_util.debug_msg("Starting bytes_into_table()")
     
@@ -174,6 +185,11 @@ def bytes_into_table(table, data_bytes):
 
     table._data_frame = df
 
+# Serialize a pands.DataFrame into bytes.
+# @param table        a {@link FromPandasTable} wrapping the data frame and 
+#                     managing the serialization of extension types
+# @param data_bytes   the data_bytes
+# @return the bytes
 def table_to_bytes(table):
    
     #debug_util.debug_msg("Python->Flatbuffers: Starting table_to_bytes()")
@@ -1043,6 +1059,9 @@ def table_to_bytes(table):
     
     return builder.Output()
 
+# Create a {@link ByteCell} in the flatbuffers builder from a bytearray.
+# @param builder    the flatbuffers builder
+# @param cell       a bytearray
 def get_ByteCell(builder, cell):
     bytesVec = builder.CreateByteArray(cell)
                 
@@ -1050,7 +1069,8 @@ def get_ByteCell(builder, cell):
     ByteCell.ByteCellAddValue(builder, bytesVec)
     return ByteCell.ByteCellEnd(builder)
      
-
+# Create an empty {@link ByteCell} in the flatbuffers builder.
+# @param builder    the flatbuffers builder
 def get_empty_ByteCell(builder):
     ByteCell.ByteCellStartValueVector(builder, 1)
     ByteCell.ByteCellAddValue(builder, 0)
@@ -1059,11 +1079,15 @@ def get_empty_ByteCell(builder):
     ByteCell.ByteCellAddValue(builder, bytesVec)
     return ByteCell.ByteCellEnd(builder)
     
-
+# Get a column of a {@link ToPandasTable} as a list.
+# @param table     the {@link ToPandasTable}
+# @param col_idx   the index of the column
 def table_column(table, col_idx):
     col = [table.get_cell(col_idx, row_idx) for row_idx in range(table.get_number_rows())]
     return col
 
+# Initialize the enum of known type ids
+# @param types     the enum of known type ids
 def init(types):
     global _types_
     _types_ = types
