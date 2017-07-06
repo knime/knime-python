@@ -74,6 +74,7 @@ public class PythonKernelManager {
 
 	/**
 	 * Creates a manager that will start a new python kernel.
+	 * @param kernelOptions all configurable options
 	 *
 	 * @throws IOException
 	 */
@@ -95,6 +96,13 @@ public class PythonKernelManager {
 		return m_kernel.getImage(name);
 	}
 
+	/**
+     * Put a {@link PickledObject} into the python workspace (asynchronous).
+     * @param name              the name of the variable in the python workspace
+     * @param object            the {@link PickledObject}
+	 * @param responseHandler   the response handler
+     *
+     */
 	public synchronized void putObject(final String name, final PickledObject object,
 			final PythonKernelResponseHandler<Void> responseHandler) {
 		final PythonKernel kernel = m_kernel;
@@ -114,6 +122,11 @@ public class PythonKernelManager {
 		});
 	}
 
+	/**
+     * Get a {@link PickledObject} from the python workspace (asynchronous).
+     * @param name  the name of the variable in the python workspace
+     * @param responseHandler   the response handler
+     */
 	public synchronized void getObject(final String name, final PythonKernelResponseHandler<PickledObject> responseHandler) {
 		final PythonKernel kernel = m_kernel;
 		runInThread(new Runnable() {
@@ -138,6 +151,7 @@ public class PythonKernelManager {
 	 *
 	 * This can be used to shutdown an unresponsive kernel.
 	 *
+	 * @param kernelOptions all configurable options for the kernel
 	 * @throws IOException
 	 *             If an error occurs during creation of the new python kernel
 	 */
@@ -205,15 +219,18 @@ public class PythonKernelManager {
 	}
 
 	/**
-	 * Put the given {@link DataTable} into the workspace.
-	 *
-	 * @param name
-	 *            The name of the table
-	 * @param table
-	 *            The table
+	 * Put the given data into the python workspace.
+	 * @param tableNames       the variable names in the python workspace for the tables to put
+	 * @param tables           the tables to put
+	 * @param variablesName    the variable name in the python workspace for the flow variable dict
+	 * @param variables        the flow variables to put
+	 * @param objectNames      the variable names in the python workspace for the objects to put
+	 * @param objects          the objects to put
 	 * @param responseHandler
 	 *            Handler called after execution (response object is always
 	 *            null)
+	 * @param executionMonitor an execution monitor for reporting progress
+	 * @param rowLimit         the maximum number of rows to put into a single table chunk
 	 */
 	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
 			final String variablesName, final Collection<FlowVariable> variables,
@@ -249,9 +266,10 @@ public class PythonKernelManager {
 	 *
 	 * @param name
 	 *            The name of the table to get
-	 * @return The table
+	 * @param exec the calling node's execution context
 	 * @param responseHandler
 	 *            Handler for the responded result table
+	 * @param executionMonitor an execution monitor for reporting progress
 	 */
 	public synchronized void getDataTable(final String name, final ExecutionContext exec,
 			final PythonKernelResponseHandler<DataTable> responseHandler, final ExecutionMonitor executionMonitor) {
@@ -383,7 +401,11 @@ public class PythonKernelManager {
 			//
 		}
 	}
-	
+
+	/**
+	 * Get the managed python kernel.
+	 * @return the managed python kernel
+	 */
 	public PythonKernel getKernel() {
 		return m_kernel;
 	}

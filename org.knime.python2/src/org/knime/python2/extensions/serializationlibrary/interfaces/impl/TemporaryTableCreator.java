@@ -54,15 +54,19 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
 /**
  * Provides a table as a list of {@link Row}s.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class TemporaryTableCreator implements TableCreator<List<Row>> {
-	
+
 	private final List<Row> m_rows;
 	private final TableSpec m_spec;
-	
+
+	/**
+     * Constructor.
+     * @param spec a python integration specific table spec
+	 */
 	public TemporaryTableCreator(final TableSpec spec) {
 		m_rows = new ArrayList<Row>();
 		m_spec = spec;

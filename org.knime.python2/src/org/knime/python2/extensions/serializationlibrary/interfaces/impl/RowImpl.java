@@ -49,18 +49,25 @@ import java.util.Iterator;
 
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 
 /**
  * An iterable row provided by a {@link TableIterator}.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class RowImpl implements Row {
-	
+
 	private String m_key;
 	private Cell[] m_cells;
-	
+
+	/**
+     * Constructor.
+	 * @param rowKey      a unique key for identifying the row
+	 * @param numberCells the number of cells in the row
+     *
+     */
 	public RowImpl(final String rowKey, final int numberCells) {
 		m_key = rowKey;
 		m_cells = new Cell[numberCells];
@@ -70,12 +77,12 @@ public class RowImpl implements Row {
 	public void setCell(final Cell cell, final int index) {
 		m_cells[index] = cell;
 	}
-	
+
 	@Override
 	public int getNumberCells() {
 		return m_cells.length;
 	}
-	
+
 	@Override
 	public String getRowKey() {
 		return m_key;
@@ -97,7 +104,7 @@ public class RowImpl implements Row {
 			}
 		};
 	}
-	
+
 	@Override
 	public Cell getCell(final int index) {
 		return m_cells[index];

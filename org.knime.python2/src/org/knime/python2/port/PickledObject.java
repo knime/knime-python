@@ -54,9 +54,9 @@ import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
 
 /**
- * Container for a pickled python object consisting of the object's byte representation, python type and a 
+ * Container for a pickled python object consisting of the object's byte representation, python type and a
  * string representation.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -69,34 +69,69 @@ public class PickledObject {
 	private String m_type;
 	private String m_stringRepresentation;
 
+	/**
+	 * Constructor.
+	 * @param pickledObject        the byte representation of the actual pickled object
+	 * @param type                 the type of the pickled object (in python)
+	 * @param stringRepresentation a representation of the pickled object as a string
+	 */
 	public PickledObject(final byte[] pickledObject, final String type, final String stringRepresentation) {
 		m_pickledObject = pickledObject;
 		m_type = type;
 		m_stringRepresentation = stringRepresentation;
 	}
 
+	/**
+	 * Constructor.
+	 * @param model the model content to initialize the object from
+	 * @throws InvalidSettingsException
+	 */
 	public PickledObject(final ModelContentRO model) throws InvalidSettingsException {
 		m_pickledObject = model.getByteArray(CFG_PICKLED_OBJECT);
 		m_type = model.getString(CFG_TYPE);
 		m_stringRepresentation = model.getString(CFG_STRING_REPRESENTATION);
 	}
 
+	/**
+	 * Gets the actual pickled object.
+	 *
+	 * @return the actual pickled object
+	 */
 	public byte[] getPickledObject() {
 		return m_pickledObject;
 	}
 
+	/**
+	 * Gets the type.
+	 *
+	 * @return the type
+	 */
 	public String getType() {
 		return m_type;
 	}
 
+	/**
+	 * Gets the string representation.
+	 *
+	 * @return the string representation
+	 */
 	public String getStringRepresentation() {
 		return m_stringRepresentation;
 	}
 
+	/**
+	 * Checks if the pickled object is None in python.
+	 *
+	 * @return true, if is None
+	 */
 	public boolean isNone() {
 		return m_type.equals("NoneType");
 	}
 
+	/**
+	 * Save the pickled object as model content.
+	 * @param model    the content to save to
+	 */
 	public void save(final ModelContentWO model) {
 		model.addByteArray(CFG_PICKLED_OBJECT, m_pickledObject);
 		model.addString(CFG_TYPE, m_type);

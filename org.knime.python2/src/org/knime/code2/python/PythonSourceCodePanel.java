@@ -81,7 +81,7 @@ import org.knime.python2.port.PickledObject;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonSourceCodePanel extends SourceCodePanel {
-	
+
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
 
 	private static final long serialVersionUID = -3111905445745421972L;
@@ -100,8 +100,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
 	/**
 	 * Create a python source code panel.
+	 * @param variableNames an object managing the known variable names in the python workspace (the "magic variables")
+	 * @param options       options that may be set via flow variables
 	 */
-	public PythonSourceCodePanel(final VariableNames variableNames, FlowVariableOptions options) {
+	public PythonSourceCodePanel(final VariableNames variableNames, final FlowVariableOptions options) {
 		super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
 		m_flowVariableOptions = options;
 		m_kernelOptions = new PythonKernelOptions();
@@ -176,14 +178,19 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 		putDataIntoPython();
 	}
 
+	/**
+	 * Get updated input data tables and put them into the python workspace.
+	 */
 	public void updateData() {
 		super.updateData(m_inputData);
 		putDataIntoPython();
 	}
 
 	/**
-	 * {@inheritDoc}
-	 */
+     * Update input data tables and objects and put them into the python workspace.
+	 * @param inputData        the new input tables
+	 * @param inputObjects     the new input objects
+     */
 	public void updateData(final BufferedDataTable[] inputData, final PickledObject[] inputObjects) {
 		super.updateData(inputData);
 		m_inputData = inputData;
@@ -474,15 +481,24 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	protected String createVariableAccessString(final String variable, final String field) {
 		return variable + "['" + field.replace("\\", "\\\\").replace("'", "\\'") + "']";
 	}
-	
+
+	/**
+	 * Register a workspace preparer to be used before user code is executed.
+	 * @param workspacePreparer    the workspace preparer
+	 */
 	public void registerWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
 		m_workspacePreparers.add(workspacePreparer);
 	}
 
+	/**
+	 * Unregister a workspace preparer.
+	 * @param workspacePreparer    the workspace preparer
+	 * @return success yes/no
+	 */
 	public boolean unregisterWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
 		return m_workspacePreparers.remove(workspacePreparer);
 	}
-	
+
 	/**
 	 * Update the internal PythonKernelOptions object with the current configuration.
 	 * @param usePython3
@@ -491,7 +507,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 	 * @param sentinelOption
 	 * @param sentinelValue
 	 */
-	public void setKernelOptions(final PythonKernelOptions.PythonVersionOption usePython3, final boolean convertToPython, 
+	public void setKernelOptions(final PythonKernelOptions.PythonVersionOption usePython3, final boolean convertToPython,
 			final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
 		PythonKernelOptions pko = new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
 		pko.setFlowVariableOptions(m_flowVariableOptions);

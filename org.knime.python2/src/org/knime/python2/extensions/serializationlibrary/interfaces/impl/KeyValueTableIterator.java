@@ -50,17 +50,22 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterato
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
 /**
- * Used for iterating over a table with a single row. Each column can be seen as a Key/Value pair, 
+ * Used for iterating over a table with a single row. Each column can be seen as a Key/Value pair,
  * with the column name being the key and the cell being the value.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class KeyValueTableIterator implements TableIterator {
-	
+
 	private TableSpec m_spec;
 	private Row m_row;
-	
+
+	/**
+     * Constructor.
+     * @param spec a python integration specific table spec
+	 * @param row the row containing the values
+     */
 	public KeyValueTableIterator(final TableSpec spec, final Row row) {
 		m_spec = spec;
 		m_row = row;

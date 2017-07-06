@@ -47,28 +47,30 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
 
 /**
  * Interface for partitioning a table into chunks that are accessed by {@link TableIterator}s.
- *  
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public interface TableChunker {
-	
+
 	/**
 	 * @return Has more chunks
 	 */
 	boolean hasNextChunk();
-	
+
 	/**
+	 * Get the iterator over the table chunk starting at the next unprocessed row.
+	 * @param numRows the number of rows to include in the returned chunk
 	 * @return A {@link TableIterator} over the next numRows rows of the underlying data structure
 	 */
 	TableIterator nextChunk(int numRows);
-	
+
 	/**
-	 * @return The number of rows that have not been requested via {@link #next()}.
+	 * @return The number of rows remaining to be processed
 	 */
 	int getNumberRemainingRows();
-	
+
 	/**
 	 * @return The {@link TableSpec}.
 	 */

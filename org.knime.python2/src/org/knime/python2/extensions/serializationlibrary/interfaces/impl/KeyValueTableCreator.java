@@ -52,15 +52,19 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 /**
  * Used for reading a table with a single row. Each column can be seen as a Key/Value pair, with the column name being
  * the key and the cell being the value.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class KeyValueTableCreator implements TableCreator<Row> {
-	
+
 	private Row m_row;
 	private TableSpec m_spec;
-	
+
+	/**
+	 * Constructor.
+	 * @param spec a python integration specific table spec
+	 */
 	public KeyValueTableCreator(final TableSpec spec) {
 		m_spec = spec;
 	}

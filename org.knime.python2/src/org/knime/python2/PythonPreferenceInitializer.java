@@ -53,7 +53,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Preference Initializer for the org.knime.python2 plugin.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -63,14 +63,20 @@ public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 	 * Use the command 'python' without a specified location as default
 	 */
 	public static final String DEFAULT_PYTHON_2_PATH = "python";
-	
+
 	/**
 	 * Use the command 'python3' without a specified location as default
 	 */
 	public static final String DEFAULT_PYTHON_3_PATH = "python3";
-	
+
+	/**
+	 * Use flatbuffers serialization as a default
+	 */
 	public static final String DEFAULT_SERIALIZER_ID = "org.knime.serialization.flatbuffers.column";
-	
+
+	/**
+	 * The initial state of the default python version
+	 */
 	public static final String DEFAULT_DEFAULT_PYTHON_OPTION_CFG = "python3";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferenceInitializer.class);

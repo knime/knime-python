@@ -47,9 +47,11 @@
  */
 package org.knime.code2.generic;
 
+import org.knime.python2.port.PickledObject;
+
 /**
  * Stores the names of the "magic variables" in the python workspace.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
@@ -63,10 +65,39 @@ public class VariableNames {
 	private final String[] m_pythonOutputObjects;
 	private final String[] m_generalInputObjects;
 	private final String[] m_generalOutputObjects;
+
+	/**
+	 * Constructor.
+	 * @param flowVariables    the variable name of the dict in the python workspace holding the flow variables
+	 * @param inputTables      the variable names of the dataframes in the python workspace holding the input tables
+	 * @param outputTables     the variable names of the dataframes in the python workspace holding the output tables
+	 * @param outputImages     the names of the variables in the python workspace holding the output images
+	 * @param inputObjects     the names of the variables in the python workspace holding the input objects
+	 *                         (corresponding to the {@link PickledObject} java type)
+	 * @param outputObjects    the names of the variables in the python workspace holding the output objects
+     *                         (corresponding to the {@link PickledObject} java type)
+	 */
 	public VariableNames(final String flowVariables, final String[] inputTables, final String[] outputTables,
 			final String[] outputImages, final String[] inputObjects, final String[] outputObjects) {
 		this(flowVariables, inputTables, outputTables, outputImages, inputObjects, outputObjects, null, null);
 	}
+
+	/**
+	 *
+	 * Constructor.
+     * @param flowVariables    the variable name of the dict in the python workspace holding the flow variables
+     * @param inputTables      the variable names of the dataframes in the python workspace holding the input tables
+     * @param outputTables     the variable names of the dataframes in the python workspace holding the output tables
+     * @param outputImages     the names of the variables in the python workspace holding the output images
+	 * @param pythonInputObjects   the names of the variables in the python workspace holding the input objects
+     *                             (corresponding to the {@link PickledObject} java type)
+	 * @param pythonOutputObjects  the names of the variables in the python workspace holding the output objects
+     *                             (corresponding to the {@link PickledObject} java type)
+	 * @param generalInputObjects  the names of the variables in the python workspace holding the input objects
+	 *                             (corresponding to arbitrary java representations)
+	 * @param generalOutputObjects the names of the variables in the python workspace holding the output objects
+	 *                             (corresponding to arbitrary java representations)
+	 */
 	public VariableNames(final String flowVariables, final String[] inputTables, final String[] outputTables,
 			final String[] outputImages, final String[] pythonInputObjects, final String[] pythonOutputObjects,
 			final String[] generalInputObjects, final String[] generalOutputObjects) {
@@ -83,34 +114,75 @@ public class VariableNames {
 		m_generalOutputObjects = generalOutputObjects != null ? generalOutputObjects : new String[0];
 	}
 
+
+	/**
+	 * Gets the flow variables.
+	 *
+	 * @return the flow variables
+	 */
 	public String getFlowVariables() {
 		return m_flowVariables;
 	}
 
+	/**
+	 * Gets the input tables.
+	 *
+	 * @return the input tables
+	 */
 	public String[] getInputTables() {
 		return m_inputTables;
 	}
 
+	/**
+	 * Gets the output tables.
+	 *
+	 * @return the output tables
+	 */
 	public String[] getOutputTables() {
 		return m_outputTables;
 	}
 
+	/**
+	 * Gets the output images.
+	 *
+	 * @return the output images
+	 */
 	public String[] getOutputImages() {
 		return m_outputImages;
 	}
 
+	/**
+	 * Gets the input objects.
+	 *
+	 * @return the input objects
+	 */
 	public String[] getInputObjects() {
 		return m_pythonInputObjects;
 	}
 
+	/**
+	 * Gets the output objects.
+	 *
+	 * @return the output objects
+	 */
 	public String[] getOutputObjects() {
 		return m_pythonOutputObjects;
 	}
 
+	/**
+	 * Gets the general input objects.
+	 *
+	 * @return the general input objects
+	 */
 	public String[] getGeneralInputObjects() {
 		return m_generalInputObjects;
 	}
 
+	/**
+	 * Gets the general output objects.
+	 *
+	 * @return the general output objects
+	 */
 	public String[] getGeneralOutputObjects() {
 		return m_generalOutputObjects;
 	}

@@ -67,7 +67,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * Activator for this plugin.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class Activator implements BundleActivator {
@@ -75,16 +75,19 @@ public class Activator implements BundleActivator {
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
 	private static PythonKernelTestResult python2TestResult;
-	
+
 	private static PythonKernelTestResult python3TestResult;
-	
+
+	/**
+	 * The id of the plugin activated by this class.
+	 */
 	public static final String PLUGIN_ID = "org.knime.python2";
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void start(BundleContext bundleContext) throws Exception {
+	public void start(final BundleContext bundleContext) throws Exception {
 		// When this plugin is loaded test the python installation
 		new Thread(new Runnable() {
 			@Override
@@ -102,12 +105,12 @@ public class Activator implements BundleActivator {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void stop(BundleContext bundleContext) throws Exception {
+	public void stop(final BundleContext bundleContext) throws Exception {
 	}
 
 	/**
 	 * Return the command to start python 2.
-	 * 
+	 *
 	 * @return The command to start python 2
 	 */
 	public static String getPython2Command() {
@@ -116,7 +119,7 @@ public class Activator implements BundleActivator {
 
 	/**
 	 * Return the command to start python 3.
-	 * 
+	 *
 	 * @return The command to start python 3
 	 */
 	public static String getPython3Command() {
@@ -126,7 +129,7 @@ public class Activator implements BundleActivator {
 	/**
 	 * Tests if python can be started with the currently configured command and
 	 * if all required modules are installed.
-	 * 
+	 *
 	 * @return {@link PythonKernelTestResult} that containes detailed test
 	 *         information
 	 */
@@ -153,7 +156,7 @@ public class Activator implements BundleActivator {
 	/**
 	 * Tests if python can be started with the currently configured command and
 	 * if all required modules are installed.
-	 * 
+	 *
 	 * @return {@link PythonKernelTestResult} that containes detailed test
 	 *         information
 	 */
@@ -169,7 +172,7 @@ public class Activator implements BundleActivator {
 	/**
 	 * Delete the previous python test result and retest the python behind the
 	 * new path.
-	 * 
+	 *
 	 * @return The new test result
 	 */
 	public static synchronized PythonKernelTestResult retestPython2Installation() {
@@ -180,7 +183,7 @@ public class Activator implements BundleActivator {
 	/**
 	 * Tests if python can be started with the currently configured command and
 	 * if all required modules are installed.
-	 * 
+	 *
 	 * @return {@link PythonKernelTestResult} that containes detailed test
 	 *         information
 	 */
@@ -196,7 +199,7 @@ public class Activator implements BundleActivator {
 	/**
 	 * Delete the previous python test result and retest the python behind the
 	 * new path.
-	 * 
+	 *
 	 * @return The new test result
 	 */
 	public static synchronized PythonKernelTestResult retestPython3Installation() {
@@ -206,7 +209,7 @@ public class Activator implements BundleActivator {
 
 	/**
 	 * Returns the file contained in the plugin with the given ID.
-	 * 
+	 *
 	 * @param symbolicName
 	 *            ID of the plugin containing the file
 	 * @param relativePath

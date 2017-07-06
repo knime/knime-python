@@ -57,35 +57,59 @@ import org.w3c.dom.svg.SVGDocument;
 
 /**
  * Used as container class for images received from the python workspace.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 public class ImageContainer {
-	
+
 	private BufferedImage m_bufferedImage;
-	
+
 	private SVGDocument m_svgDocument;
-	
+
+	/**
+	 * Constructor.
+	 * @param bufferedImage    a buffered image
+	 */
 	public ImageContainer(final BufferedImage bufferedImage) {
 		m_bufferedImage = bufferedImage;
 		m_svgDocument = null;
 	}
-	
+
+	/**
+     * Constructor.
+     * @param svgDocument    an svg image that is transcoded to a {@link BufferedImage}
+	 * @throws TranscoderException
+     */
 	public ImageContainer(final SVGDocument svgDocument) throws TranscoderException {
 		m_svgDocument = svgDocument;
         BufferedImageTranscoder t = new BufferedImageTranscoder();
         t.transcode(new TranscoderInput(svgDocument), null);
         m_bufferedImage = t.getBufferedImage();
 	}
-	
+
+	/**
+	 * Checks for svg document.
+	 *
+	 * @return true, if successful
+	 */
 	public boolean hasSvgDocument() {
 		return m_svgDocument != null;
 	}
 
+	/**
+	 * Gets the buffered image.
+	 *
+	 * @return the buffered image
+	 */
 	public BufferedImage getBufferedImage() {
 		return m_bufferedImage;
 	}
-	
+
+	/**
+	 * Gets the svg document.
+	 *
+	 * @return the svg document
+	 */
 	public SVGDocument getSvgDocument() {
 		return m_svgDocument;
 	}
@@ -93,11 +117,14 @@ public class ImageContainer {
 	private static class BufferedImageTranscoder extends ImageTranscoder {
 		protected BufferedImage bufferedImage;
 
-		public BufferedImage createImage(int width, int height) {
+		@SuppressWarnings("hiding")
+        @Override
+        public BufferedImage createImage(final int width, final int height) {
 			return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		}
 
-		public void writeImage(BufferedImage img, TranscoderOutput output) throws TranscoderException {
+		@Override
+        public void writeImage(final BufferedImage img, final TranscoderOutput output) throws TranscoderException {
 			bufferedImage = img;
 		}
 
@@ -105,5 +132,5 @@ public class ImageContainer {
 			return bufferedImage;
 		}
 	}
-	
+
 }

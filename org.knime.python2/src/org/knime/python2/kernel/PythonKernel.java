@@ -146,6 +146,7 @@ public class PythonKernel {
 	 *
 	 * Important: Call the {@link #close()} method when this kernel is no longer
 	 * needed to shut down the python process in the background
+	 * @param kernelOptions all configurable options
 	 *
 	 * @throws IOException
 	 */
@@ -196,7 +197,7 @@ public class PythonKernel {
 				existingPath = existingPath + File.pathSeparator + externalPythonPath;
 			}
 		}
-		existingPath = existingPath == null ? "" : existingPath + File.pathSeparator;
+		existingPath = existingPath + File.pathSeparator;
 		pb.environment().put("PYTHONPATH", existingPath);
 
 		// Uncomment for debugging
@@ -270,6 +271,7 @@ public class PythonKernel {
 	 *            The source code to execute
 	 * @param exec
 	 *            The execution context to check if execution has been canceled
+	 * @return Standard console output
 	 * @throws Exception
 	 *             If something goes wrong during execution or if execution has
 	 *             been canceled
@@ -561,6 +563,8 @@ public class PythonKernel {
 	 *
 	 * @param name
 	 *            The name of the table to get
+	 * @param exec
+	 *            The calling node's execution context
 	 * @return The table
 	 * @param executionMonitor
 	 *            The monitor that will be updated about progress
@@ -591,7 +595,10 @@ public class PythonKernel {
     			m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
     			deserializationMonitor.setProgress((end + 1) / (double) tableSize);
     		}
-    		return tableCreator.getTable();
+    		if(tableCreator != null) {
+    		    return tableCreator.getTable();
+    		}
+    		throw new Exception("Invalid serialized table received.");
 		} catch(EOFException ex) {
 		    throw new Exception("An exception occured while running the python kernel.");
 		}
@@ -637,6 +644,7 @@ public class PythonKernel {
 	 *
 	 * @param name
 	 *            The name of the image
+	 * @return the image
 	 * @throws IOException
 	 *             If an error occured
 	 */
@@ -674,10 +682,10 @@ public class PythonKernel {
 	}
 
 	/**
-	 * Get a {@link PickeledObject} from the python workspace.
+	 * Get a {@link PickledObject} from the python workspace.
 	 * @param name	the name of the variable in the python workspace
 	 * @param exec	the {@link ExecutionContext} of the calling KNIME node
-	 * @return 	a {@link PickeledObject} containing the pickled object representation, the objects type
+	 * @return 	a {@link PickledObject} containing the pickled object representation, the objects type
 	 * 			and a string representation of the object
 	 * @throws IOException
 	 */
@@ -710,7 +718,8 @@ public class PythonKernel {
 	 * @param name	the name of the variable in the python workspace
 	 * @param object	the {@link PickledObject}
 	 * @param exec		the {@link ExecutionContext} of the calling node
-	 * @throws IOException
+	 * @throws Exception
+	 *             if something went wrong
 	 */
 	public void putObject(final String name, final PickledObject object, final ExecutionContext exec) throws Exception {
 		final AtomicBoolean done = new AtomicBoolean(false);
@@ -976,6 +985,12 @@ public class PythonKernel {
 		m_commands.putSql(name, bytes);
 	}
 
+	/**
+	 * Gets a SQL query from the python workspace.
+	 * @param name the name of the DBUtil variable in the python workspace
+	 * @return a SQL query string
+	 * @throws IOException
+	 */
 	public String getSql(final String name) throws IOException {
 		return m_commands.getSql(name);
 	}

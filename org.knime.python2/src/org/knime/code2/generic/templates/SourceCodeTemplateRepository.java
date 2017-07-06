@@ -62,9 +62,9 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 
 /**
- * Class for managing all source code templates that are stored in the template repository or 
+ * Class for managing all source code templates that are stored in the template repository or
  * are available via extension points.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
@@ -79,6 +79,10 @@ public class SourceCodeTemplateRepository {
 	private File m_templatesFolder;
 	private Map<String, Set<SourceCodeTemplate>> m_categorizedTemplates;
 
+	/**
+	 * Constructor.
+	 * @param repositoryId a unique name for the template repository inside the sourcedoce-templates folder
+	 */
 	public SourceCodeTemplateRepository(final String repositoryId) {
 		m_id = repositoryId;
 		m_templatesFolder = new File(new File(new File(
@@ -148,7 +152,7 @@ public class SourceCodeTemplateRepository {
 	}
 
 	/**
-	 * Write a {@link SourceCodeTemplate} to the disc as an XML File in the managed repository. 
+	 * Write a {@link SourceCodeTemplate} to the disc as an XML File in the managed repository.
 	 * @param template	the template to write
 	 * @throws IOException
 	 */

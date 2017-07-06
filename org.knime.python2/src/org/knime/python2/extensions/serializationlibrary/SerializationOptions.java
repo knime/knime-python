@@ -51,86 +51,152 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
  * Options for controlling the serialization process. Missing values for Int and Long columns
  * may be replaced by a sentinel value in order to avoid automatic conversion to Double in python.
  * The sentinel may be replaced with missing values for data coming from python.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public class SerializationOptions {
-	
+
+	/**
+	 * Do not convert missing values to sentinel value by default (to python)
+	 */
 	public final static boolean DEFAULT_CONVERT_MISSING_TO_PYTHON = false;
+	/**
+     * Do not convert sentinel value to missing values by default (from python)
+     */
 	public final static boolean DEFAULT_CONVERT_MISSING_FROM_PYTHON = false;
+	/**
+     * Use minimum value of column's datatype by default
+     */
 	public final static SentinelOption DEFAULT_SENTINEL_OPTION = SentinelOption.MIN_VAL;
+	/**
+	 * Use 0 as default custom sentinel value
+	 */
 	public final static int DEFAULT_SENTINEL_VALUE = 0;
-	
+
 	private boolean m_convertMissingToPython = DEFAULT_CONVERT_MISSING_TO_PYTHON;
 	private boolean m_convertMissingFromPython = DEFAULT_CONVERT_MISSING_FROM_PYTHON;
 	private SentinelOption m_sentinelOption = DEFAULT_SENTINEL_OPTION;
 	private int m_sentinelValue = DEFAULT_SENTINEL_VALUE;
-	
+
+	/**
+	 * Default Constructor.
+	 */
 	public SerializationOptions() {
-		
+
 	}
-	
-	public SerializationOptions(boolean usePython3, boolean convertMissingToPython, 
-			boolean convertMissingFromPython, SentinelOption sentinelOption, int sentinelValue) {
+
+	/**
+	 * Constructor.
+	 * @param convertMissingToPython   convert missing values to sentinel on the way to python
+     * @param convertMissingFromPython convert sentinel to missing values on the way from python to KNIME
+     * @param sentinelOption           the sentinel option
+     * @param sentinelValue            the sentinel value (only used if sentinelOption is CUSTOM)
+	 */
+	public SerializationOptions(final boolean convertMissingToPython, final boolean convertMissingFromPython,
+	    final SentinelOption sentinelOption, final int sentinelValue) {
 		m_convertMissingFromPython = convertMissingFromPython;
 		m_convertMissingToPython = convertMissingToPython;
 		m_sentinelOption = sentinelOption;
 		m_sentinelValue = sentinelValue;
 	}
-	
-	public SerializationOptions(SerializationOptions other)
+
+	/**
+	 * Copy constructor.
+	 * @param other    the options to copy
+	 */
+	public SerializationOptions(final SerializationOptions other)
 	{
 		m_convertMissingFromPython = other.getConvertMissingFromPython();
 		m_convertMissingToPython = other.getConvertMissingToPython();
 		m_sentinelOption = other.getSentinelOption();
 		m_sentinelValue = other.getSentinelValue();
 	}
-	
+
+	/**
+	 * Gets the convert missing values to python option.
+	 *
+	 * @return the convert missing values to python option
+	 */
 	public boolean getConvertMissingToPython() {
 		return m_convertMissingToPython;
 	}
 
-	public void setConvertMissingToPython(boolean m_convertMissingToPython) {
-		this.m_convertMissingToPython = m_convertMissingToPython;
+	/**
+	 * Sets the convert missing values to python option.
+	 *
+	 * @param convertMissingToPython the convert missing values to python option
+	 */
+	public void setConvertMissingToPython(final boolean convertMissingToPython) {
+		this.m_convertMissingToPython = convertMissingToPython;
 	}
 
+	/**
+	 * Gets the convert missing values to python option.
+	 *
+	 * @return the convert missing values to python option
+	 */
 	public boolean getConvertMissingFromPython() {
 		return m_convertMissingFromPython;
 	}
 
-	public void setConvertMissingFromPython(boolean m_convertMissingFromPython) {
-		this.m_convertMissingFromPython = m_convertMissingFromPython;
+	/**
+	 * Sets the convert missing values to python option.
+	 *
+	 * @param convertMissingFromPython the convert missing values to python option
+	 */
+	public void setConvertMissingFromPython(final boolean convertMissingFromPython) {
+		this.m_convertMissingFromPython = convertMissingFromPython;
 	}
 
+	/**
+	 * Gets the sentinel option.
+	 *
+	 * @return the sentinel option
+	 */
 	public SentinelOption getSentinelOption() {
 		return m_sentinelOption;
 	}
 
-	public void setSentinelOption(SentinelOption m_sentinelOption) {
-		this.m_sentinelOption = m_sentinelOption;
+	/**
+	 * Sets the sentinel option.
+	 *
+	 * @param sentinelOption the new sentinel option
+	 */
+	public void setSentinelOption(final SentinelOption sentinelOption) {
+		this.m_sentinelOption = sentinelOption;
 	}
 
+	/**
+	 * Gets the sentinel value.
+	 *
+	 * @return the sentinel value
+	 */
 	public int getSentinelValue() {
 		return m_sentinelValue;
 	}
 
-	public void setSentinelValue(int m_sentinelValue) {
-		this.m_sentinelValue = m_sentinelValue;
+	/**
+	 * Sets the sentinel value.
+	 *
+	 * @param sentinelValue the new sentinel value
+	 */
+	public void setSentinelValue(final int sentinelValue) {
+		this.m_sentinelValue = sentinelValue;
 	}
-	
+
 	/**
 	 * Return the sentinel value for the given type.
 	 * @param type	a {@Type} (either INTEGER or LONG)
 	 * @return	the sentinel value based on the stored options
 	 * @throws IllegalArgumentException if type cannot be processed
 	 */
-	
-	public long getSentinelForType(Type type) throws IllegalArgumentException {
-		if(m_sentinelOption == SentinelOption.CUSTOM)
-			return m_sentinelValue;
-		else if(m_sentinelOption == SentinelOption.MAX_VAL) {
+
+	public long getSentinelForType(final Type type) throws IllegalArgumentException {
+		if(m_sentinelOption == SentinelOption.CUSTOM) {
+            return m_sentinelValue;
+        } else if(m_sentinelOption == SentinelOption.MAX_VAL) {
 			if(type == Type.INTEGER) {
 				return Integer.MAX_VALUE;
 			} else if(type == Type.LONG) {
@@ -145,17 +211,17 @@ public class SerializationOptions {
 		}
 		throw new IllegalArgumentException("Sentinel does not exist for type " + type.toString());
 	}
-	
+
 	/**
 	 * Indicate if the given value equals the sentinel value for the given type.
 	 * @param type 	a {@Type} (INTEGER or LONG)
 	 * @param value	the value to check
 	 * @return	value == sentinel based on the stored options and the type
 	 */
-	public boolean isSentinel(Type type, long value) {
-		if(m_sentinelOption == SentinelOption.CUSTOM)
-			return value == m_sentinelValue;
-		else if(m_sentinelOption == SentinelOption.MAX_VAL) {
+	public boolean isSentinel(final Type type, final long value) {
+		if(m_sentinelOption == SentinelOption.CUSTOM) {
+            return value == m_sentinelValue;
+        } else if(m_sentinelOption == SentinelOption.MAX_VAL) {
 			if(type == Type.INTEGER) {
 				return value == Integer.MAX_VALUE;
 			} else if(type == Type.LONG) {

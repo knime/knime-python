@@ -62,17 +62,17 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
 
 /**
  * Class administrating all {@link SerializationLibraryExtension}s.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class SerializationLibraryExtensions {
-	
+
 	private static Map<String, SerializationLibraryExtension> extensions = new HashMap<String, SerializationLibraryExtension>();
 	private Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<String, SerializationLibrary>();
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(SerializationLibraryExtensions.class);
-		
+
 	/**
 	 * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
 	 */
@@ -97,18 +97,32 @@ public class SerializationLibraryExtensions {
 			}
 		}
 	}
-	
+
+	/**
+	 * Get a serialization library instance by id. The instance is only created if the id has not been requested before.
+	 * @param id   the library's id
+	 * @return a serialization library
+	 */
 	public SerializationLibrary getSerializationLibrary(final String id) {
 		if (!m_serializationLibrary.containsKey(id)) {
 			m_serializationLibrary.put(id, extensions.get(id).getJavaSerializationLibraryFactory().createInstance());
 		}
 		return m_serializationLibrary.get(id);
 	}
-	
+
+	/**
+	 * Get a collection of all available serialization library extensions.
+	 * @return a collection of all available serialization library extensions
+	 */
 	public static Collection<SerializationLibraryExtension> getExtensions() {
 		return extensions.values();
 	}
-	
+
+	/**
+	 * Gets the serialization library path.
+	 * @param id the library's id
+	 * @return the serialization library path
+	 */
 	public static String getSerializationLibraryPath(final String id) {
 		return extensions.get(id).getPythonSerializationLibraryPath();
 	}

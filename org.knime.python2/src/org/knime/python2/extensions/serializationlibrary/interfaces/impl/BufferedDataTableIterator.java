@@ -92,10 +92,26 @@ public class BufferedDataTableIterator implements TableIterator {
 	private final ExecutionMonitor m_executionMonitor;
 	private final BufferedDataTableChunker.IterationProperties m_iterIterationProperties;
 
+	/**
+	 * Constructor.
+	 * @param spec         the spec of the table to chunk in the standard KNIME format
+     * @param rowIterator  an iterator for the table to chunk
+     * @param numberRows   the number of rows of the table to chunk
+	 * @param monitor      an execution monitor for reporting progress
+	 * @param ip           iteration properties shared with the associated chunker to ensure a consistent state
+	 */
 	public BufferedDataTableIterator(final DataTableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
 		this(dataTableSpecToTableSpec(spec), rowIterator, numberRows, monitor, ip);
 	}
 
+	/**
+     * Constructor.
+     * @param spec         the spec of the table to chunk in the python table representation format
+     * @param rowIterator  an iterator for the table to chunk
+     * @param numberRows   the number of rows of the table to chunk
+     * @param monitor      an execution monitor for reporting progress
+     * @param ip           iteration properties shared with the associated chunker to ensure a consistent state
+     */
 	public BufferedDataTableIterator(final TableSpec spec, final CloseableRowIterator rowIterator, final int numberRows, final ExecutionMonitor monitor, final BufferedDataTableChunker.IterationProperties ip) {
 		m_numberRows = numberRows;
 		m_spec = spec;

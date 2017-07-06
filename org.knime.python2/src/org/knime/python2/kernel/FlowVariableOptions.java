@@ -52,45 +52,66 @@ import org.knime.python2.PythonPreferencePage;
 
 /**
  * Encapsulates all options that may be set for the python nodes via FlowVariables.
- * Offers a factory method for parsing the list of available flow variables for a node into a 
+ * Offers a factory method for parsing the list of available flow variables for a node into a
  * {@link FlowVariableOptions} object.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public class FlowVariableOptions {
-	
+
 	private boolean m_overrulePreferencePage = false;
-	
+
 	private String m_serializerId = null;
-	
+
+	/**
+	 * Default constructor.
+	 */
 	public FlowVariableOptions() {
-		
+
 	}
-	
+
+	/**
+	 * Indicates if the preference page options should be overruled.
+	 * @return yes/no
+	 */
 	public boolean getOverrulePreferencePage() {
 		return m_overrulePreferencePage;
 	}
 
-	public void setOverrulePreferencePage(boolean overrulePreferencePage) {
+	/**
+	 * Indicate if the preference page options should be overruled.
+	 * @param overrulePreferencePage overrule yes/no
+	 */
+	public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
 		this.m_overrulePreferencePage = overrulePreferencePage;
 	}
 
+	/**
+	 * Gets the serialization library id.
+	 *
+	 * @return the serialization library id
+	 */
 	public String getSerializerId() {
 		return m_serializerId;
 	}
 
-	public void setSerializerId(String serializerId) {
+	/**
+	 * Sets the serialization library id.
+	 *
+	 * @param serializerId the new serialization library id
+	 */
+	public void setSerializerId(final String serializerId) {
 		this.m_serializerId = serializerId;
 	}
-	
+
 	/**
 	 * Parse the list of available flow variables and process those setting available flow variable options.
 	 * @param map - the available flow variables as key/value pairs
 	 * @return a initialized {@link FlowVariableOptions} object
 	 */
-	public static FlowVariableOptions parse(Map<String, FlowVariable> map) {
+	public static FlowVariableOptions parse(final Map<String, FlowVariable> map) {
 		FlowVariableOptions options = new FlowVariableOptions();
 		FlowVariable fv = map.get("python_serialization_library");
 	    String serLib = (fv == null) ? null:fv.getStringValue();

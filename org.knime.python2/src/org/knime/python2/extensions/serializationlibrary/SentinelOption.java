@@ -48,11 +48,22 @@ package org.knime.python2.extensions.serializationlibrary;
 /**
  * Enum reflecting the different options allowed for sentinel values.
  * Sentinel values replace missing values (in java) in an Int or Long column in python.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public enum SentinelOption {
-	MIN_VAL, MAX_VAL, CUSTOM;
+    /**
+     * Use the minimum value for the column's datatype
+     */
+	MIN_VAL,
+	 /**
+     * Use the minimum value for the column's datatype
+     */
+	MAX_VAL,
+	 /**
+     * Use a user provided custom value
+     */
+	CUSTOM;
 }

@@ -95,12 +95,24 @@ import org.osgi.service.prefs.BackingStoreException;
 public class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage,
     DefaultPythonVersionObserver, ExecutableObserver {
 
+    /**
+     * Python 2 executable path configuration string
+     */
 	public static final String PYTHON_2_PATH_CFG = "python2Path";
 
+	/**
+     * Python 3 executable path configuration string
+     */
 	public static final String PYTHON_3_PATH_CFG = "python3Path";
 
+	/**
+     * Serializer id configuration string
+     */
 	public static final String SERIALIZER_ID_CFG = "serializerId";
 
+	/**
+     * Default python version configuration string
+     */
 	public static final String DEFAULT_PYTHON_OPTION_CFG = "defaultPythonOption";
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferencePage.class);

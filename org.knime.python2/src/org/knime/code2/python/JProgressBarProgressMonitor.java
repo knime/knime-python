@@ -56,7 +56,7 @@ import org.knime.core.node.workflow.NodeProgressListener;
 /**
  * Implementation of a {@link NodeProgressMonitor} holding a
  * {@link JProgressBar}.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class JProgressBarProgressMonitor implements NodeProgressMonitor {
@@ -67,7 +67,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 
 	/**
 	 * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
-	 * 
+	 *
 	 * @param progressBar
 	 *            Progress bar that will display the progress
 	 */
@@ -90,7 +90,12 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
             throw new CanceledExecutionException();
         }
 	}
-	
+
+	/**
+	 * Sets the canceled state.
+	 *
+	 * @param canceled the new canceled state
+	 */
 	public void setCanceled(final boolean canceled) {
 		m_isCanceled = canceled;
 	}
@@ -99,7 +104,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setProgress(double progress) {
+	public void setProgress(final double progress) {
 		m_progress = progress;
 		m_progressBar.setValue((int) Math.round(progress * 100));
 		m_progressBar.setString((int) Math.round(progress * 100) + "%");
@@ -117,7 +122,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setProgress(double progress, String message) {
+	public void setProgress(final double progress, final String message) {
 		setProgress(progress);
 	}
 
@@ -125,7 +130,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setMessage(String message) {
+	public void setMessage(final String message) {
 		// do nothing
 	}
 
@@ -133,7 +138,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setProgress(String message) {
+	public void setProgress(final String message) {
 		// do nothing
 	}
 
@@ -165,7 +170,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void addProgressListener(NodeProgressListener l) {
+	public void addProgressListener(final NodeProgressListener l) {
 		// do nothing
 	}
 
@@ -173,7 +178,7 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void removeProgressListener(NodeProgressListener l) {
+	public void removeProgressListener(final NodeProgressListener l) {
 		// do nothing
 	}
 

@@ -65,10 +65,13 @@ import org.knime.core.node.port.AbstractSimplePortObjectSpec;
 
 /**
  * Specification for the {@link PickledObjectPortObject}.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectSpec {
+    /**
+     * The serializer for the PickeledObject portspec type
+     */
 	public static final class Serializer extends AbstractSimplePortObjectSpecSerializer<PickledObjectPortObjectSpec> {}
 
 	private String m_pickledObjectType;
@@ -83,9 +86,9 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
 	}
 
 	/**
-	 * @param pickledObject
-	 *            The type of the {@link PickledObject} that will be contained by this port
-	 *            object
+	 * Constructor.
+	 * @param pickledObjectType    the type of the contained pickled object
+	 * @param pickledObjectString  the string representation of the contained pickled object
 	 */
 	public PickledObjectPortObjectSpec(final String pickledObjectType, final String pickledObjectString) {
 		m_pickledObjectType = pickledObjectType;

@@ -69,10 +69,13 @@ import org.knime.core.node.port.PortTypeRegistry;
 
 /**
  * Port object containing a {@link PickledObject}.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public final class PickledObjectPortObject extends AbstractSimplePortObject {
+	/**
+	 * The serializer for the PickeledObject port type
+	 */
 	public static final class Serializer extends AbstractSimplePortObjectSerializer<PickledObjectPortObject> {}
 
 	private PickledObjectPortObjectSpec m_spec;
@@ -82,7 +85,8 @@ public final class PickledObjectPortObject extends AbstractSimplePortObject {
 	/**
 	 * The type of this port.
 	 */
-	public static final PortType TYPE = PortTypeRegistry.getInstance().getPortType(PickledObjectPortObject.class);
+	@SuppressWarnings("hiding")
+    public static final PortType TYPE = PortTypeRegistry.getInstance().getPortType(PickledObjectPortObject.class);
 
 	/**
 	 * Constructor used by the framework.
@@ -92,8 +96,8 @@ public final class PickledObjectPortObject extends AbstractSimplePortObject {
 	}
 
 	/**
-	 * @param spec
-	 *            The specification of this port object.
+	 * Constructor.
+	 * @param pickledObject a pickeled object
 	 */
 	public PickledObjectPortObject(final PickledObject pickledObject) {
 		m_pickledObject = pickledObject;

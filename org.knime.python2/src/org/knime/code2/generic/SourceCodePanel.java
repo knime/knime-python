@@ -315,7 +315,7 @@ public abstract class SourceCodePanel extends JPanel {
 		public boolean isCellEditable(final int row, final int column) {
 			// No cell is editable
 			return false;
-		};
+		}
 	};
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodePanel.class);
@@ -342,12 +342,8 @@ public abstract class SourceCodePanel extends JPanel {
 	 *
 	 * @param syntaxStyle
 	 *            One of the language styles defined in {@link SyntaxConstants}
-	 * @param flowVariablesName
-	 *            Name of the flow variables variable
-	 * @param inputTableNames
-	 *            Name of the input table variables
-	 * @param outputImageNames
-	 *            Name of the output image variables
+	 * @param variableNames
+	 *             an object managing all the known variable names in the python workspace (the "magic variables")
 	 */
 	public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
 		m_editor = createEditor(syntaxStyle);
@@ -603,7 +599,7 @@ public abstract class SourceCodePanel extends JPanel {
 					contentPane.add(imageSelection, BorderLayout.NORTH);
 					imageSelection.addActionListener(new ActionListener() {
 						@Override
-                        public void actionPerformed(final ActionEvent e) {
+                        public void actionPerformed(final ActionEvent ev) {
 							setImage(imageLabel, (String) imageSelection.getSelectedItem());
 							window.pack();
 						}
@@ -611,7 +607,7 @@ public abstract class SourceCodePanel extends JPanel {
 				}
 				closeButton.addActionListener(new ActionListener() {
 					@Override
-                    public void actionPerformed(final ActionEvent e) {
+                    public void actionPerformed(final ActionEvent ev) {
 						window.setVisible(false);
 					}
 				});
@@ -960,7 +956,7 @@ public abstract class SourceCodePanel extends JPanel {
 		DefaultCompletionProvider provider = new DefaultCompletionProvider() {
 			@Override
 			public List<Completion> getCompletions(final JTextComponent comp) {
-				List<Completion> completions = super.getCompletions(comp);
+				List<Completion> providedCompletions = super.getCompletions(comp);
 				// Get source code from editor
 				String sourceCode = comp.getText();
 				// Caret position only gives as the number of characters before
@@ -973,8 +969,8 @@ public abstract class SourceCodePanel extends JPanel {
 				// Column = how long is the last line of the code?
 				int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf("\n") + 1).length();
 				// Add completions from getCompletionsFor()
-				completions.addAll(getCompletionsFor(this, sourceCode, line, column));
-				return completions;
+				providedCompletions.addAll(getCompletionsFor(this, sourceCode, line, column));
+				return providedCompletions;
 			}
 		};
 		// Automatically suggest after '.'
@@ -1048,10 +1044,19 @@ public abstract class SourceCodePanel extends JPanel {
 		return m_variableNames;
 	}
 
+	/**
+	 * @return the editor widget component
+	 */
 	public RSyntaxTextArea getEditor() {
 		return m_editor;
 	}
 
+	/**
+	 * Create a preconfigured editor widget component.
+	 * @param syntaxStyle
+     *            One of the language styles defined in {@link SyntaxConstants}
+	 * @return a preconfigured editor widget component
+	 */
 	public static RSyntaxTextArea createEditor(final String syntaxStyle) {
 		RSyntaxTextArea editor = new RSyntaxTextArea();
 		editor.setSyntaxEditingStyle(syntaxStyle);

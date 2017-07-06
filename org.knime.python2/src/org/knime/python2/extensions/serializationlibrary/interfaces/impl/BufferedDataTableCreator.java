@@ -86,6 +86,11 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
+/**
+ * Used for creating a {@link BufferedDataTable} out of a python integration specific table structure.
+ *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ */
 public class BufferedDataTableCreator implements TableCreator<BufferedDataTable> {
 
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableCreator.class);
@@ -102,6 +107,13 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
 	private DataTableSpec m_dataTableSpec;
 	private ExecutionContext m_exec;
 
+	/**
+	 * Constructor.
+	 * @param spec             a table spec in the python integration specific format
+	 * @param context          a node's execution context
+	 * @param executionMonitor an execution monitor to report progress to
+	 * @param tableSize        the number of rows of the table to create
+	 */
 	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
 			final ExecutionMonitor executionMonitor, final int tableSize) {
 		m_tableSize = tableSize;

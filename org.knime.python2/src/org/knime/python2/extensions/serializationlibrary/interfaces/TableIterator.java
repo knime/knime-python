@@ -49,26 +49,28 @@ import java.util.Iterator;
 
 /**
  * {@link Iterator} for the {@link Row}s contained in a table.
- * 
+ *
  * @author Patrick Winter
  */
 public interface TableIterator extends Iterator<Row> {
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	Row next();
 
 	/**
 	 * {@inheritDoc}
 	 */
-	boolean hasNext();
-	
+	@Override
+    Row next();
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+    boolean hasNext();
+
 	/**
 	 * @return The number of rows that have not been requested via {@link #next()}.
 	 */
 	int getNumberRemainingRows();
-	
+
 	/**
 	 * @return The {@link TableSpec}.
 	 */

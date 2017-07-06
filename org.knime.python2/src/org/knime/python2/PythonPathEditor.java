@@ -80,6 +80,12 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 	private DefaultPythonVersionObserver m_observer;
 	private ExecutableObserver m_execObserver;
 
+	/**
+	 * Constructor.
+	 * @param id       the id of the managed python version
+	 * @param label    the description text for the executable
+	 * @param parent   the parent widget
+	 */
 	public PythonPathEditor(final PythonVersionId id, final String label, final Composite parent) {
 		super(parent, SWT.NONE);
 		GridData gridData = new GridData();
@@ -96,8 +102,6 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		m_header.setFont(descriptor.createFont(m_header.getDisplay()));
 		m_header.setText(id.getId());
 		m_header.setLayoutData(gridData);
-		/*gridData = new GridData();
-		gridData.horizontalSpan = 3;*/
 		m_pathEditor = new FileFieldEditor(Activator.PLUGIN_ID, label, this);
 		m_pathEditor.setStringValue(getPythonPath());
 		m_pathEditor.getTextControl(this).addListener(SWT.Traverse, new Listener() {
@@ -154,19 +158,39 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 		});
 	}
 
+	/**
+	 * Sets the python executable path.
+	 *
+	 * @param pythonPath the new python executable path
+	 */
 	public void setPythonPath(final String pythonPath) {
 		m_pathEditor.setStringValue(pythonPath);
 	}
 
+	/**
+	 * Gets the python executable path.
+	 *
+	 * @return the python executable path
+	 */
 	public String getPythonPath() {
 		return m_pathEditor.getStringValue();
 	}
 
+	/**
+	 * Sets the info message.
+	 *
+	 * @param info the new info message
+	 */
 	public void setInfo(final String info) {
 		m_info.setText(info);
 		refreshSizes();
 	}
 
+	/**
+	 * Sets the error message.
+	 *
+	 * @param error the new error message
+	 */
 	public void setError(final String error) {
 		m_error.setText(error);
 		refreshSizes();

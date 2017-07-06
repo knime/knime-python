@@ -60,8 +60,11 @@ import javax.swing.event.ChangeListener;
 
 /**
  * Panel containing additinal options to the {@link SourceCodePanel}.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ *
+ * @param <Panel> the associated {@link SourceCodePanel}'s type
+ * @param <Config> the associated {@link SourceCodeConfig}'s type
  */
 public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extends SourceCodeConfig> extends JPanel {
 
@@ -74,7 +77,7 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
 
 	/**
 	 * Create a source code options panel.
-	 * 
+	 *
 	 * @param sourceCodePanel
 	 *            The corresponding source code panel
 	 */
@@ -104,7 +107,8 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
 		gbc.weighty = Double.MIN_NORMAL;
 		add(new JLabel(), gbc);
 		m_rowLimit.addChangeListener(new ChangeListener() {
-			public void stateChanged(ChangeEvent e) {
+			@Override
+            public void stateChanged(final ChangeEvent e) {
 				sourceCodePanel.setRowLimit((int) m_rowLimit.getValue());
 			}
 		});
@@ -112,7 +116,7 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
 
 	/**
 	 * Save current settings into the given config.
-	 * 
+	 *
 	 * @param config
 	 *            The config
 	 */
@@ -122,7 +126,7 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
 
 	/**
 	 * Load settings from the given config.
-	 * 
+	 *
 	 * @param config
 	 *            The config
 	 */
@@ -130,11 +134,18 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
 		m_rowLimit.setValue(config.getRowLimit());
 		m_sourceCodePanel.setRowLimit(config.getRowLimit());
 	}
-	
+
+	/**
+	 * @return the associated {@link SourceCodePanel}
+	 */
 	protected Panel getSourceCodePanel() {
 		return m_sourceCodePanel;
 	}
-	
+
+	/**
+	 * Default implementation returning null
+	 * @return null
+	 */
 	protected JPanel getAdditionalOptionsPanel() {
 		return null;
 	}

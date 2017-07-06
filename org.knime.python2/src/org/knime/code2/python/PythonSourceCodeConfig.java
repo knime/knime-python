@@ -101,17 +101,34 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 		m_kernelOptions.setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
 	}
 
+	/**
+	 * Sets the internal {@link PythonKernelOptions} to a new object created using the specified parameters.
+	 * @param versionOption        the version options
+	 * @param convertToPython      convert missing values to sentinel on the way to python
+	 * @param convertFromPython    convert sentinel to missing values on the way from python to KNIME
+	 * @param sentinelOption       the sentinel option
+	 * @param sentinelValue        the sentinel value (only used if sentinelOption is CUSTOM)
+	 */
 	public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython, final boolean convertFromPython,
 			final SentinelOption sentinelOption, final int sentinelValue)
 	{
 		m_kernelOptions = new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption, sentinelValue);
 	}
 
+	/**
+	 * Gets the python kernel options.
+	 *
+	 * @return the python kernel options
+	 */
 	public PythonKernelOptions getKernelOptions()
 	{
 		return new PythonKernelOptions(m_kernelOptions);
 	}
 
+	/**
+	 * Indicates if the use of python 3 is configured.
+	 * @return use python3 yes/no
+	 */
 	public boolean getUsePython3() {
 		return m_kernelOptions.getUsePython3();
 	}

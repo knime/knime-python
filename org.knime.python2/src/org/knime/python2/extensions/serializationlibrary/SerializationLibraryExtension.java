@@ -47,11 +47,13 @@
  */
 package org.knime.python2.extensions.serializationlibrary;
 
+import org.knime.python2.PythonPreferencePage;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
 /**
  * Extension for plugins implementing a serialization library for transmitting data between KNIME and python.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
@@ -61,11 +63,27 @@ public class SerializationLibraryExtension {
 	private SerializationLibraryFactory m_javaSerializationLibraryFactory;
 	private boolean m_hidden;
 
+	/**
+	 * Constructor.
+	 * @param id                               a unique id for the serialization library
+	 * @param pythonSerializationLibraryPath   the path to the serialization libraries main python source file
+	 * @param javaSerializationLibraryFactory  the serialization library factory for creating a {@link SerializationLibrary}
+	 *                                         managing serialization on the java side
+	 */
     public SerializationLibraryExtension(final String id, final String pythonSerializationLibraryPath,
         final SerializationLibraryFactory javaSerializationLibraryFactory) {
         this(id, pythonSerializationLibraryPath, javaSerializationLibraryFactory, false);
     }
 
+    /**
+     * Constructor.
+     * @param id                               a unique id for the serialization library
+     * @param pythonSerializationLibraryPath   the path to the serialization libraries main python source file
+     * @param javaSerializationLibraryFactory  the serialization library factory for creating a {@link SerializationLibrary}
+     *                                         managing serialization on the java side
+     * @param hidden                           indicates if the serialization library should be hidden from the user in
+     *                                         the {@link PythonPreferencePage}
+     */
     public SerializationLibraryExtension(final String id, final String pythonSerializationLibraryPath,
         final SerializationLibraryFactory javaSerializationLibraryFactory, final boolean hidden) {
         m_id = id;
@@ -74,18 +92,38 @@ public class SerializationLibraryExtension {
         m_hidden = hidden;
     }
 
+	/**
+	 * Gets the id.
+	 *
+	 * @return the id
+	 */
 	public String getId() {
 		return m_id;
 	}
 
+	/**
+	 * Checks if library is hidden from the user.
+	 *
+	 * @return true, if is hidden
+	 */
 	public boolean isHidden() {
 		return m_hidden;
 	}
 
+	/**
+	 * Gets the python serialization library path.
+	 *
+	 * @return the python serialization library path
+	 */
 	public String getPythonSerializationLibraryPath() {
 		return m_pythonSerializationLibraryPath;
 	}
 
+	/**
+	 * Gets the java serialization library factory.
+	 *
+	 * @return the java serialization library factory
+	 */
 	public SerializationLibraryFactory getJavaSerializationLibraryFactory() {
 		return m_javaSerializationLibraryFactory;
 	}

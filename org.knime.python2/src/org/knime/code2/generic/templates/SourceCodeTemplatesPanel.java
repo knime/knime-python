@@ -87,7 +87,7 @@ import org.knime.code2.generic.SourceCodePanel;
 
 /**
  * View definition for the panel visible in the 'Templates' tab in some python nodes.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -107,6 +107,11 @@ public class SourceCodeTemplatesPanel extends JPanel {
 	private JTextArea m_description;
 	private DefaultListModel<SourceCodeTemplate> m_templateModel;
 
+	/**
+	 * Constructor.
+	 * @param sourceCodePanel  the associated source code panel
+	 * @param repositoryId     the unique name of the {@link SourceCodeTemplateRepository} containing the {@link SourceCodeTemplate}s
+	 */
 	public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel,
 			final String repositoryId) {
 		m_sourceCodePanel = sourceCodePanel;
@@ -174,33 +179,33 @@ public class SourceCodeTemplatesPanel extends JPanel {
 		// Add listeners
 		m_create.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				openCreateDialog();
 			}
 		});
 		m_apply.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				m_sourceCodePanel.getEditor().setText(
 						m_template.getSelectedValue().getSourceCode());
 			}
 		});
 		m_remove.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				m_repository.removeTemplate(m_template.getSelectedValue());
 				refreshCategories();
 			}
 		});
 		m_category.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				refreshTemplates();
 			}
 		});
 		m_template.addListSelectionListener(new ListSelectionListener() {
 			@Override
-			public void valueChanged(ListSelectionEvent e) {
+			public void valueChanged(final ListSelectionEvent e) {
 				refreshTemplateInfo();
 			}
 		});

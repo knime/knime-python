@@ -49,32 +49,32 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 
 /**
  * A serialization library used to encode and decode tables for data transfer between java and python.
- * 
+ *
  * @author Patrick Winter
  */
 public interface SerializationLibrary {
-	
+
 	/**
 	 * Converts the given table into bytes for transfer to python.
-	 * 
-	 * @param rowIterator 			Iterator for the table that should be converted.
+	 *
+	 * @param tableIterator 			Iterator for the table that should be converted.
 	 * @param serializationOptions	All options that control the serialization process.
 	 * @return The bytes that should be send to python.
 	 */
 	byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions);
-	
+
 	/**
-	 * Adds the rows contained in the bytes to the given {@link tableCreator}.
-	 * 
+	 * Adds the rows contained in the bytes to the given {@link TableCreator}.
+	 *
 	 * @param tableCreator 			The {@link TableCreator} that the rows should be added to.
 	 * @param serializationOptions	All options that control the serialization process.
 	 * @param bytes The bytes containing the encoded table.
 	 */
 	void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions);
-	
+
 	/**
 	 * Extracts the {@link TableSpec} of the given table.
-	 * 
+	 *
 	 * @param bytes The encoded table.
 	 * @return The {@link TableSpec} of the encoded table.
 	 */

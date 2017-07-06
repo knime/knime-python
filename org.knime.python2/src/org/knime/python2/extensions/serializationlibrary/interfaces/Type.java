@@ -47,12 +47,13 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
 
 /**
  * Contains the possible column types.
- * 
+ *
  * @author Patrick Winter
  */
+@SuppressWarnings("javadoc")
 public enum Type {
-	
-	BOOLEAN(1),
+
+    BOOLEAN(1),
 	BOOLEAN_LIST(2),
 	BOOLEAN_SET(3),
 	INTEGER(4),
@@ -70,17 +71,31 @@ public enum Type {
 	BYTES(16),
 	BYTES_LIST(17),
 	BYTES_SET(18);
-	
+
 	private final int m_id;
-	
+
+	/**
+	 * Constructor.
+	 * @param id   a numeric id for a column type
+	 */
 	private Type(final int id) {
 		m_id = id;
 	}
-	
+
+	/**
+	 * Gets the id.
+	 *
+	 * @return the id
+	 */
 	public int getId() {
 		return m_id;
 	}
-	
+
+	/**
+	 * Get the type associated with a specific id.
+	 * @param id   an id
+	 * @return the {@link Type} or null if id is unknown
+	 */
 	public static Type getTypeForId(final int id) {
 		for (Type type : Type.values()) {
 			if (type.getId() == id) {

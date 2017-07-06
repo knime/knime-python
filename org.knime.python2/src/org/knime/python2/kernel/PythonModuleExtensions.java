@@ -88,6 +88,11 @@ public class PythonModuleExtensions {
 		}
 	}
 
+	/**
+	 * Gets the PYTHONPATH.
+	 *
+	 * @return the PYTHONPATH
+	 */
 	public static String getPythonPath() {
 		return StringUtils.join(pythonModulePaths, File.pathSeparator);
 	}

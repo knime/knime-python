@@ -49,7 +49,7 @@ package org.knime.code2.generic.templates;
 
 /**
  * Container class for a source code template. The actual contents are stored in a file.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -62,6 +62,15 @@ public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 	private String m_sourceCode;
 	private boolean m_predefined;
 
+	/**
+	 * Constructor.
+	 * @param fileName     the name of the file for storing the template
+	 * @param category     the template's category
+	 * @param title        the template's title
+	 * @param description  a description of what the template does
+	 * @param sourceCode   the actual source code
+	 * @param predefined   flag indicating if the template is predefined or userdefined
+	 */
 	public SourceCodeTemplate(final String fileName, final String category,
 			final String title, final String description,
 			final String sourceCode, final boolean predefined) {
@@ -73,26 +82,56 @@ public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 		m_predefined = predefined;
 	}
 
+	/**
+	 * Gets the file name.
+	 *
+	 * @return the file name
+	 */
 	public String getFileName() {
 		return m_fileName;
 	}
 
+	/**
+	 * Gets the category.
+	 *
+	 * @return the category
+	 */
 	public String getCategory() {
 		return m_category;
 	}
 
+	/**
+	 * Gets the title.
+	 *
+	 * @return the title
+	 */
 	public String getTitle() {
 		return m_title;
 	}
 
+	/**
+	 * Gets the description.
+	 *
+	 * @return the description
+	 */
 	public String getDescription() {
 		return m_description;
 	}
 
+	/**
+	 * Gets the source code.
+	 *
+	 * @return the source code
+	 */
 	public String getSourceCode() {
 		return m_sourceCode;
 	}
-	
+
+	/**
+	 * Checks if is predefined.
+	 *
+	 * @return true, if is predefined
+	 */
 	public boolean isPredefined() {
 		return m_predefined;
 	}
@@ -103,7 +142,7 @@ public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 	}
 
 	@Override
-	public int compareTo(SourceCodeTemplate o) {
+	public int compareTo(final SourceCodeTemplate o) {
 		if (isPredefined() != o.isPredefined()) {
 			return isPredefined() ? 1 : -1;
 		}

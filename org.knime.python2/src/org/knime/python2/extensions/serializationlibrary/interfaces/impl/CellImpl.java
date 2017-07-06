@@ -46,19 +46,20 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
 /**
  * A cell implementation holding an object of any Type that is natively serializable via a {@link SerializationLibrary}.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
 public class CellImpl implements Cell {
-	
+
 	private Type m_type;
 	private Object m_value;
-	
+
 	/**
 	 * Constructor for use with a Missing Value cell.
 	 */
@@ -66,62 +67,128 @@ public class CellImpl implements Cell {
 		m_type = null;
 		m_value = null;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final Boolean value) {
 		m_type = Type.BOOLEAN;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final Boolean[] value, final boolean isSet) {
 		m_type = isSet ? Type.BOOLEAN_SET : Type.BOOLEAN_LIST;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final Integer value) {
 		m_type = Type.INTEGER;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final Integer[] value, final boolean isSet) {
 		m_type = isSet ? Type.INTEGER_SET : Type.INTEGER_LIST;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final Long value) {
 		m_type = Type.LONG;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final Long[] value, final boolean isSet) {
 		m_type = isSet ? Type.LONG_SET : Type.LONG_LIST;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final Double value) {
 		m_type = Type.DOUBLE;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final Double[] value, final boolean isSet) {
 		m_type = isSet ? Type.DOUBLE_SET : Type.DOUBLE_LIST;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final String value) {
 		m_type = Type.STRING;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final String[] value, final boolean isSet) {
 		m_type = isSet ? Type.STRING_SET : Type.STRING_LIST;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 */
 	public CellImpl(final Byte[] value) {
 		m_type = Type.BYTES;
 		m_value = value;
 	}
-	
+
+	/**
+	 * Instantiates a new cell impl.
+	 *
+	 * @param value the value
+	 * @param isSet true - values represent a set, false - a list
+	 */
 	public CellImpl(final Byte[][] value, final boolean isSet) {
 		m_type = isSet ? Type.BYTES_SET : Type.BYTES_LIST;
 		m_value = value;
@@ -232,7 +299,7 @@ public class CellImpl implements Cell {
 		}
 		return (Byte[][])m_value;
 	}
-	
+
 	@Override
 	public String toString(){
 		return "Type: " + m_type.toString() + ", Value: " + m_value.toString();

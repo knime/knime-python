@@ -93,6 +93,10 @@ public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonS
 	private JLabel m_missingWarningLabel;
 	private int m_sentinelValue;
 
+	/**
+	 * Constructor.
+	 * @param sourceCodePanel  the associated source code panel
+	 */
 	public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel) {
 		super(sourceCodePanel);
 	}

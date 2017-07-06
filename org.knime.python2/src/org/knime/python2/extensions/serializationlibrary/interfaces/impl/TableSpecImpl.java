@@ -47,21 +47,29 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.util.Map;
 
+import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
 /**
  * The spec of a table iterable by a {@link TableIterator}.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class TableSpecImpl implements TableSpec {
-	
+
 	private final Type[] m_types;
 	private final String[] m_names;
 	private final Map<String, String> m_columnSerializers;
-	
+
+	/**
+	 * Constructor.
+	 * @param types                array of column types
+	 * @param names                array of column names
+	 * @param columnSerializers    a map containing column names as keys and the id of the type extension use for
+	 *                             serializing that coulmn as value
+	 */
 	public TableSpecImpl(final Type[] types, final String[] names, final Map<String, String> columnSerializers) {
 		m_types = types;
 		m_names = names;
@@ -82,7 +90,7 @@ public class TableSpecImpl implements TableSpec {
 	public int getNumberColumns() {
 		return m_types.length;
 	}
-	
+
 	@Override
 	public int findColumn(final String name) {
 		int index = -1;
@@ -93,7 +101,7 @@ public class TableSpecImpl implements TableSpec {
 		}
 		return index;
 	}
-	
+
 	@Override
 	public Map<String, String> getColumnSerializers() {
 		return m_columnSerializers;
