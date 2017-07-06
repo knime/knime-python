@@ -43,6 +43,10 @@ def check_required_libs():
         check_version_pandas()
 
 
+# check as specific library
+# @param lib        the library's name
+# @param cls        a list of classes to check for availability 
+# @param version    the minimum library version (NOTE: version is not checked at the moment)
 def check_lib(lib, cls=None, version=None):
     if cls is None:
         cls = []
@@ -61,6 +65,9 @@ def check_lib(lib, cls=None, version=None):
     return not error
 
 
+# check if a class is available from a specific library
+# @param lib     the library's name
+# @param cls     the class's name
 def class_available(lib, cls):
     local_env = {}
     exec('try:\n\tfrom ' + lib + ' import ' + cls + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
@@ -73,7 +80,7 @@ def lib_available(lib):
     exec('try:\n\timport ' + lib + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
     return local_env['success']
 
-
+# check that the installed python version is >= min_python_version
 def check_version_python():
     min_version = min_python_version.split('.')
     version = sys.version_info
@@ -89,6 +96,7 @@ def check_version_python():
                        + ', required minimum is ' + '.'.join(min_version))
 
 
+# check that the installed pandas version is >= min_pandas_version
 def check_version_pandas():
     min_version = min_pandas_version.split('.')
     try:
@@ -110,14 +118,7 @@ def check_version_pandas():
         add_to_message('Could not detect pandas version, required minimum is ' + '.'.join(min_version))
 
 
-def check_version_protobuf():
-    try:
-        import table_pb2
-    except Exception as e:
-        add_to_message('Error while trying to load protobuf:\n' + str(e) + '\nThe minimum required protobuf version is '
-                       + min_protobuf_version)
-
-
+# add a line to the output message
 def add_to_message(line):
     global _message
     _message += line + '\n'
