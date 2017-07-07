@@ -62,7 +62,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -101,7 +100,6 @@ import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.spell.SpellingParser;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
@@ -440,8 +438,9 @@ public abstract class SourceCodePanel extends JPanel {
 		ac.setDescriptionWindowSize(580, 300);
 		ac.setParameterAssistanceEnabled(true);
 		ac.install(m_editor);
+		//Commented, because dict file does not exist
 		// Configure spell checker
-		File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
+		/*File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
 		if (dictFile != null) {
 			File zip = new File(dictFile.getAbsolutePath());
 			try {
@@ -457,7 +456,7 @@ public abstract class SourceCodePanel extends JPanel {
 			}
 		} else {
 			//LOGGER.warn("Could not locate org.fife.rsyntaxtextarea/res/english_dic.zip");
-		}
+		}*/
 		// Configure console
 		m_console.setEditable(false);
 		m_console.setDragEnabled(true);
