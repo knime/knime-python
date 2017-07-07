@@ -1026,7 +1026,7 @@ def simpletype_for_column(data_frame, column_name):
             col_type = column_type(data_frame, column_name)
             if col_type is None:
                 # column with only missing values, make it string
-             simpletype   simple_type = Simpletype.STRING
+                simple_type = Simpletype.STRING
             elif types_are_equivalent(col_type, bool):
                 simple_type = Simpletype.BOOLEAN
             elif col_type is list or col_type is set:
