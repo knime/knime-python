@@ -62,8 +62,9 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
-import org.knime.core.node.port.database.DatabaseReaderConnection;
 import org.knime.core.node.port.database.DatabaseUtility;
+import org.knime.core.node.port.database.aggregation.DBAggregationFunctionFactory;
+import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonKernel;
@@ -75,7 +76,6 @@ import org.knime.python2.nodes.PythonNodeModel;
  *
  * @author Tobias Koetter, KNIME.com, Zurich, Switzerland
  */
-@SuppressWarnings("deprecation")
 class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> {
 
     /**
@@ -108,8 +108,9 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
             addNewVariables(variables);
             final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn,
                 kernel.getSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]));
-            final DatabaseReaderConnection dbCon = new DatabaseReaderConnection(connOut);
-            final DataTableSpec resultSpec = dbCon.getDataTableSpec(cp);
+            DatabaseUtility du = new DatabaseUtility(null, null, (DBAggregationFunctionFactory[])null);
+            final DBReader reader = du.getReader(connOut);
+            final DataTableSpec resultSpec = reader.getDataTableSpec(cp);
             return new PortObject[]{new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut))};
         } finally {
             kernel.close();

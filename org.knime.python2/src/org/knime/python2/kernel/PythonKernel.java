@@ -454,7 +454,6 @@ public class PythonKernel {
      * @param rowLimit The amount of rows that will be transfered
      * @throws IOException If an error occurred
      */
-    @SuppressWarnings("deprecation")
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws IOException {
         if (table == null) {
@@ -463,14 +462,18 @@ public class PythonKernel {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         final CloseableRowIterator iterator = table.iterator();
-        final int numberRows = Math.min(rowLimit, table.getRowCount());
+        if(table.size() > Integer.MAX_VALUE) {
+            throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
+        }
+        final int rowCount = (int) table.size();
+        final int numberRows = Math.min(rowLimit, rowCount);
         int numberChunks = (int)Math.ceil(numberRows / (double)CHUNK_SIZE);
         if (numberChunks == 0) {
             numberChunks = 1;
         }
         int rowsDone = 0;
         final TableChunker tableChunker =
-                new BufferedDataTableChunker(table.getDataTableSpec(), iterator, table.getRowCount());
+                new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
         for (int i = 0; i < numberChunks; i++) {
             final int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
             final ExecutionMonitor chunkProgress =
@@ -506,10 +509,12 @@ public class PythonKernel {
      * @param executionMonitor The monitor that will be updated about progress
      * @throws IOException If an error occurred
      */
-    @SuppressWarnings("deprecation")
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
             throws IOException {
-        putDataTable(name, table, executionMonitor, table.getRowCount());
+        if(table.size() > Integer.MAX_VALUE) {
+            throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
+        }
+        putDataTable(name, table, executionMonitor, (int)table.size());
     }
 
     /**
