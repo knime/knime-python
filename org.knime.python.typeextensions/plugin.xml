@@ -43,8 +43,8 @@
       </type>
       <type
             id="org.knime.svg"
-            java-deserializer-factory="org.knime.python2.typeextension.builtin.xml.XMLDeserializerFactory"
-            python-serializer="py/org/knime/python2/typeextension/builtin/xml/XMLSerializer.py"
+            java-deserializer-factory="org.knime.python.typeextension.builtin.xml.XMLDeserializerFactory"
+            python-serializer="py/org/knime/python/typeextension/builtin/xml/XMLSerializer.py"
             python-type-identifier="xml.dom.minidom.Document">
       </type>
       <type
