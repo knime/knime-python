@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic;
+package org.knime.python2.generic;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

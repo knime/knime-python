@@ -45,94 +45,57 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic;
+package org.knime.python2.generic.templates;
 
-import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.batik.transcoder.TranscoderException;
-import org.apache.batik.transcoder.TranscoderInput;
-import org.apache.batik.transcoder.TranscoderOutput;
-import org.apache.batik.transcoder.image.ImageTranscoder;
-import org.w3c.dom.svg.SVGDocument;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.Platform;
+import org.knime.core.node.NodeLogger;
+import org.knime.python2.Activator;
 
 /**
- * Used as container class for images received from the python workspace.
+ * Class managing source code templates that are made available via the org.knime.python2.sourcecodetemplates extension
+ * point.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-public class ImageContainer {
 
-    private final BufferedImage m_bufferedImage;
+public class SourceCodeTemplatesExtensions {
 
-    private final SVGDocument m_svgDocument;
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
 
-    /**
-     * Constructor.
-     *
-     * @param bufferedImage a buffered image
-     */
-    public ImageContainer(final BufferedImage bufferedImage) {
-        m_bufferedImage = bufferedImage;
-        m_svgDocument = null;
-    }
+    private static List<File> templateFolders;
 
     /**
-     * Constructor.
-     *
-     * @param svgDocument an svg image that is transcoded to a {@link BufferedImage}
-     * @throws TranscoderException
+     * Read the paths to all folders containing source code templates available via the extension point and store them
+     * internally.
      */
-    public ImageContainer(final SVGDocument svgDocument) throws TranscoderException {
-        m_svgDocument = svgDocument;
-        final BufferedImageTranscoder t = new BufferedImageTranscoder();
-        t.transcode(new TranscoderInput(svgDocument), null);
-        m_bufferedImage = t.getBufferedImage();
-    }
-
-    /**
-     * Checks for svg document.
-     *
-     * @return true, if successful
-     */
-    public boolean hasSvgDocument() {
-        return m_svgDocument != null;
-    }
-
-    /**
-     * Gets the buffered image.
-     *
-     * @return the buffered image
-     */
-    public BufferedImage getBufferedImage() {
-        return m_bufferedImage;
-    }
-
-    /**
-     * Gets the svg document.
-     *
-     * @return the svg document
-     */
-    public SVGDocument getSvgDocument() {
-        return m_svgDocument;
-    }
-
-    private static class BufferedImageTranscoder extends ImageTranscoder {
-        protected BufferedImage bufferedImage;
-
-        @SuppressWarnings("hiding")
-        @Override
-        public BufferedImage createImage(final int width, final int height) {
-            return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    public static void init() {
+        templateFolders = new ArrayList<File>();
+        final IConfigurationElement[] configs =
+                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.sourcecodetemplates");
+        for (final IConfigurationElement config : configs) {
+            final String pluginId = config.getContributor().getName();
+            final String path = config.getAttribute("path");
+            final File folder = Activator.getFile(pluginId, path);
+            if ((folder != null) && folder.isDirectory()) {
+                templateFolders.add(folder);
+            } else {
+                LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
+            }
         }
+    }
 
-        @Override
-        public void writeImage(final BufferedImage img, final TranscoderOutput output) throws TranscoderException {
-            bufferedImage = img;
-        }
-
-        public BufferedImage getBufferedImage() {
-            return bufferedImage;
-        }
+    /**
+     * Provide a list of all folders containing source code templates available via the extension point
+     *
+     * @return list of template folders
+     */
+    public static List<File> getTemplateFolders() {
+        return templateFolders;
     }
 
 }

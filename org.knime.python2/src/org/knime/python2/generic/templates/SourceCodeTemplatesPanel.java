@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic.templates;
+package org.knime.python2.generic.templates;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -83,7 +83,7 @@ import javax.swing.event.ListSelectionListener;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
-import org.knime.code2.generic.SourceCodePanel;
+import org.knime.python2.generic.SourceCodePanel;
 
 /**
  * View definition for the panel visible in the 'Templates' tab in some python nodes.

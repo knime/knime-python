@@ -6,13 +6,13 @@ Bundle-Version: 3.4.0.qualifier
 Bundle-ClassPath: knime-python2.jar
 Bundle-Activator: org.knime.python2.Activator
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
-Export-Package: org.knime.code2.generic,
- org.knime.code2.generic.templates,
- org.knime.code2.python,
- org.knime.python2,
+Export-Package: org.knime.python2,
+ org.knime.python2.config,
  org.knime.python2.extensions.serializationlibrary,
  org.knime.python2.extensions.serializationlibrary.interfaces,
  org.knime.python2.extensions.serializationlibrary.interfaces.impl,
+ org.knime.python2.generic,
+ org.knime.python2.generic.templates,
  org.knime.python2.kernel,
  org.knime.python2.port
 Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",

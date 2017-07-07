@@ -72,8 +72,6 @@ import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.apache.commons.lang.ArrayUtils;
-import org.knime.code2.generic.ImageContainer;
-import org.knime.code2.generic.ScriptingNodeUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -111,6 +109,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.KeyValu
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TemporaryTableCreator;
+import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.generic.ScriptingNodeUtils;
 import org.knime.python2.port.PickledObject;
 import org.w3c.dom.svg.SVGDocument;
 

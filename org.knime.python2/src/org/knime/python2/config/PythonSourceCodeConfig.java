@@ -43,14 +43,14 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.code2.python;
+package org.knime.python2.config;
 
-import org.knime.code2.generic.SourceCodeConfig;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.generic.SourceCodeConfig;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelOptions.PythonVersionOption;
 

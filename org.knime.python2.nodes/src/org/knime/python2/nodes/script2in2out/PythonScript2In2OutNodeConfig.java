@@ -47,8 +47,8 @@
  */
 package org.knime.python2.nodes.script2in2out;
 
-import org.knime.code2.generic.VariableNames;
-import org.knime.code2.python.PythonSourceCodeConfig;
+import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.generic.VariableNames;
 
 class PythonScript2In2OutNodeConfig extends PythonSourceCodeConfig {
 

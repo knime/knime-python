@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.python;
+package org.knime.python2.config;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -59,9 +59,6 @@ import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.knime.code2.generic.ImageContainer;
-import org.knime.code2.generic.SourceCodePanel;
-import org.knime.code2.generic.VariableNames;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -69,6 +66,9 @@ import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.generic.SourceCodePanel;
+import org.knime.python2.generic.VariableNames;
 import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;

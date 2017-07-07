@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.python;
+package org.knime.python2.config;
 
 import javax.swing.JProgressBar;
 

@@ -47,8 +47,8 @@
  */
 package org.knime.python2.nodes.predictor;
 
-import org.knime.code2.generic.VariableNames;
-import org.knime.code2.python.PythonSourceCodeConfig;
+import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.generic.VariableNames;
 
 class PythonPredictorNodeConfig extends PythonSourceCodeConfig {
 

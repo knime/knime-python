@@ -45,7 +45,7 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic.templates;
+package org.knime.python2.generic.templates;
 
 import java.io.File;
 import java.io.FileInputStream;

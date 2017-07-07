@@ -50,9 +50,6 @@ package org.knime.python2.nodes.db;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.knime.code2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.code2.python.PythonSourceCodePanel;
-import org.knime.code2.python.WorkspacePreparer;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeSettingsRO;
@@ -62,6 +59,9 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.config.WorkspacePreparer;
+import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernel;
 

@@ -52,13 +52,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.knime.code2.generic.ImageContainer;
 import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
+import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.port.PickledObject;
 
 /**

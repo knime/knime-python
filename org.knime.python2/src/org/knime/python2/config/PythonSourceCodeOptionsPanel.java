@@ -43,7 +43,7 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.code2.python;
+package org.knime.python2.config;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -64,8 +64,8 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import org.knime.code2.generic.SourceCodeOptionsPanel;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.generic.SourceCodeOptionsPanel;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelOptions.PythonVersionOption;
 

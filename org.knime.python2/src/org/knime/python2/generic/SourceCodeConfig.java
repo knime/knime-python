@@ -45,57 +45,103 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic.templates;
+package org.knime.python2.generic;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
-import org.knime.python2.Activator;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
 
 /**
- * Class managing source code templates that are made available via the org.knime.python2.sourcecodetemplates extension
- * point.
+ * Configuration for the generic source code panel.
  *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
+public class SourceCodeConfig {
 
-public class SourceCodeTemplatesExtensions {
+    static final int DEFAULT_ROW_LIMIT = 1000;
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
+    private static final String CFG_SOURCE_CODE = "sourceCode";
 
-    private static List<File> templateFolders;
+    private String m_sourceCode = getDefaultSourceCode();
+
+    private static final String CFG_ROW_LIMIT = "rowLimit";
+
+    private int m_rowLimit = DEFAULT_ROW_LIMIT;
 
     /**
-     * Read the paths to all folders containing source code templates available via the extension point and store them
-     * internally.
+     * Save configuration to the given node settings.
+     *
+     * @param settings The settings to save to
      */
-    public static void init() {
-        templateFolders = new ArrayList<File>();
-        final IConfigurationElement[] configs =
-                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.sourcecodetemplates");
-        for (final IConfigurationElement config : configs) {
-            final String pluginId = config.getContributor().getName();
-            final String path = config.getAttribute("path");
-            final File folder = Activator.getFile(pluginId, path);
-            if ((folder != null) && folder.isDirectory()) {
-                templateFolders.add(folder);
-            } else {
-                LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
-            }
-        }
+    public void saveTo(final NodeSettingsWO settings) {
+        settings.addString(CFG_SOURCE_CODE, m_sourceCode);
+        settings.addInt(CFG_ROW_LIMIT, m_rowLimit);
     }
 
     /**
-     * Provide a list of all folders containing source code templates available via the extension point
+     * Load configuration from the given node settings.
      *
-     * @return list of template folders
+     * @param settings The settings to load from
+     * @throws InvalidSettingsException If the settings are invalid
      */
-    public static List<File> getTemplateFolders() {
-        return templateFolders;
+    public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        m_sourceCode = settings.getString(CFG_SOURCE_CODE);
+        m_rowLimit = settings.getInt(CFG_ROW_LIMIT);
+    }
+
+    /**
+     * Load configuration from the given node settings (using defaults if necessary).
+     *
+     * @param settings The settings to load from
+     */
+    public void loadFromInDialog(final NodeSettingsRO settings) {
+        m_sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
+        m_rowLimit = settings.getInt(CFG_ROW_LIMIT, DEFAULT_ROW_LIMIT);
+    }
+
+    /**
+     * Return the source code.
+     *
+     * @return The source code
+     */
+    public String getSourceCode() {
+        return m_sourceCode;
+    }
+
+    /**
+     * Sets the source code.
+     *
+     * @param sourceCode The source code
+     */
+    public void setSourceCode(final String sourceCode) {
+        m_sourceCode = sourceCode;
+    }
+
+    /**
+     * Return the row limit.
+     *
+     * @return The row limit
+     */
+    public int getRowLimit() {
+        return m_rowLimit;
+    }
+
+    /**
+     * Sets the row limit.
+     *
+     * @param rowLimit The row limit
+     */
+    public void setRowLimit(final int rowLimit) {
+        m_rowLimit = rowLimit;
+    }
+
+    /**
+     * Return the default source code.
+     *
+     * @return The default source code
+     */
+    protected String getDefaultSourceCode() {
+        return "";
     }
 
 }

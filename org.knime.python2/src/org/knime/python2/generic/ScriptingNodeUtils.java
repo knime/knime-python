@@ -41,107 +41,49 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ------------------------------------------------------------------------
- *
- * History
- *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.code2.generic;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
+package org.knime.python2.generic;
 
 /**
- * Configuration for the generic source code panel.
+ * Utility methods for scripting nodes.
  *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
-public class SourceCodeConfig {
-
-    static final int DEFAULT_ROW_LIMIT = 1000;
-
-    private static final String CFG_SOURCE_CODE = "sourceCode";
-
-    private String m_sourceCode = getDefaultSourceCode();
-
-    private static final String CFG_ROW_LIMIT = "rowLimit";
-
-    private int m_rowLimit = DEFAULT_ROW_LIMIT;
+public class ScriptingNodeUtils {
 
     /**
-     * Save configuration to the given node settings.
-     *
-     * @param settings The settings to save to
+     * The maximum length a string that will be added to the console can have (everything else will be truncated).
      */
-    public void saveTo(final NodeSettingsWO settings) {
-        settings.addString(CFG_SOURCE_CODE, m_sourceCode);
-        settings.addInt(CFG_ROW_LIMIT, m_rowLimit);
+    private static final int DEFAULT_MAX_STRING_LENGTH = 100000;
+
+    /**
+     * Truncate the given string if necessary.
+     *
+     * Works the same as {@link #shortenString(String, int)} with maxLength of 100000.
+     *
+     * @param originalString The string that may be to long
+     * @return The original string or a truncated version if the original's length is bigger than the defined maximum
+     */
+    public static String shortenString(final String originalString) {
+        return shortenString(originalString, DEFAULT_MAX_STRING_LENGTH);
     }
 
     /**
-     * Load configuration from the given node settings.
+     * Truncate the given string if necessary.
      *
-     * @param settings The settings to load from
-     * @throws InvalidSettingsException If the settings are invalid
+     * @param originalString The string that may be to long
+     * @param maxLength The maximum number of characters
+     * @return The original string or a truncated version if the original's length is bigger than the defined maximum
      */
-    public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_sourceCode = settings.getString(CFG_SOURCE_CODE);
-        m_rowLimit = settings.getInt(CFG_ROW_LIMIT);
-    }
-
-    /**
-     * Load configuration from the given node settings (using defaults if necessary).
-     *
-     * @param settings The settings to load from
-     */
-    public void loadFromInDialog(final NodeSettingsRO settings) {
-        m_sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
-        m_rowLimit = settings.getInt(CFG_ROW_LIMIT, DEFAULT_ROW_LIMIT);
-    }
-
-    /**
-     * Return the source code.
-     *
-     * @return The source code
-     */
-    public String getSourceCode() {
-        return m_sourceCode;
-    }
-
-    /**
-     * Sets the source code.
-     *
-     * @param sourceCode The source code
-     */
-    public void setSourceCode(final String sourceCode) {
-        m_sourceCode = sourceCode;
-    }
-
-    /**
-     * Return the row limit.
-     *
-     * @return The row limit
-     */
-    public int getRowLimit() {
-        return m_rowLimit;
-    }
-
-    /**
-     * Sets the row limit.
-     *
-     * @param rowLimit The row limit
-     */
-    public void setRowLimit(final int rowLimit) {
-        m_rowLimit = rowLimit;
-    }
-
-    /**
-     * Return the default source code.
-     *
-     * @return The default source code
-     */
-    protected String getDefaultSourceCode() {
-        return "";
+    public static String shortenString(final String originalString, final int maxLength) {
+        String string = originalString;
+        if (originalString.length() > maxLength) {
+            string = originalString.substring(0, maxLength);
+            string +=
+                    "\nReached maximum output limit, omitted " + (originalString.length() - maxLength) + " characters";
+        }
+        return string;
     }
 
 }

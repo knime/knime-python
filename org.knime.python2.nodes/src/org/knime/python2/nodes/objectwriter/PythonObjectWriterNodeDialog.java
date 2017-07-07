@@ -47,9 +47,6 @@
  */
 package org.knime.python2.nodes.objectwriter;
 
-import org.knime.code2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.code2.python.PythonSourceCodeOptionsPanel;
-import org.knime.code2.python.PythonSourceCodePanel;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
@@ -59,6 +56,9 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.config.PythonSourceCodeOptionsPanel;
+import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectPortObject;
