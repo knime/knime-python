@@ -93,493 +93,501 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
  */
 public class BufferedDataTableCreator implements TableCreator<BufferedDataTable> {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableCreator.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(BufferedDataTableCreator.class);
 
-	private final BufferedDataContainer m_container;
-	private final TableSpec m_spec;
-	private final PythonToKnimeExtensions m_pythonToKnimeExtensions;
-	private final FileStoreFactory m_fileStoreFactory;
-	private final ExecutionMonitor m_executionMonitor;
-	private final int m_tableSize;
-	private int m_rowsDone = 0;
+    private final BufferedDataContainer m_container;
 
-	private HashMap<Integer, DataTypeContainer> m_columnsToRetype;
-	private DataTableSpec m_dataTableSpec;
-	private ExecutionContext m_exec;
+    private final TableSpec m_spec;
 
-	/**
-	 * Constructor.
-	 * @param spec             a table spec in the python integration specific format
-	 * @param context          a node's execution context
-	 * @param executionMonitor an execution monitor to report progress to
-	 * @param tableSize        the number of rows of the table to create
-	 */
-	public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
-			final ExecutionMonitor executionMonitor, final int tableSize) {
-		m_tableSize = tableSize;
-		m_executionMonitor = executionMonitor;
-		m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
-		m_spec = spec;
-		m_exec = context;
-		m_columnsToRetype = new HashMap<Integer, DataTypeContainer>();
-		m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
-		DataColumnSpec[] colSpecs = new DataColumnSpec[m_spec.getNumberColumns()];
-		String key;
-		for (int i = 0; i < colSpecs.length; i++) {
-			String columnName = spec.getColumnNames()[i];
-			switch (spec.getColumnTypes()[i]) {
-			case BOOLEAN:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, BooleanCell.TYPE).createSpec();
-				break;
-			case BOOLEAN_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(BooleanCell.TYPE))
-						.createSpec();
-				break;
-			case BOOLEAN_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE))
-						.createSpec();
-				break;
-			case INTEGER:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, IntCell.TYPE).createSpec();
-				break;
-			case INTEGER_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE))
-						.createSpec();
-				break;
-			case INTEGER_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE))
-						.createSpec();
-				break;
-			case LONG:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, LongCell.TYPE).createSpec();
-				break;
-			case LONG_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE))
-						.createSpec();
-				break;
-			case LONG_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE))
-						.createSpec();
-				break;
-			case DOUBLE:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, DoubleCell.TYPE).createSpec();
-				break;
-			case DOUBLE_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE))
-						.createSpec();
-				break;
-			case DOUBLE_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE))
-						.createSpec();
-				break;
-			case STRING:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
-				break;
-			case STRING_LIST:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE))
-						.createSpec();
-				break;
-			case STRING_SET:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE))
-						.createSpec();
-				break;
-			case BYTES:
-				key = spec.getColumnSerializers().get(columnName);
-				if(key != null)
-				{
-					DataType type = PythonToKnimeExtensions.getExtension(key)
-							.getJavaDeserializerFactory().getDataType();
-					if (type.getCellClass() == null) {
-						m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
-					}
-					colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
-				} else {
-                    colSpecs[i] = new DataColumnSpecCreator(columnName, DenseByteVectorCell.TYPE).createSpec();
+    private final PythonToKnimeExtensions m_pythonToKnimeExtensions;
+
+    private final FileStoreFactory m_fileStoreFactory;
+
+    private final ExecutionMonitor m_executionMonitor;
+
+    private final int m_tableSize;
+
+    private int m_rowsDone = 0;
+
+    private final HashMap<Integer, DataTypeContainer> m_columnsToRetype;
+
+    private final DataTableSpec m_dataTableSpec;
+
+    private final ExecutionContext m_exec;
+
+    /**
+     * Constructor.
+     *
+     * @param spec a table spec in the python integration specific format
+     * @param context a node's execution context
+     * @param executionMonitor an execution monitor to report progress to
+     * @param tableSize the number of rows of the table to create
+     */
+    public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
+        final ExecutionMonitor executionMonitor, final int tableSize) {
+        m_tableSize = tableSize;
+        m_executionMonitor = executionMonitor;
+        m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
+        m_spec = spec;
+        m_exec = context;
+        m_columnsToRetype = new HashMap<Integer, DataTypeContainer>();
+        m_pythonToKnimeExtensions = new PythonToKnimeExtensions();
+        final DataColumnSpec[] colSpecs = new DataColumnSpec[m_spec.getNumberColumns()];
+        String key;
+        for (int i = 0; i < colSpecs.length; i++) {
+            final String columnName = spec.getColumnNames()[i];
+            switch (spec.getColumnTypes()[i]) {
+                case BOOLEAN:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, BooleanCell.TYPE).createSpec();
+                    break;
+                case BOOLEAN_LIST:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(BooleanCell.TYPE))
+                    .createSpec();
+                    break;
+                case BOOLEAN_SET:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE)).createSpec();
+                    break;
+                case INTEGER:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, IntCell.TYPE).createSpec();
+                    break;
+                case INTEGER_LIST:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE)).createSpec();
+                    break;
+                case INTEGER_SET:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE)).createSpec();
+                    break;
+                case LONG:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, LongCell.TYPE).createSpec();
+                    break;
+                case LONG_LIST:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE)).createSpec();
+                    break;
+                case LONG_SET:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE)).createSpec();
+                    break;
+                case DOUBLE:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, DoubleCell.TYPE).createSpec();
+                    break;
+                case DOUBLE_LIST:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+                    break;
+                case DOUBLE_SET:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+                    break;
+                case STRING:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
+                    break;
+                case STRING_LIST:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
+                    break;
+                case STRING_SET:
+                    colSpecs[i] =
+                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
+                    break;
+                case BYTES:
+                    key = spec.getColumnSerializers().get(columnName);
+                    if (key != null) {
+                        final DataType type =
+                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                        if (type.getCellClass() == null) {
+                            m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
+                        }
+                        colSpecs[i] = new DataColumnSpecCreator(columnName, type).createSpec();
+                    } else {
+                        colSpecs[i] = new DataColumnSpecCreator(columnName, DenseByteVectorCell.TYPE).createSpec();
+                    }
+                    break;
+                case BYTES_LIST:
+                    key = spec.getColumnSerializers().get(columnName);
+                    if (key != null) {
+                        final DataType list_type =
+                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                        if (list_type.getCellClass() == null) {
+                            m_columnsToRetype.put(i, new DataTypeContainer(ResultType.LIST));
+                        }
+                        colSpecs[i] =
+                                new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
+                    } else {
+                        colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE))
+                                .createSpec();
+                    }
+                    break;
+                case BYTES_SET:
+                    key = spec.getColumnSerializers().get(columnName);
+                    if (key != null) {
+                        final DataType set_type =
+                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                        if (set_type.getCellClass() == null) {
+                            m_columnsToRetype.put(i, new DataTypeContainer(ResultType.SET));
+                        }
+                        colSpecs[i] =
+                                new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
+                    } else {
+                        colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE))
+                                .createSpec();
+                    }
+                    break;
+                default:
+                    colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
+                    break;
+            }
+        }
+        m_dataTableSpec = new DataTableSpec(colSpecs);
+        m_container = context.createDataContainer(m_dataTableSpec);
+    }
+
+    @Override
+    public void addRow(final Row row) {
+        try {
+            m_executionMonitor.checkCanceled();
+        } catch (final CanceledExecutionException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        final DataCell[] cells = new DataCell[row.getNumberCells()];
+        int i = 0;
+        for (final Cell cell : row) {
+            if (cell.isMissing()) {
+                cells[i] = new MissingCell(null);
+            } else {
+                switch (cell.getColumnType()) {
+                    case BOOLEAN:
+                        cells[i] = BooleanCellFactory.create(cell.getBooleanValue());
+                        break;
+                    case BOOLEAN_LIST:
+                        final List<DataCell> booleanListCells = new ArrayList<DataCell>();
+                        for (final Boolean value : cell.getBooleanArrayValue()) {
+                            if (value == null) {
+                                booleanListCells.add(new MissingCell(null));
+                            } else {
+                                booleanListCells.add(BooleanCellFactory.create(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(booleanListCells);
+                        break;
+                    case BOOLEAN_SET:
+                        final List<DataCell> booleanSetCells = new ArrayList<DataCell>();
+                        for (final Boolean value : cell.getBooleanArrayValue()) {
+                            if (value == null) {
+                                booleanSetCells.add(new MissingCell(null));
+                            } else {
+                                booleanSetCells.add(BooleanCellFactory.create(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(booleanSetCells);
+                        break;
+                    case INTEGER:
+                        cells[i] = new IntCell(cell.getIntegerValue());
+                        break;
+                    case INTEGER_LIST:
+                        final List<DataCell> integerListCells = new ArrayList<DataCell>();
+                        for (final Integer value : cell.getIntegerArrayValue()) {
+                            if (value == null) {
+                                integerListCells.add(new MissingCell(null));
+                            } else {
+                                integerListCells.add(new IntCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(integerListCells);
+                        break;
+                    case INTEGER_SET:
+                        final List<DataCell> integerSetCells = new ArrayList<DataCell>();
+                        for (final Integer value : cell.getIntegerArrayValue()) {
+                            if (value == null) {
+                                integerSetCells.add(new MissingCell(null));
+                            } else {
+                                integerSetCells.add(new IntCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(integerSetCells);
+                        break;
+                    case LONG:
+                        cells[i] = new LongCell(cell.getLongValue());
+                        break;
+                    case LONG_LIST:
+                        final List<DataCell> longListCells = new ArrayList<DataCell>();
+                        for (final Long value : cell.getLongArrayValue()) {
+                            if (value == null) {
+                                longListCells.add(new MissingCell(null));
+                            } else {
+                                longListCells.add(new LongCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(longListCells);
+                        break;
+                    case LONG_SET:
+                        final List<DataCell> longSetCells = new ArrayList<DataCell>();
+                        for (final Long value : cell.getLongArrayValue()) {
+                            if (value == null) {
+                                longSetCells.add(new MissingCell(null));
+                            } else {
+                                longSetCells.add(new LongCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(longSetCells);
+                        break;
+                    case DOUBLE:
+                        cells[i] = new DoubleCell(cell.getDoubleValue());
+                        break;
+                    case DOUBLE_LIST:
+                        final List<DataCell> doubleListCells = new ArrayList<DataCell>();
+                        for (final Double value : cell.getDoubleArrayValue()) {
+                            if (value == null) {
+                                doubleListCells.add(new MissingCell(null));
+                            } else {
+                                doubleListCells.add(new DoubleCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(doubleListCells);
+                        break;
+                    case DOUBLE_SET:
+                        final List<DataCell> doubleSetCells = new ArrayList<DataCell>();
+                        for (final Double value : cell.getDoubleArrayValue()) {
+                            if (value == null) {
+                                doubleSetCells.add(new MissingCell(null));
+                            } else {
+                                doubleSetCells.add(new DoubleCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(doubleSetCells);
+                        break;
+                    case STRING:
+                        cells[i] = new StringCell(cell.getStringValue());
+                        break;
+                    case STRING_LIST:
+                        final List<DataCell> stringListCells = new ArrayList<DataCell>();
+                        for (final String value : cell.getStringArrayValue()) {
+                            if (value == null) {
+                                stringListCells.add(new MissingCell(null));
+                            } else {
+                                stringListCells.add(new StringCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(stringListCells);
+                        break;
+                    case STRING_SET:
+                        final List<DataCell> stringSetCells = new ArrayList<DataCell>();
+                        for (final String value : cell.getStringArrayValue()) {
+                            if (value == null) {
+                                stringSetCells.add(new MissingCell(null));
+                            } else {
+                                stringSetCells.add(new StringCell(value));
+                            }
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
+                        break;
+                    case BYTES:
+                        final String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
+                        if (bytesTypeId != null) {
+                            final Deserializer bytesDeserializer = m_pythonToKnimeExtensions
+                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
+                            try {
+                                if (cell.getBytesValue() == null) {
+                                    cells[i] = new MissingCell(null);
+                                } else {
+                                    cells[i] = bytesDeserializer
+                                            .deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
+                                }
+                                final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
+                                if (dataTypeContainer != null) {
+                                    dataTypeContainer.m_dataTypes.add(cells[i].getType());
+                                }
+                            } catch (IllegalStateException | IOException e) {
+                                LOGGER.error(e.getMessage(), e);
+                                cells[i] = new MissingCell(null);
+                            }
+                        } else {
+                            try {
+                                if (cell.getBytesValue() == null) {
+                                    cells[i] = new MissingCell(null);
+                                } else {
+                                    cells[i] = new DenseByteVectorCellFactory(
+                                        new DenseByteVector(ArrayUtils.toPrimitive(cell.getBytesValue())))
+                                            .createDataCell();
+                                }
+                            } catch (final IllegalStateException e) {
+                                LOGGER.error(e.getMessage(), e);
+                                cells[i] = new MissingCell(null);
+                            }
+                        }
+                        break;
+                    case BYTES_LIST:
+                        final String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
+                        if (bytesListTypeId != null) {
+                            final Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
+                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
+                            final List<DataCell> listCells = new ArrayList<DataCell>();
+                            if (cell.getBytesArrayValue() == null) {
+                                cells[i] = new MissingCell(null);
+                            } else {
+                                for (final Byte[] value : cell.getBytesArrayValue()) {
+                                    if (value == null) {
+                                        listCells.add(new MissingCell(null));
+                                    } else {
+                                        try {
+                                            final DataCell dc = bytesListDeserializer
+                                                    .deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
+                                            final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
+                                            if (dataTypeContainer != null) {
+                                                dataTypeContainer.m_dataTypes.add(dc.getType());
+                                            }
+                                            listCells.add(dc);
+                                        } catch (IllegalStateException | IOException e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                            listCells.add(new MissingCell(null));
+                                        }
+                                    }
+                                }
+                                cells[i] = CollectionCellFactory.createListCell(listCells);
+                            }
+                        } else {
+                            if (cell.getBytesArrayValue() == null) {
+                                cells[i] = new MissingCell(null);
+                            } else {
+                                final List<DataCell> listCells = new ArrayList<DataCell>();
+                                for (final Byte[] value : cell.getBytesArrayValue()) {
+                                    if (value == null) {
+                                        listCells.add(new MissingCell(null));
+                                    } else {
+                                        try {
+                                            listCells.add(new StringCell(value.toString()));
+                                        } catch (final IllegalStateException e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                            listCells.add(new MissingCell(null));
+                                        }
+                                    }
+                                }
+                                cells[i] = CollectionCellFactory.createListCell(listCells);
+                            }
+                        }
+                        break;
+                    case BYTES_SET:
+                        final String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
+                        if (bytesSetTypeId != null) {
+                            final Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
+                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
+                            final List<DataCell> setCells = new ArrayList<DataCell>();
+                            if (cell.getBytesArrayValue() == null) {
+                                cells[i] = new MissingCell(null);
+                            } else {
+                                for (final Byte[] value : cell.getBytesArrayValue()) {
+                                    if (value == null) {
+                                        setCells.add(new MissingCell(null));
+                                    } else {
+                                        try {
+                                            final DataCell dc = bytesSetDeserializer
+                                                    .deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
+                                            final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
+                                            if (dataTypeContainer != null) {
+                                                dataTypeContainer.m_dataTypes.add(dc.getType());
+                                            }
+                                            setCells.add(dc);
+                                        } catch (IllegalStateException | IOException e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                            setCells.add(new MissingCell(null));
+                                        }
+                                    }
+                                }
+                                cells[i] = CollectionCellFactory.createSetCell(setCells);
+                            }
+                        } else {
+                            final List<DataCell> setCells = new ArrayList<DataCell>();
+                            if (cell.getBytesArrayValue() == null) {
+                                cells[i] = new MissingCell(null);
+                            } else {
+                                for (final Byte[] value : cell.getBytesArrayValue()) {
+                                    if (value == null) {
+                                        setCells.add(new MissingCell(null));
+                                    } else {
+                                        try {
+                                            setCells.add(new StringCell(value.toString()));
+                                        } catch (final IllegalStateException e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                            setCells.add(new MissingCell(null));
+                                        }
+                                    }
+                                }
+                                cells[i] = CollectionCellFactory.createSetCell(setCells);
+                            }
+                        }
+                        break;
+                    default:
+                        cells[i] = new MissingCell(null);
                 }
-				break;
-			case BYTES_LIST:
-				key = spec.getColumnSerializers().get(columnName);
-				if(key != null)
-				{
-					DataType list_type = PythonToKnimeExtensions.getExtension(key)
-							.getJavaDeserializerFactory().getDataType();
-					if (list_type.getCellClass() == null) {
-						m_columnsToRetype.put(i, new DataTypeContainer(ResultType.LIST));
-					}
-					colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
-				} else {
-					colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
-				}
-				break;
-			case BYTES_SET:
-				key = spec.getColumnSerializers().get(columnName);
-				if(key != null)
-				{
-					DataType set_type = PythonToKnimeExtensions.getExtension(key)
-							.getJavaDeserializerFactory().getDataType();
-					if (set_type.getCellClass() == null) {
-						m_columnsToRetype.put(i, new DataTypeContainer(ResultType.SET));
-					}
-					colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
-				} else {
-					colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
-				}
-				break;
-			default:
-				colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
-				break;
-			}
-		}
-		m_dataTableSpec = new DataTableSpec(colSpecs);
-		m_container = context.createDataContainer(m_dataTableSpec);
-	}
+            }
+            i++;
+        }
+        m_container.addRowToTable(new DefaultRow(row.getRowKey(), cells));
+        m_rowsDone++;
+        m_executionMonitor.setProgress(m_rowsDone / (double)m_tableSize);
+    }
 
-	@Override
-	public void addRow(final Row row) {
-		try {
-			m_executionMonitor.checkCanceled();
-		} catch (CanceledExecutionException e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		DataCell[] cells = new DataCell[row.getNumberCells()];
-		int i = 0;
-		for (Cell cell : row) {
-			if (cell.isMissing()) {
-				cells[i] = new MissingCell(null);
-			} else {
-				switch (cell.getColumnType()) {
-				case BOOLEAN:
-					cells[i] = BooleanCellFactory.create(cell.getBooleanValue());
-					break;
-				case BOOLEAN_LIST:
-					List<DataCell> booleanListCells = new ArrayList<DataCell>();
-					for (Boolean value : cell.getBooleanArrayValue()) {
-						if (value == null) {
-							booleanListCells.add(new MissingCell(null));
-						} else {
-							booleanListCells.add(BooleanCellFactory.create(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createListCell(booleanListCells);
-					break;
-				case BOOLEAN_SET:
-					List<DataCell> booleanSetCells = new ArrayList<DataCell>();
-					for (Boolean value : cell.getBooleanArrayValue()) {
-						if (value == null) {
-							booleanSetCells.add(new MissingCell(null));
-						} else {
-							booleanSetCells.add(BooleanCellFactory.create(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createSetCell(booleanSetCells);
-					break;
-				case INTEGER:
-					cells[i] = new IntCell(cell.getIntegerValue());
-					break;
-				case INTEGER_LIST:
-					List<DataCell> integerListCells = new ArrayList<DataCell>();
-					for (Integer value : cell.getIntegerArrayValue()) {
-						if (value == null) {
-							integerListCells.add(new MissingCell(null));
-						} else {
-							integerListCells.add(new IntCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createListCell(integerListCells);
-					break;
-				case INTEGER_SET:
-					List<DataCell> integerSetCells = new ArrayList<DataCell>();
-					for (Integer value : cell.getIntegerArrayValue()) {
-						if (value == null) {
-							integerSetCells.add(new MissingCell(null));
-						} else {
-							integerSetCells.add(new IntCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createSetCell(integerSetCells);
-					break;
-				case LONG:
-					cells[i] = new LongCell(cell.getLongValue());
-					break;
-				case LONG_LIST:
-					List<DataCell> longListCells = new ArrayList<DataCell>();
-					for (Long value : cell.getLongArrayValue()) {
-						if (value == null) {
-							longListCells.add(new MissingCell(null));
-						} else {
-							longListCells.add(new LongCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createListCell(longListCells);
-					break;
-				case LONG_SET:
-					List<DataCell> longSetCells = new ArrayList<DataCell>();
-					for (Long value : cell.getLongArrayValue()) {
-						if (value == null) {
-							longSetCells.add(new MissingCell(null));
-						} else {
-							longSetCells.add(new LongCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createSetCell(longSetCells);
-					break;
-				case DOUBLE:
-					cells[i] = new DoubleCell(cell.getDoubleValue());
-					break;
-				case DOUBLE_LIST:
-					List<DataCell> doubleListCells = new ArrayList<DataCell>();
-					for (Double value : cell.getDoubleArrayValue()) {
-						if (value == null) {
-							doubleListCells.add(new MissingCell(null));
-						} else {
-							doubleListCells.add(new DoubleCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createListCell(doubleListCells);
-					break;
-				case DOUBLE_SET:
-					List<DataCell> doubleSetCells = new ArrayList<DataCell>();
-					for (Double value : cell.getDoubleArrayValue()) {
-						if (value == null) {
-							doubleSetCells.add(new MissingCell(null));
-						} else {
-							doubleSetCells.add(new DoubleCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createSetCell(doubleSetCells);
-					break;
-				case STRING:
-					cells[i] = new StringCell(cell.getStringValue());
-					break;
-				case STRING_LIST:
-					List<DataCell> stringListCells = new ArrayList<DataCell>();
-					for (String value : cell.getStringArrayValue()) {
-						if (value == null) {
-							stringListCells.add(new MissingCell(null));
-						} else {
-							stringListCells.add(new StringCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createListCell(stringListCells);
-					break;
-				case STRING_SET:
-					List<DataCell> stringSetCells = new ArrayList<DataCell>();
-					for (String value : cell.getStringArrayValue()) {
-						if (value == null) {
-							stringSetCells.add(new MissingCell(null));
-						} else {
-							stringSetCells.add(new StringCell(value));
-						}
-					}
-					cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
-					break;
-				case BYTES:
-					String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					if(bytesTypeId != null) {
-						Deserializer bytesDeserializer = m_pythonToKnimeExtensions
-								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
-						try {
-							if (cell.getBytesValue() == null) {
-								cells[i] = new MissingCell(null);
-							} else {
-								cells[i] = bytesDeserializer.deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()),
-										m_fileStoreFactory);
-							}
-							DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
-							if (dataTypeContainer != null) {
-								dataTypeContainer.m_dataTypes.add(cells[i].getType());
-							}
-						} catch (IllegalStateException | IOException e) {
-							LOGGER.error(e.getMessage(), e);
-							cells[i] = new MissingCell(null);
-						}
-					} else {
-						try {
-							if (cell.getBytesValue() == null) {
-								cells[i] = new MissingCell(null);
-							} else {
-								cells[i] = new DenseByteVectorCellFactory(new DenseByteVector(
-										ArrayUtils.toPrimitive(cell.getBytesValue()))).createDataCell();
-							}
-						} catch (IllegalStateException e) {
-							LOGGER.error(e.getMessage(), e);
-							cells[i] = new MissingCell(null);
-						}
-					}
-					break;
-				case BYTES_LIST:
-					String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					if(bytesListTypeId != null)
-					{
-						Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
-								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
-						List<DataCell> listCells = new ArrayList<DataCell>();
-						if (cell.getBytesArrayValue() == null) {
-							cells[i] = new MissingCell(null);
-						} else {
-							for (Byte[] value : cell.getBytesArrayValue()) {
-								if (value == null) {
-									listCells.add(new MissingCell(null));
-								} else {
-									try {
-										DataCell dc = bytesListDeserializer.deserialize(ArrayUtils.toPrimitive(value),
-													m_fileStoreFactory);
-										DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
-										if (dataTypeContainer != null) {
-											dataTypeContainer.m_dataTypes.add(dc.getType());
-										}
-										listCells.add(dc);
-									} catch (IllegalStateException | IOException e) {
-										LOGGER.error(e.getMessage(), e);
-										listCells.add(new MissingCell(null));
-									}
-								}
-							}
-							cells[i] = CollectionCellFactory.createListCell(listCells);
-						}
-					} else {
-						if (cell.getBytesArrayValue() == null) {
-							cells[i] = new MissingCell(null);
-						} else {
-							List<DataCell> listCells = new ArrayList<DataCell>();
-							for (Byte[] value : cell.getBytesArrayValue()) {
-								if (value == null) {
-									listCells.add(new MissingCell(null));
-								} else {
-									try {
-										listCells.add(new StringCell(value.toString()));
-									} catch (IllegalStateException e) {
-										LOGGER.error(e.getMessage(), e);
-										listCells.add(new MissingCell(null));
-									}
-								}
-							}
-							cells[i] = CollectionCellFactory.createListCell(listCells);
-						}
-					}
-					break;
-				case BYTES_SET:
-					String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
-					if(bytesSetTypeId != null)
-					{
-						Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
-								.getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
-						List<DataCell> setCells = new ArrayList<DataCell>();
-						if (cell.getBytesArrayValue() == null) {
-							cells[i] = new MissingCell(null);
-						} else {
-							for (Byte[] value : cell.getBytesArrayValue()) {
-								if (value == null) {
-									setCells.add(new MissingCell(null));
-								} else {
-									try {
-										DataCell dc = bytesSetDeserializer.deserialize(ArrayUtils.toPrimitive(value),
-												m_fileStoreFactory);
-										DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
-										if (dataTypeContainer != null) {
-											dataTypeContainer.m_dataTypes.add(dc.getType());
-										}
-										setCells.add(dc);
-									} catch (IllegalStateException | IOException e) {
-										LOGGER.error(e.getMessage(), e);
-										setCells.add(new MissingCell(null));
-									}
-								}
-							}
-							cells[i] = CollectionCellFactory.createSetCell(setCells);
-						}
-					} else {
-						List<DataCell> setCells = new ArrayList<DataCell>();
-						if (cell.getBytesArrayValue() == null) {
-							cells[i] = new MissingCell(null);
-						} else {
-							for (Byte[] value : cell.getBytesArrayValue()) {
-								if (value == null) {
-									setCells.add(new MissingCell(null));
-								} else {
-									try {
-										setCells.add(new StringCell(value.toString()));
-									} catch (IllegalStateException e) {
-										LOGGER.error(e.getMessage(), e);
-										setCells.add(new MissingCell(null));
-									}
-								}
-							}
-							cells[i] = CollectionCellFactory.createSetCell(setCells);
-						}
-					}
-					break;
-				default:
-					cells[i] = new MissingCell(null);
-				}
-			}
-			i++;
-		}
-		m_container.addRowToTable(new DefaultRow(row.getRowKey(), cells));
-		m_rowsDone++;
-		m_executionMonitor.setProgress(m_rowsDone / (double) m_tableSize);
-	}
+    @Override
+    public TableSpec getTableSpec() {
+        return m_spec;
+    }
 
-	@Override
-	public TableSpec getTableSpec() {
-		return m_spec;
-	}
+    private DataType getMostCommonAncestor(final HashSet<DataType> types) {
+        final Iterator<DataType> iter = types.iterator();
+        DataType mca = iter.next();
+        while (iter.hasNext()) {
+            mca = DataType.getCommonSuperType(mca, iter.next());
+        }
+        return mca;
+    }
 
-	private DataType getMostCommonAncestor(final HashSet<DataType> types) {
-		Iterator<DataType> iter = types.iterator();
-		DataType mca = iter.next();
-		while (iter.hasNext()) {
-			mca = DataType.getCommonSuperType(mca, iter.next());
-		}
-		return mca;
-	}
-
-	@Override
+    @Override
     public BufferedDataTable getTable() {
-		m_container.close();
-		DataTableSpec tableSpec = m_container.getTableSpec();
-		DataColumnSpec[] colSpecs = new DataColumnSpec[tableSpec.getNumColumns()];
-		for (int i = 0; i < colSpecs.length; i++) {
-			DataColumnSpec dcs = tableSpec.getColumnSpec(i);
-			DataColumnSpecCreator dcsc = new DataColumnSpecCreator(dcs);
-			if (m_columnsToRetype.containsKey(i)) {
-				DataTypeContainer dtContainer = m_columnsToRetype.get(i);
-				DataType elementType = getMostCommonAncestor(dtContainer.m_dataTypes);
-				if (dtContainer.m_resultType == ResultType.PRIMITIVE) {
-					dcsc.setType(elementType);
-				} else if (dtContainer.m_resultType == ResultType.LIST) {
-					dcsc.setType(ListCell.getCollectionType(elementType));
-				} else if (dtContainer.m_resultType == ResultType.SET) {
-					dcsc.setType(SetCell.getCollectionType(elementType));
-				}
-			}
-			colSpecs[i] = dcsc.createSpec();
-		}
-		DataTableSpec correctedSpec = new DataTableSpec(tableSpec.getName(), colSpecs);
-		return m_exec.createSpecReplacerTable(m_container.getTable(), correctedSpec);
-	}
+        m_container.close();
+        final DataTableSpec tableSpec = m_container.getTableSpec();
+        final DataColumnSpec[] colSpecs = new DataColumnSpec[tableSpec.getNumColumns()];
+        for (int i = 0; i < colSpecs.length; i++) {
+            final DataColumnSpec dcs = tableSpec.getColumnSpec(i);
+            final DataColumnSpecCreator dcsc = new DataColumnSpecCreator(dcs);
+            if (m_columnsToRetype.containsKey(i)) {
+                final DataTypeContainer dtContainer = m_columnsToRetype.get(i);
+                final DataType elementType = getMostCommonAncestor(dtContainer.m_dataTypes);
+                if (dtContainer.m_resultType == ResultType.PRIMITIVE) {
+                    dcsc.setType(elementType);
+                } else if (dtContainer.m_resultType == ResultType.LIST) {
+                    dcsc.setType(ListCell.getCollectionType(elementType));
+                } else if (dtContainer.m_resultType == ResultType.SET) {
+                    dcsc.setType(SetCell.getCollectionType(elementType));
+                }
+            }
+            colSpecs[i] = dcsc.createSpec();
+        }
+        final DataTableSpec correctedSpec = new DataTableSpec(tableSpec.getName(), colSpecs);
+        return m_exec.createSpecReplacerTable(m_container.getTable(), correctedSpec);
+    }
 
-	/**
-	 * Enum for distinguishing if a cell contains primitives or collections
-	 * (either lists or sets).
-	 */
-	private enum ResultType {
-		PRIMITIVE, LIST, SET;
-	}
+    /**
+     * Enum for distinguishing if a cell contains primitives or collections (either lists or sets).
+     */
+    private enum ResultType {
+        PRIMITIVE, LIST, SET;
+    }
 
-	/**
-	 * Container class used for storing all data types present in a certain
-	 * column. Also indicates if the objects in the column have a primitive or a
-	 * collection type.
-	 */
-	private class DataTypeContainer {
-		ResultType m_resultType;
-		HashSet<DataType> m_dataTypes;
+    /**
+     * Container class used for storing all data types present in a certain column. Also indicates if the objects in the
+     * column have a primitive or a collection type.
+     */
+    private class DataTypeContainer {
+        ResultType m_resultType;
 
-		public DataTypeContainer(final ResultType type) {
-			m_resultType = type;
-			m_dataTypes = new HashSet<DataType>();
-		}
-	}
+        HashSet<DataType> m_dataTypes;
+
+        public DataTypeContainer(final ResultType type) {
+            m_resultType = type;
+            m_dataTypes = new HashSet<DataType>();
+        }
+    }
 
 }

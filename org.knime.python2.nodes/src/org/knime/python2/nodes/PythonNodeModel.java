@@ -60,125 +60,125 @@ import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelOptions;
 
 /**
- * Base model for all python related nodes. Provides methods for loading and saving settings and
- * for pushing a collection of {@link FlowVariable}s to the stack.
+ * Base model for all python related nodes. Provides methods for loading and saving settings and for pushing a
+ * collection of {@link FlowVariable}s to the stack.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  * @param <Config> a configuration type
  */
 public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
 
-	Config m_config = createConfig();
+    Config m_config = createConfig();
 
-	/**
-	 * Constructor.
-	 * @param inPortTypes      the input port types
-	 * @param outPortTypes     the output port types
-	 */
-	public PythonNodeModel(final PortType[] inPortTypes,
-            final PortType[] outPortTypes) {
+    /**
+     * Constructor.
+     *
+     * @param inPortTypes the input port types
+     * @param outPortTypes the output port types
+     */
+    public PythonNodeModel(final PortType[] inPortTypes, final PortType[] outPortTypes) {
         super(inPortTypes, outPortTypes);
     }
 
-	/**
-	 * Creates the config.
-	 *
-	 * @return the config
-	 */
-	protected abstract Config createConfig();
+    /**
+     * Creates the config.
+     *
+     * @return the config
+     */
+    protected abstract Config createConfig();
 
-	/**
-	 * Gets the config.
-	 *
-	 * @return the config
-	 */
-	protected final Config getConfig() {
-		return m_config;
-	}
+    /**
+     * Gets the config.
+     *
+     * @return the config
+     */
+    protected final Config getConfig() {
+        return m_config;
+    }
 
-	/**
-	 * Gets the kernel specific options.
-	 *
-	 * @return the kernel specific options
-	 */
-	protected PythonKernelOptions getKernelOptions() {
-		PythonKernelOptions options = getConfig().getKernelOptions();
-		options.setFlowVariableOptions(FlowVariableOptions.parse(getAvailableFlowVariables()));
-		return options;
-	}
+    /**
+     * Gets the kernel specific options.
+     *
+     * @return the kernel specific options
+     */
+    protected PythonKernelOptions getKernelOptions() {
+        final PythonKernelOptions options = getConfig().getKernelOptions();
+        options.setFlowVariableOptions(FlowVariableOptions.parse(getAvailableFlowVariables()));
+        return options;
+    }
 
-	/**
-	 * Push new variables to the stack.
-	 *
-	 * Only pushes new variables to the stack if they are new or changed in type or value.
-	 *
-	 * @param newVariables The flow variables to push
-	 */
-	protected void addNewVariables(final Collection<FlowVariable> newVariables) {
-		Map<String, FlowVariable> flowVariables = getAvailableFlowVariables();
-        for (FlowVariable variable : newVariables) {
-        	// Only push if variable is new or has changed type or value
-        	boolean push = true;
-        	if (flowVariables.containsKey(variable.getName())) {
-        		// Old variable with the name exists
-        		FlowVariable oldVariable = flowVariables.get(variable.getName());
-        		if (oldVariable.getType().equals(variable.getType())) {
-        			// Old variable has the same type
-        			if (variable.getType().equals(Type.INTEGER)) {
-        				if (oldVariable.getIntValue() == variable.getIntValue()) {
-        					// Old variable has the same value
-        					push = false;
-        				}
-        			} else if (variable.getType().equals(Type.DOUBLE)) {
-        				if (new Double(oldVariable.getDoubleValue()).equals(new Double(variable.getDoubleValue()))) {
-        					// Old variable has the same value
-        					push = false;
-        				}
-        			} else if (variable.getType().equals(Type.STRING)) {
-        				if (oldVariable.getStringValue().equals(variable.getStringValue())) {
-        					// Old variable has the same value
-        					push = false;
-        				}
-        			}
-        		}
-        	}
-        	if (push) {
-	            if (variable.getType().equals(Type.INTEGER)) {
-	                pushFlowVariableInt(variable.getName(), variable.getIntValue());
-	            } else if (variable.getType().equals(Type.DOUBLE)) {
-	                pushFlowVariableDouble(variable.getName(), variable.getDoubleValue());
-	            } else if (variable.getType().equals(Type.STRING)) {
-	                pushFlowVariableString(variable.getName(), variable.getStringValue());
-	            }
-        	}
+    /**
+     * Push new variables to the stack.
+     *
+     * Only pushes new variables to the stack if they are new or changed in type or value.
+     *
+     * @param newVariables The flow variables to push
+     */
+    protected void addNewVariables(final Collection<FlowVariable> newVariables) {
+        final Map<String, FlowVariable> flowVariables = getAvailableFlowVariables();
+        for (final FlowVariable variable : newVariables) {
+            // Only push if variable is new or has changed type or value
+            boolean push = true;
+            if (flowVariables.containsKey(variable.getName())) {
+                // Old variable with the name exists
+                final FlowVariable oldVariable = flowVariables.get(variable.getName());
+                if (oldVariable.getType().equals(variable.getType())) {
+                    // Old variable has the same type
+                    if (variable.getType().equals(Type.INTEGER)) {
+                        if (oldVariable.getIntValue() == variable.getIntValue()) {
+                            // Old variable has the same value
+                            push = false;
+                        }
+                    } else if (variable.getType().equals(Type.DOUBLE)) {
+                        if (new Double(oldVariable.getDoubleValue()).equals(new Double(variable.getDoubleValue()))) {
+                            // Old variable has the same value
+                            push = false;
+                        }
+                    } else if (variable.getType().equals(Type.STRING)) {
+                        if (oldVariable.getStringValue().equals(variable.getStringValue())) {
+                            // Old variable has the same value
+                            push = false;
+                        }
+                    }
+                }
+            }
+            if (push) {
+                if (variable.getType().equals(Type.INTEGER)) {
+                    pushFlowVariableInt(variable.getName(), variable.getIntValue());
+                } else if (variable.getType().equals(Type.DOUBLE)) {
+                    pushFlowVariableDouble(variable.getName(), variable.getDoubleValue());
+                } else if (variable.getType().equals(Type.STRING)) {
+                    pushFlowVariableString(variable.getName(), variable.getStringValue());
+                }
+            }
         }
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(final NodeSettingsWO settings) {
-		m_config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) {
+        m_config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-		Config config = createConfig();
-		config.loadFrom(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        final Config config = createConfig();
+        config.loadFrom(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-		Config config = createConfig();
-		config.loadFrom(settings);
-		m_config = config;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        final Config config = createConfig();
+        config.loadFrom(settings);
+        m_config = config;
+    }
 
 }

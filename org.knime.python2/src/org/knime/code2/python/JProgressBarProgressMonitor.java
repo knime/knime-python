@@ -54,140 +54,140 @@ import org.knime.core.node.NodeProgressMonitor;
 import org.knime.core.node.workflow.NodeProgressListener;
 
 /**
- * Implementation of a {@link NodeProgressMonitor} holding a
- * {@link JProgressBar}.
+ * Implementation of a {@link NodeProgressMonitor} holding a {@link JProgressBar}.
  *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class JProgressBarProgressMonitor implements NodeProgressMonitor {
 
-	private JProgressBar m_progressBar;
-	private double m_progress;
-	private boolean m_isCanceled;
+    private final JProgressBar m_progressBar;
 
-	/**
-	 * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
-	 *
-	 * @param progressBar
-	 *            Progress bar that will display the progress
-	 */
-	public JProgressBarProgressMonitor(final JProgressBar progressBar) {
-		m_isCanceled = false;
-		m_progressBar = progressBar;
-		m_progressBar.setIndeterminate(false);
-		m_progressBar.setMinimum(0);
-		m_progressBar.setMaximum(100);
-		m_progressBar.setValue(0);
-		m_progressBar.setStringPainted(true);
-	}
+    private double m_progress;
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void checkCanceled() throws CanceledExecutionException {
-		if (m_isCanceled) {
+    private boolean m_isCanceled;
+
+    /**
+     * Creates a {@link NodeProgressMonitor} for the given {@link JProgressBar}
+     *
+     * @param progressBar Progress bar that will display the progress
+     */
+    public JProgressBarProgressMonitor(final JProgressBar progressBar) {
+        m_isCanceled = false;
+        m_progressBar = progressBar;
+        m_progressBar.setIndeterminate(false);
+        m_progressBar.setMinimum(0);
+        m_progressBar.setMaximum(100);
+        m_progressBar.setValue(0);
+        m_progressBar.setStringPainted(true);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void checkCanceled() throws CanceledExecutionException {
+        if (m_isCanceled) {
             throw new CanceledExecutionException();
         }
-	}
+    }
 
-	/**
-	 * Sets the canceled state.
-	 *
-	 * @param canceled the new canceled state
-	 */
-	public void setCanceled(final boolean canceled) {
-		m_isCanceled = canceled;
-	}
+    /**
+     * Sets the canceled state.
+     *
+     * @param canceled the new canceled state
+     */
+    public void setCanceled(final boolean canceled) {
+        m_isCanceled = canceled;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(final double progress) {
-		m_progress = progress;
-		m_progressBar.setValue((int) Math.round(progress * 100));
-		m_progressBar.setString((int) Math.round(progress * 100) + "%");
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setProgress(final double progress) {
+        m_progress = progress;
+        m_progressBar.setValue((int)Math.round(progress * 100));
+        m_progressBar.setString((int)Math.round(progress * 100) + "%");
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Double getProgress() {
-		return m_progress;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Double getProgress() {
+        return m_progress;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(final double progress, final String message) {
-		setProgress(progress);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setProgress(final double progress, final String message) {
+        setProgress(progress);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setMessage(final String message) {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setMessage(final String message) {
+        // do nothing
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setProgress(final String message) {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setProgress(final String message) {
+        // do nothing
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getMessage() {
-		return null;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getMessage() {
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setExecuteCanceled() {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setExecuteCanceled() {
+        // do nothing
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void reset() {
-		setProgress(0);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reset() {
+        setProgress(0);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void addProgressListener(final NodeProgressListener l) {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addProgressListener(final NodeProgressListener l) {
+        // do nothing
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeProgressListener(final NodeProgressListener l) {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeProgressListener(final NodeProgressListener l) {
+        // do nothing
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void removeAllProgressListener() {
-		// do nothing
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeAllProgressListener() {
+        // do nothing
+    }
 
 }

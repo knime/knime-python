@@ -58,30 +58,32 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
 public class KeyValueTableCreator implements TableCreator<Row> {
 
-	private Row m_row;
-	private TableSpec m_spec;
+    private Row m_row;
 
-	/**
-	 * Constructor.
-	 * @param spec a python integration specific table spec
-	 */
-	public KeyValueTableCreator(final TableSpec spec) {
-		m_spec = spec;
-	}
+    private final TableSpec m_spec;
 
-	@Override
-	public void addRow(final Row row) {
-		m_row = row;
-	}
+    /**
+     * Constructor.
+     *
+     * @param spec a python integration specific table spec
+     */
+    public KeyValueTableCreator(final TableSpec spec) {
+        m_spec = spec;
+    }
 
-	@Override
-	public TableSpec getTableSpec() {
-		return m_spec;
-	}
+    @Override
+    public void addRow(final Row row) {
+        m_row = row;
+    }
 
-	@Override
-	public Row getTable() {
-		return m_row;
-	}
+    @Override
+    public TableSpec getTableSpec() {
+        return m_spec;
+    }
+
+    @Override
+    public Row getTable() {
+        return m_row;
+    }
 
 }

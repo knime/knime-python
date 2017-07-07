@@ -55,115 +55,304 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class Column extends Table {
-  public static Column getRootAsColumn(final ByteBuffer _bb) { return getRootAsColumn(_bb, new Column()); }
-  public static Column getRootAsColumn(final ByteBuffer _bb, final Column obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public Column __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static Column getRootAsColumn(final ByteBuffer _bb) {
+        return getRootAsColumn(_bb, new Column());
+    }
 
-  public int type() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public ByteColumn byteColumn() { return byteColumn(new ByteColumn()); }
-  public ByteColumn byteColumn(final ByteColumn obj) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public ByteCollectionColumn byteListColumn() { return byteListColumn(new ByteCollectionColumn()); }
-  public ByteCollectionColumn byteListColumn(final ByteCollectionColumn obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public ByteCollectionColumn byteSetColumn() { return byteSetColumn(new ByteCollectionColumn()); }
-  public ByteCollectionColumn byteSetColumn(final ByteCollectionColumn obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public BooleanColumn booleanColumn() { return booleanColumn(new BooleanColumn()); }
-  public BooleanColumn booleanColumn(final BooleanColumn obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public BooleanCollectionColumn booleanListColumn() { return booleanListColumn(new BooleanCollectionColumn()); }
-  public BooleanCollectionColumn booleanListColumn(final BooleanCollectionColumn obj) { int o = __offset(14); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public BooleanCollectionColumn booleanSetColumn() { return booleanSetColumn(new BooleanCollectionColumn()); }
-  public BooleanCollectionColumn booleanSetColumn(final BooleanCollectionColumn obj) { int o = __offset(16); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public DoubleColumn doubleColumn() { return doubleColumn(new DoubleColumn()); }
-  public DoubleColumn doubleColumn(final DoubleColumn obj) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public DoubleCollectionColumn doubleListColumn() { return doubleListColumn(new DoubleCollectionColumn()); }
-  public DoubleCollectionColumn doubleListColumn(final DoubleCollectionColumn obj) { int o = __offset(20); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public DoubleCollectionColumn doubleSetColumn() { return doubleSetColumn(new DoubleCollectionColumn()); }
-  public DoubleCollectionColumn doubleSetColumn(final DoubleCollectionColumn obj) { int o = __offset(22); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public IntColumn intColumn() { return intColumn(new IntColumn()); }
-  public IntColumn intColumn(final IntColumn obj) { int o = __offset(24); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public IntCollectionColumn intListColumn() { return intListColumn(new IntCollectionColumn()); }
-  public IntCollectionColumn intListColumn(final IntCollectionColumn obj) { int o = __offset(26); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public IntCollectionColumn intSetColumn() { return intSetColumn(new IntCollectionColumn()); }
-  public IntCollectionColumn intSetColumn(final IntCollectionColumn obj) { int o = __offset(28); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public LongColumn longColumn() { return longColumn(new LongColumn()); }
-  public LongColumn longColumn(final LongColumn obj) { int o = __offset(30); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public LongCollectionColumn longListColumn() { return longListColumn(new LongCollectionColumn()); }
-  public LongCollectionColumn longListColumn(final LongCollectionColumn obj) { int o = __offset(32); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public LongCollectionColumn longSetColumn() { return longSetColumn(new LongCollectionColumn()); }
-  public LongCollectionColumn longSetColumn(final LongCollectionColumn obj) { int o = __offset(34); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public StringColumn stringColumn() { return stringColumn(new StringColumn()); }
-  public StringColumn stringColumn(final StringColumn obj) { int o = __offset(36); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public StringCollectionColumn stringListColumn() { return stringListColumn(new StringCollectionColumn()); }
-  public StringCollectionColumn stringListColumn(final StringCollectionColumn obj) { int o = __offset(38); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public StringCollectionColumn stringSetColumn() { return stringSetColumn(new StringCollectionColumn()); }
-  public StringCollectionColumn stringSetColumn(final StringCollectionColumn obj) { int o = __offset(40); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+    public static Column getRootAsColumn(final ByteBuffer _bb, final Column obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createColumn(final FlatBufferBuilder builder,
-      final int type,
-      final int byteColumnOffset,
-      final int byteListColumnOffset,
-      final int byteSetColumnOffset,
-      final int booleanColumnOffset,
-      final int booleanListColumnOffset,
-      final int booleanSetColumnOffset,
-      final int doubleColumnOffset,
-      final int doubleListColumnOffset,
-      final int doubleSetColumnOffset,
-      final int intColumnOffset,
-      final int intListColumnOffset,
-      final int intSetColumnOffset,
-      final int longColumnOffset,
-      final int longListColumnOffset,
-      final int longSetColumnOffset,
-      final int stringColumnOffset,
-      final int stringListColumnOffset,
-      final int stringSetColumnOffset) {
-    builder.startObject(19);
-    Column.addStringSetColumn(builder, stringSetColumnOffset);
-    Column.addStringListColumn(builder, stringListColumnOffset);
-    Column.addStringColumn(builder, stringColumnOffset);
-    Column.addLongSetColumn(builder, longSetColumnOffset);
-    Column.addLongListColumn(builder, longListColumnOffset);
-    Column.addLongColumn(builder, longColumnOffset);
-    Column.addIntSetColumn(builder, intSetColumnOffset);
-    Column.addIntListColumn(builder, intListColumnOffset);
-    Column.addIntColumn(builder, intColumnOffset);
-    Column.addDoubleSetColumn(builder, doubleSetColumnOffset);
-    Column.addDoubleListColumn(builder, doubleListColumnOffset);
-    Column.addDoubleColumn(builder, doubleColumnOffset);
-    Column.addBooleanSetColumn(builder, booleanSetColumnOffset);
-    Column.addBooleanListColumn(builder, booleanListColumnOffset);
-    Column.addBooleanColumn(builder, booleanColumnOffset);
-    Column.addByteSetColumn(builder, byteSetColumnOffset);
-    Column.addByteListColumn(builder, byteListColumnOffset);
-    Column.addByteColumn(builder, byteColumnOffset);
-    Column.addType(builder, type);
-    return Column.endColumn(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startColumn(final FlatBufferBuilder builder) { builder.startObject(19); }
-  public static void addType(final FlatBufferBuilder builder, final int type) { builder.addInt(0, type, 0); }
-  public static void addByteColumn(final FlatBufferBuilder builder, final int byteColumnOffset) { builder.addOffset(1, byteColumnOffset, 0); }
-  public static void addByteListColumn(final FlatBufferBuilder builder, final int byteListColumnOffset) { builder.addOffset(2, byteListColumnOffset, 0); }
-  public static void addByteSetColumn(final FlatBufferBuilder builder, final int byteSetColumnOffset) { builder.addOffset(3, byteSetColumnOffset, 0); }
-  public static void addBooleanColumn(final FlatBufferBuilder builder, final int booleanColumnOffset) { builder.addOffset(4, booleanColumnOffset, 0); }
-  public static void addBooleanListColumn(final FlatBufferBuilder builder, final int booleanListColumnOffset) { builder.addOffset(5, booleanListColumnOffset, 0); }
-  public static void addBooleanSetColumn(final FlatBufferBuilder builder, final int booleanSetColumnOffset) { builder.addOffset(6, booleanSetColumnOffset, 0); }
-  public static void addDoubleColumn(final FlatBufferBuilder builder, final int doubleColumnOffset) { builder.addOffset(7, doubleColumnOffset, 0); }
-  public static void addDoubleListColumn(final FlatBufferBuilder builder, final int doubleListColumnOffset) { builder.addOffset(8, doubleListColumnOffset, 0); }
-  public static void addDoubleSetColumn(final FlatBufferBuilder builder, final int doubleSetColumnOffset) { builder.addOffset(9, doubleSetColumnOffset, 0); }
-  public static void addIntColumn(final FlatBufferBuilder builder, final int intColumnOffset) { builder.addOffset(10, intColumnOffset, 0); }
-  public static void addIntListColumn(final FlatBufferBuilder builder, final int intListColumnOffset) { builder.addOffset(11, intListColumnOffset, 0); }
-  public static void addIntSetColumn(final FlatBufferBuilder builder, final int intSetColumnOffset) { builder.addOffset(12, intSetColumnOffset, 0); }
-  public static void addLongColumn(final FlatBufferBuilder builder, final int longColumnOffset) { builder.addOffset(13, longColumnOffset, 0); }
-  public static void addLongListColumn(final FlatBufferBuilder builder, final int longListColumnOffset) { builder.addOffset(14, longListColumnOffset, 0); }
-  public static void addLongSetColumn(final FlatBufferBuilder builder, final int longSetColumnOffset) { builder.addOffset(15, longSetColumnOffset, 0); }
-  public static void addStringColumn(final FlatBufferBuilder builder, final int stringColumnOffset) { builder.addOffset(16, stringColumnOffset, 0); }
-  public static void addStringListColumn(final FlatBufferBuilder builder, final int stringListColumnOffset) { builder.addOffset(17, stringListColumnOffset, 0); }
-  public static void addStringSetColumn(final FlatBufferBuilder builder, final int stringSetColumnOffset) { builder.addOffset(18, stringSetColumnOffset, 0); }
-  public static int endColumn(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public Column __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public int type() {
+        final int o = __offset(4);
+        return o != 0 ? bb.getInt(o + bb_pos) : 0;
+    }
+
+    public ByteColumn byteColumn() {
+        return byteColumn(new ByteColumn());
+    }
+
+    public ByteColumn byteColumn(final ByteColumn obj) {
+        final int o = __offset(6);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public ByteCollectionColumn byteListColumn() {
+        return byteListColumn(new ByteCollectionColumn());
+    }
+
+    public ByteCollectionColumn byteListColumn(final ByteCollectionColumn obj) {
+        final int o = __offset(8);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public ByteCollectionColumn byteSetColumn() {
+        return byteSetColumn(new ByteCollectionColumn());
+    }
+
+    public ByteCollectionColumn byteSetColumn(final ByteCollectionColumn obj) {
+        final int o = __offset(10);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public BooleanColumn booleanColumn() {
+        return booleanColumn(new BooleanColumn());
+    }
+
+    public BooleanColumn booleanColumn(final BooleanColumn obj) {
+        final int o = __offset(12);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public BooleanCollectionColumn booleanListColumn() {
+        return booleanListColumn(new BooleanCollectionColumn());
+    }
+
+    public BooleanCollectionColumn booleanListColumn(final BooleanCollectionColumn obj) {
+        final int o = __offset(14);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public BooleanCollectionColumn booleanSetColumn() {
+        return booleanSetColumn(new BooleanCollectionColumn());
+    }
+
+    public BooleanCollectionColumn booleanSetColumn(final BooleanCollectionColumn obj) {
+        final int o = __offset(16);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public DoubleColumn doubleColumn() {
+        return doubleColumn(new DoubleColumn());
+    }
+
+    public DoubleColumn doubleColumn(final DoubleColumn obj) {
+        final int o = __offset(18);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public DoubleCollectionColumn doubleListColumn() {
+        return doubleListColumn(new DoubleCollectionColumn());
+    }
+
+    public DoubleCollectionColumn doubleListColumn(final DoubleCollectionColumn obj) {
+        final int o = __offset(20);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public DoubleCollectionColumn doubleSetColumn() {
+        return doubleSetColumn(new DoubleCollectionColumn());
+    }
+
+    public DoubleCollectionColumn doubleSetColumn(final DoubleCollectionColumn obj) {
+        final int o = __offset(22);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public IntColumn intColumn() {
+        return intColumn(new IntColumn());
+    }
+
+    public IntColumn intColumn(final IntColumn obj) {
+        final int o = __offset(24);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public IntCollectionColumn intListColumn() {
+        return intListColumn(new IntCollectionColumn());
+    }
+
+    public IntCollectionColumn intListColumn(final IntCollectionColumn obj) {
+        final int o = __offset(26);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public IntCollectionColumn intSetColumn() {
+        return intSetColumn(new IntCollectionColumn());
+    }
+
+    public IntCollectionColumn intSetColumn(final IntCollectionColumn obj) {
+        final int o = __offset(28);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public LongColumn longColumn() {
+        return longColumn(new LongColumn());
+    }
+
+    public LongColumn longColumn(final LongColumn obj) {
+        final int o = __offset(30);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public LongCollectionColumn longListColumn() {
+        return longListColumn(new LongCollectionColumn());
+    }
+
+    public LongCollectionColumn longListColumn(final LongCollectionColumn obj) {
+        final int o = __offset(32);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public LongCollectionColumn longSetColumn() {
+        return longSetColumn(new LongCollectionColumn());
+    }
+
+    public LongCollectionColumn longSetColumn(final LongCollectionColumn obj) {
+        final int o = __offset(34);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public StringColumn stringColumn() {
+        return stringColumn(new StringColumn());
+    }
+
+    public StringColumn stringColumn(final StringColumn obj) {
+        final int o = __offset(36);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public StringCollectionColumn stringListColumn() {
+        return stringListColumn(new StringCollectionColumn());
+    }
+
+    public StringCollectionColumn stringListColumn(final StringCollectionColumn obj) {
+        final int o = __offset(38);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public StringCollectionColumn stringSetColumn() {
+        return stringSetColumn(new StringCollectionColumn());
+    }
+
+    public StringCollectionColumn stringSetColumn(final StringCollectionColumn obj) {
+        final int o = __offset(40);
+        return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null;
+    }
+
+    public static int createColumn(final FlatBufferBuilder builder, final int type, final int byteColumnOffset,
+        final int byteListColumnOffset, final int byteSetColumnOffset, final int booleanColumnOffset,
+        final int booleanListColumnOffset, final int booleanSetColumnOffset, final int doubleColumnOffset,
+        final int doubleListColumnOffset, final int doubleSetColumnOffset, final int intColumnOffset,
+        final int intListColumnOffset, final int intSetColumnOffset, final int longColumnOffset,
+        final int longListColumnOffset, final int longSetColumnOffset, final int stringColumnOffset,
+        final int stringListColumnOffset, final int stringSetColumnOffset) {
+        builder.startObject(19);
+        Column.addStringSetColumn(builder, stringSetColumnOffset);
+        Column.addStringListColumn(builder, stringListColumnOffset);
+        Column.addStringColumn(builder, stringColumnOffset);
+        Column.addLongSetColumn(builder, longSetColumnOffset);
+        Column.addLongListColumn(builder, longListColumnOffset);
+        Column.addLongColumn(builder, longColumnOffset);
+        Column.addIntSetColumn(builder, intSetColumnOffset);
+        Column.addIntListColumn(builder, intListColumnOffset);
+        Column.addIntColumn(builder, intColumnOffset);
+        Column.addDoubleSetColumn(builder, doubleSetColumnOffset);
+        Column.addDoubleListColumn(builder, doubleListColumnOffset);
+        Column.addDoubleColumn(builder, doubleColumnOffset);
+        Column.addBooleanSetColumn(builder, booleanSetColumnOffset);
+        Column.addBooleanListColumn(builder, booleanListColumnOffset);
+        Column.addBooleanColumn(builder, booleanColumnOffset);
+        Column.addByteSetColumn(builder, byteSetColumnOffset);
+        Column.addByteListColumn(builder, byteListColumnOffset);
+        Column.addByteColumn(builder, byteColumnOffset);
+        Column.addType(builder, type);
+        return Column.endColumn(builder);
+    }
+
+    public static void startColumn(final FlatBufferBuilder builder) {
+        builder.startObject(19);
+    }
+
+    public static void addType(final FlatBufferBuilder builder, final int type) {
+        builder.addInt(0, type, 0);
+    }
+
+    public static void addByteColumn(final FlatBufferBuilder builder, final int byteColumnOffset) {
+        builder.addOffset(1, byteColumnOffset, 0);
+    }
+
+    public static void addByteListColumn(final FlatBufferBuilder builder, final int byteListColumnOffset) {
+        builder.addOffset(2, byteListColumnOffset, 0);
+    }
+
+    public static void addByteSetColumn(final FlatBufferBuilder builder, final int byteSetColumnOffset) {
+        builder.addOffset(3, byteSetColumnOffset, 0);
+    }
+
+    public static void addBooleanColumn(final FlatBufferBuilder builder, final int booleanColumnOffset) {
+        builder.addOffset(4, booleanColumnOffset, 0);
+    }
+
+    public static void addBooleanListColumn(final FlatBufferBuilder builder, final int booleanListColumnOffset) {
+        builder.addOffset(5, booleanListColumnOffset, 0);
+    }
+
+    public static void addBooleanSetColumn(final FlatBufferBuilder builder, final int booleanSetColumnOffset) {
+        builder.addOffset(6, booleanSetColumnOffset, 0);
+    }
+
+    public static void addDoubleColumn(final FlatBufferBuilder builder, final int doubleColumnOffset) {
+        builder.addOffset(7, doubleColumnOffset, 0);
+    }
+
+    public static void addDoubleListColumn(final FlatBufferBuilder builder, final int doubleListColumnOffset) {
+        builder.addOffset(8, doubleListColumnOffset, 0);
+    }
+
+    public static void addDoubleSetColumn(final FlatBufferBuilder builder, final int doubleSetColumnOffset) {
+        builder.addOffset(9, doubleSetColumnOffset, 0);
+    }
+
+    public static void addIntColumn(final FlatBufferBuilder builder, final int intColumnOffset) {
+        builder.addOffset(10, intColumnOffset, 0);
+    }
+
+    public static void addIntListColumn(final FlatBufferBuilder builder, final int intListColumnOffset) {
+        builder.addOffset(11, intListColumnOffset, 0);
+    }
+
+    public static void addIntSetColumn(final FlatBufferBuilder builder, final int intSetColumnOffset) {
+        builder.addOffset(12, intSetColumnOffset, 0);
+    }
+
+    public static void addLongColumn(final FlatBufferBuilder builder, final int longColumnOffset) {
+        builder.addOffset(13, longColumnOffset, 0);
+    }
+
+    public static void addLongListColumn(final FlatBufferBuilder builder, final int longListColumnOffset) {
+        builder.addOffset(14, longListColumnOffset, 0);
+    }
+
+    public static void addLongSetColumn(final FlatBufferBuilder builder, final int longSetColumnOffset) {
+        builder.addOffset(15, longSetColumnOffset, 0);
+    }
+
+    public static void addStringColumn(final FlatBufferBuilder builder, final int stringColumnOffset) {
+        builder.addOffset(16, stringColumnOffset, 0);
+    }
+
+    public static void addStringListColumn(final FlatBufferBuilder builder, final int stringListColumnOffset) {
+        builder.addOffset(17, stringListColumnOffset, 0);
+    }
+
+    public static void addStringSetColumn(final FlatBufferBuilder builder, final int stringSetColumnOffset) {
+        builder.addOffset(18, stringSetColumnOffset, 0);
+    }
+
+    public static int endColumn(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

@@ -62,75 +62,77 @@ import org.w3c.dom.svg.SVGDocument;
  */
 public class ImageContainer {
 
-	private BufferedImage m_bufferedImage;
+    private final BufferedImage m_bufferedImage;
 
-	private SVGDocument m_svgDocument;
+    private final SVGDocument m_svgDocument;
 
-	/**
-	 * Constructor.
-	 * @param bufferedImage    a buffered image
-	 */
-	public ImageContainer(final BufferedImage bufferedImage) {
-		m_bufferedImage = bufferedImage;
-		m_svgDocument = null;
-	}
-
-	/**
+    /**
      * Constructor.
-     * @param svgDocument    an svg image that is transcoded to a {@link BufferedImage}
-	 * @throws TranscoderException
+     *
+     * @param bufferedImage a buffered image
      */
-	public ImageContainer(final SVGDocument svgDocument) throws TranscoderException {
-		m_svgDocument = svgDocument;
-        BufferedImageTranscoder t = new BufferedImageTranscoder();
+    public ImageContainer(final BufferedImage bufferedImage) {
+        m_bufferedImage = bufferedImage;
+        m_svgDocument = null;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param svgDocument an svg image that is transcoded to a {@link BufferedImage}
+     * @throws TranscoderException
+     */
+    public ImageContainer(final SVGDocument svgDocument) throws TranscoderException {
+        m_svgDocument = svgDocument;
+        final BufferedImageTranscoder t = new BufferedImageTranscoder();
         t.transcode(new TranscoderInput(svgDocument), null);
         m_bufferedImage = t.getBufferedImage();
-	}
+    }
 
-	/**
-	 * Checks for svg document.
-	 *
-	 * @return true, if successful
-	 */
-	public boolean hasSvgDocument() {
-		return m_svgDocument != null;
-	}
+    /**
+     * Checks for svg document.
+     *
+     * @return true, if successful
+     */
+    public boolean hasSvgDocument() {
+        return m_svgDocument != null;
+    }
 
-	/**
-	 * Gets the buffered image.
-	 *
-	 * @return the buffered image
-	 */
-	public BufferedImage getBufferedImage() {
-		return m_bufferedImage;
-	}
+    /**
+     * Gets the buffered image.
+     *
+     * @return the buffered image
+     */
+    public BufferedImage getBufferedImage() {
+        return m_bufferedImage;
+    }
 
-	/**
-	 * Gets the svg document.
-	 *
-	 * @return the svg document
-	 */
-	public SVGDocument getSvgDocument() {
-		return m_svgDocument;
-	}
+    /**
+     * Gets the svg document.
+     *
+     * @return the svg document
+     */
+    public SVGDocument getSvgDocument() {
+        return m_svgDocument;
+    }
 
-	private static class BufferedImageTranscoder extends ImageTranscoder {
-		protected BufferedImage bufferedImage;
+    private static class BufferedImageTranscoder extends ImageTranscoder {
+        protected BufferedImage bufferedImage;
 
-		@SuppressWarnings("hiding")
+        @SuppressWarnings("hiding")
         @Override
         public BufferedImage createImage(final int width, final int height) {
-			return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		}
+            return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        }
 
-		@Override
+        @Override
         public void writeImage(final BufferedImage img, final TranscoderOutput output) throws TranscoderException {
-			bufferedImage = img;
-		}
+            bufferedImage = img;
+        }
 
-		public BufferedImage getBufferedImage() {
-			return bufferedImage;
-		}
-	}
+        public BufferedImage getBufferedImage() {
+            return bufferedImage;
+        }
+    }
 
 }

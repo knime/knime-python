@@ -63,54 +63,55 @@ import org.knime.python2.port.PickledObjectPortObject;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonObjectWriterNodeModel extends PythonNodeModel<PythonObjectWriterNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonObjectWriterNodeModel() {
-		super(new PortType[] { PickledObjectPortObject.TYPE }, new PortType[0]);
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonObjectWriterNodeModel() {
+        super(new PortType[]{PickledObjectPortObject.TYPE}, new PortType[0]);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		try {
-			kernel.putFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putObject(PythonObjectWriterNodeConfig.getVariableNames().getInputObjects()[0],
-					((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
-			exec.createSubProgress(0.1).setProgress(1);
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.9).setProgress(1);
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new PortObject[0];
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        try {
+            kernel.putFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putObject(PythonObjectWriterNodeConfig.getVariableNames().getInputObjects()[0],
+                ((PickledObjectPortObject)inData[0]).getPickledObject(), exec);
+            exec.createSubProgress(0.1).setProgress(1);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonObjectWriterNodeConfig.getVariableNames().getFlowVariables());
+            exec.createSubProgress(0.9).setProgress(1);
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new PortObject[0];
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[0];
-	}
-	
-	@Override
-	protected PythonObjectWriterNodeConfig createConfig() {
-		return new PythonObjectWriterNodeConfig();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[0];
+    }
+
+    @Override
+    protected PythonObjectWriterNodeConfig createConfig() {
+        return new PythonObjectWriterNodeConfig();
+    }
 
 }

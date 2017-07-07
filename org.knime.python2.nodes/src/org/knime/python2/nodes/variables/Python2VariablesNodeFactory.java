@@ -55,57 +55,56 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class Python2VariablesNodeFactory extends NodeFactory<PythonVariablesNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonVariablesNodeModel createNodeModel() {
-		return new PythonVariablesNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonVariablesNodeModel createNodeModel() {
+        return new PythonVariablesNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonVariablesNodeModel> createNodeView(final int viewIndex, final PythonVariablesNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonVariablesNodeModel> createNodeView(final int viewIndex,
+        final PythonVariablesNodeModel nodeModel) {
         if (viewIndex == 0) {
-            return
-                new ExtToolStdoutNodeView<PythonVariablesNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<PythonVariablesNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
-            return
-                new ExtToolStderrNodeView<PythonVariablesNodeModel>(nodeModel);
+            return new ExtToolStderrNodeView<PythonVariablesNodeModel>(nodeModel);
         }
         return null;
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonVariablesNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonVariablesNodeDialog();
+    }
 
 }

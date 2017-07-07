@@ -55,30 +55,31 @@ import org.knime.core.data.DataType;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public abstract class DeserializerFactory {
-	
-	private DataType m_type;
-	
-	/**
-	 * Creates the factory.
-	 * 
-	 * @param dataType The cell type created by the deserializer
-	 */
-	public DeserializerFactory(final DataType dataType) {
-		m_type = dataType;
-	}
-	
-	/**
-	 * @return The cell type created by the deserializer
-	 */
-	public final DataType getDataType() {
-		return m_type;
-	}
-	
-	/**
-	 * Creates a deserializer.
-	 * 
-	 * @return The deserializer
-	 */
-	public abstract Deserializer createDeserializer();
+
+    private DataType m_type;
+
+    /**
+     * Creates the factory.
+     * 
+     * @param dataType
+     *            The cell type created by the deserializer
+     */
+    public DeserializerFactory(final DataType dataType) {
+        m_type = dataType;
+    }
+
+    /**
+     * @return The cell type created by the deserializer
+     */
+    public final DataType getDataType() {
+        return m_type;
+    }
+
+    /**
+     * Creates a deserializer.
+     * 
+     * @return The deserializer
+     */
+    public abstract Deserializer createDeserializer();
 
 }

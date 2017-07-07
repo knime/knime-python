@@ -54,124 +54,132 @@ import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
 
 /**
- * Container for a pickled python object consisting of the object's byte representation, python type and a
- * string representation.
+ * Container for a pickled python object consisting of the object's byte representation, python type and a string
+ * representation.
  *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
 public class PickledObject {
 
-	private static final String CFG_PICKLED_OBJECT = "pickledObject";
-	private static final String CFG_TYPE = "type";
-	private static final String CFG_STRING_REPRESENTATION = "stringRepresentation";
-	private byte[] m_pickledObject;
-	private String m_type;
-	private String m_stringRepresentation;
+    private static final String CFG_PICKLED_OBJECT = "pickledObject";
 
-	/**
-	 * Constructor.
-	 * @param pickledObject        the byte representation of the actual pickled object
-	 * @param type                 the type of the pickled object (in python)
-	 * @param stringRepresentation a representation of the pickled object as a string
-	 */
-	public PickledObject(final byte[] pickledObject, final String type, final String stringRepresentation) {
-		m_pickledObject = pickledObject;
-		m_type = type;
-		m_stringRepresentation = stringRepresentation;
-	}
+    private static final String CFG_TYPE = "type";
 
-	/**
-	 * Constructor.
-	 * @param model the model content to initialize the object from
-	 * @throws InvalidSettingsException
-	 */
-	public PickledObject(final ModelContentRO model) throws InvalidSettingsException {
-		m_pickledObject = model.getByteArray(CFG_PICKLED_OBJECT);
-		m_type = model.getString(CFG_TYPE);
-		m_stringRepresentation = model.getString(CFG_STRING_REPRESENTATION);
-	}
+    private static final String CFG_STRING_REPRESENTATION = "stringRepresentation";
 
-	/**
-	 * Gets the actual pickled object.
-	 *
-	 * @return the actual pickled object
-	 */
-	public byte[] getPickledObject() {
-		return m_pickledObject;
-	}
+    private final byte[] m_pickledObject;
 
-	/**
-	 * Gets the type.
-	 *
-	 * @return the type
-	 */
-	public String getType() {
-		return m_type;
-	}
+    private final String m_type;
 
-	/**
-	 * Gets the string representation.
-	 *
-	 * @return the string representation
-	 */
-	public String getStringRepresentation() {
-		return m_stringRepresentation;
-	}
+    private final String m_stringRepresentation;
 
-	/**
-	 * Checks if the pickled object is None in python.
-	 *
-	 * @return true, if is None
-	 */
-	public boolean isNone() {
-		return m_type.equals("NoneType");
-	}
+    /**
+     * Constructor.
+     *
+     * @param pickledObject the byte representation of the actual pickled object
+     * @param type the type of the pickled object (in python)
+     * @param stringRepresentation a representation of the pickled object as a string
+     */
+    public PickledObject(final byte[] pickledObject, final String type, final String stringRepresentation) {
+        m_pickledObject = pickledObject;
+        m_type = type;
+        m_stringRepresentation = stringRepresentation;
+    }
 
-	/**
-	 * Save the pickled object as model content.
-	 * @param model    the content to save to
-	 */
-	public void save(final ModelContentWO model) {
-		model.addByteArray(CFG_PICKLED_OBJECT, m_pickledObject);
-		model.addString(CFG_TYPE, m_type);
-		model.addString(CFG_STRING_REPRESENTATION, m_stringRepresentation);
-	}
+    /**
+     * Constructor.
+     *
+     * @param model the model content to initialize the object from
+     * @throws InvalidSettingsException
+     */
+    public PickledObject(final ModelContentRO model) throws InvalidSettingsException {
+        m_pickledObject = model.getByteArray(CFG_PICKLED_OBJECT);
+        m_type = model.getString(CFG_TYPE);
+        m_stringRepresentation = model.getString(CFG_STRING_REPRESENTATION);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(final Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (!(obj instanceof PickledObject)) {
-			return false;
-		}
-		PickledObject con = (PickledObject) obj;
-		EqualsBuilder eb = new EqualsBuilder();
-		eb.append(m_pickledObject, con.m_pickledObject);
-		eb.append(m_type, con.m_type);
-		eb.append(m_stringRepresentation, con.m_stringRepresentation);
-		return eb.isEquals();
-	}
+    /**
+     * Gets the actual pickled object.
+     *
+     * @return the actual pickled object
+     */
+    public byte[] getPickledObject() {
+        return m_pickledObject;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int hashCode() {
-		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(m_pickledObject);
-		hcb.append(m_type);
-		hcb.append(m_stringRepresentation);
-		return hcb.hashCode();
-	}
+    /**
+     * Gets the type.
+     *
+     * @return the type
+     */
+    public String getType() {
+        return m_type;
+    }
 
-	@Override
-	public String toString() {
-		return m_type + "\n" + m_stringRepresentation;
-	}
+    /**
+     * Gets the string representation.
+     *
+     * @return the string representation
+     */
+    public String getStringRepresentation() {
+        return m_stringRepresentation;
+    }
+
+    /**
+     * Checks if the pickled object is None in python.
+     *
+     * @return true, if is None
+     */
+    public boolean isNone() {
+        return m_type.equals("NoneType");
+    }
+
+    /**
+     * Save the pickled object as model content.
+     *
+     * @param model the content to save to
+     */
+    public void save(final ModelContentWO model) {
+        model.addByteArray(CFG_PICKLED_OBJECT, m_pickledObject);
+        model.addString(CFG_TYPE, m_type);
+        model.addString(CFG_STRING_REPRESENTATION, m_stringRepresentation);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof PickledObject)) {
+            return false;
+        }
+        final PickledObject con = (PickledObject)obj;
+        final EqualsBuilder eb = new EqualsBuilder();
+        eb.append(m_pickledObject, con.m_pickledObject);
+        eb.append(m_type, con.m_type);
+        eb.append(m_stringRepresentation, con.m_stringRepresentation);
+        return eb.isEquals();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        final HashCodeBuilder hcb = new HashCodeBuilder();
+        hcb.append(m_pickledObject);
+        hcb.append(m_type);
+        hcb.append(m_stringRepresentation);
+        return hcb.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return m_type + "\n" + m_stringRepresentation;
+    }
 
 }

@@ -62,28 +62,28 @@ import org.knime.python.typeextension.SerializerFactory;
 
 @SuppressWarnings("deprecation")
 public class DateTimeSerializerFactory extends SerializerFactory<DateAndTimeValue> {
-	
-	static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
-	
-	public DateTimeSerializerFactory() {
-		super(DateAndTimeValue.class);
-	}
-	
-	@Override
-	public Serializer<? extends DateAndTimeValue> createSerializer() {
-		return new DateAndTimeSerializer();
-	}
-	
-	private class DateAndTimeSerializer implements Serializer<DateAndTimeValue> {
 
-		@Override
-		public byte[] serialize(DateAndTimeValue value) throws IOException {
-			Date date = value.getUTCCalendarClone().getTime();
-			SimpleDateFormat sdf = new SimpleDateFormat(FORMAT);
-			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-			return sdf.format(date).getBytes("UTF-8");
-		}
-		
-	}
+    static final String FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
+
+    public DateTimeSerializerFactory() {
+        super(DateAndTimeValue.class);
+    }
+
+    @Override
+    public Serializer<? extends DateAndTimeValue> createSerializer() {
+        return new DateAndTimeSerializer();
+    }
+
+    private class DateAndTimeSerializer implements Serializer<DateAndTimeValue> {
+
+        @Override
+        public byte[] serialize(DateAndTimeValue value) throws IOException {
+            Date date = value.getUTCCalendarClone().getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat(FORMAT);
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return sdf.format(date).getBytes("UTF-8");
+        }
+
+    }
 
 }

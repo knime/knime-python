@@ -78,85 +78,85 @@ import org.knime.python2.nodes.PythonNodeModel;
 @SuppressWarnings("deprecation")
 class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonScriptDBNodeModel() {
-		super(new PortType[] { DatabasePortObject.TYPE }, new PortType[] { DatabasePortObject.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonScriptDBNodeModel() {
+        super(new PortType[]{DatabasePortObject.TYPE}, new PortType[]{DatabasePortObject.TYPE});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		final DatabasePortObject dbObj = (DatabasePortObject) inData[0];
-		checkDBConnection(dbObj.getSpec());
-		try {
-			kernel.putFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			final CredentialsProvider cp = getCredentialsProvider();
-			final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
-			final Collection<String> jars = getJars(connIn);
-			kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
-			final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
-			final Collection<FlowVariable> variables = kernel
-					.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
-			addNewVariables(variables);
-			final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn,
-					kernel.getSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]));
-			final DatabaseReaderConnection dbCon = new DatabaseReaderConnection(connOut);
-			final DataTableSpec resultSpec = dbCon.getDataTableSpec(cp);
-			return new PortObject[] { new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut)) };
-		} finally {
-			kernel.close();
-		}
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        final DatabasePortObject dbObj = (DatabasePortObject)inData[0];
+        checkDBConnection(dbObj.getSpec());
+        try {
+            kernel.putFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            final CredentialsProvider cp = getCredentialsProvider();
+            final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
+            final Collection<String> jars = getJars(connIn);
+            kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
+            addNewVariables(variables);
+            final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn,
+                kernel.getSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]));
+            final DatabaseReaderConnection dbCon = new DatabaseReaderConnection(connOut);
+            final DataTableSpec resultSpec = dbCon.getDataTableSpec(cp);
+            return new PortObject[]{new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut))};
+        } finally {
+            kernel.close();
+        }
+    }
 
-	static Collection<String> getJars(final DatabaseQueryConnectionSettings connectionSettings) throws IOException {
-		// locate the jdbc jar files
-		try {
-			final Collection<String> jars = new LinkedList<>();
-			final DatabaseUtility utility = connectionSettings.getUtility();
-			final Collection<File> driverFiles = utility.getConnectionFactory().getDriverFactory()
-					.getDriverFiles(connectionSettings);
-			for (final File file : driverFiles) {
-				final String absolutePath = file.getAbsolutePath();
-				jars.add(absolutePath);
-			}
-			return jars;
-		} catch (final Exception e) {
-			throw new IOException(e);
-		}
-	}
+    static Collection<String> getJars(final DatabaseQueryConnectionSettings connectionSettings) throws IOException {
+        // locate the jdbc jar files
+        try {
+            final Collection<String> jars = new LinkedList<>();
+            final DatabaseUtility utility = connectionSettings.getUtility();
+            final Collection<File> driverFiles =
+                    utility.getConnectionFactory().getDriverFactory().getDriverFiles(connectionSettings);
+            for (final File file : driverFiles) {
+                final String absolutePath = file.getAbsolutePath();
+                jars.add(absolutePath);
+            }
+            return jars;
+        } catch (final Exception e) {
+            throw new IOException(e);
+        }
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		final DatabasePortObjectSpec spec = (DatabasePortObjectSpec) inSpecs[0];
-		checkDBConnection(spec);
-		return new PortObjectSpec[] { null };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        final DatabasePortObjectSpec spec = (DatabasePortObjectSpec)inSpecs[0];
+        checkDBConnection(spec);
+        return new PortObjectSpec[]{null};
+    }
 
-	/**
-	 * @param spec
-	 * @throws InvalidSettingsException
-	 */
-	private void checkDBConnection(final DatabasePortObjectSpec spec) throws InvalidSettingsException {
-		final DatabaseUtility utility = DatabaseUtility.getUtility(spec.getDatabaseIdentifier());
-		if (!utility.supportsInsert() && !utility.supportsUpdate()) {
-			throw new InvalidSettingsException("Database does not support insert or update");
-		}
-	}
+    /**
+     * @param spec
+     * @throws InvalidSettingsException
+     */
+    private void checkDBConnection(final DatabasePortObjectSpec spec) throws InvalidSettingsException {
+        final DatabaseUtility utility = DatabaseUtility.getUtility(spec.getDatabaseIdentifier());
+        if (!utility.supportsInsert() && !utility.supportsUpdate()) {
+            throw new InvalidSettingsException("Database does not support insert or update");
+        }
+    }
 
-	@Override
-	protected PythonScriptDBNodeConfig createConfig() {
-		return new PythonScriptDBNodeConfig();
-	}
+    @Override
+    protected PythonScriptDBNodeConfig createConfig() {
+        return new PythonScriptDBNodeConfig();
+    }
 
 }

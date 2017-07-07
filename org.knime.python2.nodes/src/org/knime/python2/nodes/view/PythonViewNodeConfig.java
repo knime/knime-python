@@ -52,35 +52,29 @@ import org.knime.code2.python.PythonSourceCodeConfig;
 
 class PythonViewNodeConfig extends PythonSourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames(
-			"flow_variables", new String[] { "input_table" }, null,
-			new String[] { "output_image" }, null, null);
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
+        null, new String[]{"output_image"}, null, null);
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return "from io import BytesIO\n" +
-				"# Only use numeric columns\n" +
-				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
-				"# Replace row ID by number\n" +
-				"data.index = range(0, len(data))\n" +
-				"# Create buffer to write into\n" +
-				"buffer = BytesIO()\n" +
-				"# Create plot and write it into the buffer\n" +
-				"data.plot().get_figure().savefig(buffer, format='svg')\n" +
-				"# The output is the content of the buffer\n" +
-				VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()\n";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return "from io import BytesIO\n" + "# Only use numeric columns\n" + "data = "
+                + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Replace row ID by number\n"
+                + "data.index = range(0, len(data))\n" + "# Create buffer to write into\n" + "buffer = BytesIO()\n"
+                + "# Create plot and write it into the buffer\n"
+                + "data.plot().get_figure().savefig(buffer, format='svg')\n" + "# The output is the content of the buffer\n"
+                + VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()\n";
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

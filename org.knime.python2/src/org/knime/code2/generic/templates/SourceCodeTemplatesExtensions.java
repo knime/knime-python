@@ -59,42 +59,43 @@ import org.knime.python2.Activator;
 /**
  * Class managing source code templates that are made available via the org.knime.python2.sourcecodetemplates extension
  * point.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class SourceCodeTemplatesExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
-	
-	private static List<File> templateFolders;
-	
-	/**
-	 * Read the paths to all folders containing source code templates available via the extension point
-	 * and store them internally.
-	 */
-	public static void init() {
-		templateFolders = new ArrayList<File>();
-		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python2.sourcecodetemplates");
-		for (IConfigurationElement config : configs) {
-			String pluginId = config.getContributor().getName();
-			String path = config.getAttribute("path");
-			File folder = Activator.getFile(pluginId, path);
-			if (folder != null && folder.isDirectory()) {
-				templateFolders.add(folder);
-			} else {
-				LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
-			}
-		}
-	}
-	
-	/**
-	 * Provide a list of all folders containing source code templates available via the extension point
-	 * @return list of template folders
-	 */
-	public static List<File> getTemplateFolders() {
-		return templateFolders;
-	}
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
+
+    private static List<File> templateFolders;
+
+    /**
+     * Read the paths to all folders containing source code templates available via the extension point and store them
+     * internally.
+     */
+    public static void init() {
+        templateFolders = new ArrayList<File>();
+        final IConfigurationElement[] configs =
+                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.sourcecodetemplates");
+        for (final IConfigurationElement config : configs) {
+            final String pluginId = config.getContributor().getName();
+            final String path = config.getAttribute("path");
+            final File folder = Activator.getFile(pluginId, path);
+            if ((folder != null) && folder.isDirectory()) {
+                templateFolders.add(folder);
+            } else {
+                LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
+            }
+        }
+    }
+
+    /**
+     * Provide a list of all folders containing source code templates available via the extension point
+     *
+     * @return list of template folders
+     */
+    public static List<File> getTemplateFolders() {
+        return templateFolders;
+    }
 
 }

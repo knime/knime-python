@@ -64,54 +64,54 @@ import org.knime.python2.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonVariablesNodeModel extends PythonNodeModel<PythonVariablesNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonVariablesNodeModel() {
-		super(new PortType[] {FlowVariablePortObject.TYPE_OPTIONAL},
-                new PortType[] {FlowVariablePortObject.TYPE});
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonVariablesNodeModel() {
+        super(new PortType[]{FlowVariablePortObject.TYPE_OPTIONAL}, new PortType[]{FlowVariablePortObject.TYPE});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inObjects, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		try {
-			kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			exec.createSubProgress(0.1).setProgress(1);
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.8).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.1).setProgress(1);
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new PortObject[] { FlowVariablePortObject.INSTANCE };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        try {
+            kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            exec.createSubProgress(0.1).setProgress(1);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.8).setProgress(1);
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables());
+            exec.createSubProgress(0.1).setProgress(1);
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new PortObject[]{FlowVariablePortObject.INSTANCE};
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { FlowVariablePortObjectSpec.INSTANCE };
-	}
-	
-	@Override
-	protected PythonVariablesNodeConfig createConfig() {
-		return new PythonVariablesNodeConfig();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[]{FlowVariablePortObjectSpec.INSTANCE};
+    }
+
+    @Override
+    protected PythonVariablesNodeConfig createConfig() {
+        return new PythonVariablesNodeConfig();
+    }
 
 }

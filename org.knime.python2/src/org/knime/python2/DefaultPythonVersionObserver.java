@@ -47,23 +47,25 @@ package org.knime.python2;
 
 /**
  * Observers multiple {@link DefaultPythonVersionOption}s. Only one of those may be selected at one time.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public interface DefaultPythonVersionObserver {
-	
-	/**
-	 * Sends an update to every observed {@link DefaultPythonVersionOption} containing the currently selected option. 
-	 * @param option - the currently selected option
-	 */
-	public void notifyChange(DefaultPythonVersionOption option);
-	
-	/**
-	 * Adds a {@link DefaultPythonVersionOption} to observe
-	 * @param option - an {@link DefaultPythonVersionOption} to observe
-	 */
-	public void addOption(DefaultPythonVersionOption option);
+
+    /**
+     * Sends an update to every observed {@link DefaultPythonVersionOption} containing the currently selected option.
+     *
+     * @param option - the currently selected option
+     */
+    public void notifyChange(DefaultPythonVersionOption option);
+
+    /**
+     * Adds a {@link DefaultPythonVersionOption} to observe
+     *
+     * @param option - an {@link DefaultPythonVersionOption} to observe
+     */
+    public void addOption(DefaultPythonVersionOption option);
 
 }

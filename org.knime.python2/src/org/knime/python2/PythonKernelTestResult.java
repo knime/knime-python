@@ -49,66 +49,65 @@ package org.knime.python2;
 
 /**
  * Results of a python test.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonKernelTestResult {
 
-	private String m_version;
-	private String m_message;
-	private boolean m_error;
+    private final String m_version;
 
-	/**
-	 * Creates a test result.
-	 * 
-	 * @param message
-	 *            The result message containing detailed information
-	 */
-	PythonKernelTestResult(final String message) {
-		int endOfLineOne = message.indexOf(System.lineSeparator());
-		if (endOfLineOne < 0) {
-			endOfLineOne = message.length();
-			m_message = message.trim();
-		} else {
-			m_message = message.substring(endOfLineOne, message.length()).trim();
-		}
-		String firstLine = message.substring(0, endOfLineOne);
-		m_version = firstLine.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? firstLine : null;
-		if (m_version == null) {
-			m_error = true;
-			m_message = "Could not find python executable at the given location.";
-		}
-		if (!m_message.isEmpty()) {
-			m_error = true;
-		}
-	}
+    private String m_message;
 
-	/**
-	 * Returns the python version.
-	 * 
-	 * @return The version of the python installation
-	 */
-	public String getVersion() {
-		return m_version;
-	}
+    private boolean m_error;
 
-	/**
-	 * Returns detailed information about the result of the test.
-	 * 
-	 * @return The result message containing detailed information
-	 */
-	public String getMessage() {
-		return m_message;
-	}
+    /**
+     * Creates a test result.
+     *
+     * @param message The result message containing detailed information
+     */
+    PythonKernelTestResult(final String message) {
+        int endOfLineOne = message.indexOf(System.lineSeparator());
+        if (endOfLineOne < 0) {
+            endOfLineOne = message.length();
+            m_message = message.trim();
+        } else {
+            m_message = message.substring(endOfLineOne, message.length()).trim();
+        }
+        final String firstLine = message.substring(0, endOfLineOne);
+        m_version = firstLine.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? firstLine : null;
+        if (m_version == null) {
+            m_error = true;
+            m_message = "Could not find python executable at the given location.";
+        }
+        if (!m_message.isEmpty()) {
+            m_error = true;
+        }
+    }
 
-	/**
-	 * Returns if the python installation is not capable of running the python
-	 * kernel.
-	 * 
-	 * @return true if the installation is not capable of running the python
-	 *         kernel, false otherwise
-	 */
-	public boolean hasError() {
-		return m_error;
-	}
+    /**
+     * Returns the python version.
+     *
+     * @return The version of the python installation
+     */
+    public String getVersion() {
+        return m_version;
+    }
+
+    /**
+     * Returns detailed information about the result of the test.
+     *
+     * @return The result message containing detailed information
+     */
+    public String getMessage() {
+        return m_message;
+    }
+
+    /**
+     * Returns if the python installation is not capable of running the python kernel.
+     *
+     * @return true if the installation is not capable of running the python kernel, false otherwise
+     */
+    public boolean hasError() {
+        return m_error;
+    }
 }

@@ -54,30 +54,30 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
  */
 public interface SerializationLibrary {
 
-	/**
-	 * Converts the given table into bytes for transfer to python.
-	 *
-	 * @param tableIterator 			Iterator for the table that should be converted.
-	 * @param serializationOptions	All options that control the serialization process.
-	 * @return The bytes that should be send to python.
-	 */
-	byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions);
+    /**
+     * Converts the given table into bytes for transfer to python.
+     *
+     * @param tableIterator Iterator for the table that should be converted.
+     * @param serializationOptions All options that control the serialization process.
+     * @return The bytes that should be send to python.
+     */
+    byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions);
 
-	/**
-	 * Adds the rows contained in the bytes to the given {@link TableCreator}.
-	 *
-	 * @param tableCreator 			The {@link TableCreator} that the rows should be added to.
-	 * @param serializationOptions	All options that control the serialization process.
-	 * @param bytes The bytes containing the encoded table.
-	 */
-	void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions);
+    /**
+     * Adds the rows contained in the bytes to the given {@link TableCreator}.
+     *
+     * @param tableCreator The {@link TableCreator} that the rows should be added to.
+     * @param serializationOptions All options that control the serialization process.
+     * @param bytes The bytes containing the encoded table.
+     */
+    void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions);
 
-	/**
-	 * Extracts the {@link TableSpec} of the given table.
-	 *
-	 * @param bytes The encoded table.
-	 * @return The {@link TableSpec} of the encoded table.
-	 */
-	TableSpec tableSpecFromBytes(byte[] bytes);
+    /**
+     * Extracts the {@link TableSpec} of the given table.
+     *
+     * @param bytes The encoded table.
+     * @return The {@link TableSpec} of the encoded table.
+     */
+    TableSpec tableSpecFromBytes(byte[] bytes);
 
 }

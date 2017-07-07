@@ -55,50 +55,126 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class KnimeTable extends Table {
-  public static KnimeTable getRootAsKnimeTable(final ByteBuffer _bb) { return getRootAsKnimeTable(_bb, new KnimeTable()); }
-  public static KnimeTable getRootAsKnimeTable(final ByteBuffer _bb, final KnimeTable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public KnimeTable __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static KnimeTable getRootAsKnimeTable(final ByteBuffer _bb) {
+        return getRootAsKnimeTable(_bb, new KnimeTable());
+    }
 
-  public String rowIDs(final int j) { int o = __offset(4); return o != 0 ? __string(__vector(o) + j * 4) : null; }
-  public int rowIDsLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public String colNames(final int j) { int o = __offset(6); return o != 0 ? __string(__vector(o) + j * 4) : null; }
-  public int colNamesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public Column columns(final int j) { return columns(new Column(), j); }
-  public Column columns(final Column obj, final int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
-  public int columnsLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
+    public static KnimeTable getRootAsKnimeTable(final ByteBuffer _bb, final KnimeTable obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createKnimeTable(final FlatBufferBuilder builder,
-      final int rowIDsOffset,
-      final int colNamesOffset,
-      final int columnsOffset) {
-    builder.startObject(3);
-    KnimeTable.addColumns(builder, columnsOffset);
-    KnimeTable.addColNames(builder, colNamesOffset);
-    KnimeTable.addRowIDs(builder, rowIDsOffset);
-    return KnimeTable.endKnimeTable(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startKnimeTable(final FlatBufferBuilder builder) { builder.startObject(3); }
-  public static void addRowIDs(final FlatBufferBuilder builder, final int rowIDsOffset) { builder.addOffset(0, rowIDsOffset, 0); }
-  public static int createRowIDsVector(final FlatBufferBuilder builder, final int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-} return builder.endVector(); }
-  public static void startRowIDsVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addColNames(final FlatBufferBuilder builder, final int colNamesOffset) { builder.addOffset(1, colNamesOffset, 0); }
-  public static int createColNamesVector(final FlatBufferBuilder builder, final int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-} return builder.endVector(); }
-  public static void startColNamesVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addColumns(final FlatBufferBuilder builder, final int columnsOffset) { builder.addOffset(2, columnsOffset, 0); }
-  public static int createColumnsVector(final FlatBufferBuilder builder, final int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-} return builder.endVector(); }
-  public static void startColumnsVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(4, numElems, 4); }
-  public static int endKnimeTable(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
-  public static void finishKnimeTableBuffer(final FlatBufferBuilder builder, final int offset) { builder.finish(offset); }
+    public KnimeTable __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public String rowIDs(final int j) {
+        final int o = __offset(4);
+        return o != 0 ? __string(__vector(o) + (j * 4)) : null;
+    }
+
+    public int rowIDsLength() {
+        final int o = __offset(4);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public String colNames(final int j) {
+        final int o = __offset(6);
+        return o != 0 ? __string(__vector(o) + (j * 4)) : null;
+    }
+
+    public int colNamesLength() {
+        final int o = __offset(6);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public Column columns(final int j) {
+        return columns(new Column(), j);
+    }
+
+    public Column columns(final Column obj, final int j) {
+        final int o = __offset(8);
+        return o != 0 ? obj.__assign(__indirect(__vector(o) + (j * 4)), bb) : null;
+    }
+
+    public int columnsLength() {
+        final int o = __offset(8);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public static int createKnimeTable(final FlatBufferBuilder builder, final int rowIDsOffset,
+        final int colNamesOffset, final int columnsOffset) {
+        builder.startObject(3);
+        KnimeTable.addColumns(builder, columnsOffset);
+        KnimeTable.addColNames(builder, colNamesOffset);
+        KnimeTable.addRowIDs(builder, rowIDsOffset);
+        return KnimeTable.endKnimeTable(builder);
+    }
+
+    public static void startKnimeTable(final FlatBufferBuilder builder) {
+        builder.startObject(3);
+    }
+
+    public static void addRowIDs(final FlatBufferBuilder builder, final int rowIDsOffset) {
+        builder.addOffset(0, rowIDsOffset, 0);
+    }
+
+    public static int createRowIDsVector(final FlatBufferBuilder builder, final int[] data) {
+        builder.startVector(4, data.length, 4);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addOffset(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startRowIDsVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(4, numElems, 4);
+    }
+
+    public static void addColNames(final FlatBufferBuilder builder, final int colNamesOffset) {
+        builder.addOffset(1, colNamesOffset, 0);
+    }
+
+    public static int createColNamesVector(final FlatBufferBuilder builder, final int[] data) {
+        builder.startVector(4, data.length, 4);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addOffset(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startColNamesVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(4, numElems, 4);
+    }
+
+    public static void addColumns(final FlatBufferBuilder builder, final int columnsOffset) {
+        builder.addOffset(2, columnsOffset, 0);
+    }
+
+    public static int createColumnsVector(final FlatBufferBuilder builder, final int[] data) {
+        builder.startVector(4, data.length, 4);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addOffset(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startColumnsVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(4, numElems, 4);
+    }
+
+    public static int endKnimeTable(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
+
+    public static void finishKnimeTableBuffer(final FlatBufferBuilder builder, final int offset) {
+        builder.finish(offset);
+    }
 }
-

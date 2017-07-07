@@ -51,9 +51,8 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonPreferencePage;
 
 /**
- * Encapsulates all options that may be set for the python nodes via FlowVariables.
- * Offers a factory method for parsing the list of available flow variables for a node into a
- * {@link FlowVariableOptions} object.
+ * Encapsulates all options that may be set for the python nodes via FlowVariables. Offers a factory method for parsing
+ * the list of available flow variables for a node into a {@link FlowVariableOptions} object.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
@@ -61,67 +60,70 @@ import org.knime.python2.PythonPreferencePage;
 
 public class FlowVariableOptions {
 
-	private boolean m_overrulePreferencePage = false;
+    private boolean m_overrulePreferencePage = false;
 
-	private String m_serializerId = null;
+    private String m_serializerId = null;
 
-	/**
-	 * Default constructor.
-	 */
-	public FlowVariableOptions() {
+    /**
+     * Default constructor.
+     */
+    public FlowVariableOptions() {
 
-	}
+    }
 
-	/**
-	 * Indicates if the preference page options should be overruled.
-	 * @return yes/no
-	 */
-	public boolean getOverrulePreferencePage() {
-		return m_overrulePreferencePage;
-	}
+    /**
+     * Indicates if the preference page options should be overruled.
+     *
+     * @return yes/no
+     */
+    public boolean getOverrulePreferencePage() {
+        return m_overrulePreferencePage;
+    }
 
-	/**
-	 * Indicate if the preference page options should be overruled.
-	 * @param overrulePreferencePage overrule yes/no
-	 */
-	public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
-		this.m_overrulePreferencePage = overrulePreferencePage;
-	}
+    /**
+     * Indicate if the preference page options should be overruled.
+     *
+     * @param overrulePreferencePage overrule yes/no
+     */
+    public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
+        this.m_overrulePreferencePage = overrulePreferencePage;
+    }
 
-	/**
-	 * Gets the serialization library id.
-	 *
-	 * @return the serialization library id
-	 */
-	public String getSerializerId() {
-		return m_serializerId;
-	}
+    /**
+     * Gets the serialization library id.
+     *
+     * @return the serialization library id
+     */
+    public String getSerializerId() {
+        return m_serializerId;
+    }
 
-	/**
-	 * Sets the serialization library id.
-	 *
-	 * @param serializerId the new serialization library id
-	 */
-	public void setSerializerId(final String serializerId) {
-		this.m_serializerId = serializerId;
-	}
+    /**
+     * Sets the serialization library id.
+     *
+     * @param serializerId the new serialization library id
+     */
+    public void setSerializerId(final String serializerId) {
+        this.m_serializerId = serializerId;
+    }
 
-	/**
-	 * Parse the list of available flow variables and process those setting available flow variable options.
-	 * @param map - the available flow variables as key/value pairs
-	 * @return a initialized {@link FlowVariableOptions} object
-	 */
-	public static FlowVariableOptions parse(final Map<String, FlowVariable> map) {
-		FlowVariableOptions options = new FlowVariableOptions();
-		FlowVariable fv = map.get("python_serialization_library");
-	    String serLib = (fv == null) ? null:fv.getStringValue();
-		if( serLib != null && PythonPreferencePage.getAvailableSerializerIds().contains(serLib) ) {
-			options.setOverrulePreferencePage(true);
-			options.setSerializerId(serLib);
-		} else if(serLib != null) {
-			throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
-		}
-		return options;
-	}
+    /**
+     * Parse the list of available flow variables and process those setting available flow variable options.
+     *
+     * @param map - the available flow variables as key/value pairs
+     * @return a initialized {@link FlowVariableOptions} object
+     */
+    public static FlowVariableOptions parse(final Map<String, FlowVariable> map) {
+        final FlowVariableOptions options = new FlowVariableOptions();
+        final FlowVariable fv = map.get("python_serialization_library");
+        final String serLib = (fv == null) ? null : fv.getStringValue();
+        if ((serLib != null) && PythonPreferencePage.getAvailableSerializerIds().contains(serLib)) {
+            options.setOverrulePreferencePage(true);
+            options.setSerializerId(serLib);
+        } else if (serLib != null) {
+            throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
+        }
+        return options;
+    }
 
 }

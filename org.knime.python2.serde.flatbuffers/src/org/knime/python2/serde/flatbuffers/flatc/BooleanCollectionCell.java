@@ -55,45 +55,110 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class BooleanCollectionCell extends Table {
-  public static BooleanCollectionCell getRootAsBooleanCollectionCell(final ByteBuffer _bb) { return getRootAsBooleanCollectionCell(_bb, new BooleanCollectionCell()); }
-  public static BooleanCollectionCell getRootAsBooleanCollectionCell(final ByteBuffer _bb, final BooleanCollectionCell obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public BooleanCollectionCell __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static BooleanCollectionCell getRootAsBooleanCollectionCell(final ByteBuffer _bb) {
+        return getRootAsBooleanCollectionCell(_bb, new BooleanCollectionCell());
+    }
 
-  public boolean value(final int j) { int o = __offset(4); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
-  public int valueLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer valueAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
-  public boolean missing(final int j) { int o = __offset(6); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
-  public int missingLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer missingAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public boolean keepDummy() { int o = __offset(8); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+    public static BooleanCollectionCell getRootAsBooleanCollectionCell(final ByteBuffer _bb,
+        final BooleanCollectionCell obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createBooleanCollectionCell(final FlatBufferBuilder builder,
-      final int valueOffset,
-      final int missingOffset,
-      final boolean keepDummy) {
-    builder.startObject(3);
-    BooleanCollectionCell.addMissing(builder, missingOffset);
-    BooleanCollectionCell.addValue(builder, valueOffset);
-    BooleanCollectionCell.addKeepDummy(builder, keepDummy);
-    return BooleanCollectionCell.endBooleanCollectionCell(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startBooleanCollectionCell(final FlatBufferBuilder builder) { builder.startObject(3); }
-  public static void addValue(final FlatBufferBuilder builder, final int valueOffset) { builder.addOffset(0, valueOffset, 0); }
-  public static int createValueVector(final FlatBufferBuilder builder, final boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addBoolean(data[i]);
-} return builder.endVector(); }
-  public static void startValueVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(1, numElems, 1); }
-  public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) { builder.addOffset(1, missingOffset, 0); }
-  public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addBoolean(data[i]);
-} return builder.endVector(); }
-  public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(1, numElems, 1); }
-  public static void addKeepDummy(final FlatBufferBuilder builder, final boolean keepDummy) { builder.addBoolean(2, keepDummy, false); }
-  public static int endBooleanCollectionCell(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public BooleanCollectionCell __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public boolean value(final int j) {
+        final int o = __offset(4);
+        return o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false;
+    }
+
+    public int valueLength() {
+        final int o = __offset(4);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer valueAsByteBuffer() {
+        return __vector_as_bytebuffer(4, 1);
+    }
+
+    public boolean missing(final int j) {
+        final int o = __offset(6);
+        return o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false;
+    }
+
+    public int missingLength() {
+        final int o = __offset(6);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer missingAsByteBuffer() {
+        return __vector_as_bytebuffer(6, 1);
+    }
+
+    public boolean keepDummy() {
+        final int o = __offset(8);
+        return o != 0 ? 0 != bb.get(o + bb_pos) : false;
+    }
+
+    public static int createBooleanCollectionCell(final FlatBufferBuilder builder, final int valueOffset,
+        final int missingOffset, final boolean keepDummy) {
+        builder.startObject(3);
+        BooleanCollectionCell.addMissing(builder, missingOffset);
+        BooleanCollectionCell.addValue(builder, valueOffset);
+        BooleanCollectionCell.addKeepDummy(builder, keepDummy);
+        return BooleanCollectionCell.endBooleanCollectionCell(builder);
+    }
+
+    public static void startBooleanCollectionCell(final FlatBufferBuilder builder) {
+        builder.startObject(3);
+    }
+
+    public static void addValue(final FlatBufferBuilder builder, final int valueOffset) {
+        builder.addOffset(0, valueOffset, 0);
+    }
+
+    public static int createValueVector(final FlatBufferBuilder builder, final boolean[] data) {
+        builder.startVector(1, data.length, 1);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addBoolean(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startValueVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(1, numElems, 1);
+    }
+
+    public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) {
+        builder.addOffset(1, missingOffset, 0);
+    }
+
+    public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) {
+        builder.startVector(1, data.length, 1);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addBoolean(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(1, numElems, 1);
+    }
+
+    public static void addKeepDummy(final FlatBufferBuilder builder, final boolean keepDummy) {
+        builder.addBoolean(2, keepDummy, false);
+    }
+
+    public static int endBooleanCollectionCell(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

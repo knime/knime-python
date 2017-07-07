@@ -59,30 +59,30 @@ import org.knime.python.typeextension.SerializerFactory;
  */
 
 public class DurationSerializerFactory extends SerializerFactory<DurationValue> {
-	
-	public DurationSerializerFactory() {
-		super(DurationValue.class);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Serializer<? extends DurationValue> createSerializer() {
-		return new DurationSerializer();
-	}
-	
-	private class DurationSerializer implements Serializer<DurationValue> {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public byte[] serialize(DurationValue value) throws IOException {
-			Duration duration = value.getDuration();
-			return duration.toString().substring(2).getBytes("UTF-8");
-		}
-		
-	}
+    public DurationSerializerFactory() {
+        super(DurationValue.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Serializer<? extends DurationValue> createSerializer() {
+        return new DurationSerializer();
+    }
+
+    private class DurationSerializer implements Serializer<DurationValue> {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public byte[] serialize(DurationValue value) throws IOException {
+            Duration duration = value.getDuration();
+            return duration.toString().substring(2).getBytes("UTF-8");
+        }
+
+    }
 
 }

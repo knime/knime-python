@@ -44,20 +44,22 @@
  */
 
 package org.knime.python2.extensions.serializationlibrary.interfaces;
+
 /**
  * Provides a factory method for an arbitrary TableCreator.
- *  
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public interface TableCreatorFactory {
-	
-	/**
-	 * Create a {@link TableCreator} object knowing the resulting table's spec and size.
-	 * @param spec - the table spec (in the org.knime.python2 format)
-	 * @param tableSize - the number of rows in the resulting table
-	 * @return a {@link TableCreator}
-	 */
-	public TableCreator<?> createTableCreator(TableSpec spec, int tableSize);
+
+    /**
+     * Create a {@link TableCreator} object knowing the resulting table's spec and size.
+     *
+     * @param spec - the table spec (in the org.knime.python2 format)
+     * @param tableSize - the number of rows in the resulting table
+     * @return a {@link TableCreator}
+     */
+    public TableCreator<?> createTableCreator(TableSpec spec, int tableSize);
 
 }

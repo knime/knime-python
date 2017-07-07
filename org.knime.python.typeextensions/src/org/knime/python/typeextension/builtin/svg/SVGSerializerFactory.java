@@ -60,29 +60,29 @@ import org.knime.python.typeextension.SerializerFactory;
  */
 
 public class SVGSerializerFactory extends SerializerFactory<SvgValue> {
-	
-	public SVGSerializerFactory() {
-		super(SvgValue.class);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Serializer<SvgValue> createSerializer() {
-		return new SVGSerializer();
-	}
-	
-	private class SVGSerializer implements Serializer<SvgValue> {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public byte[] serialize(SvgValue value) throws IOException {
-			return value.toString().getBytes();
-		}
-	
-	}
+    public SVGSerializerFactory() {
+        super(SvgValue.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Serializer<SvgValue> createSerializer() {
+        return new SVGSerializer();
+    }
+
+    private class SVGSerializer implements Serializer<SvgValue> {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public byte[] serialize(SvgValue value) throws IOException {
+            return value.toString().getBytes();
+        }
+
+    }
 
 }

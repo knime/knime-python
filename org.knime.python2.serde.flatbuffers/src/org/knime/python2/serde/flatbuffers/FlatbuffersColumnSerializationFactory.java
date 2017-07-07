@@ -56,14 +56,14 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  */
 public class FlatbuffersColumnSerializationFactory implements SerializationLibraryFactory {
 
-	@Override
-	public String getName() {
-		return "Flatbuffers Column Serialization";
-	}
+    @Override
+    public String getName() {
+        return "Flatbuffers Column Serialization";
+    }
 
-	@Override
-	public SerializationLibrary createInstance() {
-		return new Flatbuffers();
-	}
+    @Override
+    public SerializationLibrary createInstance() {
+        return new Flatbuffers();
+    }
 
 }

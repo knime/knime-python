@@ -66,42 +66,42 @@ import org.osgi.framework.BundleContext;
  */
 public class Activator implements BundleActivator {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	/**
-	 * Initialize administration for extension points on startup.
-	 */
-	@Override
-	public void start(BundleContext bundleContext) throws Exception {
-		// When this plugin is loaded test the python installation
-		org.knime.python.typeextension.KnimeToPythonExtensions.init();
-		org.knime.python.typeextension.PythonToKnimeExtensions.init();
-	}
+    /**
+     * Initialize administration for extension points on startup.
+     */
+    @Override
+    public void start(BundleContext bundleContext) throws Exception {
+        // When this plugin is loaded test the python installation
+        org.knime.python.typeextension.KnimeToPythonExtensions.init();
+        org.knime.python.typeextension.PythonToKnimeExtensions.init();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void stop(BundleContext bundleContext) throws Exception {
-	}
-	
-	/**
-	 * Returns the file contained in the plugin with the given ID.
-	 * 
-	 * @param symbolicName
-	 *            ID of the plugin containing the file
-	 * @param relativePath
-	 *            File path inside the plugin
-	 * @return The file
-	 */
-	public static File getFile(final String symbolicName, final String relativePath) {
-		try {
-			Bundle bundle = Platform.getBundle(symbolicName);
-			URL url = FileLocator.find(bundle, new Path(relativePath), null);
-			return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
-		} catch (Exception e) {
-			LOGGER.debug(e.getMessage(), e);
-			return null;
-		}
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop(BundleContext bundleContext) throws Exception {
+    }
+
+    /**
+     * Returns the file contained in the plugin with the given ID.
+     * 
+     * @param symbolicName
+     *            ID of the plugin containing the file
+     * @param relativePath
+     *            File path inside the plugin
+     * @return The file
+     */
+    public static File getFile(final String symbolicName, final String relativePath) {
+        try {
+            Bundle bundle = Platform.getBundle(symbolicName);
+            URL url = FileLocator.find(bundle, new Path(relativePath), null);
+            return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
+        } catch (Exception e) {
+            LOGGER.debug(e.getMessage(), e);
+            return null;
+        }
+    }
 }

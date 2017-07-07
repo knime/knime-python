@@ -53,20 +53,24 @@ import org.knime.core.data.DataCell;
 import org.knime.core.data.filestore.FileStoreFactory;
 
 /**
- * Creates a KNIME value by deserializing a byte array created by the corresponding Python serializer.
+ * Creates a KNIME value by deserializing a byte array created by the
+ * corresponding Python serializer.
  * 
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public interface Deserializer {
-	
-	/**
-	 * Deserialize the given byte array to a DataCell.
-	 * 
-	 * @param bytes The bytes to deserialize
-	 * @param fileStoreFactory A factory used to create file store cells
-	 * @return DataCell representation of the given bytes
-	 * @throws IOException If the given bytes could not be deserialized
-	 */
-	public DataCell deserialize(final byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException;
+
+    /**
+     * Deserialize the given byte array to a DataCell.
+     * 
+     * @param bytes
+     *            The bytes to deserialize
+     * @param fileStoreFactory
+     *            A factory used to create file store cells
+     * @return DataCell representation of the given bytes
+     * @throws IOException
+     *             If the given bytes could not be deserialized
+     */
+    public DataCell deserialize(final byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException;
 
 }

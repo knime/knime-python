@@ -53,18 +53,18 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
  */
 public interface TableCreator<T> {
 
-	/**
-	 * @param row The row to add to the table.
-	 */
-	void addRow(Row row);
+    /**
+     * @param row The row to add to the table.
+     */
+    void addRow(Row row);
 
-	/**
-	 * @return The {@link TableSpec}.
-	 */
-	TableSpec getTableSpec();
+    /**
+     * @return The {@link TableSpec}.
+     */
+    TableSpec getTableSpec();
 
-	/**
-	 * @return The object to create
-	 */
-	T getTable();
+    /**
+     * @return The object to create
+     */
+    T getTable();
 }

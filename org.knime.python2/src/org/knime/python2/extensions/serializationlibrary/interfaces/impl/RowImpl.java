@@ -59,55 +59,57 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterato
 
 public class RowImpl implements Row {
 
-	private String m_key;
-	private Cell[] m_cells;
+    private final String m_key;
 
-	/**
+    private final Cell[] m_cells;
+
+    /**
      * Constructor.
-	 * @param rowKey      a unique key for identifying the row
-	 * @param numberCells the number of cells in the row
+     *
+     * @param rowKey a unique key for identifying the row
+     * @param numberCells the number of cells in the row
      *
      */
-	public RowImpl(final String rowKey, final int numberCells) {
-		m_key = rowKey;
-		m_cells = new Cell[numberCells];
-	}
+    public RowImpl(final String rowKey, final int numberCells) {
+        m_key = rowKey;
+        m_cells = new Cell[numberCells];
+    }
 
-	@Override
-	public void setCell(final Cell cell, final int index) {
-		m_cells[index] = cell;
-	}
+    @Override
+    public void setCell(final Cell cell, final int index) {
+        m_cells[index] = cell;
+    }
 
-	@Override
-	public int getNumberCells() {
-		return m_cells.length;
-	}
+    @Override
+    public int getNumberCells() {
+        return m_cells.length;
+    }
 
-	@Override
-	public String getRowKey() {
-		return m_key;
-	}
+    @Override
+    public String getRowKey() {
+        return m_key;
+    }
 
-	@Override
-	public Iterator<Cell> iterator() {
-		return new Iterator<Cell>() {
-			int m_index = 0;
+    @Override
+    public Iterator<Cell> iterator() {
+        return new Iterator<Cell>() {
+            int m_index = 0;
 
-			@Override
-			public boolean hasNext() {
-				return m_index < m_cells.length;
-			}
+            @Override
+            public boolean hasNext() {
+                return m_index < m_cells.length;
+            }
 
-			@Override
-			public Cell next() {
-				return m_cells[m_index++];
-			}
-		};
-	}
+            @Override
+            public Cell next() {
+                return m_cells[m_index++];
+            }
+        };
+    }
 
-	@Override
-	public Cell getCell(final int index) {
-		return m_cells[index];
-	}
+    @Override
+    public Cell getCell(final int index) {
+        return m_cells[index];
+    }
 
 }

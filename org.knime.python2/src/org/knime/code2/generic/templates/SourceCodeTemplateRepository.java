@@ -62,182 +62,190 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 
 /**
- * Class for managing all source code templates that are stored in the template repository or
- * are available via extension points.
+ * Class for managing all source code templates that are stored in the template repository or are available via
+ * extension points.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class SourceCodeTemplateRepository {
 
-	private static final String CATEGORY_CFG = "category";
-	private static final String TITLE_CFG = "title";
-	private static final String DESCRIPTION_CFG = "description";
-	private static final String SOURCECODE_CFG = "sourcecode";
+    private static final String CATEGORY_CFG = "category";
 
-	private String m_id;
-	private File m_templatesFolder;
-	private Map<String, Set<SourceCodeTemplate>> m_categorizedTemplates;
+    private static final String TITLE_CFG = "title";
 
-	/**
-	 * Constructor.
-	 * @param repositoryId a unique name for the template repository inside the sourcedoce-templates folder
-	 */
-	public SourceCodeTemplateRepository(final String repositoryId) {
-		m_id = repositoryId;
-		m_templatesFolder = new File(new File(new File(
-				KNIMEConstants.getKNIMEHomeDir()), "sourcecode-templates"),
-				m_id);
-		if (!m_templatesFolder.exists()) {
-			m_templatesFolder.mkdirs();
-		}
-		m_categorizedTemplates = new TreeMap<String, Set<SourceCodeTemplate>>();
-		for (File templateFolder : SourceCodeTemplatesExtensions.getTemplateFolders()) {
-			loadTemplates(new File(templateFolder, m_id), true);
-		}
-		loadTemplates(m_templatesFolder, false);
-	}
+    private static final String DESCRIPTION_CFG = "description";
 
-	/**
-	 * Get all template categories present in the managed folder.
-	 * @return set of categories
-	 */
-	public Set<String> getCategories() {
-		return m_categorizedTemplates.keySet();
-	}
+    private static final String SOURCECODE_CFG = "sourcecode";
 
-	/**
-	 * Get all {@link SourceCodeTemplate}s belonging to a certain category.
-	 * @param category	a template category
-	 * @return set of categories
-	 */
-	public Set<SourceCodeTemplate> getTemplatesForCategory(final String category) {
-		if (category == null) {
-			return new TreeSet<SourceCodeTemplate>();
-		}
-		return m_categorizedTemplates.get(category);
-	}
+    private final String m_id;
 
-	/**
-	 * Create a new template in the managed repository
-	 * @param category	the template category
-	 * @param title		a title used for identifying the template
-	 * @param description	a description of what the template code attempts to do
-	 * @param sourceCode	the actual template's source code
-	 * @throws IOException	if template cannot be written as a file
-	 * @throws IllegalArgumentException	if an empty category or title is provided
-	 */
-	public void createTemplate(final String category, final String title,
-			final String description, final String sourceCode)
-			throws IOException, IllegalArgumentException {
-		if (category == null || category.isEmpty()) {
-			throw new IllegalArgumentException("Category must not be empty");
-		} else if (title == null || title.isEmpty()) {
-			throw new IllegalArgumentException("Title must not be empty");
-		}
-		String fileName = generateFileName(title);
-		SourceCodeTemplate template = new SourceCodeTemplate(fileName,
-				category, title, description, sourceCode, false);
-		saveTemplateFile(template);
-		putIntoMap(template);
-	}
+    private final File m_templatesFolder;
 
-	/**
-	 * Remove a template in the managed repository.
-	 * @param template	the template to remove
-	 */
-	public void removeTemplate(final SourceCodeTemplate template) {
-		deleteTemplateFile(template);
-		removeFromMap(template);
-	}
+    private final Map<String, Set<SourceCodeTemplate>> m_categorizedTemplates;
 
-	/**
-	 * Write a {@link SourceCodeTemplate} to the disc as an XML File in the managed repository.
-	 * @param template	the template to write
-	 * @throws IOException
-	 */
-	private void saveTemplateFile(final SourceCodeTemplate template)
-			throws IOException {
-		File file = new File(m_templatesFolder, template.getFileName());
-		NodeSettings settings = new NodeSettings(file.getName());
-		settings.addString(CATEGORY_CFG, template.getCategory());
-		settings.addString(TITLE_CFG, template.getTitle());
-		settings.addString(DESCRIPTION_CFG, template.getDescription());
-		settings.addString(SOURCECODE_CFG, template.getSourceCode());
-		settings.saveToXML(new FileOutputStream(file));
-	}
+    /**
+     * Constructor.
+     *
+     * @param repositoryId a unique name for the template repository inside the sourcedoce-templates folder
+     */
+    public SourceCodeTemplateRepository(final String repositoryId) {
+        m_id = repositoryId;
+        m_templatesFolder =
+                new File(new File(new File(KNIMEConstants.getKNIMEHomeDir()), "sourcecode-templates"), m_id);
+        if (!m_templatesFolder.exists()) {
+            m_templatesFolder.mkdirs();
+        }
+        m_categorizedTemplates = new TreeMap<String, Set<SourceCodeTemplate>>();
+        for (final File templateFolder : SourceCodeTemplatesExtensions.getTemplateFolders()) {
+            loadTemplates(new File(templateFolder, m_id), true);
+        }
+        loadTemplates(m_templatesFolder, false);
+    }
 
-	/**
-	 * Delete a template file from the disc.
-	 * @param template a {@link SourceCodeTemplate}
-	 */
-	private void deleteTemplateFile(final SourceCodeTemplate template) {
-		new File(m_templatesFolder, template.getFileName()).delete();
-	}
+    /**
+     * Get all template categories present in the managed folder.
+     *
+     * @return set of categories
+     */
+    public Set<String> getCategories() {
+        return m_categorizedTemplates.keySet();
+    }
 
-	/**
-	 * Generate a {@link SourceCodeTemplate}s filename based on its title.
-	 * @param title	the title to generate the filename from
-	 * @return	a filename
-	 * @throws IOException
-	 */
-	private String generateFileName(final String title) throws IOException {
-		return File.createTempFile(title + "__", ".xml", m_templatesFolder)
-				.getName();
-	}
+    /**
+     * Get all {@link SourceCodeTemplate}s belonging to a certain category.
+     *
+     * @param category a template category
+     * @return set of categories
+     */
+    public Set<SourceCodeTemplate> getTemplatesForCategory(final String category) {
+        if (category == null) {
+            return new TreeSet<SourceCodeTemplate>();
+        }
+        return m_categorizedTemplates.get(category);
+    }
 
-	/**
-	 * Remove a {@link SourceCodeTemplate} from the map of managed templates.
-	 * @param template	the template to remove
-	 */
-	private void removeFromMap(final SourceCodeTemplate template) {
-		Set<SourceCodeTemplate> categoryTemplates = m_categorizedTemplates
-				.get(template.getCategory());
-		categoryTemplates.remove(template);
-		if (categoryTemplates.isEmpty()) {
-			m_categorizedTemplates.remove(template.getCategory());
-		}
-	}
+    /**
+     * Create a new template in the managed repository
+     *
+     * @param category the template category
+     * @param title a title used for identifying the template
+     * @param description a description of what the template code attempts to do
+     * @param sourceCode the actual template's source code
+     * @throws IOException if template cannot be written as a file
+     * @throws IllegalArgumentException if an empty category or title is provided
+     */
+    public void createTemplate(final String category, final String title, final String description,
+        final String sourceCode) throws IOException, IllegalArgumentException {
+        if ((category == null) || category.isEmpty()) {
+            throw new IllegalArgumentException("Category must not be empty");
+        } else if ((title == null) || title.isEmpty()) {
+            throw new IllegalArgumentException("Title must not be empty");
+        }
+        final String fileName = generateFileName(title);
+        final SourceCodeTemplate template = new SourceCodeTemplate(fileName, category, title, description, sourceCode, false);
+        saveTemplateFile(template);
+        putIntoMap(template);
+    }
 
-	/**
-	 * Add a {@link SourceCodeTemplate} to the map of managed templates.
-	 * @param template	the template to add
-	 */
-	private void putIntoMap(final SourceCodeTemplate template) {
-		if (m_categorizedTemplates.containsKey(template.getCategory())) {
-			m_categorizedTemplates.get(template.getCategory()).add(template);
-		} else {
-			Set<SourceCodeTemplate> newSet = new TreeSet<SourceCodeTemplate>();
-			newSet.add(template);
-			m_categorizedTemplates.put(template.getCategory(), newSet);
-		}
-	}
+    /**
+     * Remove a template in the managed repository.
+     *
+     * @param template the template to remove
+     */
+    public void removeTemplate(final SourceCodeTemplate template) {
+        deleteTemplateFile(template);
+        removeFromMap(template);
+    }
 
-	/**
-	 * Load all template files in the passed folder.
-	 * @param folder	a folder containing template files
-	 * @param predefined	flag the loaded {@link SourceCodeTemplate}s as predefined
-	 */
-	private void loadTemplates(final File folder, final boolean predefined) {
-		if (folder.isDirectory()) {
-			for (File file : folder.listFiles()) {
-				if (!file.isDirectory()) {
-					try {
-						NodeSettingsRO settings = NodeSettings
-								.loadFromXML(new FileInputStream(file));
-						String category = settings.getString(CATEGORY_CFG);
-						String title = settings.getString(TITLE_CFG);
-						String description = settings.getString(DESCRIPTION_CFG);
-						String sourceCode = settings.getString(SOURCECODE_CFG);
-						SourceCodeTemplate template = new SourceCodeTemplate(
-								file.getName(), category, title, description,
-								sourceCode, predefined);
-						putIntoMap(template);
-					} catch (IOException | InvalidSettingsException e) {
-					}
-				}
-			}
-		}
-	}
+    /**
+     * Write a {@link SourceCodeTemplate} to the disc as an XML File in the managed repository.
+     *
+     * @param template the template to write
+     * @throws IOException
+     */
+    private void saveTemplateFile(final SourceCodeTemplate template) throws IOException {
+        final File file = new File(m_templatesFolder, template.getFileName());
+        final NodeSettings settings = new NodeSettings(file.getName());
+        settings.addString(CATEGORY_CFG, template.getCategory());
+        settings.addString(TITLE_CFG, template.getTitle());
+        settings.addString(DESCRIPTION_CFG, template.getDescription());
+        settings.addString(SOURCECODE_CFG, template.getSourceCode());
+        settings.saveToXML(new FileOutputStream(file));
+    }
+
+    /**
+     * Delete a template file from the disc.
+     *
+     * @param template a {@link SourceCodeTemplate}
+     */
+    private void deleteTemplateFile(final SourceCodeTemplate template) {
+        new File(m_templatesFolder, template.getFileName()).delete();
+    }
+
+    /**
+     * Generate a {@link SourceCodeTemplate}s filename based on its title.
+     *
+     * @param title the title to generate the filename from
+     * @return a filename
+     * @throws IOException
+     */
+    private String generateFileName(final String title) throws IOException {
+        return File.createTempFile(title + "__", ".xml", m_templatesFolder).getName();
+    }
+
+    /**
+     * Remove a {@link SourceCodeTemplate} from the map of managed templates.
+     *
+     * @param template the template to remove
+     */
+    private void removeFromMap(final SourceCodeTemplate template) {
+        final Set<SourceCodeTemplate> categoryTemplates = m_categorizedTemplates.get(template.getCategory());
+        categoryTemplates.remove(template);
+        if (categoryTemplates.isEmpty()) {
+            m_categorizedTemplates.remove(template.getCategory());
+        }
+    }
+
+    /**
+     * Add a {@link SourceCodeTemplate} to the map of managed templates.
+     *
+     * @param template the template to add
+     */
+    private void putIntoMap(final SourceCodeTemplate template) {
+        if (m_categorizedTemplates.containsKey(template.getCategory())) {
+            m_categorizedTemplates.get(template.getCategory()).add(template);
+        } else {
+            final Set<SourceCodeTemplate> newSet = new TreeSet<SourceCodeTemplate>();
+            newSet.add(template);
+            m_categorizedTemplates.put(template.getCategory(), newSet);
+        }
+    }
+
+    /**
+     * Load all template files in the passed folder.
+     *
+     * @param folder a folder containing template files
+     * @param predefined flag the loaded {@link SourceCodeTemplate}s as predefined
+     */
+    private void loadTemplates(final File folder, final boolean predefined) {
+        if (folder.isDirectory()) {
+            for (final File file : folder.listFiles()) {
+                if (!file.isDirectory()) {
+                    try {
+                        final NodeSettingsRO settings = NodeSettings.loadFromXML(new FileInputStream(file));
+                        final String category = settings.getString(CATEGORY_CFG);
+                        final String title = settings.getString(TITLE_CFG);
+                        final String description = settings.getString(DESCRIPTION_CFG);
+                        final String sourceCode = settings.getString(SOURCECODE_CFG);
+                        final SourceCodeTemplate template = new SourceCodeTemplate(file.getName(), category, title,
+                            description, sourceCode, predefined);
+                        putIntoMap(template);
+                    } catch (IOException | InvalidSettingsException e) {
+                    }
+                }
+            }
+        }
+    }
 
 }

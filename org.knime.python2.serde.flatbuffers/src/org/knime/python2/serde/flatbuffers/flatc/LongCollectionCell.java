@@ -55,45 +55,109 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class LongCollectionCell extends Table {
-  public static LongCollectionCell getRootAsLongCollectionCell(final ByteBuffer _bb) { return getRootAsLongCollectionCell(_bb, new LongCollectionCell()); }
-  public static LongCollectionCell getRootAsLongCollectionCell(final ByteBuffer _bb, final LongCollectionCell obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public LongCollectionCell __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static LongCollectionCell getRootAsLongCollectionCell(final ByteBuffer _bb) {
+        return getRootAsLongCollectionCell(_bb, new LongCollectionCell());
+    }
 
-  public long value(final int j) { int o = __offset(4); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
-  public int valueLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer valueAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
-  public boolean missing(final int j) { int o = __offset(6); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
-  public int missingLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer missingAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public boolean keepDummy() { int o = __offset(8); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+    public static LongCollectionCell getRootAsLongCollectionCell(final ByteBuffer _bb, final LongCollectionCell obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createLongCollectionCell(final FlatBufferBuilder builder,
-      final int valueOffset,
-      final int missingOffset,
-      final boolean keepDummy) {
-    builder.startObject(3);
-    LongCollectionCell.addMissing(builder, missingOffset);
-    LongCollectionCell.addValue(builder, valueOffset);
-    LongCollectionCell.addKeepDummy(builder, keepDummy);
-    return LongCollectionCell.endLongCollectionCell(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startLongCollectionCell(final FlatBufferBuilder builder) { builder.startObject(3); }
-  public static void addValue(final FlatBufferBuilder builder, final int valueOffset) { builder.addOffset(0, valueOffset, 0); }
-  public static int createValueVector(final FlatBufferBuilder builder, final long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addLong(data[i]);
-} return builder.endVector(); }
-  public static void startValueVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) { builder.addOffset(1, missingOffset, 0); }
-  public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addBoolean(data[i]);
-} return builder.endVector(); }
-  public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(1, numElems, 1); }
-  public static void addKeepDummy(final FlatBufferBuilder builder, final boolean keepDummy) { builder.addBoolean(2, keepDummy, false); }
-  public static int endLongCollectionCell(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public LongCollectionCell __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public long value(final int j) {
+        final int o = __offset(4);
+        return o != 0 ? bb.getLong(__vector(o) + (j * 8)) : 0;
+    }
+
+    public int valueLength() {
+        final int o = __offset(4);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer valueAsByteBuffer() {
+        return __vector_as_bytebuffer(4, 8);
+    }
+
+    public boolean missing(final int j) {
+        final int o = __offset(6);
+        return o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false;
+    }
+
+    public int missingLength() {
+        final int o = __offset(6);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer missingAsByteBuffer() {
+        return __vector_as_bytebuffer(6, 1);
+    }
+
+    public boolean keepDummy() {
+        final int o = __offset(8);
+        return o != 0 ? 0 != bb.get(o + bb_pos) : false;
+    }
+
+    public static int createLongCollectionCell(final FlatBufferBuilder builder, final int valueOffset,
+        final int missingOffset, final boolean keepDummy) {
+        builder.startObject(3);
+        LongCollectionCell.addMissing(builder, missingOffset);
+        LongCollectionCell.addValue(builder, valueOffset);
+        LongCollectionCell.addKeepDummy(builder, keepDummy);
+        return LongCollectionCell.endLongCollectionCell(builder);
+    }
+
+    public static void startLongCollectionCell(final FlatBufferBuilder builder) {
+        builder.startObject(3);
+    }
+
+    public static void addValue(final FlatBufferBuilder builder, final int valueOffset) {
+        builder.addOffset(0, valueOffset, 0);
+    }
+
+    public static int createValueVector(final FlatBufferBuilder builder, final long[] data) {
+        builder.startVector(8, data.length, 8);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addLong(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startValueVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(8, numElems, 8);
+    }
+
+    public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) {
+        builder.addOffset(1, missingOffset, 0);
+    }
+
+    public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) {
+        builder.startVector(1, data.length, 1);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addBoolean(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(1, numElems, 1);
+    }
+
+    public static void addKeepDummy(final FlatBufferBuilder builder, final boolean keepDummy) {
+        builder.addBoolean(2, keepDummy, false);
+    }
+
+    public static int endLongCollectionCell(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

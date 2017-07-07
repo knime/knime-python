@@ -67,68 +67,69 @@ import org.knime.python2.port.PickledObjectPortObject;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonObjectReaderNodeModel() {
-		super(new PortType[0], new PortType[] { PickledObjectPortObject.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonObjectReaderNodeModel() {
+        super(new PortType[0], new PortType[]{PickledObjectPortObject.TYPE});
+    }
 
-	protected PythonObjectReaderNodeModel(final NodeCreationContext context) {
-		this();
-		URI uri;
-		try {
-			uri = context.getUrl().toURI();
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		if ((!uri.getScheme().equals("knime")) || (!uri.getHost().equals("LOCAL"))) {
-			throw new RuntimeException("Only pickle files in the local workspace are supported.");
-		}
-		getConfig().setSourceCode(PythonObjectReaderNodeConfig.getDefaultSourceCode(uri.getPath()));
-	}
+    protected PythonObjectReaderNodeModel(final NodeCreationContext context) {
+        this();
+        URI uri;
+        try {
+            uri = context.getUrl().toURI();
+        } catch (final URISyntaxException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        if ((!uri.getScheme().equals("knime")) || (!uri.getHost().equals("LOCAL"))) {
+            throw new RuntimeException("Only pickle files in the local workspace are supported.");
+        }
+        getConfig().setSourceCode(PythonObjectReaderNodeConfig.getDefaultSourceCode(uri.getPath()));
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		PickledObject object = null;
-		try {
-			kernel.putFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.9).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
-			object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
-			exec.createSubProgress(0.1).setProgress(1);
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new PortObject[] { new PickledObjectPortObject(object) };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        PickledObject object = null;
+        try {
+            kernel.putFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.9).setProgress(1);
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
+            object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
+            exec.createSubProgress(0.1).setProgress(1);
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new PortObject[]{new PickledObjectPortObject(object)};
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { null };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[]{null};
+    }
 
-	@Override
-	protected PythonObjectReaderNodeConfig createConfig() {
-		return new PythonObjectReaderNodeConfig();
-	}
+    @Override
+    protected PythonObjectReaderNodeConfig createConfig() {
+        return new PythonObjectReaderNodeConfig();
+    }
 
 }

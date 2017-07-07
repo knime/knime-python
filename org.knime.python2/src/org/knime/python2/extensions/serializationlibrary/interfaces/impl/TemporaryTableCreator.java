@@ -60,31 +60,33 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
 public class TemporaryTableCreator implements TableCreator<List<Row>> {
 
-	private final List<Row> m_rows;
-	private final TableSpec m_spec;
+    private final List<Row> m_rows;
 
-	/**
+    private final TableSpec m_spec;
+
+    /**
      * Constructor.
+     *
      * @param spec a python integration specific table spec
-	 */
-	public TemporaryTableCreator(final TableSpec spec) {
-		m_rows = new ArrayList<Row>();
-		m_spec = spec;
-	}
+     */
+    public TemporaryTableCreator(final TableSpec spec) {
+        m_rows = new ArrayList<Row>();
+        m_spec = spec;
+    }
 
-	@Override
-	public void addRow(final Row row) {
-		m_rows.add(row);
-	}
+    @Override
+    public void addRow(final Row row) {
+        m_rows.add(row);
+    }
 
-	@Override
-	public TableSpec getTableSpec() {
-		return m_spec;
-	}
+    @Override
+    public TableSpec getTableSpec() {
+        return m_spec;
+    }
 
-	@Override
-	public List<Row> getTable() {
-		return m_rows;
-	}
+    @Override
+    public List<Row> getTable() {
+        return m_rows;
+    }
 
 }

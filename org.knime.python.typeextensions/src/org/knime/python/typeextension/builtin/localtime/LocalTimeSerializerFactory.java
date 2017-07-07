@@ -60,33 +60,33 @@ import org.knime.python.typeextension.SerializerFactory;
  */
 
 public class LocalTimeSerializerFactory extends SerializerFactory<LocalTimeValue> {
-	
-	static final String FORMAT = "HH:mm:ss.SSS";
-	
-	public LocalTimeSerializerFactory() {
-		super(LocalTimeValue.class);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Serializer<? extends LocalTimeValue> createSerializer() {
-		return new LocalTimeSerializer();
-	}
-	
-	private class LocalTimeSerializer implements Serializer<LocalTimeValue> {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public byte[] serialize(LocalTimeValue value) throws IOException {
-			LocalTime time = value.getLocalTime();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
-			return time.format(formatter).getBytes("UTF-8");
-		}
-		
-	}
+    static final String FORMAT = "HH:mm:ss.SSS";
+
+    public LocalTimeSerializerFactory() {
+        super(LocalTimeValue.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Serializer<? extends LocalTimeValue> createSerializer() {
+        return new LocalTimeSerializer();
+    }
+
+    private class LocalTimeSerializer implements Serializer<LocalTimeValue> {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public byte[] serialize(LocalTimeValue value) throws IOException {
+            LocalTime time = value.getLocalTime();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
+            return time.format(formatter).getBytes("UTF-8");
+        }
+
+    }
 
 }

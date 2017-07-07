@@ -55,41 +55,99 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class DoubleColumn extends Table {
-  public static DoubleColumn getRootAsDoubleColumn(final ByteBuffer _bb) { return getRootAsDoubleColumn(_bb, new DoubleColumn()); }
-  public static DoubleColumn getRootAsDoubleColumn(final ByteBuffer _bb, final DoubleColumn obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public DoubleColumn __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static DoubleColumn getRootAsDoubleColumn(final ByteBuffer _bb) {
+        return getRootAsDoubleColumn(_bb, new DoubleColumn());
+    }
 
-  public double values(final int j) { int o = __offset(4); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
-  public int valuesLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer valuesAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
-  public boolean missing(final int j) { int o = __offset(6); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
-  public int missingLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer missingAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
+    public static DoubleColumn getRootAsDoubleColumn(final ByteBuffer _bb, final DoubleColumn obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createDoubleColumn(final FlatBufferBuilder builder,
-      final int valuesOffset,
-      final int missingOffset) {
-    builder.startObject(2);
-    DoubleColumn.addMissing(builder, missingOffset);
-    DoubleColumn.addValues(builder, valuesOffset);
-    return DoubleColumn.endDoubleColumn(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startDoubleColumn(final FlatBufferBuilder builder) { builder.startObject(2); }
-  public static void addValues(final FlatBufferBuilder builder, final int valuesOffset) { builder.addOffset(0, valuesOffset, 0); }
-  public static int createValuesVector(final FlatBufferBuilder builder, final double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addDouble(data[i]);
-} return builder.endVector(); }
-  public static void startValuesVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) { builder.addOffset(1, missingOffset, 0); }
-  public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addBoolean(data[i]);
-} return builder.endVector(); }
-  public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endDoubleColumn(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public DoubleColumn __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public double values(final int j) {
+        final int o = __offset(4);
+        return o != 0 ? bb.getDouble(__vector(o) + (j * 8)) : 0;
+    }
+
+    public int valuesLength() {
+        final int o = __offset(4);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer valuesAsByteBuffer() {
+        return __vector_as_bytebuffer(4, 8);
+    }
+
+    public boolean missing(final int j) {
+        final int o = __offset(6);
+        return o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false;
+    }
+
+    public int missingLength() {
+        final int o = __offset(6);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer missingAsByteBuffer() {
+        return __vector_as_bytebuffer(6, 1);
+    }
+
+    public static int createDoubleColumn(final FlatBufferBuilder builder, final int valuesOffset,
+        final int missingOffset) {
+        builder.startObject(2);
+        DoubleColumn.addMissing(builder, missingOffset);
+        DoubleColumn.addValues(builder, valuesOffset);
+        return DoubleColumn.endDoubleColumn(builder);
+    }
+
+    public static void startDoubleColumn(final FlatBufferBuilder builder) {
+        builder.startObject(2);
+    }
+
+    public static void addValues(final FlatBufferBuilder builder, final int valuesOffset) {
+        builder.addOffset(0, valuesOffset, 0);
+    }
+
+    public static int createValuesVector(final FlatBufferBuilder builder, final double[] data) {
+        builder.startVector(8, data.length, 8);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addDouble(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startValuesVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(8, numElems, 8);
+    }
+
+    public static void addMissing(final FlatBufferBuilder builder, final int missingOffset) {
+        builder.addOffset(1, missingOffset, 0);
+    }
+
+    public static int createMissingVector(final FlatBufferBuilder builder, final boolean[] data) {
+        builder.startVector(1, data.length, 1);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addBoolean(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startMissingVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(1, numElems, 1);
+    }
+
+    public static int endDoubleColumn(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

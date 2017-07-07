@@ -52,33 +52,29 @@ import org.knime.code2.python.PythonSourceCodeConfig;
 
 class PythonLearnerNodeConfig extends PythonSourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, null, null, null, new String[] { "output_model" });
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
+        null, null, null, new String[]{"output_model"});
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return "from numpy import array, ones, linalg\n" +
-				"# Only use numeric columns\n" +
-				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
-				"# Use first column as value column\n" +
-				"value_column = data[data.columns[0]]\n" +
-				"# Use second column as target column\n" +
-				"target_column = data[data.columns[1]]\n" +
-				"A = array([array(value_column), ones(len(value_column))])\n" +
-				"# Calculate linear regression\n" +
-				VARIABLE_NAMES.getOutputObjects()[0] + " = linalg.lstsq(A.T, target_column)[0]\n";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return "from numpy import array, ones, linalg\n" + "# Only use numeric columns\n" + "data = "
+                + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Use first column as value column\n"
+                + "value_column = data[data.columns[0]]\n" + "# Use second column as target column\n"
+                + "target_column = data[data.columns[1]]\n" + "A = array([array(value_column), ones(len(value_column))])\n"
+                + "# Calculate linear regression\n" + VARIABLE_NAMES.getOutputObjects()[0]
+                        + " = linalg.lstsq(A.T, target_column)[0]\n";
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

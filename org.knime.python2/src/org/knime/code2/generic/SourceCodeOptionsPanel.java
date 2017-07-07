@@ -68,86 +68,86 @@ import javax.swing.event.ChangeListener;
  */
 public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extends SourceCodeConfig> extends JPanel {
 
-	private static final long serialVersionUID = 526829042113254402L;
+    private static final long serialVersionUID = 526829042113254402L;
 
-	private JLabel m_rowLimitLabel = new JLabel("Row limit (dialog)");
-	private JSpinner m_rowLimit = new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0,
-			Integer.MAX_VALUE, 100));
-	private Panel m_sourceCodePanel;
+    private final JLabel m_rowLimitLabel = new JLabel("Row limit (dialog)");
 
-	/**
-	 * Create a source code options panel.
-	 *
-	 * @param sourceCodePanel
-	 *            The corresponding source code panel
-	 */
-	public SourceCodeOptionsPanel(final Panel sourceCodePanel) {
-		m_sourceCodePanel = sourceCodePanel;
-		setLayout(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(5, 5, 5, 5);
-		gbc.anchor = GridBagConstraints.NORTHWEST;
-		gbc.fill = GridBagConstraints.BOTH;
-		gbc.weightx = 0;
-		gbc.weighty = 0;
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		add(m_rowLimitLabel, gbc);
-		gbc.gridx++;
-		gbc.weightx = 1;
-		add(m_rowLimit, gbc);
-		gbc.gridx = 0;
-		gbc.gridy++;
-		gbc.gridwidth = 2;
-		JPanel additionalOptionsPanel = getAdditionalOptionsPanel();
-		if (additionalOptionsPanel != null) {
-			add(additionalOptionsPanel, gbc);
-			gbc.gridy++;
-		}
-		gbc.weighty = Double.MIN_NORMAL;
-		add(new JLabel(), gbc);
-		m_rowLimit.addChangeListener(new ChangeListener() {
-			@Override
+    private final JSpinner m_rowLimit =
+            new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0, Integer.MAX_VALUE, 100));
+
+    private final Panel m_sourceCodePanel;
+
+    /**
+     * Create a source code options panel.
+     *
+     * @param sourceCodePanel The corresponding source code panel
+     */
+    public SourceCodeOptionsPanel(final Panel sourceCodePanel) {
+        m_sourceCodePanel = sourceCodePanel;
+        setLayout(new GridBagLayout());
+        final GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        add(m_rowLimitLabel, gbc);
+        gbc.gridx++;
+        gbc.weightx = 1;
+        add(m_rowLimit, gbc);
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        final JPanel additionalOptionsPanel = getAdditionalOptionsPanel();
+        if (additionalOptionsPanel != null) {
+            add(additionalOptionsPanel, gbc);
+            gbc.gridy++;
+        }
+        gbc.weighty = Double.MIN_NORMAL;
+        add(new JLabel(), gbc);
+        m_rowLimit.addChangeListener(new ChangeListener() {
+            @Override
             public void stateChanged(final ChangeEvent e) {
-				sourceCodePanel.setRowLimit((int) m_rowLimit.getValue());
-			}
-		});
-	}
+                sourceCodePanel.setRowLimit((int)m_rowLimit.getValue());
+            }
+        });
+    }
 
-	/**
-	 * Save current settings into the given config.
-	 *
-	 * @param config
-	 *            The config
-	 */
-	public void saveSettingsTo(final Config config) {
-		config.setRowLimit((int) m_rowLimit.getValue());
-	}
+    /**
+     * Save current settings into the given config.
+     *
+     * @param config The config
+     */
+    public void saveSettingsTo(final Config config) {
+        config.setRowLimit((int)m_rowLimit.getValue());
+    }
 
-	/**
-	 * Load settings from the given config.
-	 *
-	 * @param config
-	 *            The config
-	 */
-	public void loadSettingsFrom(final Config config) {
-		m_rowLimit.setValue(config.getRowLimit());
-		m_sourceCodePanel.setRowLimit(config.getRowLimit());
-	}
+    /**
+     * Load settings from the given config.
+     *
+     * @param config The config
+     */
+    public void loadSettingsFrom(final Config config) {
+        m_rowLimit.setValue(config.getRowLimit());
+        m_sourceCodePanel.setRowLimit(config.getRowLimit());
+    }
 
-	/**
-	 * @return the associated {@link SourceCodePanel}
-	 */
-	protected Panel getSourceCodePanel() {
-		return m_sourceCodePanel;
-	}
+    /**
+     * @return the associated {@link SourceCodePanel}
+     */
+    protected Panel getSourceCodePanel() {
+        return m_sourceCodePanel;
+    }
 
-	/**
-	 * Default implementation returning null
-	 * @return null
-	 */
-	protected JPanel getAdditionalOptionsPanel() {
-		return null;
-	}
+    /**
+     * Default implementation returning null
+     *
+     * @return null
+     */
+    protected JPanel getAdditionalOptionsPanel() {
+        return null;
+    }
 
 }

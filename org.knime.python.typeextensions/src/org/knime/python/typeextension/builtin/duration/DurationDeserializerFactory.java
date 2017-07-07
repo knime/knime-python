@@ -61,29 +61,29 @@ import org.knime.python.typeextension.DeserializerFactory;
 
 public class DurationDeserializerFactory extends DeserializerFactory {
 
-	public DurationDeserializerFactory() {
-		super(DurationCellFactory.TYPE);
-	}
+    public DurationDeserializerFactory() {
+        super(DurationCellFactory.TYPE);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Deserializer createDeserializer() {
-		return new DurationDeserializer();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Deserializer createDeserializer() {
+        return new DurationDeserializer();
+    }
 
-	private class DurationDeserializer implements Deserializer {
+    private class DurationDeserializer implements Deserializer {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
-			String string = new String(bytes, "UTF-8");
-			return DurationCellFactory.create(string);
-		}
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+            String string = new String(bytes, "UTF-8");
+            return DurationCellFactory.create(string);
+        }
 
-	}
+    }
 
 }

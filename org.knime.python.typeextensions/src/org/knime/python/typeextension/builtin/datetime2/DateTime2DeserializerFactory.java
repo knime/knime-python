@@ -62,61 +62,65 @@ import org.knime.python.typeextension.Deserializer;
 import org.knime.python.typeextension.DeserializerFactory;
 
 /**
- * Is used to deserialize python datetime objects to either LocalDateTime objects if no timezoneinfo is given
- * or ZonedDateTime objects if said info is given.
+ * Is used to deserialize python datetime objects to either LocalDateTime
+ * objects if no timezoneinfo is given or ZonedDateTime objects if said info is
+ * given.
  * 
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class DateTime2DeserializerFactory extends DeserializerFactory {
 
-	public DateTime2DeserializerFactory() {
-		//Set the type of the resulting column to the conjunction of the LocalDateTimeType and ZonedDateTimeType. (non-native)
-		//While the table is created the types included in the resulting columns are tracked and the column type is replaced with
-		//the most common super type of all included cells after all cells have been inserted. This means that if only cells of a 
-		//single data type are present the type will be native.
-		super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
-	}
+    public DateTime2DeserializerFactory() {
+        // Set the type of the resulting column to the conjunction of the
+        // LocalDateTimeType and ZonedDateTimeType. (non-native)
+        // While the table is created the types included in the resulting
+        // columns are tracked and the column type is replaced with
+        // the most common super type of all included cells after all cells have
+        // been inserted. This means that if only cells of a
+        // single data type are present the type will be native.
+        super(DataType.getCommonSuperType(LocalDateTimeCellFactory.TYPE, ZonedDateTimeCellFactory.TYPE));
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Deserializer createDeserializer() {
-		return new DateTimeDeserializer();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Deserializer createDeserializer() {
+        return new DateTimeDeserializer();
+    }
 
-	private class DateTimeDeserializer implements Deserializer {
-		
-		ArrayList<ZoneId> tzWithChangedOffset = new ArrayList<ZoneId>();
+    private class DateTimeDeserializer implements Deserializer {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
-			//Deserialize to LocalDateTime or ZonedDateTime based on incoming date string
-			String string = new String(bytes, "UTF-8");
-			if(string.length() <= 23)
-			{
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalDateTimeSerializerFactory.FORMAT);
-				return LocalDateTimeCellFactory.create(string, formatter);
-			}
-			else
-			{
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
-				ZonedDateTime dt = ZonedDateTime.parse(string, formatter);
-				if(!tzWithChangedOffset.contains(dt.getZone()) && !dt.getOffset().equals(ZoneOffset.of(string.substring(23,29)))) {
-					//warn
-					NodeLogger.getLogger("ZonedDateTime deserialization").warn("Offset " + string.substring(23,29) + 
-							" was changed automatically to the stored offset for timezone " + dt.getZone() +
-							". Multiple entries may be affected!");
-					tzWithChangedOffset.add(dt.getZone());
-				}
-				return ZonedDateTimeCellFactory.create(string, formatter);
-			}
-		}
+        ArrayList<ZoneId> tzWithChangedOffset = new ArrayList<ZoneId>();
 
-	}
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+            // Deserialize to LocalDateTime or ZonedDateTime based on incoming
+            // date string
+            String string = new String(bytes, "UTF-8");
+            if (string.length() <= 23) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalDateTimeSerializerFactory.FORMAT);
+                return LocalDateTimeCellFactory.create(string, formatter);
+            } else {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
+                ZonedDateTime dt = ZonedDateTime.parse(string, formatter);
+                if (!tzWithChangedOffset.contains(dt.getZone())
+                        && !dt.getOffset().equals(ZoneOffset.of(string.substring(23, 29)))) {
+                    // warn
+                    NodeLogger.getLogger("ZonedDateTime deserialization")
+                            .warn("Offset " + string.substring(23, 29)
+                                    + " was changed automatically to the stored offset for timezone " + dt.getZone()
+                                    + ". Multiple entries may be affected!");
+                    tzWithChangedOffset.add(dt.getZone());
+                }
+                return ZonedDateTimeCellFactory.create(string, formatter);
+            }
+        }
+
+    }
 
 }

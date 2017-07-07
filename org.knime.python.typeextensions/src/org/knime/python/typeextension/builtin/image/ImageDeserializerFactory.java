@@ -61,25 +61,24 @@ import org.knime.python.typeextension.DeserializerFactory;
 
 public class ImageDeserializerFactory extends DeserializerFactory {
 
-	public ImageDeserializerFactory() {
-		super(PNGImageContent.TYPE);
-	}
+    public ImageDeserializerFactory() {
+        super(PNGImageContent.TYPE);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Deserializer createDeserializer() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Deserializer createDeserializer() {
 
-		return new Deserializer() {
+        return new Deserializer() {
 
-			@Override
-			public DataCell deserialize(byte[] bytes,
-					FileStoreFactory fileStoreFactory) throws IOException {
+            @Override
+            public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
 
-				return new PNGImageContent(bytes).toImageCell();
-			}
+                return new PNGImageContent(bytes).toImageCell();
+            }
 
-		};
-	}
+        };
+    }
 }

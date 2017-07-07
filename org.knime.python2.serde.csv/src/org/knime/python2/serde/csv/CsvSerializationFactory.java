@@ -55,14 +55,14 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  */
 public class CsvSerializationFactory implements SerializationLibraryFactory {
 
-	@Override
-	public String getName() {
-		return "CSV (Experimental)";
-	}
+    @Override
+    public String getName() {
+        return "CSV (Experimental)";
+    }
 
-	@Override
-	public SerializationLibrary createInstance() {
-		return new CsvSerializationLibrary();
-	}
+    @Override
+    public SerializationLibrary createInstance() {
+        return new CsvSerializationLibrary();
+    }
 
 }

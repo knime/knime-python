@@ -53,56 +53,43 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
 @SuppressWarnings("javadoc")
 public enum Type {
 
-    BOOLEAN(1),
-	BOOLEAN_LIST(2),
-	BOOLEAN_SET(3),
-	INTEGER(4),
-	INTEGER_LIST(5),
-	INTEGER_SET(6),
-	LONG(7),
-	LONG_LIST(8),
-	LONG_SET(9),
-	DOUBLE(10),
-	DOUBLE_LIST(11),
-	DOUBLE_SET(12),
-	STRING(13),
-	STRING_LIST(14),
-	STRING_SET(15),
-	BYTES(16),
-	BYTES_LIST(17),
-	BYTES_SET(18);
+    BOOLEAN(1), BOOLEAN_LIST(2), BOOLEAN_SET(3), INTEGER(4), INTEGER_LIST(5), INTEGER_SET(6), LONG(7), LONG_LIST(8),
+    LONG_SET(9), DOUBLE(10), DOUBLE_LIST(11), DOUBLE_SET(12), STRING(13), STRING_LIST(14), STRING_SET(15),
+    BYTES(16), BYTES_LIST(17), BYTES_SET(18);
 
-	private final int m_id;
+    private final int m_id;
 
-	/**
-	 * Constructor.
-	 * @param id   a numeric id for a column type
-	 */
-	private Type(final int id) {
-		m_id = id;
-	}
+    /**
+     * Constructor.
+     *
+     * @param id a numeric id for a column type
+     */
+    private Type(final int id) {
+        m_id = id;
+    }
 
-	/**
-	 * Gets the id.
-	 *
-	 * @return the id
-	 */
-	public int getId() {
-		return m_id;
-	}
+    /**
+     * Gets the id.
+     *
+     * @return the id
+     */
+    public int getId() {
+        return m_id;
+    }
 
-	/**
-	 * Get the type associated with a specific id.
-	 * @param id   an id
-	 * @return the {@link Type} or null if id is unknown
-	 */
-	public static Type getTypeForId(final int id) {
-		for (Type type : Type.values()) {
-			if (type.getId() == id) {
-				return type;
-			}
-		}
-		return null;
-	}
+    /**
+     * Get the type associated with a specific id.
+     *
+     * @param id an id
+     * @return the {@link Type} or null if id is unknown
+     */
+    public static Type getTypeForId(final int id) {
+        for (final Type type : Type.values()) {
+            if (type.getId() == id) {
+                return type;
+            }
+        }
+        return null;
+    }
 
 }

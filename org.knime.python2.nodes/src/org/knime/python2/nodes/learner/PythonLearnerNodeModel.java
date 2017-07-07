@@ -65,56 +65,57 @@ import org.knime.python2.port.PickledObjectPortObject;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonLearnerNodeModel() {
-		super(new PortType[] { BufferedDataTable.TYPE }, new PortType[] { PickledObjectPortObject.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonLearnerNodeModel() {
+        super(new PortType[]{BufferedDataTable.TYPE}, new PortType[]{PickledObjectPortObject.TYPE});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		PickledObject object = null;
-		try {
-			kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
-					(BufferedDataTable) inData[0], exec.createSubProgress(0.3));
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.6).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
-			object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
-			exec.createSubProgress(0.1).setProgress(1);
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new PortObject[] { new PickledObjectPortObject(object) };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        PickledObject object = null;
+        try {
+            kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
+                (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.6).setProgress(1);
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
+            object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
+            exec.createSubProgress(0.1).setProgress(1);
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new PortObject[]{new PickledObjectPortObject(object)};
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { null };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[]{null};
+    }
 
-	@Override
-	protected PythonLearnerNodeConfig createConfig() {
-		return new PythonLearnerNodeConfig();
-	}
+    @Override
+    protected PythonLearnerNodeConfig createConfig() {
+        return new PythonLearnerNodeConfig();
+    }
 
 }

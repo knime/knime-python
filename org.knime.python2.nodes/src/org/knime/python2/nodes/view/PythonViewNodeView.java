@@ -59,37 +59,38 @@ import org.knime.core.node.NodeView;
  */
 public class PythonViewNodeView extends NodeView<PythonViewNodeModel> {
 
-	private JLabel m_label = new JLabel();
+    private final JLabel m_label = new JLabel();
 
-	/**
-	 * Constructor.
-	 * @param model    the python view's node model
-	 */
-	public PythonViewNodeView(final PythonViewNodeModel model) {
-		super(model);
-		super.setComponent(m_label);
-	}
+    /**
+     * Constructor.
+     *
+     * @param model the python view's node model
+     */
+    public PythonViewNodeView(final PythonViewNodeModel model) {
+        super(model);
+        super.setComponent(m_label);
+    }
 
-	@Override
-	protected void onClose() {
-		// nothing
-	}
+    @Override
+    protected void onClose() {
+        // nothing
+    }
 
-	@Override
-	protected void onOpen() {
-		// nothing
-	}
+    @Override
+    protected void onOpen() {
+        // nothing
+    }
 
-	@Override
-	protected void modelChanged() {
-		Image image = getNodeModel().getOutputImage();
-		if (image != null) {
-			m_label.setText(null);
-			m_label.setIcon(new ImageIcon(image));
-		} else {
-			m_label.setText("No image");
-			m_label.setIcon(null);
-		}
-	}
+    @Override
+    protected void modelChanged() {
+        final Image image = getNodeModel().getOutputImage();
+        if (image != null) {
+            m_label.setText(null);
+            m_label.setIcon(new ImageIcon(image));
+        } else {
+            m_label.setText("No image");
+            m_label.setIcon(null);
+        }
+    }
 
 }

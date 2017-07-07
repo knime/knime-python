@@ -59,40 +59,40 @@ import org.osgi.service.prefs.BackingStoreException;
 
 public class PythonPreferenceInitializer extends AbstractPreferenceInitializer {
 
-	/**
-	 * Use the command 'python' without a specified location as default
-	 */
-	public static final String DEFAULT_PYTHON_2_PATH = "python";
+    /**
+     * Use the command 'python' without a specified location as default
+     */
+    public static final String DEFAULT_PYTHON_2_PATH = "python";
 
-	/**
-	 * Use the command 'python3' without a specified location as default
-	 */
-	public static final String DEFAULT_PYTHON_3_PATH = "python3";
+    /**
+     * Use the command 'python3' without a specified location as default
+     */
+    public static final String DEFAULT_PYTHON_3_PATH = "python3";
 
-	/**
-	 * Use flatbuffers serialization as a default
-	 */
-	public static final String DEFAULT_SERIALIZER_ID = "org.knime.serialization.flatbuffers.column";
+    /**
+     * Use flatbuffers serialization as a default
+     */
+    public static final String DEFAULT_SERIALIZER_ID = "org.knime.serialization.flatbuffers.column";
 
-	/**
-	 * The initial state of the default python version
-	 */
-	public static final String DEFAULT_DEFAULT_PYTHON_OPTION_CFG = "python3";
+    /**
+     * The initial state of the default python version
+     */
+    public static final String DEFAULT_DEFAULT_PYTHON_OPTION_CFG = "python3";
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferenceInitializer.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPreferenceInitializer.class);
 
-	@Override
-	public void initializeDefaultPreferences() {
-		IEclipsePreferences prefs = DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
-		prefs.put(PythonPreferencePage.PYTHON_2_PATH_CFG, DEFAULT_PYTHON_2_PATH);
-		prefs.put(PythonPreferencePage.PYTHON_3_PATH_CFG, DEFAULT_PYTHON_3_PATH);
-		prefs.put(PythonPreferencePage.SERIALIZER_ID_CFG, DEFAULT_SERIALIZER_ID);
-		prefs.put(PythonPreferencePage.DEFAULT_PYTHON_OPTION_CFG, DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
-		try {
-			prefs.flush();
-		} catch (BackingStoreException e) {
-			LOGGER.error("Could not save preferences: " + e.getMessage(), e);
-		}
-	}
+    @Override
+    public void initializeDefaultPreferences() {
+        final IEclipsePreferences prefs = DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
+        prefs.put(PythonPreferencePage.PYTHON_2_PATH_CFG, DEFAULT_PYTHON_2_PATH);
+        prefs.put(PythonPreferencePage.PYTHON_3_PATH_CFG, DEFAULT_PYTHON_3_PATH);
+        prefs.put(PythonPreferencePage.SERIALIZER_ID_CFG, DEFAULT_SERIALIZER_ID);
+        prefs.put(PythonPreferencePage.DEFAULT_PYTHON_OPTION_CFG, DEFAULT_DEFAULT_PYTHON_OPTION_CFG);
+        try {
+            prefs.flush();
+        } catch (final BackingStoreException e) {
+            LOGGER.error("Could not save preferences: " + e.getMessage(), e);
+        }
+    }
 
 }

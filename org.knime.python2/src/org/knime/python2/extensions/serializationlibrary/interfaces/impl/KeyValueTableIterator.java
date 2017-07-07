@@ -50,47 +50,49 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterato
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 
 /**
- * Used for iterating over a table with a single row. Each column can be seen as a Key/Value pair,
- * with the column name being the key and the cell being the value.
+ * Used for iterating over a table with a single row. Each column can be seen as a Key/Value pair, with the column name
+ * being the key and the cell being the value.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 
 public class KeyValueTableIterator implements TableIterator {
 
-	private TableSpec m_spec;
-	private Row m_row;
+    private final TableSpec m_spec;
 
-	/**
+    private Row m_row;
+
+    /**
      * Constructor.
+     *
      * @param spec a python integration specific table spec
-	 * @param row the row containing the values
+     * @param row the row containing the values
      */
-	public KeyValueTableIterator(final TableSpec spec, final Row row) {
-		m_spec = spec;
-		m_row = row;
-	}
+    public KeyValueTableIterator(final TableSpec spec, final Row row) {
+        m_spec = spec;
+        m_row = row;
+    }
 
-	@Override
-	public Row next() {
-		Row next = m_row;
-		m_row = null;
-		return next;
-	}
+    @Override
+    public Row next() {
+        final Row next = m_row;
+        m_row = null;
+        return next;
+    }
 
-	@Override
-	public boolean hasNext() {
-		return m_row != null;
-	}
+    @Override
+    public boolean hasNext() {
+        return m_row != null;
+    }
 
-	@Override
-	public int getNumberRemainingRows() {
-		return m_row != null ? 1 : 0;
-	}
+    @Override
+    public int getNumberRemainingRows() {
+        return m_row != null ? 1 : 0;
+    }
 
-	@Override
-	public TableSpec getTableSpec() {
-		return m_spec;
-	}
+    @Override
+    public TableSpec getTableSpec() {
+        return m_spec;
+    }
 
 }

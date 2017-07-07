@@ -62,30 +62,30 @@ import org.knime.python.typeextension.DeserializerFactory;
 
 public class LocalTimeDeserializerFactory extends DeserializerFactory {
 
-	public LocalTimeDeserializerFactory() {
-		super(LocalTimeCellFactory.TYPE);
-	}
+    public LocalTimeDeserializerFactory() {
+        super(LocalTimeCellFactory.TYPE);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Deserializer createDeserializer() {
-		return new LocalTimeDeserializer();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Deserializer createDeserializer() {
+        return new LocalTimeDeserializer();
+    }
 
-	private class LocalTimeDeserializer implements Deserializer {
+    private class LocalTimeDeserializer implements Deserializer {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
-			String string = new String(bytes, "UTF-8");
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalTimeSerializerFactory.FORMAT);
-			return LocalTimeCellFactory.create(string, formatter);
-		}
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public DataCell deserialize(byte[] bytes, FileStoreFactory fileStoreFactory) throws IOException {
+            String string = new String(bytes, "UTF-8");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LocalTimeSerializerFactory.FORMAT);
+            return LocalTimeCellFactory.create(string, formatter);
+        }
 
-	}
+    }
 
 }

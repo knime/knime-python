@@ -58,43 +58,45 @@ import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 
 /**
- * Class for administrating all modules that are added to the PYTHONPATH via the org.knime.python2.modules extension point.
+ * Class for administrating all modules that are added to the PYTHONPATH via the org.knime.python2.modules extension
+ * point.
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public class PythonModuleExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
 
-	private static Set<String> pythonModulePaths;
+    private static Set<String> pythonModulePaths;
 
-	/**
-	 * Add all additional pyhton modules specified via the modules extension point to the PYTHONPATH
-	 */
-	public static void init() {
-		pythonModulePaths = new HashSet<String>();
-		final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python2.modules");
-		for (final IConfigurationElement config : configs) {
-			final String pluginId = config.getContributor().getName();
-			final String path = config.getAttribute("path");
-			final File file = Activator.getFile(pluginId, path);
-			if (file == null || !file.exists() || !file.isDirectory()) {
-				LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
-			} else {
-				pythonModulePaths.add(file.getAbsolutePath());
-			}
-		}
-	}
+    /**
+     * Add all additional pyhton modules specified via the modules extension point to the PYTHONPATH
+     */
+    public static void init() {
+        pythonModulePaths = new HashSet<String>();
+        final IConfigurationElement[] configs =
+                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.modules");
+        for (final IConfigurationElement config : configs) {
+            final String pluginId = config.getContributor().getName();
+            final String path = config.getAttribute("path");
+            final File file = Activator.getFile(pluginId, path);
+            if ((file == null) || !file.exists() || !file.isDirectory()) {
+                LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
+            } else {
+                pythonModulePaths.add(file.getAbsolutePath());
+            }
+        }
+    }
 
-	/**
-	 * Gets the PYTHONPATH.
-	 *
-	 * @return the PYTHONPATH
-	 */
-	public static String getPythonPath() {
-		return StringUtils.join(pythonModulePaths, File.pathSeparator);
-	}
+    /**
+     * Gets the PYTHONPATH.
+     *
+     * @return the PYTHONPATH
+     */
+    public static String getPythonPath() {
+        return StringUtils.join(pythonModulePaths, File.pathSeparator);
+    }
 
 }

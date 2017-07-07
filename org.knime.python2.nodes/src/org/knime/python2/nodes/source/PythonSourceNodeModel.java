@@ -62,54 +62,55 @@ import org.knime.python2.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonSourceNodeModel() {
-		super(new PortType[0], new PortType[] { BufferedDataTable.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonSourceNodeModel() {
+        super(new PortType[0], new PortType[]{BufferedDataTable.TYPE});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		BufferedDataTable table = null;
-		try {
-			kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.7).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables());
-			table = kernel.getDataTable(PythonSourceNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new BufferedDataTable[] { table };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        BufferedDataTable table = null;
+        try {
+            kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.7).setProgress(1);
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables());
+            table = kernel.getDataTable(PythonSourceNodeConfig.getVariableNames().getOutputTables()[0], exec,
+                exec.createSubProgress(0.3));
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new BufferedDataTable[]{table};
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected DataTableSpec[] configure(DataTableSpec[] inSpecs) throws InvalidSettingsException {
-		return new DataTableSpec[] { null };
-	}
-	
-	@Override
-	protected PythonSourceNodeConfig createConfig() {
-		return new PythonSourceNodeConfig();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        return new DataTableSpec[]{null};
+    }
+
+    @Override
+    protected PythonSourceNodeConfig createConfig() {
+        return new PythonSourceNodeConfig();
+    }
 
 }

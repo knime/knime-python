@@ -69,38 +69,38 @@ import org.w3c.dom.svg.SVGDocument;
 
 public class ImageSerializerFactory extends SerializerFactory<ImageValue> {
 
-	public ImageSerializerFactory() {
-		super(ImageValue.class);
-	}
+    public ImageSerializerFactory() {
+        super(ImageValue.class);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Serializer<? extends ImageValue> createSerializer() {
-		return new Serializer<ImageValue>() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Serializer<? extends ImageValue> createSerializer() {
+        return new Serializer<ImageValue>() {
 
-			@Override
-			public byte[] serialize(ImageValue value) throws IOException {
-				ImageContent content = value.getImageContent();
-				if (content instanceof PNGImageContent) {
-					return ((PNGImageContent)content).getByteArray();
-				} else if (content instanceof SvgImageContent) {
-					SvgImageContent svgContent = (SvgImageContent)content;
-					SVGDocument svg = ((SvgCell)svgContent.toImageCell()).getDocument();
-					TranscoderInput input = new TranscoderInput(svg);
-					ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-					TranscoderOutput output = new TranscoderOutput(ostream);
-					PNGTranscoder converter = new PNGTranscoder();
-					try {
-						converter.transcode(input, output);
-						return ostream.toByteArray();
-					} catch (TranscoderException e) {
-						throw new IOException(e);
-					}
-				}
-				return null;
-			}
-		};
-	}
+            @Override
+            public byte[] serialize(ImageValue value) throws IOException {
+                ImageContent content = value.getImageContent();
+                if (content instanceof PNGImageContent) {
+                    return ((PNGImageContent) content).getByteArray();
+                } else if (content instanceof SvgImageContent) {
+                    SvgImageContent svgContent = (SvgImageContent) content;
+                    SVGDocument svg = ((SvgCell) svgContent.toImageCell()).getDocument();
+                    TranscoderInput input = new TranscoderInput(svg);
+                    ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+                    TranscoderOutput output = new TranscoderOutput(ostream);
+                    PNGTranscoder converter = new PNGTranscoder();
+                    try {
+                        converter.transcode(input, output);
+                        return ostream.toByteArray();
+                    } catch (TranscoderException e) {
+                        throw new IOException(e);
+                    }
+                }
+                return null;
+            }
+        };
+    }
 }

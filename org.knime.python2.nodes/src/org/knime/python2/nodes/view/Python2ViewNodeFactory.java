@@ -55,60 +55,58 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class Python2ViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonViewNodeModel createNodeModel() {
-		return new PythonViewNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonViewNodeModel createNodeModel() {
+        return new PythonViewNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 3;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 3;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
         if (viewIndex == 0) {
-        	return new PythonViewNodeView(nodeModel);
+            return new PythonViewNodeView(nodeModel);
         } else if (viewIndex == 1) {
-            return
-                    new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
         } else if (viewIndex == 2) {
-            return
-                    new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
-        	
+            return new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
+
         }
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonViewNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonViewNodeDialog();
+    }
 
 }

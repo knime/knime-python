@@ -49,16 +49,16 @@
 package org.knime.python2;
 
 /**
-* Observes {@link ExecutableObservable}s managing the path to python executables.
-* Executes a specific action if notified by an observable.
-*
-* @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
-*/
+ * Observes {@link ExecutableObservable}s managing the path to python executables. Executes a specific action if
+ * notified by an observable.
+ *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ */
 @SuppressWarnings("javadoc")
 interface ExecutableObserver {
     /**
-     * Used by an {@link ExecutableObservable} to notify this observer about a state change,
-     * i.e. an updated executable location.
+     * Used by an {@link ExecutableObservable} to notify this observer about a state change, i.e. an updated executable
+     * location.
      */
     public void executableUpdated();
 }

@@ -68,63 +68,69 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
 
 public class SerializationLibraryExtensions {
 
-	private static Map<String, SerializationLibraryExtension> extensions = new HashMap<String, SerializationLibraryExtension>();
-	private Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<String, SerializationLibrary>();
+    private static Map<String, SerializationLibraryExtension> extensions =
+            new HashMap<String, SerializationLibraryExtension>();
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(SerializationLibraryExtensions.class);
+    private final Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<String, SerializationLibrary>();
 
-	/**
-	 * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
-	 */
-	public static void init() {
-		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python2.serializationlibrary");
-		for (IConfigurationElement config : configs) {
-			try {
-				Object o = config.createExecutableExtension("java-serializationlibrary-factory");
-				if (o instanceof SerializationLibraryFactory) {
-					String contributer = config.getContributor().getName();
-					String filePath = config.getAttribute("python-serializationlibrary");
-					File file = Activator.getFile(contributer, filePath);
-					if (file != null) {
-						SerializationLibraryFactory serializationLibrary = (SerializationLibraryFactory) o;
-						String id = config.getAttribute("id");
-						extensions.put(id, new SerializationLibraryExtension(id, file.getAbsolutePath(), serializationLibrary));
-					}
-				}
-			} catch (CoreException e) {
-				LOGGER.error(e.getMessage(), e);
-			}
-		}
-	}
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(SerializationLibraryExtensions.class);
 
-	/**
-	 * Get a serialization library instance by id. The instance is only created if the id has not been requested before.
-	 * @param id   the library's id
-	 * @return a serialization library
-	 */
-	public SerializationLibrary getSerializationLibrary(final String id) {
-		if (!m_serializationLibrary.containsKey(id)) {
-			m_serializationLibrary.put(id, extensions.get(id).getJavaSerializationLibraryFactory().createInstance());
-		}
-		return m_serializationLibrary.get(id);
-	}
+    /**
+     * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
+     */
+    public static void init() {
+        final IConfigurationElement[] configs =
+                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.serializationlibrary");
+        for (final IConfigurationElement config : configs) {
+            try {
+                final Object o = config.createExecutableExtension("java-serializationlibrary-factory");
+                if (o instanceof SerializationLibraryFactory) {
+                    final String contributer = config.getContributor().getName();
+                    final String filePath = config.getAttribute("python-serializationlibrary");
+                    final File file = Activator.getFile(contributer, filePath);
+                    if (file != null) {
+                        final SerializationLibraryFactory serializationLibrary = (SerializationLibraryFactory)o;
+                        final String id = config.getAttribute("id");
+                        extensions.put(id,
+                            new SerializationLibraryExtension(id, file.getAbsolutePath(), serializationLibrary));
+                    }
+                }
+            } catch (final CoreException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+    }
 
-	/**
-	 * Get a collection of all available serialization library extensions.
-	 * @return a collection of all available serialization library extensions
-	 */
-	public static Collection<SerializationLibraryExtension> getExtensions() {
-		return extensions.values();
-	}
+    /**
+     * Get a serialization library instance by id. The instance is only created if the id has not been requested before.
+     *
+     * @param id the library's id
+     * @return a serialization library
+     */
+    public SerializationLibrary getSerializationLibrary(final String id) {
+        if (!m_serializationLibrary.containsKey(id)) {
+            m_serializationLibrary.put(id, extensions.get(id).getJavaSerializationLibraryFactory().createInstance());
+        }
+        return m_serializationLibrary.get(id);
+    }
 
-	/**
-	 * Gets the serialization library path.
-	 * @param id the library's id
-	 * @return the serialization library path
-	 */
-	public static String getSerializationLibraryPath(final String id) {
-		return extensions.get(id).getPythonSerializationLibraryPath();
-	}
+    /**
+     * Get a collection of all available serialization library extensions.
+     *
+     * @return a collection of all available serialization library extensions
+     */
+    public static Collection<SerializationLibraryExtension> getExtensions() {
+        return extensions.values();
+    }
+
+    /**
+     * Gets the serialization library path.
+     *
+     * @param id the library's id
+     * @return the serialization library path
+     */
+    public static String getSerializationLibraryPath(final String id) {
+        return extensions.get(id).getPythonSerializationLibraryPath();
+    }
 
 }

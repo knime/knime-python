@@ -55,26 +55,50 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class ColumnName extends Table {
-  public static ColumnName getRootAsColumnName(final ByteBuffer _bb) { return getRootAsColumnName(_bb, new ColumnName()); }
-  public static ColumnName getRootAsColumnName(final ByteBuffer _bb, final ColumnName obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public ColumnName __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static ColumnName getRootAsColumnName(final ByteBuffer _bb) {
+        return getRootAsColumnName(_bb, new ColumnName());
+    }
 
-  public String name() { int o = __offset(4); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
+    public static ColumnName getRootAsColumnName(final ByteBuffer _bb, final ColumnName obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createColumnName(final FlatBufferBuilder builder,
-      final int nameOffset) {
-    builder.startObject(1);
-    ColumnName.addName(builder, nameOffset);
-    return ColumnName.endColumnName(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startColumnName(final FlatBufferBuilder builder) { builder.startObject(1); }
-  public static void addName(final FlatBufferBuilder builder, final int nameOffset) { builder.addOffset(0, nameOffset, 0); }
-  public static int endColumnName(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public ColumnName __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public String name() {
+        final int o = __offset(4);
+        return o != 0 ? __string(o + bb_pos) : null;
+    }
+
+    public ByteBuffer nameAsByteBuffer() {
+        return __vector_as_bytebuffer(4, 1);
+    }
+
+    public static int createColumnName(final FlatBufferBuilder builder, final int nameOffset) {
+        builder.startObject(1);
+        ColumnName.addName(builder, nameOffset);
+        return ColumnName.endColumnName(builder);
+    }
+
+    public static void startColumnName(final FlatBufferBuilder builder) {
+        builder.startObject(1);
+    }
+
+    public static void addName(final FlatBufferBuilder builder, final int nameOffset) {
+        builder.addOffset(0, nameOffset, 0);
+    }
+
+    public static int endColumnName(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

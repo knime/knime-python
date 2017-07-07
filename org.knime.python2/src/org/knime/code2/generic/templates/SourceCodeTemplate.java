@@ -55,102 +55,107 @@ package org.knime.code2.generic.templates;
 
 public class SourceCodeTemplate implements Comparable<SourceCodeTemplate> {
 
-	private String m_fileName;
-	private String m_category;
-	private String m_title;
-	private String m_description;
-	private String m_sourceCode;
-	private boolean m_predefined;
+    private final String m_fileName;
 
-	/**
-	 * Constructor.
-	 * @param fileName     the name of the file for storing the template
-	 * @param category     the template's category
-	 * @param title        the template's title
-	 * @param description  a description of what the template does
-	 * @param sourceCode   the actual source code
-	 * @param predefined   flag indicating if the template is predefined or userdefined
-	 */
-	public SourceCodeTemplate(final String fileName, final String category,
-			final String title, final String description,
-			final String sourceCode, final boolean predefined) {
-		m_fileName = fileName;
-		m_category = category;
-		m_title = title;
-		m_description = description;
-		m_sourceCode = sourceCode;
-		m_predefined = predefined;
-	}
+    private final String m_category;
 
-	/**
-	 * Gets the file name.
-	 *
-	 * @return the file name
-	 */
-	public String getFileName() {
-		return m_fileName;
-	}
+    private final String m_title;
 
-	/**
-	 * Gets the category.
-	 *
-	 * @return the category
-	 */
-	public String getCategory() {
-		return m_category;
-	}
+    private final String m_description;
 
-	/**
-	 * Gets the title.
-	 *
-	 * @return the title
-	 */
-	public String getTitle() {
-		return m_title;
-	}
+    private final String m_sourceCode;
 
-	/**
-	 * Gets the description.
-	 *
-	 * @return the description
-	 */
-	public String getDescription() {
-		return m_description;
-	}
+    private final boolean m_predefined;
 
-	/**
-	 * Gets the source code.
-	 *
-	 * @return the source code
-	 */
-	public String getSourceCode() {
-		return m_sourceCode;
-	}
+    /**
+     * Constructor.
+     *
+     * @param fileName the name of the file for storing the template
+     * @param category the template's category
+     * @param title the template's title
+     * @param description a description of what the template does
+     * @param sourceCode the actual source code
+     * @param predefined flag indicating if the template is predefined or userdefined
+     */
+    public SourceCodeTemplate(final String fileName, final String category, final String title,
+        final String description, final String sourceCode, final boolean predefined) {
+        m_fileName = fileName;
+        m_category = category;
+        m_title = title;
+        m_description = description;
+        m_sourceCode = sourceCode;
+        m_predefined = predefined;
+    }
 
-	/**
-	 * Checks if is predefined.
-	 *
-	 * @return true, if is predefined
-	 */
-	public boolean isPredefined() {
-		return m_predefined;
-	}
+    /**
+     * Gets the file name.
+     *
+     * @return the file name
+     */
+    public String getFileName() {
+        return m_fileName;
+    }
 
-	@Override
-	public String toString() {
-		return m_title;
-	}
+    /**
+     * Gets the category.
+     *
+     * @return the category
+     */
+    public String getCategory() {
+        return m_category;
+    }
 
-	@Override
-	public int compareTo(final SourceCodeTemplate o) {
-		if (isPredefined() != o.isPredefined()) {
-			return isPredefined() ? 1 : -1;
-		}
-		int result = getTitle().compareTo(o.getTitle());
-		if (result == 0) {
-			result = getFileName().compareTo(o.getFileName());
-		}
-		return result;
-	}
+    /**
+     * Gets the title.
+     *
+     * @return the title
+     */
+    public String getTitle() {
+        return m_title;
+    }
+
+    /**
+     * Gets the description.
+     *
+     * @return the description
+     */
+    public String getDescription() {
+        return m_description;
+    }
+
+    /**
+     * Gets the source code.
+     *
+     * @return the source code
+     */
+    public String getSourceCode() {
+        return m_sourceCode;
+    }
+
+    /**
+     * Checks if is predefined.
+     *
+     * @return true, if is predefined
+     */
+    public boolean isPredefined() {
+        return m_predefined;
+    }
+
+    @Override
+    public String toString() {
+        return m_title;
+    }
+
+    @Override
+    public int compareTo(final SourceCodeTemplate o) {
+        if (isPredefined() != o.isPredefined()) {
+            return isPredefined() ? 1 : -1;
+        }
+        int result = getTitle().compareTo(o.getTitle());
+        if (result == 0) {
+            result = getFileName().compareTo(o.getFileName());
+        }
+        return result;
+    }
 
 }

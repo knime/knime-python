@@ -57,6 +57,7 @@ package org.knime.python2;
 interface ExecutableObservable {
     /**
      * Set the observer for this observable.
+     *
      * @param obs an {@link ExecutableObserver}
      */
     public void setExecutableObserver(ExecutableObserver obs);

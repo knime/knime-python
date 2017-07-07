@@ -52,43 +52,34 @@ import org.knime.code2.python.PythonSourceCodeConfig;
 
 class PythonPredictorNodeConfig extends PythonSourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table" }, new String[] { "output_table" }, null, new String[] { "input_model" }, null);
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
+        new String[]{"output_table"}, null, new String[]{"input_model"}, null);
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return "from pandas import Series\n" +
-				"# Only use numeric columns\n" +
-				"data = " + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" +
-				"# Use first column as value\n" +
-				"value_column = data[data.columns[0]]\n" +
-				"# List of predictions\n" +
-				"predictions = []\n" +
-				"# prediction = value * m + c\n" +
-				"# m is first value in model\n" +
-				"m = " + VARIABLE_NAMES.getInputObjects()[0] + "[0]\n" +
-				"# c is second value in model\n" +
-				"c = " + VARIABLE_NAMES.getInputObjects()[0] + "[1]\n" +
-				"# Iterate over values\n" +
-				"for i in range(len(value_column)):\n" +
-				"\t# Calculate predictions\n" +
-				"\tpredictions.append(value_column[i]*m+c)\n" +
-				"# Copy input table to output table\n" +
-				VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" +
-				"# Append predictions\n" +
-				VARIABLE_NAMES.getOutputTables()[0] + "['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)\n";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return "from pandas import Series\n" + "# Only use numeric columns\n" + "data = "
+                + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Use first column as value\n"
+                + "value_column = data[data.columns[0]]\n" + "# List of predictions\n" + "predictions = []\n"
+                + "# prediction = value * m + c\n" + "# m is first value in model\n" + "m = "
+                + VARIABLE_NAMES.getInputObjects()[0] + "[0]\n" + "# c is second value in model\n" + "c = "
+                + VARIABLE_NAMES.getInputObjects()[0] + "[1]\n" + "# Iterate over values\n"
+                + "for i in range(len(value_column)):\n" + "\t# Calculate predictions\n"
+                + "\tpredictions.append(value_column[i]*m+c)\n" + "# Copy input table to output table\n"
+                + VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n"
+                + "# Append predictions\n" + VARIABLE_NAMES.getOutputTables()[0]
+                        + "['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)\n";
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

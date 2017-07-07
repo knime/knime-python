@@ -46,39 +46,41 @@
 package org.knime.python2;
 
 /**
- * An observable option for the default python version. Only one DefaultPythonVersionOption observed by a 
+ * An observable option for the default python version. Only one DefaultPythonVersionOption observed by a
  * {@link DefaultPythonVersionObserver} may be selected at a time.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
 
 public interface DefaultPythonVersionOption {
-	
-	/**
-	 * @return true - the option is the currently selected one, false - otherwise
-	 */
-	
-	public boolean isSelected();
-	
-	/**
-	 * Process an update from the observer.
-	 * @param option - the currently selected option
-	 */
-	
-	public void updateDefaultPythonVersion(DefaultPythonVersionOption option);
-	
-	/**
-	 * Set an observer for this option.
-	 * @param observer - a {@link DefaultPythonVersionObserver}
-	 */
-	
-	public void setObserver(DefaultPythonVersionObserver observer);
-	
-	/**
-	 * Notifies the observer about a state change meaning that this option was selected.
-	 */
-	
-	public void notifyChange();
+
+    /**
+     * @return true - the option is the currently selected one, false - otherwise
+     */
+
+    public boolean isSelected();
+
+    /**
+     * Process an update from the observer.
+     *
+     * @param option - the currently selected option
+     */
+
+    public void updateDefaultPythonVersion(DefaultPythonVersionOption option);
+
+    /**
+     * Set an observer for this option.
+     *
+     * @param observer - a {@link DefaultPythonVersionObserver}
+     */
+
+    public void setObserver(DefaultPythonVersionObserver observer);
+
+    /**
+     * Notifies the observer about a state change meaning that this option was selected.
+     */
+
+    public void notifyChange();
 
 }

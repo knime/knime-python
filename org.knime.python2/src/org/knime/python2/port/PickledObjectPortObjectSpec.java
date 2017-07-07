@@ -72,106 +72,109 @@ public final class PickledObjectPortObjectSpec extends AbstractSimplePortObjectS
     /**
      * The serializer for the PickeledObject portspec type
      */
-	public static final class Serializer extends AbstractSimplePortObjectSpecSerializer<PickledObjectPortObjectSpec> {}
+    public static final class Serializer extends AbstractSimplePortObjectSpecSerializer<PickledObjectPortObjectSpec> {
+    }
 
-	private String m_pickledObjectType;
-	private String m_pickledObjectString;
+    private String m_pickledObjectType;
 
-	/**
-	 * Constructor for a port object spec that holds no {@link PickledObject}.
-	 */
-	public PickledObjectPortObjectSpec() {
-		m_pickledObjectType = null;
-		m_pickledObjectString = null;
-	}
+    private String m_pickledObjectString;
 
-	/**
-	 * Constructor.
-	 * @param pickledObjectType    the type of the contained pickled object
-	 * @param pickledObjectString  the string representation of the contained pickled object
-	 */
-	public PickledObjectPortObjectSpec(final String pickledObjectType, final String pickledObjectString) {
-		m_pickledObjectType = pickledObjectType;
-		m_pickledObjectString = pickledObjectString;
-	}
+    /**
+     * Constructor for a port object spec that holds no {@link PickledObject}.
+     */
+    public PickledObjectPortObjectSpec() {
+        m_pickledObjectType = null;
+        m_pickledObjectString = null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void save(final ModelContentWO model) {
-		model.addString("pickledObjectType", m_pickledObjectType);
-		model.addString("pickledObjectString", m_pickledObjectString);
-	}
+    /**
+     * Constructor.
+     *
+     * @param pickledObjectType the type of the contained pickled object
+     * @param pickledObjectString the string representation of the contained pickled object
+     */
+    public PickledObjectPortObjectSpec(final String pickledObjectType, final String pickledObjectString) {
+        m_pickledObjectType = pickledObjectType;
+        m_pickledObjectString = pickledObjectString;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void load(final ModelContentRO model) throws InvalidSettingsException {
-		m_pickledObjectType = model.getString("pickledObjectType", null);
-		m_pickledObjectString = model.getString("pickledObjectString", null);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void save(final ModelContentWO model) {
+        model.addString("pickledObjectType", m_pickledObjectType);
+        model.addString("pickledObjectString", m_pickledObjectString);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(final Object ospec) {
-		if (this == ospec) {
-			return true;
-		}
-		if (!(ospec instanceof PickledObjectPortObjectSpec)) {
-			return false;
-		}
-		PickledObjectPortObjectSpec spec = (PickledObjectPortObjectSpec) ospec;
-		return m_pickledObjectType.equals(spec.m_pickledObjectType) && m_pickledObjectString.equals(spec.m_pickledObjectString);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void load(final ModelContentRO model) throws InvalidSettingsException {
+        m_pickledObjectType = model.getString("pickledObjectType", null);
+        m_pickledObjectString = model.getString("pickledObjectString", null);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int hashCode() {
-		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(m_pickledObjectType);
-		hcb.append(m_pickledObjectString);
-		return hcb.hashCode();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object ospec) {
+        if (this == ospec) {
+            return true;
+        }
+        if (!(ospec instanceof PickledObjectPortObjectSpec)) {
+            return false;
+        }
+        final PickledObjectPortObjectSpec spec = (PickledObjectPortObjectSpec)ospec;
+        return m_pickledObjectType.equals(spec.m_pickledObjectType)
+                && m_pickledObjectString.equals(spec.m_pickledObjectString);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public JComponent[] getViews() {
-		String text;
-		if (m_pickledObjectType != null) {
-			text = "<html><b>" + m_pickledObjectType
-					+ "</b><br><br><code>"
-					+ m_pickledObjectString.replace("\n", "<br>") + "</code></html>";
-		} else {
-			text = "No object available";
-		}
-		JLabel label = new JLabel(text);
-		Font font = label.getFont();
-		Font plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
-		label.setFont(plainFont);
-		JPanel panel = new JPanel(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(5, 5, 5, 5);
-		gbc.anchor = GridBagConstraints.NORTHWEST;
-		gbc.fill = GridBagConstraints.BOTH;
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		panel.add(label, gbc);
-		gbc.insets = new Insets(0, 0, 0, 0);
-		gbc.gridy++;
-		gbc.weighty = Double.MIN_VALUE;
-		gbc.weightx = Double.MIN_VALUE;
-		panel.add(new JLabel(), gbc);
-		JComponent f = new JScrollPane(panel);
-		f.setName("Pickled object");
-		return new JComponent[] { f };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        final HashCodeBuilder hcb = new HashCodeBuilder();
+        hcb.append(m_pickledObjectType);
+        hcb.append(m_pickledObjectString);
+        return hcb.hashCode();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JComponent[] getViews() {
+        String text;
+        if (m_pickledObjectType != null) {
+            text = "<html><b>" + m_pickledObjectType + "</b><br><br><code>"
+                    + m_pickledObjectString.replace("\n", "<br>") + "</code></html>";
+        } else {
+            text = "No object available";
+        }
+        final JLabel label = new JLabel(text);
+        final Font font = label.getFont();
+        final Font plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
+        label.setFont(plainFont);
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(label, gbc);
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy++;
+        gbc.weighty = Double.MIN_VALUE;
+        gbc.weightx = Double.MIN_VALUE;
+        panel.add(new JLabel(), gbc);
+        final JComponent f = new JScrollPane(panel);
+        f.setName("Pickled object");
+        return new JComponent[]{f};
+    }
 
 }

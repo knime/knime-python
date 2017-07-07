@@ -62,58 +62,59 @@ import org.knime.python2.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonScript2In1OutNodeModel extends PythonNodeModel<PythonScript2In1OutNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonScript2In1OutNodeModel() {
-		super(new PortType[] { BufferedDataTable.TYPE, BufferedDataTable.TYPE }, new PortType[] { BufferedDataTable.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonScript2In1OutNodeModel() {
+        super(new PortType[]{BufferedDataTable.TYPE, BufferedDataTable.TYPE}, new PortType[]{BufferedDataTable.TYPE});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected BufferedDataTable[] execute(BufferedDataTable[] inData, ExecutionContext exec) throws Exception {
-		final PythonKernel kernel = new PythonKernel(getKernelOptions());
-		BufferedDataTable table = null;
-		try {
-			kernel.putFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
-					exec.createSubProgress(0.15));
-			kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[1], inData[1],
-					exec.createSubProgress(0.15));
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables());
-			table = kernel.getDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new BufferedDataTable[] { table };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        BufferedDataTable table = null;
+        try {
+            kernel.putFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
+                exec.createSubProgress(0.15));
+            kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[1], inData[1],
+                exec.createSubProgress(0.15));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.4).setProgress(1);
+            final Collection<FlowVariable> variables =
+                    kernel.getFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables());
+            table = kernel.getDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
+                exec.createSubProgress(0.3));
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new BufferedDataTable[]{table};
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected DataTableSpec[] configure(DataTableSpec[] inSpecs) throws InvalidSettingsException {
-		return new DataTableSpec[] { null };
-	}
-	
-	@Override
-	protected PythonScript2In1OutNodeConfig createConfig() {
-		return new PythonScript2In1OutNodeConfig();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        return new DataTableSpec[]{null};
+    }
+
+    @Override
+    protected PythonScript2In1OutNodeConfig createConfig() {
+        return new PythonScript2In1OutNodeConfig();
+    }
 
 }

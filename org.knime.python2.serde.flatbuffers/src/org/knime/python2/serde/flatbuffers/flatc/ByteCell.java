@@ -55,31 +55,67 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class ByteCell extends Table {
-  public static ByteCell getRootAsByteCell(final ByteBuffer _bb) { return getRootAsByteCell(_bb, new ByteCell()); }
-  public static ByteCell getRootAsByteCell(final ByteBuffer _bb, final ByteCell obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(final int _i, final ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
-  public ByteCell __assign(final int _i, final ByteBuffer _bb) { __init(_i, _bb); return this; }
+    public static ByteCell getRootAsByteCell(final ByteBuffer _bb) {
+        return getRootAsByteCell(_bb, new ByteCell());
+    }
 
-  public int value(final int j) { int o = __offset(4); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
-  public int valueLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer valueAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
+    public static ByteCell getRootAsByteCell(final ByteBuffer _bb, final ByteCell obj) {
+        _bb.order(ByteOrder.LITTLE_ENDIAN);
+        return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb));
+    }
 
-  public static int createByteCell(final FlatBufferBuilder builder,
-      final int valueOffset) {
-    builder.startObject(1);
-    ByteCell.addValue(builder, valueOffset);
-    return ByteCell.endByteCell(builder);
-  }
+    public void __init(final int _i, final ByteBuffer _bb) {
+        bb_pos = _i;
+        bb = _bb;
+    }
 
-  public static void startByteCell(final FlatBufferBuilder builder) { builder.startObject(1); }
-  public static void addValue(final FlatBufferBuilder builder, final int valueOffset) { builder.addOffset(0, valueOffset, 0); }
-  public static int createValueVector(final FlatBufferBuilder builder, final byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) {
-    builder.addByte(data[i]);
-} return builder.endVector(); }
-  public static void startValueVector(final FlatBufferBuilder builder, final int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endByteCell(final FlatBufferBuilder builder) {
-    int o = builder.endObject();
-    return o;
-  }
+    public ByteCell __assign(final int _i, final ByteBuffer _bb) {
+        __init(_i, _bb);
+        return this;
+    }
+
+    public int value(final int j) {
+        final int o = __offset(4);
+        return o != 0 ? bb.get(__vector(o) + (j * 1)) & 0xFF : 0;
+    }
+
+    public int valueLength() {
+        final int o = __offset(4);
+        return o != 0 ? __vector_len(o) : 0;
+    }
+
+    public ByteBuffer valueAsByteBuffer() {
+        return __vector_as_bytebuffer(4, 1);
+    }
+
+    public static int createByteCell(final FlatBufferBuilder builder, final int valueOffset) {
+        builder.startObject(1);
+        ByteCell.addValue(builder, valueOffset);
+        return ByteCell.endByteCell(builder);
+    }
+
+    public static void startByteCell(final FlatBufferBuilder builder) {
+        builder.startObject(1);
+    }
+
+    public static void addValue(final FlatBufferBuilder builder, final int valueOffset) {
+        builder.addOffset(0, valueOffset, 0);
+    }
+
+    public static int createValueVector(final FlatBufferBuilder builder, final byte[] data) {
+        builder.startVector(1, data.length, 1);
+        for (int i = data.length - 1; i >= 0; i--) {
+            builder.addByte(data[i]);
+        }
+        return builder.endVector();
+    }
+
+    public static void startValueVector(final FlatBufferBuilder builder, final int numElems) {
+        builder.startVector(1, numElems, 1);
+    }
+
+    public static int endByteCell(final FlatBufferBuilder builder) {
+        final int o = builder.endObject();
+        return o;
+    }
 }
-

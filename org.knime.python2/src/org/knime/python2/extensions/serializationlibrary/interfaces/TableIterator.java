@@ -54,26 +54,26 @@ import java.util.Iterator;
  */
 public interface TableIterator extends Iterator<Row> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     Row next();
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     boolean hasNext();
 
-	/**
-	 * @return The number of rows that have not been requested via {@link #next()}.
-	 */
-	int getNumberRemainingRows();
+    /**
+     * @return The number of rows that have not been requested via {@link #next()}.
+     */
+    int getNumberRemainingRows();
 
-	/**
-	 * @return The {@link TableSpec}.
-	 */
-	TableSpec getTableSpec();
+    /**
+     * @return The {@link TableSpec}.
+     */
+    TableSpec getTableSpec();
 
 }

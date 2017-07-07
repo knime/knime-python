@@ -60,29 +60,29 @@ import org.knime.python.typeextension.SerializerFactory;
  */
 
 public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
-	
-	public XMLSerializerFactory() {
-		super(XMLValue.class);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Serializer<XMLValue> createSerializer() {
-		return new XMLSerializer();
-	}
-	
-	private class XMLSerializer implements Serializer<XMLValue> {
 
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public byte[] serialize(XMLValue value) throws IOException {
-			return value.toString().getBytes();
-		}
-	
-	}
+    public XMLSerializerFactory() {
+        super(XMLValue.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Serializer<XMLValue> createSerializer() {
+        return new XMLSerializer();
+    }
+
+    private class XMLSerializer implements Serializer<XMLValue> {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public byte[] serialize(XMLValue value) throws IOException {
+            return value.toString().getBytes();
+        }
+
+    }
 
 }

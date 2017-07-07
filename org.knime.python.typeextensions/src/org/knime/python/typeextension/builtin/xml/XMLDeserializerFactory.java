@@ -67,34 +67,33 @@ import org.xml.sax.SAXException;
  */
 
 public class XMLDeserializerFactory extends DeserializerFactory {
-	
-	public XMLDeserializerFactory() {
-		super(XMLCell.TYPE);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Deserializer createDeserializer() {
-		return new XMLDeserializer();
-	}
 
-	private class XMLDeserializer implements Deserializer {
-		
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
-			try {
-				return XMLCellFactory.create(new String(bytes));
-			} catch (ParserConfigurationException | SAXException
-					| XMLStreamException e) {
-				throw new IOException(e.getMessage(), e);
-			}
-		}
-		
-	}
+    public XMLDeserializerFactory() {
+        super(XMLCell.TYPE);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Deserializer createDeserializer() {
+        return new XMLDeserializer();
+    }
+
+    private class XMLDeserializer implements Deserializer {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
+            try {
+                return XMLCellFactory.create(new String(bytes));
+            } catch (ParserConfigurationException | SAXException | XMLStreamException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+    }
 
 }
