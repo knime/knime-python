@@ -14,6 +14,12 @@
    		<node category-path="/labs/python" factory-class="org.knime.python2.nodes.objectwriter.Python2ObjectWriterNodeFactory" after="org.knime.python2.nodes.objectreader.Python2ObjectReaderNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python2.nodes.learner.Python2LearnerNodeFactory" after="org.knime.python2.nodes.objectwriter.Python2ObjectWriterNodeFactory"/>
    		<node category-path="/labs/python" factory-class="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory" after="org.knime.python2.nodes.learner.Python2LearnerNodeFactory"/>
+     <node
+           after="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory"
+           category-path="/labs/python"
+           deprecated="false"
+           factory-class="org.knime.python2.nodes.db.Python2ScriptDBNodeFactory">
+     </node>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python (major versions 2 &amp; 3)" path="/labs" />

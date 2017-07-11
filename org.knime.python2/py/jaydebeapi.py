@@ -17,10 +17,11 @@
 # License along with JayDeBeApi.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-__version_info__ = (1, 0, 0)
+__version_info__ = (0, 1, 5)
 __version__ = ".".join(str(i) for i in __version_info__)
 
 import datetime
+import exceptions
 import glob
 import os
 import time
@@ -269,7 +270,7 @@ class DBAPITypeObject(object):
 
 STRING = DBAPITypeObject('CHAR', 'NCHAR', 'NVARCHAR', 'VARCHAR', 'OTHER')
 
-TEXT = DBAPITypeObject('CLOB', 'LONGVARCHAR', 'LONGNVARCHAR', 'NCLOB', 'SQLXML')
+TEXT = DBAPITypeObject('CLOB', 'LONGNVARCHAR', 'LONGNARCHAR', 'NCLOB', 'SQLXML')
 
 BINARY = DBAPITypeObject('BINARY', 'BLOB', 'LONGVARBINARY', 'VARBINARY')
 
@@ -382,7 +383,6 @@ def connect(jclassname, url, driver_args=None, jars=None, libs=None):
 
 # DB-API 2.0 Connection Object
 class Connection(object):
-
     Error = Error
     Warning = Warning
     InterfaceError = InterfaceError
@@ -411,14 +411,39 @@ class Connection(object):
         except:
             _handle_sql_exception()
 
-    def rollback(self):
+    def rollback(self, savepoint=None):
         try:
-            self.jconn.rollback()
+            if savepoint == None:
+                self.jconn.rollback()
+            else:
+                self.jconn.rollback(savepoint)
         except:
             _handle_sql_exception()
-
+    
+    def getMetaData(self):
+        try:
+            return self.jconn.getMetaData()
+        except:
+            _handle_sql_exception()
+    
+    def set_savepoint(self, name=None):
+        try:
+            if name == None:
+                return self.jconn.setSavepoint()
+            return self.jconn.setSavepoint(name)
+        except:
+            _handle_sql_exception()
+    
+    def release_savepoint(self, savepoint):
+        try:
+            self.jconn.releaseSavepoint(savepoint)
+        except:
+            _handle_sql_exception()
+    
     def cursor(self):
         return Cursor(self, self._converters)
+    
+    
 
 # DB-API 2.0 Cursor Object
 class Cursor(object):
@@ -484,8 +509,17 @@ class Cursor(object):
     __del__ = _close_last
 
     def _set_stmt_parms(self, prep_stmt, parameters):
+        from pandas.tslib import Timestamp
         for i in range(len(parameters)):
-            # print (i, parameters[i], type(parameters[i]))
+            if isinstance(parameters[i], Timestamp):
+                import jpype
+                year, month, day = parameters[i].year, parameters[i].month, parameters[i].day
+                hh, mm, ss = parameters[i].hour, parameters[i].minute, parameters[i].second
+                SSS = parameters[i].microsecond
+                time = (str(year) + "-" + str(month) + "-" + str(day) + " "+ 
+                        str(hh) + ":" + str(mm) + ":" + str(ss) + "." + str(SSS))
+                parameters[i] = jpype.java.sql.Timestamp.valueOf(time)
+            #print (i, parameters[i], type(parameters[i]))
             prep_stmt.setObject(i + 1, parameters[i])
 
     def execute(self, operation, parameters=None):
@@ -507,10 +541,10 @@ class Cursor(object):
         else:
             self.rowcount = self._prep.getUpdateCount()
         # self._prep.getWarnings() ???
-
+        
     def executemany(self, operation, seq_of_parameters):
         self._close_last()
-        self._prep = self._connection.jconn.prepareStatement(operation)
+        self._prep = self._connection.jconn.prepareStatement(operation) 
         for parameters in seq_of_parameters:
             self._set_stmt_parms(self._prep, parameters)
             self._prep.addBatch()

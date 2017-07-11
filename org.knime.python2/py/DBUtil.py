@@ -1,46 +1,3 @@
-# ------------------------------------------------------------------------
-#  Copyright by KNIME GmbH, Konstanz, Germany
-#  Website: http://www.knime.org; Email: contact@knime.org
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License, Version 3, as
-#  published by the Free Software Foundation.
-#
-#  This program is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, see <http://www.gnu.org/licenses>.
-#
-#  Additional permission under GNU GPL version 3 section 7:
-#
-#  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
-#  Hence, KNIME and ECLIPSE are both independent programs and are not
-#  derived from each other. Should, however, the interpretation of the
-#  GNU GPL Version 3 ("License") under any applicable laws result in
-#  KNIME and ECLIPSE being a combined program, KNIME GMBH herewith grants
-#  you the additional permission to use and propagate KNIME together with
-#  ECLIPSE with only the license terms in place for ECLIPSE applying to
-#  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
-#  license terms of ECLIPSE themselves allow for the respective use and
-#  propagation of ECLIPSE together with KNIME.
-#
-#  Additional permission relating to nodes for KNIME that extend the Node
-#  Extension (and in particular that are based on subclasses of NodeModel,
-#  NodeDialog, and NodeView) and that only interoperate with KNIME through
-#  standard APIs ("Nodes"):
-#  Nodes are deemed to be separate and independent programs and to not be
-#  covered works.  Notwithstanding anything to the contrary in the
-#  License, the License does not apply to Nodes, you are not required to
-#  license Nodes under the License, and you are granted a license to
-#  prepare and propagate Nodes, in each case even if such Nodes are
-#  propagated with or for interoperation with KNIME.  The owner of a Node
-#  may freely choose the license terms applicable to such Node, including
-#  when such Node is propagated with or for interoperation with KNIME.
-# ------------------------------------------------------------------------
-
 import jaydebeapi
 import re
 import numpy as np
@@ -77,9 +34,15 @@ class DBUtil(object):
         Args:
             sql: A SQL object containing informations to connect to the database.
         """
-        self._conn = jaydebeapi.connect(sql['driver'][0],
-                                        [sql['jdbcurl'][0], sql['username'][0], sql['password'][0]],
-                                        sql['jars'][0])
+        driver_args = {}
+        if sql['username'][0]:
+            driver_args["user"] = sql['username'][0]
+        if sql['password'][0]:
+            driver_args["password"] = sql['password'][0]
+        self._conn = jaydebeapi.connect(jclassname=sql['driver'][0],
+                                        url=sql['jdbcurl'][0],
+                                        driver_args=driver_args,
+                                        jars=sql['jars'][0])
             
         self._conn.jconn.setAutoCommit(False)
         #sql_key_words_str = meta_data.getSQLKeywords()
@@ -160,6 +123,7 @@ class DBUtil(object):
 
         query = query % {'tablename' : self._quote_identifier(tablename), 
                          'columns' : columns}
+        
         self._execute_query(query)
         return col_specs
         
@@ -192,6 +156,7 @@ class DBUtil(object):
         savepoint = None
         try:
             savepoint = self._conn.set_savepoint()
+            #savepoint = self._conn.setSavepoint()
         except:
             if self._debug:
                 print("Save points not supported by db")
@@ -559,6 +524,7 @@ class GenericWriter(DBWriter):
         If a table exists and drop is True, the existing table will be dropped
         and a new table will be created.
         """
+        
         self._set_tablename(tablename)
         table_exists = self._db_util._table_exists(self._tablename)
         if table_exists and drop:
@@ -869,4 +835,4 @@ class DBUtilError(Exception):
     
     def __str__(self):
         return self.message
-        
+    
