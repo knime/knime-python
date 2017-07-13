@@ -8,7 +8,17 @@ import inspect
 import tempfile
 import codecs
 from datetime import datetime
+import sys
 #from __builtin__ import int
+
+PY2 = sys.version_info[0] == 2
+if PY2:
+    def dict_items(dict):
+        return dict.viewitems()
+else:
+    basestring = (str,bytes)
+    def dict_items(dict):
+        return dict.items()
 
 """ Dictionary contains the mapping of python data types to SQL data types."""
 python_db_mapping = {int : 'integer',
@@ -117,7 +127,7 @@ class DBUtil(object):
         col_specs = self._get_type_mapping(col_specs)
         
         columns = (',\n').join('%s %s' % (self._quote_identifier(cname), ctype) 
-                               for cname, ctype in col_specs.iteritems())
+                               for cname, ctype in dict_items(col_specs))
         
         query = """CREATE TABLE %(tablename)s (%(columns)s)"""
 
@@ -220,7 +230,7 @@ class DBUtil(object):
     def _get_type_mapping_from_dict(self, col_specs):
         """Gets type mapping of SQL data type from a 'dict' object."""
         specs = OrderedDict()
-        for col_name, col_type in col_specs.iteritems():
+        for col_name, col_type in dict_items(col_specs):
             try:
                 specs[col_name] = self._get_db_type(col_type)
             except DBUtilError as ex:
@@ -565,7 +575,17 @@ class GenericWriter(DBWriter):
         """
         if isinstance(dataframe, DataFrame):
             query = self._db_util._build_insert_query(self._tablename, list(dataframe))
-            self._db_util._executemany(query, dataframe.values)
+            # Convert numpy types to generic python tpyes in order to allow processing
+            # in JPype. 
+            # NOTE: in pyhton3 numpy datatpyes do no longer inherit a python generic type
+            cols = []
+            for col in dataframe.columns:
+                if str(dataframe[col].dtype).find('int') >= 0 or str(dataframe[col].dtype).find('float') >= 0:
+                    cols.append(list(dataframe.loc[i,col].item() for i in range(len(dataframe[col]))))
+                else:
+                    cols.append(list(dataframe[col]))
+            vals = zip(*cols)
+            self._db_util._executemany(query, vals)
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")
         

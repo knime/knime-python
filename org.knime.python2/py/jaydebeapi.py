@@ -21,7 +21,6 @@ __version_info__ = (0, 1, 5)
 __version__ = ".".join(str(i) for i in __version_info__)
 
 import datetime
-import exceptions
 import glob
 import os
 import time
@@ -32,6 +31,7 @@ import warnings
 PY2 = sys.version_info[0] == 2
 
 if PY2:
+    import exceptions
     # Ideas stolen from the six python 2 and 3 compatibility layer
     def exec_(_code_, _globs_=None, _locs_=None):
         """Execute code in a namespace."""
