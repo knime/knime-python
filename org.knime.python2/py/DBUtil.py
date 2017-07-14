@@ -545,6 +545,10 @@ class GenericWriter(DBWriter):
         else:
             self._col_specs = self._db_util._get_type_mapping(col_specs)
             
+    def get_col_specs(self):
+        """Returns the specs of the table that this writer writes to."""
+        return self._col_specs
+            
     def write_row(self, row):
         """Writes a new row into the database.
         
@@ -554,8 +558,8 @@ class GenericWriter(DBWriter):
                 that match the table specifications in the database.
         """
         if isinstance(row, dict):
-            query = self._db_util._build_insert_query(self._tablename, row.keys())
-            self._db_util._execute_query(query, row.values())
+            query = self._db_util._build_insert_query(self._tablename, list(row.keys()))
+            self._db_util._execute_query(query, list(row.values()))
         elif isinstance(row, (list, tuple)):
             query = self._db_util._build_insert_query(self._tablename, self._col_specs.keys())
             self._db_util._execute_query(query, row)
@@ -584,7 +588,12 @@ class GenericWriter(DBWriter):
                     cols.append(list(dataframe.loc[i,col].item() for i in range(len(dataframe[col]))))
                 else:
                     cols.append(list(dataframe[col]))
-            vals = zip(*cols)
+            #vals = zip(*cols)
+            # transform columns to rows 
+            # [[col1_cell1, col1_cell2, ...], [col2_cell1, col2_cell2, ...], ...] to
+            # [[col1_cell1, col2_cell1, ...], [col1_cell2, col2_cell2, ...], ...]
+            from operator import itemgetter
+            vals = list(list(map(itemgetter(i), cols)) for i in range(len(cols[0])))
             self._db_util._executemany(query, vals)
         else:
             raise DBUtilError("The input parameter must be a 'DataFrame' object.")

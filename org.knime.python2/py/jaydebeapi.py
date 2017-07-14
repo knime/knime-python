@@ -28,6 +28,9 @@ import re
 import sys
 import warnings
 
+# suppress FutureWarnings
+warnings.filterwarnings(action='ignore', category=FutureWarning)
+
 PY2 = sys.version_info[0] == 2
 
 if PY2:
@@ -507,11 +510,20 @@ class Cursor(object):
     # TODO: this is a possible way to close the open result sets
     # but I'm not sure when __del__ will be called
     __del__ = _close_last
+    
+    from pandas.tslib import Timestamp
+    if PY2:
+        supported_types = [int, float, basestring, bool, datetime.datetime, Timestamp]
+    else:
+        supported_types = [int, float, str, bool, datetime.datetime, Timestamp]
+    
+    def _is_supported_datatype(self, type):
+        return any(filter(lambda x: issubclass(type, x), self.supported_types))
 
     def _set_stmt_parms(self, prep_stmt, parameters):
         from pandas.tslib import Timestamp
         for i in range(len(parameters)):
-            if isinstance(parameters[i], Timestamp):
+            if isinstance(parameters[i], Timestamp) or isinstance(parameters[i], datetime.datetime):
                 import jpype
                 year, month, day = parameters[i].year, parameters[i].month, parameters[i].day
                 hh, mm, ss = parameters[i].hour, parameters[i].minute, parameters[i].second
@@ -519,6 +531,8 @@ class Cursor(object):
                 time = (str(year) + "-" + str(month) + "-" + str(day) + " "+ 
                         str(hh) + ":" + str(mm) + ":" + str(ss) + "." + str(SSS))
                 parameters[i] = jpype.java.sql.Timestamp.valueOf(time)
+            elif not self._is_supported_datatype(type(parameters[i])):
+                raise TypeError("Type " + str(type(parameters[i])) + " is not supported in DB statements.")
             #print (i, parameters[i], type(parameters[i]))
             prep_stmt.setObject(i + 1, parameters[i])
 
