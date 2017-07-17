@@ -441,8 +441,8 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final PythonKernelTestResult python2Result = Activator.retestPython2Installation();
-                final PythonKernelTestResult python3Result = Activator.retestPython3Installation();
+                final PythonKernelTestResult python2Result = Activator.retestPython2Installation(null);
+                final PythonKernelTestResult python3Result = Activator.retestPython3Installation(null);
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {

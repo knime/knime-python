@@ -136,7 +136,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     // This will return immediately if the test result was
                     // positive before
                     final PythonKernelTestResult result = m_kernelOptions.getUsePython3()
-                            ? Activator.testPython3Installation() : Activator.testPython2Installation();
+                            ? Activator.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules()) :
+                                Activator.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules());
                             // Display result message (this might just be a warning
                             // about missing optional modules)
                             if (!result.getMessage().isEmpty()) {
@@ -524,12 +525,24 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         final PythonKernelOptions pko =
                 new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
         pko.setFlowVariableOptions(m_flowVariableOptions);
+        for(String module:m_kernelOptions.getAdditionalRequiredModules()) {
+            pko.addRequiredModule(module);
+        }
         if (pko.equals(m_kernelOptions)) {
             m_pythonOptionsHaveChanged = false;
         } else {
             m_kernelOptions = pko;
             m_pythonOptionsHaveChanged = true;
         }
+    }
+
+    /**
+     * Add a required module in order for the caller to work properly.
+     *
+     * @param name  the module name
+     */
+    public void addAdditionalRequiredModule(final String name) {
+        m_kernelOptions.addRequiredModule(name);
     }
 
 }

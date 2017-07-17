@@ -45,6 +45,9 @@
 
 package org.knime.python2.kernel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
@@ -63,6 +66,8 @@ public class PythonKernelOptions {
     private final SerializationOptions m_serializationOptions = new SerializationOptions();
 
     private FlowVariableOptions m_flowVariableOptions = new FlowVariableOptions();
+
+    private ArrayList<String> m_additionalRequiredModules = new ArrayList<String>();
 
     /**
      * Default constructor. Consults the {@link PythonPreferencePage} for the default python version to use.
@@ -106,6 +111,24 @@ public class PythonKernelOptions {
      */
     public PythonVersionOption getPythonVersionOption() {
         return m_usePython3;
+    }
+
+    /**
+     * Add an additional required module. A check for that module is performed on kernel startup.
+     *
+     * @param name  the module name
+     */
+    public void addRequiredModule(final String name) {
+        m_additionalRequiredModules.add(name);
+    }
+
+    /**
+     * Returns a list of all additional required modules which are checked on kernel startup.
+     *
+     * @return a list of all additional required modules
+     */
+    public List<String> getAdditionalRequiredModules() {
+        return m_additionalRequiredModules;
     }
 
     /**

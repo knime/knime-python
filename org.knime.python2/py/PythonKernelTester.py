@@ -46,19 +46,36 @@
 import sys
 
 min_pandas_version = '0.20.0'
-min_python_version = '3.1.0'
+min_python_version = '2.7.0'
+check_python_version_num = 2
+additional_required_modules = []
 
 _message = ''
 
 
 # check libs, output info and exit with 1 if an error occurred
 def main():
+    parse_cmd_args()
     python_version = sys.version_info
     print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
-    if python_version[0] != 3:
-        add_to_message('Python is required to have a major version of 3. Use the options tab to choose the major version to use.')
+    if python_version[0] != check_python_version_num:
+        add_to_message('Python is required to have a major version of ' + str(check_python_version_num) + '. Use the options tab to choose the major version to use.')
     check_required_libs()
     print(_message)
+    
+# parse cmd arguments
+def parse_cmd_args():
+    global min_python_version, check_python_version_num, additional_required_modules
+    min_python_version = sys.argv[1]
+    check_python_version_num = int(min_python_version[0])
+    mode = ''
+    for i in range(2, len(sys.argv)):
+        if sys.argv[i][0] is '-':
+            mode = sys.argv[i]
+        elif mode is '-m':
+            additional_required_modules.append(sys.argv[i])
+        else:
+            raise ArgumentException('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\nOptional:\n-m\tlist of additional requierd modules (space separated)')
 
 
 # check for all libs that are required by the python kernel
@@ -84,6 +101,9 @@ def check_required_libs():
     check_lib('numpy')
     if check_lib('pandas', ['DataFrame'], min_pandas_version):
         check_version_pandas()
+        
+    for m in additional_required_modules:
+        check_lib(m)
 
 
 # check as specific library
@@ -138,6 +158,7 @@ def check_version_python():
         add_to_message('Installed python version is ' + str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
                        + ', required minimum is ' + '.'.join(min_version))
 
+
 # check that the installed pandas version is >= min_pandas_version
 def check_version_pandas():
     min_version = min_pandas_version.split('.')
@@ -158,6 +179,7 @@ def check_version_pandas():
                            + '.'.join(min_version))
     except Exception:
         add_to_message('Could not detect pandas version, required minimum is ' + '.'.join(min_version))
+
 
 # add a line to the output message
 def add_to_message(line):

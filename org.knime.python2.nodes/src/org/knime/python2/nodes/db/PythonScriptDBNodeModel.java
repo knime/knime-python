@@ -68,6 +68,7 @@ import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
 
 /**
@@ -90,7 +91,9 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+        PythonKernelOptions options = getKernelOptions();
+        options.addRequiredModule("jpype");
+        final PythonKernel kernel = new PythonKernel(options);
         final DatabasePortObject dbObj = (DatabasePortObject)inData[0];
         checkDBConnection(dbObj.getSpec());
         try {

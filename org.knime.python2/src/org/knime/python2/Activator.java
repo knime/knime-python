@@ -51,6 +51,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
@@ -92,8 +94,8 @@ public class Activator implements BundleActivator {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                testPython2Installation();
-                testPython3Installation();
+                testPython2Installation(new ArrayList<String>());
+                testPython3Installation(new ArrayList<String>());
             }
         }).start();
         SerializationLibraryExtensions.init();
@@ -132,11 +134,11 @@ public class Activator implements BundleActivator {
      * @return {@link PythonKernelTestResult} that containes detailed test information
      */
     private static synchronized PythonKernelTestResult testPythonInstallation(final String pythonCommand,
-        final String testScript) {
+        final String testScript, final String arguments) {
         try {
             // Start python kernel tester script
             final String scriptPath = getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
-            final ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
+            final ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath, arguments);
             final Process process = pb.start();
             // Get console output of script
             final StringWriter writer = new StringWriter();
@@ -154,50 +156,71 @@ public class Activator implements BundleActivator {
 
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
+     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
+     *                                  for the caller to work properly
      *
      * @return {@link PythonKernelTestResult} that containes detailed test information
      */
-    public static synchronized PythonKernelTestResult testPython2Installation() {
+    public static synchronized PythonKernelTestResult testPython2Installation(final List<String> additionalRequiredModules) {
         // If python test already succeeded we do not have to run it again
         if ((python2TestResult != null) && !python2TestResult.hasError()) {
             return python2TestResult;
         }
-        python2TestResult = testPythonInstallation(getPython2Command(), "Python2KernelTester.py");
+        String arguments = "2.7.0";
+        if(additionalRequiredModules != null && additionalRequiredModules.size() > 0) {
+            arguments += " -m";
+            for(String module:additionalRequiredModules) {
+                arguments += " " + module;
+            }
+        }
+        python2TestResult = testPythonInstallation(getPython2Command(), "PythonKernelTester.py", arguments);
         return python2TestResult;
     }
 
     /**
      * Delete the previous python test result and retest the python behind the new path.
-     *
+     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
+     *                                  for the caller to work properly
      * @return The new test result
      */
-    public static synchronized PythonKernelTestResult retestPython2Installation() {
+    public static synchronized PythonKernelTestResult retestPython2Installation(final List<String> additionalRequiredModules) {
         python2TestResult = null;
-        return testPython2Installation();
+        return testPython2Installation(additionalRequiredModules);
     }
 
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
+     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
+     *                                  for the caller to work properly
      *
      * @return {@link PythonKernelTestResult} that containes detailed test information
      */
-    public static synchronized PythonKernelTestResult testPython3Installation() {
+    public static synchronized PythonKernelTestResult testPython3Installation(final List<String> additionalRequiredModules) {
         // If python test already succeeded we do not have to run it again
         if ((python3TestResult != null) && !python3TestResult.hasError()) {
             return python3TestResult;
         }
-        python3TestResult = testPythonInstallation(getPython3Command(), "Python3KernelTester.py");
+        String arguments = "3.1.0";
+        if(additionalRequiredModules != null && additionalRequiredModules.size() > 0) {
+            arguments += " -m";
+            for(String module:additionalRequiredModules) {
+                arguments += " " + module;
+            }
+        }
+        python3TestResult = testPythonInstallation(getPython3Command(), "PythonKernelTester.py", arguments);
         return python3TestResult;
     }
 
     /**
      * Delete the previous python test result and retest the python behind the new path.
+     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
+     *                                  for the caller to work properly
      *
      * @return The new test result
      */
-    public static synchronized PythonKernelTestResult retestPython3Installation() {
+    public static synchronized PythonKernelTestResult retestPython3Installation(final List<String> additionalRequiredModules) {
         python3TestResult = null;
-        return testPython3Installation();
+        return testPython3Installation(additionalRequiredModules);
     }
 
     /**

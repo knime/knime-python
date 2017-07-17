@@ -159,8 +159,9 @@ public class PythonKernel {
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = kernelOptions;
-        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3() ? Activator.testPython3Installation()
-            : Activator.retestPython2Installation();
+        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3() ?
+            Activator.testPython3Installation(kernelOptions.getAdditionalRequiredModules())
+            : Activator.retestPython2Installation(kernelOptions.getAdditionalRequiredModules());
         if (testResult.hasError()) {
             throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
         }

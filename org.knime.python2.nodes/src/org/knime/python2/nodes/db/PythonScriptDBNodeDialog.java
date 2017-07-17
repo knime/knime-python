@@ -126,10 +126,11 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
                     try {
                         kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
                                 connectionSettings, getCredentialsProvider(), jars);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                     }
                 }
             });
+            m_sourceCodePanel.addAdditionalRequiredModule("jpype");
         } catch (final InvalidSettingsException|IOException e) {
             throw new NotConfigurableException(e.getMessage(), e);
         }
