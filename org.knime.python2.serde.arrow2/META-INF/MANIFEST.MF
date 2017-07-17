@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Python Serialization (Labs) - Arrow
+Bundle-SymbolicName: org.knime.python2.serde.arrow;singleton:=true
+Bundle-Version: 3.4.0.qualifier
+Bundle-ClassPath: lib/arrow-format-0.4.0.jar,
+ lib/arrow-memory-0.4.0.jar,
+ lib/arrow-vector-0.4.0.jar,
+ python-serde-arrow.jar,
+ lib/arrow-tools-0.4.0-jar-with-dependencies.jar
+Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Require-Bundle: org.knime.python2;bundle-version="[3.4.0,4.0.0)",
+ org.knime.core;bundle-version="[3.4.0,4.0.0)",
+ org.apache.commons.lang3;bundle-version="[3.2.1,4.0.0)"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
