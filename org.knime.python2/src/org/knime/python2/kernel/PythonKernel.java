@@ -933,10 +933,10 @@ public class PythonKernel {
      * @param conn the database connection to use
      * @param cp a credential provider for username and password
      * @param jars a list of jar files needed for invoking the jdbc driver on pyhton side
-     * @throws IOException
+     * @throws Exception
      */
     public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
-        final Collection<String> jars) throws IOException {
+        final Collection<String> jars) throws Exception {
         final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
             Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
         final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
@@ -955,7 +955,11 @@ public class PythonKernel {
         final TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
         final TableIterator tableIterator = new KeyValueTableIterator(spec, row);
         final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
-        m_commands.putSql(name, bytes);
+        try {
+            m_commands.putSql(name, bytes);
+        } catch (final EOFException ex) {
+            throw new Exception("An exception occured while running the python kernel.");
+        }
     }
 
     /**
@@ -963,10 +967,14 @@ public class PythonKernel {
      *
      * @param name the name of the DBUtil variable in the python workspace
      * @return a SQL query string
-     * @throws IOException
+     * @throws Exception
      */
-    public String getSql(final String name) throws IOException {
-        return m_commands.getSql(name);
+    public String getSql(final String name) throws Exception {
+        try {
+            return m_commands.getSql(name);
+        } catch (final EOFException ex) {
+            throw new Exception("An exception occured while running the python kernel.");
+        }
     }
 
     /**
