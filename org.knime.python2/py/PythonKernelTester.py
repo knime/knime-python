@@ -70,12 +70,12 @@ def parse_cmd_args():
     check_python_version_num = int(min_python_version[0])
     mode = ''
     for i in range(2, len(sys.argv)):
-        if sys.argv[i][0] is '-':
+        if sys.argv[i][0] == '-':
             mode = sys.argv[i]
-        elif mode is '-m':
+        elif mode == '-m':
             additional_required_modules.append(sys.argv[i])
         else:
-            raise ArgumentException('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\nOptional:\n-m\tlist of additional requierd modules (space separated)')
+            raise ValueError('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\nOptional:\n-m\tlist of additional requierd modules (space separated)')
 
 
 # check for all libs that are required by the python kernel

@@ -138,7 +138,14 @@ public class Activator implements BundleActivator {
         try {
             // Start python kernel tester script
             final String scriptPath = getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
-            final ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath, arguments);
+            String[] args = arguments.split(" ");
+            String[] pbargs = new String[args.length + 2];
+            pbargs[0] = pythonCommand;
+            pbargs[1] = scriptPath;
+            for(int i=0; i<args.length; i++) {
+                pbargs[i + 2] = args[i];
+            }
+            final ProcessBuilder pb = new ProcessBuilder(pbargs);
             final Process process = pb.start();
             // Get console output of script
             final StringWriter writer = new StringWriter();
