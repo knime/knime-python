@@ -9,7 +9,11 @@ import tempfile
 import codecs
 from datetime import datetime
 import sys
+import warnings
 #from __builtin__ import int
+
+# suppress FutureWarnings
+warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 PY2 = sys.version_info[0] == 2
 if PY2:

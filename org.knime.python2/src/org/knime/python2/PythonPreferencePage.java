@@ -51,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -441,8 +442,8 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final PythonKernelTestResult python2Result = Activator.retestPython2Installation(null);
-                final PythonKernelTestResult python3Result = Activator.retestPython3Installation(null);
+                final PythonKernelTestResult python2Result = Activator.retestPython2Installation(Collections.emptyList());
+                final PythonKernelTestResult python3Result = Activator.retestPython3Installation(Collections.emptyList());
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {

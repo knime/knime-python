@@ -51,7 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -80,6 +80,10 @@ public class Activator implements BundleActivator {
 
     private static PythonKernelTestResult python3TestResult;
 
+    private static List<String> additionalModulesPython2;
+
+    private static List<String> additionalModulesPython3;
+
     /**
      * The id of the plugin activated by this class.
      */
@@ -94,8 +98,8 @@ public class Activator implements BundleActivator {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                testPython2Installation(new ArrayList<String>());
-                testPython3Installation(new ArrayList<String>());
+                testPython2Installation(Collections.emptyList());
+                testPython3Installation(Collections.emptyList());
             }
         }).start();
         SerializationLibraryExtensions.init();
@@ -164,17 +168,20 @@ public class Activator implements BundleActivator {
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly
+     *                                  for the caller to work properly - must not be null
      *
      * @return {@link PythonKernelTestResult} that containes detailed test information
      */
     public static synchronized PythonKernelTestResult testPython2Installation(final List<String> additionalRequiredModules) {
         // If python test already succeeded we do not have to run it again
-        if ((python2TestResult != null) && !python2TestResult.hasError()) {
+        if ((python2TestResult != null) && !python2TestResult.hasError()
+                && additionalRequiredModules.containsAll(additionalModulesPython2)
+                && additionalModulesPython2.containsAll(additionalRequiredModules)) {
             return python2TestResult;
         }
+        additionalModulesPython2 = additionalRequiredModules;
         String arguments = "2.7.0";
-        if(additionalRequiredModules != null && additionalRequiredModules.size() > 0) {
+        if(additionalRequiredModules.size() > 0) {
             arguments += " -m";
             for(String module:additionalRequiredModules) {
                 arguments += " " + module;
@@ -187,7 +194,7 @@ public class Activator implements BundleActivator {
     /**
      * Delete the previous python test result and retest the python behind the new path.
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly
+     *                                  for the caller to work properly - must not be null
      * @return The new test result
      */
     public static synchronized PythonKernelTestResult retestPython2Installation(final List<String> additionalRequiredModules) {
@@ -198,17 +205,20 @@ public class Activator implements BundleActivator {
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly
+     *                                  for the caller to work properly - must not be null
      *
      * @return {@link PythonKernelTestResult} that containes detailed test information
      */
     public static synchronized PythonKernelTestResult testPython3Installation(final List<String> additionalRequiredModules) {
         // If python test already succeeded we do not have to run it again
-        if ((python3TestResult != null) && !python3TestResult.hasError()) {
+        if ((python3TestResult != null) && !python3TestResult.hasError()
+                && additionalRequiredModules.containsAll(additionalModulesPython3)
+                && additionalModulesPython3.containsAll(additionalRequiredModules)) {
             return python3TestResult;
         }
+        additionalModulesPython3 = additionalRequiredModules;
         String arguments = "3.1.0";
-        if(additionalRequiredModules != null && additionalRequiredModules.size() > 0) {
+        if(additionalRequiredModules.size() > 0) {
             arguments += " -m";
             for(String module:additionalRequiredModules) {
                 arguments += " " + module;
@@ -221,7 +231,7 @@ public class Activator implements BundleActivator {
     /**
      * Delete the previous python test result and retest the python behind the new path.
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly
+     *                                  for the caller to work properly - must not be null
      *
      * @return The new test result
      */

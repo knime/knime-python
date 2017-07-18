@@ -155,7 +155,7 @@ public class PythonKernel {
      *
      * @param kernelOptions all configurable options
      *
-     * @throws IOException
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = kernelOptions;
@@ -258,7 +258,7 @@ public class PythonKernel {
      *
      * @param sourceCode The source code to execute
      * @return Standard console output
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public String[] execute(final String sourceCode) throws IOException {
         final String[] output = m_commands.execute(sourceCode);
@@ -325,7 +325,7 @@ public class PythonKernel {
      *
      * @param name The name of the dict
      * @param flowVariables The flow variables to put
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables) throws IOException {
         final byte[] bytes = flowVariablesToBytes(flowVariables);
@@ -421,7 +421,7 @@ public class PythonKernel {
      *
      * @param name Variable name of the flow variable dict in Python
      * @return Collection of flow variables
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
         final byte[] bytes = m_commands.getFlowVariables(name);
@@ -453,7 +453,7 @@ public class PythonKernel {
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
      * @param rowLimit The amount of rows that will be transfered
-     * @throws IOException If an error occurred
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws IOException {
@@ -508,7 +508,7 @@ public class PythonKernel {
      * @param name The name of the table
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws IOException If an error occurred
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
             throws IOException {
@@ -526,7 +526,7 @@ public class PythonKernel {
      * @param name The name of the table
      * @param tableChunker A {@link TableChunker}
      * @param rowsPerChunk The number of rows to send per chunk
-     * @throws IOException If an error occurred
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putData(final String name, final TableChunker tableChunker, final int rowsPerChunk) throws IOException {
         final int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
@@ -555,11 +555,12 @@ public class PythonKernel {
      * @param exec The calling node's execution context
      * @return The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws Exception If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws PythonKernelException If an error occurred in the python code
      *
      */
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
-        final ExecutionMonitor executionMonitor) throws Exception {
+        final ExecutionMonitor executionMonitor) throws PythonKernelException, IOException {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         try {
@@ -584,9 +585,9 @@ public class PythonKernel {
             if (tableCreator != null) {
                 return tableCreator.getTable();
             }
-            throw new Exception("Invalid serialized table received.");
+            throw new PythonKernelException("Invalid serialized table received.");
         } catch (final EOFException ex) {
-            throw new Exception("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.");
         }
     }
 
@@ -596,7 +597,7 @@ public class PythonKernel {
      * @param name The name of the object to get
      * @return The object
      * @param tcf A {@link TableCreatorFactory} that can be used to create the requested {@link TableCreator}
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public TableCreator<?> getData(final String name, final TableCreatorFactory tcf) throws IOException {
         final int tableSize = m_commands.getTableSize(name);
@@ -625,7 +626,7 @@ public class PythonKernel {
      *
      * @param name The name of the image
      * @return the image
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public ImageContainer getImage(final String name) throws IOException {
         final byte[] bytes = m_commands.getImage(name);
@@ -646,7 +647,7 @@ public class PythonKernel {
      *
      * @param svgString a string containing the XML content of a svg image
      * @return a {@link SVGDocument}
-     * @throws IOException
+     * @throws IOException if the svg file cannot be created or written
      */
     private SVGDocument stringToSVG(final String svgString) throws IOException {
         SVGDocument doc = null;
@@ -668,7 +669,7 @@ public class PythonKernel {
      * @param exec the {@link ExecutionContext} of the calling KNIME node
      * @return a {@link PickledObject} containing the pickled object representation, the objects type and a string
      *         representation of the object
-     * @throws IOException
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
         final byte[] bytes = m_commands.getObject(name);
@@ -689,7 +690,7 @@ public class PythonKernel {
      *
      * @param name the name of the variable in the python workspace
      * @param object the {@link PickledObject}
-     * @throws IOException
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putObject(final String name, final PickledObject object) throws IOException {
         m_commands.putObject(name, object.getPickledObject());
@@ -743,7 +744,7 @@ public class PythonKernel {
      * Each variable map contains the fields 'name', 'type' and 'value'.
      *
      * @return List of variables currently defined in the workspace
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public List<Map<String, String>> listVariables() throws IOException {
         final byte[] bytes = m_commands.listVariables();
@@ -782,7 +783,7 @@ public class PythonKernel {
      * @param line Cursor position (line)
      * @param column Cursor position (column)
      * @return Possible auto completions.
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
             throws IOException {
@@ -906,7 +907,7 @@ public class PythonKernel {
      *
      * @param stream an {@link InputStream}
      * @return the incoming bytes as a string
-     * @throws IOException
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
     private String readAvailableBytesFromStream(final InputStream stream) throws IOException {
         final byte[] bytes = new byte[1024];
@@ -933,11 +934,12 @@ public class PythonKernel {
      * @param name the name of the variable in the python workspace
      * @param conn the database connection to use
      * @param cp a credential provider for username and password
-     * @param jars a list of jar files needed for invoking the jdbc driver on pyhton side
-     * @throws Exception
+     * @param jars a list of jar files needed for invoking the jdbc driver on python side
+     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws PythonKernelException If an error occurred in the python code
      */
     public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
-        final Collection<String> jars) throws Exception {
+        final Collection<String> jars) throws PythonKernelException, IOException {
         final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
             Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
         final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
@@ -959,7 +961,7 @@ public class PythonKernel {
         try {
             m_commands.putSql(name, bytes);
         } catch (final EOFException ex) {
-            throw new Exception("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.");
         }
     }
 
@@ -968,13 +970,14 @@ public class PythonKernel {
      *
      * @param name the name of the DBUtil variable in the python workspace
      * @return a SQL query string
-     * @throws Exception
+     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws PythonKernelException If an error occurred in the python code
      */
-    public String getSql(final String name) throws Exception {
+    public String getSql(final String name) throws PythonKernelException, IOException {
         try {
             return m_commands.getSql(name);
         } catch (final EOFException ex) {
-            throw new Exception("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.");
         }
     }
 
