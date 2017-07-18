@@ -58,6 +58,7 @@ _eval_types_ = None
 _bytes_types_ = None
 
 read_data_frame = None
+read_types = []
 
 
 # Initialize the enum of known type ids
@@ -75,8 +76,9 @@ def init(types):
 # Get the column names of the table to create from the serialized data.
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_names_from_bytes(data_bytes):
+    global read_data_frame, read_types
     path = data_bytes.decode('utf-8')
-    if read_data_frame == None:
+    if read_data_frame is None:
         deserialize_data_frame(path)
     return read_data_frame.columns.tolist()
 
@@ -84,27 +86,20 @@ def column_names_from_bytes(data_bytes):
 # Get the column types of the table to create from the serialized data.
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_types_from_bytes(data_bytes):
+    global read_data_frame, read_types
     path = data_bytes.decode('utf-8')
-    if read_data_frame == None:
+    if read_data_frame is None:
         deserialize_data_frame(path)
-    #TODO
-    types = []
-    if types == ['']:
-        types = []
-    column_types = []
-    for i in range(len(types)):
-        col_type_id = int(types[i])
-        column_types.append(col_type_id)
-    in_file.close()
-    return column_types
+    return read_types
 
 
 # Get the serializer ids (meaning the java extension point id of the serializer)
 # of the table to create from the serialized data.
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_serializers_from_bytes(data_bytes):
+    global read_data_frame, read_types
     path = data_bytes.decode('utf-8')
-    if read_data_frame == None:
+    if read_data_frame is None:
         deserialize_data_frame(path)
     return []
 
@@ -114,20 +109,24 @@ def column_serializers_from_bytes(data_bytes):
 #                     managing the deserialization of extension types
 # @param data_bytes   the serialized path to the temporary CSV file
 def bytes_into_table(table, data_bytes):
+    global read_data_frame, read_types
     path = data_bytes.decode('utf-8')
-    if read_data_frame == None:
+    if read_data_frame is None:
         deserialize_data_frame(path)
+    table._data_frame = read_data_frame
         
 def deserialize_data_frame(path):
-    global read_data_frame
+    global read_data_frame, read_types
     with pyarrow.OSFile(path, 'rb') as f:
         stream_reader = pyarrow.StreamReader(f)
-        #read_data_frame = stream_reader.read_pandas()
         arrowtable = stream_reader.read_all()
         read_data_frame = arrowtable.to_pandas()
         import debug_util
         debug_util.breakpoint()
-        print('test')
+        import json
+        columns = json.loads(arrowtable.schema.metadata[b'columns'].decode("utf-8"))
+        for col in columns:
+            read_types.append(col["metadata"])
 
 # Serialize a pandas.DataFrame into a memory mapped file
 # Return the path to the created memory mapped file as bytearray.

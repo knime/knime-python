@@ -149,7 +149,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             }
             
             //TODO custom meta data ?   
-            VectorSchemaRoot vsr = new VectorSchemaRoot(fields, vecs, ctr);
+            
             //TODO schöner
             /*JsonReader jsreader = Json.createReader(new StringReader(vsr.getSchema().toJson()));
             JsonObject obj = jsreader.readObject();
@@ -160,6 +160,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             //builder.add("customMetadata", metadataBuilder.build());
             vsr.setSchema(Schema.fromJSON(builder.build().toString()));
             VectorSchemaRoot extendedVsr = VectorSchemaRoot.create(Schema.fromJSON(builder.build().toString()), ) */
+            Map<String,String> metadata = new HashMap<String, String>();
+            metadata.put("pandas", metadataBuilder.build().toString());
+            Schema schema = new Schema(fields, metadata);
+            VectorSchemaRoot vsr = new VectorSchemaRoot(schema, vecs, ctr);
             
             ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
             writer.writeBatch();
