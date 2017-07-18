@@ -57,6 +57,8 @@ _types_ = None
 _eval_types_ = None
 _bytes_types_ = None
 
+read_data_frame = None
+
 
 # Initialize the enum of known type ids
 # @param types     the enum of known type ids
@@ -74,21 +76,19 @@ def init(types):
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_names_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
-    in_file = open(path, 'r')
-    try:
-        data_frame = pandas.read_csv(in_file, index_col=0, nrows=0, skiprows=2)
-    except ValueError:
-        data_frame = pandas.DataFrame()
-    in_file.close()
-    return data_frame.columns.tolist()
+    if read_data_frame == None:
+        deserialize_data_frame(path)
+    return read_data_frame.columns.tolist()
 
 
 # Get the column types of the table to create from the serialized data.
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_types_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
-    in_file = open(path, 'r')
-    types = in_file.readline().strip()[2:].split(',')
+    if read_data_frame == None:
+        deserialize_data_frame(path)
+    #TODO
+    types = []
     if types == ['']:
         types = []
     column_types = []
@@ -104,15 +104,9 @@ def column_types_from_bytes(data_bytes):
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_serializers_from_bytes(data_bytes):
     path = data_bytes.decode('utf-8')
-    in_file = open(path, 'r')
-    types = in_file.readline().strip()[2:].split(',')
-    serializers_line = in_file.readline().strip()[2:].split(',')
-    serializers = {}
-    for part in serializers_line:
-        if part != '':
-            key_value = part.split('=')
-            serializers[key_value[0]] = key_value[1]
-    return serializers
+    if read_data_frame == None:
+        deserialize_data_frame(path)
+    return []
 
 # Read the CSV serialized data into a pandas.DataFrame.
 # Delete the temporary CSV file afterwards.
@@ -121,84 +115,19 @@ def column_serializers_from_bytes(data_bytes):
 # @param data_bytes   the serialized path to the temporary CSV file
 def bytes_into_table(table, data_bytes):
     path = data_bytes.decode('utf-8')
-    in_file = open(path, 'rb')
-    types = in_file.readline().decode('utf-8').strip()[2:].split(',')
-    if types == ['']:
-        types = []
-    serializers_line = in_file.readline().decode('utf-8').strip()[2:].split(',')
-    try:
-        names = pandas.read_csv(in_file, index_col=0, nrows=0).columns.tolist()
-    except ValueError:
-        names = []
-    in_file.seek(0)
-    # this is commented out because assigning types if a column contains missing values will fail
-    # dtypes = {}
-    # for i in range(len(names)):
-    #     name = names[i]
-    #     col_type_id = int(types[i])
-    #     if col_type_id == _types_.BOOLEAN:
-    #         col_type = numpy.bool
-    #     elif col_type_id == _types_.INTEGER:
-    #         col_type = numpy.int32
-    #     elif col_type_id == _types_.LONG:
-    #         col_type = numpy.int64
-    #     elif col_type_id == _types_.DOUBLE:
-    #         col_type = numpy.float64
-    #     else:
-    #         col_type = numpy.str
-    #     dtypes[name] = col_type
-    try:
-        # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
-        data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], keep_default_na=False)
-    except ValueError:
-        data_frame = pandas.DataFrame()
-    for i in range(len(types)):
-        col_type_id = int(types[i])
-        if col_type_id in _eval_types_:
-            for j in range(len(data_frame)):
-                index = data_frame.index[j]
-                if str(data_frame[names[i]][index]) != 'nan':
-                    #debug_util.breakpoint()
-                    data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
-                else:
-                    data_frame.set_value(index, names[i], None)
-        if col_type_id == _types_.BYTES:
-            for j in range(len(data_frame)):
-                index = data_frame.index[j]
-                if str(data_frame[names[i]][index]) != 'nan':
-                    data_frame.set_value(index, names[i], base64.b64decode(data_frame[names[i]][index]))
-                else:
-                    data_frame.set_value(index, names[i], None)
-        elif col_type_id == _types_.BYTES_LIST:
-            for j in range(len(data_frame)):
-                index = data_frame.index[j]
-                base64_list = data_frame[names[i]][index]
-                if base64_list is not None:
-                    bytes_list = []
-                    for k in range(len(base64_list)):
-                        bytes_value = base64_list[k]
-                        if bytes_value:
-                            bytes_list.append(base64.b64decode(bytes_value))
-                        else:
-                            bytes_list.append(None)
-                    data_frame.set_value(index, names[i], bytes_list)
-        elif col_type_id == _types_.BYTES_SET:
-            for j in range(len(data_frame)):
-                index = data_frame.index[j]
-                base64_set = data_frame[names[i]][index]
-                if base64_set is not None:
-                    bytes_set = set()
-                    for value in base64_set:
-                        if value:
-                            bytes_set.add(base64.b64decode(value))
-                        else:
-                            bytes_set.add(None)
-                    data_frame.set_value(index, names[i], bytes_set)
-        elif col_type_id == _types_.DOUBLE:
-            data_frame.iloc[:,i] = data_frame.iloc[:,i].astype('float', copy=False)
-    table._data_frame = data_frame
-    in_file.close()
-    os.remove(path)
+    if read_data_frame == None:
+        deserialize_data_frame(path)
+        
+def deserialize_data_frame(path):
+    global read_data_frame
+    with pyarrow.OSFile(path, 'rb') as f:
+        stream_reader = pyarrow.StreamReader(f)
+        #read_data_frame = stream_reader.read_pandas()
+        arrowtable = stream_reader.read_all()
+        read_data_frame = arrowtable.to_pandas()
+        import debug_util
+        debug_util.breakpoint()
+        print('test')
 
 # Serialize a pandas.DataFrame into a memory mapped file
 # Return the path to the created memory mapped file as bytearray.

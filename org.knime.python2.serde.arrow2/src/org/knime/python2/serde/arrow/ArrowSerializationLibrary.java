@@ -31,14 +31,19 @@ import java.io.StringReader;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableBigIntVector;
+import org.apache.arrow.vector.NullableIntVector;
 import org.apache.arrow.vector.NullableVarCharVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.dictionary.Dictionary;
 import org.apache.arrow.vector.file.ReadChannel;
 import org.apache.arrow.vector.stream.ArrowStreamReader;
+import org.apache.arrow.vector.stream.ArrowStreamWriter;
+import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.node.NodeLogger;
@@ -64,6 +69,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             //Get metadata
             JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
             TableSpec spec = tableIterator.getTableSpec();
+            List<FieldVector> vecs = new ArrayList<FieldVector>();
+            List<Field> fields = new ArrayList<Field>();
             JsonArrayBuilder icBuilder = Json.createArrayBuilder();
             icBuilder.add("__index_level_0__");
             metadataBuilder.add("index_columns", icBuilder);
@@ -76,9 +83,17 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             //TODO add serializer
             rowIdBuilder.add("metadata", Type.STRING.getId());
             colBuilder.add(rowIdBuilder);
+            //TODO calculate space and set Allocator size accordingly
+            NullableVarCharVector rowIdVector = new NullableVarCharVector("__index_level_0__", new RootAllocator(1024*1024));
+            rowIdVector.allocateNew();
+            vecs.add(rowIdVector);
+            //Field rowIdField = new Field("__index_level_0__", new FieldType(false, new ArrowType.Utf8(), null), null);
+            fields.add(rowIdVector.getField());
+            
             for(int i=0; i<spec.getNumberColumns(); i++) {
                 JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
                 colMetadataBuilder.add("name", spec.getColumnNames()[i]);
+                FieldVector vec;
                 switch(spec.getColumnTypes()[i]) {
                     //TODO null value handling
                     case INTEGER:
@@ -86,19 +101,72 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         colMetadataBuilder.add("numpy", "int32");
                       //TODO add serializer
                         colMetadataBuilder.add("metadata", Type.INTEGER.getId());
+                        //Allocate vector for column
+                        vec = new NullableIntVector(spec.getColumnNames()[i], new RootAllocator(1024*1024));
+                        vecs.add(vec);
+                        fields.add(vec.getField());
                         break;
                     case STRING:
                         colMetadataBuilder.add("pandas_type", "unicode");
                         colMetadataBuilder.add("numpy_type", "object");
                         //TODO add serializer
                         colMetadataBuilder.add("metadata", Type.STRING.getId());
+                        vec = new NullableVarCharVector(spec.getColumnNames()[i], new RootAllocator(10000*1024));
+                        vecs.add(vec);
+                        fields.add(vec.getField());
                         break;
                     default:
                         throw new IllegalStateException("Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
                 }
-                colBuilder.add(colMetadataBuilder);
+                colBuilder.add(colMetadataBuilder);   
             }
-            Schema schema = Schema.fromJSON(metadataBuilder.build().toString());
+            metadataBuilder.add("columns", colBuilder);
+            //Schema schema = Schema.fromJSON(metadataBuilder.build().toString());
+            int ctr = 0;
+            while(tableIterator.hasNext()) {
+                Row row = tableIterator.next();
+                ((NullableVarCharVector) vecs.get(0)).allocateNew();
+                ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).set(ctr, row.getRowKey().getBytes("UTF-8"));
+                ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).setValueCount(ctr + 1);
+                for(int i=0; i<spec.getNumberColumns(); i++) {
+                    switch(spec.getColumnTypes()[i]) {
+                    //TODO null value handling
+                    case INTEGER:
+                        ((NullableIntVector) vecs.get(i+1)).allocateNew();
+                        ((NullableIntVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, row.getCell(i).getIntegerValue().intValue());
+                        ((NullableIntVector.Mutator) vecs.get(i+1).getMutator()).setValueCount(ctr + 1);
+                        break;
+                    case STRING:
+                        ((NullableVarCharVector) vecs.get(i+1)).allocateNew();
+                        ((NullableVarCharVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, row.getCell(i).getStringValue().getBytes("UTF-8"));
+                        ((NullableVarCharVector.Mutator) vecs.get(i+1).getMutator()).setValueCount(ctr + 1);
+                        break;
+                    default:
+                        throw new IllegalStateException("Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+                    }
+                }
+                ctr++;
+            }
+            
+            //TODO custom meta data ?   
+            VectorSchemaRoot vsr = new VectorSchemaRoot(fields, vecs, ctr);
+            //TODO schöner
+            /*JsonReader jsreader = Json.createReader(new StringReader(vsr.getSchema().toJson()));
+            JsonObject obj = jsreader.readObject();
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            for(Entry<String,JsonValue> entry:obj.entrySet()) {
+                builder.add(entry.getKey(), entry.getValue());
+            }
+            //builder.add("customMetadata", metadataBuilder.build());
+            vsr.setSchema(Schema.fromJSON(builder.build().toString()));
+            VectorSchemaRoot extendedVsr = VectorSchemaRoot.create(Schema.fromJSON(builder.build().toString()), ) */
+            
+            ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
+            writer.writeBatch();
+            writer.close();
+            
+            return path.getBytes("UTF-8");
+            
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -108,7 +176,17 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         }
         
         return null;
-    }
+    } 
+    
+    /*class ExchangableSchemaVectorSchemaRoot extends VectorSchemaRoot {
+        public ExchangableSchemaVectorSchemaRoot(List<Field> fields, List<FieldVector> fieldVectors, int rowCount) {
+            super(fields, fieldVectors, rowCount);
+        }
+
+        public void setSchema(Schema schema) {
+            this.
+        }
+    }*/
     
    /* @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
