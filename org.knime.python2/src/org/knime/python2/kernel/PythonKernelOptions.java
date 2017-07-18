@@ -67,7 +67,7 @@ public class PythonKernelOptions {
 
     private FlowVariableOptions m_flowVariableOptions = new FlowVariableOptions();
 
-    private ArrayList<String> m_additionalRequiredModules = new ArrayList<String>();
+    private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
     /**
      * Default constructor. Consults the {@link PythonPreferencePage} for the default python version to use.

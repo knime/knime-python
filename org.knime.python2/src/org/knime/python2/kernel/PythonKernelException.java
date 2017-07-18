@@ -54,18 +54,24 @@ package org.knime.python2.kernel;
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class PythonKernelException extends Exception {
-
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
 
     /**
-     * Constructor.
-     * @param message   a message indicating the cause of the exception
+     * Creates a new Python exception.
+     *
+     * @param message a message indicating the cause of the exception
      */
     public PythonKernelException(final String message) {
         super(message);
     }
 
+    /**
+     * Creates a new Python exception.
+     *
+     * @param message a message indicating the cause of the exception
+     * @param cause the cause of the problem
+     */
+    public PythonKernelException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

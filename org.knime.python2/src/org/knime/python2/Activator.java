@@ -147,7 +147,7 @@ public class Activator implements BundleActivator {
             String[] pbargs = new String[args.length + 2];
             pbargs[0] = pythonCommand;
             pbargs[1] = scriptPath;
-            for(int i=0; i<args.length; i++) {
+            for (int i = 0; i < args.length; i++) {
                 pbargs[i + 2] = args[i];
             }
             final ProcessBuilder pb = new ProcessBuilder(pbargs);
@@ -258,5 +258,4 @@ public class Activator implements BundleActivator {
             return null;
         }
     }
-
 }

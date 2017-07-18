@@ -587,7 +587,7 @@ public class PythonKernel {
             }
             throw new PythonKernelException("Invalid serialized table received.");
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
         }
     }
 
@@ -961,7 +961,7 @@ public class PythonKernel {
         try {
             m_commands.putSql(name, bytes);
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
         }
     }
 
@@ -977,7 +977,7 @@ public class PythonKernel {
         try {
             return m_commands.getSql(name);
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.");
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
         }
     }
 
