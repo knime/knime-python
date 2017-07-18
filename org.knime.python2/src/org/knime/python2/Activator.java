@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -179,11 +180,11 @@ public class Activator implements BundleActivator {
                 && additionalModulesPython2.containsAll(additionalRequiredModules)) {
             return python2TestResult;
         }
-        additionalModulesPython2 = additionalRequiredModules;
+        additionalModulesPython2 = new ArrayList<String>(additionalRequiredModules);
         String arguments = "2.7.0";
-        if(additionalRequiredModules.size() > 0) {
+        if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
-            for(String module:additionalRequiredModules) {
+            for (String module : additionalRequiredModules) {
                 arguments += " " + module;
             }
         }
@@ -216,11 +217,11 @@ public class Activator implements BundleActivator {
                 && additionalModulesPython3.containsAll(additionalRequiredModules)) {
             return python3TestResult;
         }
-        additionalModulesPython3 = additionalRequiredModules;
+        additionalModulesPython3 = new ArrayList<String>(additionalRequiredModules);
         String arguments = "3.1.0";
-        if(additionalRequiredModules.size() > 0) {
+        if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
-            for(String module:additionalRequiredModules) {
+            for (String module : additionalRequiredModules) {
                 arguments += " " + module;
             }
         }
