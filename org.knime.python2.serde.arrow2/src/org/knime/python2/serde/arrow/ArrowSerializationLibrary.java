@@ -1,15 +1,11 @@
 package org.knime.python2.serde.arrow;
 
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.function.Consumer;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -17,14 +13,9 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-import javax.json.JsonReaderFactory;
-import javax.json.JsonValue;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.StringReader;
@@ -34,21 +25,16 @@ import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableBigIntVector;
 import org.apache.arrow.vector.NullableIntVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.apache.arrow.vector.NullableVarCharVector;
-import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.dictionary.Dictionary;
-import org.apache.arrow.vector.file.ReadChannel;
 import org.apache.arrow.vector.stream.ArrowStreamReader;
 import org.apache.arrow.vector.stream.ArrowStreamWriter;
-import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator;
@@ -61,57 +47,72 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSp
 
 public class ArrowSerializationLibrary implements SerializationLibrary {
 
+    private JsonObjectBuilder createColumnMetadataBuilder(String name, String pandasType, String numpyType, 
+            Type knimeType, String serializer) {
+        JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
+        colMetadataBuilder.add("name", name);
+        colMetadataBuilder.add("pandas_type", pandasType);
+        colMetadataBuilder.add("numpy_type", numpyType);
+        //TODO add serializer
+        JsonObjectBuilder knimeMetadataBuilder = Json.createObjectBuilder();
+        knimeMetadataBuilder.add("type_id", knimeType.getId());
+        knimeMetadataBuilder.add("serializer_id", serializer);
+        colMetadataBuilder.add("metadata", knimeMetadataBuilder);
+        return colMetadataBuilder;
+    }
+    
     @Override
     public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
         String path = "/tmp/memory_mapped.dat";
         try {
             FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
             //Get metadata
+            final String INDEX_COL_NAME = "__index_level_0__";
             JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
             TableSpec spec = tableIterator.getTableSpec();
             List<FieldVector> vecs = new ArrayList<FieldVector>();
             List<Field> fields = new ArrayList<Field>();
             JsonArrayBuilder icBuilder = Json.createArrayBuilder();
-            icBuilder.add("__index_level_0__");
+            RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
+            icBuilder.add(INDEX_COL_NAME);
             metadataBuilder.add("index_columns", icBuilder);
             JsonArrayBuilder colBuilder = Json.createArrayBuilder();
             //Row ids
-            JsonObjectBuilder rowIdBuilder = Json.createObjectBuilder();
-            rowIdBuilder.add("name", "__index_level_0__");
-            rowIdBuilder.add("pandas_type", "unicode");
-            rowIdBuilder.add("numpy_type", "object");
-            //TODO add serializer
-            rowIdBuilder.add("metadata", Type.STRING.getId());
+            JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object", Type.STRING, "");
             colBuilder.add(rowIdBuilder);
             //TODO calculate space and set Allocator size accordingly
-            NullableVarCharVector rowIdVector = new NullableVarCharVector("__index_level_0__", new RootAllocator(1024*1024));
+            NullableVarCharVector rowIdVector = new NullableVarCharVector(INDEX_COL_NAME, rootAllocator);
             rowIdVector.allocateNew();
             vecs.add(rowIdVector);
-            //Field rowIdField = new Field("__index_level_0__", new FieldType(false, new ArrowType.Utf8(), null), null);
             fields.add(rowIdVector.getField());
             
+            //Create FieldVectors and metadata
             for(int i=0; i<spec.getNumberColumns(); i++) {
-                JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
-                colMetadataBuilder.add("name", spec.getColumnNames()[i]);
+                JsonObjectBuilder colMetadataBuilder;
                 FieldVector vec;
                 switch(spec.getColumnTypes()[i]) {
                     //TODO null value handling
                     case INTEGER:
-                        colMetadataBuilder.add("pandas", "int");
-                        colMetadataBuilder.add("numpy", "int32");
-                      //TODO add serializer
-                        colMetadataBuilder.add("metadata", Type.INTEGER.getId());
+                        colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32", Type.INTEGER, "");
                         //Allocate vector for column
-                        vec = new NullableIntVector(spec.getColumnNames()[i], new RootAllocator(1024*1024));
+                        NullableIntVector ivec = new NullableIntVector(spec.getColumnNames()[i], rootAllocator);
+                        ivec.allocateNew(spec.getNumberColumns());
+                        vec = ivec;
                         vecs.add(vec);
                         fields.add(vec.getField());
                         break;
                     case STRING:
-                        colMetadataBuilder.add("pandas_type", "unicode");
-                        colMetadataBuilder.add("numpy_type", "object");
-                        //TODO add serializer
-                        colMetadataBuilder.add("metadata", Type.STRING.getId());
-                        vec = new NullableVarCharVector(spec.getColumnNames()[i], new RootAllocator(10000*1024));
+                        colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object", Type.STRING, "");
+                        vec = new NullableVarCharVector(spec.getColumnNames()[i], rootAllocator);
+                        vec.allocateNew();
+                        vecs.add(vec);
+                        fields.add(vec.getField());
+                        break;
+                    case BYTES:
+                        colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.BYTES, 
+                                spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+                        vec = new NullableVarBinaryVector(spec.getColumnNames()[i], rootAllocator);
+                        vec.allocateNew();
                         vecs.add(vec);
                         fields.add(vec.getField());
                         break;
@@ -121,25 +122,42 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 colBuilder.add(colMetadataBuilder);   
             }
             metadataBuilder.add("columns", colBuilder);
-            //Schema schema = Schema.fromJSON(metadataBuilder.build().toString());
+
             int ctr = 0;
+            int[] val_length = new int[vecs.size()];
             while(tableIterator.hasNext()) {
                 Row row = tableIterator.next();
-                ((NullableVarCharVector) vecs.get(0)).allocateNew();
-                ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).set(ctr, row.getRowKey().getBytes("UTF-8"));
+                byte[] bRowKey = row.getRowKey().getBytes("UTF-8");
+                val_length[0] += bRowKey.length;
+                if(val_length[0] / 8 > ((NullableVarCharVector) vecs.get(0)).getValueCapacity())
+                    ((NullableVarCharVector) vecs.get(0)).reAlloc();
+                ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).set(ctr, bRowKey);
                 ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).setValueCount(ctr + 1);
                 for(int i=0; i<spec.getNumberColumns(); i++) {
                     switch(spec.getColumnTypes()[i]) {
                     //TODO null value handling
                     case INTEGER:
-                        ((NullableIntVector) vecs.get(i+1)).allocateNew();
+                        val_length[i+1]++;
+                        if(val_length[i+1] > ((NullableIntVector) vecs.get(i+1)).getValueCapacity())
+                            ((NullableIntVector) vecs.get(i+1)).reAlloc();
                         ((NullableIntVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, row.getCell(i).getIntegerValue().intValue());
                         ((NullableIntVector.Mutator) vecs.get(i+1).getMutator()).setValueCount(ctr + 1);
                         break;
                     case STRING:
-                        ((NullableVarCharVector) vecs.get(i+1)).allocateNew();
-                        ((NullableVarCharVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, row.getCell(i).getStringValue().getBytes("UTF-8"));
+                        byte[] bVal = row.getCell(i).getStringValue().getBytes("UTF-8");
+                        val_length[i+1] += bVal.length;
+                        if(val_length[i+1] / 8 > ((NullableVarCharVector) vecs.get(i+1)).getValueCapacity())
+                            ((NullableVarCharVector) vecs.get(i+1)).reAlloc();
+                        ((NullableVarCharVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, bVal);
                         ((NullableVarCharVector.Mutator) vecs.get(i+1).getMutator()).setValueCount(ctr + 1);
+                        break;
+                    case BYTES:
+                        byte[] bytes = ArrayUtils.toPrimitive(row.getCell(i).getBytesValue());
+                        val_length[i+1] += bytes.length;
+                        if(val_length[i+1] / 8 > ((NullableVarBinaryVector) vecs.get(i+1)).getValueCapacity())
+                            ((NullableVarBinaryVector) vecs.get(i+1)).reAlloc();
+                        ((NullableVarBinaryVector.Mutator) vecs.get(i+1).getMutator()).set(ctr, bytes);
+                        ((NullableVarBinaryVector.Mutator) vecs.get(i+1).getMutator()).setValueCount(ctr + 1);
                         break;
                     default:
                         throw new IllegalStateException("Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
@@ -148,18 +166,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 ctr++;
             }
             
-            //TODO custom meta data ?   
-            
-            //TODO schöner
-            /*JsonReader jsreader = Json.createReader(new StringReader(vsr.getSchema().toJson()));
-            JsonObject obj = jsreader.readObject();
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            for(Entry<String,JsonValue> entry:obj.entrySet()) {
-                builder.add(entry.getKey(), entry.getValue());
-            }
-            //builder.add("customMetadata", metadataBuilder.build());
-            vsr.setSchema(Schema.fromJSON(builder.build().toString()));
-            VectorSchemaRoot extendedVsr = VectorSchemaRoot.create(Schema.fromJSON(builder.build().toString()), ) */
             Map<String,String> metadata = new HashMap<String, String>();
             metadata.put("pandas", metadataBuilder.build().toString());
             Schema schema = new Schema(fields, metadata);
@@ -168,6 +174,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
             writer.writeBatch();
             writer.close();
+            fc.close();
             
             return path.getBytes("UTF-8");
             
@@ -182,227 +189,13 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return null;
     } 
     
-    /*class ExchangableSchemaVectorSchemaRoot extends VectorSchemaRoot {
-        public ExchangableSchemaVectorSchemaRoot(List<Field> fields, List<FieldVector> fieldVectors, int rowCount) {
-            super(fields, fieldVectors, rowCount);
-        }
-
-        public void setSchema(Schema schema) {
-            this.
-        }
-    }*/
-    
-   /* @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
-        try {
-            final File file = File.createTempFile("java-to-python-", ".csv");
-            file.deleteOnExit();
-            final FileWriter writer = new FileWriter(file);
-            String types = "#";
-            String names = "";
-            final TableSpec spec = tableIterator.getTableSpec();
-            for (int i = 0; i < spec.getNumberColumns(); i++) {
-                types += "," + spec.getColumnTypes()[i].getId();
-                names += "," + spec.getColumnNames()[i];
-            }
-            String serializers = "#";
-            for (final Entry<String, String> entry : spec.getColumnSerializers().entrySet()) {
-                serializers += ',' + entry.getKey() + '=' + entry.getValue();
-            }
-            writer.write(types + "\n");
-            writer.write(serializers + "\n");
-            writer.write(names + "\n");
-            int ctr;
-            while (tableIterator.hasNext()) {
-                final Row row = tableIterator.next();
-                String line = row.getRowKey();
-                ctr = 0;
-                for (final Cell cell : row) {
-                    String value = "";
-                    if (cell.isMissing()) {
-                        value = "MissingCell";
-                        final Type type = spec.getColumnTypes()[ctr];
-                        if (serializationOptions.getConvertMissingToPython()
-                                && ((type == Type.INTEGER) || (type == Type.LONG))) {
-                            value = Long.toString(serializationOptions.getSentinelForType(type));
-                        }
-                    } else {
-                        switch (cell.getColumnType()) {
-                            case BOOLEAN:
-                                value = cell.getBooleanValue() ? "True" : "False";
-                                break;
-                            case BOOLEAN_LIST:
-                            case BOOLEAN_SET:
-                                final Boolean[] booleanArray = cell.getBooleanArrayValue();
-                                final StringBuilder booleanBuilder = new StringBuilder();
-                                booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "[" : "{");
-                                for (int i = 0; i < booleanArray.length; i++) {
-                                    if (booleanArray[i] == null) {
-                                        booleanBuilder.append("None");
-                                    } else {
-                                        booleanBuilder.append(booleanArray[i] ? "True" : "False");
-                                    }
-                                    if ((i + 1) < booleanArray.length) {
-                                        booleanBuilder.append(",");
-                                    }
-                                }
-                                booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "]" : "}");
-                                value = booleanBuilder.toString();
-                                break;
-                            case INTEGER:
-                                value = cell.getIntegerValue().toString();
-                                break;
-                            case INTEGER_LIST:
-                            case INTEGER_SET:
-                                final Integer[] integerArray = cell.getIntegerArrayValue();
-                                final StringBuilder integerBuilder = new StringBuilder();
-                                integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "[" : "{");
-                                for (int i = 0; i < integerArray.length; i++) {
-                                    if (integerArray[i] == null) {
-                                        integerBuilder.append("None");
-                                    } else {
-                                        integerBuilder.append(integerArray[i].toString());
-                                    }
-                                    if ((i + 1) < integerArray.length) {
-                                        integerBuilder.append(",");
-                                    }
-                                }
-                                integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "]" : "}");
-                                value = integerBuilder.toString();
-                                break;
-                            case LONG:
-                                value = cell.getLongValue().toString();
-                                break;
-                            case LONG_LIST:
-                            case LONG_SET:
-                                final Long[] longArray = cell.getLongArrayValue();
-                                final StringBuilder longBuilder = new StringBuilder();
-                                longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "[" : "{");
-                                for (int i = 0; i < longArray.length; i++) {
-                                    if (longArray[i] == null) {
-                                        longBuilder.append("None");
-                                    } else {
-                                        longBuilder.append(longArray[i].toString());
-                                    }
-                                    if ((i + 1) < longArray.length) {
-                                        longBuilder.append(",");
-                                    }
-                                }
-                                longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "]" : "}");
-                                value = longBuilder.toString();
-                                break;
-                            case DOUBLE:
-                                final Double doubleValue = cell.getDoubleValue();
-                                if (Double.isInfinite(doubleValue)) {
-                                    if (doubleValue > 0) {
-                                        value = "inf";
-                                    } else {
-                                        value = "-inf";
-                                    }
-                                } else if (Double.isNaN(doubleValue)) {
-                                    value = "NaN";
-                                } else {
-                                    value = doubleValue.toString();
-                                }
-                                break;
-                            case DOUBLE_LIST:
-                            case DOUBLE_SET:
-                                final Double[] doubleArray = cell.getDoubleArrayValue();
-                                final StringBuilder doubleBuilder = new StringBuilder();
-                                doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "[" : "{");
-                                for (int i = 0; i < doubleArray.length; i++) {
-                                    if (doubleArray[i] == null) {
-                                        doubleBuilder.append("None");
-                                    } else {
-                                        String doubleVal = doubleArray[i].toString();
-                                        if (doubleVal.equals("NaN")) {
-                                            doubleVal = "float('nan')";
-                                        } else if (doubleVal.equals("-Infinity")) {
-                                            doubleVal = "float('-inf')";
-                                        } else if (doubleVal.equals("Infinity")) {
-                                            doubleVal = "float('inf')";
-                                        }
-                                        doubleBuilder.append(doubleVal);
-                                    }
-                                    if ((i + 1) < doubleArray.length) {
-                                        doubleBuilder.append(",");
-                                    }
-                                }
-                                doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "]" : "}");
-                                value = doubleBuilder.toString();
-                                break;
-                            case STRING:
-                                value = cell.getStringValue();
-                                break;
-                            case STRING_LIST:
-                            case STRING_SET:
-                                final String[] stringArray = cell.getStringArrayValue();
-                                final StringBuilder stringBuilder = new StringBuilder();
-                                stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "[" : "{");
-                                for (int i = 0; i < stringArray.length; i++) {
-                                    String stringValue = stringArray[i];
-                                    if (stringValue == null) {
-                                        stringBuilder.append("None");
-                                    } else {
-                                        stringValue = stringValue.replace("\\", "\\\\");
-                                        stringValue = stringValue.replace("'", "\\'");
-                                        stringValue = stringValue.replace("\r", "\\r");
-                                        stringValue = stringValue.replace("\n", "\\n");
-                                        stringBuilder.append("'" + stringValue + "'");
-                                    }
-                                    if ((i + 1) < stringArray.length) {
-                                        stringBuilder.append(",");
-                                    }
-                                }
-                                stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "]" : "}");
-                                value = stringBuilder.toString();
-                                break;
-                            case BYTES:
-                                value = bytesToBase64(cell.getBytesValue());
-                                break;
-                            case BYTES_LIST:
-                            case BYTES_SET:
-                                final Byte[][] bytesArray = cell.getBytesArrayValue();
-                                final StringBuilder bytesBuilder = new StringBuilder();
-                                bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "[" : "{");
-                                for (int i = 0; i < bytesArray.length; i++) {
-                                    final Byte[] bytesValue = bytesArray[i];
-                                    if (bytesValue == null) {
-                                        bytesBuilder.append("None");
-                                    } else {
-                                        bytesBuilder.append("'" + bytesToBase64(bytesValue) + "'");
-                                    }
-                                    if ((i + 1) < bytesArray.length) {
-                                        bytesBuilder.append(",");
-                                    }
-                                }
-                                bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "]" : "}");
-                                value = bytesBuilder.toString();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    value = escapeValue(value);
-                    line += "," + value;
-                    ctr++;
-                }
-                writer.write(line + "\n");
-            }
-            writer.close();
-            return file.getAbsolutePath().getBytes();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-    } */
-    
     ArrowStreamReader m_streamReader = null;
     
     private ArrowStreamReader getReader(String path) throws FileNotFoundException {
         if(m_streamReader == null) {
                 FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
                 ArrowStreamReader reader = new ArrowStreamReader((ReadableByteChannel) fc, 
-                        (BufferAllocator) new RootAllocator(1024));
+                        (BufferAllocator) new RootAllocator(Long.MAX_VALUE));
                 m_streamReader = reader;
         }
         return m_streamReader;
@@ -426,6 +219,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                        row.setCell( new CellImpl(((NullableVarCharVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i).toString()), j );
                    } else if(spec.getColumnTypes()[j] == Type.LONG) {
                        row.setCell( new CellImpl(((NullableBigIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i)), j );
+                   } else if(spec.getColumnTypes()[j] == Type.INTEGER) {
+                       row.setCell( new CellImpl(((NullableIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i)), j );
+                   } else if(spec.getColumnTypes()[j] == Type.BYTES) {
+                       //TODO ugly
+                       row.setCell( new CellImpl( ArrayUtils.toObject(((NullableVarBinaryVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i)) ), j );
                    } else {
                        throw new IllegalStateException("Unknown column type!");
                    }
@@ -459,6 +257,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 NodeLogger.getLogger("test").warn("Success on loading batch: " + succ);
                 Schema schema = reader.getVectorSchemaRoot().getSchema();
                 Map<String,String> metadata = schema.getCustomMetadata();
+                Map<String,String> columnSerializers = new HashMap<String,String>();
                 String pandas_metadata = metadata.get("pandas");
                 if(pandas_metadata != null) {
                     NodeLogger.getLogger("test").warn("pandas metadata found: " + pandas_metadata);
@@ -468,7 +267,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     JsonArray cols = jpandas_metadata.getJsonArray("columns");
                     String[] names = new String[cols.size() - index_cols.size()];
                     Type[] types = new Type[cols.size() - index_cols.size()];
-                    //TODO send and get serializers, send tpyes (use metadata field in pandas metadata ?!)
                     int noIdxCtr = 0;
                     for(int i=0; i<cols.size(); i++) {
                         JsonObject col = cols.getJsonObject(i);
@@ -492,12 +290,19 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             case "int64":
                                 types[noIdxCtr] = Type.LONG;
                                 break;
+                            case "int32":
+                                types[noIdxCtr] = Type.INTEGER;
+                                break;
+                            case "bytes":
+                                types[noIdxCtr] = Type.BYTES;
+                                columnSerializers.put(names[noIdxCtr], col.getJsonObject("metadata").getString("serializer_id"));
+                                break;
                             default:
                                 throw new IllegalStateException("Cannot process type: " + type);
                         }
                         noIdxCtr++;
                     }
-                    m_tableSpec = new TableSpecImpl(types, names, null);
+                    m_tableSpec = new TableSpecImpl(types, names, columnSerializers);
                 }
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
@@ -514,17 +319,4 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         
         return m_tableSpec;
     }
-
-    private static String escapeValue(String value) {
-        value = value.replace("\"", "\"\"");
-        if (value.contains("\"") || value.contains("\n") || value.contains(",") || value.contains("\r")) {
-            value = "\"" + value + "\"";
-        }
-        return value;
-    }
-
-    private static String bytesToBase64(final Byte[] bytes) {
-        return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
-    }
-
 }

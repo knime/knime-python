@@ -46,6 +46,7 @@ import tempfile
 import os
 import base64
 import pyarrow
+import json
 try:
     from StringIO import StringIO
 except ImportError:
@@ -59,6 +60,7 @@ _bytes_types_ = None
 
 read_data_frame = None
 read_types = []
+read_serializers = {}
 
 
 # Initialize the enum of known type ids
@@ -97,11 +99,11 @@ def column_types_from_bytes(data_bytes):
 # of the table to create from the serialized data.
 # @param data_bytes    the serialized path to the temporary CSV file
 def column_serializers_from_bytes(data_bytes):
-    global read_data_frame, read_types
+    global read_data_frame, read_types, read_serializers
     path = data_bytes.decode('utf-8')
     if read_data_frame is None:
         deserialize_data_frame(path)
-    return []
+    return read_serializers
 
 # Read the CSV serialized data into a pandas.DataFrame.
 # Delete the temporary CSV file afterwards.
@@ -109,24 +111,29 @@ def column_serializers_from_bytes(data_bytes):
 #                     managing the deserialization of extension types
 # @param data_bytes   the serialized path to the temporary CSV file
 def bytes_into_table(table, data_bytes):
-    global read_data_frame, read_types
+    global read_data_frame, read_types, read_serializers
     path = data_bytes.decode('utf-8')
     if read_data_frame is None:
         deserialize_data_frame(path)
     table._data_frame = read_data_frame
+    read_data_frame = None
+    read_types = []
+    read_serializers = {}
         
 def deserialize_data_frame(path):
-    global read_data_frame, read_types
+    global read_data_frame, read_types, read_serializers
     with pyarrow.OSFile(path, 'rb') as f:
         stream_reader = pyarrow.StreamReader(f)
         arrowtable = stream_reader.read_all()
         read_data_frame = arrowtable.to_pandas()
-        import debug_util
-        debug_util.breakpoint()
-        import json
-        columns = json.loads(arrowtable.schema.metadata[b'columns'].decode("utf-8"))
-        for col in columns:
-            read_types.append(col["metadata"])
+        #import debug_util
+        #debug_util.breakpoint()
+        pandas_metadata = json.loads(arrowtable.schema.metadata[b'pandas'].decode('utf-8'))
+        for col in pandas_metadata['columns']:
+            read_types.append(col['metadata']['type_id'])
+            ser_id = col['metadata']['serializer_id']
+            if ser_id != '':
+                read_serializers[col['name']] = ser_id
 
 # Serialize a pandas.DataFrame into a memory mapped file
 # Return the path to the created memory mapped file as bytearray.
@@ -134,9 +141,23 @@ def deserialize_data_frame(path):
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
     path = '/tmp/memory_mapped.dat'
+    #for i in range(len(table._data_frame.columns)):
+    #    if type(table._data_frame.iat[0,i]) == list:
+    #        if type(table._data_frame.iat[0,i][0]) == str:
+    #            for j in range(len(table._data_frame)):
+    #                table._data_frame.iat[j,i] = str(table._data_frame.iat[j,i]).encode("utf-8")
     batch = pyarrow.RecordBatch.from_pandas(table._data_frame)
+    metadata = batch.schema.metadata
+    pandas_metadata = json.loads(metadata[b'pandas'].decode('utf-8'))
+    for column in pandas_metadata['columns']:
+        if column['pandas_type'] == 'bytes':
+            column['metadata'] = {"serializer_id": table.get_column_serializers()[column['name']], "type_id": _types_.BYTES}
+    metadata[b'pandas'] = json.dumps(pandas_metadata).encode('utf-8')
+    schema = batch.schema.remove_metadata()
+    schema = schema.add_metadata(metadata)
+            
     with pyarrow.OSFile(path, 'wb') as f:
-        stream_writer = pyarrow.StreamWriter(f, batch.schema)
+        stream_writer = pyarrow.StreamWriter(f, schema)
         stream_writer.write_batch(batch)
         stream_writer.close()
     return bytearray(path, 'utf-8')
