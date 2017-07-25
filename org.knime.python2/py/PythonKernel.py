@@ -853,13 +853,9 @@ class FromPandasTable:
     def standardize_default_indices(self):
         row_indices = []
         for i in range(len(self._data_frame.index)):
-            #debug_util.breakpoint()
-            try:
-                if int(self._data_frame.index[i]) == i:
-                    row_indices.append(u'Row' + str(i))
-                else:
-                    row_indices.append(str(self._data_frame.index[i]))
-            except:
+            if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i:
+                row_indices.append(u'Row' + str(i))
+            else:
                 row_indices.append(str(self._data_frame.index[i]))
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
