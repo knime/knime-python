@@ -150,8 +150,16 @@ def table_to_bytes(table):
     metadata = batch.schema.metadata
     pandas_metadata = json.loads(metadata[b'pandas'].decode('utf-8'))
     for column in pandas_metadata['columns']:
-        if column['pandas_type'] == 'bytes':
-            column['metadata'] = {"serializer_id": table.get_column_serializers()[column['name']], "type_id": _types_.BYTES}
+        try:
+            col_idx = table.get_names().get_loc(column['name'])
+            if table.get_type(col_idx) == _types_.BYTES:
+                column['metadata'] = {"serializer_id": table.get_column_serializers()[column['name']], "type_id": table.get_type(col_idx)}
+            else:
+                column['metadata'] = {"serializer_id": '', "type_id": table.get_type(col_idx)}
+        except:
+            #Only index columns -> always string
+            column['metadata'] = {"serializer_id": '', "type_id": _types_.STRING}
+        
     metadata[b'pandas'] = json.dumps(pandas_metadata).encode('utf-8')
     schema = batch.schema.remove_metadata()
     schema = schema.add_metadata(metadata)
