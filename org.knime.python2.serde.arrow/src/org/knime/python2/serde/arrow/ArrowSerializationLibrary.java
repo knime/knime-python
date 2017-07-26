@@ -24,11 +24,12 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableBigIntVector;
+import org.apache.arrow.vector.NullableBitVector;
 import org.apache.arrow.vector.NullableFloat8Vector;
 import org.apache.arrow.vector.NullableIntVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.apache.arrow.vector.NullableVarCharVector;
-import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.ValueVector.Accessor;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.stream.ArrowStreamReader;
 import org.apache.arrow.vector.stream.ArrowStreamWriter;
@@ -55,7 +56,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         colMetadataBuilder.add("name", name);
         colMetadataBuilder.add("pandas_type", pandasType);
         colMetadataBuilder.add("numpy_type", numpyType);
-        //TODO add serializer
         JsonObjectBuilder knimeMetadataBuilder = Json.createObjectBuilder();
         knimeMetadataBuilder.add("type_id", knimeType.getId());
         knimeMetadataBuilder.add("serializer_id", serializer);
@@ -98,7 +98,14 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 JsonObjectBuilder colMetadataBuilder;
                 FieldVector vec;
                 switch (spec.getColumnTypes()[i]) {
-                // TODO null value handling
+                case BOOLEAN:
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object",
+                            Type.BOOLEAN, "");
+                    // Allocate vector for column
+                    NullableBitVector bovec = new NullableBitVector(spec.getColumnNames()[i], rootAllocator);
+                    bovec.allocateNew(tableIterator.getNumberRemainingRows());
+                    vec = bovec;
+                    break;
                 case INTEGER:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32",
                             Type.INTEGER, "");
@@ -162,6 +169,16 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).setValueCount(ctr + 1);
                 for (int i = 0; i < spec.getNumberColumns(); i++) {
                     switch (spec.getColumnTypes()[i]) {
+                    case BOOLEAN:
+                        if (row.getCell(i).isMissing()) {
+                            ((NullableBitVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
+                        } else {
+                            val_length[i + 1]++;
+                            ((NullableBitVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
+                                    row.getCell(i).getBooleanValue().booleanValue() ? 1: 0);
+                        }
+                        ((NullableBitVector.Mutator) vecs.get(i + 1).getMutator()).setValueCount(ctr + 1);
+                        break; 
                     case INTEGER:
                         if (row.getCell(i).isMissing()) {
                             if(serializationOptions.getConvertMissingToPython()) {
@@ -169,7 +186,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                 ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
                                         (int) serializationOptions.getSentinelForType(Type.INTEGER));
                             } else {
-                                ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr + 1);
+                                ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
                             }
                         } else {
                             val_length[i + 1]++;
@@ -185,7 +202,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                 ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
                                         serializationOptions.getSentinelForType(Type.LONG));
                             } else {
-                                ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr + 1);
+                                ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
                             }
                         } else {
                             val_length[i + 1]++;
@@ -196,7 +213,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         break;
                     case DOUBLE:
                         if (row.getCell(i).isMissing()) {
-                            ((NullableFloat8Vector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr + 1);
+                            ((NullableFloat8Vector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
                         } else {
                             val_length[i + 1]++;
                             ((NullableFloat8Vector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
@@ -209,7 +226,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             ((NullableVarCharVector) vecs.get(i + 1)).reAlloc();
                         }
                         if (row.getCell(i).isMissing()) {
-                            ((NullableVarCharVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr + 1);
+                            ((NullableVarCharVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
                         } else {
                             byte[] bVal = row.getCell(i).getStringValue().getBytes("UTF-8");
                             val_length[i + 1] += bVal.length;
@@ -232,7 +249,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             ((NullableVarBinaryVector) vecs.get(i + 1)).reAlloc();
                         }
                         if (row.getCell(i).isMissing()) {
-                            ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr + 1);
+                            ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
                         } else {
                             byte[] bytes = ArrayUtils.toPrimitive(row.getCell(i).getBytesValue());
                             val_length[i + 1] += bytes.length;
@@ -250,6 +267,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 }
                 ctr++;
             }
+            
+            //Does not work -> why ?
+            /*for (int i = 0; i < spec.getNumberColumns() + 1; i++) {
+                ((ValueVector.Mutator) vecs.get(i).getMutator()).setValueCount(ctr + 1);
+            }*/
 
             Map<String, String> metadata = new HashMap<String, String>();
             metadata.put("pandas", metadataBuilder.build().toString());
@@ -297,30 +319,38 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             VectorSchemaRoot root = reader.getVectorSchemaRoot();
             NullableVarCharVector indexCol = (NullableVarCharVector) root.getVector(m_indexColumnName);
             NullableVarCharVector.Accessor rowKeyAccessor = (NullableVarCharVector.Accessor) indexCol.getAccessor();
+            Accessor[] accessors = new Accessor[spec.getNumberColumns()];
+            
+            for(int j=0; j<spec.getNumberColumns(); j++) {
+                accessors[j] = root.getVector(spec.getColumnNames()[j]).getAccessor();
+            }
+            
             for(int i=0; i<rowKeyAccessor.getValueCount(); i++) {
                Row row = new RowImpl(rowKeyAccessor.getObject(i).toString(), spec.getNumberColumns());
                for(int j=0; j<spec.getNumberColumns(); j++) {
-                   if ( ((ValueVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).isNull(i) ) {
+                   if ( accessors[j].isNull(i) ) {
                        row.setCell(new CellImpl(), j);
                    } else {
                        if(spec.getColumnTypes()[j] == Type.STRING) {
                            row.setCell( new CellImpl(((NullableVarCharVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i).toString()), j );
                        } else if(spec.getColumnTypes()[j] == Type.LONG) {
-                           long lval = ((NullableBigIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i);
+                           long lval = ((NullableBigIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).get(i);
                            if(serializationOptions.getConvertMissingFromPython() && serializationOptions.isSentinel(Type.LONG, lval)) {
                                row.setCell( new CellImpl(), j );
                            } else {
                                row.setCell( new CellImpl(lval), j );
                            }
                        } else if(spec.getColumnTypes()[j] == Type.INTEGER) {
-                           int ival = ((NullableIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i);
+                           int ival = ((NullableIntVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).get(i);
                            if(serializationOptions.getConvertMissingFromPython() && serializationOptions.isSentinel(Type.INTEGER, ival)) {
                                row.setCell( new CellImpl(), j );
                            } else {
                                row.setCell( new CellImpl(ival), j );
                            }
                        } else if(spec.getColumnTypes()[j] == Type.DOUBLE) {
-                           row.setCell( new CellImpl(((NullableFloat8Vector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i)), j );
+                           row.setCell( new CellImpl(((NullableFloat8Vector.Accessor) accessors[j]).get(i)), j );
+                       } else if(spec.getColumnTypes()[j] == Type.BOOLEAN) {
+                           row.setCell( new CellImpl(((NullableBitVector.Accessor) accessors[j]).get(i) > 0), j );
                        } else if(spec.getColumnTypes()[j] == Type.BYTES) {
                            //TODO ugly
                            row.setCell( new CellImpl( ArrayUtils.toObject(((NullableVarBinaryVector.Accessor) root.getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i)) ), j );

@@ -305,6 +305,12 @@ def bytes_to_data_frame(data_bytes):
 # @param data_frame    a pandas DataFrame containing the table to serialize
 def data_frame_to_bytes(data_frame):
     table = FromPandasTable(data_frame)
+    #Uncomment to profile serialization time
+    #import cProfile
+    #profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
+    #prof = cProfile.Profile()
+    #data_bytes = prof.runcall(_serializer.table_to_bytes, table)
+    #prof.dump_stats(profilepath)
     data_bytes = _serializer.table_to_bytes(table)
     return data_bytes
 

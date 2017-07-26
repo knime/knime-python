@@ -55,7 +55,7 @@ import debug_util
 
 
 _types_ = None
-_eval_types_ = None
+_pandas_native_types_ = None
 _bytes_types_ = None
 
 read_data_frame = None
@@ -66,12 +66,10 @@ read_serializers = {}
 # Initialize the enum of known type ids
 # @param types     the enum of known type ids
 def init(types):
-    global _types_, _eval_types_, _bytes_types_
+    global _types_, _pandas_native_types_, _bytes_types_
     _types_ = types
-    _eval_types_ = {_types_.BOOLEAN_LIST, _types_.BOOLEAN_SET, _types_.INTEGER_LIST,
-                    _types_.INTEGER_SET, _types_.LONG_LIST, _types_.LONG_SET,
-                    _types_.DOUBLE_LIST, _types_.DOUBLE_SET, _types_.STRING_LIST,
-                    _types_.STRING_SET, _types_.BYTES_LIST, _types_.BYTES_SET}
+    _pandas_native_types_ = {_types_.INTEGER, _types_.LONG, _types_.DOUBLE,
+                             _types_.STRING, _types_.BYTES, _types_.BOOLEAN}
     _bytes_types_ = {_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET}
 
 
@@ -121,19 +119,47 @@ def bytes_into_table(table, data_bytes):
     read_serializers = {}
         
 def deserialize_data_frame(path):
-    global read_data_frame, read_types, read_serializers
+    global read_data_frame, read_types, read_serializers, _pandas_native_types_
     with pyarrow.OSFile(path, 'rb') as f:
         stream_reader = pyarrow.StreamReader(f)
         arrowtable = stream_reader.read_all()
-        read_data_frame = arrowtable.to_pandas()
-        #import debug_util
-        #debug_util.breakpoint()
+        #metadata 
         pandas_metadata = json.loads(arrowtable.schema.metadata[b'pandas'].decode('utf-8'))
+        names = []
         for col in pandas_metadata['columns']:
+            names.append(col['name'])
             read_types.append(col['metadata']['type_id'])
             ser_id = col['metadata']['serializer_id']
             if ser_id != '':
                 read_serializers[col['name']] = ser_id
+        #data 
+        read_data_frame = pandas.DataFrame()       
+        for arrowcolumn in arrowtable.itercolumns():
+            typeidx = names.index(arrowcolumn.name)
+            coltype = read_types[typeidx]
+            if coltype in _pandas_native_types_:
+                dfcol = arrowcolumn.to_pandas()
+            else:
+                if coltype == _types_.BOOLEAN:
+                    import debug_util
+                    debug_util.breakpoint()
+                    #gen = (arrowcolumn)
+                    #dfcol = 
+                else:
+                    raise Error()
+            #Note: we only have one index column (the KNIME RowKeys)
+            if arrowcolumn.name in pandas_metadata['index_columns']:
+                indexcol = dfcol
+            else:
+                read_data_frame[arrowcolumn.name] = dfcol
+                
+        if not 'indexcol' in locals():  
+            raise NameError('Variable indexcol has not been set properly, exiting!')
+        
+        read_data_frame.set_index(keys=indexcol, inplace=True)      
+        #import debug_util
+        #debug_util.breakpoint()
+        
 
 # Serialize a pandas.DataFrame into a memory mapped file
 # Return the path to the created memory mapped file as bytearray.
