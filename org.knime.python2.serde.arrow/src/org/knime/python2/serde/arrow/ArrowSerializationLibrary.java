@@ -89,7 +89,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     
     @Override
     public byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) {
-        String path = "/tmp/memory_mapped.dat";
+        String path = System.getProperty("java.io.tmpdir") + File.separator + "memory_mapped.dat";
         try {
             FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
             // Get metadata
@@ -97,7 +97,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
             TableSpec spec = tableIterator.getTableSpec();
             JsonArrayBuilder icBuilder = Json.createArrayBuilder();
-            RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
             icBuilder.add(INDEX_COL_NAME);
             metadataBuilder.add("index_columns", icBuilder);
             JsonArrayBuilder colBuilder = Json.createArrayBuilder();
@@ -164,11 +163,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             Row cachRow = null;
             ArrowBatchWriter writer = null;
             Schema schema = null;
-            int cachPos = 0;
-            //TODO check if only last row does not fit in buffer
+
             while(tableIterator.hasNext()) {
                 
-                BufferAllocator allocator = rootAllocator.newChildAllocator("batchAllocator", 0, FIXED_BATCH_BYTE_SIZE);
+                BufferAllocator allocator = new RootAllocator(FIXED_BATCH_BYTE_SIZE);
                 
                 /*int numRowsInBatch = Math.min(numRowsEstimateBatch, 
                         tableIterator.getNumberRemainingRows() + ((cachRow == null) ? 0 : 1)); */
@@ -257,7 +255,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     val_length[0] += bRowKey.length;
                     if (val_length[0] > ((NullableVarCharVector) vecs.get(0)).getByteCapacity()) {
                         bufferFull = true;
-                        cachPos = 0;
                     } else {
                         ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).set(ctr, bRowKey);
                         for (int i = 0; i < spec.getNumberColumns(); i++) {
@@ -316,7 +313,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             case STRING:
                                 if(ctr >= ((NullableVarCharVector) vecs.get(i + 1)).getValueCapacity()) {
                                     bufferFull = true;
-                                    cachPos = i + 1;
                                     break;
                                 }
                                 if (row.getCell(i).isMissing()) {
@@ -326,7 +322,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                     val_length[i + 1] += bVal.length;
                                     if (val_length[i + 1] > ((NullableVarCharVector) vecs.get(i + 1)).getByteCapacity()) {
                                         bufferFull = true;
-                                        cachPos = i + 1;
                                         break;
                                     }
                                     ((NullableVarCharVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr, bVal);
@@ -335,7 +330,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             case BYTES:
                                 if(ctr >= ((NullableVarBinaryVector) vecs.get(i + 1)).getValueCapacity()) {
                                     bufferFull = true;
-                                    cachPos = i + 1;
                                     break;
                                 }
                                 if (row.getCell(i).isMissing()) {
@@ -346,7 +340,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                     val_length[i + 1] += bytes.length;
                                     if (val_length[i + 1] > ((NullableVarBinaryVector) vecs.get(i + 1)).getByteCapacity()) {
                                         bufferFull = true;
-                                        cachPos = i + 1;
                                         break;
                                     }
                                     ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr, bytes);

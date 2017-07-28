@@ -47,11 +47,14 @@ import os
 import base64
 import pyarrow
 import json
+import sys
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 import debug_util
+
+_python3 = sys.version_info >= (3, 0)
 
 
 _types_ = None
@@ -140,13 +143,7 @@ def deserialize_data_frame(path):
             if coltype in _pandas_native_types_:
                 dfcol = arrowcolumn.to_pandas()
             else:
-                if coltype == _types_.BOOLEAN:
-                    import debug_util
-                    debug_util.breakpoint()
-                    #gen = (arrowcolumn)
-                    #dfcol = 
-                else:
-                    raise Error()
+                raise Error()
             #Note: we only have one index column (the KNIME RowKeys)
             if arrowcolumn.name in pandas_metadata['index_columns']:
                 indexcol = dfcol
@@ -167,12 +164,26 @@ def deserialize_data_frame(path):
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    path = '/tmp/memory_mapped.dat'
+    path = os.path.join(tempfile.gettempdir(), 'memory_mapped.dat')
     #for i in range(len(table._data_frame.columns)):
     #    if type(table._data_frame.iat[0,i]) == list:
     #        if type(table._data_frame.iat[0,i][0]) == str:
     #            for j in range(len(table._data_frame)):
     #                table._data_frame.iat[j,i] = str(table._data_frame.iat[j,i]).encode("utf-8")
+    
+    #Python2 workaround for strings -> convert all to unicode
+    if not _python3:
+        for i in range(len(table._data_frame.columns)):
+            if type(table._data_frame.iloc[0,i]) == str and table._column_types[i] == _types_.STRING:
+                for j in range(len(table._data_frame)):
+                    table._data_frame.iloc[j,i] = unicode(table._data_frame.iloc[j,i])
+        indexls = []
+        for j in range(len(table._data_frame)):
+            indexls.append(unicode(table._data_frame.index[j]))
+        table._data_frame.set_index(keys=pandas.Series(indexls), inplace=True)
+    #import debug_util
+    #debug_util.breakpoint()
+    
     batch = pyarrow.RecordBatch.from_pandas(table._data_frame)
     metadata = batch.schema.metadata
     pandas_metadata = json.loads(metadata[b'pandas'].decode('utf-8'))
