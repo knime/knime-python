@@ -159,6 +159,7 @@ def deserialize_data_frame(path):
         read_data_frame.set_index(keys=indexcol, inplace=True)      
         #import debug_util
         #debug_util.breakpoint()
+        #print('test')
         
 
 # Serialize a pandas.DataFrame into a memory mapped file
