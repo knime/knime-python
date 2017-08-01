@@ -48,6 +48,8 @@ import base64
 import pyarrow
 import json
 import sys
+import struct
+import numpy as np
 try:
     from StringIO import StringIO
 except ImportError:
@@ -120,6 +122,35 @@ def bytes_into_table(table, data_bytes):
     read_data_frame = None
     read_types = []
     read_serializers = {}
+    
+def int_collection_generator(arrowcolumn, isset):
+    for i in range(len(arrowcolumn.data.chunk(0))):
+        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+            yield None
+        else:
+            py_obj = arrowcolumn.data.chunk(0)[i].as_py()
+            #buffer: length(values) int32, values [int32], missing [bit]
+            #get length(values)
+            n_vals = struct.unpack(">i", py_obj[:4])[0]
+            #get values
+            if not isset:
+                res = list(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
+                #get missings and set corresponding value to None if required
+                missings = np.fromstring(py_obj[4*(n_vals + 1):], dtype=np.uint8)
+                for i in range(n_vals):
+                    if not missings[i / 8] & (1 << (i % 8)):
+                        res[i] = None
+                yield res
+            else:
+                #TODO
+                res = list(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
+                #TODO improve for sets
+                #get missings and set corresponding value to None if required
+                missings = np.fromstring(py_obj[4*(n_vals + 1):], dtype=np.uint8)
+                for i in range(n_vals):
+                    if not missings[i / 8] & (1 << (i % 8)):
+                        res[i] = None
+                yield set(res)
         
 def deserialize_data_frame(path):
     global read_data_frame, read_types, read_serializers, _pandas_native_types_
@@ -143,7 +174,10 @@ def deserialize_data_frame(path):
             if coltype in _pandas_native_types_:
                 dfcol = arrowcolumn.to_pandas()
             else:
-                raise Error()
+                if coltype == _types_.INTEGER_LIST or coltype == _types_.INTEGER_SET:
+                    dfcol = pandas.Series(int_collection_generator(arrowcolumn, coltype == _types_.INTEGER_SET)) 
+                else:
+                    raise Error()
             #Note: we only have one index column (the KNIME RowKeys)
             if arrowcolumn.name in pandas_metadata['index_columns']:
                 indexcol = dfcol
@@ -165,11 +199,22 @@ def deserialize_data_frame(path):
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
     path = os.path.join(tempfile.gettempdir(), 'memory_mapped.dat')
-    #for i in range(len(table._data_frame.columns)):
-    #    if type(table._data_frame.iat[0,i]) == list:
-    #        if type(table._data_frame.iat[0,i][0]) == str:
-    #            for j in range(len(table._data_frame)):
-    #                table._data_frame.iat[j,i] = str(table._data_frame.iat[j,i]).encode("utf-8")
+    
+    #debug_util.breakpoint()
+    #TODO columnwise ?
+    for i in range(len(table._data_frame.columns)):
+        if type(table._data_frame.iat[0,i]) in [list, np.ndarray]:
+            if any(filter(lambda x: issubclass(type(table._data_frame.iat[0,i][0]), x), [int, np.integer])):
+                for j in range(len(table._data_frame)):
+                    if not table._data_frame.iat[j,i] == None: 
+                        n_vals = len(table._data_frame.iat[j,i])
+                        missings = np.zeros(shape=((n_vals / 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+                        for idx in range(n_vals):
+                            if not table._data_frame.iat[j,i][idx] == None:
+                                missings[idx / 8] += (1 << (idx % 8))
+                            else:
+                                table._data_frame.iat[j,i][idx] = 0
+                        table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i4').tobytes() + missings.tobytes()
     
     #Python2 workaround for strings -> convert all to unicode
     if not _python3:
