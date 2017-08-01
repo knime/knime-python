@@ -142,15 +142,15 @@ def int_collection_generator(arrowcolumn, isset):
                         res[i] = None
                 yield res
             else:
-                #TODO
-                res = list(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
-                #TODO improve for sets
-                #get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[4*(n_vals + 1):], dtype=np.uint8)
-                for i in range(n_vals):
-                    if not missings[i / 8] & (1 << (i % 8)):
-                        res[i] = None
-                yield set(res)
+                hasMissing = (py_obj[4*(n_vals + 1)] == b'\x00')
+                res = struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals])
+                #debug_util.breakpoint()
+                if hasMissing:
+                    res = set(res[:-1])
+                    res.add(None)
+                else:
+                    res = set(res)
+                yield res
         
 def deserialize_data_frame(path):
     global read_data_frame, read_types, read_serializers, _pandas_native_types_
@@ -203,6 +203,7 @@ def table_to_bytes(table):
     #debug_util.breakpoint()
     #TODO columnwise ?
     for i in range(len(table._data_frame.columns)):
+        #lists
         if type(table._data_frame.iat[0,i]) in [list, np.ndarray]:
             if any(filter(lambda x: issubclass(type(table._data_frame.iat[0,i][0]), x), [int, np.integer])):
                 for j in range(len(table._data_frame)):
@@ -215,6 +216,18 @@ def table_to_bytes(table):
                             else:
                                 table._data_frame.iat[j,i][idx] = 0
                         table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i4').tobytes() + missings.tobytes()
+        #sets
+        if type(table._data_frame.iat[0,i]) == set:
+            if any(filter(lambda x: issubclass(type(next(iter(table._data_frame.iat[0,i]))), x), [int, np.integer])):
+                for j in range(len(table._data_frame)):
+                    if not table._data_frame.iat[j,i] == None: 
+                        n_vals = len(table._data_frame.iat[j,i])
+                        hasMissing = np.uint8(1)
+                        if None in table._data_frame.iat[j,i]:
+                            hasMissing = np.uint8(0)
+                            table._data_frame.iat[j,i].discard(None)
+                            n_vals -= 1
+                        table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(list(table._data_frame.iat[j,i]), dtype='<i4').tobytes() + hasMissing.tobytes()
     
     #Python2 workaround for strings -> convert all to unicode
     if not _python3:

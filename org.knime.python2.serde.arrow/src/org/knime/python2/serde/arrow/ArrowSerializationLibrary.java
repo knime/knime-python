@@ -6,6 +6,7 @@ import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -187,13 +188,20 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     vec = bvec;
                     break;
                 case INTEGER_LIST:
-                case INTEGER_SET:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
                             Type.INTEGER_LIST, "");
                     NullableVarBinaryVector ilsvec = new NullableVarBinaryVector(spec.getColumnNames()[i], rootAllocator);
                     ilsvec.allocateNew(ASSUMED_BYTES_VAL_BYTE_SIZE * tableIterator.getNumberRemainingRows(),
                             tableIterator.getNumberRemainingRows());
                     vec = ilsvec;
+                    break;
+                case INTEGER_SET:
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+                            Type.INTEGER_SET, "");
+                    NullableVarBinaryVector isetvec = new NullableVarBinaryVector(spec.getColumnNames()[i], rootAllocator);
+                    isetvec.allocateNew(ASSUMED_BYTES_VAL_BYTE_SIZE * tableIterator.getNumberRemainingRows(),
+                            tableIterator.getNumberRemainingRows());
+                    vec = isetvec;
                     break;
                 default:
                     throw new IllegalStateException(
@@ -313,7 +321,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setValueCount(ctr + 1);
                         break;
                     case INTEGER_LIST:
-                    case INTEGER_SET:
                         NullableVarBinaryVector ilsvec = (NullableVarBinaryVector) vecs.get(i+1);
                         if (ctr >= ((NullableVarBinaryVector) vecs.get(i + 1)).getValueCapacity()) {
                             ilsvec.reAlloc();
@@ -322,8 +329,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             ilsvec.getMutator().setNull(ctr);
                         } else {
                             //TODO ugly
-                            boolean isset = (spec.getColumnTypes()[i] == Type.INTEGER_LIST);
-                            boolean hasNull = false;
+
                             Integer[] objs = row.getCell(i).getIntegerArrayValue();
                             int[] integers = new int[objs.length];
                             for(int j=0; j<objs.length; j++) {
@@ -368,6 +374,58 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                 byteBuffer.position(8 * (pos / 8 + 1));
                             }*/
                             ilsvec.getMutator().set(ctr, byteBuffer.array());
+                        }
+                        ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setValueCount(ctr + 1);
+                        break;
+                    case INTEGER_SET:
+                        NullableVarBinaryVector isetvec = (NullableVarBinaryVector) vecs.get(i+1);
+                        if (ctr >= ((NullableVarBinaryVector) vecs.get(i + 1)).getValueCapacity()) {
+                            isetvec.reAlloc();
+                        }
+                        if (row.getCell(i).isMissing()) {
+                            isetvec.getMutator().setNull(ctr);
+                        } else {
+                            //TODO ugly
+                            Integer[] objs = row.getCell(i).getIntegerArrayValue();
+                            int[] integers = new int[objs.length];
+                            boolean hasMissing = false;
+                            //Put missing value to last array position
+                            for(int j=0; j<objs.length; j++) {
+                                if(objs[j] == null) {
+                                    hasMissing = true;
+                                } else if(hasMissing) {
+                                    integers[j - 1] = objs[j].intValue();
+                                } else {
+                                    integers[j] = objs[j].intValue();
+                                }
+                            }
+                            //len(values) + values + missings
+                            int len = 4 * (integers.length + 1) + 1;
+                            val_length[i + 1] += len;
+                            while (val_length[i + 1] > ((NullableVarBinaryVector) vecs.get(i + 1)).getByteCapacity()) {
+                                isetvec.reAlloc();
+                            }
+                            ByteBuffer byteBuffer = ByteBuffer.allocate(len);        
+                            IntBuffer intBuffer = byteBuffer.asIntBuffer();
+                            //put value length
+                            intBuffer.put(integers.length);
+                            //put values
+                            intBuffer.put(integers);
+                            //TODO ugly
+                            //missing values
+                            byteBuffer.position((integers.length + 1) * 4);
+                            if(hasMissing) {
+                                byteBuffer.put((byte)0);
+                            } else {
+                                byteBuffer.put((byte)1);
+                            }
+                            //TODO ?
+                            //align to 64bit 
+                            /*int pos = byteBuffer.position();
+                            if(pos % 8 != 0) {
+                                byteBuffer.position(8 * (pos / 8 + 1));
+                            }*/
+                            isetvec.getMutator().set(ctr, byteBuffer.array());
                         }
                         ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setValueCount(ctr + 1);
                         break;
@@ -753,18 +811,25 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                            int[] iar = new int[nVals];
                            ibuffer.get(iar);
                            //TODO ugly
-                           Integer[] obj = ArrayUtils.toObject( iar );
+                           ArrayList<Integer> ls = new ArrayList<>(Arrays.asList(ArrayUtils.toObject(iar)));
                            buffer.position((nVals + 1)*4);
+                           boolean isset = (spec.getColumnTypes()[j] == Type.INTEGER_SET);
+                           if(!isset) {
                            byte b = 0;
-                           for(int idx=0; idx<nVals; idx++) {
-                               if(idx % 8 == 0) {
-                                   b = buffer.get();
+                               for(int idx=0; idx<nVals; idx++) {
+                                   if(idx % 8 == 0) {
+                                       b = buffer.get();
+                                   }
+                                   if((b & (1 << (idx %8))) == 0) {
+                                       ls.set(idx, null);
+                                   }
                                }
-                               if((b & (1 << (idx %8))) == 0) {
-                                   obj[idx] = null;
+                           } else {
+                               if(buffer.get() == 0) {
+                                   ls.add(null);
                                }
                            }
-                           row.setCell( new CellImpl( obj, (spec.getColumnTypes()[j] == Type.INTEGER_SET)  ), j );
+                           row.setCell( new CellImpl( ls.toArray(new Integer[ls.size()]), isset  ), j );
                        } else {
                            throw new IllegalStateException("Unknown column type!");
                        }
