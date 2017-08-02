@@ -53,6 +53,7 @@ import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,6 +101,7 @@ import org.knime.python2.serde.arrow.inserters.IntListInserter;
 import org.knime.python2.serde.arrow.inserters.IntSetInserter;
 import org.knime.python2.serde.arrow.inserters.IntegerInserter;
 import org.knime.python2.serde.arrow.inserters.LongInserter;
+import org.knime.python2.serde.arrow.inserters.LongListInserter;
 import org.knime.python2.serde.arrow.inserters.StringInserter;
 import org.knime.python2.serde.arrow.inserters.VectorInserter;
 import org.knime.python2.serde.arrow.libraryextensions.ArrowBatchWriter;
@@ -117,6 +119,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         knimeMetadataBuilder.add("serializer_id", serializer);
         colMetadataBuilder.add("metadata", knimeMetadataBuilder);
         return colMetadataBuilder;
+    }
+
+    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final String pandasType, final String numpyType,
+        final Type knimeType) {
+        return createColumnMetadataBuilder(name, pandasType, numpyType, knimeType, "");
     }
 
     /**
@@ -180,7 +187,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             int numRows = tableIterator.getNumberRemainingRows();
             // Row ids
             JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object",
-                    Type.STRING, "");
+                    Type.STRING);
             inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator,
                 numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
             colBuilder.add(rowIdBuilder);
@@ -191,32 +198,32 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 switch (spec.getColumnTypes()[i]) {
                 case BOOLEAN:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object",
-                            Type.BOOLEAN, "");
+                            Type.BOOLEAN);
                     inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows));
                     break;
                 case INTEGER:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32",
-                            Type.INTEGER, "");
+                            Type.INTEGER);
                     inserters.add(new IntegerInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows, serializationOptions));
                     break;
                 case LONG:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int64",
-                            Type.LONG, "");
+                            Type.LONG);
                     inserters.add(new LongInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows, serializationOptions));
                     break;
                 case DOUBLE:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "float64",
-                            Type.DOUBLE, "");
+                            Type.DOUBLE);
                     // Allocate vector for column
                     inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows));
                     break;
                 case STRING:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object",
-                            Type.STRING, "");
+                            Type.STRING);
                     inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows, ASSUMED_STRING_VAL_BYTE_SIZE));
                     break;
@@ -228,9 +235,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     break;
                 case INTEGER_LIST:
                 	// TODO "bytes" and "object" etc maybe part of enum?
-                    // TODO offer second createColumnmetadataBuilder method without last argument ("") which calls existing with "" or even better: null!!!
                 	colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.INTEGER_LIST, "");
+                            Type.INTEGER_LIST);
 
                 	//TODO maybe guess assumed size based on first row?
                 	inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator,
@@ -238,8 +244,17 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     break;
                 case INTEGER_SET:
                     colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.INTEGER_SET, "");
+                            Type.INTEGER_SET);
                     inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator,
+                        numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case LONG_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+                            Type.LONG_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator,
                         numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 default:
@@ -672,7 +687,29 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             }
                             row.setCell(new CellImpl(obj, true), j);
 
-                        } else {
+                        } else if (spec.getColumnTypes()[j] == Type.LONG_LIST) {
+                            ByteBuffer buffer = ByteBuffer.wrap(((NullableVarBinaryVector.Accessor) root
+                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i))
+                                    .order(ByteOrder.LITTLE_ENDIAN);
+                            int nVals = buffer.asIntBuffer().get();
+                            buffer.position(4);
+                            LongBuffer lbuffer = buffer.asLongBuffer();
+                            long[] iar = new long[nVals];
+                            lbuffer.get(iar);
+                            // TODO ugly object types
+                            Long[] obj = ArrayUtils.toObject(iar);
+                            buffer.position(4 + nVals  * 8);
+                            byte b = 0;
+                            for (int idx = 0; idx < nVals; idx++) {
+                                if (idx % 8 == 0) {
+                                    b = buffer.get();
+                                }
+                                if ((b & (1 << (idx % 8))) == 0) {
+                                    obj[idx] = null;
+                                }
+                            }
+                            row.setCell(new CellImpl(obj, false), j);
+                        }else {
                             throw new IllegalStateException("Unknown column type!");
                         }
                     }

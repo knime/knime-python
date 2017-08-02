@@ -139,12 +139,39 @@ def int_collection_generator(arrowcolumn, isset):
                 #get missings and set corresponding value to None if required
                 missings = np.fromstring(py_obj[4*(n_vals + 1):], dtype=np.uint8)
                 for i in range(n_vals):
-                    if not missings[i / 8] & (1 << (i % 8)):
+                    if not missings[i // 8] & (1 << (i % 8)):
                         res[i] = None
                 yield res
             else:
                 hasMissing = (py_obj[4*(n_vals + 1)] == b'\x00')
                 res = set(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
+                #debug_util.breakpoint()
+                if hasMissing:
+                    res.add(None)
+                yield res
+                
+def long_collection_generator(arrowcolumn, isset):
+    for i in range(len(arrowcolumn.data.chunk(0))):
+        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+            yield None
+        else:
+            py_obj = arrowcolumn.data.chunk(0)[i].as_py()
+            #debug_util.breakpoint()
+            #buffer: length(values) int32, values [int32], missing [bit]
+            #get length(values)
+            n_vals = struct.unpack(">i", py_obj[:4])[0]
+            #get values
+            if not isset:
+                res = list(struct.unpack(">%dq" % (n_vals), py_obj[4:4 + 8*n_vals]))
+                #get missings and set corresponding value to None if required
+                missings = np.fromstring(py_obj[4 + 8 * n_vals:], dtype=np.uint8)
+                for i in range(n_vals):
+                    if not missings[i // 8] & (1 << (i % 8)):
+                        res[i] = None
+                yield res
+            else:
+                hasMissing = (py_obj[4 + 8 * n_vals] == b'\x00')
+                res = set(struct.unpack(">%dq" % (n_vals), py_obj[4:4 + 8*n_vals]))
                 #debug_util.breakpoint()
                 if hasMissing:
                     res.add(None)
@@ -174,6 +201,8 @@ def deserialize_data_frame(path):
             else:
                 if coltype == _types_.INTEGER_LIST or coltype == _types_.INTEGER_SET:
                     dfcol = pandas.Series(int_collection_generator(arrowcolumn, coltype == _types_.INTEGER_SET)) 
+                elif coltype == _types_.LONG_LIST or coltype == _types_.LONG_SET:
+                    dfcol = pandas.Series(long_collection_generator(arrowcolumn, coltype == _types_.LONG_SET)) 
                 else:
                     raise Error()
             #Note: we only have one index column (the KNIME RowKeys)
@@ -201,31 +230,38 @@ def table_to_bytes(table):
     #debug_util.breakpoint()
     #TODO columnwise ?
     for i in range(len(table._data_frame.columns)):
-        #lists
-        if type(table._data_frame.iat[0,i]) in [list, np.ndarray]:
-            if any(filter(lambda x: issubclass(type(table._data_frame.iat[0,i][0]), x), [int, np.integer])):
-                for j in range(len(table._data_frame)):
-                    if not table._data_frame.iat[j,i] == None: 
-                        n_vals = len(table._data_frame.iat[j,i])
-                        missings = np.zeros(shape=((n_vals / 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
-                        for idx in range(n_vals):
-                            if not table._data_frame.iat[j,i][idx] == None:
-                                missings[idx / 8] += (1 << (idx % 8))
-                            else:
-                                table._data_frame.iat[j,i][idx] = 0
-                        table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i4').tobytes() + missings.tobytes()
-        #sets
-        if type(table._data_frame.iat[0,i]) == set:
-            if any(filter(lambda x: issubclass(type(next(iter(table._data_frame.iat[0,i]))), x), [int, np.integer])):
-                for j in range(len(table._data_frame)):
-                    if not table._data_frame.iat[j,i] == None: 
-                        n_vals = len(table._data_frame.iat[j,i])
-                        hasMissing = np.uint8(1)
-                        if None in table._data_frame.iat[j,i]:
-                            hasMissing = np.uint8(0)
-                            table._data_frame.iat[j,i].discard(None)
-                            n_vals -= 1
-                        table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(list(table._data_frame.iat[j,i]), dtype='<i4').tobytes() + hasMissing.tobytes()
+        if table.get_type(i) == _types_.INTEGER_LIST:
+            for j in range(len(table._data_frame)):
+                if not table._data_frame.iat[j,i] == None: 
+                    n_vals = len(table._data_frame.iat[j,i])
+                    missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+                    for idx in range(n_vals):
+                        if not table._data_frame.iat[j,i][idx] == None:
+                            missings[idx // 8] += (1 << (idx % 8))
+                        else:
+                            table._data_frame.iat[j,i][idx] = 0
+                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i4').tobytes() + missings.tobytes()
+        elif table.get_type(i) == _types_.LONG_LIST:
+            for j in range(len(table._data_frame)):
+                if not table._data_frame.iat[j,i] == None: 
+                    n_vals = len(table._data_frame.iat[j,i])
+                    missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+                    for idx in range(n_vals):
+                        if not table._data_frame.iat[j,i][idx] == None:
+                            missings[idx // 8] += (1 << (idx % 8))
+                        else:
+                            table._data_frame.iat[j,i][idx] = 0
+                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i8').tobytes() + missings.tobytes()
+        elif table.get_type(i) == _types_.INTEGER_SET:
+            for j in range(len(table._data_frame)):
+                if not table._data_frame.iat[j,i] == None: 
+                    n_vals = len(table._data_frame.iat[j,i])
+                    hasMissing = np.uint8(1)
+                    if None in table._data_frame.iat[j,i]:
+                        hasMissing = np.uint8(0)
+                        table._data_frame.iat[j,i].discard(None)
+                        n_vals -= 1
+                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(list(table._data_frame.iat[j,i]), dtype='<i4').tobytes() + hasMissing.tobytes()
     
     #Python2 workaround for strings -> convert all to unicode
     if not _python3:
