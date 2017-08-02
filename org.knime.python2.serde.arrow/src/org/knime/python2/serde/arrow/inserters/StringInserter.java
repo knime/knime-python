@@ -43,63 +43,75 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.serde.arrow.libraryextensions;
+package org.knime.python2.serde.arrow.inserters;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.List;
+import java.io.UnsupportedEncodingException;
 
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.file.ArrowBlock;
-import org.apache.arrow.vector.file.ArrowWriter;
-import org.apache.arrow.vector.file.WriteChannel;
-import org.apache.arrow.vector.schema.ArrowRecordBatch;
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarCharVector;
+import org.knime.core.node.NodeLogger;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Based on ArrowStreamWriter. Exposing writeRecordBatch for writing output batch by batch.
+ * Manages the data transfer between the pyhton table format and the arrow table format. Works on String cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
+public class StringInserter implements VectorInserter {
 
-public class ArrowBatchWriter extends ArrowWriter {
+    private final static NodeLogger LOGGER = NodeLogger.getLogger(StringInserter.class);
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final OutputStream out) {
-       this(root, provider, Channels.newChannel(out));
-    }
+    private final NullableVarCharVector m_vec;
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final WritableByteChannel out) {
-       super(root, provider, out);
+    private final NullableVarCharVector.Mutator m_mutator;
+
+    private int m_ctr;
+
+    private int m_byteCount;
+
+    /**
+     * Constructor.
+     *
+     * @param name the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows the number of rows in the managed vector
+     * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
+     */
+    public StringInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final int bytesPerCellAssumption) {
+
+        m_vec = new NullableVarCharVector(name, allocator);
+        m_vec.allocateNew(bytesPerCellAssumption * numRows, numRows);
+        m_mutator = m_vec.getMutator();
     }
 
     @Override
-    protected void startInternal(final WriteChannel out) throws IOException {}
-
-    @Override
-    protected void endInternal(final WriteChannel out,
-                               final Schema schema,
-                               final List<ArrowBlock> dictionaries,
-                               final List<ArrowBlock> records) throws IOException {
-       out.writeIntLittleEndian(0);
-    }
-
-    @Override
-    public void writeRecordBatch(final ArrowRecordBatch batch) throws IOException {
-        super.start();
-        super.writeRecordBatch(batch);
-    }
-
-    @Override
-    public void close() {
-        try {
-            super.end();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    public void put(final Cell cell) {
+        if (m_ctr >= m_vec.getValueCapacity()) {
+            m_vec.getValuesVector().getOffsetVector().reAlloc();
+            m_vec.getValidityVector().reAlloc();
         }
-        super.close();
+        try {
+            if (!cell.isMissing()) {
+                //Implicitly assumed to be missing
+                byte[] bVal = cell.getStringValue().getBytes("UTF-8");
+                m_byteCount += bVal.length;
+                while (m_byteCount > m_vec.getByteCapacity()) {
+                    //TODO realloc only content vector (not offset vector), if possible with factor 2^x
+                    m_vec.getValuesVector().reAlloc();
+                }
+                m_mutator.set(m_ctr, bVal);
+            }
+            m_mutator.setValueCount(++m_ctr);
+        } catch( UnsupportedEncodingException ex ) {
+            LOGGER.error("Internal error", ex);
+        }
     }
+
+    @Override
+    public FieldVector retrieveVector() {
+        return m_vec;
+    }
+
 }

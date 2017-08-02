@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,66 +41,79 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.inserters;
 
-package org.knime.python2.serde.arrow.libraryextensions;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.List;
-
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.file.ArrowBlock;
-import org.apache.arrow.vector.file.ArrowWriter;
-import org.apache.arrow.vector.file.WriteChannel;
-import org.apache.arrow.vector.schema.ArrowRecordBatch;
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.memory.BufferAllocator;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Based on ArrowStreamWriter. Exposing writeRecordBatch for writing output batch by batch.
+ * Manages the data transfer between the pyhton table format and the arrow table format.
+ * Works on Integer[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
+public class IntListInserter extends ListInserter {
 
-public class ArrowBatchWriter extends ArrowWriter {
-
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final OutputStream out) {
-       this(root, provider, Channels.newChannel(out));
+    private Integer[] m_objs;
+    private int[] m_ints;
+    /**
+     * Constructor.
+     *
+     * @param name the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows the number of rows in the managed vector
+     * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
+     */
+    public IntListInserter(final String name, final BufferAllocator allocator, final int numRows, final int bytesPerCellAssumption) {
+        super(name, allocator, numRows, bytesPerCellAssumption);
     }
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final WritableByteChannel out) {
-       super(root, provider, out);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNumBytesPerEntry() {
+        return 4;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected void startInternal(final WriteChannel out) throws IOException {}
+    public int fillInternalArrayAndGetSize(final Cell cell) {
+        //TODO ugly object types
+        m_objs = cell.getIntegerArrayValue();
 
-    @Override
-    protected void endInternal(final WriteChannel out,
-                               final Schema schema,
-                               final List<ArrowBlock> dictionaries,
-                               final List<ArrowBlock> records) throws IOException {
-       out.writeIntLittleEndian(0);
-    }
+        m_ints = new int[m_objs.length];
 
-    @Override
-    public void writeRecordBatch(final ArrowRecordBatch batch) throws IOException {
-        super.start();
-        super.writeRecordBatch(batch);
-    }
-
-    @Override
-    public void close() {
-        try {
-            super.end();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        for(int j=0; j<m_objs.length; j++) {
+            if(m_objs[j] != null) {
+                m_ints[j] = m_objs[j].intValue();
+            }
         }
-        super.close();
+        return m_objs.length;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+
+        IntBuffer intBuffer = buffer.asIntBuffer();
+        //put values
+        intBuffer.put(m_ints);
+
+        return m_objs;
+
+    }
+
 }

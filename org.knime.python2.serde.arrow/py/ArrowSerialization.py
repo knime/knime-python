@@ -129,6 +129,7 @@ def int_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
+            #debug_util.breakpoint()
             #buffer: length(values) int32, values [int32], missing [bit]
             #get length(values)
             n_vals = struct.unpack(">i", py_obj[:4])[0]
@@ -143,13 +144,10 @@ def int_collection_generator(arrowcolumn, isset):
                 yield res
             else:
                 hasMissing = (py_obj[4*(n_vals + 1)] == b'\x00')
-                res = struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals])
+                res = set(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
                 #debug_util.breakpoint()
                 if hasMissing:
-                    res = set(res[:-1])
                     res.add(None)
-                else:
-                    res = set(res)
                 yield res
         
 def deserialize_data_frame(path):

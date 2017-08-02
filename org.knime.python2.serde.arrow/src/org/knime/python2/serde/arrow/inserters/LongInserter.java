@@ -43,63 +43,62 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.serde.arrow.libraryextensions;
+package org.knime.python2.serde.arrow.inserters;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.List;
-
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.file.ArrowBlock;
-import org.apache.arrow.vector.file.ArrowWriter;
-import org.apache.arrow.vector.file.WriteChannel;
-import org.apache.arrow.vector.schema.ArrowRecordBatch;
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableBigIntVector;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
 /**
- * Based on ArrowStreamWriter. Exposing writeRecordBatch for writing output batch by batch.
+ * Manages the data transfer between the pyhton table format and the arrow table format.
+ * Works on Long cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
+public class LongInserter implements VectorInserter {
 
-public class ArrowBatchWriter extends ArrowWriter {
+    private final NullableBigIntVector m_vec;
+    private final NullableBigIntVector.Mutator m_mutator;
+    private final SerializationOptions m_serializationOptions;
+    private final long m_longSentinel;
+    private int m_ctr;
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final OutputStream out) {
-       this(root, provider, Channels.newChannel(out));
-    }
+    /**
+     * Constructor.
+     * @param name  the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows   the number of rows in the managed vector
+     * @param serializationOptions additional serialization options
+     */
+    public LongInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final SerializationOptions serializationOptions) {
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final WritableByteChannel out) {
-       super(root, provider, out);
-    }
-
-    @Override
-    protected void startInternal(final WriteChannel out) throws IOException {}
-
-    @Override
-    protected void endInternal(final WriteChannel out,
-                               final Schema schema,
-                               final List<ArrowBlock> dictionaries,
-                               final List<ArrowBlock> records) throws IOException {
-       out.writeIntLittleEndian(0);
-    }
-
-    @Override
-    public void writeRecordBatch(final ArrowRecordBatch batch) throws IOException {
-        super.start();
-        super.writeRecordBatch(batch);
+        m_vec = new NullableBigIntVector(name, allocator);
+        m_vec.allocateNew(numRows);
+        m_mutator = m_vec.getMutator();
+        m_serializationOptions = serializationOptions;
+        m_longSentinel = m_serializationOptions.getSentinelForType(Type.LONG);
     }
 
     @Override
-    public void close() {
-        try {
-            super.end();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    public void put(final Cell cell) {
+        if (cell.isMissing()) {
+            if(m_serializationOptions.getConvertMissingToPython()) {
+                m_mutator.set(m_ctr, m_longSentinel);
+            }
+        } else {
+            //missing is implicitly assumed
+            m_mutator.set(m_ctr, cell.getLongValue().longValue());
         }
-        super.close();
+        m_mutator.setValueCount(++m_ctr);
     }
+
+    @Override
+    public FieldVector retrieveVector() {
+        return m_vec;
+    }
+
 }

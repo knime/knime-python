@@ -43,63 +43,50 @@
  * ------------------------------------------------------------------------
  */
 
-package org.knime.python2.serde.arrow.libraryextensions;
+package org.knime.python2.serde.arrow.inserters;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.List;
-
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.file.ArrowBlock;
-import org.apache.arrow.vector.file.ArrowWriter;
-import org.apache.arrow.vector.file.WriteChannel;
-import org.apache.arrow.vector.schema.ArrowRecordBatch;
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableFloat8Vector;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Based on ArrowStreamWriter. Exposing writeRecordBatch for writing output batch by batch.
+ * Manages the data transfer between the pyhton table format and the arrow table format.
+ * Works on Double cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
+public class DoubleInserter implements VectorInserter {
 
-public class ArrowBatchWriter extends ArrowWriter {
+    private final NullableFloat8Vector m_vec;
+    private final NullableFloat8Vector.Mutator m_mutator;
+    private int m_ctr;
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final OutputStream out) {
-       this(root, provider, Channels.newChannel(out));
-    }
+    /**
+     * Constructor.
+     * @param name  the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows   the number of rows in the managed vector
+     */
+    public DoubleInserter(final String name, final BufferAllocator allocator, final int numRows) {
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final WritableByteChannel out) {
-       super(root, provider, out);
-    }
-
-    @Override
-    protected void startInternal(final WriteChannel out) throws IOException {}
-
-    @Override
-    protected void endInternal(final WriteChannel out,
-                               final Schema schema,
-                               final List<ArrowBlock> dictionaries,
-                               final List<ArrowBlock> records) throws IOException {
-       out.writeIntLittleEndian(0);
+        m_vec = new NullableFloat8Vector(name, allocator);
+        m_vec.allocateNew(numRows);
+        m_mutator = m_vec.getMutator();
     }
 
     @Override
-    public void writeRecordBatch(final ArrowRecordBatch batch) throws IOException {
-        super.start();
-        super.writeRecordBatch(batch);
-    }
-
-    @Override
-    public void close() {
-        try {
-            super.end();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    public void put(final Cell cell) {
+        if (!cell.isMissing()) {
+            //missing is implicitly assumed
+            m_mutator.set(m_ctr, cell.getDoubleValue().doubleValue());
         }
-        super.close();
+        m_mutator.setValueCount(++m_ctr);
     }
+
+    @Override
+    public FieldVector retrieveVector() {
+        return m_vec;
+    }
+
 }
