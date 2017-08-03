@@ -50,10 +50,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.StringReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +63,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
-import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableBigIntVector;
@@ -76,14 +71,13 @@ import org.apache.arrow.vector.NullableFloat8Vector;
 import org.apache.arrow.vector.NullableIntVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.apache.arrow.vector.NullableVarCharVector;
-import org.apache.arrow.vector.ValueVector.Accessor;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.stream.ArrowStreamReader;
 import org.apache.arrow.vector.stream.ArrowStreamWriter;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -94,22 +88,75 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.serde.arrow.extractors.BooleanExtractor;
+import org.knime.python2.serde.arrow.extractors.BooleanListExtractor;
+import org.knime.python2.serde.arrow.extractors.BooleanSetExtractor;
+import org.knime.python2.serde.arrow.extractors.BytesExtractor;
+import org.knime.python2.serde.arrow.extractors.BytesListExtractor;
+import org.knime.python2.serde.arrow.extractors.BytesSetExtractor;
+import org.knime.python2.serde.arrow.extractors.DoubleExtractor;
+import org.knime.python2.serde.arrow.extractors.DoubleListExtractor;
+import org.knime.python2.serde.arrow.extractors.DoubleSetExtractor;
+import org.knime.python2.serde.arrow.extractors.IntListExtractor;
+import org.knime.python2.serde.arrow.extractors.IntSetExtractor;
+import org.knime.python2.serde.arrow.extractors.IntegerExtractor;
+import org.knime.python2.serde.arrow.extractors.LongExtractor;
+import org.knime.python2.serde.arrow.extractors.LongListExtractor;
+import org.knime.python2.serde.arrow.extractors.LongSetExtractor;
+import org.knime.python2.serde.arrow.extractors.MissingExtractor;
+import org.knime.python2.serde.arrow.extractors.StringExtractor;
+import org.knime.python2.serde.arrow.extractors.StringListExtractor;
+import org.knime.python2.serde.arrow.extractors.StringSetExtractor;
+import org.knime.python2.serde.arrow.extractors.VectorExtractor;
 import org.knime.python2.serde.arrow.inserters.BooleanInserter;
+import org.knime.python2.serde.arrow.inserters.BooleanListInserter;
+import org.knime.python2.serde.arrow.inserters.BooleanSetInserter;
 import org.knime.python2.serde.arrow.inserters.BytesInserter;
+import org.knime.python2.serde.arrow.inserters.BytesListInserter;
+import org.knime.python2.serde.arrow.inserters.BytesSetInserter;
 import org.knime.python2.serde.arrow.inserters.DoubleInserter;
+import org.knime.python2.serde.arrow.inserters.DoubleListInserter;
+import org.knime.python2.serde.arrow.inserters.DoubleSetInserter;
 import org.knime.python2.serde.arrow.inserters.IntListInserter;
 import org.knime.python2.serde.arrow.inserters.IntSetInserter;
 import org.knime.python2.serde.arrow.inserters.IntegerInserter;
 import org.knime.python2.serde.arrow.inserters.LongInserter;
 import org.knime.python2.serde.arrow.inserters.LongListInserter;
+import org.knime.python2.serde.arrow.inserters.LongSetInserter;
 import org.knime.python2.serde.arrow.inserters.StringInserter;
+import org.knime.python2.serde.arrow.inserters.StringListInserter;
+import org.knime.python2.serde.arrow.inserters.StringSetInserter;
 import org.knime.python2.serde.arrow.inserters.VectorInserter;
-import org.knime.python2.serde.arrow.libraryextensions.ArrowBatchWriter;
 
+/**
+ * @author Clemens von Schwerin, KNIME
+ */
 public class ArrowSerializationLibrary implements SerializationLibrary {
 
-    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final String pandasType, final String numpyType,
-            final Type knimeType, final String serializer) {
+    /*Note: should be a power of 2*/
+    private final static int ASSUMED_ROWID_VAL_BYTE_SIZE = 4;
+
+    /*Note: should be a power of 2*/
+    private final static int ASSUMED_STRING_VAL_BYTE_SIZE = 64;
+
+    /*Note: should be a power of 2*/
+    private final static int ASSUMED_BYTES_VAL_BYTE_SIZE = 32;
+
+    //    private final static long FIXED_BATCH_BYTE_SIZE = 5 * 1024 * 1024;
+
+    private ArrowStreamReader m_streamReader = null;
+
+    private TableSpec m_tableSpec = null;
+
+    private String m_fromPythonPath = null;
+
+    //NOTE: we will never get a multi-index due to index standardization in FromPandasTable
+    private String m_indexColumnName = null;
+
+    private String[] m_missingColumnNames = null;
+
+    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final String pandasType,
+        final String numpyType, final Type knimeType, final String serializer) {
         JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
         colMetadataBuilder.add("name", name);
         colMetadataBuilder.add("pandas_type", pandasType);
@@ -121,662 +168,322 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return colMetadataBuilder;
     }
 
-    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final String pandasType, final String numpyType,
-        final Type knimeType) {
+    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final String pandasType,
+        final String numpyType, final Type knimeType) {
         return createColumnMetadataBuilder(name, pandasType, numpyType, knimeType, "");
     }
 
-    /**
-     * Rounds down the provided value to the nearest power of two.
-     *
-     * @param val An integer value.
-     * @return The closest power of two of that value.
-     */
-    static int nextSmallerPowerOfTwo(final int val) {
-      int highestBit = Integer.highestOneBit(val);
-      if (highestBit == val) {
-        return val;
-      } else {
-        return highestBit;
-      }
-    }
-
-    /*Note: should be a power of 2*/
-    private static int ASSUMED_ROWID_VAL_BYTE_SIZE = 4;
-    /*Note: should be a power of 2*/
-    private static int ASSUMED_STRING_VAL_BYTE_SIZE = 64;
-    /*Note: should be a power of 2*/
-    private static int ASSUMED_BYTES_VAL_BYTE_SIZE = 32;
-    private static long FIXED_BATCH_BYTE_SIZE = 5 * 1024 * 1024;
-
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
-    	// TODO: Use FileUtil.createTmpFile(..., true) to create a temporary file
-    	// TODO: make sure file is unique...e.g. using UUID.randomUUID().toString().
-        String path = System.getProperty("java.io.tmpdir") + File.separator + "memory_mapped.dat";
         try {
-        	// TODO try to pass RandomAccessFile rather than fc + path
-            FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
-            return tableToBytesDynamic(tableIterator, serializationOptions, fc, path);
-
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            File file = File.createTempFile("arrow-memory-mapped", ".dat");
+            // TODO try to pass RandomAccessFile rather than fc + path
+            try (RandomAccessFile raf = new RandomAccessFile(file, "rw"); FileChannel channel = raf.getChannel()) {
+                return tableToBytesDynamic(tableIterator, serializationOptions, channel, file.getAbsolutePath());
+            }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            // TODO Logging and better exception handling?
+            throw new IllegalStateException(e);
         }
-
-        return null;
     }
 
-    private byte[] tableToBytesDynamic(final TableIterator tableIterator, final SerializationOptions serializationOptions,
-            final FileChannel fc, final String path) throws IOException {
+    private byte[] tableToBytesDynamic(final TableIterator tableIterator,
+        final SerializationOptions serializationOptions, final FileChannel fc, final String path) throws IOException {
 
-            final String INDEX_COL_NAME = "__index_level_0__";
-            JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
-            TableSpec spec = tableIterator.getTableSpec();
-            //List<FieldVector> vecs = new ArrayList<FieldVector>();
-            List<VectorInserter> inserters = new ArrayList<>();
-            //List<Field> fields = new ArrayList<Field>();
-            JsonArrayBuilder icBuilder = Json.createArrayBuilder();
-            RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
-            icBuilder.add(INDEX_COL_NAME);
-            metadataBuilder.add("index_columns", icBuilder);
-            JsonArrayBuilder colBuilder = Json.createArrayBuilder();
-            int numRows = tableIterator.getNumberRemainingRows();
-            // Row ids
-            JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object",
-                    Type.STRING);
-            inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator,
-                numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
-            colBuilder.add(rowIdBuilder);
-
-            // Create FieldVectors and metadata
-            for (int i = 0; i < spec.getNumberColumns(); i++) {
-                JsonObjectBuilder colMetadataBuilder;
-                switch (spec.getColumnTypes()[i]) {
-                case BOOLEAN:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object",
-                            Type.BOOLEAN);
-                    inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows));
-                    break;
-                case INTEGER:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32",
-                            Type.INTEGER);
-                    inserters.add(new IntegerInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, serializationOptions));
-                    break;
-                case LONG:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int64",
-                            Type.LONG);
-                    inserters.add(new LongInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, serializationOptions));
-                    break;
-                case DOUBLE:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "float64",
-                            Type.DOUBLE);
-                    // Allocate vector for column
-                    inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows));
-                    break;
-                case STRING:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object",
-                            Type.STRING);
-                    inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, ASSUMED_STRING_VAL_BYTE_SIZE));
-                    break;
-                case BYTES:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.BYTES, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
-                    inserters.add(new BytesInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case INTEGER_LIST:
-                	// TODO "bytes" and "object" etc maybe part of enum?
-                	colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.INTEGER_LIST);
-
-                	//TODO maybe guess assumed size based on first row?
-                	inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case INTEGER_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.INTEGER_SET);
-                    inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case LONG_LIST:
-                    // TODO "bytes" and "object" etc maybe part of enum?
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
-                            Type.LONG_LIST);
-
-                    //TODO maybe guess assumed size based on first row?
-                    inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator,
-                        numRows, ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
-                }
-                colBuilder.add(colMetadataBuilder);
-            }
-            metadataBuilder.add("columns", colBuilder);
-
-            while (tableIterator.hasNext()) {
-                Row row = tableIterator.next();
-                inserters.get(0).put(new CellImpl(row.getRowKey()));
-
-                for (int i = 0; i < spec.getNumberColumns(); i++) {
-                    inserters.get(i + 1).put(row.getCell(i));
-                }
-            }
-
-            Map<String, String> metadata = new HashMap<String, String>();
-            metadata.put("pandas", metadataBuilder.build().toString());
-
-            List<FieldVector> vecs = new ArrayList<FieldVector>();
-            List<Field> fields = new ArrayList<Field>();
-            for(int i=0; i<inserters.size(); i++) {
-                FieldVector vec = inserters.get(i).retrieveVector();
-                vecs.add(vec);
-                fields.add(vec.getField());
-            }
-
-            Schema schema = new Schema(fields, metadata);
-            VectorSchemaRoot vsr = new VectorSchemaRoot(schema, vecs, numRows);
-
-            ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
-            writer.writeBatch();
-            writer.close();
-            fc.close();
-
-            return path.getBytes("UTF-8");
-    }
-
-    private byte[] tableToBytesFixedSize(final TableIterator tableIterator, final SerializationOptions serializationOptions,
-            final FileChannel fc, final String path) throws IOException {
-     // Get metadata
         final String INDEX_COL_NAME = "__index_level_0__";
         JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
         TableSpec spec = tableIterator.getTableSpec();
+        //List<FieldVector> vecs = new ArrayList<FieldVector>();
+        List<VectorInserter> inserters = new ArrayList<>();
+        //List<Field> fields = new ArrayList<Field>();
         JsonArrayBuilder icBuilder = Json.createArrayBuilder();
+        RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
         icBuilder.add(INDEX_COL_NAME);
         metadataBuilder.add("index_columns", icBuilder);
         JsonArrayBuilder colBuilder = Json.createArrayBuilder();
-
-
-        int perRowEstimateBit = 0;
+        int numRows = tableIterator.getNumberRemainingRows();
         // Row ids
-        JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object",
-                Type.STRING, "");
-        //row_id length + offsetVector entry length + null vector entry length
-        perRowEstimateBit += 8 * (ASSUMED_ROWID_VAL_BYTE_SIZE + 4) + 1;
+        JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object", Type.STRING);
+        inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
         colBuilder.add(rowIdBuilder);
-        //Regular columns
+
+        // Create FieldVectors and metadata
         for (int i = 0; i < spec.getNumberColumns(); i++) {
             JsonObjectBuilder colMetadataBuilder;
             switch (spec.getColumnTypes()[i]) {
-            case BOOLEAN:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object",
-                        Type.BOOLEAN, "");
-                //Null vector + value vector = 2 Bit
-                perRowEstimateBit += 2;
-                break;
-            case INTEGER:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32",
-                        Type.INTEGER, "");
-                perRowEstimateBit += 33;
-                break;
-            case LONG:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int64",
-                        Type.LONG, "");
-                perRowEstimateBit += 65;
-                break;
-            case DOUBLE:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "float64",
-                        Type.DOUBLE, "");
-                perRowEstimateBit += 65;
-                break;
-            case STRING:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object",
-                        Type.STRING, "");
-                //string length + offsetVector entry length + null vector entry length
-                perRowEstimateBit += 8 * (ASSUMED_STRING_VAL_BYTE_SIZE + 4) + 1;
-                break;
-            case BYTES:
-                colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+                case BOOLEAN:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object", Type.BOOLEAN);
+                    inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator, numRows));
+                    break;
+                case INTEGER:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32", Type.INTEGER);
+                    inserters.add(
+                        new IntegerInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
+                    break;
+                case LONG:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int64", Type.LONG);
+                    inserters
+                        .add(new LongInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
+                    break;
+                case DOUBLE:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "float64", Type.DOUBLE);
+                    // Allocate vector for column
+                    inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator, numRows));
+                    break;
+                case STRING:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object", Type.STRING);
+                    inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_STRING_VAL_BYTE_SIZE));
+                    break;
+                case BYTES:
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
                         Type.BYTES, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
-                //string length + offsetVector entry length + null vector entry length
-                perRowEstimateBit += 8 * (ASSUMED_BYTES_VAL_BYTE_SIZE + 4) + 1;
-                break;
-            default:
-                throw new IllegalStateException(
+                    inserters.add(new BytesInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case INTEGER_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.INTEGER_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case INTEGER_SET:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.INTEGER_SET);
+                    inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case LONG_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.LONG_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case LONG_SET:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.LONG_SET);
+                    inserters.add(new LongSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case DOUBLE_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.DOUBLE_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new DoubleListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case DOUBLE_SET:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.DOUBLE_SET);
+                    inserters.add(new DoubleSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case BOOLEAN_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.BOOLEAN_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new BooleanListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case BOOLEAN_SET:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.BOOLEAN_SET);
+                    inserters.add(new BooleanSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case STRING_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.STRING_LIST);
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new StringListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case STRING_SET:
+                    colMetadataBuilder =
+                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object", Type.STRING_SET);
+                    inserters.add(new StringSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case BYTES_LIST:
+                    // TODO "bytes" and "object" etc maybe part of enum?
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+                        Type.BYTES_LIST, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+
+                    //TODO maybe guess assumed size based on first row?
+                    inserters.add(new BytesListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                case BYTES_SET:
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+                        Type.BYTES_SET, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+                    inserters.add(new BytesSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                        ASSUMED_BYTES_VAL_BYTE_SIZE));
+                    break;
+                default:
+                    throw new IllegalStateException(
                         "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
             }
             colBuilder.add(colMetadataBuilder);
         }
         metadataBuilder.add("columns", colBuilder);
-        //Build pandas metadata
+
+        while (tableIterator.hasNext()) {
+            Row row = tableIterator.next();
+            inserters.get(0).put(new CellImpl(row.getRowKey()));
+
+            for (int i = 0; i < spec.getNumberColumns(); i++) {
+                inserters.get(i + 1).put(row.getCell(i));
+            }
+        }
+
         Map<String, String> metadata = new HashMap<String, String>();
         metadata.put("pandas", metadataBuilder.build().toString());
 
-        //Maximum overhead per column 2 * 63 Bit < 16 Byte
-        int numRowsEstimateBatch = (int) (8 * (FIXED_BATCH_BYTE_SIZE - 16) / perRowEstimateBit);
-
-        Row cachRow = null;
-        ArrowBatchWriter writer = null;
-        Schema schema = null;
-
-        while(tableIterator.hasNext()) {
-
-            BufferAllocator allocator = new RootAllocator(FIXED_BATCH_BYTE_SIZE);
-
-            /*int numRowsInBatch = Math.min(numRowsEstimateBatch,
-                    tableIterator.getNumberRemainingRows() + ((cachRow == null) ? 0 : 1)); */
-            int numRowsInBatch = nextSmallerPowerOfTwo(numRowsEstimateBatch);
-
-            List<FieldVector> vecs = new ArrayList<FieldVector>();
-            List<Field> fields = new ArrayList<Field>();
-
-            //Row ids
-            NullableVarCharVector rowIdVector = new NullableVarCharVector(INDEX_COL_NAME, allocator);
-            rowIdVector.allocateNew(nextSmallerPowerOfTwo(ASSUMED_ROWID_VAL_BYTE_SIZE * numRowsInBatch),
-                    numRowsInBatch - 1);
-            vecs.add(rowIdVector);
-            fields.add(rowIdVector.getField());
-            // Create FieldVectors and metadata
-            for (int i = 0; i < spec.getNumberColumns(); i++) {
-
-                FieldVector vec;
-                switch (spec.getColumnTypes()[i]) {
-                case BOOLEAN:
-
-                    // Allocate vector for column
-                    NullableBitVector bovec = new NullableBitVector(spec.getColumnNames()[i], allocator);
-                    bovec.allocateNew(numRowsInBatch);
-                    vec = bovec;
-                    break;
-                case INTEGER:
-
-                    // Allocate vector for column
-                    NullableIntVector ivec = new NullableIntVector(spec.getColumnNames()[i], allocator);
-                    ivec.allocateNew(numRowsInBatch);
-                    vec = ivec;
-                    break;
-                case LONG:
-
-                    // Allocate vector for column
-                    NullableBigIntVector lvec = new NullableBigIntVector(spec.getColumnNames()[i], allocator);
-                    lvec.allocateNew(numRowsInBatch);
-                    vec = lvec;
-                    break;
-                case DOUBLE:
-
-                    // Allocate vector for column
-                    NullableFloat8Vector dvec = new NullableFloat8Vector(spec.getColumnNames()[i], allocator);
-                    dvec.allocateNew(numRowsInBatch);
-                    vec = dvec;
-                    break;
-                case STRING:
-
-                    NullableVarCharVector vvec = new NullableVarCharVector(spec.getColumnNames()[i], allocator);
-                    vvec.allocateNew(nextSmallerPowerOfTwo(ASSUMED_STRING_VAL_BYTE_SIZE * numRowsInBatch),
-                            numRowsInBatch - 1);
-                    vec = vvec;
-                    break;
-                case BYTES:
-
-                    NullableVarBinaryVector bvec = new NullableVarBinaryVector(spec.getColumnNames()[i], allocator);
-                    bvec.allocateNew(nextSmallerPowerOfTwo(ASSUMED_BYTES_VAL_BYTE_SIZE * numRowsInBatch),
-                            numRowsInBatch - 1);
-                    vec = bvec;
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
-                }
-                vecs.add(vec);
-                fields.add(vec.getField());
-            }
-
-            int ctr = 0;
-            int[] val_length = new int[vecs.size()];
-            boolean bufferFull = false;
-            boolean first = true;
-
-            //TODO check row size < FIXED_BUFFER_SIZE
-            while (tableIterator.hasNext() && !bufferFull && ctr < numRowsInBatch) {
-                Row row;
-                if(first && cachRow != null) {
-                    row = cachRow;
-                    cachRow = null;
-                } else {
-                    row = tableIterator.next();
-                }
-                first = false;
-                byte[] bRowKey = row.getRowKey().getBytes("UTF-8");
-                val_length[0] += bRowKey.length;
-                if (val_length[0] > ((NullableVarCharVector) vecs.get(0)).getByteCapacity()) {
-                    bufferFull = true;
-                } else {
-                    ((NullableVarCharVector.Mutator) vecs.get(0).getMutator()).set(ctr, bRowKey);
-                    for (int i = 0; i < spec.getNumberColumns(); i++) {
-                        if(bufferFull) {
-                            break;
-                        }
-                        switch (spec.getColumnTypes()[i]) {
-                        case BOOLEAN:
-                            if (row.getCell(i).isMissing()) {
-                                ((NullableBitVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                            } else {
-                                val_length[i + 1]++;
-                                ((NullableBitVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                        row.getCell(i).getBooleanValue().booleanValue() ? 1: 0);
-                            }
-                            break;
-                        case INTEGER:
-                            if (row.getCell(i).isMissing()) {
-                                if(serializationOptions.getConvertMissingToPython()) {
-                                    val_length[i + 1]++;
-                                    ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                            (int) serializationOptions.getSentinelForType(Type.INTEGER));
-                                } else {
-                                    ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                                }
-                            } else {
-                                val_length[i + 1]++;
-                                ((NullableIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                        row.getCell(i).getIntegerValue().intValue());
-                            }
-                            break;
-                        case LONG:
-                            if (row.getCell(i).isMissing()) {
-                                if(serializationOptions.getConvertMissingToPython()) {
-                                    val_length[i + 1]++;
-                                    ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                            serializationOptions.getSentinelForType(Type.LONG));
-                                } else {
-                                    ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                                }
-                            } else {
-                                val_length[i + 1]++;
-                                ((NullableBigIntVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                        row.getCell(i).getLongValue().longValue());
-                            }
-                            break;
-                        case DOUBLE:
-                            if (row.getCell(i).isMissing()) {
-                                ((NullableFloat8Vector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                            } else {
-                                val_length[i + 1]++;
-                                ((NullableFloat8Vector.Mutator) vecs.get(i + 1).getMutator()).set(ctr,
-                                        row.getCell(i).getDoubleValue().doubleValue());
-                            }
-                            break;
-                        case STRING:
-                            if(ctr >= ((NullableVarCharVector) vecs.get(i + 1)).getValueCapacity()) {
-                                bufferFull = true;
-                                break;
-                            }
-                            if (row.getCell(i).isMissing()) {
-                                ((NullableVarCharVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                            } else {
-                                byte[] bVal = row.getCell(i).getStringValue().getBytes("UTF-8");
-                                val_length[i + 1] += bVal.length;
-                                if (val_length[i + 1] > ((NullableVarCharVector) vecs.get(i + 1)).getByteCapacity()) {
-                                    bufferFull = true;
-                                    break;
-                                }
-                                ((NullableVarCharVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr, bVal);
-                            }
-                            break;
-                        case BYTES:
-                            if(ctr >= ((NullableVarBinaryVector) vecs.get(i + 1)).getValueCapacity()) {
-                                bufferFull = true;
-                                break;
-                            }
-                            if (row.getCell(i).isMissing()) {
-                                ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).setNull(ctr);
-                            } else {
-                                //TODO ugly
-                                byte[] bytes = ArrayUtils.toPrimitive(row.getCell(i).getBytesValue());
-                                val_length[i + 1] += bytes.length;
-                                if (val_length[i + 1] > ((NullableVarBinaryVector) vecs.get(i + 1)).getByteCapacity()) {
-                                    bufferFull = true;
-                                    break;
-                                }
-                                ((NullableVarBinaryVector.Mutator) vecs.get(i + 1).getMutator()).set(ctr, bytes);
-                            }
-                            break;
-                        default:
-                            throw new IllegalStateException(
-                                    "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
-                        }
-                    }
-                    if(!bufferFull) {
-                        for (int col = 0; col < spec.getNumberColumns() + 1; col++) {
-                            vecs.get(col).getMutator().setValueCount(ctr + 1);
-                        }
-                    }
-                }
-                if(bufferFull) {
-                    cachRow = row;
-                } else {
-                    ctr++;
-                }
-            }
-
-            VectorSchemaRoot vsr;
-            if(writer == null) {
-                schema = new Schema(fields, metadata);
-                vsr = new VectorSchemaRoot(schema, vecs, ctr);
-                writer = new ArrowBatchWriter(vsr, null, fc);
-            } else {
-                vsr = new VectorSchemaRoot(schema, vecs, ctr);
-            }
-            writer.writeRecordBatch(new VectorUnloader(vsr).getRecordBatch());
+        List<FieldVector> vecs = new ArrayList<FieldVector>();
+        List<Field> fields = new ArrayList<Field>();
+        for (int i = 0; i < inserters.size(); i++) {
+            final FieldVector vec = inserters.get(i).retrieveVector();
+            vecs.add(vec);
+            fields.add(vec.getField());
         }
+
+        final ArrowStreamWriter writer =
+            new ArrowStreamWriter(new VectorSchemaRoot(new Schema(fields, metadata), vecs, numRows), null, fc);
+        writer.writeBatch();
         writer.close();
-        fc.close();
 
         return path.getBytes("UTF-8");
     }
 
-    ArrowStreamReader m_streamReader = null;
-
-    private ArrowStreamReader getReader(final String path) throws FileNotFoundException {
-        if(m_streamReader == null) {
-                FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
-                ArrowStreamReader reader = new ArrowStreamReader(fc,
-                        new RootAllocator(Long.MAX_VALUE));
-                m_streamReader = reader;
+    private ArrowStreamReader getReader(final String path) throws IOException {
+        // TODO when do we actually close the file?
+        // TODO when do we actually clean-up the file
+        if (m_streamReader == null) {
+            m_streamReader = new ArrowStreamReader(new RandomAccessFile(new File(path), "rw").getChannel(),
+                new RootAllocator(Long.MAX_VALUE));
         }
         return m_streamReader;
     }
 
     @Override
-    public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes, final SerializationOptions serializationOptions) {
+    public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
+        final SerializationOptions serializationOptions) {
         // TODO sentinel
         String path = new String(bytes);
         TableSpec spec = tableSpecFromBytes(bytes);
-        try {
-            ArrowStreamReader reader = getReader(path);
-            // Index is always string
-            VectorSchemaRoot root = reader.getVectorSchemaRoot();
-            NullableVarCharVector indexCol = (NullableVarCharVector) root.getVector(m_indexColumnName);
-            NullableVarCharVector.Accessor rowKeyAccessor = indexCol.getAccessor();
-            Accessor[] accessors = new Accessor[spec.getNumberColumns()];
-
-            for (int j = 0; j < spec.getNumberColumns(); j++) {
-                accessors[j] = root.getVector(spec.getColumnNames()[j]).getAccessor();
-            }
-
-            for (int i = 0; i < rowKeyAccessor.getValueCount(); i++) {
-                Row row = new RowImpl(rowKeyAccessor.getObject(i).toString(), spec.getNumberColumns());
-                for (int j = 0; j < spec.getNumberColumns(); j++) {
-                    if (accessors[j].isNull(i)) {
-                        row.setCell(new CellImpl(), j);
-                    } else {
-                        if (spec.getColumnTypes()[j] == Type.STRING) {
-                            row.setCell(new CellImpl(((NullableVarCharVector.Accessor) root
-                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i).toString()), j);
-                        } else if (spec.getColumnTypes()[j] == Type.LONG) {
-                            long lval = ((NullableBigIntVector.Accessor) root.getVector(spec.getColumnNames()[j])
-                                    .getAccessor()).get(i);
-                            if (serializationOptions.getConvertMissingFromPython()
-                                    && serializationOptions.isSentinel(Type.LONG, lval)) {
-                                row.setCell(new CellImpl(), j);
-                            } else {
-                                row.setCell(new CellImpl(lval), j);
-                            }
-                        } else if (spec.getColumnTypes()[j] == Type.INTEGER) {
-                            int ival = ((NullableIntVector.Accessor) root.getVector(spec.getColumnNames()[j])
-                                    .getAccessor()).get(i);
-                            if (serializationOptions.getConvertMissingFromPython()
-                                    && serializationOptions.isSentinel(Type.INTEGER, ival)) {
-                                row.setCell(new CellImpl(), j);
-                            } else {
-                                row.setCell(new CellImpl(ival), j);
-                            }
-                        } else if (spec.getColumnTypes()[j] == Type.DOUBLE) {
-                            row.setCell(new CellImpl(((NullableFloat8Vector.Accessor) accessors[j]).get(i)), j);
-                        } else if (spec.getColumnTypes()[j] == Type.BOOLEAN) {
-                            row.setCell(new CellImpl(((NullableBitVector.Accessor) accessors[j]).get(i) > 0), j);
-                        } else if (spec.getColumnTypes()[j] == Type.BYTES) {
-                            // TODO ugly
-                            row.setCell(new CellImpl(ArrayUtils.toObject(((NullableVarBinaryVector.Accessor) root
-                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i))), j);
-                        } else if (spec.getColumnTypes()[j] == Type.INTEGER_LIST) {
-                            ByteBuffer buffer = ByteBuffer.wrap(((NullableVarBinaryVector.Accessor) root
-                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i))
-                                    .order(ByteOrder.LITTLE_ENDIAN);
-                            IntBuffer ibuffer = buffer.asIntBuffer();
-                            int nVals = ibuffer.get();
-                            int[] iar = new int[nVals];
-                            ibuffer.get(iar);
-                            // TODO ugly object types
-                            Integer[] obj = ArrayUtils.toObject(iar);
-                            buffer.position((nVals + 1) * 4);
-                            byte b = 0;
-                            for (int idx = 0; idx < nVals; idx++) {
-                                if (idx % 8 == 0) {
-                                    b = buffer.get();
-                                }
-                                if ((b & (1 << (idx % 8))) == 0) {
-                                    obj[idx] = null;
-                                }
-                            }
-
-                            row.setCell(new CellImpl(obj, false), j);
-                        } else if (spec.getColumnTypes()[j] == Type.INTEGER_SET) {
-                            ByteBuffer buffer = ByteBuffer.wrap(((NullableVarBinaryVector.Accessor) root
-                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i))
-                                    .order(ByteOrder.LITTLE_ENDIAN);
-                            IntBuffer ibuffer = buffer.asIntBuffer();
-                            int nVals = ibuffer.get();
-                            boolean hasMissing = (buffer.get(4 * (nVals + 1)) == 0);
-                            int[] iar = new int[nVals + (hasMissing ? 1 : 0)];
-                            ibuffer.get(iar, 0, nVals);
-                            // TODO ugly object types
-                            Integer[] obj = ArrayUtils.toObject(iar);
-                            if (hasMissing) {
-                                obj[obj.length - 1] = null;
-                            }
-                            row.setCell(new CellImpl(obj, true), j);
-
-                        } else if (spec.getColumnTypes()[j] == Type.LONG_LIST) {
-                            ByteBuffer buffer = ByteBuffer.wrap(((NullableVarBinaryVector.Accessor) root
-                                    .getVector(spec.getColumnNames()[j]).getAccessor()).getObject(i))
-                                    .order(ByteOrder.LITTLE_ENDIAN);
-                            int nVals = buffer.asIntBuffer().get();
-                            buffer.position(4);
-                            LongBuffer lbuffer = buffer.asLongBuffer();
-                            long[] iar = new long[nVals];
-                            lbuffer.get(iar);
-                            // TODO ugly object types
-                            Long[] obj = ArrayUtils.toObject(iar);
-                            buffer.position(4 + nVals  * 8);
-                            byte b = 0;
-                            for (int idx = 0; idx < nVals; idx++) {
-                                if (idx % 8 == 0) {
-                                    b = buffer.get();
-                                }
-                                if ((b & (1 << (idx % 8))) == 0) {
-                                    obj[idx] = null;
-                                }
-                            }
-                            row.setCell(new CellImpl(obj, false), j);
-                        }else {
-                            throw new IllegalStateException("Unknown column type!");
-                        }
-                    }
-                }
-                tableCreator.addRow(row);
-            }
-            reader.close();
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        m_streamReader = null;
-        m_tableSpec = null;
-    }
-
-    TableSpec m_tableSpec = null;
-    //NOTE: we will never get a multiindex due to index standartization in FromPandasTable
-    String m_indexColumnName = null;
-
-    @Override
-    public TableSpec tableSpecFromBytes(final byte[] bytes) {
-
-        if(m_tableSpec == null) {
-            String path = new String(bytes);
+        if (spec.getNumberColumns() > 0) {
             try {
                 ArrowStreamReader reader = getReader(path);
-                boolean succ = reader.loadNextBatch();
-                //NodeLogger.getLogger("test").warn("Success on loading batch: " + succ);
-                Schema schema = reader.getVectorSchemaRoot().getSchema();
-                Map<String,String> metadata = schema.getCustomMetadata();
-                Map<String,String> columnSerializers = new HashMap<String,String>();
-                String pandas_metadata = metadata.get("pandas");
-                if(pandas_metadata != null) {
-                    //NodeLogger.getLogger("test").warn("pandas metadata found: " + pandas_metadata);
-                    JsonReader jsreader = Json.createReader(new StringReader(pandas_metadata));
-                    JsonObject jpandas_metadata = jsreader.readObject();
-                    JsonArray index_cols = jpandas_metadata.getJsonArray("index_columns");
-                    JsonArray cols = jpandas_metadata.getJsonArray("columns");
-                    String[] names = new String[cols.size() - index_cols.size()];
-                    Type[] types = new Type[cols.size() - index_cols.size()];
-                    int noIdxCtr = 0;
-                    for(int i=0; i<cols.size(); i++) {
-                        JsonObject col = cols.getJsonObject(i);
-                        boolean contained = false;
-                        for(int j=0; j<index_cols.size(); j++) {
-                            if(index_cols.getString(j).contentEquals(col.getString("name"))) {
-                                contained = true;
+                // Index is always string
+                VectorSchemaRoot root = reader.getVectorSchemaRoot();
+                Type[] types = spec.getColumnTypes();
+                String[] names = spec.getColumnNames();
+
+                List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
+                extractors.add(new StringExtractor((NullableVarCharVector)root.getVector(m_indexColumnName)));
+
+                for (int j = 0; j < spec.getNumberColumns(); j++) {
+                    if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
+                        extractors.add(new MissingExtractor());
+                    } else {
+                        switch (types[j]) {
+                            case BOOLEAN:
+                                extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
                                 break;
-                            }
+                            case INTEGER:
+                                extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
+                                    serializationOptions));
+                                break;
+                            case LONG:
+                                extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
+                                    serializationOptions));
+                                break;
+                            case DOUBLE:
+                                extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
+                                break;
+                            case STRING:
+                                extractors.add(new StringExtractor((NullableVarCharVector)root.getVector(names[j])));
+                                break;
+                            case BYTES:
+                                extractors.add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case INTEGER_LIST:
+                                extractors.add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case INTEGER_SET:
+                                extractors.add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case LONG_LIST:
+                                extractors
+                                    .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case LONG_SET:
+                                extractors.add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case DOUBLE_LIST:
+                                extractors
+                                    .add(new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case DOUBLE_SET:
+                                extractors
+                                    .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BOOLEAN_LIST:
+                                extractors
+                                    .add(new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BOOLEAN_SET:
+                                extractors
+                                    .add(new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case STRING_LIST:
+                                extractors
+                                    .add(new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case STRING_SET:
+                                extractors
+                                    .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BYTES_LIST:
+                                extractors
+                                    .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BYTES_SET:
+                                extractors
+                                    .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            default:
+                                throw new IllegalStateException(
+                                    "Deserialization is not implemented for type: " + types[j]);
                         }
-                        if(contained) {
-                            m_indexColumnName = col.getString("name");
-                            continue;
-                        }
-                        names[noIdxCtr] = col.getString("name");
-                        JsonObject typeObj = col.getJsonObject("metadata");
-                        types[noIdxCtr] = Type.getTypeForId(typeObj.getInt("type_id"));
-                        if(types[noIdxCtr] == Type.BYTES) {
-                            columnSerializers.put(names[noIdxCtr], col.getJsonObject("metadata").getString("serializer_id"));
-                        }
-                        noIdxCtr++;
                     }
-                    m_tableSpec = new TableSpecImpl(types, names, columnSerializers);
                 }
+
+                for (int i = 0; i < root.getRowCount(); i++) {
+                    Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
+                    for (int j = 0; j < spec.getNumberColumns(); j++) {
+                        row.setCell(extractors.get(j + 1).extract(), j);
+                    }
+                    tableCreator.addRow(row);
+                }
+                reader.close();
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -785,11 +492,384 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 e.printStackTrace();
             }
         }
+        m_streamReader = null;
+        m_tableSpec = null;
+    }
 
-        if(m_tableSpec == null) {
+    @Override
+    public TableSpec tableSpecFromBytes(final byte[] bytes) {
+
+        String path = new String(bytes);
+        if (m_tableSpec == null) {
+            m_fromPythonPath = path;
+            if (new File(m_fromPythonPath).exists()) {
+                try {
+                    ArrowStreamReader reader = getReader(path);
+                    Schema schema = reader.getVectorSchemaRoot().getSchema();
+                    Map<String, String> metadata = schema.getCustomMetadata();
+                    Map<String, String> columnSerializers = new HashMap<String, String>();
+                    String pandas_metadata = metadata.get("pandas");
+                    if (pandas_metadata != null) {
+                        JsonReader jsreader = Json.createReader(new StringReader(pandas_metadata));
+                        JsonObject jpandas_metadata = jsreader.readObject();
+                        JsonArray index_cols = jpandas_metadata.getJsonArray("index_columns");
+                        JsonArray cols = jpandas_metadata.getJsonArray("columns");
+                        JsonArray missing_cols = jpandas_metadata.getJsonArray("missing_columns");
+                        String[] names = new String[cols.size() - index_cols.size()];
+                        Type[] types = new Type[cols.size() - index_cols.size()];
+                        int noIdxCtr = 0;
+                        for (int i = 0; i < cols.size(); i++) {
+                            JsonObject col = cols.getJsonObject(i);
+                            boolean contained = false;
+                            for (int j = 0; j < index_cols.size(); j++) {
+                                if (index_cols.getString(j).contentEquals(col.getString("name"))) {
+                                    contained = true;
+                                    break;
+                                }
+                            }
+                            if (contained) {
+                                m_indexColumnName = col.getString("name");
+                                continue;
+                            }
+                            names[noIdxCtr] = col.getString("name");
+                            JsonObject typeObj = col.getJsonObject("metadata");
+                            types[noIdxCtr] = Type.getTypeForId(typeObj.getInt("type_id"));
+                            if (types[noIdxCtr] == Type.BYTES || types[noIdxCtr] == Type.BYTES_LIST
+                                || types[noIdxCtr] == Type.BYTES_SET) {
+                                String serializerId = col.getJsonObject("metadata").getString("serializer_id");
+                                if (!StringUtils.isBlank(serializerId)) {
+                                    columnSerializers.put(names[noIdxCtr], serializerId);
+                                }
+                            }
+                            noIdxCtr++;
+                        }
+                        m_missingColumnNames = new String[missing_cols.size()];
+                        for (int i = 0; i < missing_cols.size(); i++) {
+                            m_missingColumnNames[i] = missing_cols.getString(i);
+                        }
+                        m_tableSpec = new TableSpecImpl(types, names, columnSerializers);
+                    }
+                } catch (IOException e) {
+                    //TODO is illegal state the correct exception here?
+                    throw new IllegalStateException(e);
+                }
+            } else {
+                m_tableSpec = new TableSpecImpl(new Type[0], new String[0], null);
+            }
+        } else if (!path.contentEquals(m_fromPythonPath)) {
+            throw new IllegalStateException("New table spec was requested before the old table was read!");
+        }
+
+        if (m_tableSpec == null) {
             throw new IllegalStateException("Could not build TableSpec!");
         }
 
         return m_tableSpec;
     }
+
+    //    /**
+    //     * Rounds down the provided value to the nearest power of two.
+    //     *
+    //     * @param val An integer value.
+    //     * @return The closest power of two of that value.
+    //     */
+    //    private static int nextSmallerPowerOfTwo(final int val) {
+    //        int highestBit = Integer.highestOneBit(val);
+    //        if (highestBit == val) {
+    //            return val;
+    //        } else {
+    //            return highestBit;
+    //        }
+    //    }
+
+    //    private byte[] tableToBytesFixedSize(final TableIterator tableIterator,
+    //        final SerializationOptions serializationOptions, final FileChannel fc, final String path) throws IOException {
+    //        // Get metadata
+    //        final String INDEX_COL_NAME = "__index_level_0__";
+    //        JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
+    //        TableSpec spec = tableIterator.getTableSpec();
+    //        JsonArrayBuilder icBuilder = Json.createArrayBuilder();
+    //        icBuilder.add(INDEX_COL_NAME);
+    //        metadataBuilder.add("index_columns", icBuilder);
+    //        JsonArrayBuilder colBuilder = Json.createArrayBuilder();
+    //
+    //        int perRowEstimateBit = 0;
+    //        // Row ids
+    //        JsonObjectBuilder rowIdBuilder =
+    //            createColumnMetadataBuilder(INDEX_COL_NAME, "unicode", "object", Type.STRING, "");
+    //        //row_id length + offsetVector entry length + null vector entry length
+    //        perRowEstimateBit += 8 * (ASSUMED_ROWID_VAL_BYTE_SIZE + 4) + 1;
+    //        colBuilder.add(rowIdBuilder);
+    //        //Regular columns
+    //        for (int i = 0; i < spec.getNumberColumns(); i++) {
+    //            JsonObjectBuilder colMetadataBuilder;
+    //            switch (spec.getColumnTypes()[i]) {
+    //                case BOOLEAN:
+    //                    colMetadataBuilder =
+    //                        createColumnMetadataBuilder(spec.getColumnNames()[i], "bool", "object", Type.BOOLEAN, "");
+    //                    //Null vector + value vector = 2 Bit
+    //                    perRowEstimateBit += 2;
+    //                    break;
+    //                case INTEGER:
+    //                    colMetadataBuilder =
+    //                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int32", Type.INTEGER, "");
+    //                    perRowEstimateBit += 33;
+    //                    break;
+    //                case LONG:
+    //                    colMetadataBuilder =
+    //                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "int64", Type.LONG, "");
+    //                    perRowEstimateBit += 65;
+    //                    break;
+    //                case DOUBLE:
+    //                    colMetadataBuilder =
+    //                        createColumnMetadataBuilder(spec.getColumnNames()[i], "int", "float64", Type.DOUBLE, "");
+    //                    perRowEstimateBit += 65;
+    //                    break;
+    //                case STRING:
+    //                    colMetadataBuilder =
+    //                        createColumnMetadataBuilder(spec.getColumnNames()[i], "unicode", "object", Type.STRING, "");
+    //                    //string length + offsetVector entry length + null vector entry length
+    //                    perRowEstimateBit += 8 * (ASSUMED_STRING_VAL_BYTE_SIZE + 4) + 1;
+    //                    break;
+    //                case BYTES:
+    //                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], "bytes", "object",
+    //                        Type.BYTES, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+    //                    //string length + offsetVector entry length + null vector entry length
+    //                    perRowEstimateBit += 8 * (ASSUMED_BYTES_VAL_BYTE_SIZE + 4) + 1;
+    //                    break;
+    //                default:
+    //                    throw new IllegalStateException(
+    //                        "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+    //            }
+    //            colBuilder.add(colMetadataBuilder);
+    //        }
+    //        metadataBuilder.add("columns", colBuilder);
+    //        //Build pandas metadata
+    //        Map<String, String> metadata = new HashMap<String, String>();
+    //        metadata.put("pandas", metadataBuilder.build().toString());
+    //
+    //        //Maximum overhead per column 2 * 63 Bit < 16 Byte
+    //        int numRowsEstimateBatch = (int)(8 * (FIXED_BATCH_BYTE_SIZE - 16) / perRowEstimateBit);
+    //
+    //        Row cachRow = null;
+    //        ArrowBatchWriter writer = null;
+    //        Schema schema = null;
+    //
+    //        while (tableIterator.hasNext()) {
+    //
+    //            BufferAllocator allocator = new RootAllocator(FIXED_BATCH_BYTE_SIZE);
+    //
+    //            /*int numRowsInBatch = Math.min(numRowsEstimateBatch,
+    //                    tableIterator.getNumberRemainingRows() + ((cachRow == null) ? 0 : 1)); */
+    //            int numRowsInBatch = nextSmallerPowerOfTwo(numRowsEstimateBatch);
+    //
+    //            List<FieldVector> vecs = new ArrayList<FieldVector>();
+    //            List<Field> fields = new ArrayList<Field>();
+    //
+    //            //Row ids
+    //            NullableVarCharVector rowIdVector = new NullableVarCharVector(INDEX_COL_NAME, allocator);
+    //            rowIdVector.allocateNew(nextSmallerPowerOfTwo(ASSUMED_ROWID_VAL_BYTE_SIZE * numRowsInBatch),
+    //                numRowsInBatch - 1);
+    //            vecs.add(rowIdVector);
+    //            fields.add(rowIdVector.getField());
+    //            // Create FieldVectors and metadata
+    //            for (int i = 0; i < spec.getNumberColumns(); i++) {
+    //
+    //                FieldVector vec;
+    //                switch (spec.getColumnTypes()[i]) {
+    //                    case BOOLEAN:
+    //
+    //                        // Allocate vector for column
+    //                        NullableBitVector bovec = new NullableBitVector(spec.getColumnNames()[i], allocator);
+    //                        bovec.allocateNew(numRowsInBatch);
+    //                        vec = bovec;
+    //                        break;
+    //                    case INTEGER:
+    //
+    //                        // Allocate vector for column
+    //                        NullableIntVector ivec = new NullableIntVector(spec.getColumnNames()[i], allocator);
+    //                        ivec.allocateNew(numRowsInBatch);
+    //                        vec = ivec;
+    //                        break;
+    //                    case LONG:
+    //
+    //                        // Allocate vector for column
+    //                        NullableBigIntVector lvec = new NullableBigIntVector(spec.getColumnNames()[i], allocator);
+    //                        lvec.allocateNew(numRowsInBatch);
+    //                        vec = lvec;
+    //                        break;
+    //                    case DOUBLE:
+    //
+    //                        // Allocate vector for column
+    //                        NullableFloat8Vector dvec = new NullableFloat8Vector(spec.getColumnNames()[i], allocator);
+    //                        dvec.allocateNew(numRowsInBatch);
+    //                        vec = dvec;
+    //                        break;
+    //                    case STRING:
+    //
+    //                        NullableVarCharVector vvec = new NullableVarCharVector(spec.getColumnNames()[i], allocator);
+    //                        vvec.allocateNew(nextSmallerPowerOfTwo(ASSUMED_STRING_VAL_BYTE_SIZE * numRowsInBatch),
+    //                            numRowsInBatch - 1);
+    //                        vec = vvec;
+    //                        break;
+    //                    case BYTES:
+    //
+    //                        NullableVarBinaryVector bvec = new NullableVarBinaryVector(spec.getColumnNames()[i], allocator);
+    //                        bvec.allocateNew(nextSmallerPowerOfTwo(ASSUMED_BYTES_VAL_BYTE_SIZE * numRowsInBatch),
+    //                            numRowsInBatch - 1);
+    //                        vec = bvec;
+    //                        break;
+    //                    default:
+    //                        throw new IllegalStateException(
+    //                            "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+    //                }
+    //                vecs.add(vec);
+    //                fields.add(vec.getField());
+    //            }
+    //
+    //            int ctr = 0;
+    //            int[] val_length = new int[vecs.size()];
+    //            boolean bufferFull = false;
+    //            boolean first = true;
+    //
+    //            //TODO check row size < FIXED_BUFFER_SIZE
+    //            while (tableIterator.hasNext() && !bufferFull && ctr < numRowsInBatch) {
+    //                Row row;
+    //                if (first && cachRow != null) {
+    //                    row = cachRow;
+    //                    cachRow = null;
+    //                } else {
+    //                    row = tableIterator.next();
+    //                }
+    //                first = false;
+    //                byte[] bRowKey = row.getRowKey().getBytes("UTF-8");
+    //                val_length[0] += bRowKey.length;
+    //                if (val_length[0] > ((NullableVarCharVector)vecs.get(0)).getByteCapacity()) {
+    //                    bufferFull = true;
+    //                } else {
+    //                    ((NullableVarCharVector.Mutator)vecs.get(0).getMutator()).set(ctr, bRowKey);
+    //                    for (int i = 0; i < spec.getNumberColumns(); i++) {
+    //                        if (bufferFull) {
+    //                            break;
+    //                        }
+    //                        switch (spec.getColumnTypes()[i]) {
+    //                            case BOOLEAN:
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    ((NullableBitVector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                } else {
+    //                                    val_length[i + 1]++;
+    //                                    ((NullableBitVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                        row.getCell(i).getBooleanValue().booleanValue() ? 1 : 0);
+    //                                }
+    //                                break;
+    //                            case INTEGER:
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    if (serializationOptions.getConvertMissingToPython()) {
+    //                                        val_length[i + 1]++;
+    //                                        ((NullableIntVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                            (int)serializationOptions.getSentinelForType(Type.INTEGER));
+    //                                    } else {
+    //                                        ((NullableIntVector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                    }
+    //                                } else {
+    //                                    val_length[i + 1]++;
+    //                                    ((NullableIntVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                        row.getCell(i).getIntegerValue().intValue());
+    //                                }
+    //                                break;
+    //                            case LONG:
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    if (serializationOptions.getConvertMissingToPython()) {
+    //                                        val_length[i + 1]++;
+    //                                        ((NullableBigIntVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                            serializationOptions.getSentinelForType(Type.LONG));
+    //                                    } else {
+    //                                        ((NullableBigIntVector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                    }
+    //                                } else {
+    //                                    val_length[i + 1]++;
+    //                                    ((NullableBigIntVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                        row.getCell(i).getLongValue().longValue());
+    //                                }
+    //                                break;
+    //                            case DOUBLE:
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    ((NullableFloat8Vector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                } else {
+    //                                    val_length[i + 1]++;
+    //                                    ((NullableFloat8Vector.Mutator)vecs.get(i + 1).getMutator()).set(ctr,
+    //                                        row.getCell(i).getDoubleValue().doubleValue());
+    //                                }
+    //                                break;
+    //                            case STRING:
+    //                                if (ctr >= ((NullableVarCharVector)vecs.get(i + 1)).getValueCapacity()) {
+    //                                    bufferFull = true;
+    //                                    break;
+    //                                }
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    ((NullableVarCharVector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                } else {
+    //                                    byte[] bVal = row.getCell(i).getStringValue().getBytes("UTF-8");
+    //                                    val_length[i + 1] += bVal.length;
+    //                                    if (val_length[i + 1] > ((NullableVarCharVector)vecs.get(i + 1))
+    //                                        .getByteCapacity()) {
+    //                                        bufferFull = true;
+    //                                        break;
+    //                                    }
+    //                                    ((NullableVarCharVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr, bVal);
+    //                                }
+    //                                break;
+    //                            case BYTES:
+    //                                if (ctr >= ((NullableVarBinaryVector)vecs.get(i + 1)).getValueCapacity()) {
+    //                                    bufferFull = true;
+    //                                    break;
+    //                                }
+    //                                if (row.getCell(i).isMissing()) {
+    //                                    ((NullableVarBinaryVector.Mutator)vecs.get(i + 1).getMutator()).setNull(ctr);
+    //                                } else {
+    //                                    //TODO ugly
+    //                                    byte[] bytes = ArrayUtils.toPrimitive(row.getCell(i).getBytesValue());
+    //                                    val_length[i + 1] += bytes.length;
+    //                                    if (val_length[i + 1] > ((NullableVarBinaryVector)vecs.get(i + 1))
+    //                                        .getByteCapacity()) {
+    //                                        bufferFull = true;
+    //                                        break;
+    //                                    }
+    //                                    ((NullableVarBinaryVector.Mutator)vecs.get(i + 1).getMutator()).set(ctr, bytes);
+    //                                }
+    //                                break;
+    //                            default:
+    //                                throw new IllegalStateException(
+    //                                    "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+    //                        }
+    //                    }
+    //                    if (!bufferFull) {
+    //                        for (int col = 0; col < spec.getNumberColumns() + 1; col++) {
+    //                            vecs.get(col).getMutator().setValueCount(ctr + 1);
+    //                        }
+    //                    }
+    //                }
+    //                if (bufferFull) {
+    //                    cachRow = row;
+    //                } else {
+    //                    ctr++;
+    //                }
+    //            }
+    //
+    //            VectorSchemaRoot vsr;
+    //            if (writer == null) {
+    //                schema = new Schema(fields, metadata);
+    //                vsr = new VectorSchemaRoot(schema, vecs, ctr);
+    //                writer = new ArrowBatchWriter(vsr, null, fc);
+    //            } else {
+    //                vsr = new VectorSchemaRoot(schema, vecs, ctr);
+    //            }
+    //            writer.writeRecordBatch(new VectorUnloader(vsr).getRecordBatch());
+    //        }
+    //        writer.close();
+    //        fc.close();
+    //
+    //        return path.getBytes("UTF-8");
+    //    }
+
 }

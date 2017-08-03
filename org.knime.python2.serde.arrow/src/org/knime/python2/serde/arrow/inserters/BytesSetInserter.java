@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,90 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
-
 package org.knime.python2.serde.arrow.inserters;
 
-import org.apache.arrow.vector.FieldVector;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Double[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class BytesSetInserter extends SetInserter {
+
+    private Byte[][] m_objs;
+
+    private int[] m_offsets;
+
+    private boolean m_hasMissing;
+
+    private int m_size;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param name the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows the number of rows in the managed vector
+     * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    void put(Cell cell);
+    public BytesSetInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final int bytesPerCellAssumption) {
+        super(name, allocator, numRows, bytesPerCellAssumption);
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    public int[] fillInternalArrayAndGetSize(final Cell cell) {
+        m_objs = cell.getBytesArrayValue();
+
+        m_offsets = new int[m_objs.length + 1];
+        m_hasMissing = false;
+        //Put missing value to last array position
+        for (int j = 0; j < m_objs.length; j++) {
+            if (m_objs[j] == null) {
+                m_hasMissing = true;
+                //swap missing to end
+                Byte[] tmp = m_objs[j];
+                m_objs[j] = m_objs[m_objs.length - 1];
+                m_objs[m_objs.length - 1] = tmp;
+            }
+            if (!(j == m_objs.length - 1) || !m_hasMissing) {
+                m_offsets[j + 1] = m_offsets[j] + m_objs[j].length;
+            }
+        }
+        m_size = m_objs.length - (m_hasMissing ? 1 : 0);
+        return new int[]{m_size, (m_size + 1) * 4 + m_offsets[m_size]};
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean putCollection(final ByteBuffer buffer, final Cell cell) {
+
+        IntBuffer intBuffer = buffer.asIntBuffer();
+        //put values
+        intBuffer.put(m_offsets, 0, m_size + 1);
+
+        buffer.position(4 + (m_size + 1) * 4);
+        for (int i = 0; i < m_size; i++) {
+            buffer.put(ArrayUtils.toPrimitive(m_objs[i]));
+        }
+        return m_hasMissing;
+
+    }
 
 }

@@ -66,6 +66,7 @@ _bytes_types_ = None
 read_data_frame = None
 read_types = []
 read_serializers = {}
+path_to_mmap = None
 
 
 # Initialize the enum of known type ids
@@ -122,8 +123,14 @@ def bytes_into_table(table, data_bytes):
     read_data_frame = None
     read_types = []
     read_serializers = {}
-    
-def int_collection_generator(arrowcolumn, isset):
+                
+# Generator function for collection columns of type Integer, Long, Double.
+# @param arrowcolumn    the pyarrow.Column to extract the values from
+# @param isset          are the column values sets or lists
+# @param entry_len      the length of a single primitive inside every collection (e.g. 4 for Integer collections)
+# @param format_char    the format char to pass to struct.unpack for the primitive type inside every collection (e.g. 'i' for Integer collections)
+# @return collection type values
+def collection_generator(arrowcolumn, isset, entry_len, format_char):
     for i in range(len(arrowcolumn.data.chunk(0))):
         if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
             yield None
@@ -135,22 +142,29 @@ def int_collection_generator(arrowcolumn, isset):
             n_vals = struct.unpack(">i", py_obj[:4])[0]
             #get values
             if not isset:
-                res = list(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
+                res = list(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
                 #get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[4*(n_vals + 1):], dtype=np.uint8)
+                missings = np.fromstring(py_obj[4 + entry_len * n_vals:], dtype=np.uint8)
                 for i in range(n_vals):
-                    if not missings[i // 8] & (1 << (i % 8)):
+                    if missings[i // 8] & (1 << (i % 8)) == 0:
                         res[i] = None
                 yield res
             else:
-                hasMissing = (py_obj[4*(n_vals + 1)] == b'\x00')
-                res = set(struct.unpack(">%di" % (n_vals), py_obj[4:4 + 4*n_vals]))
+                if _python3:
+                    hasMissing = (np.uint8(py_obj[4 + entry_len * n_vals]) == 0)
+                else:
+                    hasMissing = (py_obj[4 + entry_len * n_vals] == b'\x00')
+                res = set(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
                 #debug_util.breakpoint()
                 if hasMissing:
                     res.add(None)
                 yield res
                 
-def long_collection_generator(arrowcolumn, isset):
+# Generator function for collection columns of type String.
+# @param arrowcolumn    the pyarrow.Column to extract the values from
+# @param isset          are the column values sets or lists
+# @return collection type values
+def string_collection_generator(arrowcolumn, isset):
     for i in range(len(arrowcolumn.data.chunk(0))):
         if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
             yield None
@@ -160,25 +174,105 @@ def long_collection_generator(arrowcolumn, isset):
             #buffer: length(values) int32, values [int32], missing [bit]
             #get length(values)
             n_vals = struct.unpack(">i", py_obj[:4])[0]
+            val_offset = 4 + 4 * (n_vals + 1)
+            offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
             #get values
             if not isset:
-                res = list(struct.unpack(">%dq" % (n_vals), py_obj[4:4 + 8*n_vals]))
+                res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in range(n_vals)]
                 #get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[4 + 8 * n_vals:], dtype=np.uint8)
+                missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
                 for i in range(n_vals):
-                    if not missings[i // 8] & (1 << (i % 8)):
+                    if missings[i // 8] & (1 << (i % 8)) == 0:
                         res[i] = None
                 yield res
             else:
-                hasMissing = (py_obj[4 + 8 * n_vals] == b'\x00')
-                res = set(struct.unpack(">%dq" % (n_vals), py_obj[4:4 + 8*n_vals]))
+                if _python3:
+                    hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                else:
+                    hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
+                res = set(py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in range(n_vals))
                 #debug_util.breakpoint()
+                if hasMissing:
+                    res.add(None)
+                yield res
+                
+# Generator function for collection columns of type String.
+# @param arrowcolumn    the pyarrow.Column to extract the values from
+# @param isset          are the column values sets or lists
+# @return collection type values
+def bytes_collection_generator(arrowcolumn, isset):
+    for i in range(len(arrowcolumn.data.chunk(0))):
+        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+            yield None
+        else:
+            py_obj = arrowcolumn.data.chunk(0)[i].as_py()
+            #debug_util.breakpoint()
+            #buffer: length(values) int32, values [int32], missing [bit]
+            #get length(values)
+            n_vals = struct.unpack(">i", py_obj[:4])[0]
+            val_offset = 4 + 4 * (n_vals + 1)
+            offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
+            #get values
+            if not isset:
+                res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals)]
+                #get missings and set corresponding value to None if required
+                missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
+                for i in range(n_vals):
+                    if missings[i // 8] & (1 << (i % 8)) == 0:
+                        res[i] = None
+                yield res
+            else:
+                if _python3:
+                    hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                else:
+                    hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
+                res = set(py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals))
+                #debug_util.breakpoint()
+                if hasMissing:
+                    res.add(None)
+                yield res
+                
+# Generator function for Boolean collection columns.
+# @param arrowcolumn    the pyarrow.Column to extract the values from
+# @param isset          are the column values sets or lists
+# @return collection type values
+def boolean_collection_generator(arrowcolumn, isset):
+    for i in range(len(arrowcolumn.data.chunk(0))):
+        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+            yield None
+        else:
+            py_obj = arrowcolumn.data.chunk(0)[i].as_py()
+            #buffer: length(values) int32, values [int32], missing [bit]
+            #get length(values)
+            n_vals = struct.unpack(">i", py_obj[:4])[0]
+            val_ln = n_vals // 8 + (0 if n_vals % 8 == 0 else 1)
+            missing_start = 4 + val_ln
+            if _python3:
+                rbytes = py_obj[4:missing_start]
+            else:
+                rbytes = np.fromstring(py_obj[4:missing_start], dtype='i1')
+            #get values
+            if not isset:
+                res = [((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals)] 
+                #get missings and set corresponding value to None if required
+                missings = np.fromstring(py_obj[missing_start:], dtype=np.uint8)
+                for i in range(n_vals):
+                    if missings[i // 8] & (1 << (i % 8)) == 0:
+                        res[i] = None
+                yield res
+            else:
+                if _python3:
+                    hasMissing = (np.uint8(py_obj[missing_start]) == 0)
+                else:
+                    hasMissing = (py_obj[missing_start] == b'\x00')
+                res = set(((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals))
                 if hasMissing:
                     res.add(None)
                 yield res
         
 def deserialize_data_frame(path):
-    global read_data_frame, read_types, read_serializers, _pandas_native_types_
+    global read_data_frame, read_types, read_serializers, _pandas_native_types_, path_to_mmap
+    path_to_mmap = path
     with pyarrow.OSFile(path, 'rb') as f:
         stream_reader = pyarrow.StreamReader(f)
         arrowtable = stream_reader.read_all()
@@ -191,6 +285,8 @@ def deserialize_data_frame(path):
             ser_id = col['metadata']['serializer_id']
             if ser_id != '':
                 read_serializers[col['name']] = ser_id
+                
+        #debug_util.breakpoint()
         #data 
         read_data_frame = pandas.DataFrame()       
         for arrowcolumn in arrowtable.itercolumns():
@@ -200,11 +296,19 @@ def deserialize_data_frame(path):
                 dfcol = arrowcolumn.to_pandas()
             else:
                 if coltype == _types_.INTEGER_LIST or coltype == _types_.INTEGER_SET:
-                    dfcol = pandas.Series(int_collection_generator(arrowcolumn, coltype == _types_.INTEGER_SET)) 
+                    dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.INTEGER_SET, 4, 'i')) 
                 elif coltype == _types_.LONG_LIST or coltype == _types_.LONG_SET:
-                    dfcol = pandas.Series(long_collection_generator(arrowcolumn, coltype == _types_.LONG_SET)) 
+                    dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.LONG_SET, 8, 'q')) 
+                elif coltype == _types_.DOUBLE_LIST or coltype == _types_.DOUBLE_SET:
+                    dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.DOUBLE_SET, 8, 'd')) 
+                elif coltype == _types_.BOOLEAN_LIST or coltype == _types_.BOOLEAN_SET:
+                    dfcol = pandas.Series(boolean_collection_generator(arrowcolumn, coltype == _types_.BOOLEAN_SET)) 
+                elif coltype == _types_.STRING_LIST or coltype == _types_.STRING_SET:
+                    dfcol = pandas.Series(string_collection_generator(arrowcolumn, coltype == _types_.STRING_SET)) 
+                elif coltype == _types_.BYTES_LIST or coltype == _types_.BYTES_SET:
+                    dfcol = pandas.Series(bytes_collection_generator(arrowcolumn, coltype == _types_.BYTES_SET)) 
                 else:
-                    raise Error()
+                    raise KeyError('Type with id ' + str(coltype) + ' cannot be deserialized!')
             #Note: we only have one index column (the KNIME RowKeys)
             if arrowcolumn.name in pandas_metadata['index_columns']:
                 indexcol = dfcol
@@ -214,54 +318,272 @@ def deserialize_data_frame(path):
         if not 'indexcol' in locals():  
             raise NameError('Variable indexcol has not been set properly, exiting!')
         
-        read_data_frame.set_index(keys=indexcol, inplace=True)      
-        #import debug_util
+        if len(read_data_frame.columns) > 0:
+            read_data_frame.set_index(keys=indexcol, inplace=True)      
+
         #debug_util.breakpoint()
         #print('test')
         
+        
+def to_pyarrow_type(type):
+    if type == _types_.BOOLEAN:
+        return pyarrow.bool_()
+    elif type == _types_.INTEGER:
+        return pyarrow.int32()
+    elif type == _types_.LONG:
+        return pyarrow.int64()
+    elif type == _types_.DOUBLE:
+        return pyarrow.float64()
+    elif type == _types_.STRING:
+        return pyarrow.string()
+    else:
+        return pyarrow.binary()
+
+# Generator converting values in a list type column to a binary representation 
+# having the format (length(values), values, missing_mask). Works on Integer,
+# Long and Double lists.
+# @param column      the column to convert (a pandas.Series)
+# @param numpy_type  the numpy_type of the primitive collection entries
+def binary_from_list_generator(column, numpy_type):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+            missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+            for idx in range(n_vals):
+                if not column[j][idx] == None:
+                    missings[idx // 8] += (1 << (idx % 8))
+                else:
+                    column[j][idx] = 0
+            yield np.int32(n_vals).tobytes() + np.array(column[j], dtype=numpy_type).tobytes() + missings.tobytes()
+            
+# Generator converting values in a list type column to a binary representation 
+# having the format (length(values), offsets, values, missing_mask). Works on 
+# String lists.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_string_list_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            #debug_util.breakpoint()
+            n_vals = len(column[j])
+            
+            missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+            for idx in range(n_vals):
+                if not column[j][idx] == None:
+                    missings[idx // 8] += (1 << (idx % 8))
+                else:
+                    column[j][idx] = ''
+            
+            #TODO find a clean way for recursive list comprehension here
+            offsets = np.zeros(n_vals + 1, dtype=np.int32)
+            for i in range(n_vals):
+                offsets[i + 1] = offsets[i] + len(column[j][i])
+            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+            if _python3:
+                values = bytes(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + missings.tobytes()
+            else:
+                values = b''.join(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                yield np.int32(n_vals).tobytes() + offsets.tobytes() + values.encode("utf-8") + missings.tobytes()
+            
+            
+            
+# Generator converting values in a set type column to a binary representation 
+# having the format (length(values), offsets, values, missing_mask). Works on 
+# String sets.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_string_set_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+
+            hasMissing = np.uint8(1)
+            if None in column[j]:
+                hasMissing = np.uint8(0)
+                column[j].discard(None)
+                n_vals -= 1
+                
+            #TODO find a clean way for recursive list comprehension here
+            #TODO find a way to avoid list() usage
+            offsets = np.zeros(n_vals + 1, dtype=np.int32)
+            retls = list(column[j])
+            for i in range(n_vals):
+                offsets[i + 1] = offsets[i] + len(retls[i])
+            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+            if _python3:
+                values = bytes(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + hasMissing.tobytes()
+            else:
+                values = b''.join(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                yield np.int32(n_vals).tobytes() + offsets.tobytes() + values.encode("utf-8") + hasMissing.tobytes()
+            
+# Generator converting values in a list type column to a binary representation 
+# having the format (length(values), offsets, values, missing_mask). Works on 
+# Bytes lists.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_bytes_list_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+           
+            
+            missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
+            for idx in range(n_vals):
+                if not column[j][idx] == None:
+                    missings[idx // 8] += (1 << (idx % 8))
+                else:
+                    column[j][idx] = b''
+                    
+            #TODO find a clean way for recursive list comprehension here       
+            offsets = np.zeros(n_vals + 1, dtype=np.int32)
+            for i in range(n_vals):
+                offsets[i + 1] = offsets[i] + len(column[j][i])
+            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+            if _python3:
+                values = bytes(bts for elem in column[j] for bts in elem)
+            else:
+                values = b''.join(bts for elem in column[j] for bts in elem)
+            
+            yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + missings.tobytes()
+            
+# Generator converting values in a set type column to a binary representation 
+# having the format (length(values), offsets, values, missing_mask). Works on 
+# Bytes sets.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_bytes_set_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+
+            hasMissing = np.uint8(1)
+            if None in column[j]:
+                hasMissing = np.uint8(0)
+                column[j].discard(None)
+                n_vals -= 1
+                
+            #TODO find a clean way for recursive list comprehension here
+            #TODO find a way to avoid list() usage
+            offsets = np.zeros(n_vals + 1, dtype=np.int32)
+            retls = list(column[j])
+            for i in range(n_vals):
+                offsets[i + 1] = offsets[i] + len(retls[i])
+
+            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+            if _python3:
+                values = bytes(bts for elem in column[j] for bts in elem)
+            else:
+                values = b''.join(bts for elem in column[j] for bts in elem)
+            
+            yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + hasMissing.tobytes()
+
+#Converts a list of booleans to a bit-representation            
+def bool_to_bits_generator(cell):
+    cur_byte = np.uint8(0)
+    for i in range(len(cell)):
+        if cell[i]:
+            cur_byte |= (1 << (i%8))
+        if i % 8 == 7:
+            yield cur_byte
+            cur_byte = np.uint8(0)
+    if not (len(cell) % 8 == 0):
+        yield cur_byte
+            
+# Generator converting values in a list type column to a binary representation 
+# having the format (length(values), values, missing_mask). Works on Boolean
+# lists.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_boolean_list_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+            val_len = (n_vals // 8) + (1 if n_vals % 8 != 0 else 0)
+            missings = np.zeros(shape=(val_len), dtype=np.uint8)
+            for idx in range(n_vals):
+                if not column[j][idx] == None:
+                    missings[idx // 8] += (1 << (idx % 8))
+                else:
+                    column[j][idx] = False
+            
+            if _python3:
+                yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(column[j])) + missings.tobytes()
+            else:
+                ar = np.zeros(val_len, dtype=np.uint8)
+                for i, el in enumerate(bool_to_bits_generator(column[j])): ar[i] = el
+                yield np.int32(n_vals).tobytes() + ar.tobytes() + missings.tobytes()
+            
+# Generator converting values in a set type column to a binary representation 
+# having the format (length(values), values, missing_mask)
+# @param column      the column to convert (a pandas.Series)
+# @param numpy_type  the numpy_type of the primitive collection entries
+def binary_from_set_generator(column, numpy_type):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+            hasMissing = np.uint8(1)
+            if None in column[j]:
+                hasMissing = np.uint8(0)
+                column[j].discard(None)
+                n_vals -= 1
+            #TODO can list() call be avoided ?
+            yield np.int32(n_vals).tobytes() + np.array(list(column[j]), dtype=numpy_type).tobytes() + hasMissing.tobytes()
+            
+# Generator converting values in a set type column to a binary representation 
+# having the format (length(values), values, missing_mask). Works on Boolean
+# sets.
+# @param column      the column to convert (a pandas.Series)
+def binary_from_boolean_set_generator(column):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else: 
+            n_vals = len(column[j])
+            val_len = (n_vals // 8) + (1 if n_vals % 8 != 0 else 0)
+            hasMissing = np.uint8(1)
+            if None in column[j]:
+                hasMissing = np.uint8(0)
+                column[j].discard(None)
+                n_vals -= 1
+            #TODO can list() call be avoided ?
+            if _python3:
+                yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(list(column[j]))) + hasMissing.tobytes()
+            else:
+                ar = np.zeros(val_len, dtype=np.uint8)
+                for i, el in enumerate(bool_to_bits_generator(list(column[j]))): ar[i] = el
+                yield np.int32(n_vals).tobytes() + ar.tobytes() + hasMissing.tobytes()
+
+def get_first_not_None(column):
+    for elem in column:
+        if not elem == None:
+            return elem
+    return None
 
 # Serialize a pandas.DataFrame into a memory mapped file
 # Return the path to the created memory mapped file as bytearray.
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    path = os.path.join(tempfile.gettempdir(), 'memory_mapped.dat')
+    if not path_to_mmap == None:
+        path = path_to_mmap
+    else:
+        path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)[1]
     
-    #debug_util.breakpoint()
-    #TODO columnwise ?
-    for i in range(len(table._data_frame.columns)):
-        if table.get_type(i) == _types_.INTEGER_LIST:
-            for j in range(len(table._data_frame)):
-                if not table._data_frame.iat[j,i] == None: 
-                    n_vals = len(table._data_frame.iat[j,i])
-                    missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
-                    for idx in range(n_vals):
-                        if not table._data_frame.iat[j,i][idx] == None:
-                            missings[idx // 8] += (1 << (idx % 8))
-                        else:
-                            table._data_frame.iat[j,i][idx] = 0
-                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i4').tobytes() + missings.tobytes()
-        elif table.get_type(i) == _types_.LONG_LIST:
-            for j in range(len(table._data_frame)):
-                if not table._data_frame.iat[j,i] == None: 
-                    n_vals = len(table._data_frame.iat[j,i])
-                    missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
-                    for idx in range(n_vals):
-                        if not table._data_frame.iat[j,i][idx] == None:
-                            missings[idx // 8] += (1 << (idx % 8))
-                        else:
-                            table._data_frame.iat[j,i][idx] = 0
-                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(table._data_frame.iat[j,i], dtype='<i8').tobytes() + missings.tobytes()
-        elif table.get_type(i) == _types_.INTEGER_SET:
-            for j in range(len(table._data_frame)):
-                if not table._data_frame.iat[j,i] == None: 
-                    n_vals = len(table._data_frame.iat[j,i])
-                    hasMissing = np.uint8(1)
-                    if None in table._data_frame.iat[j,i]:
-                        hasMissing = np.uint8(0)
-                        table._data_frame.iat[j,i].discard(None)
-                        n_vals -= 1
-                    table._data_frame.iat[j,i] = np.int32(n_vals).tobytes() + np.array(list(table._data_frame.iat[j,i]), dtype='<i4').tobytes() + hasMissing.tobytes()
+    #empty dataframe ?
+    if len(table._data_frame) == 0 or len(table._data_frame.columns) == 0:
+        os.remove(path)
+        return bytearray(path, 'utf-8')
     
     #Python2 workaround for strings -> convert all to unicode
     if not _python3:
@@ -273,24 +595,79 @@ def table_to_bytes(table):
         for j in range(len(table._data_frame)):
             indexls.append(unicode(table._data_frame.index[j]))
         table._data_frame.set_index(keys=pandas.Series(indexls), inplace=True)
-    #import debug_util
+    
+    mp = pyarrow.MemoryPool(2**64)
+    col_arrays = []
+    col_names = []
+    all_names = []
+    missing_names = []
+    if not table._data_frame.index.isnull().all():
+        col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.index, type=to_pyarrow_type(_types_.STRING), memory_pool=mp))
+        col_names.append("__index_level_0__")
+        all_names.append("__index_level_0__")
+    for i in range(len(table._data_frame.columns)):
+        #missing column ? -> save name and don't send any buffer for column
+        if(table._data_frame.iloc[:,i].isnull().all()):
+            missing_names.append(table.get_name(i))
+            all_names.append(table.get_name(i))
+            continue
+        #Convert collection types to binary
+        if table.get_type(i) == _types_.INTEGER_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:,i], '<i4')))
+        elif table.get_type(i) == _types_.LONG_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:,i], '<i8')))
+        elif table.get_type(i) == _types_.DOUBLE_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:,i], '<f8')))
+        elif table.get_type(i) == _types_.BOOLEAN_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_boolean_list_generator(table._data_frame.iloc[:,i])))
+        elif table.get_type(i) == _types_.STRING_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_string_list_generator(table._data_frame.iloc[:,i])))
+        elif table.get_type(i) == _types_.BYTES_LIST:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_bytes_list_generator(table._data_frame.iloc[:,i])))
+        elif table.get_type(i) == _types_.INTEGER_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:,i], '<i4')))
+        elif table.get_type(i) == _types_.LONG_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:,i], '<i8')))
+        elif table.get_type(i) == _types_.DOUBLE_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:,i], '<f8')))
+        elif table.get_type(i) == _types_.BOOLEAN_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_boolean_set_generator(table._data_frame.iloc[:,i])))
+        elif table.get_type(i) == _types_.STRING_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_string_set_generator(table._data_frame.iloc[:,i])))
+        elif table.get_type(i) == _types_.BYTES_SET:
+            col_arrays.append(pyarrow.Array.from_pandas(binary_from_bytes_set_generator(table._data_frame.iloc[:,i])))
+        #Workaround until explicit typization can be done 
+        elif table.get_type(i) == _types_.INTEGER and table._data_frame.iloc[:,i].dtype == np.int64:
+            col_arrays.append(pyarrow.Array.from_pandas(np.array(table._data_frame.iloc[:,i], dtype=np.int32), memory_pool=mp))
+        #Workaround until fixed in pyarrow ... it is assumed that the first non-None object is bytearray if any
+        elif table.get_type(i) == _types_.BYTES and type(get_first_not_None(table._data_frame.iloc[:,i])) == bytearray:
+            col_arrays.append(pyarrow.Array.from_pandas(map(bytes, table._data_frame.iloc[:,i]), memory_pool=mp))
+        #create pyarrow.Array
+        #TODO binary type not working ... why ?
+        #col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.iloc[:,i], type=to_pyarrow_type(table.get_type(i)), memory_pool=mp))
+        else:
+            #debug_util.breakpoint()
+            col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.iloc[:,i], memory_pool=mp))
+        col_names.append(table.get_name(i))
+        all_names.append(table.get_name(i))
+    
+    batch = pyarrow.RecordBatch.from_arrays(col_arrays, col_names)
+    
     #debug_util.breakpoint()
     
-    batch = pyarrow.RecordBatch.from_pandas(table._data_frame)
-    metadata = batch.schema.metadata
-    pandas_metadata = json.loads(metadata[b'pandas'].decode('utf-8'))
-    for column in pandas_metadata['columns']:
-        try:
-            col_idx = table.get_names().get_loc(column['name'])
-            if table.get_type(col_idx) == _types_.BYTES:
-                column['metadata'] = {"serializer_id": table.get_column_serializers()[column['name']], "type_id": table.get_type(col_idx)}
-            else:
-                column['metadata'] = {"serializer_id": '', "type_id": table.get_type(col_idx)}
-        except:
-            #Only index columns -> always string
-            column['metadata'] = {"serializer_id": '', "type_id": _types_.STRING}
-        
-    metadata[b'pandas'] = json.dumps(pandas_metadata).encode('utf-8')
+    #TODO add pandas and numpy types to columns
+    pandas_metadata = {"index_columns": [all_names[0]], "columns": [{"name": all_names[0], "metadata": {"serializer_id": "", "type_id": _types_.STRING}}], "missing_columns": missing_names}
+    
+    real_col_names = list(table._data_frame.columns)
+    for name in all_names[1:]:
+        col_idx = real_col_names.index(name)
+        if table.get_type(col_idx) in [_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET]:
+            pandas_metadata['columns'].append({"name": name, "metadata": {"serializer_id": table.get_column_serializers().get(name, ""), "type_id": table.get_type(col_idx)}})
+        else:
+            pandas_metadata['columns'].append({"name": name, "metadata": {"serializer_id": "", "type_id": table.get_type(col_idx)}})
+    
+    metadata = {b'pandas': json.dumps(pandas_metadata).encode('utf-8')}
+      
     schema = batch.schema.remove_metadata()
     schema = schema.add_metadata(metadata)
             

@@ -48,6 +48,9 @@ package org.knime.python2.serde.arrow;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
+/**
+ * @author Clemens von Schwerin, KNIME
+ */
 public class ArrowSerialzationFactory implements SerializationLibraryFactory {
 
     @Override

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,67 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
+import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the arrow table format and the python table format.
+ * Works on Long list vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class LongListExtractor extends ListExtractor {
+
+    private Long[] m_objects;
+    private long[] m_primitives;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
-     *
-     * @param cell a cell in the python table format
+     * Constructor.
+     * @param vector the vector to extract from
      */
-    void put(Cell cell);
+    public LongListExtractor(final NullableVarBinaryVector vector) {
+       super(vector);
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    protected Object[] fillInternalArray(final ByteBuffer buffer, final int numVals) {
+        LongBuffer ibuffer = buffer.asLongBuffer();
+        m_primitives = new long[numVals];
+        ibuffer.get(m_primitives);
+        // TODO ugly object types
+        m_objects = ArrayUtils.toObject(m_primitives);
+        return m_objects;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Cell getReturnValue() {
+        return new CellImpl(m_objects, false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int getValuesLength() {
+        return 8 * m_primitives.length;
+    }
 
 }

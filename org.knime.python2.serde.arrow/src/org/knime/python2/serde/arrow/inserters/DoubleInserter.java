@@ -51,22 +51,24 @@ import org.apache.arrow.vector.NullableFloat8Vector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format.
- * Works on Double cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Double cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class DoubleInserter implements VectorInserter {
 
     private final NullableFloat8Vector m_vec;
+
     private final NullableFloat8Vector.Mutator m_mutator;
+
     private int m_ctr;
 
     /**
      * Constructor.
-     * @param name  the name of the managed vector
+     *
+     * @param name the name of the managed vector
      * @param allocator an allocator for the underlying buffer
-     * @param numRows   the number of rows in the managed vector
+     * @param numRows the number of rows in the managed vector
      */
     public DoubleInserter(final String name, final BufferAllocator allocator, final int numRows) {
 

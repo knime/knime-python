@@ -64,26 +64,37 @@ import org.apache.arrow.vector.types.pojo.Schema;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-
 public class ArrowBatchWriter extends ArrowWriter {
 
+    /**
+     * @param root
+     * @param provider
+     * @param out
+     */
     public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final OutputStream out) {
-       this(root, provider, Channels.newChannel(out));
+        this(root, provider, Channels.newChannel(out));
     }
 
-    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider, final WritableByteChannel out) {
-       super(root, provider, out);
+    /**
+     *
+     * @param root
+     * @param provider
+     * @param out
+     */
+    public ArrowBatchWriter(final VectorSchemaRoot root, final DictionaryProvider provider,
+        final WritableByteChannel out) {
+        super(root, provider, out);
     }
 
     @Override
-    protected void startInternal(final WriteChannel out) throws IOException {}
+    protected void startInternal(final WriteChannel out) throws IOException {
+        // noop
+    }
 
     @Override
-    protected void endInternal(final WriteChannel out,
-                               final Schema schema,
-                               final List<ArrowBlock> dictionaries,
-                               final List<ArrowBlock> records) throws IOException {
-       out.writeIntLittleEndian(0);
+    protected void endInternal(final WriteChannel out, final Schema schema, final List<ArrowBlock> dictionaries,
+        final List<ArrowBlock> records) throws IOException {
+        out.writeIntLittleEndian(0);
     }
 
     @Override
@@ -97,8 +108,8 @@ public class ArrowBatchWriter extends ArrowWriter {
         try {
             super.end();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            // TODO logging
+            // nothing we can really do
         }
         super.close();
     }

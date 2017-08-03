@@ -52,7 +52,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format. Works on Byte[] cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Byte[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

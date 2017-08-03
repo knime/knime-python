@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,86 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Base class for List types that are transferred between the arrow table format and the python table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public abstract class ListExtractor implements VectorExtractor {
+
+    private final NullableVarBinaryVector.Accessor m_accessor;
+
+    private int m_ctr;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param vector the vector to extract from
      */
-    void put(Cell cell);
+    protected ListExtractor(final NullableVarBinaryVector vector) {
+        m_accessor = vector.getAccessor();
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
+     * Extract the list from the buffer (type specific).
      *
-     * @return an arrow vector
+     * @param buffer the buffer containing the list
+     * @param numVals the number of values to read
+     * @return a reference to the extracted list
      */
-    FieldVector retrieveVector();
+    protected abstract Object[] fillInternalArray(final ByteBuffer buffer, int numVals);
+
+    /**
+     * Wrap the extracted list into a {@link Cell} representation.
+     *
+     * @return the {@link Cell} representation
+     */
+    protected abstract Cell getReturnValue();
+
+    /**
+     * Returns the length of the section in the buffer occupied by values
+     *
+     * @return the length of the section in the buffer occupied by values
+     */
+    protected abstract int getValuesLength();
+
+    @Override
+    public Cell extract() {
+        if (m_accessor.isNull(m_ctr)) {
+            m_ctr++;
+            return new CellImpl();
+        }
+
+        ByteBuffer buffer = ByteBuffer.wrap(m_accessor.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
+        int nVals = buffer.asIntBuffer().get();
+        buffer.position(4);
+        Object[] obj = fillInternalArray(buffer, nVals);
+        buffer.position(getValuesLength() + 4);
+        byte b = 0;
+        for (int idx = 0; idx < nVals; idx++) {
+            if (idx % 8 == 0) {
+                b = buffer.get();
+            }
+            if ((b & (1 << (idx % 8))) == 0) {
+                obj[idx] = null;
+            }
+        }
+        m_ctr++;
+        return getReturnValue();
+    }
 
 }

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,60 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
-
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableBigIntVector;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the arrow table format and the python table format.
+ * Works on Long vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class LongExtractor implements VectorExtractor {
+
+    private final NullableBigIntVector.Accessor m_accessor;
+    private final SerializationOptions m_serializationOptions;
+    private int m_ctr;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
-     *
-     * @param cell a cell in the python table format
+     * Constructor.
+     * @param vector the vector to extract from
+     * @param opts additional serialization options
      */
-    void put(Cell cell);
+    public LongExtractor(final NullableBigIntVector vector, final SerializationOptions opts) {
+        m_accessor = vector.getAccessor();
+        m_serializationOptions = opts;
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    public Cell extract() {
+        Cell c;
+        if(m_accessor.isNull(m_ctr)) {
+            c = new CellImpl();
+        } else {
+            long val = m_accessor.get(m_ctr);
+            if (m_serializationOptions.getConvertMissingFromPython()
+                    && m_serializationOptions.isSentinel(Type.LONG, val)) {
+                c = new CellImpl();
+            } else {
+                c = new CellImpl(val);
+            }
+        }
+        m_ctr++;
+        return c;
+    }
 
 }

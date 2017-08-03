@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,68 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the arrow table format and the python table format. Works on Integer set vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class BytesSetExtractor extends VariableSizeSetExtractor {
+
+    private int[] m_offsets;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param vector the vector to extract from
      */
-    void put(Cell cell);
+    public BytesSetExtractor(final NullableVarBinaryVector vector) {
+        super(vector);
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    public int getValuesLength(final ByteBuffer buffer, final int numVals) {
+
+        IntBuffer ibuffer = buffer.asIntBuffer();
+        m_offsets = new int[numVals + 1];
+        ibuffer.get(m_offsets);
+
+        return 4 * m_offsets.length + m_offsets[m_offsets.length - 1];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Cell extractArray(final ByteBuffer buffer, final int numVals, final boolean hasMissing) {
+        buffer.position(4 + 4 * m_offsets.length);
+        Byte[][] objs = new Byte[numVals + (hasMissing ? 1 : 0)][];
+        for (int i = 0; i < numVals; i++) {
+            byte[] dst = new byte[m_offsets[i + 1] - m_offsets[i]];
+            buffer.get(dst);
+            objs[i] = ArrayUtils.toObject(dst);
+        }
+        if (hasMissing) {
+            objs[objs.length - 1] = null;
+        }
+        return new CellImpl(objs, true);
+    }
 
 }

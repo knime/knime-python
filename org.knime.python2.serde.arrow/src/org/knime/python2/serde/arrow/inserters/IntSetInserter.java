@@ -55,16 +55,18 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format.
- * Works on Integer[] cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Integer[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class IntSetInserter extends SetInserter {
 
     private int[] m_ints;
+
     private boolean m_hasMissing;
+
     private int m_size;
+
     /**
      * Constructor.
      *
@@ -73,7 +75,8 @@ public class IntSetInserter extends SetInserter {
      * @param numRows the number of rows in the managed vector
      * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    public IntSetInserter(final String name, final BufferAllocator allocator, final int numRows, final int bytesPerCellAssumption) {
+    public IntSetInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final int bytesPerCellAssumption) {
         super(name, allocator, numRows, bytesPerCellAssumption);
     }
 
@@ -81,31 +84,23 @@ public class IntSetInserter extends SetInserter {
      * {@inheritDoc}
      */
     @Override
-    public int getNumBytesPerEntry() {
-        return 4;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int fillInternalArrayAndGetSize(final Cell cell) {
+    public int[] fillInternalArrayAndGetSize(final Cell cell) {
         //TODO ugly object types
         Integer[] objs = cell.getIntegerArrayValue();
         m_ints = new int[objs.length];
         m_hasMissing = false;
         //Put missing value to last array position
-        for(int j=0; j<objs.length; j++) {
-            if(objs[j] == null) {
+        for (int j = 0; j < objs.length; j++) {
+            if (objs[j] == null) {
                 m_hasMissing = true;
-            } else if(m_hasMissing) {
+            } else if (m_hasMissing) {
                 m_ints[j - 1] = objs[j].intValue();
             } else {
                 m_ints[j] = objs[j].intValue();
             }
         }
-        m_size = m_ints.length - (m_hasMissing ? 1:0);
-        return m_size;
+        m_size = m_ints.length - (m_hasMissing ? 1 : 0);
+        return new int[]{m_size, m_size * 4};
     }
 
     /**

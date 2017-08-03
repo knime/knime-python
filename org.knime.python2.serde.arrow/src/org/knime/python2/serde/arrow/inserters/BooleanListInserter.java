@@ -58,11 +58,11 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import com.google.common.primitives.Ints;
 
 /**
- * Base class for ListTypes that are transferred between the python table format and the arrow table format.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Integer[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class SetInserter implements VectorInserter {
+public class BooleanListInserter implements VectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -82,30 +82,13 @@ public abstract class SetInserter implements VectorInserter {
      * @param numRows the number of rows in the managed vector
      * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    protected SetInserter(final String name, final BufferAllocator allocator, final int numRows,
+    public BooleanListInserter(final String name, final BufferAllocator allocator, final int numRows,
         final int bytesPerCellAssumption) {
 
         m_vec = new NullableVarBinaryVector(name, allocator);
         m_vec.allocateNew(bytesPerCellAssumption * numRows, numRows);
         m_mutator = m_vec.getMutator();
     }
-
-    /**
-     * Extract the cell as primitive array and return the length. IMPORTANT: must set m_hasMissing.
-     *
-     * @param cell the cell to process
-     * @return int[2]: [0] the number of values, [1] the length of the value array
-     */
-    public abstract int[] fillInternalArrayAndGetSize(Cell cell);
-
-    /**
-     * Put the collection into the {@link ByteBuffer}.
-     *
-     * @param buffer the internal {@link ByteBuffer}
-     * @param cell the cell to process
-     * @return has a missing value yes / no
-     */
-    public abstract boolean putCollection(ByteBuffer buffer, Cell cell);
 
     @Override
     public void put(final Cell cell) {
@@ -117,9 +100,21 @@ public abstract class SetInserter implements VectorInserter {
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
 
-            int[] numAndLen = fillInternalArrayAndGetSize(cell);
+            //TODO ugly object types
+            Boolean[] objs = cell.getBooleanArrayValue();
 
-            int len = 4 + numAndLen[1] + 1;
+            int primLn = objs.length / 8 + ((objs.length % 8 == 0) ? 0 : 1);
+            byte[] m_primitives = new byte[primLn];
+
+            for (int j = 0; j < objs.length; j++) {
+                if (objs[j] != null) {
+                    if (objs[j].booleanValue()) {
+                        m_primitives[j / 8] |= (1 << (j % 8));
+                    }
+                }
+            }
+
+            int len = 4 + 2 * primLn;
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
                 //TODO realloc only content vector (not offset vector), if possible with factor 2^x
@@ -132,15 +127,21 @@ public abstract class SetInserter implements VectorInserter {
                 m_buffer.position(0);
             }
 
-            m_buffer.put(Ints.toByteArray(numAndLen[0]));
+            m_buffer.put(Ints.toByteArray(objs.length));
 
-            boolean hasMissing = putCollection(m_buffer, cell);
-            //entries + length (int32)
-            m_buffer.position(numAndLen[1] + 4);
-            if (hasMissing) {
-                m_buffer.put((byte)0);
-            } else {
-                m_buffer.put((byte)1);
+            m_buffer.put(m_primitives);
+            byte b = 0;
+            for (int j = 0; j < objs.length; j++) {
+                if (objs[j] != null) {
+                    b += (1 << (j % 8));
+                }
+                if (j % 8 == 7) {
+                    m_buffer.put(b);
+                    b = 0;
+                }
+            }
+            if (objs.length % 8 != 0) {
+                m_buffer.put(b);
             }
             //TODO ?
             //align to 64bit

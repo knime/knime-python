@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,59 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the arrow table format and the python table format. Works on Double set vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class DoubleSetExtractor extends FixedSizeSetExtractor {
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param vector the vector to extract from
      */
-    void put(Cell cell);
+    public DoubleSetExtractor(final NullableVarBinaryVector vector) {
+        super(vector);
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    public int getNumBytesPerEntry() {
+        return 8;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Cell extractArray(final ByteBuffer buffer, final int numVals, final boolean hasMissing) {
+        DoubleBuffer ibuffer = buffer.asDoubleBuffer();
+        double[] iar = new double[numVals + (hasMissing ? 1 : 0)];
+        ibuffer.get(iar, 0, numVals);
+        // TODO ugly object types
+        Double[] obj = ArrayUtils.toObject(iar);
+        if (hasMissing) {
+            obj[obj.length - 1] = null;
+        }
+        return new CellImpl(obj, true);
+    }
 
 }

@@ -51,22 +51,24 @@ import org.apache.arrow.vector.NullableBitVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format.
- * Works on Boolean cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Boolean cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class BooleanInserter implements VectorInserter {
 
     private final NullableBitVector m_vec;
+
     private final NullableBitVector.Mutator m_mutator;
+
     private int m_ctr;
 
     /**
      * Constructor.
-     * @param name  the name of the managed vector
+     *
+     * @param name the name of the managed vector
      * @param allocator an allocator for the underlying buffer
-     * @param numRows   the number of rows in the managed vector
+     * @param numRows the number of rows in the managed vector
      */
     public BooleanInserter(final String name, final BufferAllocator allocator, final int numRows) {
 

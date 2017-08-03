@@ -53,24 +53,28 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format.
- * Works on Integer cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Integer cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class IntegerInserter implements VectorInserter {
 
     private final NullableIntVector m_vec;
+
     private final NullableIntVector.Mutator m_mutator;
+
     private final SerializationOptions m_serializationOptions;
+
     private final int m_intSentinel;
+
     private int m_ctr;
 
     /**
      * Constructor.
-     * @param name  the name of the managed vector
+     *
+     * @param name the name of the managed vector
      * @param allocator an allocator for the underlying buffer
-     * @param numRows   the number of rows in the managed vector
+     * @param numRows the number of rows in the managed vector
      * @param serializationOptions additional serialization options
      */
     public IntegerInserter(final String name, final BufferAllocator allocator, final int numRows,
@@ -80,13 +84,13 @@ public class IntegerInserter implements VectorInserter {
         m_vec.allocateNew(numRows);
         m_mutator = m_vec.getMutator();
         m_serializationOptions = serializationOptions;
-        m_intSentinel = (int) m_serializationOptions.getSentinelForType(Type.INTEGER);
+        m_intSentinel = (int)m_serializationOptions.getSentinelForType(Type.INTEGER);
     }
 
     @Override
     public void put(final Cell cell) {
         if (cell.isMissing()) {
-            if(m_serializationOptions.getConvertMissingToPython()) {
+            if (m_serializationOptions.getConvertMissingToPython()) {
                 m_mutator.set(m_ctr, m_intSentinel);
             }
         } else {

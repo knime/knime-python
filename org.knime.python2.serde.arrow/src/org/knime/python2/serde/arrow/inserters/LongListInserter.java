@@ -55,15 +55,16 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format.
- * Works on Integer[] cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Long[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class LongListInserter extends ListInserter {
 
     private Long[] m_objs;
+
     private long[] m_primitives;
+
     /**
      * Constructor.
      *
@@ -72,7 +73,8 @@ public class LongListInserter extends ListInserter {
      * @param numRows the number of rows in the managed vector
      * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    public LongListInserter(final String name, final BufferAllocator allocator, final int numRows, final int bytesPerCellAssumption) {
+    public LongListInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final int bytesPerCellAssumption) {
         super(name, allocator, numRows, bytesPerCellAssumption);
     }
 
@@ -80,33 +82,25 @@ public class LongListInserter extends ListInserter {
      * {@inheritDoc}
      */
     @Override
-    public int getNumBytesPerEntry() {
-        return 8;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int fillInternalArrayAndGetSize(final Cell cell) {
+    protected int[] fillInternalArrayAndGetSize(final Cell cell) {
         //TODO ugly object types
         m_objs = cell.getLongArrayValue();
 
         m_primitives = new long[m_objs.length];
 
-        for(int j=0; j<m_objs.length; j++) {
-            if(m_objs[j] != null) {
+        for (int j = 0; j < m_objs.length; j++) {
+            if (m_objs[j] != null) {
                 m_primitives[j] = m_objs[j].longValue();
             }
         }
-        return m_objs.length;
+        return new int[]{m_objs.length, 8 * m_objs.length};
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
 
         LongBuffer valBuffer = buffer.asLongBuffer();
         //put values

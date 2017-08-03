@@ -58,7 +58,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import com.google.common.primitives.Ints;
 
 /**
- * Base class for ListTypes that are transferred between the pyhton table format and the arrow table format.
+ * Base class for ListTypes that are transferred between the python table format and the arrow table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -73,7 +73,6 @@ public abstract class ListInserter implements VectorInserter {
     private int m_byteCount;
 
     private ByteBuffer m_buffer;
-
 
     /**
      * Constructor.
@@ -92,25 +91,21 @@ public abstract class ListInserter implements VectorInserter {
     }
 
     /**
-     * Get the number of bytes per entry in the collection.
-     * @return number of bytes per entry in the collection
-     */
-    public abstract int getNumBytesPerEntry();
-
-    /**
      * Extract the cell as primitive array and return the length.
+     *
      * @param cell the cell to process
-     * @return the length of the primitive array
+     * @return int[2]: [0] the number of values, [1] the length of the value array
      */
-    public abstract int fillInternalArrayAndGetSize(Cell cell);
+    protected abstract int[] fillInternalArrayAndGetSize(Cell cell);
 
     /**
      * Put the collection into the {@link ByteBuffer}.
+     *
      * @param buffer the internal {@link ByteBuffer}
      * @param cell the cell to process
      * @return the object array corresponding to the inserted values (NOTE: ugly, will be changed)
      */
-    public abstract Object[] putCollection(ByteBuffer buffer, Cell cell);
+    protected abstract Object[] putCollection(ByteBuffer buffer, Cell cell);
 
     @Override
     public void put(final Cell cell) {
@@ -122,38 +117,38 @@ public abstract class ListInserter implements VectorInserter {
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
 
-            int size = fillInternalArrayAndGetSize(cell);
+            int[] numAndLen = fillInternalArrayAndGetSize(cell);
 
-            int len = 4 +  size * getNumBytesPerEntry() + size / 8 + (size % 8 == 0 ? 0 : 1);
+            int len = 4 + numAndLen[1] + numAndLen[0] / 8 + (numAndLen[0] % 8 == 0 ? 0 : 1);
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
                 //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
 
-            if(m_buffer == null || m_buffer.capacity() != len) {
+            if (m_buffer == null || m_buffer.capacity() != len) {
                 m_buffer = ByteBuffer.allocate(len);
             } else {
                 m_buffer.position(0);
             }
 
-            m_buffer.put(Ints.toByteArray(size));
+            m_buffer.put(Ints.toByteArray(numAndLen[0]));
 
             Object[] objs = putCollection(m_buffer, cell);
             //entries + length (int32)
-            m_buffer.position(objs.length * getNumBytesPerEntry() + 4);
+            m_buffer.position(numAndLen[1] + 4);
             // TODO create byte[] with missing while looping over objs...
             byte b = 0;
-            for(int j=0; j<objs.length; j++) {
-                if(objs[j] != null) {
+            for (int j = 0; j < objs.length; j++) {
+                if (objs[j] != null) {
                     b += (1 << (j % 8));
                 }
-                if(j % 8 == 7) {
+                if (j % 8 == 7) {
                     m_buffer.put(b);
                     b = 0;
                 }
             }
-            if(objs.length % 8 != 0) {
+            if (objs.length % 8 != 0) {
                 m_buffer.put(b);
             }
             //TODO ?

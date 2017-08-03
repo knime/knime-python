@@ -45,22 +45,19 @@
 
 package org.knime.python2.serde.arrow.inserters;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableVarCharVector;
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the pyhton table format and the arrow table format. Works on String cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on String cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class StringInserter implements VectorInserter {
-
-    private final static NodeLogger LOGGER = NodeLogger.getLogger(StringInserter.class);
 
     private final NullableVarCharVector m_vec;
 
@@ -92,21 +89,17 @@ public class StringInserter implements VectorInserter {
             m_vec.getValuesVector().getOffsetVector().reAlloc();
             m_vec.getValidityVector().reAlloc();
         }
-        try {
-            if (!cell.isMissing()) {
-                //Implicitly assumed to be missing
-                byte[] bVal = cell.getStringValue().getBytes("UTF-8");
-                m_byteCount += bVal.length;
-                while (m_byteCount > m_vec.getByteCapacity()) {
-                    //TODO realloc only content vector (not offset vector), if possible with factor 2^x
-                    m_vec.getValuesVector().reAlloc();
-                }
-                m_mutator.set(m_ctr, bVal);
+        if (!cell.isMissing()) {
+            //Implicitly assumed to be missing
+            byte[] bVal = cell.getStringValue().getBytes(StandardCharsets.UTF_8);
+            m_byteCount += bVal.length;
+            while (m_byteCount > m_vec.getByteCapacity()) {
+                //TODO realloc only content vector (not offset vector), if possible with factor 2^x
+                m_vec.getValuesVector().reAlloc();
             }
-            m_mutator.setValueCount(++m_ctr);
-        } catch( UnsupportedEncodingException ex ) {
-            LOGGER.error("Internal error", ex);
+            m_mutator.set(m_ctr, bVal);
         }
+        m_mutator.setValueCount(++m_ctr);
     }
 
     @Override

@@ -62,7 +62,7 @@ import com.google.common.primitives.Ints;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class SetInserter implements VectorInserter {
+public class BooleanSetInserter implements VectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -74,6 +74,7 @@ public abstract class SetInserter implements VectorInserter {
 
     private ByteBuffer m_buffer;
 
+
     /**
      * Constructor.
      *
@@ -82,30 +83,13 @@ public abstract class SetInserter implements VectorInserter {
      * @param numRows the number of rows in the managed vector
      * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    protected SetInserter(final String name, final BufferAllocator allocator, final int numRows,
+    public BooleanSetInserter(final String name, final BufferAllocator allocator, final int numRows,
         final int bytesPerCellAssumption) {
 
         m_vec = new NullableVarBinaryVector(name, allocator);
         m_vec.allocateNew(bytesPerCellAssumption * numRows, numRows);
         m_mutator = m_vec.getMutator();
     }
-
-    /**
-     * Extract the cell as primitive array and return the length. IMPORTANT: must set m_hasMissing.
-     *
-     * @param cell the cell to process
-     * @return int[2]: [0] the number of values, [1] the length of the value array
-     */
-    public abstract int[] fillInternalArrayAndGetSize(Cell cell);
-
-    /**
-     * Put the collection into the {@link ByteBuffer}.
-     *
-     * @param buffer the internal {@link ByteBuffer}
-     * @param cell the cell to process
-     * @return has a missing value yes / no
-     */
-    public abstract boolean putCollection(ByteBuffer buffer, Cell cell);
 
     @Override
     public void put(final Cell cell) {
@@ -117,27 +101,45 @@ public abstract class SetInserter implements VectorInserter {
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
 
-            int[] numAndLen = fillInternalArrayAndGetSize(cell);
+            //TODO ugly object types
+            Boolean[] objs = cell.getBooleanArrayValue();
+            int primLn = objs.length / 8 + ((objs.length % 8 == 0) ? 0 : 1);
+            byte[] primitives = new byte[primLn];
+            boolean hasMissing = false;
+            //Put missing value to last array position
+            for(int j=0; j<objs.length; j++) {
+                if(objs[j] == null) {
+                    hasMissing = true;
+                } else if(hasMissing) {
+                    if(objs[j].booleanValue()) {
+                        primitives[(j - 1) / 8] |= (1 << ((j -1) % 8));
+                    }
+                } else {
+                    if(objs[j].booleanValue()) {
+                        primitives[j / 8] |= (1 << (j % 8));
+                    }
+                }
+            }
+            int valueLn = objs.length - (hasMissing ? 1:0);
+            int size = valueLn / 8 + ((valueLn % 8 == 0) ? 0 : 1);
 
-            int len = 4 + numAndLen[1] + 1;
+            int len = 4 +  size + 1;
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
                 //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
 
-            if (m_buffer == null || m_buffer.capacity() != len) {
+            if(m_buffer == null || m_buffer.capacity() != len) {
                 m_buffer = ByteBuffer.allocate(len);
             } else {
                 m_buffer.position(0);
             }
 
-            m_buffer.put(Ints.toByteArray(numAndLen[0]));
+            m_buffer.put(Ints.toByteArray(valueLn));
+            m_buffer.put(primitives, 0, size);
 
-            boolean hasMissing = putCollection(m_buffer, cell);
-            //entries + length (int32)
-            m_buffer.position(numAndLen[1] + 4);
-            if (hasMissing) {
+            if(hasMissing) {
                 m_buffer.put((byte)0);
             } else {
                 m_buffer.put((byte)1);

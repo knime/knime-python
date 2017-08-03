@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,84 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
-
 package org.knime.python2.serde.arrow.inserters;
 
-import org.apache.arrow.vector.FieldVector;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.arrow.memory.BufferAllocator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Integer[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class StringListInserter extends ListInserter {
+
+    private String[] m_objs;
+
+    private int[] m_offsets;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param name the name of the managed vector
+     * @param allocator an allocator for the underlying buffer
+     * @param numRows the number of rows in the managed vector
+     * @param bytesPerCellAssumption an initial assumption of the number of bytes per cell
      */
-    void put(Cell cell);
+    public StringListInserter(final String name, final BufferAllocator allocator, final int numRows,
+        final int bytesPerCellAssumption) {
+        super(name, allocator, numRows, bytesPerCellAssumption);
+    }
 
     /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
+     * {@inheritDoc}
      */
-    FieldVector retrieveVector();
+    @Override
+    protected int[] fillInternalArrayAndGetSize(final Cell cell) {
+        m_objs = cell.getStringArrayValue();
+
+        m_offsets = new int[m_objs.length + 1];
+
+        for (int j = 0; j < m_objs.length; j++) {
+            if (m_objs[j] == null) {
+                m_offsets[j + 1] = m_offsets[j];
+            } else {
+                m_offsets[j + 1] = m_offsets[j] + m_objs[j].length();
+            }
+        }
+
+        //total length = length of variable size block + length of offset vector
+        return new int[]{m_objs.length, m_offsets[m_objs.length] + 4 * m_offsets.length};
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+
+        IntBuffer intBuffer = buffer.asIntBuffer();
+        //put values
+        intBuffer.put(m_offsets);
+
+        buffer.position(4 + m_offsets.length * 4);
+        for (String obj : m_objs) {
+            if (obj != null) {
+                buffer.put(obj.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+
+        return m_objs;
+
+    }
 
 }

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,67 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 2, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * Base class for Set types that are transferred between the arrow table format and the python table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
+public class BooleanSetExtractor implements VectorExtractor {
+
+    private final NullableVarBinaryVector.Accessor m_accessor;
+
+    private int m_ctr;
 
     /**
-     * Add a cell to the end of the managed arrow vector.
+     * Constructor.
      *
-     * @param cell a cell in the python table format
+     * @param vector the vector to extract from
      */
-    void put(Cell cell);
+    public BooleanSetExtractor(final NullableVarBinaryVector vector) {
+        m_accessor = vector.getAccessor();
+    }
 
-    /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
-     */
-    FieldVector retrieveVector();
+    @Override
+    public Cell extract() {
+
+        if (m_accessor.isNull(m_ctr)) {
+            m_ctr++;
+            return new CellImpl();
+        }
+
+        ByteBuffer buffer = ByteBuffer.wrap(m_accessor.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
+        m_ctr++;
+        int nVals = buffer.asIntBuffer().get();
+        buffer.position(4);
+        int primLn = (nVals / 8) + ((nVals % 8 == 0) ? 0 : 1);
+        boolean hasMissing = (buffer.get(4 + primLn) == 0);
+        int nValsAndMissing = nVals + (hasMissing ? 1 : 0);
+
+        byte[] primitives = new byte[primLn];
+        buffer.get(primitives, 0, primLn);
+        // TODO ugly object types
+        Boolean[] objs = new Boolean[nValsAndMissing];
+        for (int i = 0; i < nVals; i++) {
+            objs[i] = ((primitives[i / 8] & (1 << (i % 8))) > 0);
+        }
+        if (hasMissing) {
+            objs[objs.length - 1] = null;
+        }
+        return new CellImpl(objs, true);
+    }
 
 }

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME GmbH, Konstanz, Germany
  *  Website: http://www.knime.org; Email: contact@knime.org
  *
@@ -40,33 +41,33 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Aug 3, 2017 (clemens): created
  */
+package org.knime.python2.serde.arrow.extractors;
 
-package org.knime.python2.serde.arrow.inserters;
-
-import org.apache.arrow.vector.FieldVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on cells.
+ * TODO
  *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Clemens von Schwerin, KNIME
  */
-public interface VectorInserter {
+public class MissingExtractor implements VectorExtractor {
+
+    private Cell missingCell = new CellImpl();
 
     /**
-     * Add a cell to the end of the managed arrow vector.
-     *
-     * @param cell a cell in the python table format
+     * {@inheritDoc}
      */
-    void put(Cell cell);
+    @Override
+    public Cell extract() {
+        return missingCell;
+    }
 
-    /**
-     * Close the arrow vector for writing and return it.
-     *
-     * @return an arrow vector
-     */
-    FieldVector retrieveVector();
+
 
 }
