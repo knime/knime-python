@@ -364,20 +364,22 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             fields.add(vec.getField());
         }
 
-        final ArrowStreamWriter writer =
-            new ArrowStreamWriter(new VectorSchemaRoot(new Schema(fields, metadata), vecs, numRows), null, fc);
+        Schema schema = new Schema(fields, metadata);
+        VectorSchemaRoot vsr = new VectorSchemaRoot(schema, vecs, numRows);
+        ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
+
         writer.writeBatch();
         writer.close();
+        fc.close();
 
         return path.getBytes("UTF-8");
     }
 
-    private ArrowStreamReader getReader(final String path) throws IOException {
-        // TODO when do we actually close the file?
-        // TODO when do we actually clean-up the file
+    private ArrowStreamReader getReader(final String path) throws FileNotFoundException {
         if (m_streamReader == null) {
-            m_streamReader = new ArrowStreamReader(new RandomAccessFile(new File(path), "rw").getChannel(),
-                new RootAllocator(Long.MAX_VALUE));
+            FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
+            ArrowStreamReader reader = new ArrowStreamReader(fc, new RootAllocator(Long.MAX_VALUE));
+            m_streamReader = reader;
         }
         return m_streamReader;
     }
@@ -505,6 +507,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             if (new File(m_fromPythonPath).exists()) {
                 try {
                     ArrowStreamReader reader = getReader(path);
+                    reader.loadNextBatch();
                     Schema schema = reader.getVectorSchemaRoot().getSchema();
                     Map<String, String> metadata = schema.getCustomMetadata();
                     Map<String, String> columnSerializers = new HashMap<String, String>();
