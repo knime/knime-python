@@ -48,7 +48,6 @@ package org.knime.python2.serde.flatbuffers;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,28 +58,39 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
-import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionCell;
+import org.knime.python2.serde.flatbuffers.extractors.BooleanExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.BooleanListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.BooleanSetExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.BytesExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.BytesListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.BytesSetExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.DoubleExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.DoubleListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.DoubleSetExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.IntExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.IntListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.IntSetExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.LongExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.LongListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.LongSetExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.StringExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.StringListExtractor;
+import org.knime.python2.serde.flatbuffers.extractors.StringSetExtractor;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanColumn;
-import org.knime.python2.serde.flatbuffers.flatc.ByteCell;
-import org.knime.python2.serde.flatbuffers.flatc.ByteCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.ByteCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.ByteColumn;
 import org.knime.python2.serde.flatbuffers.flatc.Column;
-import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.DoubleColumn;
 import org.knime.python2.serde.flatbuffers.flatc.IntCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.IntColumn;
-import org.knime.python2.serde.flatbuffers.flatc.IntegerCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.KnimeTable;
-import org.knime.python2.serde.flatbuffers.flatc.LongCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.LongCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
-import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.StringCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.StringColumn;
 import org.knime.python2.serde.flatbuffers.inserters.BooleanInserter;
@@ -249,27 +259,12 @@ public class Flatbuffers implements SerializationLibrary {
         final SerializationOptions serializationOptions) {
 
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
-
-        final List<String> rowIds = new ArrayList<>();
-        final List<String> colNames = new ArrayList<>();
         final Map<String, Type> colTypes = new HashMap<>();
-        final Map<String, List<Object>> columns = new LinkedHashMap<>();
-        final Map<String, boolean[]> missing = new HashMap<>();
+
+        List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
 
         if (table.colNamesLength() == 0) {
             return;
-        }
-
-        for (int id = 0; id < table.rowIDsLength(); id++) {
-            final String rowId = table.rowIDs(id);
-            rowIds.add(rowId);
-        }
-
-        for (int h = 0; h < table.colNamesLength(); h++) {
-            final String colName = table.colNames(h);
-            colNames.add(colName);
-            columns.put(colName, new ArrayList<>());
-            missing.put(colName, new boolean[rowIds.size()]);
         }
 
         for (int j = 0; j < table.columnsLength(); j++) {
@@ -279,308 +274,112 @@ public class Flatbuffers implements SerializationLibrary {
                 case BOOLEAN: {
                     final BooleanColumn colVec = col.booleanColumn();
                     colTypes.put(table.colNames(j), Type.BOOLEAN);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        columns.get(table.colNames(j)).add(colVec.values(i));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BooleanExtractor(colVec));
                     break;
                 }
                 case BOOLEAN_LIST: {
                     final BooleanCollectionColumn colVec = col.booleanListColumn();
                     colTypes.put(table.colNames(j), Type.BOOLEAN_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final BooleanCollectionCell cell = colVec.values(i);
-
-                        final List<Boolean> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                l.add(cell.value(k));
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BooleanListExtractor(colVec));
                     break;
                 }
                 case BOOLEAN_SET: {
                     final BooleanCollectionColumn colVec = col.booleanSetColumn();
                     colTypes.put(table.colNames(j), Type.BOOLEAN_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final BooleanCollectionCell cell = colVec.values(i);
-
-                        final List<Boolean> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            l.add(cell.value(k));
-                        }
-                        if (cell.keepDummy()) {
-                            l.add(null);
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Boolean[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BooleanSetExtractor(colVec));
                     break;
                 }
                 case INTEGER: {
                     final IntColumn colVec = col.intColumn();
                     colTypes.put(table.colNames(j), Type.INTEGER);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        if (serializationOptions.getConvertMissingFromPython()
-                                && serializationOptions.isSentinel(Type.INTEGER, colVec.values(i))) {
-                            missing.get(table.colNames(j))[i] = true;
-                        } else {
-                            missing.get(table.colNames(j))[i] = colVec.missing(i);
-                        }
-                        columns.get(table.colNames(j)).add(colVec.values(i));
-                    }
+                    extractors.add(new IntExtractor(colVec, serializationOptions));
                     break;
                 }
                 case INTEGER_LIST: {
                     final IntCollectionColumn colVec = col.intListColumn();
                     colTypes.put(table.colNames(j), Type.INTEGER_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final IntegerCollectionCell cell = colVec.values(i);
-
-                        final List<Integer> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                l.add(cell.value(k));
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new IntListExtractor(colVec));
                     break;
                 }
                 case INTEGER_SET: {
                     final IntCollectionColumn colVec = col.intSetColumn();
                     colTypes.put(table.colNames(j), Type.INTEGER_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final IntegerCollectionCell cell = colVec.values(i);
-
-                        final List<Integer> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            l.add(cell.value(k));
-                        }
-                        if (cell.keepDummy()) {
-                            l.add(null);
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Integer[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new IntSetExtractor(colVec));
                     break;
                 }
                 case LONG: {
                     final LongColumn colVec = col.longColumn();
                     colTypes.put(table.colNames(j), Type.LONG);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        if (serializationOptions.getConvertMissingFromPython()
-                                && serializationOptions.isSentinel(Type.LONG, colVec.values(i))) {
-                            missing.get(table.colNames(j))[i] = true;
-                        } else {
-                            missing.get(table.colNames(j))[i] = colVec.missing(i);
-                        }
-                        columns.get(table.colNames(j)).add(colVec.values(i));
-                    }
+                    extractors.add(new LongExtractor(colVec, serializationOptions));
                     break;
                 }
                 case LONG_LIST: {
                     final LongCollectionColumn colVec = col.longListColumn();
                     colTypes.put(table.colNames(j), Type.LONG_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final LongCollectionCell cell = colVec.values(i);
-
-                        final List<Long> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                l.add(cell.value(k));
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new LongListExtractor(colVec));
                     break;
                 }
                 case LONG_SET: {
                     final LongCollectionColumn colVec = col.longSetColumn();
                     colTypes.put(table.colNames(j), Type.LONG_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final LongCollectionCell cell = colVec.values(i);
-
-                        final List<Long> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            l.add(cell.value(k));
-                        }
-                        if (cell.keepDummy()) {
-                            l.add(null);
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Long[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new LongSetExtractor(colVec));
                     break;
                 }
                 case DOUBLE: {
                     final DoubleColumn colVec = col.doubleColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        columns.get(table.colNames(j)).add(colVec.values(i));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new DoubleExtractor(colVec));
 
                     break;
                 }
                 case DOUBLE_LIST: {
                     final DoubleCollectionColumn colVec = col.doubleListColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final DoubleCollectionCell cell = colVec.values(i);
-
-                        final List<Double> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                l.add(cell.value(k));
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Double[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new DoubleListExtractor(colVec));
                     break;
                 }
                 case DOUBLE_SET: {
                     final DoubleCollectionColumn colVec = col.doubleSetColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final DoubleCollectionCell cell = colVec.values(i);
-
-                        final List<Double> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            l.add(cell.value(k));
-                        }
-                        if (cell.keepDummy()) {
-                            l.add(null);
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Double[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new DoubleSetExtractor(colVec));
                     break;
                 }
                 case STRING: {
                     final StringColumn colVec = col.stringColumn();
                     colTypes.put(table.colNames(j), Type.STRING);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        columns.get(table.colNames(j)).add(colVec.values(i));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new StringExtractor(colVec));
                     break;
                 }
                 case STRING_LIST: {
                     final StringCollectionColumn colVec = col.stringListColumn();
                     colTypes.put(table.colNames(j), Type.STRING_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final StringCollectionCell cell = colVec.values(i);
-
-                        final List<String> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                l.add(cell.value(k));
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new String[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new StringListExtractor(colVec));
                     break;
                 }
                 case STRING_SET: {
                     final StringCollectionColumn colVec = col.stringSetColumn();
                     colTypes.put(table.colNames(j), Type.STRING_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final StringCollectionCell cell = colVec.values(i);
-
-                        final List<String> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            l.add(cell.value(k));
-                        }
-                        if (cell.keepDummy()) {
-                            l.add(null);
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new String[cell.valueLength()]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new StringSetExtractor(colVec));
                     break;
                 }
                 case BYTES: {
 
                     final ByteColumn colVec = col.byteColumn();
                     colTypes.put(table.colNames(j), Type.BYTES);
-
-                    @SuppressWarnings("unused")
-                    final
-                    int xxx = colVec.valuesLength();
-
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final ByteCell bc = colVec.values(i);
-                        final Byte[] byteArray = new Byte[bc.valueLength()];
-                        for (int k = 0; k < bc.valueLength(); k++) {
-                            byteArray[k] = (byte)bc.value(k);
-                        }
-                        columns.get(table.colNames(j)).add(byteArray);
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BytesExtractor(colVec));
 
                     break;
                 }
                 case BYTES_LIST: {
                     final ByteCollectionColumn colVec = col.byteListColumn();
                     colTypes.put(table.colNames(j), Type.BYTES_LIST);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final ByteCollectionCell cell = colVec.values(i);
-
-                        final List<Byte[]> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            if (cell.missing(k)) {
-                                l.add(null);
-                            } else {
-                                final Byte[] bb = new Byte[cell.value(k).valueLength()];
-                                for (int b = 0; b < cell.value(k).valueLength(); b++) {
-                                    bb[b] = (byte)cell.value(k).value(b);
-                                }
-                                l.add(bb);
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()][]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BytesListExtractor(colVec));
                     break;
                 }
                 case BYTES_SET: {
                     final ByteCollectionColumn colVec = col.byteSetColumn();
                     colTypes.put(table.colNames(j), Type.BYTES_SET);
-                    for (int i = 0; i < colVec.valuesLength(); i++) {
-                        final ByteCollectionCell cell = colVec.values(i);
-
-                        final List<Byte[]> l = new ArrayList<>(cell.valueLength());
-                        for (int k = 0; k < cell.valueLength(); k++) {
-                            final Byte[] bb = new Byte[cell.value(k).valueLength()];
-                            for (int b = 0; b < cell.value(k).valueLength(); b++) {
-                                bb[b] = (byte)cell.value(k).value(b);
-                            }
-                            l.add(bb);
-                            if (cell.keepDummy()) {
-                                l.add(null);
-                            }
-                        }
-                        columns.get(table.colNames(j)).add(l.toArray(new Byte[cell.valueLength()][]));
-                        missing.get(table.colNames(j))[i] = colVec.missing(i);
-                    }
+                    extractors.add(new BytesSetExtractor(colVec));
                     break;
                 }
                 default:
@@ -589,103 +388,14 @@ public class Flatbuffers implements SerializationLibrary {
             }
         }
 
-        if (columns.isEmpty()) {
-            return;
-        }
-
-        final int numRows = columns.get(columns.keySet().iterator().next()).size();
+        final int numRows = table.rowIDsLength();
+        final int numCols = table.colNamesLength();
         for (int rowCount = 0; rowCount < numRows; rowCount++) {
-
-            final Row r = new RowImpl(rowIds.get(rowCount), columns.keySet().size());
-            int colCount = 0;
-            for (final String colName : colNames) {
-                if (missing.get(colName)[rowCount]) {
-                    r.setCell(new CellImpl(), colCount);
-                } else {
-
-                    switch (colTypes.get(colName)) {
-                        case BOOLEAN: {
-                            r.setCell(new CellImpl((Boolean)columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case BOOLEAN_LIST: {
-                            r.setCell(new CellImpl((Boolean[])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case BOOLEAN_SET: {
-                            r.setCell(new CellImpl((Boolean[])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        case INTEGER: {
-                            r.setCell(new CellImpl((Integer)columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case INTEGER_LIST: {
-                            r.setCell(new CellImpl((Integer[])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case INTEGER_SET: {
-                            r.setCell(new CellImpl((Integer[])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        case LONG: {
-                            r.setCell(new CellImpl((Long)columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case LONG_LIST: {
-                            r.setCell(new CellImpl((Long[])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case LONG_SET: {
-                            r.setCell(new CellImpl((Long[])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        case DOUBLE: {
-                            r.setCell(new CellImpl((Double)columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case DOUBLE_LIST: {
-                            r.setCell(new CellImpl((Double[])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case DOUBLE_SET: {
-                            r.setCell(new CellImpl((Double[])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        case STRING: {
-                            r.setCell(new CellImpl((String)columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case STRING_LIST: {
-                            r.setCell(new CellImpl((String[])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case STRING_SET: {
-                            r.setCell(new CellImpl((String[])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        case BYTES: {
-                            r.setCell(new CellImpl((Byte[])columns.get(colName).get(rowCount)), colCount);
-                            break;
-                        }
-                        case BYTES_LIST: {
-                            r.setCell(new CellImpl((Byte[][])columns.get(colName).get(rowCount), false), colCount);
-                            break;
-                        }
-                        case BYTES_SET: {
-                            r.setCell(new CellImpl((Byte[][])columns.get(colName).get(rowCount), true), colCount);
-                            break;
-                        }
-                        default:
-                            break;
-
-                    }
-                }
-
-                colCount++;
+            final Row r = new RowImpl(table.rowIDs(rowCount), numCols);
+            for (int colCount=0; colCount<numCols; colCount++) {
+                r.setCell(extractors.get(colCount).extract(), colCount);
             }
             tableCreator.addRow(r);
-
         }
 
     }
