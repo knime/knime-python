@@ -121,11 +121,11 @@ public class BytesListInserter implements FlatbuffersVectorInserter {
                 int cIdx = 0;
                 for (final Byte[] b : o) {
                     if (b == null) {
-                        final int bytesCellValVec = ByteCell.createValueVector(builder, new byte[0]);
+                        final int bytesCellValVec = builder.createByteVector(new byte[0]);
                         bytesCellOffsets[cIdx] = ByteCell.createByteCell(builder, bytesCellValVec);
                         missingCells[cIdx] = true;
                     } else {
-                        final int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive(b));
+                        final int bytesCellValVec = builder.createByteVector(ArrayUtils.toPrimitive(b));
                         bytesCellOffsets[cIdx] = ByteCell.createByteCell(builder, bytesCellValVec);
                         missingCells[cIdx] = false;
                     }

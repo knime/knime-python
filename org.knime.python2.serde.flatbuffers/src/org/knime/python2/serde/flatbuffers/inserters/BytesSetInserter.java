@@ -122,7 +122,7 @@ public class BytesSetInserter implements FlatbuffersVectorInserter {
                     if (b == null) {
                         addMissingValue = true;
                     } else {
-                        final int bytesCellValVec = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive(b));
+                        final int bytesCellValVec = builder.createByteVector(ArrayUtils.toPrimitive(b));
                         ibuff.put(ByteCell.createByteCell(builder, bytesCellValVec));
                     }
                 }
