@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.extractors;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -63,6 +62,7 @@ import org.knime.python2.serde.flatbuffers.flatc.ByteCollectionColumn;
 public class BytesSetExtractor implements VectorExtractor {
 
     private ByteCollectionColumn m_colVec;
+
     private int m_ctr;
 
     /**
@@ -79,27 +79,20 @@ public class BytesSetExtractor implements VectorExtractor {
      */
     @Override
     public Cell extract() {
-        if(m_colVec.missing(m_ctr)) {
+        if (m_colVec.missing(m_ctr)) {
             m_ctr++;
             return new CellImpl();
         }
         final ByteCollectionCell cell = m_colVec.values(m_ctr);
 
-
-        final Byte[][] l;
-        if(cell.keepDummy()) {
-           l = new Byte[cell.valueLength() + 1][];
-           l[l.length - 1] = null;
-        } else {
-            l = new Byte[cell.valueLength()][];
-        }
+        final byte[][] l = new byte[cell.valueLength()][];
         for (int k = 0; k < cell.valueLength(); k++) {
-                byte[] bb = new byte[cell.value(k).valueLength()];
-                cell.value(k).valueAsByteBuffer().get(bb);
-                l[k] = ArrayUtils.toObject(bb);
+            byte[] bb = new byte[cell.value(k).valueLength()];
+            cell.value(k).valueAsByteBuffer().get(bb);
+            l[k] = bb;
         }
         m_ctr++;
-        return new CellImpl(l, true);
+        return new CellImpl(l, cell.keepDummy());
     }
 
 }

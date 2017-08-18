@@ -85,18 +85,12 @@ public class BooleanSetExtractor implements VectorExtractor {
         }
         final BooleanCollectionCell cell = m_colVec.values(m_ctr);
 
-        final Boolean[] l;
-        if (cell.keepDummy()) {
-            l = new Boolean[cell.valueLength() + 1];
-            l[l.length - 1] = null;
-        } else {
-            l = new Boolean[cell.valueLength()];
-        }
+        boolean[] l = new boolean[cell.valueLength()];
         for (int k = 0; k < cell.valueLength(); k++) {
             l[k] = cell.value(k);
         }
         m_ctr++;
-        return new CellImpl(l, true);
+        return new CellImpl(l, cell.keepDummy());
     }
 
 }

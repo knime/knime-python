@@ -61,12 +61,18 @@ public class CellImpl implements Cell {
 
     private final Object m_value;
 
+    private final byte[] m_missing;
+
+    private static byte B_ZERO = (byte) 0;
+    private static byte B_ONE = (byte) 1;
+
     /**
      * Constructor for use with a Missing Value cell.
      */
     public CellImpl() {
         m_type = null;
         m_value = null;
+        m_missing = null;
     }
 
     /**
@@ -74,20 +80,35 @@ public class CellImpl implements Cell {
      *
      * @param value the value
      */
-    public CellImpl(final Boolean value) {
+    public CellImpl(final boolean value) {
         m_type = Type.BOOLEAN;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final Boolean[] value, final boolean isSet) {
-        m_type = isSet ? Type.BOOLEAN_SET : Type.BOOLEAN_LIST;
+    public CellImpl(final boolean[] value, final byte[] missings) {
+        m_type = Type.BOOLEAN_LIST;
         m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final boolean[] value, final boolean hasMissing) {
+        m_type = Type.BOOLEAN_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
 
     /**
@@ -95,20 +116,35 @@ public class CellImpl implements Cell {
      *
      * @param value the value
      */
-    public CellImpl(final Integer value) {
+    public CellImpl(final int value) {
         m_type = Type.INTEGER;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final Integer[] value, final boolean isSet) {
-        m_type = isSet ? Type.INTEGER_SET : Type.INTEGER_LIST;
+    public CellImpl(final int[] value, final byte[] missings) {
+        m_type = Type.INTEGER_LIST;
         m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final int[] value, final boolean hasMissing) {
+        m_type = Type.INTEGER_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
 
     /**
@@ -116,20 +152,35 @@ public class CellImpl implements Cell {
      *
      * @param value the value
      */
-    public CellImpl(final Long value) {
+    public CellImpl(final long value) {
         m_type = Type.LONG;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final Long[] value, final boolean isSet) {
-        m_type = isSet ? Type.LONG_SET : Type.LONG_LIST;
+    public CellImpl(final long[] value, final byte[] missings) {
+        m_type = Type.LONG_LIST;
         m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final long[] value, final boolean hasMissing) {
+        m_type = Type.LONG_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
 
     /**
@@ -137,22 +188,36 @@ public class CellImpl implements Cell {
      *
      * @param value the value
      */
-    public CellImpl(final Double value) {
+    public CellImpl(final double value) {
         m_type = Type.DOUBLE;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final Double[] value, final boolean isSet) {
-        m_type = isSet ? Type.DOUBLE_SET : Type.DOUBLE_LIST;
+    public CellImpl(final double[] value, final byte[] missings) {
+        m_type = Type.DOUBLE_LIST;
         m_value = value;
+        m_missing = missings;
     }
 
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final double[] value, final boolean hasMissing) {
+        m_type = Type.DOUBLE_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
+    }
     /**
      * Instantiates a new cell impl.
      *
@@ -161,17 +226,32 @@ public class CellImpl implements Cell {
     public CellImpl(final String value) {
         m_type = Type.STRING;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final String[] value, final boolean isSet) {
-        m_type = isSet ? Type.STRING_SET : Type.STRING_LIST;
+    public CellImpl(final String[] value, final byte[] missings) {
+        m_type = Type.STRING_LIST;
         m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final String[] value, final boolean hasMissing) {
+        m_type = Type.STRING_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
 
     /**
@@ -179,20 +259,35 @@ public class CellImpl implements Cell {
      *
      * @param value the value
      */
-    public CellImpl(final Byte[] value) {
+    public CellImpl(final byte[] value) {
         m_type = Type.BYTES;
         m_value = value;
+        m_missing = null;
     }
 
     /**
-     * Instantiates a new cell impl.
+     * Instantiates a new cell impl with an integer list.
      *
      * @param value the value
-     * @param isSet true - values represent a set, false - a list
+     * @param missings bit encoded missing values (0 missing, 1 available)
      */
-    public CellImpl(final Byte[][] value, final boolean isSet) {
-        m_type = isSet ? Type.BYTES_SET : Type.BYTES_LIST;
+    public CellImpl(final byte[][] value, final byte[] missings) {
+        m_type = Type.BYTES_LIST;
         m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an integer set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final byte[][] value, final boolean hasMissing) {
+        m_type = Type.BYTES_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
 
     @Override
@@ -206,67 +301,67 @@ public class CellImpl implements Cell {
     }
 
     @Override
-    public Boolean getBooleanValue() throws IllegalStateException {
+    public boolean getBooleanValue() throws IllegalStateException {
         if (!(m_value instanceof Boolean)) {
             throw new IllegalStateException("Requested boolean value from cell with type: " + m_type);
         }
-        return (Boolean)m_value;
+        return (boolean)m_value;
     }
 
     @Override
-    public Boolean[] getBooleanArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof Boolean[])) {
+    public boolean[] getBooleanArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof boolean[])) {
             throw new IllegalStateException("Requested boolean array value from cell with type: " + m_type);
         }
-        return (Boolean[])m_value;
+        return (boolean[])m_value;
     }
 
     @Override
-    public Integer getIntegerValue() throws IllegalStateException {
+    public int getIntegerValue() throws IllegalStateException {
         if (!(m_value instanceof Integer)) {
             throw new IllegalStateException("Requested integer value from cell with type: " + m_type);
         }
-        return (Integer)m_value;
+        return (int)m_value;
     }
 
     @Override
-    public Integer[] getIntegerArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof Integer[])) {
+    public int[] getIntegerArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof int[])) {
             throw new IllegalStateException("Requested integer array value from cell with type: " + m_type);
         }
-        return (Integer[])m_value;
+        return (int[])m_value;
     }
 
     @Override
-    public Long getLongValue() throws IllegalStateException {
+    public long getLongValue() throws IllegalStateException {
         if (!(m_value instanceof Long)) {
             throw new IllegalStateException("Requested long value from cell with type: " + m_type);
         }
-        return (Long)m_value;
+        return (long)m_value;
     }
 
     @Override
-    public Long[] getLongArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof Long[])) {
+    public long[] getLongArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof long[])) {
             throw new IllegalStateException("Requested long array value from cell with type: " + m_type);
         }
-        return (Long[])m_value;
+        return (long[])m_value;
     }
 
     @Override
-    public Double getDoubleValue() throws IllegalStateException {
+    public double getDoubleValue() throws IllegalStateException {
         if (!(m_value instanceof Double)) {
             throw new IllegalStateException("Requested double value from cell with type: " + m_type);
         }
-        return (Double)m_value;
+        return (double)m_value;
     }
 
     @Override
-    public Double[] getDoubleArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof Double[])) {
+    public double[] getDoubleArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof double[])) {
             throw new IllegalStateException("Requested double array value from cell with type: " + m_type);
         }
-        return (Double[])m_value;
+        return (double[])m_value;
     }
 
     @Override
@@ -286,24 +381,40 @@ public class CellImpl implements Cell {
     }
 
     @Override
-    public Byte[] getBytesValue() throws IllegalStateException {
-        if (!(m_value instanceof Byte[])) {
+    public byte[] getBytesValue() throws IllegalStateException {
+        if (!(m_value instanceof byte[])) {
             throw new IllegalStateException("Requested bytes value from cell with type: " + m_type);
         }
-        return (Byte[])m_value;
+        return (byte[])m_value;
     }
 
     @Override
-    public Byte[][] getBytesArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof Byte[][])) {
+    public byte[][] getBytesArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof byte[][])) {
             throw new IllegalStateException("Requested bytes array value from cell with type: " + m_type);
         }
-        return (Byte[][])m_value;
+        return (byte[][])m_value;
     }
 
     @Override
     public String toString() {
         return "Type: " + m_type.toString() + ", Value: " + m_value.toString();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isMissing(final int index) {
+        return (m_missing[index / 8] & (1 << (index % 8))) == 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasMissingInSet() {
+       return m_missing[0] == B_ZERO;
     }
 
 }

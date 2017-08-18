@@ -226,6 +226,7 @@ def bytes_into_table(table, data_bytes):
             colVec = col.ByteSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
 
+    #debug_util.breakpoint()
     table._data_frame = df
 
 # Serialize a pands.DataFrame into bytes.

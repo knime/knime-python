@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.ByteCell;
@@ -63,13 +62,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BytesListInserter implements FlatbuffersVectorInserter {
-
-    private Byte[][][] m_values;
-
-    private boolean[] m_missings;
-
-    private int m_ctr;
+public class BytesListInserter extends CollectionInserter {
 
     private String m_serializer;
 
@@ -80,8 +73,7 @@ public class BytesListInserter implements FlatbuffersVectorInserter {
      * @param serializer the serializer for the contained type
      */
     public BytesListInserter(final int numRows, final String serializer) {
-        m_values = new Byte[numRows][][];
-        m_missings = new boolean[numRows];
+        super(numRows);
         m_serializer = serializer;
     }
 
@@ -89,43 +81,31 @@ public class BytesListInserter implements FlatbuffersVectorInserter {
      * {@inheritDoc}
      */
     @Override
-    public void put(final Cell cell) {
-        if (cell.isMissing()) {
-            m_missings[m_ctr] = true;
-        } else {
-            m_values[m_ctr] = cell.getBytesArrayValue();
-        }
-        m_ctr++;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int[] cellOffsets = new int[m_values.length];
-
+        final int[] cellOffsets = new int[m_column.length];
+        final boolean[] missings = new boolean[m_column.length];
         int ctr = 0;
-        for (final Byte[][] o : m_values) {
+        for (final Cell c : m_column) {
             int[] bytesCellOffsets;
             boolean[] missingCells;
-            if (o == null) {
+            if (c.isMissing()) {
                 missingCells = new boolean[0];
                 final int bytesCellValVec = ByteCell.createValueVector(builder, new byte[0]);
                 bytesCellOffsets = new int[1];
                 bytesCellOffsets[0] = ByteCell.createByteCell(builder, bytesCellValVec);
+                missings[ctr] = true;
             } else {
-                bytesCellOffsets = new int[o.length];
-                missingCells = new boolean[o.length];
+                bytesCellOffsets = new int[c.getBytesArrayValue().length];
+                missingCells = new boolean[c.getBytesArrayValue().length];
 
                 int cIdx = 0;
-                for (final Byte[] b : o) {
-                    if (b == null) {
+                for (final byte[] b : c.getBytesArrayValue()) {
+                    if (c.isMissing(cIdx)) {
                         final int bytesCellValVec = builder.createByteVector(new byte[0]);
                         bytesCellOffsets[cIdx] = ByteCell.createByteCell(builder, bytesCellValVec);
                         missingCells[cIdx] = true;
                     } else {
-                        final int bytesCellValVec = builder.createByteVector(ArrayUtils.toPrimitive(b));
+                        final int bytesCellValVec = builder.createByteVector(b);
                         bytesCellOffsets[cIdx] = ByteCell.createByteCell(builder, bytesCellValVec);
                         missingCells[cIdx] = false;
                     }
@@ -142,7 +122,7 @@ public class BytesListInserter implements FlatbuffersVectorInserter {
 
         final int valuesVector = ByteCollectionColumn.createValuesVector(builder, cellOffsets);
 
-        final int missingOffset = ByteCollectionColumn.createMissingVector(builder, m_missings);
+        final int missingOffset = ByteCollectionColumn.createMissingVector(builder, missings);
 
         final int colOffset = ByteCollectionColumn.createByteCollectionColumn(builder,
             builder.createString(m_serializer), valuesVector, missingOffset);

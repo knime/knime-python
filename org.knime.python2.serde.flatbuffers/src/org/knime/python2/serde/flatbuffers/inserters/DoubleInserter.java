@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.Column;
@@ -63,7 +62,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  */
 public class DoubleInserter implements FlatbuffersVectorInserter {
 
-    private Double[] m_values;
+    private double[] m_values;
     private boolean[] m_missings;
     private int m_ctr;
 
@@ -72,7 +71,7 @@ public class DoubleInserter implements FlatbuffersVectorInserter {
      * @param numRows the number of rows in the table
      */
     public DoubleInserter(final int numRows) {
-        m_values = new Double[numRows];
+        m_values = new double[numRows];
         m_missings = new boolean[numRows];
     }
 
@@ -83,7 +82,6 @@ public class DoubleInserter implements FlatbuffersVectorInserter {
     public void put(final Cell cell) {
         if(cell.isMissing()) {
             m_missings[m_ctr] = true;
-            m_values[m_ctr] = Double.NaN;
         } else {
             m_values[m_ctr] = cell.getDoubleValue();
         }
@@ -95,8 +93,7 @@ public class DoubleInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int valuesOffset = DoubleColumn.createValuesVector(builder,
-            ArrayUtils.toPrimitive(m_values));
+        final int valuesOffset = DoubleColumn.createValuesVector(builder,m_values);
         final int missingOffset = DoubleColumn.createMissingVector(builder, m_missings);
         final int colOffset = DoubleColumn.createDoubleColumn(builder, valuesOffset, missingOffset);
         Column.startColumn(builder);

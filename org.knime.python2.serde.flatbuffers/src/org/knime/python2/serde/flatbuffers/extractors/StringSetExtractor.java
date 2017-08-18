@@ -85,18 +85,12 @@ public class StringSetExtractor implements VectorExtractor {
         }
         final StringCollectionCell cell = m_colVec.values(m_ctr);
 
-        final String[] l;
-        if (cell.keepDummy()) {
-            l = new String[cell.valueLength() + 1];
-            l[l.length - 1] = null;
-        } else {
-            l = new String[cell.valueLength()];
-        }
+        String[] l = new String[cell.valueLength()];
         for (int k = 0; k < cell.valueLength(); k++) {
             l[k] = cell.value(k);
         }
         m_ctr++;
-        return new CellImpl(l, true);
+        return new CellImpl(l, cell.keepDummy());
     }
 
 }

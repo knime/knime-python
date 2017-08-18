@@ -52,7 +52,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
@@ -142,61 +141,61 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                     break;
                 case BOOLEAN_LIST:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(BooleanCell.TYPE))
-                    .createSpec();
+                        .createSpec();
                     break;
                 case BOOLEAN_SET:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, SetCell.getCollectionType(BooleanCell.TYPE)).createSpec();
                     break;
                 case INTEGER:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, IntCell.TYPE).createSpec();
                     break;
                 case INTEGER_LIST:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, ListCell.getCollectionType(IntCell.TYPE)).createSpec();
                     break;
                 case INTEGER_SET:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, SetCell.getCollectionType(IntCell.TYPE)).createSpec();
                     break;
                 case LONG:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, LongCell.TYPE).createSpec();
                     break;
                 case LONG_LIST:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, ListCell.getCollectionType(LongCell.TYPE)).createSpec();
                     break;
                 case LONG_SET:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE)).createSpec();
                     break;
                 case DOUBLE:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, DoubleCell.TYPE).createSpec();
                     break;
                 case DOUBLE_LIST:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE)).createSpec();
                     break;
                 case DOUBLE_SET:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE)).createSpec();
                     break;
                 case STRING:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, StringCell.TYPE).createSpec();
                     break;
                 case STRING_LIST:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE)).createSpec();
                     break;
                 case STRING_SET:
                     colSpecs[i] =
-                    new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
+                        new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE)).createSpec();
                     break;
                 case BYTES:
                     key = spec.getColumnSerializers().get(columnName);
                     if (key != null) {
                         final DataType type =
-                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                            PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
                         if (type.getCellClass() == null) {
                             m_columnsToRetype.put(i, new DataTypeContainer(ResultType.PRIMITIVE));
                         }
@@ -209,30 +208,30 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                     key = spec.getColumnSerializers().get(columnName);
                     if (key != null) {
                         final DataType list_type =
-                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                            PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
                         if (list_type.getCellClass() == null) {
                             m_columnsToRetype.put(i, new DataTypeContainer(ResultType.LIST));
                         }
                         colSpecs[i] =
-                                new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
+                            new DataColumnSpecCreator(columnName, ListCell.getCollectionType(list_type)).createSpec();
                     } else {
                         colSpecs[i] = new DataColumnSpecCreator(columnName, ListCell.getCollectionType(StringCell.TYPE))
-                                .createSpec();
+                            .createSpec();
                     }
                     break;
                 case BYTES_SET:
                     key = spec.getColumnSerializers().get(columnName);
                     if (key != null) {
                         final DataType set_type =
-                                PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
+                            PythonToKnimeExtensions.getExtension(key).getJavaDeserializerFactory().getDataType();
                         if (set_type.getCellClass() == null) {
                             m_columnsToRetype.put(i, new DataTypeContainer(ResultType.SET));
                         }
                         colSpecs[i] =
-                                new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
+                            new DataColumnSpecCreator(columnName, SetCell.getCollectionType(set_type)).createSpec();
                     } else {
                         colSpecs[i] = new DataColumnSpecCreator(columnName, SetCell.getCollectionType(StringCell.TYPE))
-                                .createSpec();
+                            .createSpec();
                     }
                     break;
                 default:
@@ -263,23 +262,24 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         break;
                     case BOOLEAN_LIST:
                         final List<DataCell> booleanListCells = new ArrayList<DataCell>();
-                        for (final Boolean value : cell.getBooleanArrayValue()) {
-                            if (value == null) {
+                        int pos = 0;
+                        for (final boolean value : cell.getBooleanArrayValue()) {
+                            if (cell.isMissing(pos)) {
                                 booleanListCells.add(new MissingCell(null));
                             } else {
                                 booleanListCells.add(BooleanCellFactory.create(value));
                             }
+                            pos++;
                         }
                         cells[i] = CollectionCellFactory.createListCell(booleanListCells);
                         break;
                     case BOOLEAN_SET:
                         final List<DataCell> booleanSetCells = new ArrayList<DataCell>();
-                        for (final Boolean value : cell.getBooleanArrayValue()) {
-                            if (value == null) {
-                                booleanSetCells.add(new MissingCell(null));
-                            } else {
-                                booleanSetCells.add(BooleanCellFactory.create(value));
-                            }
+                        for (final boolean value : cell.getBooleanArrayValue()) {
+                            booleanSetCells.add(BooleanCellFactory.create(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            booleanSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(booleanSetCells);
                         break;
@@ -288,11 +288,11 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         break;
                     case INTEGER_LIST:
                         final List<DataCell> integerListCells = new ArrayList<DataCell>();
-                        for (final Integer value : cell.getIntegerArrayValue()) {
-                            if (value == null) {
+                        for (int ipos = 0; ipos < cell.getIntegerArrayValue().length; ipos++) {
+                            if (cell.isMissing(ipos)) {
                                 integerListCells.add(new MissingCell(null));
                             } else {
-                                integerListCells.add(new IntCell(value));
+                                integerListCells.add(new IntCell(cell.getIntegerArrayValue()[ipos]));
                             }
                         }
                         cells[i] = CollectionCellFactory.createListCell(integerListCells);
@@ -300,11 +300,10 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                     case INTEGER_SET:
                         final List<DataCell> integerSetCells = new ArrayList<DataCell>();
                         for (final Integer value : cell.getIntegerArrayValue()) {
-                            if (value == null) {
-                                integerSetCells.add(new MissingCell(null));
-                            } else {
-                                integerSetCells.add(new IntCell(value));
-                            }
+                            integerSetCells.add(new IntCell(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            integerSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(integerSetCells);
                         break;
@@ -313,23 +312,24 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         break;
                     case LONG_LIST:
                         final List<DataCell> longListCells = new ArrayList<DataCell>();
-                        for (final Long value : cell.getLongArrayValue()) {
-                            if (value == null) {
+                        int lpos = 0;
+                        for (final long value : cell.getLongArrayValue()) {
+                            if (cell.isMissing(lpos)) {
                                 longListCells.add(new MissingCell(null));
                             } else {
                                 longListCells.add(new LongCell(value));
                             }
+                            lpos++;
                         }
                         cells[i] = CollectionCellFactory.createListCell(longListCells);
                         break;
                     case LONG_SET:
                         final List<DataCell> longSetCells = new ArrayList<DataCell>();
-                        for (final Long value : cell.getLongArrayValue()) {
-                            if (value == null) {
-                                longSetCells.add(new MissingCell(null));
-                            } else {
-                                longSetCells.add(new LongCell(value));
-                            }
+                        for (final long value : cell.getLongArrayValue()) {
+                            longSetCells.add(new LongCell(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            longSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(longSetCells);
                         break;
@@ -338,23 +338,24 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         break;
                     case DOUBLE_LIST:
                         final List<DataCell> doubleListCells = new ArrayList<DataCell>();
-                        for (final Double value : cell.getDoubleArrayValue()) {
-                            if (value == null) {
+                        int dpos = 0;
+                        for (final double value : cell.getDoubleArrayValue()) {
+                            if (cell.isMissing(dpos)) {
                                 doubleListCells.add(new MissingCell(null));
                             } else {
                                 doubleListCells.add(new DoubleCell(value));
                             }
+                            dpos++;
                         }
                         cells[i] = CollectionCellFactory.createListCell(doubleListCells);
                         break;
                     case DOUBLE_SET:
                         final List<DataCell> doubleSetCells = new ArrayList<DataCell>();
-                        for (final Double value : cell.getDoubleArrayValue()) {
-                            if (value == null) {
-                                doubleSetCells.add(new MissingCell(null));
-                            } else {
-                                doubleSetCells.add(new DoubleCell(value));
-                            }
+                        for (final double value : cell.getDoubleArrayValue()) {
+                            doubleSetCells.add(new DoubleCell(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            doubleSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(doubleSetCells);
                         break;
@@ -363,23 +364,24 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         break;
                     case STRING_LIST:
                         final List<DataCell> stringListCells = new ArrayList<DataCell>();
+                        int spos = 0;
                         for (final String value : cell.getStringArrayValue()) {
-                            if (value == null) {
+                            if (cell.isMissing(spos)) {
                                 stringListCells.add(new MissingCell(null));
                             } else {
                                 stringListCells.add(new StringCell(value));
                             }
+                            spos++;
                         }
                         cells[i] = CollectionCellFactory.createListCell(stringListCells);
                         break;
                     case STRING_SET:
                         final List<DataCell> stringSetCells = new ArrayList<DataCell>();
                         for (final String value : cell.getStringArrayValue()) {
-                            if (value == null) {
-                                stringSetCells.add(new MissingCell(null));
-                            } else {
-                                stringSetCells.add(new StringCell(value));
-                            }
+                            stringSetCells.add(new StringCell(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            stringSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(stringSetCells);
                         break;
@@ -387,13 +389,12 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         final String bytesTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
                         if (bytesTypeId != null) {
                             final Deserializer bytesDeserializer = m_pythonToKnimeExtensions
-                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
+                                .getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
                             try {
                                 if (cell.getBytesValue() == null) {
                                     cells[i] = new MissingCell(null);
                                 } else {
-                                    cells[i] = bytesDeserializer
-                                            .deserialize(ArrayUtils.toPrimitive(cell.getBytesValue()), m_fileStoreFactory);
+                                    cells[i] = bytesDeserializer.deserialize(cell.getBytesValue(), m_fileStoreFactory);
                                 }
                                 final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
                                 if (dataTypeContainer != null) {
@@ -408,9 +409,8 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                                 if (cell.getBytesValue() == null) {
                                     cells[i] = new MissingCell(null);
                                 } else {
-                                    cells[i] = new DenseByteVectorCellFactory(
-                                        new DenseByteVector(ArrayUtils.toPrimitive(cell.getBytesValue())))
-                                            .createDataCell();
+                                    cells[i] = new DenseByteVectorCellFactory(new DenseByteVector(cell.getBytesValue()))
+                                        .createDataCell();
                                 }
                             } catch (final IllegalStateException e) {
                                 LOGGER.error(e.getMessage(), e);
@@ -422,18 +422,19 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         final String bytesListTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
                         if (bytesListTypeId != null) {
                             final Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
-                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
+                                .getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
                             final List<DataCell> listCells = new ArrayList<DataCell>();
                             if (cell.getBytesArrayValue() == null) {
                                 cells[i] = new MissingCell(null);
                             } else {
-                                for (final Byte[] value : cell.getBytesArrayValue()) {
-                                    if (value == null) {
+                                int blpos = 0;
+                                for (final byte[] value : cell.getBytesArrayValue()) {
+                                    if (cell.isMissing(blpos)) {
                                         listCells.add(new MissingCell(null));
                                     } else {
                                         try {
-                                            final DataCell dc = bytesListDeserializer
-                                                    .deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
+                                            final DataCell dc =
+                                                bytesListDeserializer.deserialize(value, m_fileStoreFactory);
                                             final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
                                             if (dataTypeContainer != null) {
                                                 dataTypeContainer.m_dataTypes.add(dc.getType());
@@ -444,6 +445,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                                             listCells.add(new MissingCell(null));
                                         }
                                     }
+                                    blpos++;
                                 }
                                 cells[i] = CollectionCellFactory.createListCell(listCells);
                             }
@@ -452,8 +454,9 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                                 cells[i] = new MissingCell(null);
                             } else {
                                 final List<DataCell> listCells = new ArrayList<DataCell>();
-                                for (final Byte[] value : cell.getBytesArrayValue()) {
-                                    if (value == null) {
+                                int blpos = 0;
+                                for (final byte[] value : cell.getBytesArrayValue()) {
+                                    if (cell.isMissing(blpos)) {
                                         listCells.add(new MissingCell(null));
                                     } else {
                                         try {
@@ -472,28 +475,27 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         final String bytesSetTypeId = m_spec.getColumnSerializers().get(m_spec.getColumnNames()[i]);
                         if (bytesSetTypeId != null) {
                             final Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
-                                    .getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
+                                .getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
                             final List<DataCell> setCells = new ArrayList<DataCell>();
                             if (cell.getBytesArrayValue() == null) {
                                 cells[i] = new MissingCell(null);
                             } else {
-                                for (final Byte[] value : cell.getBytesArrayValue()) {
-                                    if (value == null) {
-                                        setCells.add(new MissingCell(null));
-                                    } else {
-                                        try {
-                                            final DataCell dc = bytesSetDeserializer
-                                                    .deserialize(ArrayUtils.toPrimitive(value), m_fileStoreFactory);
-                                            final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
-                                            if (dataTypeContainer != null) {
-                                                dataTypeContainer.m_dataTypes.add(dc.getType());
-                                            }
-                                            setCells.add(dc);
-                                        } catch (IllegalStateException | IOException e) {
-                                            LOGGER.error(e.getMessage(), e);
-                                            setCells.add(new MissingCell(null));
+                                for (final byte[] value : cell.getBytesArrayValue()) {
+                                    try {
+                                        final DataCell dc = bytesSetDeserializer.deserialize(value, m_fileStoreFactory);
+                                        final DataTypeContainer dataTypeContainer = m_columnsToRetype.get(i);
+                                        if (dataTypeContainer != null) {
+                                            dataTypeContainer.m_dataTypes.add(dc.getType());
                                         }
+                                        setCells.add(dc);
+                                    } catch (IllegalStateException | IOException e) {
+                                        LOGGER.error(e.getMessage(), e);
+                                        setCells.add(new MissingCell(null));
                                     }
+
+                                }
+                                if (cell.hasMissingInSet()) {
+                                    setCells.add(new MissingCell(null));
                                 }
                                 cells[i] = CollectionCellFactory.createSetCell(setCells);
                             }
@@ -502,17 +504,16 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             if (cell.getBytesArrayValue() == null) {
                                 cells[i] = new MissingCell(null);
                             } else {
-                                for (final Byte[] value : cell.getBytesArrayValue()) {
-                                    if (value == null) {
+                                for (final byte[] value : cell.getBytesArrayValue()) {
+                                    try {
+                                        setCells.add(new StringCell(value.toString()));
+                                    } catch (final IllegalStateException e) {
+                                        LOGGER.error(e.getMessage(), e);
                                         setCells.add(new MissingCell(null));
-                                    } else {
-                                        try {
-                                            setCells.add(new StringCell(value.toString()));
-                                        } catch (final IllegalStateException e) {
-                                            LOGGER.error(e.getMessage(), e);
-                                            setCells.add(new MissingCell(null));
-                                        }
                                     }
+                                }
+                                if (cell.hasMissingInSet()) {
+                                    setCells.add(new MissingCell(null));
                                 }
                                 cells[i] = CollectionCellFactory.createSetCell(setCells);
                             }
@@ -572,7 +573,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
      * Enum for distinguishing if a cell contains primitives or collections (either lists or sets).
      */
     private enum ResultType {
-        PRIMITIVE, LIST, SET;
+            PRIMITIVE, LIST, SET;
     }
 
     /**

@@ -63,60 +63,73 @@ public interface Cell {
     boolean isMissing();
 
     /**
+     * Collection cell method.
+     * @param index the index inside the underlying collection cell
+     * @return true if the value of the underlying list at the given position is missing
+     */
+    boolean isMissing(int index);
+
+
+    /**
+     * @return true if the underlying set contains a missing value, false otherwise
+     */
+    boolean hasMissingInSet();
+
+    /**
      * @return The boolean value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#BOOLEAN}.
      */
-    Boolean getBooleanValue() throws IllegalStateException;
+    boolean getBooleanValue() throws IllegalStateException;
 
     /**
      * @return The boolean array value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#BOOLEAN_LIST} or {@link Type#BOOLEAN_SET}.
      */
-    Boolean[] getBooleanArrayValue() throws IllegalStateException;
+    boolean[] getBooleanArrayValue() throws IllegalStateException;
 
     /**
      * @return The integer value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#INTEGER}.
      */
-    Integer getIntegerValue() throws IllegalStateException;
+    int getIntegerValue() throws IllegalStateException;
 
     /**
      * @return The integer array value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#INTEGER_LIST} or {@link Type#INTEGER_SET}.
      */
-    Integer[] getIntegerArrayValue() throws IllegalStateException;
+    int[] getIntegerArrayValue() throws IllegalStateException;
 
     /**
      * @return The long value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#LONG}.
      */
-    Long getLongValue() throws IllegalStateException;
+    long getLongValue() throws IllegalStateException;
 
     /**
      * @return The long array value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#LONG_LIST} or {@link Type#LONG_SET}.
      */
-    Long[] getLongArrayValue() throws IllegalStateException;
+    long[] getLongArrayValue() throws IllegalStateException;
 
     /**
      * @return The double value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#DOUBLE}.
      */
-    Double getDoubleValue() throws IllegalStateException;
+    double getDoubleValue() throws IllegalStateException;
 
     /**
      * @return The double array value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#DOUBLE_LIST} or {@link Type#DOUBLE_SET}.
      */
-    Double[] getDoubleArrayValue() throws IllegalStateException;
+    double[] getDoubleArrayValue() throws IllegalStateException;
 
     /**
      * @return The string value of this cell.
@@ -137,13 +150,13 @@ public interface Cell {
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#BYTES}.
      */
-    Byte[] getBytesValue() throws IllegalStateException;
+    byte[] getBytesValue() throws IllegalStateException;
 
     /**
      * @return The bytes array value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#BYTES_LIST} or {@link Type#BYTES_SET}.
      */
-    Byte[][] getBytesArrayValue() throws IllegalStateException;
+    byte[][] getBytesArrayValue() throws IllegalStateException;
 
 }

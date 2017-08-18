@@ -48,10 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanCollectionCell;
@@ -65,13 +61,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BooleanSetInserter implements FlatbuffersVectorInserter {
-
-    private Boolean[][] m_values;
-
-    private boolean[] m_missings;
-
-    private int m_ctr;
+public class BooleanSetInserter extends CollectionInserter {
 
     /**
      * Constructor.
@@ -79,21 +69,7 @@ public class BooleanSetInserter implements FlatbuffersVectorInserter {
      * @param numRows the number of rows in the table
      */
     public BooleanSetInserter(final int numRows) {
-        m_values = new Boolean[numRows][];
-        m_missings = new boolean[numRows];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void put(final Cell cell) {
-        if (cell.isMissing()) {
-            m_missings[m_ctr] = true;
-        } else {
-            m_values[m_ctr] = cell.getBooleanArrayValue();
-        }
-        m_ctr++;
+        super(numRows);
     }
 
     /**
@@ -101,28 +77,22 @@ public class BooleanSetInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int[] cellOffsets = new int[m_values.length];
+        final int[] cellOffsets = new int[m_column.length];
+        final boolean[] missings = new boolean[m_column.length];
         int ctr = 0;
-        for (final Boolean[] o : m_values) {
+        for (final Cell c : m_column) {
 
             boolean addMissingValue = false;
             boolean[] missingCells;
             boolean[] values;
-            if (o == null) {
+            if (c.isMissing()) {
                 values = new boolean[0];
                 missingCells = new boolean[0];
+                missings[ctr] = true;
             } else {
-                //TODO ugly, pack and change
-                final List<Boolean> l = new ArrayList<>();
-                for (final Boolean c : o) {
-                    if (c == null) {
-                        addMissingValue = true;
-                    } else {
-                        l.add(c);
-                    }
-                }
-                values = ArrayUtils.toPrimitive(l.toArray(new Boolean[l.size()]));
-                missingCells = new boolean[o.length];
+                values = c.getBooleanArrayValue();
+                addMissingValue = c.hasMissingInSet();
+                missingCells = new boolean[values.length];
             }
             final int valuesOffset = BooleanCollectionCell.createValueVector(builder, values);
             final int missingCellsOffset = BooleanCollectionCell.createMissingVector(builder, missingCells);
@@ -132,7 +102,7 @@ public class BooleanSetInserter implements FlatbuffersVectorInserter {
         }
 
         final int valuesVector = BooleanCollectionColumn.createValuesVector(builder, cellOffsets);
-        final int missingOffset = BooleanCollectionColumn.createMissingVector(builder, m_missings);
+        final int missingOffset = BooleanCollectionColumn.createMissingVector(builder, missings);
         final int colOffset =
             BooleanCollectionColumn.createBooleanCollectionColumn(builder, valuesVector, missingOffset);
         Column.startColumn(builder);

@@ -50,7 +50,6 @@ package org.knime.python2.serde.flatbuffers.extractors;
 
 import java.nio.DoubleBuffer;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -90,14 +89,14 @@ public class DoubleListExtractor implements VectorExtractor {
         double[] values = new double[cell.valueLength()];
         buff.get(values);
 
-        final Double[] l = ArrayUtils.toObject(values);
+        byte[] missings = new byte[cell.valueLength() / 8 + (cell.valueLength() % 8 == 0 ? 0:1)];
         for (int k = 0; k < cell.valueLength(); k++) {
-            if (cell.missing(k)) {
-                l[k] = null;
+            if (!cell.missing(k)) {
+                missings[k / 8] += (1 << (k % 8));
             }
         }
         m_ctr++;
-        return new CellImpl(l, false);
+        return new CellImpl(values, missings);
     }
 
 }

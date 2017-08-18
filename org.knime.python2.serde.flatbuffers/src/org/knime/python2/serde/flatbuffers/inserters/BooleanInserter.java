@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.BooleanColumn;
@@ -63,7 +62,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  */
 public class BooleanInserter implements FlatbuffersVectorInserter {
 
-    private Boolean[] m_values;
+    private boolean[] m_values;
     private boolean[] m_missings;
     private int m_ctr;
 
@@ -72,7 +71,7 @@ public class BooleanInserter implements FlatbuffersVectorInserter {
      * @param numRows the number of rows in the table
      */
     public BooleanInserter(final int numRows) {
-        m_values = new Boolean[numRows];
+        m_values = new boolean[numRows];
         m_missings = new boolean[numRows];
     }
 
@@ -83,7 +82,6 @@ public class BooleanInserter implements FlatbuffersVectorInserter {
     public void put(final Cell cell) {
         if(cell.isMissing()) {
             m_missings[m_ctr] = true;
-            m_values[m_ctr] = false;
         } else {
             m_values[m_ctr] = cell.getBooleanValue();
         }
@@ -95,8 +93,7 @@ public class BooleanInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int valuesOffset = BooleanColumn.createValuesVector(builder,
-            ArrayUtils.toPrimitive(m_values));
+        final int valuesOffset = BooleanColumn.createValuesVector(builder,m_values);
         final int missingOffset = BooleanColumn.createMissingVector(builder, m_missings);
         final int colOffset = BooleanColumn.createBooleanColumn(builder, valuesOffset, missingOffset);
         Column.startColumn(builder);
