@@ -103,9 +103,9 @@ public class BytesInserter implements FlatbuffersVectorInserter {
         for (final Byte[] bytes : m_values) {
             int byteCellOffset;
             if(bytes == null) {
-                byteCellOffset = ByteCell.createValueVector(builder, new byte[0]);
+                byteCellOffset = builder.createByteVector(new byte[0]);
             } else {
-                byteCellOffset = ByteCell.createValueVector(builder, ArrayUtils.toPrimitive(bytes));
+                byteCellOffset = builder.createByteVector(ArrayUtils.toPrimitive(bytes));
             }
             bytesOffsets[ctr] = ByteCell.createByteCell(builder, byteCellOffset);
             ctr++;
