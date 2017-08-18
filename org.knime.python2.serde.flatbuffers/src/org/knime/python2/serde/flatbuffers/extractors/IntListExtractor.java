@@ -48,9 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.extractors;
 
-import java.nio.IntBuffer;
-
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -58,7 +55,7 @@ import org.knime.python2.serde.flatbuffers.flatc.IntCollectionColumn;
 import org.knime.python2.serde.flatbuffers.flatc.IntegerCollectionCell;
 
 /**
- * Extracts Cells from a BooleanColumn.
+ * Extracts Cells from a IntListColumn.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -86,18 +83,18 @@ public class IntListExtractor implements VectorExtractor {
             return new CellImpl();
         }
         final IntegerCollectionCell cell = m_colVec.values(m_ctr);
-        IntBuffer buff = cell.valueAsByteBuffer().asIntBuffer();
         int[] values = new int[cell.valueLength()];
-        buff.get(values);
+        cell.valueAsByteBuffer().asIntBuffer().get(values);
 
-        final Integer[] l = ArrayUtils.toObject(values);
+        //TODO in superclass ?
+        byte[] missings = new byte[cell.valueLength() / 8 + (cell.valueLength() % 8 == 0 ? 0:1)];
         for (int k = 0; k < cell.valueLength(); k++) {
-            if (cell.missing(k)) {
-                l[k] = null;
+            if (!cell.missing(k)) {
+                missings[k / 8] += (1 << (k % 8));
             }
         }
         m_ctr++;
-        return new CellImpl(l, false);
+        return new CellImpl(values, missings);
     }
 
 }

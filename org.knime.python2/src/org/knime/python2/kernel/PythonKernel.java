@@ -71,7 +71,6 @@ import javax.imageio.ImageIO;
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.commons.lang.ArrayUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -678,7 +677,7 @@ public class PythonKernel {
         final int bytesIndex = spec.findColumn("bytes");
         final int typeIndex = spec.findColumn("type");
         final int representationIndex = spec.findColumn("representation");
-        final byte[] objectBytes = ArrayUtils.toPrimitive(row.getCell(bytesIndex).getBytesValue());
+        final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
         return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
             row.getCell(representationIndex).getStringValue());
     }

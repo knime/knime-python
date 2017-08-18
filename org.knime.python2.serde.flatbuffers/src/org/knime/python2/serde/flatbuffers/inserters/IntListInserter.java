@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.Column;
@@ -62,32 +61,14 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class IntListInserter implements FlatbuffersVectorInserter {
-
-    private Integer[][] m_values;
-    private boolean[] m_missings;
-    private int m_ctr;
+public class IntListInserter extends CollectionInserter {
 
     /**
      * Constructor.
      * @param numRows the number of rows in the table
      */
     public IntListInserter(final int numRows) {
-        m_values = new Integer[numRows][];
-        m_missings = new boolean[numRows];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void put(final Cell cell) {
-        if(cell.isMissing()) {
-            m_missings[m_ctr] = true;
-        } else {
-            m_values[m_ctr] = cell.getIntegerArrayValue();
-        }
-        m_ctr++;
+        super(numRows);
     }
 
     /**
@@ -95,27 +76,26 @@ public class IntListInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int[] cellOffsets = new int[m_values.length];
+        final int[] cellOffsets = new int[m_column.length];
+        final boolean[] missings = new boolean[m_column.length];
         int ctr = 0;
-        for (final Integer[] o : m_values) {
+        for (final Cell c : m_column) {
             int[] values;
             boolean[] missingCells;
-            if(o == null) {
+            if(c.isMissing()) {
                 values = new int[0];
                 missingCells = new boolean[0];
+                missings[ctr] = true;
             } else {
-                missingCells = new boolean[o.length];
+                values = c.getIntegerArrayValue();
+                //TODO Flatbuffers missing bit encoding (1 missing, 0 available)
+                missingCells = new boolean[values.length];
 
-                int cIdx = 0;
-                for (final Integer c : o) {
-                    if (c == null) {
-                        o[cIdx] = 0;
-                        // missing
-                        missingCells[cIdx] = true;
+                for(int i=0; i<values.length; i++) {
+                    if(c.isMissing(i)) {
+                        missingCells[i] = true;
                     }
-                    cIdx++;
                 }
-                values = ArrayUtils.toPrimitive(o);
 
             }
             final int valuesOffset =
@@ -128,7 +108,7 @@ public class IntListInserter implements FlatbuffersVectorInserter {
         }
 
         final int valuesVector = IntCollectionColumn.createValuesVector(builder, cellOffsets);
-        final int missingOffset = IntCollectionColumn.createMissingVector(builder, m_missings);
+        final int missingOffset = IntCollectionColumn.createMissingVector(builder, missings);
         final int colOffset =
                 IntCollectionColumn.createIntCollectionColumn(builder, valuesVector, missingOffset);
         Column.startColumn(builder);

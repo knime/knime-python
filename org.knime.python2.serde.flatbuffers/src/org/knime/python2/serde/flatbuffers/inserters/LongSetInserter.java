@@ -48,8 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import java.nio.LongBuffer;
-
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.Column;
@@ -63,13 +61,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class LongSetInserter implements FlatbuffersVectorInserter {
-
-    private Long[][] m_values;
-
-    private boolean[] m_missings;
-
-    private int m_ctr;
+public class LongSetInserter extends CollectionInserter {
 
     /**
      * Constructor.
@@ -77,21 +69,7 @@ public class LongSetInserter implements FlatbuffersVectorInserter {
      * @param numRows the number of rows in the table
      */
     public LongSetInserter(final int numRows) {
-        m_values = new Long[numRows][];
-        m_missings = new boolean[numRows];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void put(final Cell cell) {
-        if (cell.isMissing()) {
-            m_missings[m_ctr] = true;
-        } else {
-            m_values[m_ctr] = cell.getLongArrayValue();
-        }
-        m_ctr++;
+       super(numRows);
     }
 
     /**
@@ -99,34 +77,22 @@ public class LongSetInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int[] cellOffsets = new int[m_values.length];
+        final int[] cellOffsets = new int[m_column.length];
+        final boolean[] missings = new boolean[m_column.length];
         int ctr = 0;
-        for (final Long[] o : m_values) {
+        for (final Cell c : m_column) {
 
             boolean addMissingValue = false;
             long[] values;
             boolean[] missingCells;
-            if (o == null) {
+            if (c.isMissing()) {
                 values = new long[0];
                 missingCells = new boolean[0];
+                missings[ctr] = true;
             } else {
-                LongBuffer ibuff = LongBuffer.allocate(o.length);
-                for (final Long c : o) {
-                    if (c == null) {
-                        addMissingValue = true;
-                    } else {
-                        ibuff.put(c.longValue());
-                    }
-                }
-
-                if (addMissingValue) {
-                    values = new long[o.length - 1];
-                    ibuff.position(0);
-                    ibuff.get(values);
-                } else {
-                    values = ibuff.array();
-                }
-                missingCells = new boolean[o.length];
+                values = c.getLongArrayValue();
+                addMissingValue = c.hasMissingInSet();
+                missingCells = new boolean[values.length];
             }
             final int valuesOffset = LongCollectionCell.createValueVector(builder, values);
             final int missingCellsOffset = LongCollectionCell.createMissingVector(builder, missingCells);
@@ -136,7 +102,7 @@ public class LongSetInserter implements FlatbuffersVectorInserter {
         }
 
         final int valuesVector = LongCollectionColumn.createValuesVector(builder, cellOffsets);
-        final int missingOffset = LongCollectionColumn.createMissingVector(builder, m_missings);
+        final int missingOffset = LongCollectionColumn.createMissingVector(builder, missings);
         final int colOffset = LongCollectionColumn.createLongCollectionColumn(builder, valuesVector, missingOffset);
         Column.startColumn(builder);
         Column.addType(builder, Type.LONG_SET.getId());

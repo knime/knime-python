@@ -85,16 +85,17 @@ public class BooleanListExtractor implements VectorExtractor {
         }
         final BooleanCollectionCell cell = m_colVec.values(m_ctr);
 
-        final Boolean[] l = new Boolean[cell.valueLength()];
+        final boolean[] l = new boolean[cell.valueLength()];
+        byte[] missings = new byte[cell.valueLength() / 8 + (cell.valueLength() % 8 == 0 ? 0:1)];
         for (int k = 0; k < cell.valueLength(); k++) {
-            if (cell.missing(k)) {
-                l[k] = null;
-            } else {
+            if (!cell.missing(k)) {
                 l[k] = cell.value(k);
+                missings[k / 8] += (1 << (k % 8));
             }
         }
+
         m_ctr++;
-        return new CellImpl(l, false);
+        return new CellImpl(l, missings);
     }
 
 }

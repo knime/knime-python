@@ -44,56 +44,47 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 17, 2017 (clemens): created
+ *   Aug 18, 2017 (clemens): created
  */
-package org.knime.python2.serde.flatbuffers.extractors;
+package org.knime.python2.serde.flatbuffers.inserters;
 
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
-import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
-import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
-import org.knime.python2.serde.flatbuffers.flatc.StringCollectionColumn;
 
 /**
- * Extracts Cells from a BooleanColumn.
  *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author clemens
  */
-public class StringListExtractor implements VectorExtractor {
+public abstract class CollectionInserter implements FlatbuffersVectorInserter {
 
-    private StringCollectionColumn m_colVec;
-    private int m_ctr;
+    protected Cell[] m_column;
+    protected int m_ctr;
 
     /**
      * Constructor.
-     *
-     * @param colVec the vector to extract from
+     * @param numRows the number of rows in the table
      */
-    public StringListExtractor(final StringCollectionColumn colVec) {
-        m_colVec = colVec;
+    protected CollectionInserter(final int numRows) {
+        m_column = new Cell[numRows];
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Cell extract() {
-        if(m_colVec.missing(m_ctr)) {
-            m_ctr++;
-            return new CellImpl();
-        }
-        final StringCollectionCell cell = m_colVec.values(m_ctr);
+    public void put(final Cell cell) {
+        m_column[m_ctr] = cell;
+        m_ctr++;
+    }
 
-        final String[] l = new String[cell.valueLength()];
-        byte[] missings = new byte[cell.valueLength() / 8 + (cell.valueLength() % 8 == 0 ? 0:1)];
-        for (int k = 0; k < cell.valueLength(); k++) {
-            if (!cell.missing(k)) {
-                l[k] = cell.value(k);
-                missings[k / 8] += (1 << (k % 8));
+    protected boolean[] getMissingInnerCells(final Cell c, final int numElems) {
+        boolean [] missingCells = new boolean[numElems];
+
+        for(int i=0; i<numElems; i++) {
+            if(c.isMissing(i)) {
+                missingCells[i] = true;
             }
         }
-        m_ctr++;
-        return new CellImpl(l, missings);
+        return missingCells;
     }
 
 }

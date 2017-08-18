@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.extractors;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -84,7 +83,7 @@ public class BytesExtractor implements VectorExtractor {
        } else {
            byte[] bytes = new byte[m_colVec.values(m_ctr).valueLength()];
            m_colVec.values(m_ctr).valueAsByteBuffer().get(bytes);
-           c = new CellImpl(ArrayUtils.toObject(bytes));
+           c = new CellImpl(bytes);
        }
        m_ctr++;
        return c;

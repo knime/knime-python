@@ -48,7 +48,6 @@
  */
 package org.knime.python2.serde.flatbuffers.inserters;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.serde.flatbuffers.flatc.ByteCell;
@@ -64,7 +63,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  */
 public class BytesInserter implements FlatbuffersVectorInserter {
 
-    private Byte[][] m_values;
+    private byte[][] m_values;
     private boolean[] m_missings;
     private int m_ctr;
 
@@ -73,9 +72,10 @@ public class BytesInserter implements FlatbuffersVectorInserter {
     /**
      * Constructor.
      * @param numRows the number of rows in the table
+     * @param serializer the serializer for the underlying type
      */
     public BytesInserter(final int numRows, final String serializer) {
-        m_values = new Byte[numRows][];
+        m_values = new byte[numRows][];
         m_missings = new boolean[numRows];
         m_serializer = serializer;
     }
@@ -100,12 +100,12 @@ public class BytesInserter implements FlatbuffersVectorInserter {
     public int createColumn(final FlatBufferBuilder builder) {
         int[] bytesOffsets = new int[m_values.length];
         int ctr = 0;
-        for (final Byte[] bytes : m_values) {
+        for (final byte[] bytes : m_values) {
             int byteCellOffset;
             if(bytes == null) {
                 byteCellOffset = builder.createByteVector(new byte[0]);
             } else {
-                byteCellOffset = builder.createByteVector(ArrayUtils.toPrimitive(bytes));
+                byteCellOffset = builder.createByteVector(bytes);
             }
             bytesOffsets[ctr] = ByteCell.createByteCell(builder, byteCellOffset);
             ctr++;

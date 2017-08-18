@@ -61,13 +61,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class StringListInserter implements FlatbuffersVectorInserter {
-
-    private String[][] m_values;
-
-    private boolean[] m_missings;
-
-    private int m_ctr;
+public class StringListInserter extends CollectionInserter {
 
     /**
      * Constructor.
@@ -75,21 +69,7 @@ public class StringListInserter implements FlatbuffersVectorInserter {
      * @param numRows the number of rows in the table
      */
     public StringListInserter(final int numRows) {
-        m_values = new String[numRows][];
-        m_missings = new boolean[numRows];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void put(final Cell cell) {
-        if (cell.isMissing()) {
-            m_missings[m_ctr] = true;
-        } else {
-            m_values[m_ctr] = cell.getStringArrayValue();
-        }
-        m_ctr++;
+        super(numRows);
     }
 
     /**
@@ -97,21 +77,22 @@ public class StringListInserter implements FlatbuffersVectorInserter {
      */
     @Override
     public int createColumn(final FlatBufferBuilder builder) {
-        final int[] cellOffsets = new int[m_values.length];
-
+        final int[] cellOffsets = new int[m_column.length];
+        final boolean[] missings = new boolean[m_column.length];
         int ctr = 0;
-        for (final String[] o : m_values) {
+        for (final Cell c : m_column) {
             int[] strOffsets;
             boolean[] missingCells;
-            if (o == null) {
+            if(c.isMissing()) {
                 strOffsets = new int[0];
                 missingCells = new boolean[0];
+                missings[ctr] = true;
             } else {
-                strOffsets = new int[o.length];
-                missingCells = new boolean[o.length];
+                strOffsets = new int[c.getStringArrayValue().length];
+                missingCells = new boolean[c.getStringArrayValue().length];
                 int cIdx = 0;
-                for (final String s : o) {
-                    if (s == null) {
+                for (final String s : c.getStringArrayValue()) {
+                    if (c.isMissing(cIdx)) {
                         strOffsets[cIdx] = builder.createString("");
                         missingCells[cIdx] = true;
                     } else {
@@ -130,7 +111,7 @@ public class StringListInserter implements FlatbuffersVectorInserter {
         }
 
         final int valuesVector = StringCollectionColumn.createValuesVector(builder, cellOffsets);
-        final int missingOffset = StringCollectionColumn.createMissingVector(builder, m_missings);
+        final int missingOffset = StringCollectionColumn.createMissingVector(builder, missings);
 
         final int colOffset = StringCollectionColumn.createStringCollectionColumn(builder, valuesVector, missingOffset);
         Column.startColumn(builder);

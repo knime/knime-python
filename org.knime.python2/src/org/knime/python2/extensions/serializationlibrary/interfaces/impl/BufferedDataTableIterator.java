@@ -46,6 +46,9 @@
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
+import java.nio.DoubleBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -200,65 +203,152 @@ public class BufferedDataTableIterator implements TableIterator {
             if (dataCell.isMissing()) {
                 row.setCell(new CellImpl(), i);
             } else if (type == Type.BOOLEAN) {
-                final Boolean value = ((BooleanValue)dataCell).getBooleanValue();
+                final boolean value = ((BooleanValue)dataCell).getBooleanValue();
                 row.setCell(new CellImpl(value), i);
-            } else if ((type == Type.BOOLEAN_LIST) || (type == Type.BOOLEAN_SET)) {
+            } else if (type == Type.BOOLEAN_LIST) {
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
-                final Boolean[] values = new Boolean[colCell.size()];
+                final boolean[] values = new boolean[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
-                        values[j++] = ((BooleanValue)innerCell).getBooleanValue();
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((BooleanValue)innerCell).getBooleanValue();
+                        missings[j / 8] += (1 << (j % 8));
+                        j++;
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.BOOLEAN_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.BOOLEAN_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                boolean[] values = new boolean[colCell.size()];
+                boolean hasMissing = false;
+                int ctr = 0;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        values[ctr] = ((BooleanValue)innerCell).getBooleanValue();
+                        ctr++;
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                } else {
+                    row.setCell(new CellImpl(ArrayUtils.subarray(values, 0, colCell.size() - 1), hasMissing), i);
+                }
+
             } else if (type == Type.INTEGER) {
-                final Integer value = ((IntValue)dataCell).getIntValue();
+                final int value = ((IntValue)dataCell).getIntValue();
                 row.setCell(new CellImpl(value), i);
-            } else if ((type == Type.INTEGER_LIST) || (type == Type.INTEGER_SET)) {
+            } else if (type == Type.INTEGER_LIST) {
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
-                final Integer[] values = new Integer[colCell.size()];
+                final int[] values = new int[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
-                        values[j++] = ((IntValue)innerCell).getIntValue();
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((IntValue)innerCell).getIntValue();
+                        missings[j / 8] += (1 << (j % 8));
+                        j++;
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.INTEGER_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.INTEGER_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                IntBuffer buff = IntBuffer.allocate(colCell.size());
+                boolean hasMissing = false;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        buff.put(((IntValue)innerCell).getIntValue());
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(buff.array(), hasMissing), i);
+                } else {
+                    int[] values = new int[colCell.size() - 1];
+                    buff.position(0);
+                    buff.get(values);
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                }
+
             } else if (type == Type.LONG) {
-                final Long value = ((LongValue)dataCell).getLongValue();
+                final long value = ((LongValue)dataCell).getLongValue();
                 row.setCell(new CellImpl(value), i);
-            } else if ((type == Type.LONG_LIST) || (type == Type.LONG_SET)) {
+            } else if (type == Type.LONG_LIST) {
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
-                final Long[] values = new Long[colCell.size()];
+                final long[] values = new long[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
-                        values[j++] = ((LongValue)innerCell).getLongValue();
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((LongValue)innerCell).getLongValue();
+                        missings[j / 8] += (1 << (j % 8));
+                        j++;
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.LONG_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.LONG_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                LongBuffer buff = LongBuffer.allocate(colCell.size());
+                boolean hasMissing = false;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        buff.put(((LongValue)innerCell).getLongValue());
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(buff.array(), hasMissing), i);
+                } else {
+                    long[] values = new long[colCell.size() - 1];
+                    buff.position(0);
+                    buff.get(values);
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                }
+
             } else if (type == Type.DOUBLE) {
-                final Double value = ((DoubleValue)dataCell).getDoubleValue();
+                final double value = ((DoubleValue)dataCell).getDoubleValue();
                 row.setCell(new CellImpl(value), i);
-            } else if ((type == Type.DOUBLE_LIST) || (type == Type.DOUBLE_SET)) {
+            } else if (type == Type.DOUBLE_LIST) {
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
-                final Double[] values = new Double[colCell.size()];
+                final double[] values = new double[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
-                        values[j++] = ((DoubleValue)innerCell).getDoubleValue();
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((DoubleValue)innerCell).getDoubleValue();
+                        missings[j / 8] += (1 << (j % 8));
+                        j++;
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.DOUBLE_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.DOUBLE_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                DoubleBuffer buff = DoubleBuffer.allocate(colCell.size());
+                boolean hasMissing = false;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        buff.put(((DoubleValue)innerCell).getDoubleValue());
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(buff.array(), hasMissing), i);
+                } else {
+                    double[] values = new double[colCell.size() - 1];
+                    buff.position(0);
+                    buff.get(values);
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                }
+
             } else if (type == Type.STRING) {
                 String value;
                 if (dataCell.getType().isCompatible(StringValue.class)) {
@@ -267,51 +357,94 @@ public class BufferedDataTableIterator implements TableIterator {
                     value = dataCell.toString();
                 }
                 row.setCell(new CellImpl(value), i);
-            } else if ((type == Type.STRING_LIST) || (type == Type.STRING_SET)) {
+            } else if (type == Type.STRING_LIST) {
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
                 final String[] values = new String[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
-                        if (innerCell.getType().isCompatible(StringValue.class)) {
-                            values[j++] = ((StringValue)innerCell).getStringValue();
-                        } else {
-                            values[j++] = innerCell.toString();
-                        }
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((StringValue)innerCell).getStringValue();
+                        missings[j / 8] += (1 << (j % 8));
+                        j++;
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.STRING_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.STRING_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                final String[] values = new String[colCell.size()];
+                boolean hasMissing = false;
+                int j = 0;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        values[j] = ((StringValue)innerCell).getStringValue();
+                        j++;
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                } else {
+                    row.setCell(new CellImpl((String[]) ArrayUtils.subarray(values, 0, colCell.size() - 1), hasMissing), i);
+                }
+
             } else if (type == Type.BYTES) {
                 final Serializer serializer = m_knimeToPythonExtensions
                         .getSerializer(KnimeToPythonExtensions.getExtension(dataCell.getType()).getId());
                 try {
-                    final Byte[] value = ArrayUtils.toObject(serializer.serialize(dataCell));
+                    final byte[] value = serializer.serialize(dataCell);
                     row.setCell(new CellImpl(value), i);
                 } catch (final IOException e) {
                     LOGGER.error(e.getMessage(), e);
                     row.setCell(new CellImpl(), i);
                 }
-            } else if ((type == Type.BYTES_LIST) || (type == Type.BYTES_SET)) {
+            } else if (type == Type.BYTES_LIST) {
                 final Serializer serializer = m_knimeToPythonExtensions.getSerializer(
                     KnimeToPythonExtensions.getExtension(dataCell.getType().getCollectionElementType()).getId());
                 final CollectionDataValue colCell = (CollectionDataValue)dataCell;
-                final Byte[][] values = new Byte[colCell.size()][];
+                final byte[][] values = new byte[colCell.size()][];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0:1)];
                 int j = 0;
                 for (final DataCell innerCell : colCell) {
-                    if (innerCell.isMissing()) {
-                        values[j++] = null;
-                    } else {
+                    if (!innerCell.isMissing()) {
                         try {
-                            values[j++] = ArrayUtils.toObject(serializer.serialize(innerCell));
+                            values[j] = serializer.serialize(innerCell);
+                            missings[j / 8] += (1 << (j % 8));
                         } catch (final IOException e) {
                             LOGGER.error(e.getMessage(), e);
-                            values[j++] = null;
                         }
+                        j++;
+
                     }
                 }
-                row.setCell(new CellImpl(values, type == Type.BYTES_SET), i);
+                row.setCell(new CellImpl(values, missings), i);
+
+            } else if (type == Type.BYTES_SET) {
+                final Serializer serializer = m_knimeToPythonExtensions.getSerializer(
+                    KnimeToPythonExtensions.getExtension(dataCell.getType().getCollectionElementType()).getId());
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                final byte[][] values = new byte[colCell.size()][];
+                boolean hasMissing = false;
+                int j = 0;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        try {
+                            values[j] = serializer.serialize(innerCell);
+                        } catch (final IOException e) {
+                            LOGGER.error(e.getMessage(), e);
+                        }
+                        j++;
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if(!hasMissing) {
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                } else {
+                    row.setCell(new CellImpl((byte[][]) ArrayUtils.subarray(values, 0, colCell.size() - 1), hasMissing), i);
+                }
             }
         }
         return row;
