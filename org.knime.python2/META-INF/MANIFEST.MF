@@ -14,7 +14,8 @@ Export-Package: org.knime.python2,
  org.knime.python2.generic,
  org.knime.python2.generic.templates,
  org.knime.python2.kernel,
- org.knime.python2.port
+ org.knime.python2.port,
+ org.knime.python2.util
 Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
  org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
  org.apache.commons.io;bundle-version="[2.4.0,3.0.0)",

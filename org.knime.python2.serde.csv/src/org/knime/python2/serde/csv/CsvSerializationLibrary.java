@@ -69,6 +69,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.util.BitArray;
 
 /**
  * Used for (de)serializing KNIME tables via CSV files.
@@ -120,17 +121,18 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                             value = Long.toString(serializationOptions.getSentinelForType(type));
                         }
                     } else {
-                        switch (cell.getColumnType()) {
+                        Type type = cell.getColumnType();
+                        switch (type) {
                             case BOOLEAN:
                                 value = cell.getBooleanValue() ? "True" : "False";
                                 break;
                             case BOOLEAN_LIST:
                             case BOOLEAN_SET:
-                                final Boolean[] booleanArray = cell.getBooleanArrayValue();
+                                final boolean[] booleanArray = cell.getBooleanArrayValue();
                                 final StringBuilder booleanBuilder = new StringBuilder();
                                 booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "[" : "{");
                                 for (int i = 0; i < booleanArray.length; i++) {
-                                    if (booleanArray[i] == null) {
+                                    if (type == Type.BOOLEAN_LIST && cell.isMissing(i)) {
                                         booleanBuilder.append("None");
                                     } else {
                                         booleanBuilder.append(booleanArray[i] ? "True" : "False");
@@ -139,53 +141,71 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         booleanBuilder.append(",");
                                     }
                                 }
+                                if(type == Type.BOOLEAN_SET && cell.hasMissingInSet()) {
+                                    if(booleanArray.length > 0) {
+                                        booleanBuilder.append(",");
+                                    }
+                                    booleanBuilder.append("None");
+                                }
                                 booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "]" : "}");
                                 value = booleanBuilder.toString();
                                 break;
                             case INTEGER:
-                                value = cell.getIntegerValue().toString();
+                                value = Integer.toString(cell.getIntegerValue());
                                 break;
                             case INTEGER_LIST:
                             case INTEGER_SET:
-                                final Integer[] integerArray = cell.getIntegerArrayValue();
+                                final int[] integerArray = cell.getIntegerArrayValue();
                                 final StringBuilder integerBuilder = new StringBuilder();
                                 integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "[" : "{");
                                 for (int i = 0; i < integerArray.length; i++) {
-                                    if (integerArray[i] == null) {
+                                    if (type == Type.INTEGER_LIST && cell.isMissing(i)) {
                                         integerBuilder.append("None");
                                     } else {
-                                        integerBuilder.append(integerArray[i].toString());
+                                        integerBuilder.append(Integer.toString(integerArray[i]));
                                     }
                                     if ((i + 1) < integerArray.length) {
                                         integerBuilder.append(",");
                                     }
                                 }
+                                if(type == Type.INTEGER_SET && cell.hasMissingInSet()) {
+                                    if(integerArray.length > 0) {
+                                        integerBuilder.append(",");
+                                    }
+                                    integerBuilder.append(",");
+                                }
                                 integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "]" : "}");
                                 value = integerBuilder.toString();
                                 break;
                             case LONG:
-                                value = cell.getLongValue().toString();
+                                value = Long.toString(cell.getLongValue());
                                 break;
                             case LONG_LIST:
                             case LONG_SET:
-                                final Long[] longArray = cell.getLongArrayValue();
+                                final long[] longArray = cell.getLongArrayValue();
                                 final StringBuilder longBuilder = new StringBuilder();
                                 longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "[" : "{");
                                 for (int i = 0; i < longArray.length; i++) {
-                                    if (longArray[i] == null) {
+                                    if (type == Type.LONG_LIST && cell.isMissing(i)) {
                                         longBuilder.append("None");
                                     } else {
-                                        longBuilder.append(longArray[i].toString());
+                                        longBuilder.append(Long.toString(longArray[i]));
                                     }
                                     if ((i + 1) < longArray.length) {
                                         longBuilder.append(",");
                                     }
                                 }
+                                if(type == Type.LONG_SET && cell.hasMissingInSet()) {
+                                    if(longArray.length > 0) {
+                                        longBuilder.append(",");
+                                    }
+                                    longBuilder.append("None");
+                                }
                                 longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "]" : "}");
                                 value = longBuilder.toString();
                                 break;
                             case DOUBLE:
-                                final Double doubleValue = cell.getDoubleValue();
+                                final double doubleValue = cell.getDoubleValue();
                                 if (Double.isInfinite(doubleValue)) {
                                     if (doubleValue > 0) {
                                         value = "inf";
@@ -195,19 +215,19 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 } else if (Double.isNaN(doubleValue)) {
                                     value = "NaN";
                                 } else {
-                                    value = doubleValue.toString();
+                                    value = Double.toString(doubleValue);
                                 }
                                 break;
                             case DOUBLE_LIST:
                             case DOUBLE_SET:
-                                final Double[] doubleArray = cell.getDoubleArrayValue();
+                                final double[] doubleArray = cell.getDoubleArrayValue();
                                 final StringBuilder doubleBuilder = new StringBuilder();
                                 doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "[" : "{");
                                 for (int i = 0; i < doubleArray.length; i++) {
-                                    if (doubleArray[i] == null) {
+                                    if (type == Type.DOUBLE_LIST && cell.isMissing(i)) {
                                         doubleBuilder.append("None");
                                     } else {
-                                        String doubleVal = doubleArray[i].toString();
+                                        String doubleVal = Double.toString(doubleArray[i]);
                                         if (doubleVal.equals("NaN")) {
                                             doubleVal = "float('nan')";
                                         } else if (doubleVal.equals("-Infinity")) {
@@ -220,6 +240,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if ((i + 1) < doubleArray.length) {
                                         doubleBuilder.append(",");
                                     }
+                                }
+                                if(type == Type.DOUBLE_SET && cell.hasMissingInSet()) {
+                                    if(doubleArray.length > 0) {
+                                        doubleBuilder.append(",");
+                                    }
+                                    doubleBuilder.append("None");
                                 }
                                 doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "]" : "}");
                                 value = doubleBuilder.toString();
@@ -234,7 +260,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "[" : "{");
                                 for (int i = 0; i < stringArray.length; i++) {
                                     String stringValue = stringArray[i];
-                                    if (stringValue == null) {
+                                    if (type == Type.STRING_LIST && cell.isMissing(i)) {
                                         stringBuilder.append("None");
                                     } else {
                                         stringValue = stringValue.replace("\\", "\\\\");
@@ -247,6 +273,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         stringBuilder.append(",");
                                     }
                                 }
+                                if(type == Type.STRING_SET && cell.hasMissingInSet()) {
+                                    if(stringArray.length > 0) {
+                                        stringBuilder.append(",");
+                                    }
+                                    stringBuilder.append("None");
+                                }
                                 stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "]" : "}");
                                 value = stringBuilder.toString();
                                 break;
@@ -255,12 +287,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 break;
                             case BYTES_LIST:
                             case BYTES_SET:
-                                final Byte[][] bytesArray = cell.getBytesArrayValue();
+                                final byte[][] bytesArray = cell.getBytesArrayValue();
                                 final StringBuilder bytesBuilder = new StringBuilder();
                                 bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "[" : "{");
                                 for (int i = 0; i < bytesArray.length; i++) {
-                                    final Byte[] bytesValue = bytesArray[i];
-                                    if (bytesValue == null) {
+                                    final byte[] bytesValue = bytesArray[i];
+                                    if (type == Type.BYTES_LIST && cell.isMissing(i)) {
                                         bytesBuilder.append("None");
                                     } else {
                                         bytesBuilder.append("'" + bytesToBase64(bytesValue) + "'");
@@ -268,6 +300,12 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if ((i + 1) < bytesArray.length) {
                                         bytesBuilder.append(",");
                                     }
+                                }
+                                if(type == Type.BYTES_SET && cell.hasMissingInSet()) {
+                                    if(bytesArray.length > 0) {
+                                        bytesBuilder.append(",");
+                                    }
+                                    bytesBuilder.append("None");
                                 }
                                 bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "]" : "}");
                                 value = bytesBuilder.toString();
@@ -324,28 +362,52 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                             cell = new CellImpl();
                         }
                     } else {
+                        int idxCtr = 0;
                         switch (type) {
                             case BOOLEAN:
                                 cell = new CellImpl(value.equals("True") ? true : false);
                                 break;
                             case BOOLEAN_LIST:
-                            case BOOLEAN_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
                                     value = value.substring(1, value.length() - 1);
                                 }
                                 final String[] booleanValues = value.split(",");
-                                final Boolean[] booleanArray = new Boolean[booleanValues.length];
+                                final boolean[] booleanArray = new boolean[booleanValues.length];
+                                BitArray booleanMissings = new BitArray(booleanValues.length);
                                 for (int j = 0; j < booleanArray.length; j++) {
                                     booleanValues[j] = booleanValues[j].trim();
-                                    if (booleanValues[j].equals("None")) {
-                                        booleanArray[j] = null;
-                                    } else {
+                                    if (!booleanValues[j].equals("None")) {
+                                        booleanMissings.setToOne(j);
                                         booleanArray[j] = booleanValues[j].equals("True");
                                     }
                                 }
-                                cell = new CellImpl(booleanArray, type == Type.BOOLEAN_SET);
+                                cell = new CellImpl(booleanArray, booleanMissings.getEncodedByteArray());
+                                break;
+                            case BOOLEAN_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] booleanSetValues = value.split(",");
+                                final boolean[] booleanSetArray = new boolean[booleanSetValues.length];
+                                boolean booleanHasMissing = false;
+                                for (String bsValue : booleanSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        booleanSetArray[idxCtr] = bsValue.equals("True");
+                                        idxCtr++;
+                                    } else {
+                                        booleanHasMissing = true;
+                                    }
+                                }
+                                if(!booleanHasMissing) {
+                                    cell = new CellImpl(booleanSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(booleanSetArray, 0, booleanSetArray.length - 1), true);
+                                }
                                 break;
                             case INTEGER:
                                 final int intVal = Integer.parseInt(value);
@@ -357,23 +419,46 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 break;
                             case INTEGER_LIST:
-                            case INTEGER_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
                                     value = value.substring(1, value.length() - 1);
                                 }
                                 final String[] integerValues = value.split(",");
-                                final Integer[] integerArray = new Integer[integerValues.length];
+                                final int[] integerArray = new int[integerValues.length];
+                                BitArray integerMissings = new BitArray(integerValues.length);
                                 for (int j = 0; j < integerArray.length; j++) {
                                     integerValues[j] = integerValues[j].trim();
-                                    if (integerValues[j].equals("None")) {
-                                        integerArray[j] = null;
-                                    } else {
+                                    if (!integerValues[j].equals("None")) {
+                                        integerMissings.setToOne(j);
                                         integerArray[j] = Integer.parseInt(integerValues[j]);
                                     }
                                 }
-                                cell = new CellImpl(integerArray, type == Type.INTEGER_SET);
+                                cell = new CellImpl(integerArray, integerMissings.getEncodedByteArray());
+                                break;
+                            case INTEGER_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] integerSetValues = value.split(",");
+                                final int[] integerSetArray = new int[integerSetValues.length];
+                                boolean integerHasMissing = false;
+                                for (String bsValue : integerSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        integerSetArray[idxCtr] = Integer.parseInt(bsValue);
+                                        idxCtr++;
+                                    } else {
+                                        integerHasMissing = true;
+                                    }
+                                }
+                                if(!integerHasMissing) {
+                                    cell = new CellImpl(integerSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(integerSetArray, 0, integerSetArray.length - 1), true);
+                                }
                                 break;
                             case LONG:
                                 final long longVal = Long.parseLong(value);
@@ -385,26 +470,49 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 break;
                             case LONG_LIST:
-                            case LONG_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
                                     value = value.substring(1, value.length() - 1);
                                 }
                                 final String[] longValues = value.split(",");
-                                final Long[] longArray = new Long[longValues.length];
+                                final long[] longArray = new long[longValues.length];
+                                BitArray longMissings = new BitArray(longValues.length);
                                 for (int j = 0; j < longArray.length; j++) {
                                     longValues[j] = longValues[j].trim();
-                                    if (longValues[j].equals("None")) {
-                                        longArray[j] = null;
-                                    } else {
-                                        longArray[j] = Long.parseLong(longValues[j].replaceAll("L", ""));
+                                    if (!longValues[j].equals("None")) {
+                                        longMissings.setToOne(j);
+                                        longArray[j] = Long.parseLong(longValues[j]);
                                     }
                                 }
-                                cell = new CellImpl(longArray, type == Type.LONG_SET);
+                                cell = new CellImpl(longArray, longMissings.getEncodedByteArray());
+                                break;
+                            case LONG_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] longSetValues = value.split(",");
+                                final long[] longSetArray = new long[longSetValues.length];
+                                boolean longHasMissing = false;
+                                for (String bsValue : longSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        longSetArray[idxCtr] = Long.parseLong(bsValue);
+                                        idxCtr++;
+                                    } else {
+                                        longHasMissing = true;
+                                    }
+                                }
+                                if(!longHasMissing) {
+                                    cell = new CellImpl(longSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(longSetArray, 0, longSetArray.length - 1), true);
+                                }
                                 break;
                             case DOUBLE:
-                                Double doubleValue;
+                                double doubleValue;
                                 if (value.equals("inf")) {
                                     doubleValue = Double.POSITIVE_INFINITY;
                                 } else if (value.equals("-inf")) {
@@ -417,19 +525,18 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(doubleValue);
                                 break;
                             case DOUBLE_LIST:
-                            case DOUBLE_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
                                     value = value.substring(1, value.length() - 1);
                                 }
                                 final String[] doubleValues = value.split(",");
-                                final Double[] doubleArray = new Double[doubleValues.length];
+                                final double[] doubleArray = new double[doubleValues.length];
+                                BitArray doubleMissings = new BitArray(doubleValues.length);
                                 for (int j = 0; j < doubleArray.length; j++) {
                                     doubleValues[j] = doubleValues[j].trim();
-                                    if (doubleValues[j].equals("None")) {
-                                        doubleArray[j] = null;
-                                    } else {
+                                    if (!doubleValues[j].equals("None")) {
+                                        doubleMissings.setToOne(j);
                                         final String doubleVal = doubleValues[j];
                                         if (doubleVal.equals("nan")) {
                                             doubleArray[j] = Double.NaN;
@@ -442,13 +549,45 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         }
                                     }
                                 }
-                                cell = new CellImpl(doubleArray, type == Type.DOUBLE_SET);
+                                cell = new CellImpl(doubleArray, doubleMissings.getEncodedByteArray());
+                                break;
+                            case DOUBLE_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] doubleSetValues = value.split(",");
+                                final double[] doubleSetArray = new double[doubleSetValues.length];
+                                boolean doubleHasMissing = false;
+                                for (String bsValue : doubleSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        final String doubleVal = bsValue;
+                                        if (doubleVal.equals("nan")) {
+                                            doubleSetArray[idxCtr] = Double.NaN;
+                                        } else if (doubleVal.equals("inf")) {
+                                            doubleSetArray[idxCtr] = Double.POSITIVE_INFINITY;
+                                        } else if (doubleVal.equals("-inf")) {
+                                            doubleSetArray[idxCtr] = Double.NEGATIVE_INFINITY;
+                                        } else {
+                                            doubleSetArray[idxCtr] = Double.parseDouble(doubleVal);
+                                        }
+                                        idxCtr++;
+                                    } else {
+                                        doubleHasMissing = true;
+                                    }
+                                }
+                                if(!doubleHasMissing) {
+                                    cell = new CellImpl(doubleSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
+                                }
                                 break;
                             case STRING:
                                 cell = new CellImpl(value);
                                 break;
                             case STRING_LIST:
-                            case STRING_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
@@ -457,6 +596,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 value = value.replaceAll("None", "'None'");
                                 final String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
                                 final String[] stringArray = new String[stringValues.length];
+                                BitArray stringMissings = new BitArray(stringValues.length);
                                 for (int j = 0; j < stringArray.length; j++) {
                                     stringArray[j] = stringValues[j];
                                     if (j == 0) {
@@ -465,40 +605,100 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if (j == (stringArray.length - 1)) {
                                         stringArray[j] = stringArray[j].substring(0, stringArray[j].length() - 1);
                                     }
-                                    if (stringArray[j].equals("None")) {
-                                        stringArray[j] = null;
-                                    } else {
+                                    if (!stringArray[j].equals("None")) {
                                         //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
                                         stringArray[j] = stringArray[j].replace("\\\\", "\\");
                                         stringArray[j] = stringArray[j].replace("\\'", "'");
                                         stringArray[j] = stringArray[j].replace("\\r", "\r");
                                         stringArray[j] = stringArray[j].replace("\\n", "\n");
                                         stringArray[j] = stringArray[j].replace("\\t", "\t");
+                                        stringMissings.setToOne(j);
                                     }
                                 }
-                                cell = new CellImpl(stringArray, type == Type.STRING_SET);
+                                cell = new CellImpl(stringArray, stringMissings.getEncodedByteArray());
+                                break;
+                            case STRING_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                value = value.replaceAll("None", "'None'");
+                                final String[] stringSetValues = value.split("(', '|', \"|\", '|\", \")");
+                                final String[] stringSetArray = new String[stringSetValues.length];
+                                boolean hasStringMissing = false;
+                                int posCtr = 0;
+                                for (String stringValue:stringSetValues) {
+                                    stringSetArray[idxCtr] = stringValue;
+                                    if (posCtr == 0) {
+                                        stringSetArray[idxCtr] = stringValue.substring(1);
+                                    }
+                                    if (posCtr == (stringSetArray.length - 1)) {
+                                        stringSetArray[idxCtr] = stringValue.substring(0, stringValue.length() - 1);
+                                    }
+                                    if (!stringValue.equals("None")) {
+                                        //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\\\", "\\");
+                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\'", "'");
+                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\r", "\r");
+                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\n", "\n");
+                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\t", "\t");
+                                        idxCtr++;
+                                    } else {
+                                        hasStringMissing = true;
+                                    }
+                                    posCtr++;
+                                }
+                                if(!hasStringMissing) {
+                                    cell = new CellImpl(stringSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(stringSetArray, 0, stringSetArray.length - 1), true);
+                                }
                                 break;
                             case BYTES:
                                 cell = new CellImpl(bytesFromBase64(value));
                                 break;
                             case BYTES_LIST:
-                            case BYTES_SET:
                                 if (value.startsWith("set([")) {
                                     value = value.substring(5, value.length() - 2);
                                 } else {
                                     value = value.substring(1, value.length() - 1);
                                 }
                                 final String[] bytesValues = value.split(",");
-                                final Byte[][] bytesArray = new Byte[bytesValues.length][];
+                                final byte[][] bytesArray = new byte[bytesValues.length][];
+                                BitArray bytesMissings = new BitArray(bytesValues.length);
                                 for (int j = 0; j < bytesArray.length; j++) {
                                     bytesValues[j] = bytesValues[j].trim();
-                                    if (bytesValues[j].equals("None")) {
-                                        bytesArray[j] = null;
-                                    } else {
+                                    if (!bytesValues[j].equals("None")) {
+                                        bytesMissings.setToOne(j);
                                         bytesArray[j] = bytesFromBase64(bytesValues[j]);
                                     }
                                 }
-                                cell = new CellImpl(bytesArray, type == Type.BYTES_SET);
+                                cell = new CellImpl(bytesArray, bytesMissings.getEncodedByteArray());
+                                break;
+                            case BYTES_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] bytesSetValues = value.split(",");
+                                final byte[][] bytesSetArray = new byte[bytesSetValues.length][];
+                                boolean bytesHasMissing = false;
+                                for (String bsValue : bytesSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        bytesSetArray[idxCtr] = bytesFromBase64(bsValue);
+                                        idxCtr++;
+                                    } else {
+                                        bytesHasMissing = true;
+                                    }
+                                }
+                                if(!bytesHasMissing) {
+                                    cell = new CellImpl(bytesSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(bytesSetArray, 0, bytesSetArray.length - 1), true);
+                                }
                                 break;
                             default:
                                 cell = new CellImpl(columnName);
@@ -589,17 +789,17 @@ public class CsvSerializationLibrary implements SerializationLibrary {
         return value;
     }
 
-    private static String bytesToBase64(final Byte[] bytes) {
-        return new String(Base64.getEncoder().encode(ArrayUtils.toPrimitive(bytes)));
+    private static String bytesToBase64(final byte[] bytes) {
+        return new String(Base64.getEncoder().encode(bytes));
     }
 
-    private static Byte[] bytesFromBase64(String base64) {
+    private static byte[] bytesFromBase64(String base64) {
         if (base64.startsWith("b'")) {
             base64 = base64.substring(2, base64.length() - 1);
         } else if (base64.startsWith("'")) {
             base64 = base64.substring(1, base64.length() - 1);
         }
-        return ArrayUtils.toObject(Base64.getDecoder().decode(base64.getBytes()));
+        return Base64.getDecoder().decode(base64.getBytes());
     }
 
 }
