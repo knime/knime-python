@@ -62,7 +62,7 @@ import com.google.common.primitives.Ints;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ListInserter implements VectorInserter {
+public abstract class ListInserter implements ArrowVectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -105,7 +105,7 @@ public abstract class ListInserter implements VectorInserter {
      * @param cell the cell to process
      * @return the object array corresponding to the inserted values (NOTE: ugly, will be changed)
      */
-    protected abstract Object[] putCollection(ByteBuffer buffer, Cell cell);
+    protected abstract void putCollection(ByteBuffer buffer, Cell cell);
 
     @Override
     public void put(final Cell cell) {
@@ -134,23 +134,10 @@ public abstract class ListInserter implements VectorInserter {
 
             m_buffer.put(Ints.toByteArray(numAndLen[0]));
 
-            Object[] objs = putCollection(m_buffer, cell);
+            putCollection(m_buffer, cell);
             //entries + length (int32)
             m_buffer.position(numAndLen[1] + 4);
-            // TODO create byte[] with missing while looping over objs...
-            byte b = 0;
-            for (int j = 0; j < objs.length; j++) {
-                if (objs[j] != null) {
-                    b += (1 << (j % 8));
-                }
-                if (j % 8 == 7) {
-                    m_buffer.put(b);
-                    b = 0;
-                }
-            }
-            if (objs.length % 8 != 0) {
-                m_buffer.put(b);
-            }
+            m_buffer.put(cell.getBitEncodedMissingListValues());
             //TODO ?
             //align to 64bit
             /*int pos = byteBuffer.position();

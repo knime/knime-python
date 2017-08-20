@@ -52,6 +52,7 @@ import org.apache.arrow.vector.NullableBigIntVector;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**

@@ -79,7 +79,7 @@ public class StringListExtractor extends ListExtractor {
      * {@inheritDoc}
      */
     @Override
-    protected Object[] fillInternalArray(final ByteBuffer buffer, final int numVals) {
+    protected void fillInternalArray(final ByteBuffer buffer, final int numVals) {
         IntBuffer ibuffer = buffer.asIntBuffer();
         m_offsets = new int[numVals + 1];
         ibuffer.get(m_offsets);
@@ -91,15 +91,14 @@ public class StringListExtractor extends ListExtractor {
             buffer.get(dst);
             m_objects[i] = new String(dst, StandardCharsets.UTF_8);
         }
-        return m_objects;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Cell getReturnValue() {
-        return new CellImpl(m_objects, false);
+    protected Cell getReturnValue(final byte[] missings) {
+        return new CellImpl(m_objects, missings);
     }
 
     /**

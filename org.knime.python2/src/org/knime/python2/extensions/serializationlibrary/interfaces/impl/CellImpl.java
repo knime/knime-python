@@ -417,4 +417,12 @@ public class CellImpl implements Cell {
        return m_missing[0] == B_ZERO;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public byte[] getBitEncodedMissingListValues() {
+        return m_missing;
+    }
+
 }

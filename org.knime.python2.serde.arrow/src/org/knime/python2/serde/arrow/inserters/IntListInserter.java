@@ -61,8 +61,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  */
 public class IntListInserter extends ListInserter {
 
-    private Integer[] m_objs;
-
     private int[] m_ints;
 
     /**
@@ -83,30 +81,19 @@ public class IntListInserter extends ListInserter {
      */
     @Override
     protected int[] fillInternalArrayAndGetSize(final Cell cell) {
-        //TODO ugly object types
-        m_objs = cell.getIntegerArrayValue();
-
-        m_ints = new int[m_objs.length];
-
-        for (int j = 0; j < m_objs.length; j++) {
-            if (m_objs[j] != null) {
-                m_ints[j] = m_objs[j].intValue();
-            }
-        }
-        return new int[]{m_objs.length, 4 * m_objs.length};
+        m_ints = cell.getIntegerArrayValue();
+        return new int[]{m_ints.length, 4 * m_ints.length};
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+    protected void putCollection(final ByteBuffer buffer, final Cell cell) {
 
         IntBuffer intBuffer = buffer.asIntBuffer();
         //put values
         intBuffer.put(m_ints);
-
-        return m_objs;
 
     }
 

@@ -57,7 +57,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class IntegerInserter implements VectorInserter {
+public class IntegerInserter implements ArrowVectorInserter {
 
     private final NullableIntVector m_vec;
 
@@ -95,7 +95,7 @@ public class IntegerInserter implements VectorInserter {
             }
         } else {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getIntegerValue().intValue());
+            m_mutator.set(m_ctr, cell.getIntegerValue());
         }
         m_mutator.setValueCount(++m_ctr);
     }

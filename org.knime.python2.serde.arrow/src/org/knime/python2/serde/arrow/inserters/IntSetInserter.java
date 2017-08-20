@@ -85,21 +85,10 @@ public class IntSetInserter extends SetInserter {
      */
     @Override
     public int[] fillInternalArrayAndGetSize(final Cell cell) {
-        //TODO ugly object types
-        Integer[] objs = cell.getIntegerArrayValue();
-        m_ints = new int[objs.length];
-        m_hasMissing = false;
-        //Put missing value to last array position
-        for (int j = 0; j < objs.length; j++) {
-            if (objs[j] == null) {
-                m_hasMissing = true;
-            } else if (m_hasMissing) {
-                m_ints[j - 1] = objs[j].intValue();
-            } else {
-                m_ints[j] = objs[j].intValue();
-            }
-        }
-        m_size = m_ints.length - (m_hasMissing ? 1 : 0);
+
+        m_ints = cell.getIntegerArrayValue();
+        m_hasMissing = cell.hasMissingInSet();
+        m_size = m_ints.length;
         return new int[]{m_size, m_size * 4};
     }
 

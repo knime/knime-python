@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -86,14 +85,9 @@ public class DoubleSetExtractor extends FixedSizeSetExtractor {
     @Override
     public Cell extractArray(final ByteBuffer buffer, final int numVals, final boolean hasMissing) {
         DoubleBuffer ibuffer = buffer.asDoubleBuffer();
-        double[] iar = new double[numVals + (hasMissing ? 1 : 0)];
+        double[] iar = new double[numVals];
         ibuffer.get(iar, 0, numVals);
-        // TODO ugly object types
-        Double[] obj = ArrayUtils.toObject(iar);
-        if (hasMissing) {
-            obj[obj.length - 1] = null;
-        }
-        return new CellImpl(obj, true);
+        return new CellImpl(iar, hasMissing);
     }
 
 }

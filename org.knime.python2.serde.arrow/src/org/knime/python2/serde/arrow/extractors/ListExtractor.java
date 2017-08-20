@@ -53,6 +53,7 @@ import java.nio.ByteOrder;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
@@ -80,16 +81,16 @@ public abstract class ListExtractor implements VectorExtractor {
      *
      * @param buffer the buffer containing the list
      * @param numVals the number of values to read
-     * @return a reference to the extracted list
      */
-    protected abstract Object[] fillInternalArray(final ByteBuffer buffer, int numVals);
+    protected abstract void fillInternalArray(final ByteBuffer buffer, int numVals);
 
     /**
      * Wrap the extracted list into a {@link Cell} representation.
+     * @param missings the bit encoded missing values array
      *
      * @return the {@link Cell} representation
      */
-    protected abstract Cell getReturnValue();
+    protected abstract Cell getReturnValue(byte[] missings);
 
     /**
      * Returns the length of the section in the buffer occupied by values
@@ -108,19 +109,13 @@ public abstract class ListExtractor implements VectorExtractor {
         ByteBuffer buffer = ByteBuffer.wrap(m_accessor.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
         int nVals = buffer.asIntBuffer().get();
         buffer.position(4);
-        Object[] obj = fillInternalArray(buffer, nVals);
+        fillInternalArray(buffer, nVals);
         buffer.position(getValuesLength() + 4);
-        byte b = 0;
-        for (int idx = 0; idx < nVals; idx++) {
-            if (idx % 8 == 0) {
-                b = buffer.get();
-            }
-            if ((b & (1 << (idx % 8))) == 0) {
-                obj[idx] = null;
-            }
-        }
+        byte[] missings = new byte[nVals / 8 + (nVals % 8 == 0 ? 0:1)];
+        buffer.get(missings);
+
         m_ctr++;
-        return getReturnValue();
+        return getReturnValue(missings);
     }
 
 }

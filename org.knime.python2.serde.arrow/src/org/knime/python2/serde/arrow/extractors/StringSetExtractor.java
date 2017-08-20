@@ -95,16 +95,13 @@ public class StringSetExtractor extends VariableSizeSetExtractor {
     @Override
     public Cell extractArray(final ByteBuffer buffer, final int numVals, final boolean hasMissing) {
         buffer.position(4 + 4 * m_offsets.length);
-        String[] objs = new String[numVals + (hasMissing ? 1:0)];
+        String[] objs = new String[numVals];
         for(int i=0; i<numVals; i++) {
             byte[] dst = new byte[m_offsets[i + 1] - m_offsets[i]];
             buffer.get(dst);
             objs[i] = new String(dst, StandardCharsets.UTF_8);
         }
-        if (hasMissing) {
-            objs[objs.length - 1] = null;
-        }
-        return new CellImpl(objs, true);
+        return new CellImpl(objs, hasMissing);
     }
 
 }

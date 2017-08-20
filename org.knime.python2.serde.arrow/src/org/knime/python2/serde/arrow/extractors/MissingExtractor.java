@@ -49,6 +49,7 @@
 package org.knime.python2.serde.arrow.extractors;
 
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**

@@ -48,7 +48,6 @@ package org.knime.python2.serde.arrow.inserters;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
@@ -56,7 +55,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BytesInserter implements VectorInserter {
+public class BytesInserter implements ArrowVectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -91,7 +90,7 @@ public class BytesInserter implements VectorInserter {
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
             //TODO ugly object type
-            byte[] bVal = ArrayUtils.toPrimitive(cell.getBytesValue());
+            byte[] bVal = cell.getBytesValue();
             m_byteCount += bVal.length;
             while (m_byteCount > m_vec.getByteCapacity()) {
                 //TODO realloc only content vector (not offset vector), if possible with factor 2^x

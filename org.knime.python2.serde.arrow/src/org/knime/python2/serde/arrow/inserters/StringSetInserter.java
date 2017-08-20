@@ -91,21 +91,12 @@ public class StringSetInserter extends SetInserter {
         m_objs = cell.getStringArrayValue();
 
         m_offsets = new int[m_objs.length + 1];
-        m_hasMissing = false;
+        m_hasMissing = cell.hasMissingInSet();
         //Put missing value to last array position
         for (int j = 0; j < m_objs.length; j++) {
-            if (m_objs[j] == null) {
-                m_hasMissing = true;
-                //swap missing to end
-                String tmp = m_objs[j];
-                m_objs[j] = m_objs[m_objs.length - 1];
-                m_objs[m_objs.length - 1] = tmp;
-            }
-            if (!(j == m_objs.length - 1) || !m_hasMissing) {
-                m_offsets[j + 1] = m_offsets[j] + m_objs[j].length();
-            }
+            m_offsets[j + 1] = m_offsets[j] + m_objs[j].length();
         }
-        m_size = m_objs.length - (m_hasMissing ? 1 : 0);
+        m_size = m_objs.length;
         return new int[]{m_size, (m_size + 1) * 4 + m_offsets[m_size]};
     }
 

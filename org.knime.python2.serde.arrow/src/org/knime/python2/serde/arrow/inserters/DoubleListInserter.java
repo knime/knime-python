@@ -61,8 +61,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  */
 public class DoubleListInserter extends ListInserter {
 
-    private Double[] m_objs;
-
     private double[] m_primitives;
 
     /**
@@ -83,31 +81,20 @@ public class DoubleListInserter extends ListInserter {
      */
     @Override
     protected int[] fillInternalArrayAndGetSize(final Cell cell) {
-        //TODO ugly object types
-        m_objs = cell.getDoubleArrayValue();
+        m_primitives = cell.getDoubleArrayValue();
 
-        m_primitives = new double[m_objs.length];
-
-        for (int j = 0; j < m_objs.length; j++) {
-            if (m_objs[j] != null) {
-                m_primitives[j] = m_objs[j].doubleValue();
-            }
-        }
-        return new int[]{m_objs.length, 8 * m_objs.length};
+        return new int[]{m_primitives.length, 8 * m_primitives.length};
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+    protected void putCollection(final ByteBuffer buffer, final Cell cell) {
 
         DoubleBuffer valBuffer = buffer.asDoubleBuffer();
         //put values
         valBuffer.put(m_primitives);
-
-        return m_objs;
-
     }
 
 }

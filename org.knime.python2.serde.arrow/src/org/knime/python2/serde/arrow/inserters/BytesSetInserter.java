@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
@@ -62,7 +61,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  */
 public class BytesSetInserter extends SetInserter {
 
-    private Byte[][] m_objs;
+    private byte[][] m_objs;
 
     private int[] m_offsets;
 
@@ -91,21 +90,12 @@ public class BytesSetInserter extends SetInserter {
         m_objs = cell.getBytesArrayValue();
 
         m_offsets = new int[m_objs.length + 1];
-        m_hasMissing = false;
+        m_hasMissing = cell.hasMissingInSet();
         //Put missing value to last array position
         for (int j = 0; j < m_objs.length; j++) {
-            if (m_objs[j] == null) {
-                m_hasMissing = true;
-                //swap missing to end
-                Byte[] tmp = m_objs[j];
-                m_objs[j] = m_objs[m_objs.length - 1];
-                m_objs[m_objs.length - 1] = tmp;
-            }
-            if (!(j == m_objs.length - 1) || !m_hasMissing) {
-                m_offsets[j + 1] = m_offsets[j] + m_objs[j].length;
-            }
+            m_offsets[j + 1] = m_offsets[j] + m_objs[j].length;
         }
-        m_size = m_objs.length - (m_hasMissing ? 1 : 0);
+        m_size = m_objs.length;
         return new int[]{m_size, (m_size + 1) * 4 + m_offsets[m_size]};
     }
 
@@ -121,7 +111,7 @@ public class BytesSetInserter extends SetInserter {
 
         buffer.position(4 + (m_size + 1) * 4);
         for (int i = 0; i < m_size; i++) {
-            buffer.put(ArrayUtils.toPrimitive(m_objs[i]));
+            buffer.put(m_objs[i]);
         }
         return m_hasMissing;
 

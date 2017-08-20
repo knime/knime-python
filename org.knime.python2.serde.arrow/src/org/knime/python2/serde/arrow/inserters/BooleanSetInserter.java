@@ -62,7 +62,7 @@ import com.google.common.primitives.Ints;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BooleanSetInserter implements VectorInserter {
+public class BooleanSetInserter implements ArrowVectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -102,25 +102,17 @@ public class BooleanSetInserter implements VectorInserter {
             //Implicitly assumed to be missing
 
             //TODO ugly object types
-            Boolean[] objs = cell.getBooleanArrayValue();
+            boolean[] objs = cell.getBooleanArrayValue();
             int primLn = objs.length / 8 + ((objs.length % 8 == 0) ? 0 : 1);
             byte[] primitives = new byte[primLn];
-            boolean hasMissing = false;
+            boolean hasMissing = cell.hasMissingInSet();
             //Put missing value to last array position
             for(int j=0; j<objs.length; j++) {
-                if(objs[j] == null) {
-                    hasMissing = true;
-                } else if(hasMissing) {
-                    if(objs[j].booleanValue()) {
-                        primitives[(j - 1) / 8] |= (1 << ((j -1) % 8));
-                    }
-                } else {
-                    if(objs[j].booleanValue()) {
-                        primitives[j / 8] |= (1 << (j % 8));
-                    }
+                if(objs[j]) {
+                    primitives[j / 8] |= (1 << (j % 8));
                 }
             }
-            int valueLn = objs.length - (hasMissing ? 1:0);
+            int valueLn = objs.length;
             int size = valueLn / 8 + ((valueLn % 8 == 0) ? 0 : 1);
 
             int len = 4 +  size + 1;

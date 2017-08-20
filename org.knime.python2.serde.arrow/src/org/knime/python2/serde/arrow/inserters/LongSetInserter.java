@@ -85,21 +85,9 @@ public class LongSetInserter extends SetInserter {
      */
     @Override
     public int[] fillInternalArrayAndGetSize(final Cell cell) {
-        //TODO ugly object types
-        Long[] objs = cell.getLongArrayValue();
-        m_primitives = new long[objs.length];
-        m_hasMissing = false;
-        //Put missing value to last array position
-        for (int j = 0; j < objs.length; j++) {
-            if (objs[j] == null) {
-                m_hasMissing = true;
-            } else if (m_hasMissing) {
-                m_primitives[j - 1] = objs[j].longValue();
-            } else {
-                m_primitives[j] = objs[j].longValue();
-            }
-        }
-        m_size = m_primitives.length - (m_hasMissing ? 1 : 0);
+        m_primitives = cell.getLongArrayValue();
+        m_hasMissing = cell.hasMissingInSet();
+        m_size = m_primitives.length;
         return new int[]{m_size, m_size * 8};
     }
 

@@ -55,7 +55,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class DoubleInserter implements VectorInserter {
+public class DoubleInserter implements ArrowVectorInserter {
 
     private final NullableFloat8Vector m_vec;
 
@@ -81,7 +81,7 @@ public class DoubleInserter implements VectorInserter {
     public void put(final Cell cell) {
         if (!cell.isMissing()) {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getDoubleValue().doubleValue());
+            m_mutator.set(m_ctr, cell.getDoubleValue());
         }
         m_mutator.setValueCount(++m_ctr);
     }

@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -62,8 +61,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class DoubleListExtractor extends ListExtractor {
-
-    private Double[] m_objects;
 
     private double[] m_primitives;
 
@@ -80,21 +77,18 @@ public class DoubleListExtractor extends ListExtractor {
      * {@inheritDoc}
      */
     @Override
-    protected Object[] fillInternalArray(final ByteBuffer buffer, final int numVals) {
+    protected void fillInternalArray(final ByteBuffer buffer, final int numVals) {
         DoubleBuffer ibuffer = buffer.asDoubleBuffer();
         m_primitives = new double[numVals];
         ibuffer.get(m_primitives);
-        // TODO ugly object types
-        m_objects = ArrayUtils.toObject(m_primitives);
-        return m_objects;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Cell getReturnValue() {
-        return new CellImpl(m_objects, false);
+    protected Cell getReturnValue(final byte[] missings) {
+        return new CellImpl(m_primitives, missings);
     }
 
     /**

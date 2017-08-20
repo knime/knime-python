@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -63,7 +62,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  */
 public class BytesListExtractor extends ListExtractor {
 
-    private Byte[][] m_objects;
+    private byte[][] m_values;
 
     private int[] m_offsets;
 
@@ -80,27 +79,25 @@ public class BytesListExtractor extends ListExtractor {
      * {@inheritDoc}
      */
     @Override
-    protected Object[] fillInternalArray(final ByteBuffer buffer, final int numVals) {
+    protected void fillInternalArray(final ByteBuffer buffer, final int numVals) {
         IntBuffer ibuffer = buffer.asIntBuffer();
         m_offsets = new int[numVals + 1];
         ibuffer.get(m_offsets);
 
         buffer.position(4 + 4 * m_offsets.length);
-        m_objects = new Byte[numVals][];
+        m_values = new byte[numVals][];
         for (int i = 0; i < numVals; i++) {
-            byte[] dst = new byte[m_offsets[i + 1] - m_offsets[i]];
-            buffer.get(dst);
-            m_objects[i] = ArrayUtils.toObject(dst);
+            m_values[i] = new byte[m_offsets[i + 1] - m_offsets[i]];
+            buffer.get(m_values[i]);
         }
-        return m_objects;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Cell getReturnValue() {
-        return new CellImpl(m_objects, false);
+    protected Cell getReturnValue(final byte[] missings) {
+        return new CellImpl(m_values, missings);
     }
 
     /**

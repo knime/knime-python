@@ -104,7 +104,7 @@ public class StringListInserter extends ListInserter {
      * {@inheritDoc}
      */
     @Override
-    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+    protected void putCollection(final ByteBuffer buffer, final Cell cell) {
 
         IntBuffer intBuffer = buffer.asIntBuffer();
         //put values
@@ -116,9 +116,6 @@ public class StringListInserter extends ListInserter {
                 buffer.put(obj.getBytes(StandardCharsets.UTF_8));
             }
         }
-
-        return m_objs;
-
     }
 
 }

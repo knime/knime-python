@@ -85,6 +85,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
@@ -107,7 +108,6 @@ import org.knime.python2.serde.arrow.extractors.MissingExtractor;
 import org.knime.python2.serde.arrow.extractors.StringExtractor;
 import org.knime.python2.serde.arrow.extractors.StringListExtractor;
 import org.knime.python2.serde.arrow.extractors.StringSetExtractor;
-import org.knime.python2.serde.arrow.extractors.VectorExtractor;
 import org.knime.python2.serde.arrow.inserters.BooleanInserter;
 import org.knime.python2.serde.arrow.inserters.BooleanListInserter;
 import org.knime.python2.serde.arrow.inserters.BooleanSetInserter;
@@ -126,7 +126,7 @@ import org.knime.python2.serde.arrow.inserters.LongSetInserter;
 import org.knime.python2.serde.arrow.inserters.StringInserter;
 import org.knime.python2.serde.arrow.inserters.StringListInserter;
 import org.knime.python2.serde.arrow.inserters.StringSetInserter;
-import org.knime.python2.serde.arrow.inserters.VectorInserter;
+import org.knime.python2.serde.arrow.inserters.ArrowVectorInserter;
 
 /**
  * @author Clemens von Schwerin, KNIME
@@ -194,7 +194,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
         TableSpec spec = tableIterator.getTableSpec();
         //List<FieldVector> vecs = new ArrayList<FieldVector>();
-        List<VectorInserter> inserters = new ArrayList<>();
+        List<ArrowVectorInserter> inserters = new ArrayList<>();
         //List<Field> fields = new ArrayList<Field>();
         JsonArrayBuilder icBuilder = Json.createArrayBuilder();
         RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);

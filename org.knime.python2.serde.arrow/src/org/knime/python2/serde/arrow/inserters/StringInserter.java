@@ -57,7 +57,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class StringInserter implements VectorInserter {
+public class StringInserter implements ArrowVectorInserter {
 
     private final NullableVarCharVector m_vec;
 

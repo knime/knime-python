@@ -53,6 +53,7 @@ import java.nio.ByteOrder;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
@@ -89,19 +90,15 @@ public class BooleanSetExtractor implements VectorExtractor {
         buffer.position(4);
         int primLn = (nVals / 8) + ((nVals % 8 == 0) ? 0 : 1);
         boolean hasMissing = (buffer.get(4 + primLn) == 0);
-        int nValsAndMissing = nVals + (hasMissing ? 1 : 0);
 
         byte[] primitives = new byte[primLn];
         buffer.get(primitives, 0, primLn);
         // TODO ugly object types
-        Boolean[] objs = new Boolean[nValsAndMissing];
+        boolean[] objs = new boolean[nVals];
         for (int i = 0; i < nVals; i++) {
             objs[i] = ((primitives[i / 8] & (1 << (i % 8))) > 0);
         }
-        if (hasMissing) {
-            objs[objs.length - 1] = null;
-        }
-        return new CellImpl(objs, true);
+        return new CellImpl(objs, hasMissing);
     }
 
 }

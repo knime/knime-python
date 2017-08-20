@@ -62,7 +62,7 @@ import com.google.common.primitives.Ints;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class SetInserter implements VectorInserter {
+public abstract class SetInserter implements ArrowVectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 

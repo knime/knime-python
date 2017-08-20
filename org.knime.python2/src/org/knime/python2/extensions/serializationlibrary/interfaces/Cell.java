@@ -69,6 +69,11 @@ public interface Cell {
      */
     boolean isMissing(int index);
 
+    /**
+     * @return the bit encoded missing values in the contained list (0 = missing)
+     */
+    byte[] getBitEncodedMissingListValues();
+
 
     /**
      * @return true if the underlying set contains a missing value, false otherwise

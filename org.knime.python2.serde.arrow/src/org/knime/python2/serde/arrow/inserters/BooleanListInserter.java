@@ -62,7 +62,7 @@ import com.google.common.primitives.Ints;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BooleanListInserter implements VectorInserter {
+public class BooleanListInserter implements ArrowVectorInserter {
 
     private final NullableVarBinaryVector m_vec;
 
@@ -101,16 +101,14 @@ public class BooleanListInserter implements VectorInserter {
             //Implicitly assumed to be missing
 
             //TODO ugly object types
-            Boolean[] objs = cell.getBooleanArrayValue();
+            boolean[] objs = cell.getBooleanArrayValue();
 
             int primLn = objs.length / 8 + ((objs.length % 8 == 0) ? 0 : 1);
             byte[] m_primitives = new byte[primLn];
 
             for (int j = 0; j < objs.length; j++) {
-                if (objs[j] != null) {
-                    if (objs[j].booleanValue()) {
-                        m_primitives[j / 8] |= (1 << (j % 8));
-                    }
+                if (objs[j]) {
+                    m_primitives[j / 8] |= (1 << (j % 8));
                 }
             }
 
@@ -130,19 +128,7 @@ public class BooleanListInserter implements VectorInserter {
             m_buffer.put(Ints.toByteArray(objs.length));
 
             m_buffer.put(m_primitives);
-            byte b = 0;
-            for (int j = 0; j < objs.length; j++) {
-                if (objs[j] != null) {
-                    b += (1 << (j % 8));
-                }
-                if (j % 8 == 7) {
-                    m_buffer.put(b);
-                    b = 0;
-                }
-            }
-            if (objs.length % 8 != 0) {
-                m_buffer.put(b);
-            }
+            m_buffer.put(cell.getBitEncodedMissingListValues());
             //TODO ?
             //align to 64bit
             /*int pos = byteBuffer.position();

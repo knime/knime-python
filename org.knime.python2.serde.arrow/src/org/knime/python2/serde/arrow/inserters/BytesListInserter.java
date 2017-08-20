@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
@@ -62,8 +61,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  */
 public class BytesListInserter extends ListInserter {
 
-    //TODO ugly object types
-    private Byte[][] m_objs;
+    private byte[][] m_objs;
 
     private int[] m_offsets;
 
@@ -105,21 +103,18 @@ public class BytesListInserter extends ListInserter {
      * {@inheritDoc}
      */
     @Override
-    protected Object[] putCollection(final ByteBuffer buffer, final Cell cell) {
+    protected void putCollection(final ByteBuffer buffer, final Cell cell) {
 
         IntBuffer intBuffer = buffer.asIntBuffer();
         //put values
         intBuffer.put(m_offsets);
 
         buffer.position(4 + m_offsets.length * 4);
-        for (Byte[] obj : m_objs) {
+        for (byte[] obj : m_objs) {
             if (obj != null) {
-                buffer.put(ArrayUtils.toPrimitive(obj));
+                buffer.put(obj);
             }
         }
-
-        return m_objs;
-
     }
 
 }

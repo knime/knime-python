@@ -49,8 +49,8 @@
 package org.knime.python2.serde.arrow.extractors;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
@@ -83,7 +83,7 @@ public class BytesExtractor implements VectorExtractor {
             c = new CellImpl();
         } else {
             //TODO ugly
-            c = new CellImpl(ArrayUtils.toObject(m_accessor.getObject(m_ctr)));
+            c = new CellImpl(m_accessor.getObject(m_ctr));
         }
         m_ctr++;
         return c;

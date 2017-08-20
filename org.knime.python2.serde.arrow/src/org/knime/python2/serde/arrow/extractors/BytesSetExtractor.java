@@ -52,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -93,16 +92,13 @@ public class BytesSetExtractor extends VariableSizeSetExtractor {
     @Override
     public Cell extractArray(final ByteBuffer buffer, final int numVals, final boolean hasMissing) {
         buffer.position(4 + 4 * m_offsets.length);
-        Byte[][] objs = new Byte[numVals + (hasMissing ? 1 : 0)][];
+        byte[][] objs = new byte[numVals][];
         for (int i = 0; i < numVals; i++) {
             byte[] dst = new byte[m_offsets[i + 1] - m_offsets[i]];
             buffer.get(dst);
-            objs[i] = ArrayUtils.toObject(dst);
+            objs[i] = dst;
         }
-        if (hasMissing) {
-            objs[objs.length - 1] = null;
-        }
-        return new CellImpl(objs, true);
+        return new CellImpl(objs, hasMissing);
     }
 
 }

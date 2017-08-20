@@ -55,7 +55,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BooleanInserter implements VectorInserter {
+public class BooleanInserter implements ArrowVectorInserter {
 
     private final NullableBitVector m_vec;
 
@@ -81,7 +81,7 @@ public class BooleanInserter implements VectorInserter {
     public void put(final Cell cell) {
         if (!cell.isMissing()) {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getBooleanValue().booleanValue() ? 1 : 0);
+            m_mutator.set(m_ctr, cell.getBooleanValue() ? 1 : 0);
         }
         m_mutator.setValueCount(++m_ctr);
     }

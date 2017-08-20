@@ -46,21 +46,14 @@
 package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.vector.FieldVector;
-import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.extensions.serializationlibrary.interfaces.VectorInserter;
 
 /**
  * Manages the data transfer between the python table format and the arrow table format. Works on cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface VectorInserter {
-
-    /**
-     * Add a cell to the end of the managed arrow vector.
-     *
-     * @param cell a cell in the python table format
-     */
-    void put(Cell cell);
+public interface ArrowVectorInserter extends VectorInserter {
 
     /**
      * Close the arrow vector for writing and return it.
