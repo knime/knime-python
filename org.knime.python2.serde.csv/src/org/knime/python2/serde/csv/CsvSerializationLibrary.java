@@ -605,7 +605,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if (j == (stringArray.length - 1)) {
                                         stringArray[j] = stringArray[j].substring(0, stringArray[j].length() - 1);
                                     }
-                                    if (!stringArray[j].equals("None")) {
+                                    if (!(stringArray[j].equals("None") || stringArray[j].equals("'None'"))) {
                                         //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
                                         stringArray[j] = stringArray[j].replace("\\\\", "\\");
                                         stringArray[j] = stringArray[j].replace("\\'", "'");
@@ -636,7 +636,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if (posCtr == (stringSetArray.length - 1)) {
                                         stringSetArray[idxCtr] = stringValue.substring(0, stringValue.length() - 1);
                                     }
-                                    if (!stringValue.equals("None")) {
+                                    if (!(stringValue.equals("None") || stringValue.contentEquals("'None'"))) {
                                         //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
                                         stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\\\", "\\");
                                         stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\'", "'");
