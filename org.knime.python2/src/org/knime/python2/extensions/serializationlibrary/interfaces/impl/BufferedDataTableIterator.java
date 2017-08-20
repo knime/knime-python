@@ -214,8 +214,8 @@ public class BufferedDataTableIterator implements TableIterator {
                     if (!innerCell.isMissing()) {
                         values[j] = ((BooleanValue)innerCell).getBooleanValue();
                         missings[j / 8] += (1 << (j % 8));
-                        j++;
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
@@ -250,8 +250,8 @@ public class BufferedDataTableIterator implements TableIterator {
                     if (!innerCell.isMissing()) {
                         values[j] = ((IntValue)innerCell).getIntValue();
                         missings[j / 8] += (1 << (j % 8));
-                        j++;
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
@@ -287,8 +287,8 @@ public class BufferedDataTableIterator implements TableIterator {
                     if (!innerCell.isMissing()) {
                         values[j] = ((LongValue)innerCell).getLongValue();
                         missings[j / 8] += (1 << (j % 8));
-                        j++;
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
@@ -324,8 +324,8 @@ public class BufferedDataTableIterator implements TableIterator {
                     if (!innerCell.isMissing()) {
                         values[j] = ((DoubleValue)innerCell).getDoubleValue();
                         missings[j / 8] += (1 << (j % 8));
-                        j++;
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
@@ -366,8 +366,8 @@ public class BufferedDataTableIterator implements TableIterator {
                     if (!innerCell.isMissing()) {
                         values[j] = ((StringValue)innerCell).getStringValue();
                         missings[j / 8] += (1 << (j % 8));
-                        j++;
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
@@ -415,9 +415,8 @@ public class BufferedDataTableIterator implements TableIterator {
                         } catch (final IOException e) {
                             LOGGER.error(e.getMessage(), e);
                         }
-                        j++;
-
                     }
+                    j++;
                 }
                 row.setCell(new CellImpl(values, missings), i);
 
