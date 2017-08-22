@@ -57,11 +57,11 @@ import org.knime.python2.serde.flatbuffers.flatc.LongCollectionColumn;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting an integer list column into the flatbuffers table.
+ * Manages inserting an long list column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class LongListInserter extends CollectionInserter {
+public class LongListInserter extends AbstractCollectionInserter {
 
     /**
      * Constructor.

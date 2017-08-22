@@ -56,7 +56,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
 import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
 
 /**
- * Extracts Cells from a BooleanColumn.
+ * Extracts Cells from a LongColumn.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

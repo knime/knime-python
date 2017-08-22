@@ -57,11 +57,11 @@ import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionColumn;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting a long set column into the flatbuffers table.
+ * Manages inserting a double set column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class DoubleSetInserter extends CollectionInserter {
+public class DoubleSetInserter extends AbstractCollectionInserter {
 
     /**
      * Constructor.

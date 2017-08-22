@@ -56,7 +56,7 @@ import org.knime.python2.serde.flatbuffers.flatc.StringColumn;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting a double column into the flatbuffers table.
+ * Manages inserting a String column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

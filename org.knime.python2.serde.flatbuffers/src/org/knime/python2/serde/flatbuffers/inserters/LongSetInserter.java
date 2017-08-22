@@ -61,7 +61,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class LongSetInserter extends CollectionInserter {
+public class LongSetInserter extends AbstractCollectionInserter {
 
     /**
      * Constructor.

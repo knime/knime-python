@@ -52,18 +52,25 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
  *
- * @author clemens
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class CollectionInserter implements FlatbuffersVectorInserter {
+public abstract class AbstractCollectionInserter implements FlatbuffersVectorInserter {
 
+    /**
+     * Cells of collection column
+     */
     protected Cell[] m_column;
+
+    /**
+     * Global counter
+     */
     protected int m_ctr;
 
     /**
      * Constructor.
      * @param numRows the number of rows in the table
      */
-    protected CollectionInserter(final int numRows) {
+    protected AbstractCollectionInserter(final int numRows) {
         m_column = new Cell[numRows];
     }
 
@@ -76,6 +83,12 @@ public abstract class CollectionInserter implements FlatbuffersVectorInserter {
         m_ctr++;
     }
 
+    /**
+     *
+     * @param c the cell
+     * @param numElems mnumber of elements in collection
+     * @return vector indicating whether a cell is missing or not.
+     */
     protected boolean[] getMissingInnerCells(final Cell c, final int numElems) {
         boolean [] missingCells = new boolean[numElems];
 
