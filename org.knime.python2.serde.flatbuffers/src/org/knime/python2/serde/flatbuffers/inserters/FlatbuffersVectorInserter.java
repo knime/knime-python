@@ -53,8 +53,9 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.VectorInsert
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
+ * TODO
  *
- * @author clemens
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public interface FlatbuffersVectorInserter extends VectorInserter {
 

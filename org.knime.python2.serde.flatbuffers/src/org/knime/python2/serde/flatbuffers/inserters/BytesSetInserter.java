@@ -59,11 +59,11 @@ import org.knime.python2.serde.flatbuffers.flatc.StringCollectionCell;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting a long set column into the flatbuffers table.
+ * Manages inserting a bytes set column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BytesSetInserter extends CollectionInserter {
+public class BytesSetInserter extends AbstractCollectionInserter {
 
     private String m_serializer;
 

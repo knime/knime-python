@@ -57,7 +57,7 @@ import org.knime.python2.serde.flatbuffers.flatc.LongColumn;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting a double column into the flatbuffers table.
+ * Manages inserting a long column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -72,6 +72,7 @@ public class LongInserter implements FlatbuffersVectorInserter {
     /**
      * Constructor.
      * @param numRows the number of rows in the table
+     * @param options
      */
     public LongInserter(final int numRows, final SerializationOptions options) {
         m_values = new long[numRows];

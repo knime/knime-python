@@ -55,7 +55,7 @@ import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionCell;
 import org.knime.python2.serde.flatbuffers.flatc.DoubleCollectionColumn;
 
 /**
- * Extracts Cells from a BooleanColumn.
+ * Extracts Cells from a DoubleCollectionColumn.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

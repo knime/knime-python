@@ -58,11 +58,11 @@ import org.knime.python2.serde.flatbuffers.flatc.Column;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Manages inserting an integer list column into the flatbuffers table.
+ * Manages inserting an bytes list column into the flatbuffers table.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class BytesListInserter extends CollectionInserter {
+public class BytesListInserter extends AbstractCollectionInserter {
 
     private String m_serializer;
 
