@@ -172,7 +172,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     if(integerArray.length > 0) {
                                         integerBuilder.append(",");
                                     }
-                                    integerBuilder.append(",");
+                                    integerBuilder.append("None");
                                 }
                                 integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "]" : "}");
                                 value = integerBuilder.toString();
