@@ -326,7 +326,8 @@ def table_to_bytes(table):
                                  
                 IntegerCollectionCell.IntegerCollectionCellStart(builder)
                 IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
-                IntegerCollectionCell.IntegerCollectionCellAddMissing(builder, cellMissingVec)
+                if col[valIdx] != None:
+                    IntegerCollectionCell.IntegerCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                         
             IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
@@ -451,7 +452,8 @@ def table_to_bytes(table):
                     
                 BooleanCollectionCell.BooleanCollectionCellStart(builder)
                 BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
-                BooleanCollectionCell.BooleanCollectionCellAddMissing(builder,cellMissingVec)
+                if col[valIdx] != None:
+                    BooleanCollectionCell.BooleanCollectionCellAddMissing(builder,cellMissingVec)
                 cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
                         
        #     valVec = builder.EndVector(len(cellOffsets))
@@ -587,7 +589,8 @@ def table_to_bytes(table):
                     
                 LongCollectionCell.LongCollectionCellStart(builder)
                 LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
-                LongCollectionCell.LongCollectionCellAddMissing(builder, cellMissingVec)
+                if col[valIdx] != None:
+                    LongCollectionCell.LongCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
                         
             LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
@@ -714,7 +717,8 @@ def table_to_bytes(table):
                                    
                 DoubleCollectionCell.DoubleCollectionCellStart(builder)
                 DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
-                DoubleCollectionCell.DoubleCollectionCellAddMissing(builder, cellMissingVec)
+                if col[valIdx] != None:
+                    DoubleCollectionCell.DoubleCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
                         
             DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
@@ -844,7 +848,8 @@ def table_to_bytes(table):
                 cellVec = builder.EndVector(len(strOffsets))
                 StringCollectionCell.StringCollectionCellStart(builder)
                 StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
-                StringCollectionCell.StringCollectionCellAddMissing(builder, cellMissingVec)
+                if col[valIdx] != None:
+                    StringCollectionCell.StringCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
                         
             StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
@@ -994,8 +999,9 @@ def table_to_bytes(table):
                     cellVec = builder.EndVector(len(collOffsets))                   
                 
                 ByteCollectionCell.ByteCollectionCellStart(builder)
-                ByteCollectionCell.ByteCollectionCellAddValue(builder, cellVec)
-                ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
+                if col[valIdx] != None:
+                    ByteCollectionCell.ByteCollectionCellAddValue(builder, cellVec)
+                    ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
                 cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
                         
             ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
