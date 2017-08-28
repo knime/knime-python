@@ -64,60 +64,60 @@ import org.knime.python.port.PickledObjectPortObject;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig> {
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonPredictorNodeModel() {
-		super(new PortType[] { PickledObjectPortObject.TYPE, BufferedDataTable.TYPE },
-				new PortType[] { BufferedDataTable.TYPE });
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonPredictorNodeModel() {
+        super(new PortType[] { PickledObjectPortObject.TYPE, BufferedDataTable.TYPE },
+            new PortType[] { BufferedDataTable.TYPE });
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
-		BufferedDataTable table = null;
-		try {
-			kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putObject(PythonPredictorNodeConfig.getVariableNames().getInputObjects()[0],
-					((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
-			exec.createSubProgress(0.1).setProgress(1);
-			kernel.putDataTable(PythonPredictorNodeConfig.getVariableNames().getInputTables()[0],
-					(BufferedDataTable) inData[1], exec.createSubProgress(0.2));
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.4).setProgress(1);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables());
-			table = kernel.getDataTable(PythonPredictorNodeConfig.getVariableNames().getOutputTables()[0], exec,
-					exec.createSubProgress(0.3));
-	        addNewVariables(variables);
-		} finally {
-			kernel.close();
-		}
-		return new BufferedDataTable[] { table };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel();
+        BufferedDataTable table = null;
+        try {
+            kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putObject(PythonPredictorNodeConfig.getVariableNames().getInputObjects()[0],
+                ((PickledObjectPortObject) inData[0]).getPickledObject(), exec);
+            exec.createSubProgress(0.1).setProgress(1);
+            kernel.putDataTable(PythonPredictorNodeConfig.getVariableNames().getInputTables()[0],
+                (BufferedDataTable) inData[1], exec.createSubProgress(0.2));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.4).setProgress(1);
+            final Collection<FlowVariable> variables = kernel.getFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables());
+            table = kernel.getDataTable(PythonPredictorNodeConfig.getVariableNames().getOutputTables()[0], exec,
+                exec.createSubProgress(0.3));
+            addNewVariables(variables);
+        } finally {
+            kernel.close();
+        }
+        return new BufferedDataTable[] { table };
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { null };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[] { null };
+    }
 
-	@Override
-	protected PythonPredictorNodeConfig createConfig() {
-		return new PythonPredictorNodeConfig();
-	}
+    @Override
+    protected PythonPredictorNodeConfig createConfig() {
+        return new PythonPredictorNodeConfig();
+    }
 
 }

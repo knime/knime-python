@@ -55,57 +55,57 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonScript2In1OutNodeFactory extends NodeFactory<PythonScript2In1OutNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonScript2In1OutNodeModel createNodeModel() {
-		return new PythonScript2In1OutNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonScript2In1OutNodeModel createNodeModel() {
+        return new PythonScript2In1OutNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonScript2In1OutNodeModel> createNodeView(final int viewIndex, final PythonScript2In1OutNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonScript2In1OutNodeModel> createNodeView(final int viewIndex, final PythonScript2In1OutNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScript2In1OutNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonScript2In1OutNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScript2In1OutNodeModel>(nodeModel);
+                    new ExtToolStderrNodeView<PythonScript2In1OutNodeModel>(nodeModel);
         }
         return null;
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScript2In1OutNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonScript2In1OutNodeDialog();
+    }
 
 }

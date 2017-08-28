@@ -69,342 +69,342 @@ import org.knime.python.port.PickledObject;
  */
 public class PythonKernelManager {
 
-	private ThreadPool m_threadPool;
-	private PythonKernel m_kernel;
+    private ThreadPool m_threadPool;
+    private PythonKernel m_kernel;
 
-	/**
-	 * Creates a manager that will start a new python kernel.
-	 *
-	 * @throws IOException
-	 */
-	public PythonKernelManager() throws IOException {
-		m_threadPool = new ThreadPool(8);
-		m_kernel = new PythonKernel();
-	}
+    /**
+     * Creates a manager that will start a new python kernel.
+     *
+     * @throws IOException
+     */
+    public PythonKernelManager() throws IOException {
+        m_threadPool = new ThreadPool(8);
+        m_kernel = new PythonKernel();
+    }
 
-	/**
-	 * Returns the image with the given name.
-	 *
-	 * @param name
-	 *            Name of the image
-	 * @return The image
-	 * @throws IOException
-	 *             If an error occured
-	 */
-	public synchronized ImageContainer getImage(final String name) throws IOException {
-		return m_kernel.getImage(name);
-	}
+    /**
+     * Returns the image with the given name.
+     *
+     * @param name
+     *            Name of the image
+     * @return The image
+     * @throws IOException
+     *             If an error occured
+     */
+    public synchronized ImageContainer getImage(final String name) throws IOException {
+        return m_kernel.getImage(name);
+    }
 
-	public synchronized void putObject(final String name, final PickledObject object,
-			final PythonKernelResponseHandler<Void> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				Exception exception = null;
-				try {
-					kernel.putObject(name, object);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(null, exception);
-				}
-			}
-		});
-	}
+    public synchronized void putObject(final String name, final PickledObject object,
+        final PythonKernelResponseHandler<Void> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                Exception exception = null;
+                try {
+                    kernel.putObject(name, object);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(null, exception);
+                }
+            }
+        });
+    }
 
-	public synchronized void getObject(final String name, final PythonKernelResponseHandler<PickledObject> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				PickledObject response = null;
-				Exception exception = null;
-				try {
-					response = kernel.getObject(name);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(response, exception);
-				}
-			}
-		});
-	}
+    public synchronized void getObject(final String name, final PythonKernelResponseHandler<PickledObject> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                PickledObject response = null;
+                Exception exception = null;
+                try {
+                    response = kernel.getObject(name);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(response, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Switches the underling python kernel and closes the old one.
-	 *
-	 * This can be used to shutdown an unresponsive kernel.
-	 *
-	 * @throws IOException
-	 *             If an error occurs during creation of the new python kernel
-	 */
-	public synchronized void switchToNewKernel() throws IOException {
-		m_kernel.close();
-		m_kernel = new PythonKernel();
-	}
+    /**
+     * Switches the underling python kernel and closes the old one.
+     *
+     * This can be used to shutdown an unresponsive kernel.
+     *
+     * @throws IOException
+     *             If an error occurs during creation of the new python kernel
+     */
+    public synchronized void switchToNewKernel() throws IOException {
+        m_kernel.close();
+        m_kernel = new PythonKernel();
+    }
 
-	/**
-	 * Execute the given source code.
-	 *
-	 * @param sourceCode
-	 *            The source code to execute
-	 * @param responseHandler
-	 *            Handler for the responded console output
-	 */
-	public synchronized void execute(final String sourceCode,
-			final PythonKernelResponseHandler<String[]> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				String[] response = null;
-				Exception exception = null;
-				try {
-					response = kernel.execute(sourceCode);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(response, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Execute the given source code.
+     *
+     * @param sourceCode
+     *            The source code to execute
+     * @param responseHandler
+     *            Handler for the responded console output
+     */
+    public synchronized void execute(final String sourceCode,
+        final PythonKernelResponseHandler<String[]> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                String[] response = null;
+                Exception exception = null;
+                try {
+                    response = kernel.execute(sourceCode);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(response, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Put the given flow variables into the workspace.
-	 *
-	 * @param name
-	 *            The name of the flow variables dict
-	 * @param flowVariables
-	 *            The flow variables
-	 * @param responseHandler
-	 *            Handler called after execution (response object is always
-	 *            null)
-	 */
-	public synchronized void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables,
-			final PythonKernelResponseHandler<Void> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				Exception exception = null;
-				try {
-					kernel.putFlowVariables(name, flowVariables);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(null, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Put the given flow variables into the workspace.
+     *
+     * @param name
+     *            The name of the flow variables dict
+     * @param flowVariables
+     *            The flow variables
+     * @param responseHandler
+     *            Handler called after execution (response object is always
+     *            null)
+     */
+    public synchronized void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables,
+        final PythonKernelResponseHandler<Void> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                Exception exception = null;
+                try {
+                    kernel.putFlowVariables(name, flowVariables);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(null, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Put the given {@link DataTable} into the workspace.
-	 *
-	 * @param name
-	 *            The name of the table
-	 * @param table
-	 *            The table
-	 * @param responseHandler
-	 *            Handler called after execution (response object is always
-	 *            null)
-	 */
-	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
-			final String variablesName, final Collection<FlowVariable> variables,
-			final String[] objectNames, final PickledObject[] objects,
-			final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
-			final int rowLimit) {
-		putData(tableNames, tables, variablesName, variables, objectNames, objects,
-				new EditorObjectWriter[0], responseHandler, executionMonitor, rowLimit);
-	}
+    /**
+     * Put the given {@link DataTable} into the workspace.
+     *
+     * @param name
+     *            The name of the table
+     * @param table
+     *            The table
+     * @param responseHandler
+     *            Handler called after execution (response object is always
+     *            null)
+     */
+    public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
+        final String variablesName, final Collection<FlowVariable> variables,
+        final String[] objectNames, final PickledObject[] objects,
+        final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
+        final int rowLimit) {
+        putData(tableNames, tables, variablesName, variables, objectNames, objects,
+            new EditorObjectWriter[0], responseHandler, executionMonitor, rowLimit);
+    }
 
-	/**
-	 * Put the given {@link DataTable} into the workspace.
-	 *
-	 * @param name
-	 *            The name of the table
-	 * @param table
-	 *            The table
-	 * @param responseHandler
-	 *            Handler called after execution (response object is always
-	 *            null)
-	 */
-	public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
-			final String variablesName, final Collection<FlowVariable> variables,
-			final String[] objectNames, final PickledObject[] objects, final EditorObjectWriter[] generalObjects,
-			final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
-			final int rowLimit) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				Exception exception = null;
-				try {
-					kernel.putFlowVariables(variablesName, variables);
-					for (int i = 0; i < objects.length; i++) {
-						kernel.putObject(objectNames[i], objects[i]);
-					}
-					for (int i = 0; i < tables.length; i++) {
-						kernel.putDataTable(tableNames[i], tables[i],
-								executionMonitor.createSubProgress(1 / (double) tables.length), rowLimit);
-					}
-					for (final EditorObjectWriter generalObject : generalObjects) {
-						kernel.putGeneralObject(generalObject);
-					}
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(null, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Put the given {@link DataTable} into the workspace.
+     *
+     * @param name
+     *            The name of the table
+     * @param table
+     *            The table
+     * @param responseHandler
+     *            Handler called after execution (response object is always
+     *            null)
+     */
+    public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
+        final String variablesName, final Collection<FlowVariable> variables,
+        final String[] objectNames, final PickledObject[] objects, final EditorObjectWriter[] generalObjects,
+        final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
+        final int rowLimit) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                Exception exception = null;
+                try {
+                    kernel.putFlowVariables(variablesName, variables);
+                    for (int i = 0; i < objects.length; i++) {
+                        kernel.putObject(objectNames[i], objects[i]);
+                    }
+                    for (int i = 0; i < tables.length; i++) {
+                        kernel.putDataTable(tableNames[i], tables[i],
+                            executionMonitor.createSubProgress(1 / (double) tables.length), rowLimit);
+                    }
+                    for (final EditorObjectWriter generalObject : generalObjects) {
+                        kernel.putGeneralObject(generalObject);
+                    }
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(null, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Get a {@link DataTable} from the workspace.
-	 *
-	 * @param name
-	 *            The name of the table to get
-	 * @return The table
-	 * @param responseHandler
-	 *            Handler for the responded result table
-	 */
-	public synchronized void getDataTable(final String name, final ExecutionContext exec,
-			final PythonKernelResponseHandler<DataTable> responseHandler, final ExecutionMonitor executionMonitor) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				DataTable response = null;
-				Exception exception = null;
-				try {
-					response = kernel.getDataTable(name, exec, executionMonitor);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(response, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Get a {@link DataTable} from the workspace.
+     *
+     * @param name
+     *            The name of the table to get
+     * @return The table
+     * @param responseHandler
+     *            Handler for the responded result table
+     */
+    public synchronized void getDataTable(final String name, final ExecutionContext exec,
+        final PythonKernelResponseHandler<DataTable> responseHandler, final ExecutionMonitor executionMonitor) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                DataTable response = null;
+                Exception exception = null;
+                try {
+                    response = kernel.getDataTable(name, exec, executionMonitor);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(response, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Returns the list of all defined variables, functions, classes and loaded
-	 * modules.
-	 *
-	 * Each variable map contains the fields 'name', 'type' and 'value'.
-	 *
-	 * @param responseHandler
-	 *            Handler for the responded list of variables
-	 */
-	public synchronized void listVariables(final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				List<Map<String, String>> response = null;
-				Exception exception = null;
-				try {
-					response = kernel.listVariables();
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(response, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Returns the list of all defined variables, functions, classes and loaded
+     * modules.
+     *
+     * Each variable map contains the fields 'name', 'type' and 'value'.
+     *
+     * @param responseHandler
+     *            Handler for the responded list of variables
+     */
+    public synchronized void listVariables(final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                List<Map<String, String>> response = null;
+                Exception exception = null;
+                try {
+                    response = kernel.listVariables();
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(response, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Resets the workspace of the python kernel.
-	 *
-	 * @param responseHandler
-	 *            Handler called after execution (response object is always
-	 *            null)
-	 */
-	public synchronized void resetWorkspace(final PythonKernelResponseHandler<Void> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				Exception exception = null;
-				try {
-					kernel.resetWorkspace();
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(null, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Resets the workspace of the python kernel.
+     *
+     * @param responseHandler
+     *            Handler called after execution (response object is always
+     *            null)
+     */
+    public synchronized void resetWorkspace(final PythonKernelResponseHandler<Void> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                Exception exception = null;
+                try {
+                    kernel.resetWorkspace();
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(null, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Returns the list of possible auto completions to the given source at the
-	 * given position.
-	 *
-	 * Each auto completion contains the fields 'name', 'type' and 'doc'.
-	 *
-	 * @param sourceCode
-	 *            The source code
-	 * @param line
-	 *            Cursor position (line)
-	 * @param column
-	 *            Cursor position (column)
-	 * @param responseHandler
-	 *            Handler for the responded possible auto completions
-	 */
-	public synchronized void autoComplete(final String sourceCode, final int line, final int column,
-			final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
-		final PythonKernel kernel = m_kernel;
-		runInThread(new Runnable() {
-			@Override
-			public void run() {
-				List<Map<String, String>> response = null;
-				Exception exception = null;
-				try {
-					response = kernel.autoComplete(sourceCode, line, column);
-				} catch (final Exception e) {
-					exception = e;
-				}
-				if (kernel.equals(m_kernel)) {
-					responseHandler.handleResponse(response, exception);
-				}
-			}
-		});
-	}
+    /**
+     * Returns the list of possible auto completions to the given source at the
+     * given position.
+     *
+     * Each auto completion contains the fields 'name', 'type' and 'doc'.
+     *
+     * @param sourceCode
+     *            The source code
+     * @param line
+     *            Cursor position (line)
+     * @param column
+     *            Cursor position (column)
+     * @param responseHandler
+     *            Handler for the responded possible auto completions
+     */
+    public synchronized void autoComplete(final String sourceCode, final int line, final int column,
+        final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
+        final PythonKernel kernel = m_kernel;
+        runInThread(new Runnable() {
+            @Override
+            public void run() {
+                List<Map<String, String>> response = null;
+                Exception exception = null;
+                try {
+                    response = kernel.autoComplete(sourceCode, line, column);
+                } catch (final Exception e) {
+                    exception = e;
+                }
+                if (kernel.equals(m_kernel)) {
+                    responseHandler.handleResponse(response, exception);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Closes the underling python kernel.
-	 */
-	public synchronized void close() {
-		m_threadPool.shutdown();
-		m_threadPool = new ThreadPool(8);
-		m_kernel.close();
-	}
+    /**
+     * Closes the underling python kernel.
+     */
+    public synchronized void close() {
+        m_threadPool.shutdown();
+        m_threadPool = new ThreadPool(8);
+        m_kernel.close();
+    }
 
-	/**
-	 * Runs the given runnable in a separate thread.
-	 *
-	 * @param runnable
-	 *            The runnable to run
-	 */
-	private void runInThread(final Runnable runnable) {
-		try {
-			m_threadPool.submit(runnable);
-		} catch (final InterruptedException e) {
-			//
-		}
-	}
+    /**
+     * Runs the given runnable in a separate thread.
+     *
+     * @param runnable
+     *            The runnable to run
+     */
+    private void runInThread(final Runnable runnable) {
+        try {
+            m_threadPool.submit(runnable);
+        } catch (final InterruptedException e) {
+            //
+        }
+    }
 
 }

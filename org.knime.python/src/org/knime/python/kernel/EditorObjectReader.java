@@ -6,8 +6,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public interface EditorObjectReader {
 
-	Command getCommand();
+    Command getCommand();
 
-	void read(byte[] readMessageBytes) throws InvalidProtocolBufferException;
+    void read(byte[] readMessageBytes) throws InvalidProtocolBufferException;
 
 }

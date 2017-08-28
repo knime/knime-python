@@ -58,28 +58,28 @@ import org.knime.python.Activator;
 
 public class SourceCodeTemplatesExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
-	
-	private static List<File> templateFolders;
-	
-	public static void init() {
-		templateFolders = new ArrayList<File>();
-		IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.sourcecodetemplates");
-		for (IConfigurationElement config : configs) {
-			String pluginId = config.getContributor().getName();
-			String path = config.getAttribute("path");
-			File folder = Activator.getFile(pluginId, path);
-			if (folder != null && folder.isDirectory()) {
-				templateFolders.add(folder);
-			} else {
-				LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
-			}
-		}
-	}
-	
-	public static List<File> getTemplateFolders() {
-		return templateFolders;
-	}
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodeTemplatesExtensions.class);
+
+    private static List<File> templateFolders;
+
+    public static void init() {
+        templateFolders = new ArrayList<File>();
+        final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
+                "org.knime.python.sourcecodetemplates");
+        for (final IConfigurationElement config : configs) {
+            final String pluginId = config.getContributor().getName();
+            final String path = config.getAttribute("path");
+            final File folder = Activator.getFile(pluginId, path);
+            if ((folder != null) && folder.isDirectory()) {
+                templateFolders.add(folder);
+            } else {
+                LOGGER.warn("Could not find templates folder " + path + " in plugin " + pluginId);
+            }
+        }
+    }
+
+    public static List<File> getTemplateFolders() {
+        return templateFolders;
+    }
 
 }

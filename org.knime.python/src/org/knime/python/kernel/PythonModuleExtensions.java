@@ -59,28 +59,28 @@ import org.knime.python.Activator;
 
 public class PythonModuleExtensions {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonModuleExtensions.class);
 
-	private static Set<String> pythonModulePaths;
+    private static Set<String> pythonModulePaths;
 
-	public static void init() {
-		pythonModulePaths = new HashSet<String>();
-		final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
-				"org.knime.python.modules");
-		for (final IConfigurationElement config : configs) {
-			final String pluginId = config.getContributor().getName();
-			final String path = config.getAttribute("path");
-			final File file = Activator.getFile(pluginId, path);
-			if (file == null || !file.exists() || !file.isDirectory()) {
-				LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
-			} else {
-				pythonModulePaths.add(file.getAbsolutePath());
-			}
-		}
-	}
+    public static void init() {
+        pythonModulePaths = new HashSet<String>();
+        final IConfigurationElement[] configs = Platform.getExtensionRegistry().getConfigurationElementsFor(
+                "org.knime.python.modules");
+        for (final IConfigurationElement config : configs) {
+            final String pluginId = config.getContributor().getName();
+            final String path = config.getAttribute("path");
+            final File file = Activator.getFile(pluginId, path);
+            if ((file == null) || !file.exists() || !file.isDirectory()) {
+                LOGGER.warn("Could not find the directory " + path + " in plugin " + pluginId);
+            } else {
+                pythonModulePaths.add(file.getAbsolutePath());
+            }
+        }
+    }
 
-	public static String getPythonPath() {
-		return StringUtils.join(pythonModulePaths, File.pathSeparator);
-	}
+    public static String getPythonPath() {
+        return StringUtils.join(pythonModulePaths, File.pathSeparator);
+    }
 
 }

@@ -67,108 +67,108 @@ import org.osgi.framework.BundleContext;
 
 /**
  * Activator for this plugin.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class Activator implements BundleActivator {
 
-	private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-	private static PythonKernelTestResult pythonTestResult;
+    private static PythonKernelTestResult pythonTestResult;
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void start(BundleContext bundleContext) throws Exception {
-		// When this plugin is loaded test the python installation
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				testPythonInstallation();
-			}
-		}).start();
-		SourceCodeTemplatesExtensions.init();
-		PythonModuleExtensions.init();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start(final BundleContext bundleContext) throws Exception {
+        // When this plugin is loaded test the python installation
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                testPythonInstallation();
+            }
+        }).start();
+        SourceCodeTemplatesExtensions.init();
+        PythonModuleExtensions.init();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void stop(BundleContext bundleContext) throws Exception {
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop(final BundleContext bundleContext) throws Exception {
+    }
 
-	/**
-	 * Return the command to start python.
-	 * 
-	 * @return The command to start python
-	 */
-	public static String getPythonCommand() {
-		return PythonPreferencePage.getPython2Path();
-	}
+    /**
+     * Return the command to start python.
+     *
+     * @return The command to start python
+     */
+    public static String getPythonCommand() {
+        return PythonPreferencePage.getPython2Path();
+    }
 
-	/**
-	 * Tests if python can be started with the currently configured command and
-	 * if all required modules are installed.
-	 * 
-	 * @return {@link PythonKernelTestResult} that containes detailed test
-	 *         information
-	 */
-	public static synchronized PythonKernelTestResult testPythonInstallation() {
-		// If python test already succeeded we do not have to run it again
-		if (pythonTestResult != null && !pythonTestResult.hasError()) {
-			return pythonTestResult;
-		}
-		String pythonCommand = getPythonCommand();
-		try {
-			// Start python kernel tester script
-			String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
-			ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
-			Process process = pb.start();
-			// Get console output of script
-			StringWriter writer = new StringWriter();
-			IOUtils.copy(process.getInputStream(), writer, "UTF-8");
-			// Create test result with console output as message and error code
-			// != 0 as error
-			pythonTestResult = new PythonKernelTestResult(writer.toString());
-			return pythonTestResult;
-		} catch (IOException e) {
-			LOGGER.error(e.getMessage(), e);
-			// Python could not be started
-			return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
-		}
-	}
+    /**
+     * Tests if python can be started with the currently configured command and
+     * if all required modules are installed.
+     *
+     * @return {@link PythonKernelTestResult} that containes detailed test
+     *         information
+     */
+    public static synchronized PythonKernelTestResult testPythonInstallation() {
+        // If python test already succeeded we do not have to run it again
+        if ((pythonTestResult != null) && !pythonTestResult.hasError()) {
+            return pythonTestResult;
+        }
+        final String pythonCommand = getPythonCommand();
+        try {
+            // Start python kernel tester script
+            final String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
+            final ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
+            final Process process = pb.start();
+            // Get console output of script
+            final StringWriter writer = new StringWriter();
+            IOUtils.copy(process.getInputStream(), writer, "UTF-8");
+            // Create test result with console output as message and error code
+            // != 0 as error
+            pythonTestResult = new PythonKernelTestResult(writer.toString());
+            return pythonTestResult;
+        } catch (final IOException e) {
+            LOGGER.error(e.getMessage(), e);
+            // Python could not be started
+            return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
+        }
+    }
 
-	/**
-	 * Delete the previous python test result and retest the python behind the
-	 * new path.
-	 * 
-	 * @return The new test result
-	 */
-	public static synchronized PythonKernelTestResult retestPythonInstallation() {
-		pythonTestResult = null;
-		return testPythonInstallation();
-	}
+    /**
+     * Delete the previous python test result and retest the python behind the
+     * new path.
+     *
+     * @return The new test result
+     */
+    public static synchronized PythonKernelTestResult retestPythonInstallation() {
+        pythonTestResult = null;
+        return testPythonInstallation();
+    }
 
-	/**
-	 * Returns the file contained in the plugin with the given ID.
-	 * 
-	 * @param symbolicName
-	 *            ID of the plugin containing the file
-	 * @param relativePath
-	 *            File path inside the plugin
-	 * @return The file
-	 */
-	public static File getFile(final String symbolicName, final String relativePath) {
-		try {
-			Bundle bundle = Platform.getBundle(symbolicName);
-			URL url = FileLocator.find(bundle, new Path(relativePath), null);
-			return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
-		} catch (Exception e) {
-			LOGGER.debug(e.getMessage(), e);
-			return null;
-		}
-	}
+    /**
+     * Returns the file contained in the plugin with the given ID.
+     *
+     * @param symbolicName
+     *            ID of the plugin containing the file
+     * @param relativePath
+     *            File path inside the plugin
+     * @return The file
+     */
+    public static File getFile(final String symbolicName, final String relativePath) {
+        try {
+            final Bundle bundle = Platform.getBundle(symbolicName);
+            final URL url = FileLocator.find(bundle, new Path(relativePath), null);
+            return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
+        } catch (final Exception e) {
+            LOGGER.debug(e.getMessage(), e);
+            return null;
+        }
+    }
 
 }

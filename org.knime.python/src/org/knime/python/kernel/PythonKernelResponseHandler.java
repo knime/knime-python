@@ -49,24 +49,24 @@ package org.knime.python.kernel;
 
 /**
  * Handler that handles responses from the python kernel.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
- * 
+ *
  * @param <T>
  *            Type of the response object
  */
 public interface PythonKernelResponseHandler<T extends Object> {
 
-	/**
-	 * Method that handles the received response of the python kernel.
-	 * 
-	 * @param response
-	 *            The response object (depends on command) or null if an
-	 *            exception was thrown
-	 * @param exception
-	 *            The exception that was thrown or null if no exception was
-	 *            thrown
-	 */
-	public void handleResponse(final T response, final Exception exception);
+    /**
+     * Method that handles the received response of the python kernel.
+     *
+     * @param response
+     *            The response object (depends on command) or null if an
+     *            exception was thrown
+     * @param exception
+     *            The exception that was thrown or null if no exception was
+     *            thrown
+     */
+    public void handleResponse(final T response, final Exception exception);
 
 }

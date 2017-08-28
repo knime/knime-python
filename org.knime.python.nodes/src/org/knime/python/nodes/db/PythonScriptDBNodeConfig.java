@@ -52,33 +52,33 @@ import org.knime.code.generic.VariableNames;
 
 class PythonScriptDBNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			null, null, null, null, null, new String[] {"db_util"}, null);
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        null, null, null, null, null, new String[] {"db_util"}, null);
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		final String var = VARIABLE_NAMES.getGeneralInputObjects()[0];
-		return  "# To prevent changes to the database in the node dialog\n" +
-				"# do NOT call commit() in your script!\n" +
-				"# All changes to the database are automatically\n" +
-				"# committed once the node is executed.\n" +
-				"# To list all functions of the db_util object call\n" +
-				"# " + var + ".print_description()\n\n" +
-				"df = " + var + ".get_dataframe()\n" +
-				var + ".write_dataframe('resultTableName', df)";
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        final String var = VARIABLE_NAMES.getGeneralInputObjects()[0];
+        return  "# To prevent changes to the database in the node dialog\n" +
+        "# do NOT call commit() in your script!\n" +
+        "# All changes to the database are automatically\n" +
+        "# committed once the node is executed.\n" +
+        "# To list all functions of the db_util object call\n" +
+        "# " + var + ".print_description()\n\n" +
+        "df = " + var + ".get_dataframe()\n" +
+        var + ".write_dataframe('resultTableName', df)";
 
-	}
+    }
 
-	/**
-	 * Get the variable names for this node
-	 *
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

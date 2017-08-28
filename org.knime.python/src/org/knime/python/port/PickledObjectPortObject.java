@@ -63,153 +63,153 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
 import org.knime.core.node.port.AbstractSimplePortObject;
-import org.knime.core.node.port.PortTypeRegistry;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.PortTypeRegistry;
 
 /**
  * Port object containing a {@link PickledObject}.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public final class PickledObjectPortObject extends AbstractSimplePortObject {
-	public static final class Serializer extends AbstractSimplePortObjectSerializer<PickledObjectPortObject> {}
+    public static final class Serializer extends AbstractSimplePortObjectSerializer<PickledObjectPortObject> {}
 
-	private PickledObjectPortObjectSpec m_spec;
+    private PickledObjectPortObjectSpec m_spec;
 
-	private PickledObject m_pickledObject;
+    private PickledObject m_pickledObject;
 
-	/**
-	 * The type of this port.
-	 */
-	public static final PortType TYPE = PortTypeRegistry.getInstance().getPortType(PickledObjectPortObject.class);
+    /**
+     * The type of this port.
+     */
+    public static final PortType TYPE = PortTypeRegistry.getInstance().getPortType(PickledObjectPortObject.class);
 
-	/**
-	 * Constructor used by the framework.
-	 */
-	public PickledObjectPortObject() {
-		m_pickledObject = null;
-	}
+    /**
+     * Constructor used by the framework.
+     */
+    public PickledObjectPortObject() {
+        m_pickledObject = null;
+    }
 
-	/**
-	 * @param spec
-	 *            The specification of this port object.
-	 */
-	public PickledObjectPortObject(final PickledObject pickledObject) {
-		m_pickledObject = pickledObject;
-		m_spec = new PickledObjectPortObjectSpec(m_pickledObject.getType(), m_pickledObject.getStringRepresentation());
-	}
+    /**
+     * @param spec
+     *            The specification of this port object.
+     */
+    public PickledObjectPortObject(final PickledObject pickledObject) {
+        m_pickledObject = pickledObject;
+        m_spec = new PickledObjectPortObjectSpec(m_pickledObject.getType(), m_pickledObject.getStringRepresentation());
+    }
 
-	/**
-	 * @return The contained PickledObject
-	 */
-	public PickledObject getPickledObject() {
-		return m_pickledObject;
-	}
+    /**
+     * @return The contained PickledObject
+     */
+    public PickledObject getPickledObject() {
+        return m_pickledObject;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getSummary() {
-		return m_pickledObject.toString();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getSummary() {
+        return m_pickledObject.toString();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PortObjectSpec getSpec() {
-		return m_spec;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PortObjectSpec getSpec() {
+        return m_spec;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void save(final ModelContentWO model, final ExecutionMonitor exec)
-			throws CanceledExecutionException {
-		m_pickledObject.save(model);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void save(final ModelContentWO model, final ExecutionMonitor exec)
+            throws CanceledExecutionException {
+        m_pickledObject.save(model);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void load(final ModelContentRO model, final PortObjectSpec spec,
-			final ExecutionMonitor exec) throws InvalidSettingsException,
-			CanceledExecutionException {
-		m_spec = (PickledObjectPortObjectSpec) spec;
-		m_pickledObject = new PickledObject(model);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void load(final ModelContentRO model, final PortObjectSpec spec,
+        final ExecutionMonitor exec) throws InvalidSettingsException,
+    CanceledExecutionException {
+        m_spec = (PickledObjectPortObjectSpec) spec;
+        m_pickledObject = new PickledObject(model);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public JComponent[] getViews() {
-		String text;
-		if (getPickledObject() != null) {
-			String pickledObject = getPickledObject().getStringRepresentation();
-			pickledObject = shortenString(pickledObject, 1000, "\n...");
-			text = "<html><b>" + getPickledObject().getType()
-					+ "</b><br><br><code>"
-					+ pickledObject.replace("\n", "<br>") + "</code></html>";
-		} else {
-			text = "No object available";
-		}
-		JLabel label = new JLabel(text);
-		Font font = label.getFont();
-		Font plainFont = new Font(font.getFontName(), Font.PLAIN,
-				font.getSize());
-		label.setFont(plainFont);
-		JPanel panel = new JPanel(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(5, 5, 5, 5);
-		gbc.anchor = GridBagConstraints.NORTHWEST;
-		gbc.fill = GridBagConstraints.BOTH;
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		panel.add(label, gbc);
-		gbc.insets = new Insets(0, 0, 0, 0);
-		gbc.gridy++;
-		gbc.weighty = Double.MIN_VALUE;
-		gbc.weightx = Double.MIN_VALUE;
-		panel.add(new JLabel(), gbc);
-		JComponent f = new JScrollPane(panel);
-		f.setName("Pickled object");
-		return new JComponent[] { f };
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JComponent[] getViews() {
+        String text;
+        if (getPickledObject() != null) {
+            String pickledObject = getPickledObject().getStringRepresentation();
+            pickledObject = shortenString(pickledObject, 1000, "\n...");
+            text = "<html><b>" + getPickledObject().getType()
+                    + "</b><br><br><code>"
+                    + pickledObject.replace("\n", "<br>") + "</code></html>";
+        } else {
+            text = "No object available";
+        }
+        final JLabel label = new JLabel(text);
+        final Font font = label.getFont();
+        final Font plainFont = new Font(font.getFontName(), Font.PLAIN,
+            font.getSize());
+        label.setFont(plainFont);
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(label, gbc);
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy++;
+        gbc.weighty = Double.MIN_VALUE;
+        gbc.weightx = Double.MIN_VALUE;
+        panel.add(new JLabel(), gbc);
+        final JComponent f = new JScrollPane(panel);
+        f.setName("Pickled object");
+        return new JComponent[] { f };
+    }
 
-	private static String shortenString(String string, final int maxLength,
-			final String suffix) {
-		if (string.length() > maxLength) {
-			string = string.substring(0, maxLength - suffix.length()) + suffix;
-		}
-		return string;
-	}
+    private static String shortenString(String string, final int maxLength,
+        final String suffix) {
+        if (string.length() > maxLength) {
+            string = string.substring(0, maxLength - suffix.length()) + suffix;
+        }
+        return string;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof PickledObjectPortObject)) {
-			return false;
-		}
-		PickledObjectPortObject portObject = (PickledObjectPortObject) o;
-		return m_pickledObject.equals(portObject.m_pickledObject);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PickledObjectPortObject)) {
+            return false;
+        }
+        final PickledObjectPortObject portObject = (PickledObjectPortObject) o;
+        return m_pickledObject.equals(portObject.m_pickledObject);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int hashCode() {
-		return m_pickledObject != null ? m_pickledObject.hashCode() : 0;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return m_pickledObject != null ? m_pickledObject.hashCode() : 0;
+    }
 
 }
