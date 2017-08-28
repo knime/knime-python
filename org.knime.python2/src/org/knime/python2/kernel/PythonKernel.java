@@ -171,15 +171,15 @@ public class PythonKernel {
         // Create socket to listen on
         m_serverSocket = new ServerSocket(0);
         final int port = m_serverSocket.getLocalPort();
-        final String def_to = "10000";
-        String timeout = System.getProperty("knime.python.connecttimeout", def_to);
+        final String defTimeout = "30000";
+        String timeout = System.getProperty("knime.python.connecttimeout", defTimeout);
         try {
             m_serverSocket.setSoTimeout(Integer.parseInt(timeout));
         } catch (NumberFormatException ex) {
-            m_serverSocket.setSoTimeout(Integer.parseInt(def_to));
+            m_serverSocket.setSoTimeout(Integer.parseInt(defTimeout));
             LOGGER.warn(
                 "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is " +
-                "set to the default value " + def_to + "ms.");
+                        "set to the default value " + defTimeout + "ms.");
         }
         final AtomicReference<IOException> exception = new AtomicReference<IOException>();
         final Thread thread = new Thread(new Runnable() {
