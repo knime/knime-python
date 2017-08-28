@@ -71,77 +71,77 @@ import org.knime.python.kernel.SQLEditorObjectWriter;
  */
 class PythonScriptDBNodeDialog extends NodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonScriptDBNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames());
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonScriptDBNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames());
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-		if (specs == null || specs.length < 1 || specs[0] == null) {
-			throw new NotConfigurableException("No database connection available");
-		}
-		final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
-		try {
-			final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
-			final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings);
-			final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
-					PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-					connectionSettings, getCredentialsProvider(), jars);
-			m_sourceCodePanel.updateData(sqlObject);
-		} catch (final InvalidSettingsException|IOException e) {
-			throw new NotConfigurableException(e.getMessage(), e);
-		}
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        if ((specs == null) || (specs.length < 1) || (specs[0] == null)) {
+            throw new NotConfigurableException("No database connection available");
+        }
+        final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+        final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
+        try {
+            final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
+            final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings);
+            final SQLEditorObjectWriter sqlObject = new SQLEditorObjectWriter(
+                PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
+                connectionSettings, getCredentialsProvider(), jars);
+            m_sourceCodePanel.updateData(sqlObject);
+        } catch (final InvalidSettingsException|IOException e) {
+            throw new NotConfigurableException(e.getMessage(), e);
+        }
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

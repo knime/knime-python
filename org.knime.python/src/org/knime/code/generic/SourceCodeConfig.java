@@ -53,99 +53,99 @@ import org.knime.core.node.NodeSettingsWO;
 
 /**
  * Configuration for the generic source code panel.
- * 
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class SourceCodeConfig {
 
-	static final int DEFAULT_ROW_LIMIT = 1000;
+    static final int DEFAULT_ROW_LIMIT = 1000;
 
-	private static final String CFG_SOURCE_CODE = "sourceCode";
-	private String m_sourceCode = getDefaultSourceCode();
-	private static final String CFG_ROW_LIMIT = "rowLimit";
-	private int m_rowLimit = DEFAULT_ROW_LIMIT;
+    private static final String CFG_SOURCE_CODE = "sourceCode";
+    private String m_sourceCode = getDefaultSourceCode();
+    private static final String CFG_ROW_LIMIT = "rowLimit";
+    private int m_rowLimit = DEFAULT_ROW_LIMIT;
 
-	/**
-	 * Save configuration to the given node settings.
-	 * 
-	 * @param settings
-	 *            The settings to save to
-	 */
-	public void saveTo(final NodeSettingsWO settings) {
-		settings.addString(CFG_SOURCE_CODE, m_sourceCode);
-		settings.addInt(CFG_ROW_LIMIT, m_rowLimit);
-	}
+    /**
+     * Save configuration to the given node settings.
+     *
+     * @param settings
+     *            The settings to save to
+     */
+    public void saveTo(final NodeSettingsWO settings) {
+        settings.addString(CFG_SOURCE_CODE, m_sourceCode);
+        settings.addInt(CFG_ROW_LIMIT, m_rowLimit);
+    }
 
-	/**
-	 * Load configuration from the given node settings.
-	 * 
-	 * @param settings
-	 *            The settings to load from
-	 * @throws InvalidSettingsException
-	 *             If the settings are invalid
-	 */
-	public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-		m_sourceCode = settings.getString(CFG_SOURCE_CODE);
-		m_rowLimit = settings.getInt(CFG_ROW_LIMIT);
-	}
+    /**
+     * Load configuration from the given node settings.
+     *
+     * @param settings
+     *            The settings to load from
+     * @throws InvalidSettingsException
+     *             If the settings are invalid
+     */
+    public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        m_sourceCode = settings.getString(CFG_SOURCE_CODE);
+        m_rowLimit = settings.getInt(CFG_ROW_LIMIT);
+    }
 
-	/**
-	 * Load configuration from the given node settings (using defaults if
-	 * necessary).
-	 * 
-	 * @param settings
-	 *            The settings to load from
-	 */
-	public void loadFromInDialog(final NodeSettingsRO settings) {
-		m_sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
-		m_rowLimit = settings.getInt(CFG_ROW_LIMIT, DEFAULT_ROW_LIMIT);
-	}
+    /**
+     * Load configuration from the given node settings (using defaults if
+     * necessary).
+     *
+     * @param settings
+     *            The settings to load from
+     */
+    public void loadFromInDialog(final NodeSettingsRO settings) {
+        m_sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
+        m_rowLimit = settings.getInt(CFG_ROW_LIMIT, DEFAULT_ROW_LIMIT);
+    }
 
-	/**
-	 * Return the source code.
-	 * 
-	 * @return The source code
-	 */
-	public String getSourceCode() {
-		return m_sourceCode;
-	}
+    /**
+     * Return the source code.
+     *
+     * @return The source code
+     */
+    public String getSourceCode() {
+        return m_sourceCode;
+    }
 
-	/**
-	 * Sets the source code.
-	 * 
-	 * @param sourceCode
-	 *            The source code
-	 */
-	public void setSourceCode(final String sourceCode) {
-		m_sourceCode = sourceCode;
-	}
+    /**
+     * Sets the source code.
+     *
+     * @param sourceCode
+     *            The source code
+     */
+    public void setSourceCode(final String sourceCode) {
+        m_sourceCode = sourceCode;
+    }
 
-	/**
-	 * Return the row limit.
-	 * 
-	 * @return The row limit
-	 */
-	public int getRowLimit() {
-		return m_rowLimit;
-	}
+    /**
+     * Return the row limit.
+     *
+     * @return The row limit
+     */
+    public int getRowLimit() {
+        return m_rowLimit;
+    }
 
-	/**
-	 * Sets the row limit.
-	 * 
-	 * @param rowLimit
-	 *            The row limit
-	 */
-	public void setRowLimit(final int rowLimit) {
-		m_rowLimit = rowLimit;
-	}
+    /**
+     * Sets the row limit.
+     *
+     * @param rowLimit
+     *            The row limit
+     */
+    public void setRowLimit(final int rowLimit) {
+        m_rowLimit = rowLimit;
+    }
 
-	/**
-	 * Return the default source code.
-	 * 
-	 * @return The default source code
-	 */
-	protected String getDefaultSourceCode() {
-		return "";
-	}
+    /**
+     * Return the default source code.
+     *
+     * @return The default source code
+     */
+    protected String getDefaultSourceCode() {
+        return "";
+    }
 
 }

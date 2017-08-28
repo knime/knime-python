@@ -59,69 +59,69 @@ import org.knime.core.node.workflow.FlowVariable;
 
 /**
  * <code>NodeDialog</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonObjectReaderNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames());
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonObjectReaderNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames());
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
-		PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
-		PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

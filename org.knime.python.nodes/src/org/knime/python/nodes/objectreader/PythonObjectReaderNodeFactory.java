@@ -56,63 +56,63 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonObjectReaderNodeFactory extends ContextAwareNodeFactory<PythonObjectReaderNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonObjectReaderNodeModel createNodeModel() {
-		return new PythonObjectReaderNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonObjectReaderNodeModel createNodeModel() {
+        return new PythonObjectReaderNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonObjectReaderNodeModel> createNodeView(final int viewIndex,
-			final PythonObjectReaderNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonObjectReaderNodeModel> createNodeView(final int viewIndex,
+        final PythonObjectReaderNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonObjectReaderNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonObjectReaderNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonObjectReaderNodeModel>(nodeModel);
+                    new ExtToolStderrNodeView<PythonObjectReaderNodeModel>(nodeModel);
         }
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonObjectReaderNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonObjectReaderNodeDialog();
+    }
 
-	@Override
-	public PythonObjectReaderNodeModel createNodeModel(NodeCreationContext context) {
-		return new PythonObjectReaderNodeModel(context);
-	}
+    @Override
+    public PythonObjectReaderNodeModel createNodeModel(final NodeCreationContext context) {
+        return new PythonObjectReaderNodeModel(context);
+    }
 
 }

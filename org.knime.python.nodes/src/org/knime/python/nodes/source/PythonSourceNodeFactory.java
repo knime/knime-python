@@ -55,57 +55,57 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonSourceNodeFactory extends NodeFactory<PythonSourceNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonSourceNodeModel createNodeModel() {
-		return new PythonSourceNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonSourceNodeModel createNodeModel() {
+        return new PythonSourceNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonSourceNodeModel> createNodeView(final int viewIndex, final PythonSourceNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonSourceNodeModel> createNodeView(final int viewIndex, final PythonSourceNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonSourceNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonSourceNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonSourceNodeModel>(nodeModel);
+                    new ExtToolStderrNodeView<PythonSourceNodeModel>(nodeModel);
         }
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonSourceNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonSourceNodeDialog();
+    }
 
 }

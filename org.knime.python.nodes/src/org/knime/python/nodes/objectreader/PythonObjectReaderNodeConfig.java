@@ -52,34 +52,34 @@ import org.knime.code.generic.VariableNames;
 
 class PythonObjectReaderNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null, null,
-			new String[] { "output_object" });
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", null, null, null, null,
+        new String[] { "output_object" });
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return getDefaultSourceCode("python_object.pkl");
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return getDefaultSourceCode("python_object.pkl");
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
-	static String getDefaultSourceCode(final String path) {
-		String path2 = path.replace("/", "' + os.sep + '");
-		return "import pickle\n" +
-				"import os\n" +
-				"# Path is workspace/" + path + "\n" +
-				"path = " + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path2 + "'\n" +
-				"# Load object from pickle file\n" +
-				VARIABLE_NAMES.getOutputObjects()[0] + " = pickle.load(open(path, 'rb'))\n";
-	}
+    static String getDefaultSourceCode(final String path) {
+        final String path2 = path.replace("/", "' + os.sep + '");
+        return "import pickle\n" +
+        "import os\n" +
+        "# Path is workspace/" + path + "\n" +
+        "path = " + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path2 + "'\n" +
+        "# Load object from pickle file\n" +
+        VARIABLE_NAMES.getOutputObjects()[0] + " = pickle.load(open(path, 'rb'))\n";
+    }
 
 }

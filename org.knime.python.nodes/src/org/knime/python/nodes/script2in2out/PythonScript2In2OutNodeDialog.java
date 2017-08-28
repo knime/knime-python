@@ -61,84 +61,84 @@ import org.knime.core.node.workflow.FlowVariable;
 
 /**
  * <code>NodeDialog</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonScript2In2OutNodeDialog extends DataAwareNodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonScript2In2OutNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonScript2In2OutNodeConfig.getVariableNames());
-		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script-2in2out");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Options", m_sourceCodeOptionsPanel, true);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonScript2In2OutNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonScript2In2OutNodeConfig.getVariableNames());
+        m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script-2in2out");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Options", m_sourceCodeOptionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
-		PythonScript2In2OutNodeConfig config = new PythonScript2In2OutNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		m_sourceCodeOptionsPanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonScript2In2OutNodeConfig config = new PythonScript2In2OutNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
-		PythonScript2In2OutNodeConfig config = new PythonScript2In2OutNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-		m_sourceCodePanel.updateData(new BufferedDataTable[]{null, null});
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PythonScript2In2OutNodeConfig config = new PythonScript2In2OutNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateData(new BufferedDataTable[]{null, null});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, BufferedDataTable[] input) throws NotConfigurableException {
-		loadSettingsFrom(settings, new PortObjectSpec[] { input[0] == null ? null : input[0].getDataTableSpec(), input[1] == null ? null : input[1].getDataTableSpec() });
-		m_sourceCodePanel.updateData(input);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input) throws NotConfigurableException {
+        loadSettingsFrom(settings, new PortObjectSpec[] { input[0] == null ? null : input[0].getDataTableSpec(), input[1] == null ? null : input[1].getDataTableSpec() });
+        m_sourceCodePanel.updateData(input);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

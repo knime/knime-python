@@ -61,84 +61,84 @@ import org.knime.core.node.workflow.FlowVariable;
 
 /**
  * <code>NodeDialog</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonLearnerNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames());
-		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Options", m_sourceCodeOptionsPanel, true);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonLearnerNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames());
+        m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Options", m_sourceCodeOptionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
-		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		m_sourceCodeOptionsPanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
-		PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-		m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, BufferedDataTable[] input) throws NotConfigurableException {
-		loadSettingsFrom(settings, new PortObjectSpec[] { input[0] == null ? null : input[0].getDataTableSpec() });
-		m_sourceCodePanel.updateData(input);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input) throws NotConfigurableException {
+        loadSettingsFrom(settings, new PortObjectSpec[] { input[0] == null ? null : input[0].getDataTableSpec() });
+        m_sourceCodePanel.updateData(input);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

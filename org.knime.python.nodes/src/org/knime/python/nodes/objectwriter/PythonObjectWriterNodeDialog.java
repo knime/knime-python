@@ -63,85 +63,85 @@ import org.knime.python.port.PickledObjectPortObject;
 
 /**
  * <code>NodeDialog</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonObjectWriterNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonObjectWriterNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames());
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
-		PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
-		PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		m_sourceCodePanel.updateData(new BufferedDataTable[0],
-				new PickledObject[] { null });
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+        m_sourceCodePanel.updateData(new BufferedDataTable[0],
+            new PickledObject[] { null });
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObject[] input) throws NotConfigurableException {
-		loadSettingsFrom(settings, new PortObjectSpec[0]);
-		PickledObject pickledObject = null;
-		if (input[0] != null) {
-			pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
-		}
-		m_sourceCodePanel.updateData(new BufferedDataTable[0],
-				new PickledObject[] { pickledObject });
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input) throws NotConfigurableException {
+        loadSettingsFrom(settings, new PortObjectSpec[0]);
+        PickledObject pickledObject = null;
+        if (input[0] != null) {
+            pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
+        }
+        m_sourceCodePanel.updateData(new BufferedDataTable[0],
+            new PickledObject[] { pickledObject });
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

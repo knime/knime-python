@@ -55,58 +55,58 @@ import org.knime.core.node.NodeView;
 
 /**
  * <code>NodeFactory</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonObjectWriterNodeFactory extends NodeFactory<PythonObjectWriterNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonObjectWriterNodeModel createNodeModel() {
-		return new PythonObjectWriterNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonObjectWriterNodeModel createNodeModel() {
+        return new PythonObjectWriterNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonObjectWriterNodeModel> createNodeView(final int viewIndex,
-			final PythonObjectWriterNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonObjectWriterNodeModel> createNodeView(final int viewIndex,
+        final PythonObjectWriterNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonObjectWriterNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonObjectWriterNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonObjectWriterNodeModel>(nodeModel);
+                    new ExtToolStderrNodeView<PythonObjectWriterNodeModel>(nodeModel);
         }
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonObjectWriterNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonObjectWriterNodeDialog();
+    }
 
 }

@@ -52,25 +52,25 @@ import org.knime.code.generic.VariableNames;
 
 class PythonScript2In1OutNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
-			new String[] { "input_table_1", "input_table_2" }, new String[] { "output_table" }, null, null, null);
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        new String[] { "input_table_1", "input_table_2" }, new String[] { "output_table" }, null, null, null);
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return "# Do pandas inner join\n" +
-				VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".join(" + VARIABLE_NAMES.getInputTables()[1] + ", how='inner', lsuffix=' (left)', rsuffix=' (right)')\n";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return "# Do pandas inner join\n" +
+                VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".join(" + VARIABLE_NAMES.getInputTables()[1] + ", how='inner', lsuffix=' (left)', rsuffix=' (right)')\n";
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

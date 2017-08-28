@@ -61,51 +61,51 @@ import org.knime.core.node.NodeView;
  */
 public class PythonScriptDBNodeFactory extends NodeFactory<PythonScriptDBNodeModel> {
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public PythonScriptDBNodeModel createNodeModel() {
-		return new PythonScriptDBNodeModel();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PythonScriptDBNodeModel createNodeModel() {
+        return new PythonScriptDBNodeModel();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getNrNodeViews() {
-		return 2;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNrNodeViews() {
+        return 2;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<PythonScriptDBNodeModel> createNodeView(final int viewIndex, final PythonScriptDBNodeModel nodeModel) {
         if (viewIndex == 0) {
             return
-                new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
+                    new ExtToolStdoutNodeView<PythonScriptDBNodeModel>(nodeModel);
         } else if (viewIndex == 1) {
             return
-                new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
+                    new ExtToolStderrNodeView<PythonScriptDBNodeModel>(nodeModel);
         }
         return null;
-	}
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean hasDialog() {
-		return true;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public NodeDialogPane createNodeDialogPane() {
-		return new PythonScriptDBNodeDialog();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new PythonScriptDBNodeDialog();
+    }
 
 }

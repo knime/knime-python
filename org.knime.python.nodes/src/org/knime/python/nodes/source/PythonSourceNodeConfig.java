@@ -52,26 +52,26 @@ import org.knime.code.generic.VariableNames;
 
 class PythonSourceNodeConfig extends SourceCodeConfig {
 
-	private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[0],
-			new String[] { "output_table" }, null, null, null);
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[0],
+        new String[] { "output_table" }, null, null, null);
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected String getDefaultSourceCode() {
-		return "from pandas import DataFrame\n" +
-				"# Create empty table\n" +
-				VARIABLE_NAMES.getOutputTables()[0] + " = DataFrame()\n";
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getDefaultSourceCode() {
+        return "from pandas import DataFrame\n" +
+                "# Create empty table\n" +
+                VARIABLE_NAMES.getOutputTables()[0] + " = DataFrame()\n";
+    }
 
-	/**
-	 * Get the variable names for this node
-	 * 
-	 * @return The variable names
-	 */
-	static VariableNames getVariableNames() {
-		return VARIABLE_NAMES;
-	}
+    /**
+     * Get the variable names for this node
+     *
+     * @return The variable names
+     */
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
 }

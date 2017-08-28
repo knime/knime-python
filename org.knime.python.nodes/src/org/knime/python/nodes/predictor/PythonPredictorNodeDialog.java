@@ -64,94 +64,94 @@ import org.knime.python.port.PickledObjectPortObject;
 
 /**
  * <code>NodeDialog</code> for the node.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
 
-	PythonSourceCodePanel m_sourceCodePanel;
-	SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-	SourceCodeTemplatesPanel m_templatesPanel;
+    PythonSourceCodePanel m_sourceCodePanel;
+    SourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+    SourceCodeTemplatesPanel m_templatesPanel;
 
-	/**
-	 * Create the dialog for this node.
-	 */
-	protected PythonPredictorNodeDialog() {
-		m_sourceCodePanel = new PythonSourceCodePanel(PythonPredictorNodeConfig.getVariableNames());
-		m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
-		m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
-		addTab("Script", m_sourceCodePanel, false);
-		addTab("Options", m_sourceCodeOptionsPanel, true);
-		addTab("Templates", m_templatesPanel, true);
-	}
+    /**
+     * Create the dialog for this node.
+     */
+    protected PythonPredictorNodeDialog() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonPredictorNodeConfig.getVariableNames());
+        m_sourceCodeOptionsPanel = new SourceCodeOptionsPanel(m_sourceCodePanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Options", m_sourceCodeOptionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void saveSettingsTo(NodeSettingsWO settings) throws InvalidSettingsException {
-		PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
-		m_sourceCodePanel.saveSettingsTo(config);
-		m_sourceCodeOptionsPanel.saveSettingsTo(config);
-		config.saveTo(settings);
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
+        m_sourceCodePanel.saveSettingsTo(config);
+        m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObjectSpec[] specs) throws NotConfigurableException {
-		PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
-		config.loadFromInDialog(settings);
-		m_sourceCodePanel.loadSettingsFrom(config, specs);
-		m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-				new FlowVariable[getAvailableFlowVariables().size()]));
-		m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-		m_sourceCodePanel.updateData(new BufferedDataTable[] { null },
-				new PickledObject[] { null });
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
+            new FlowVariable[getAvailableFlowVariables().size()]));
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateData(new BufferedDataTable[] { null },
+            new PickledObject[] { null });
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void loadSettingsFrom(NodeSettingsRO settings, PortObject[] input) throws NotConfigurableException {
-		PortObjectSpec[] specs = new PortObjectSpec[input.length];
-		for (int i = 0; i < specs.length; i++) {
-			specs[i] = input[i] == null ? null : input[i].getSpec();
-		}
-		loadSettingsFrom(settings, specs);
-		PickledObject pickledObject = null;
-		if (input[0]!=null) {
-			pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
-		}
-		m_sourceCodePanel.updateData(new BufferedDataTable[] { (BufferedDataTable) input[1] },
-				new PickledObject[] { pickledObject });
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input) throws NotConfigurableException {
+        final PortObjectSpec[] specs = new PortObjectSpec[input.length];
+        for (int i = 0; i < specs.length; i++) {
+            specs[i] = input[i] == null ? null : input[i].getSpec();
+        }
+        loadSettingsFrom(settings, specs);
+        PickledObject pickledObject = null;
+        if (input[0]!=null) {
+            pickledObject = ((PickledObjectPortObject) input[0]).getPickledObject();
+        }
+        m_sourceCodePanel.updateData(new BufferedDataTable[] { (BufferedDataTable) input[1] },
+            new PickledObject[] { pickledObject });
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean closeOnESC() {
-		return false;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onOpen() {
-		m_sourceCodePanel.open();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void onClose() {
-		m_sourceCodePanel.close();
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 
 }

@@ -78,85 +78,85 @@ import org.knime.python.nodes.PythonNodeModel;
 
 /**
  * This is the model implementation.
- * 
- * 
+ *
+ *
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
-	
-	private BufferedImage m_image;
 
-	/**
-	 * Constructor for the node model.
-	 */
-	protected PythonViewNodeModel() {
-		super(new PortType[] { BufferedDataTable.TYPE }, new PortType[] { ImagePortObject.TYPE });
-	}
+    private BufferedImage m_image;
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObject[] execute(PortObject[] inData, ExecutionContext exec) throws Exception {
-		PythonKernel kernel = new PythonKernel();
-		ImageContainer image = null;
-		try {
-			kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),
-					getAvailableFlowVariables().values());
-			kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
-					(BufferedDataTable) inData[0], exec.createSubProgress(0.3));
-			String[] output = kernel.execute(getConfig().getSourceCode(), exec);
-			setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-			setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-			exec.createSubProgress(0.6).setProgress(1);
-			image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
-			Collection<FlowVariable> variables = kernel.getFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables());
-			exec.createSubProgress(0.1).setProgress(1);
-	        addNewVariables(variables);
-			m_image = image.getBufferedImage();
-		} finally {
-			kernel.close();
-		}
-		if (image.hasSvgDocument()) {
-			return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()), new ImagePortObjectSpec(SvgCell.TYPE))};
-		} else {
-			return new PortObject[] { new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
-					new ImagePortObjectSpec(PNGImageContent.TYPE)) };
-		}
-	}
-	
-	@Override
-	protected void reset() {
-		m_image = null;
-		super.reset();
-	}
-	
-	Image getOutputImage() {
-		return m_image;
-	}
+    /**
+     * Constructor for the node model.
+     */
+    protected PythonViewNodeModel() {
+        super(new PortType[] { BufferedDataTable.TYPE }, new PortType[] { ImagePortObject.TYPE });
+    }
 
-	/**
-	 * Returns the bytes of the given image.
-	 * 
-	 * @param image The image
-	 * @return The image as byte array
-	 * @throws IOException If an I/O error occurs
-	 */
-	private static byte[] imageToBytes(final BufferedImage image) throws IOException {
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		ImageIO.write(image, "png", os);
-		byte[] bytes = os.toByteArray();
-		os.close();
-		return bytes;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        final PythonKernel kernel = new PythonKernel();
+        ImageContainer image = null;
+        try {
+            kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
+                (BufferedDataTable) inData[0], exec.createSubProgress(0.3));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.6).setProgress(1);
+            image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
+            final Collection<FlowVariable> variables = kernel.getFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables());
+            exec.createSubProgress(0.1).setProgress(1);
+            addNewVariables(variables);
+            m_image = image.getBufferedImage();
+        } finally {
+            kernel.close();
+        }
+        if (image.hasSvgDocument()) {
+            return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()), new ImagePortObjectSpec(SvgCell.TYPE))};
+        } else {
+            return new PortObject[] { new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
+                new ImagePortObjectSpec(PNGImageContent.TYPE)) };
+        }
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected PortObjectSpec[] configure(PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-		return new PortObjectSpec[] { new ImagePortObjectSpec(PNGImageContent.TYPE) };
-	}
+    @Override
+    protected void reset() {
+        m_image = null;
+        super.reset();
+    }
+
+    Image getOutputImage() {
+        return m_image;
+    }
+
+    /**
+     * Returns the bytes of the given image.
+     *
+     * @param image The image
+     * @return The image as byte array
+     * @throws IOException If an I/O error occurs
+     */
+    private static byte[] imageToBytes(final BufferedImage image) throws IOException {
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", os);
+        final byte[] bytes = os.toByteArray();
+        os.close();
+        return bytes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[] { new ImagePortObjectSpec(PNGImageContent.TYPE) };
+    }
 
     /**
      * The saved image is loaded.
@@ -165,12 +165,12 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
      */
     @Override
     protected void loadInternals(final File nodeInternDir,
-            final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+        final ExecutionMonitor exec)
+                throws IOException, CanceledExecutionException {
         super.loadInternals(nodeInternDir, exec);
-        File file = new File(nodeInternDir, "image.png");
+        final File file = new File(nodeInternDir, "image.png");
         if (file.exists() && file.canRead()) {
-        	m_image = ImageIO.read(file);
+            m_image = ImageIO.read(file);
         }
     }
 
@@ -181,18 +181,18 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
      */
     @Override
     protected void saveInternals(final File nodeInternDir,
-            final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+        final ExecutionMonitor exec)
+                throws IOException, CanceledExecutionException {
         super.saveInternals(nodeInternDir, exec);
         if (m_image != null) {
-            File file = new File(nodeInternDir, "image.png");
+            final File file = new File(nodeInternDir, "image.png");
             ImageIO.write(m_image, "png", file);
         }
     }
-    
+
     @Override
     protected PythonViewNodeConfig createConfig() {
-    	return new PythonViewNodeConfig();
+        return new PythonViewNodeConfig();
     }
 
 }
