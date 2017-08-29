@@ -888,12 +888,13 @@ class FromPandasTable:
     # @param row_index       the row index
     # @return the cell content
     def get_cell(self, column_index, row_index):
-        value = self._data_frame.iat[row_index, column_index]
-        if value is None:
-            return None
-        else:
-            return value_to_simpletype_value(value,
-                                             self._column_types[column_index])
+        #value = self._data_frame.iat[row_index, column_index]
+        #if value is None:
+        #    return None
+        #else:
+        #    return value_to_simpletype_value(value,
+        #                                     self._column_types[column_index])
+        return self._data_frame.iat[row_index, column_index]
 
     # example: table.get_rowkey(0)
     def get_rowkey(self, row_index):

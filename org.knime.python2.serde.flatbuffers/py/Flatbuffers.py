@@ -273,8 +273,8 @@ def table_to_bytes(table):
     
    # debug_util.debug_msg("data_frame", table._data_frame)
     for colIdx in range(0,table.get_number_columns()):
+        col = table._data_frame.iloc[:,colIdx]
         if table.get_type(colIdx) == _types_.INTEGER:  
-            col = table._data_frame.iloc[:,colIdx]
             valVec = builder.CreateByteArray(np.array(col.values, dtype='i4').tobytes())
             missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
                       
@@ -288,7 +288,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.INTEGER_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
                      
             for valIdx in range(0,len(col)):
@@ -341,7 +340,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.INTEGER_SET:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             
             for valIdx in range(0,len(col)):
@@ -388,7 +386,6 @@ def table_to_bytes(table):
 
             
         elif table.get_type(colIdx) == _types_.BOOLEAN:  
-            col = table._data_frame.iloc[:,colIdx]
             missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
             valVec = builder.CreateByteArray(col.fillna(False).values.tobytes())
 
@@ -403,7 +400,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.BOOLEAN_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                # debug_util.debug_msg("Python->Flatbuffers: (Boolean List) col [", valIdx,"]", col[valIdx]) 
@@ -459,7 +455,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.BOOLEAN_SET:  
-            col = table_column(table, colIdx)
 #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Start)")       
 #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Column Length):", len(col))
             cellOffsets = []
@@ -507,7 +502,6 @@ def table_to_bytes(table):
 
             
         elif table.get_type(colIdx) == _types_.LONG:  
-            col = table._data_frame.iloc[:,colIdx]
             valVec = builder.CreateByteArray(col.values.tobytes())
             missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
         
@@ -521,7 +515,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.LONG_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                
@@ -574,7 +567,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.LONG_SET:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                
@@ -620,7 +612,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
         
         elif table.get_type(colIdx) == _types_.DOUBLE:
-            col = table._data_frame.iloc[:,colIdx]
             valVec = builder.CreateByteArray(col.values.tobytes())
             missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
                    
@@ -635,7 +626,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.DOUBLE_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                # debug_util.debug_msg("Python->Flatbuffers: (Double List)", col[valIdx])               
@@ -690,7 +680,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.DOUBLE_SET:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                 addMissingValue = False
@@ -734,9 +723,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
                 
         elif table.get_type(colIdx) == _types_.STRING:
-            #debug_util.debug_msg("Python->Flatbuffers: (String) colIdx", colIdx, "colName", table.get_names()[colIdx])
-          
-            col = table._data_frame.iloc[:,colIdx]
           
             strOffsets = []
             for strIdx in range(0, len(col)):
@@ -762,7 +748,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.STRING_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                
@@ -818,7 +803,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.STRING_SET:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
 #                debug_util.debug_msg("Python->Flatbuffers: (String Set Cell):", col[valIdx])
@@ -863,8 +847,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.BYTES:
-            #debug_util.debug_msg("Python->Flatbuffers: Starting BYTES")
-            col = table._data_frame.iloc[:,colIdx]
           
             bytesOffsets = []
             missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
@@ -900,7 +882,6 @@ def table_to_bytes(table):
             #debug_util.debug_msg("Python->Flatbuffers: Ending BYTES")
             
         elif table.get_type(colIdx) == _types_.BYTES_LIST:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                 collOffsets = []
@@ -969,7 +950,6 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
             
         elif table.get_type(colIdx) == _types_.BYTES_SET:  
-            col = table_column(table, colIdx)
             cellOffsets = []
             for valIdx in range(0,len(col)):
                 collOffsets = []
@@ -1061,13 +1041,6 @@ def get_empty_ByteCell(builder):
     ByteCell.ByteCellStart(builder)
     ByteCell.ByteCellAddValue(builder, bytesVec)
     return ByteCell.ByteCellEnd(builder)
-    
-# Get a column of a {@link ToPandasTable} as a list.
-# @param table     the {@link ToPandasTable}
-# @param col_idx   the index of the column
-def table_column(table, col_idx):
-    col = [table.get_cell(col_idx, row_idx) for row_idx in range(table.get_number_rows())]
-    return col
 
 # Initialize the enum of known type ids
 # @param types     the enum of known type ids
