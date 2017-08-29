@@ -44,6 +44,7 @@
 # namespace: flatc
 
 import flatbuffers
+import struct
 
 class IntegerCollectionCell(object):
     __slots__ = ['_tab']
@@ -102,22 +103,23 @@ class IntegerCollectionCell(object):
     def GetAllValues(self, islist):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            l = self.ValueLength()
+            start = self._tab.Vector(o)
+            l = self._tab.VectorLen(o)
+            end = start + l * 4
             if islist:
-                buff = list(self._tab.Get(flatbuffers.number_types.Int32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4)) for j in range(l))
+                buff = list(struct.unpack_from('%di' % l, self._tab.Bytes[start:end]))
                 # Handle missing values
                 o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
                 if o2 != 0:
-                    a2 = self._tab.Vector(o2)
+                    start2 = self._tab.Vector(o2)
                     m = self.MissingLength()
                     for j in range(m):
-                        if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                        if self._tab.Bytes[start2+j]:
                             buff[j] = None
                     return buff
                 return 0
             else:
-                buff = set(self._tab.Get(flatbuffers.number_types.Int32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4)) for j in range(l))
+                buff = set(struct.unpack_from('%di' % l, self._tab.Bytes[start:end]))
                 # Handle missing values
                 if self.KeepDummy():
                     buff.add(None)

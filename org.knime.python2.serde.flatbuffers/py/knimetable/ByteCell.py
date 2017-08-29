@@ -73,16 +73,17 @@ class ByteCell(object):
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
-    
+
     # custom method
     def GetAllBytes(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
-        if o != 0:
-            a = self._tab.Vector(o)
-            l = self.ValueLength()
-            buff = bytearray(self._tab.Get(flatbuffers.number_types.Uint8Flags, a + j) for j in range(l))
-            return bytes(buff)
-        return 0
+        offset = 4
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(offset))
+        if o == 0:
+            return None
+        count = self._tab.VectorLen(o)
+        start = self._tab.Vector(o)
+        end = start + count
+        return bytes(self._tab.Bytes[start:end])
 
 def ByteCellStart(builder): builder.StartObject(1)
 def ByteCellAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)

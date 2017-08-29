@@ -44,6 +44,7 @@
 # namespace: flatc
 
 import flatbuffers
+import struct
 
 class BooleanColumn(object):
     __slots__ = ['_tab']
@@ -94,20 +95,24 @@ class BooleanColumn(object):
     # @param df        a dataframe (preinitialized)
     # @param colidx    the index of the column to set (in the dataframe)
     def AddValuesAsColumn(self, df, colidx):
+        #import debug_util
+        #debug_util.breakpoint()
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            l = self.ValuesLength()
-            for j in range(l):
-                df.iat[j, colidx] = self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+            start = self._tab.Vector(o)
+            l = self._tab.VectorLen(o)
+            #len(boolean) = 1
+            end = start + l
+            vals = list(self._tab.Bytes[i] > 0 for i in range(start,end))
             # Handle missing values
             o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
             if o2 != 0:
-                a2 = self._tab.Vector(o2)
-                m = self.MissingLength()
-                for j in range(m):
-                    if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
-                        df.iat[j, colidx] = None
+                start2 = self._tab.Vector(o2)
+                m = self._tab.VectorLen(o2)
+                for i in range(m): 
+                    if(self._tab.Bytes[start2+i]):
+                        vals[i] = None
+                df.iloc[:,colidx] = vals
                 return True
             return False
         return False
