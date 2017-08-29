@@ -102,23 +102,23 @@ class BooleanCollectionCell(object):
     def GetAllValues(self, islist):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            l = self.ValueLength()
-            # Handle missing values
+            start = self._tab.Vector(o)
+            l = self._tab.VectorLen(o)
+            end = start + l
             if islist:
-                buff = list(self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1)) for j in range(l))
+                buff = list(self._tab.Bytes[i] > 0 for i in range(start,end))
                 # Handle missing values
                 o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
                 if o2 != 0:
-                    a2 = self._tab.Vector(o2)
+                    start2 = self._tab.Vector(o2)
                     m = self.MissingLength()
                     for j in range(m):
-                        if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                        if self._tab.Bytes[start2+j]:
                             buff[j] = None
                     return buff
                 return 0
             else:
-                buff = set(self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1)) for j in range(l))
+                buff = set(self._tab.Bytes[i] > 0 for i in range(start,end))
                 # Handle missing values
                 if self.KeepDummy():
                     buff.add(None)
