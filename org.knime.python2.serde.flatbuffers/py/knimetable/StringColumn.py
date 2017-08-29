@@ -103,10 +103,10 @@ class StringColumn(object):
             # Handle missing values
             o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
             if o2 != 0:
-                a2 = self._tab.Vector(o2)
-                m = self.MissingLength()
+                start2 = self._tab.Vector(o2)
+                m = self._tab.VectorLen(o2)
                 for j in range(m):
-                    if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
+                    if self._tab.Bytes[start2+j]:
                         df.iat[j, colidx] = None
                 return True
             return False

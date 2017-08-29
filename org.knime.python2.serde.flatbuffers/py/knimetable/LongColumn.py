@@ -44,6 +44,7 @@
 # namespace: flatc
 
 import flatbuffers
+import struct
 
 class LongColumn(object):
     __slots__ = ['_tab']
@@ -94,20 +95,24 @@ class LongColumn(object):
     # @param df        a dataframe (preinitialized)
     # @param colidx    the index of the column to set (in the dataframe)
     def AddValuesAsColumn(self, df, colidx):
+        #import debug_util
+        #debug_util.breakpoint()
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            l = self.ValuesLength()
-            vals = list(self._tab.Get(flatbuffers.number_types.Int64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8)) for j in range(l))
+            start = self._tab.Vector(o)
+            l = self._tab.VectorLen(o)
+            #len(long) = 8
+            end = start + l * 8
+            df.iloc[:,colidx] = struct.unpack_from('%dq' % l, self._tab.Bytes[start:end])
             # Handle missing values
             o2 = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
             if o2 != 0:
-                a2 = self._tab.Vector(o2)
-                m = self.MissingLength()
-                for j in range(m):
-                    if self._tab.Get(flatbuffers.number_types.BoolFlags, a2 + j):
-                        vals[j] = float('NaN')
-                df.iloc[:,colidx] = vals
+                start2 = self._tab.Vector(o2)
+                m = self._tab.VectorLen(o2)
+                end2 = start + m
+                for i in range(m): 
+                    if(self._tab.Bytes[start2+i]):
+                        df.iloc[i,colidx] = float('NaN')
                 return True
             return False
         return False
