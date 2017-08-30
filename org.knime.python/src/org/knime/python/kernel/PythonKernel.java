@@ -54,6 +54,7 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -180,7 +181,7 @@ public class PythonKernel {
             m_serverSocket.setSoTimeout(Integer.parseInt(defTimeout));
             LOGGER.warn(
                 "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is "
-                        + "set to the default value " + defTimeout + "ms.");
+                    + "set to the default value " + defTimeout + "ms.");
         }
         final AtomicReference<IOException> exception = new AtomicReference<IOException>();
         final Thread thread = new Thread(new Runnable() {
@@ -190,7 +191,13 @@ public class PythonKernel {
                     m_socket = m_serverSocket.accept();
                 } catch (final IOException e) {
                     m_socket = null;
-                    exception.set(e);
+                    if (e instanceof SocketTimeoutException) {
+                        exception.set(new IOException("The connection attempt "
+                            + "timed out. Please consider increasing the socket timeout using the VM option "
+                            + "'-Dknime.python.connecttimeout=<value-in-ms>'."));
+                    } else {
+                        exception.set(e);
+                    }
                 }
             }
         });
@@ -223,7 +230,8 @@ public class PythonKernel {
         if (m_socket == null) {
             // Python did not connect this kernel is invalid
             close();
-            throw new IOException("Could not start python kernel", exception.get());
+            throw new IOException("Could not start python kernel. Cause: " + exception.get().getMessage(),
+                exception.get());
         }
         // First get PID of Python process
         m_pid = SimpleResponse.parseFrom(readMessageBytes(m_socket.getInputStream())).getInteger();

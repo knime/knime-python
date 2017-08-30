@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -188,7 +189,13 @@ public class PythonKernel {
                     m_socket = m_serverSocket.accept();
                 } catch (final IOException e) {
                     m_socket = null;
-                    exception.set(e);
+                    if(e instanceof SocketTimeoutException) {
+                        exception.set(new IOException("The connection attempt "
+                            + "timed out. Please consider increasing the socket timeout using the VM option "
+                            + "'-Dknime.python.connecttimeout=<value-in-ms>'."));
+                    } else {
+                        exception.set(e);
+                    }
                 }
             }
         });
@@ -228,7 +235,8 @@ public class PythonKernel {
         if (m_socket == null) {
             // Python did not connect this kernel is invalid
             close();
-            throw new IOException("Could not start python kernel", exception.get());
+            throw new IOException("Could not start python kernel. Cause: " + exception.get().getMessage(),
+                exception.get());
         }
         m_commands = new Commands(m_socket.getOutputStream(), m_socket.getInputStream());
         // First get PID of Python process
