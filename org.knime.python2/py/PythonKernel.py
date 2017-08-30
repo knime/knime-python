@@ -1093,7 +1093,11 @@ def simpletype_for_column(data_frame, column_name):
                 type_string = get_type_string(first_valid_object(data_frame, column_name))
                 column_serializer = _type_extension_manager.get_serializer_id_by_type(type_string)
                 if column_serializer is None:
-                    raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
+                    raise ValueError('Column ' + str(column_name) + ' has columntype "' 
+                                     + str(data_frame[column_name].dtype) 
+                                     + '" although the first nonnull element has type "' 
+                                     + type_string + '". Mixed types in the column cannot be ruled out.'
+                                     + ' You may convert the column type manually using the pandas.Series.astype method.')
                 simple_type = Simpletype.BYTES
     return simple_type, column_serializer
 
