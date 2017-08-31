@@ -78,11 +78,8 @@ public class DoubleExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
        Cell c;
-       if(m_colVec.missing(m_ctr)) {
-           c = new CellImpl();
-       } else {
-           c = new CellImpl(m_colVec.values(m_ctr));
-       }
+       //If double is missing it is set to NaN
+       c = new CellImpl(m_colVec.values(m_ctr));
        m_ctr++;
        return c;
     }
