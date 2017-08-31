@@ -85,15 +85,12 @@ public class IntExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
         Cell c;
-        if (m_colVec.missing(m_ctr)) {
+        //int cannot be missing in pandas dataframe
+        if (m_serializationOptions.getConvertMissingFromPython()
+            && m_serializationOptions.isSentinel(Type.INTEGER, m_colVec.values(m_ctr))) {
             c = new CellImpl();
         } else {
-            if (m_serializationOptions.getConvertMissingFromPython()
-                && m_serializationOptions.isSentinel(Type.INTEGER, m_colVec.values(m_ctr))) {
-                c = new CellImpl();
-            } else {
-                c = new CellImpl(m_colVec.values(m_ctr));
-            }
+            c = new CellImpl(m_colVec.values(m_ctr));
         }
         m_ctr++;
         return c;

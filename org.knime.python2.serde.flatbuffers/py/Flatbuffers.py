@@ -273,11 +273,9 @@ def table_to_bytes(table):
         col = table._data_frame.iloc[:,colIdx]
         if table.get_type(colIdx) == _types_.INTEGER:  
             valVec = builder.CreateByteArray(np.array(col.values, dtype='i4').tobytes())
-            missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
                       
             IntColumn.IntColumnStart(builder)                             
             IntColumn.IntColumnAddValues(builder, valVec)
-            IntColumn.IntColumnAddMissing(builder, missingVec)
             colOffset = IntColumn.IntColumnEnd(builder)           
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx))
@@ -500,11 +498,9 @@ def table_to_bytes(table):
             
         elif table.get_type(colIdx) == _types_.LONG:  
             valVec = builder.CreateByteArray(col.values.tobytes())
-            missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
         
             LongColumn.LongColumnStart(builder)                             
             LongColumn.LongColumnAddValues(builder, valVec)
-            LongColumn.LongColumnAddMissing(builder, missingVec)
             colOffset = LongColumn.LongColumnEnd(builder)           
             Column.ColumnStart(builder)
             Column.ColumnAddType(builder, table.get_type(colIdx))
@@ -609,12 +605,10 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
         
         elif table.get_type(colIdx) == _types_.DOUBLE:
-            valVec = builder.CreateByteArray(col.values.tobytes())
-            missingVec = builder.CreateByteArray(bytearray(0 for i in range(len(col))))               
+            valVec = builder.CreateByteArray(col.values.tobytes())              
                    
             DoubleColumn.DoubleColumnStart(builder)                     
             DoubleColumn.DoubleColumnAddValues(builder, valVec)
-            DoubleColumn.DoubleColumnAddMissing(builder, missingVec)
             colOffset = DoubleColumn.DoubleColumnEnd(builder)
             
             Column.ColumnStart(builder)
