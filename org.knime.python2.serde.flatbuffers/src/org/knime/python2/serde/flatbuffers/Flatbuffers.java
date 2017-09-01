@@ -388,16 +388,23 @@ public class Flatbuffers implements SerializationLibrary {
             }
         }
 
-        final int numRows = table.rowIDsLength();
+        int[] rowIdVectorOffsets = table.rowIdOffsets();
+        int[] rowIdLengths = table.rowIDsLengthArray(rowIdVectorOffsets[1]);
+
+        final int numRows = rowIdLengths.length;
         final int numCols = table.colNamesLength();
+
+        String rowIdsBlob = table.rowIDsBlob(rowIdVectorOffsets[0]);
+        int curLen = 0;
         for (int rowCount = 0; rowCount < numRows; rowCount++) {
-            final Row r = new RowImpl(table.rowIDs(rowCount), numCols);
+            //final Row r = new RowImpl(table.rowIDs(rowCount), numCols);
+            final Row r = new RowImpl(rowIdsBlob.substring(curLen, curLen + rowIdLengths[rowCount]), numCols);
+            curLen += rowIdLengths[rowCount];
             for (int colCount=0; colCount<numCols; colCount++) {
                 r.setCell(extractors.get(colCount).extract(), colCount);
             }
             tableCreator.addRow(r);
         }
-
     }
 
     @Override

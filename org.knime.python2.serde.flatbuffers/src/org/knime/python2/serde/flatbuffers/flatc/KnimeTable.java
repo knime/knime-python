@@ -49,6 +49,7 @@ package org.knime.python2.serde.flatbuffers.flatc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Table;
@@ -74,14 +75,38 @@ public final class KnimeTable extends Table {
         return this;
     }
 
-    public String rowIDs(final int j) {
+    /**
+     *
+     * @return  [0] offset from the buffer end where the row ID string starts
+     *          [1] offset from the buffer end where the vector containing the row id lengths starts
+     */
+    public int[] rowIdOffsets() {
         final int o = __offset(4);
-        return o != 0 ? __string(__vector(o) + (j * 4)) : null;
+        int l = __vector_len(o);
+        int[] offsets = new int[l];
+        bb.position(__vector(o));
+        bb.asIntBuffer().get(offsets);
+        return offsets;
     }
 
-    public int rowIDsLength() {
-        final int o = __offset(4);
-        return o != 0 ? __vector_len(o) : 0;
+    public String rowIDsBlob(final int offsetFromEnd) {
+
+        int strVecStart = bb.limit() - offsetFromEnd;
+        int len = bb.getInt(strVecStart);
+        byte[] bts = new byte[len];
+        bb.position(strVecStart + 4);
+        bb.get(bts);
+        String str = new String(bts, StandardCharsets.UTF_8);
+        return str;
+    }
+
+    public int[] rowIDsLengthArray(final int offsetFromEnd) {
+        int offsetsVecStart = bb.limit() - offsetFromEnd;
+        int len = bb.getInt(offsetsVecStart);
+        int[] offsetsVec = new int[len / 4];
+        bb.position(offsetsVecStart + 4);
+        bb.asIntBuffer().get(offsetsVec);
+        return offsetsVec;
     }
 
     public String colNames(final int j) {
