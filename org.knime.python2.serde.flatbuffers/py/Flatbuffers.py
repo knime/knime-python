@@ -242,17 +242,14 @@ def table_to_bytes(table):
     builder = flatbuffers.Builder(1024)
     
     #Row IDs
-    rowIdOffsets = [] 
-    
-    for idx in range(0, table.get_number_rows()):
-        rowIdOffset = builder.CreateString(str(table.get_rowkey(idx)))
-        rowIdOffsets.append(rowIdOffset)
- #       debug_util.debug_msg("Python->Flatbuffers: (RowID)", table.get_rowkey(idx))
+    rowIdLength = list(map(len, table._row_indices))
+    offListOff = builder.CreateByteArray(np.array(rowIdLength, dtype='i4').tobytes())
+    strOff = builder.CreateString(''.join(table._row_indices))
         
-    KnimeTable.KnimeTableStartRowIDsVector(builder, len(rowIdOffsets))
-    for idOffset in reversed(rowIdOffsets):
-        builder.PrependUOffsetTRelative(idOffset)
-    rowIdVecOffset = builder.EndVector(len(rowIdOffsets))
+    KnimeTable.KnimeTableStartRowIDsVector(builder, 2)
+    builder.PrependInt32(offListOff)
+    builder.PrependInt32(strOff)
+    rowIdVecOffset = builder.EndVector(2)
        
     #Column Names
     colNameOffsets = []
@@ -723,7 +720,7 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
                 
         elif table.get_type(colIdx) == _types_.STRING:
-          
+            #col = table._data_frame.iloc[:,colIdx]
             strOffsets = []
             for strIdx in range(0, len(col)):
                 if col[strIdx] == None:
