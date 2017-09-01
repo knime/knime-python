@@ -714,21 +714,18 @@ def table_to_bytes(table):
             colOffsetList.append(Column.ColumnEnd(builder))
                 
         elif table.get_type(colIdx) == _types_.STRING:
-            #col = table._data_frame.iloc[:,colIdx]
-            strOffsets = []
-            for strIdx in range(0, len(col)):
-                if col[strIdx] == None:
-                    strOffsets.append(builder.CreateString(""))
-                else:
-                    strOffsets.append(builder.CreateString(col[strIdx]))
-                    
-            StringColumn.StringColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(strOffsets))):
-                builder.PrependUOffsetTRelative(strOffsets[valIdx])
-            valVec = builder.EndVector(len(col))
-                    
             missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+            col.fillna(value='', inplace=True)
             
+            strLengths = list(map(len, col))
+            offStrLengths = builder.CreateByteArray(np.array(strLengths, dtype='i4').tobytes())
+            offStrBlob = builder.CreateString(''.join(col))
+            
+            StringColumn.StringColumnStartValuesVector(builder, 2)
+            builder.PrependInt32(offStrLengths)
+            builder.PrependInt32(offStrBlob)
+            valVec = builder.EndVector(2)
+                    
             StringColumn.StringColumnStart(builder)        
             StringColumn.StringColumnAddValues(builder, valVec)
             StringColumn.StringColumnAddMissing(builder, missingVec)

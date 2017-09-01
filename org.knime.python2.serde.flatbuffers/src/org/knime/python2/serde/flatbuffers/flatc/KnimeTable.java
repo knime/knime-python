@@ -56,6 +56,12 @@ import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class KnimeTable extends Table {
+    private int m_length;
+
+    private int m_lengthsVecPos;
+
+    private int m_strVecPos;
+
     public static KnimeTable getRootAsKnimeTable(final ByteBuffer _bb) {
         return getRootAsKnimeTable(_bb, new KnimeTable());
     }
@@ -68,6 +74,7 @@ public final class KnimeTable extends Table {
     public void __init(final int _i, final ByteBuffer _bb) {
         bb_pos = _i;
         bb = _bb;
+        initVectorPositions();
     }
 
     public KnimeTable __assign(final int _i, final ByteBuffer _bb) {
@@ -75,38 +82,34 @@ public final class KnimeTable extends Table {
         return this;
     }
 
-    /**
-     *
-     * @return  [0] offset from the buffer end where the row ID string starts
-     *          [1] offset from the buffer end where the vector containing the row id lengths starts
-     */
-    public int[] rowIdOffsets() {
+    private void initVectorPositions() {
         final int o = __offset(4);
         int l = __vector_len(o);
+        // [0] offset from the buffer end where the rowIDs vector starts
+        // [1] offset from the buffer end where the vector containing the rowIDs vector elements' lengths starts
         int[] offsets = new int[l];
         bb.position(__vector(o));
         bb.asIntBuffer().get(offsets);
-        return offsets;
+        //offset from the buffers end, first element is length => +len(int32)
+        m_lengthsVecPos = bb.limit() - offsets[1] + 4;
+        m_strVecPos = bb.limit() - offsets[0] + 4;
+        //values length = length in bytes / 4
+        m_length = bb.getInt(bb.limit() - offsets[1]) / 4;
     }
 
-    public String rowIDsBlob(final int offsetFromEnd) {
-
-        int strVecStart = bb.limit() - offsetFromEnd;
-        int len = bb.getInt(strVecStart);
-        byte[] bts = new byte[len];
-        bb.position(strVecStart + 4);
-        bb.get(bts);
-        String str = new String(bts, StandardCharsets.UTF_8);
-        return str;
+    public String rowID(final int j) {
+        bb.position(m_lengthsVecPos);
+        int strLen = bb.getInt();
+        m_lengthsVecPos += 4;
+        bb.position(m_strVecPos);
+        byte[] dst = new byte[strLen];
+        bb.get(dst);
+        m_strVecPos += strLen;
+        return new String(dst, StandardCharsets.UTF_8);
     }
 
-    public int[] rowIDsLengthArray(final int offsetFromEnd) {
-        int offsetsVecStart = bb.limit() - offsetFromEnd;
-        int len = bb.getInt(offsetsVecStart);
-        int[] offsetsVec = new int[len / 4];
-        bb.position(offsetsVecStart + 4);
-        bb.asIntBuffer().get(offsetsVec);
-        return offsetsVec;
+    public int rowIDsLength() {
+        return m_length;
     }
 
     public String colNames(final int j) {
