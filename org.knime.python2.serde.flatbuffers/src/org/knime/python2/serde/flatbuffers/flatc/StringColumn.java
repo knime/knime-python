@@ -49,12 +49,19 @@ package org.knime.python2.serde.flatbuffers.flatc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Table;
 
 @SuppressWarnings("javadoc")
 public final class StringColumn extends Table {
+    private int m_length;
+
+    private int m_lengthsVecPos;
+
+    private int m_strVecPos;
+
     public static StringColumn getRootAsStringColumn(final ByteBuffer _bb) {
         return getRootAsStringColumn(_bb, new StringColumn());
     }
@@ -67,6 +74,7 @@ public final class StringColumn extends Table {
     public void __init(final int _i, final ByteBuffer _bb) {
         bb_pos = _i;
         bb = _bb;
+        initVectorPositions();
     }
 
     public StringColumn __assign(final int _i, final ByteBuffer _bb) {
@@ -75,18 +83,31 @@ public final class StringColumn extends Table {
     }
 
     public String values(final int j) {
-        final int o = __offset(4);
-        return o != 0 ? __string(__vector(o) + (j * 4)) : null;
+        //NOTE: may not work if missing was not checked before
+        bb.position(m_lengthsVecPos);
+        int strLen = bb.getInt();
+        m_lengthsVecPos += 4;
+        if(strLen == 0) {
+            return "";
+        }
+        bb.position(m_strVecPos);
+        byte[] dst = new byte[strLen];
+        bb.get(dst);
+        m_strVecPos += strLen;
+        return new String(dst, StandardCharsets.UTF_8);
     }
 
     public int valuesLength() {
-        final int o = __offset(4);
-        return o != 0 ? __vector_len(o) : 0;
+        return m_length;
     }
 
     public boolean missing(final int j) {
         final int o = __offset(6);
-        return o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false;
+        if(o != 0 ? 0 != bb.get(__vector(o) + (j * 1)) : false) {
+            m_lengthsVecPos += 4;
+            return true;
+        }
+        return false;
     }
 
     public int missingLength() {
@@ -145,5 +166,20 @@ public final class StringColumn extends Table {
     public static int endStringColumn(final FlatBufferBuilder builder) {
         final int o = builder.endObject();
         return o;
+    }
+
+    private void initVectorPositions() {
+        final int o = __offset(4);
+        int l = __vector_len(o);
+        // [0] offset from the buffer end where the string vector starts
+        // [1] offset from the buffer end where the vector containing the string elements' lengths starts
+        int[] offsets = new int[l];
+        bb.position(__vector(o));
+        bb.asIntBuffer().get(offsets);
+        //offset from the buffers end, first element is length => +len(int32)
+        m_lengthsVecPos = bb.limit() - offsets[1] + 4;
+        m_strVecPos = bb.limit() - offsets[0] + 4;
+        //values length = length in bytes / 4
+        m_length = bb.getInt(bb.limit() - offsets[1]) / 4;
     }
 }
