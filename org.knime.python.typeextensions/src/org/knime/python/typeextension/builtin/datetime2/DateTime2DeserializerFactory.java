@@ -111,7 +111,7 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
                 if (!tzWithChangedOffset.contains(dt.getZone())
                         && !dt.getOffset().equals(ZoneOffset.of(string.substring(23, 29)))) {
                     // warn
-                    NodeLogger.getLogger("ZonedDateTime deserialization")
+                    NodeLogger.getLogger(DateTimeDeserializer.class)
                             .warn("Offset " + string.substring(23, 29)
                                     + " was changed automatically to the stored offset for timezone " + dt.getZone()
                                     + ". Multiple entries may be affected!");
