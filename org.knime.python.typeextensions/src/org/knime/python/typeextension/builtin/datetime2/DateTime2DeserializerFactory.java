@@ -108,6 +108,12 @@ public class DateTime2DeserializerFactory extends DeserializerFactory {
             } else {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ZonedDateTimeSerializerFactory.FORMAT);
                 ZonedDateTime dt = ZonedDateTime.parse(string, formatter);
+                //For a zoned datetime coming from python it is possible that the transferred timezone name and 
+                //timezone offset do not comply with java defaults (e.g. timezone name = 'Europe\Berlin', offset=5 are
+                //received while in Java timezone name 'Europe\Berlin' has an associated offset=2). ZonedDateTime.parse
+                //overwrites incorrect offsets without a warning. Therefore we check manually if the received timezone
+                //offset of the incoming timestampstring (located between position 23 and 29) equals the offset of the 
+                //created ZonedDateTime object. If not a warning is issued so that the user may further look into it.
                 if (!tzWithChangedOffset.contains(dt.getZone())
                         && !dt.getOffset().equals(ZoneOffset.of(string.substring(23, 29)))) {
                     // warn
