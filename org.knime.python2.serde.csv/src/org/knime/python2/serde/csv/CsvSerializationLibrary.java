@@ -461,7 +461,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 break;
                             case LONG:
-                                final long longVal = Long.parseLong(value);
+                                final long longVal = Long.parseLong(value.replace("L", ""));
                                 if (serializationOptions.getConvertMissingFromPython()
                                         && serializationOptions.isSentinel(Type.LONG, longVal)) {
                                     cell = new CellImpl();
@@ -482,7 +482,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     longValues[j] = longValues[j].trim();
                                     if (!longValues[j].equals("None")) {
                                         longMissings.setToOne(j);
-                                        longArray[j] = Long.parseLong(longValues[j]);
+                                        longArray[j] = Long.parseLong(longValues[j].replace("L", ""));
                                     }
                                 }
                                 cell = new CellImpl(longArray, longMissings.getEncodedByteArray());
@@ -499,7 +499,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 for (String bsValue : longSetValues) {
                                     bsValue = bsValue.trim();
                                     if (!bsValue.equals("None")) {
-                                        longSetArray[idxCtr] = Long.parseLong(bsValue);
+                                        longSetArray[idxCtr] = Long.parseLong(bsValue.replace("L", ""));
                                         idxCtr++;
                                     } else {
                                         longHasMissing = true;
