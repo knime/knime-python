@@ -71,7 +71,7 @@ public class PythonKernelTestResult {
         m_message = "";
         for (final String line : lines) {
             if (version != null) {
-                m_message += version;
+                m_message += line;
             } else {
                 // Ignore everything before version, could be anaconda for example
                 final String trimmed = line.trim();
