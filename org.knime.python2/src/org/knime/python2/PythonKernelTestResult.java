@@ -66,19 +66,25 @@ public class PythonKernelTestResult {
      * @param message The result message containing detailed information
      */
     PythonKernelTestResult(final String message) {
-        int endOfLineOne = message.indexOf(System.lineSeparator());
-        if (endOfLineOne < 0) {
-            endOfLineOne = message.length();
-            m_message = message.trim();
-        } else {
-            m_message = message.substring(endOfLineOne, message.length()).trim();
+        final String[] lines = message.split("\\r?\\n");
+        String version = null;
+        m_message = "";
+        for (final String line : lines) {
+            if (version != null) {
+                m_message += version;
+            } else {
+                // Ignore everything before version, could be anaconda for example
+                final String trimmed = line.trim();
+                version = trimmed.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? trimmed : null;
+            }
         }
-        final String firstLine = message.substring(0, endOfLineOne);
-        m_version = firstLine.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? firstLine : null;
+        m_version = version;
         if (m_version == null) {
             m_error = true;
             m_message = "Could not find python executable at the given location.";
         }
+
+        // no lines allowed after version line (i.e. no error messages)
         if (!m_message.isEmpty()) {
             m_error = true;
         }
