@@ -196,7 +196,8 @@ def bytes_into_table(table, data_bytes):
                     data_frame.set_value(index, names[i], bytes_set)
         elif col_type_id == _types_.DOUBLE:
             data_frame.iloc[:,i] = data_frame.iloc[:,i].astype('float', copy=False)
-        elif col_type_id == _types_.STRING and data_frame.iloc[:,i].dtype != 'object':
+        #Check if column contains only missing values. If so make sure dtype is object.
+        elif col_type_id == _types_.STRING and data_frame.iloc[:,i].dtype != 'object' and data_frame.iloc[:,i].isnull().all():
             data_frame.iloc[:,i] = [None] * len(data_frame)
     #debug_util.breakpoint()
     table._data_frame = data_frame
