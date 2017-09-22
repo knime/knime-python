@@ -73,6 +73,7 @@ import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelResponseHandler;
+import org.knime.python2.kernel.PythonOutputListener;
 import org.knime.python2.port.PickledObject;
 
 /**
@@ -106,6 +107,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final List<WorkspacePreparer> m_workspacePreparers = new ArrayList<WorkspacePreparer>();
 
+    private final PythonOutputListener m_stdoutToConsole;
+
+    private final PythonOutputListener m_stderrorToConsole;
+
     /**
      * Create a python source code panel.
      *
@@ -117,6 +122,21 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         m_flowVariableOptions = options;
         m_kernelOptions = new PythonKernelOptions();
         m_kernelOptions.setFlowVariableOptions(m_flowVariableOptions);
+        m_stdoutToConsole = new PythonOutputListener() {
+
+            @Override
+            public void messageReceived(final String msg) {
+                messageToConsole(msg);
+            }
+        };
+
+        m_stderrorToConsole = new PythonOutputListener() {
+
+            @Override
+            public void messageReceived(final String msg) {
+                errorToConsole(msg);
+            }
+        };
     }
 
     /**
@@ -154,6 +174,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     setStatusMessage("Python successfully started");
                                     putDataIntoPython();
                                     setInteractive(true);
+                                    //Push python stdout content to console live
+                                    m_kernelManager.addStdoutListener(m_stdoutToConsole);
+                                    m_kernelManager.addStderrorListener(m_stderrorToConsole);
+
                                 } catch (final IOException e) {
                                     logError(e, "Error during python start");
                                 }
@@ -250,6 +274,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     m_lock.unlock();
                 }
             });
+
             // Execute will be run in a separate thread by the kernel manager
             m_kernelManager.execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
                 @Override
@@ -262,8 +287,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         if (exception != null) {
                             logError(exception, "Error during execution");
                         } else {
-                            messageToConsole(response[0]);
-                            errorToConsole(response[1]);
+                            //messageToConsole(response[0]);
+                            //errorToConsole(response[1]);
                             setStatusMessage("Execution successful");
                         }
                         // Setting running to false will also update the

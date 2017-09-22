@@ -48,6 +48,7 @@
 package org.knime.python2.kernel;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,10 @@ public class PythonKernelManager {
 
     private PythonKernel m_kernel;
 
+    private final List<PythonOutputListener> m_stdoutListeners;
+
+    private final List<PythonOutputListener> m_stderrListeners;
+
     /**
      * Creates a manager that will start a new python kernel.
      *
@@ -80,6 +85,8 @@ public class PythonKernelManager {
      * @throws IOException
      */
     public PythonKernelManager(final PythonKernelOptions kernelOptions) throws IOException {
+        m_stdoutListeners = new ArrayList<PythonOutputListener>();
+        m_stderrListeners = new ArrayList<PythonOutputListener>();
         m_threadPool = new ThreadPool(8);
         m_kernel = new PythonKernel(kernelOptions);
     }
@@ -159,6 +166,12 @@ public class PythonKernelManager {
     public synchronized void switchToNewKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernel.close();
         m_kernel = new PythonKernel(kernelOptions);
+        for(PythonOutputListener l:m_stdoutListeners) {
+            m_kernel.addStdoutListener(l);
+        }
+        for(PythonOutputListener l:m_stderrListeners) {
+            m_kernel.addStderrorListener(l);
+        }
     }
 
     /**
@@ -391,6 +404,46 @@ public class PythonKernelManager {
      */
     public PythonKernel getKernel() {
         return m_kernel;
+    }
+
+    /**
+     * Add a listener receiving live messages from the python stdout stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void addStdoutListener(final PythonOutputListener listener) {
+        m_stdoutListeners.add(listener);
+        m_kernel.addStdoutListener(listener);
+    }
+
+    /**
+     * Add a listener receiving live messages from the python stderror stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void addStderrorListener(final PythonOutputListener listener) {
+        m_stderrListeners.add(listener);
+        m_kernel.addStderrorListener(listener);
+    }
+
+    /**
+     * Remove a listener receiving live messages from the python stdout stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void removeStdoutListener(final PythonOutputListener listener) {
+        m_stdoutListeners.remove(listener);
+        m_kernel.removeStdoutListener(listener);
+    }
+
+    /**
+     * Remove a listener receiving live messages from the python stderror stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void removeStderrorListener(final PythonOutputListener listener) {
+        m_stderrListeners.remove(listener);
+        m_kernel.removeStderrorListener(listener);
     }
 
 }

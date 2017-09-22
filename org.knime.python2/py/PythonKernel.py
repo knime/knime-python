@@ -351,20 +351,38 @@ def _cleanup():
             except Exception:
                 pass
 
+#Logger class for parallel logging to sys.stdout and a sink, e.g. a StringIO
+#object or a file
+class Logger(object):
+    def __init__(self, stdstream, sink):
+        self.stdstream = stdstream
+        self.sink = sink
+        
+    def write(self, message):
+        self.stdstream.write(message)
+        self.sink.write(message)
 
 # execute the given source code
 def execute(source_code):
     output = StringIO()
     error = StringIO()
-    if not debug_util.is_debug_enabled():
-        sys.stdout = output
+    
+    #log to stdout and output variable simultaneously
+    backupStdOut = sys.stdout
+    sys.stdout = Logger(sys.stdout, output)
+    
+    #log to stderr and error variable simultaneously
+    backupStdErr = sys.stderr
+    sys.stderr = Logger(sys.stderr, error)
+    
     # run execute with the provided source code
     try:
         exec(source_code, _exec_env, _exec_env)
     except Exception:
-        traceback.print_exc(file=error)
-    if not debug_util.is_debug_enabled():
-        sys.stdout = sys.__stdout__
+        traceback.print_exc()
+    
+    sys.stdout = backupStdOut
+    sys.stderr = backupStdErr
     return [output.getvalue(), error.getvalue()]
 
 

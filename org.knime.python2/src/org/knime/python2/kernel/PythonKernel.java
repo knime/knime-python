@@ -47,11 +47,13 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -147,6 +149,16 @@ public class PythonKernel {
 
     private final PythonKernelOptions m_kernelOptions;
 
+    private final List<PythonOutputListener> m_stdoutListeners;
+
+    private final List<PythonOutputListener> m_stderrListeners;
+
+    private final InputStream m_stdoutStream;
+
+    private final InputStream m_stderrStream;
+
+    private final PythonOutputListener m_errorPrintListener;
+
     /**
      * Creates a python kernel by starting a python process and connecting to it.
      *
@@ -159,8 +171,10 @@ public class PythonKernel {
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = kernelOptions;
-        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3() ?
-            Activator.testPython3Installation(kernelOptions.getAdditionalRequiredModules())
+        m_stdoutListeners = new ArrayList<PythonOutputListener>();
+        m_stderrListeners = new ArrayList<PythonOutputListener>();
+        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
+            ? Activator.testPython3Installation(kernelOptions.getAdditionalRequiredModules())
             : Activator.retestPython2Installation(kernelOptions.getAdditionalRequiredModules());
         if (testResult.hasError()) {
             throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
@@ -205,9 +219,10 @@ public class PythonKernel {
         // Get path to python kernel script
         final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
         // Start python kernel that listens to the given port
+        // use the -u options to force python to not buffer stdout and stderror
         final ProcessBuilder pb = new ProcessBuilder(
-            m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), scriptPath,
-                "" + port, serializerPythonPath);
+            m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
+            scriptPath, "" + port, serializerPythonPath);
         // Add all python modules to PYTHONPATH variable
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
@@ -226,8 +241,49 @@ public class PythonKernel {
         // pb.redirectOutput(Redirect.INHERIT);
         // pb.redirectError(Redirect.INHERIT);
 
+        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+        pb.redirectError(ProcessBuilder.Redirect.PIPE);
+
         // Start python
         m_process = pb.start();
+
+        //Get stdout and stderror pipes and start listening to them
+        m_stdoutStream = m_process.getInputStream();
+        m_stderrStream = m_process.getErrorStream();
+
+        startPipeListeners();
+
+        //Log output and errors to console
+        addStdoutListener(new PythonOutputListener() {
+
+            @Override
+            public void messageReceived(final String msg) {
+                LOGGER.info(msg);
+            }
+        });
+
+        m_errorPrintListener = new PythonOutputListener() {
+
+            boolean m_lastStacktrace = false;
+
+            @Override
+            public void messageReceived(final String msg) {
+
+                if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
+                    LOGGER.error(msg);
+                    m_lastStacktrace = false;
+                } else {
+                    if (!m_lastStacktrace) {
+                        LOGGER.debug("Python error with stacktrace:\n");
+                        m_lastStacktrace = true;
+                    }
+                    LOGGER.debug(msg);
+                }
+            }
+        };
+
+        addStderrorListener(m_errorPrintListener);
+
         try {
             // Wait for python to connect
             thread.join();
@@ -302,6 +358,7 @@ public class PythonKernel {
             @Override
             public void run() {
                 String[] out;
+                removeStderrorListener(m_errorPrintListener);
                 try {
                     out = execute(sourceCode);
                     output.set(out);
@@ -312,6 +369,7 @@ public class PythonKernel {
                 } catch (final Exception e) {
                     exception.set(e);
                 }
+                addStderrorListener(m_errorPrintListener);
                 done.set(true);
                 // Wake up waiting thread
                 nodeExecutionThread.interrupt();
@@ -839,7 +897,6 @@ public class PythonKernel {
                         Thread.sleep(1000);
                     } catch (final InterruptedException e1) {
                     }
-                    printStreamToLog();
                     // Send shutdown
                     try {
                         m_commands.shutdown();
@@ -858,6 +915,11 @@ public class PythonKernel {
                     }
                     try {
                         m_socket.close();
+                    } catch (final Throwable t) {
+                    }
+                    try{
+                        m_stdoutStream.close();
+                        m_stderrStream.close();
                     } catch (final Throwable t) {
                     }
                     // If the original process was a script we have to kill the
@@ -883,56 +945,9 @@ public class PythonKernel {
                     } catch (final InterruptedException e) {
                         //
                     }
-                    printStreamToLog();
                 }
             }).start();
         }
-    }
-
-    /**
-     * Print the contents of the python kernel's stdout and stderror to the KNIME console
-     */
-    private void printStreamToLog() {
-        if (m_process != null) {
-            try {
-                final String out = readAvailableBytesFromStream(m_process.getInputStream());
-                final String error = readAvailableBytesFromStream(m_process.getErrorStream());
-                if (!out.isEmpty()) {
-                    LOGGER.info(out);
-                }
-                if (!error.isEmpty()) {
-                    //Only show the error message to the user, push full error with stacktrace to log
-                    final String[] lines = error.split("\n");
-                    final StringBuilder errorMessage = new StringBuilder();
-                    for (final String line : lines) {
-                        if (!line.startsWith("Traceback") && !line.startsWith(" ")) {
-                            errorMessage.append(line + "\n");
-                        }
-                    }
-                    LOGGER.debug("Python error with stacktrace:\n\n" + error);
-                    LOGGER.error(errorMessage);
-                }
-            } catch (final IOException e) {
-                // ignore
-            }
-        }
-    }
-
-    /**
-     * Read available information from an {@link InputStream}.
-     *
-     * @param stream an {@link InputStream}
-     * @return the incoming bytes as a string
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    private String readAvailableBytesFromStream(final InputStream stream) throws IOException {
-        final byte[] bytes = new byte[1024];
-        final StringBuilder sb = new StringBuilder();
-        while (stream.available() > 0) {
-            final int read = stream.read(bytes);
-            sb.append(new String(bytes, 0, read));
-        }
-        return sb.toString();
     }
 
     /**
@@ -1007,5 +1022,94 @@ public class PythonKernel {
             return m_kernelOptions.getSerializerId();
         }
         return PythonPreferencePage.getSerializerId();
+    }
+
+    /**
+     * Add a listener receiving live messages from the python stdout stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void addStdoutListener(final PythonOutputListener listener) {
+        m_stdoutListeners.add(listener);
+    }
+
+    /**
+     * Add a listener receiving live messages from the python stderror stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void addStderrorListener(final PythonOutputListener listener) {
+        m_stderrListeners.add(listener);
+    }
+
+    /**
+     * Remove a listener receiving live messages from the python stdout stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void removeStdoutListener(final PythonOutputListener listener) {
+        m_stdoutListeners.remove(listener);
+    }
+
+    /**
+     * Remove a listener receiving live messages from the python stderror stream.
+     *
+     * @param listener a {@link PythonOutputListener}
+     */
+    public synchronized void removeStderrorListener(final PythonOutputListener listener) {
+        m_stderrListeners.remove(listener);
+    }
+
+
+    private synchronized void distributeStdoutMsg(final String msg) {
+        for (PythonOutputListener listener : m_stdoutListeners) {
+            listener.messageReceived(msg);
+        }
+    }
+
+    private synchronized void distributeStderrorMsg(final String msg) {
+        for (PythonOutputListener listener : m_stderrListeners) {
+            listener.messageReceived(msg);
+        }
+    }
+
+    private void startPipeListeners() {
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                String msg;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(m_stdoutStream));
+                try {
+                    while ((msg = reader.readLine()) != null) {
+                        distributeStdoutMsg(msg);
+                    }
+                } catch (IOException ex) {
+                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage());
+                }
+
+            }
+
+        });
+        t.start();
+
+        Thread t2 = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                String msg;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(m_stderrStream));
+                try {
+                    while ((msg = reader.readLine()) != null) {
+                        distributeStderrorMsg(msg);
+                    }
+                } catch (IOException ex) {
+                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage());
+                }
+
+            }
+
+        });
+        t2.start();
     }
 }
