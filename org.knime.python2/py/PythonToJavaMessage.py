@@ -1,5 +1,5 @@
 # Used for defining responses that can be sent back to Java
-class PythonToJavaMessage:
+class PythonToJavaMessage(object):
     # @param cmd    a string command to trigger a certain Java response action
     # @param val    the value to process in Java
     # @param requestsData true - the message requests data from java, false otherwise
