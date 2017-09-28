@@ -296,6 +296,42 @@ public class PythonKernel {
                 exception.get());
         }
         m_commands = new Commands(m_socket.getOutputStream(), m_socket.getInputStream());
+
+        m_commands.registerMessageHandler(new PythonToJavaMessageHandler("serializer_request") {
+
+            @Override
+            protected void handle(final PythonToJavaMessage msg) {
+                try {
+                    for (PythonToKnimeExtension ext : PythonToKnimeExtensions.getExtensions()) {
+                        if (ext.getType().contentEquals(msg.getValue()) || ext.getId().contentEquals(msg.getValue())) {
+                            m_commands.answer(ext.getId() + ";" + ext.getType() + ";" + ext.getPythonSerializerPath());
+                            return;
+                        }
+                    }
+                    m_commands.answer(";;");
+                } catch (IOException ex) {
+                    // TODO Auto-generated catch block
+                }
+            }
+        });
+
+        m_commands.registerMessageHandler(new PythonToJavaMessageHandler("deserializer_request") {
+
+            @Override
+            protected void handle(final PythonToJavaMessage msg) {
+                try {
+                    for (KnimeToPythonExtension ext : KnimeToPythonExtensions.getExtensions()) {
+                        if (ext.getId().contentEquals(msg.getValue())) {
+                            m_commands.answer(ext.getId() + ";" + ext.getPythonDeserializerPath());
+                            return;
+                        }
+                    }
+                    m_commands.answer(";");
+                } catch (IOException ex) {
+                    // TODO Auto-generated catch block
+                }
+            }
+        });
         // First get PID of Python process
         m_pid = m_commands.getPid();
         try {
@@ -306,14 +342,14 @@ public class PythonKernel {
             //
         }
         // Python serializers
-        for (final PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
+        /*for (final PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
             m_commands.addSerializer(typeExtension.getId(), typeExtension.getType(),
                 typeExtension.getPythonSerializerPath());
         }
         // Python deserializers
         for (final KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
             m_commands.addDeserializer(typeExtension.getId(), typeExtension.getPythonDeserializerPath());
-        }
+        }*/
         //Add sentinel constants
         if (m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL) {
             m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");
@@ -321,7 +357,7 @@ public class PythonKernel {
             m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63");
         } else {
             m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + "; LONG_SENTINEL = "
-                    + m_kernelOptions.getSentinelValue());
+                + m_kernelOptions.getSentinelValue());
         }
     }
 

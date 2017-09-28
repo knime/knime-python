@@ -57,6 +57,8 @@ import collections
 from datetime import datetime
 from pandas import DataFrame, Index
 from DBUtil import *
+from PythonToJavaMessage import *
+from TypeExtensionManager import *
 
 # suppress FutureWarnings
 import warnings
@@ -130,6 +132,8 @@ debug_util.debug_msg('Python Kernel enabled debugging!')
 def run():
     global _connection
     global _serializer
+    global _type_extension_manager
+    global _command_handlers
     _connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     _connection.connect(('localhost', int(sys.argv[1])))
     # load serialization library
@@ -139,145 +143,17 @@ def run():
     sys.path.append(serializer_directory_path)
     _serializer = load_module_from_path(serializer_path)
     _serializer.init(Simpletype)
+    # Get the TypeExtensionManager instance
+    _type_extension_manager = TypeExtensionManager(write_response_msg)
     # First send PID of this process (so it can reliably be killed later)
     write_integer(os.getpid())
     try:
         while 1:
             command = read_string()
-            if command == 'execute':
-                source_code = read_string()
-                debug_util.debug_msg('executing: ' + source_code + '\n')
-                output, error = execute(source_code)
-                debug_util.debug_msg('executing done!')
-                write_string(output)
-                write_string(error)
-            elif command == 'putFlowVariables':
-                flow_variables = collections.OrderedDict()
-                name = read_string()
-                data_bytes = read_bytearray()
-                data_frame = bytes_to_data_frame(data_bytes)
-                fill_flow_variables_from_data_frame(flow_variables, data_frame)
-                put_variable(name, flow_variables)
-                write_dummy()
-            elif command == 'getFlowVariables':
-                name = read_string()
-                current_variables = get_variable(name)
-                data_frame = dict_to_data_frame(current_variables)
-                data_bytes = data_frame_to_bytes(data_frame)
-                write_bytearray(data_bytes)
-            elif command == 'putTable':
-                name = read_string()
-                data_bytes = read_bytearray()
-                data_frame = bytes_to_data_frame(data_bytes)
-                put_variable(name, data_frame)
-                write_dummy()
-            elif command == 'appendToTable':
-                name = read_string()
-                data_bytes = read_bytearray()
-                data_frame = bytes_to_data_frame(data_bytes)
-                append_to_table(name, data_frame)
-                write_dummy()
-            elif command == 'getTableSize':
-                name = read_string()
-                data_frame = get_variable(name)
-                write_integer(len(data_frame))
-            elif command == 'getTable':
-                debug_util.debug_msg('getTable\n')
-                name = read_string()
-                data_frame = get_variable(name)
-                data_bytes = data_frame_to_bytes(data_frame)
-                write_bytearray(data_bytes)
-            elif command == 'getTableChunk':
-                debug_util.debug_msg('getTableChunk\n')
-                name = read_string()
-                start = read_integer()
-                end = read_integer()
-                data_frame = get_variable(name)
-                import pandas
-                if type(data_frame) != pandas.core.frame.DataFrame:
-                    raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
-                data_frame_chunk = data_frame[start:end+1]
-                data_bytes = data_frame_to_bytes(data_frame_chunk)
-                write_bytearray(data_bytes)
-            elif command == 'listVariables':
-                variables = list_variables()
-                data_frame = DataFrame(variables)
-                data_bytes = data_frame_to_bytes(data_frame)
-                write_bytearray(data_bytes)
-            elif command == 'reset':
-                reset()
-                write_dummy()
-            elif command == 'hasAutoComplete':
-                if has_auto_complete():
-                    value = 1
-                else:
-                    value = 0
-                write_integer(value)
-            elif command == 'autoComplete':
-                source_code = read_string()
-                line = read_integer()
-                column = read_integer()
-                suggestions = auto_complete(source_code, line, column)
-                data_frame = DataFrame(suggestions)
-                data_bytes = data_frame_to_bytes(data_frame)
-                write_bytearray(data_bytes)
-            elif command == 'getImage':
-                name = read_string()
-                image = get_variable(name)
-                if _python3:
-                    if type(image) is bytes:
-                        data_bytes = image
-                    else:
-                        data_bytes = bytearray()
-                else:
-                    if type(image) is str:
-                        data_bytes = image
-                    else:
-                        data_bytes = ''
-                write_bytearray(data_bytes)
-            elif command == 'getObject':
-                name = read_string()
-                data_object = get_variable(name)
-                o_bytes = bytearray(pickle.dumps(data_object))
-                o_type = type(data_object).__name__
-                o_representation = object_to_string(data_object)
-                data_frame = DataFrame([{'bytes': o_bytes, 'type': o_type, 'representation': o_representation}])
-                data_bytes = data_frame_to_bytes(data_frame)
-                write_bytearray(data_bytes)
-            elif command == 'putObject':
-                name = read_string()
-                data_bytes = read_bytearray()
-                data_object = pickle.loads(data_bytes)
-                put_variable(name, data_object)
-                write_dummy()
-            elif command == 'addSerializer':
-                s_id = read_string()
-                s_type = read_string()
-                s_path = read_string()
-                _type_extension_manager.add_serializer(s_id, s_type, s_path)
-                write_dummy()
-            elif command == 'addDeserializer':
-                d_id = read_string()
-                d_path = read_string()
-                _type_extension_manager.add_deserializer(d_id, d_path)
-                write_dummy()
-            elif command == 'shutdown':
-                _cleanup()
-                exit()
-            elif command == 'putSql':
-                name = read_string()
-                data_bytes = read_bytearray()
-                data_frame = bytes_to_data_frame(data_bytes)
-                db_util = DBUtil(data_frame)
-                _exec_env[name] = db_util
-                _cleanup_object_names.append(name)
-                write_dummy()
-            elif command == 'getSql':
-                name = read_string()
-                db_util = get_variable(name)
-                db_util._writer.commit()
-                query = db_util.get_output_query()
-                write_string(query)
+            for handler in _command_handlers:
+                if(handler.has_command(command)):
+                    handler.execute()
+                    break
     finally:
         _connection.close()
 
@@ -573,94 +449,6 @@ def get_type_string(data_object):
     else:
         return data_object.__class__.__name__
 
-# Used for managing all registered serializers and deserializers.
-# Serializers and deserializers can be accessed using the identifier,
-# which is the id of the java extension point or the type_string corresponding
-# to the python type. This type string is set in the extension point's specification
-# in plugin.xml.
-class TypeExtensionManager:
-    def __init__(self):
-        self._serializer_id_to_index = {}
-        self._serializer_type_to_id = {}
-        self._serializers = []
-        self._deserializer_id_to_index = {}
-        self._deserializers = []
-
-    # Get the deserializer associated with the given id
-    # @param identifier    the java extension point id (string)
-    # @return deserializer module (implementing the deserialize(bytes) method) or None on miss
-    def get_deserializer_by_id(self, identifier):
-        if identifier not in self._deserializer_id_to_index:
-            return None
-        return self.get_extension_by_index(self._deserializer_id_to_index[identifier], self._deserializers)
-
-    # Get the serializer associated with the given id
-    # @param identifier    the java extension point id (string)
-    # @return serializer module (implementing the serialize(object) method) or None on miss
-    def get_serializer_by_id(self, identifier):
-        if identifier not in self._serializer_id_to_index:
-            return None
-        return self.get_extension_by_index(self._serializer_id_to_index[identifier], self._serializers)
-
-    # Get the serializer associated with the given type
-    # @param identifier    a python type
-    # @return serializer module (implementing the serialize(object) method) or None on miss
-    def get_serializer_by_type(self, type_string):
-        if type_string not in self._serializer_type_to_id:
-            return None
-        return self.get_serializer_by_id(self._serializer_type_to_id[type_string])
-
-    # Get the java extension point id associated with the given python type
-    # @param type_string    a python type
-    # @return java extension point id (string)
-    def get_serializer_id_by_type(self, type_string):
-        if type_string not in self._serializer_type_to_id:
-            return None
-        return self._serializer_type_to_id[type_string]
-
-    # Get the path to a module at position index in the passed lists of paths 
-    # (extensions) and load it. Return the loaded module.
-    # @param index         a position in the extensions array
-    # @param extensions    a list of paths to python modules (usually self._serializers or self._deserializers)
-    # @return the module loaded from the specified path
-    @staticmethod
-    def get_extension_by_index(index, extensions):
-        if index >= len(extensions):
-            return None
-        type_extension = extensions[index]
-        if not isinstance(type_extension, types.ModuleType):
-            path = type_extension
-            last_separator = path.rfind(os.sep)
-            file_extension_start = path.rfind('.')
-            module_name = path[last_separator + 1:file_extension_start]
-            try:
-                if _python3:
-                    type_extension = importlib.machinery.SourceFileLoader(module_name, path).load_module()
-                else:
-                    type_extension = imp.load_source(module_name, path)
-            except ImportError as error:
-                raise ImportError('Error while loading python type extension ' + module_name + '\nCause: ' + str(error))
-            extensions[index] = type_extension
-        return type_extension
-
-    # Add a serializer for a python type.
-    # @param identifier     the java extension point id (string)
-    # @param type_string    a python type
-    # @param path           the path to the file containing the serializer module
-    def add_serializer(self, identifier, type_string, path):
-        index = len(self._serializers)
-        self._serializers.append(path)
-        self._serializer_id_to_index[identifier] = index
-        self._serializer_type_to_id[type_string] = identifier
-
-    # Add a deserializer for a python type.
-    # @param identifier     the java extension point id (string)
-    # @param path           the path to the file containing the deserializer module
-    def add_deserializer(self, identifier, path):
-        index = len(self._deserializers)
-        self._deserializers.append(path)
-        self._deserializer_id_to_index[identifier] = index
-
 # Load a python module from a source file.
 # @param path    the path to the source file (string)
 # @return the module loaded from the specified path
@@ -692,8 +480,6 @@ else:
         except Exception:
             return ''
 
-
-_type_extension_manager = TypeExtensionManager()
 
 # Serialize all cells in the provided data frame to a bytes representation (inplace).
 # @param data_frame          a pandas.DataFrame containing columns to serialize
@@ -844,6 +630,14 @@ def read_bytearray():
 
 def write_bytearray(data_bytes):
     write_data(data_bytes)
+    
+# Write a ResponseMessage object
+def write_response_msg(msg):
+    if not issubclass(type(msg), PythonToJavaMessage):
+        raise TypeError("write_response_msg was called with an object of a type not inheriting PythonToJavaMessage!")
+    write_data(msg.to_string().encode('utf-8'))
+    if msg.is_data_request():
+        return msg.parse_response_string(read_data().decode('utf-8'))
 
 
 # Wrapper class for data that should be serialized using the serialization library. 
@@ -865,7 +659,6 @@ class FromPandasTable:
             self._column_types.append(column_type)
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
-        #debug_util.breakpoint()
         serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices()
         self._row_indices = self._data_frame.index.astype(str)
@@ -1220,9 +1013,270 @@ def value_to_simpletype_value(value, simpletype):
                 value_set.add(bytes(inner_value))
         return value_set
 
-# Uncomment below and comment the run() call for profiling
-# See https://docs.python.org/3/library/profile.html on how to interpet the result
-#import cProfile
-#profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
-#cProfile.run('run()', filename=profilepath)
-run()
+class CommandHandler:
+    def __init__(self, command):
+        self._command = command
+        
+    def has_command(self, command):
+        return self._command == command
+        
+    def execute(self):
+        raise NotImplementedError("Abstract class CommandHandler does not provide an Implementation for execute().")
+    
+class ExecuteCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'execute'
+        
+    def execute(self):
+        source_code = read_string()
+        debug_util.debug_msg('executing: ' + source_code + '\n')
+        output, error = execute(source_code)
+        debug_util.debug_msg('executing done!')
+        write_string(output)
+        write_string(error)
+        
+class PutFlowVariablesCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'putFlowVariables'
+        
+    def execute(self):
+        flow_variables = collections.OrderedDict()
+        name = read_string()
+        data_bytes = read_bytearray()
+        data_frame = bytes_to_data_frame(data_bytes)
+        fill_flow_variables_from_data_frame(flow_variables, data_frame)
+        put_variable(name, flow_variables)
+        write_dummy()
+        
+class GetFlowVariablesCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getFlowVariables'
+        
+    def execute(self):
+        name = read_string()
+        current_variables = get_variable(name)
+        data_frame = dict_to_data_frame(current_variables)
+        data_bytes = data_frame_to_bytes(data_frame)
+        write_bytearray(data_bytes)
+        
+class PutTableCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'putTable'
+        
+    def execute(self):
+        name = read_string()
+        data_bytes = read_bytearray()
+        data_frame = bytes_to_data_frame(data_bytes)
+        put_variable(name, data_frame)
+        write_response_msg(SuccessResponse())
+        
+class AppendToTableCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'appendToTable'
+        
+    def execute(self):
+        name = read_string()
+        data_bytes = read_bytearray()
+        data_frame = bytes_to_data_frame(data_bytes)
+        append_to_table(name, data_frame)
+        write_response_msg(SuccessResponse())
+        
+class GetTableSizeCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getTableSize'
+        
+    def execute(self):
+        name = read_string()
+        data_frame = get_variable(name)
+        write_integer(len(data_frame))
+        
+class GetTableCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getTable'
+        
+    def execute(self):
+        debug_util.debug_msg('getTable\n')
+        name = read_string()
+        data_frame = get_variable(name)
+        data_bytes = data_frame_to_bytes(data_frame)
+        write_response_msg(SuccessResponse())
+        write_bytearray(data_bytes)
+        
+class GetTableChunkCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getTableChunk'
+        
+    def execute(self):
+        debug_util.debug_msg('getTableChunk\n')
+        name = read_string()
+        start = read_integer()
+        end = read_integer()
+        data_frame = get_variable(name)
+        import pandas
+        if type(data_frame) != pandas.core.frame.DataFrame:
+            raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
+        data_frame_chunk = data_frame[start:end+1]
+        data_bytes = data_frame_to_bytes(data_frame_chunk)
+        write_response_msg(SuccessResponse())
+        write_bytearray(data_bytes)
+        
+class ListVariablesCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'listVariables'
+        
+    def execute(self):
+        variables = list_variables()
+        data_frame = DataFrame(variables)
+        data_bytes = data_frame_to_bytes(data_frame)
+        write_bytearray(data_bytes)
+        
+class ResetCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'reset'
+        
+    def execute(self):
+        reset()
+        write_dummy()
+        
+class HasAutoCompleteCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'hasAutoComplete'
+        
+    def execute(self):
+        if has_auto_complete():
+            value = 1
+        else:
+            value = 0
+        write_integer(value)
+        
+class AutoCompleteCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'autoComplete'
+        
+    def execute(self):
+        source_code = read_string()
+        line = read_integer()
+        column = read_integer()
+        suggestions = auto_complete(source_code, line, column)
+        data_frame = DataFrame(suggestions)
+        data_bytes = data_frame_to_bytes(data_frame)
+        write_bytearray(data_bytes)
+        
+class GetImageCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getImage'
+        
+    def execute(self):
+        name = read_string()
+        image = get_variable(name)
+        if _python3:
+            if type(image) is bytes:
+                data_bytes = image
+            else:
+                data_bytes = bytearray()
+        else:
+            if type(image) is str:
+                data_bytes = image
+            else:
+                data_bytes = ''
+        write_bytearray(data_bytes)
+        
+class GetObjectCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getObject'
+        
+    def execute(self):
+        name = read_string()
+        data_object = get_variable(name)
+        o_bytes = bytearray(pickle.dumps(data_object))
+        o_type = type(data_object).__name__
+        o_representation = object_to_string(data_object)
+        data_frame = DataFrame([{'bytes': o_bytes, 'type': o_type, 'representation': o_representation}])
+        data_bytes = data_frame_to_bytes(data_frame)
+        write_bytearray(data_bytes)
+        
+class PutObjectCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'putObject'
+        
+    def execute(self):
+        name = read_string()
+        data_bytes = read_bytearray()
+        data_object = pickle.loads(data_bytes)
+        put_variable(name, data_object)
+        write_dummy()
+        
+class AddSerializerCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'addSerializer'
+        
+    def execute(self):
+        s_id = read_string()
+        s_type = read_string()
+        s_path = read_string()
+        _type_extension_manager.add_serializer(s_id, s_type, s_path)
+        write_dummy()
+        
+class AddDeserializerCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'addDeserializer'
+        
+    def execute(self):
+        d_id = read_string()
+        d_path = read_string()
+        _type_extension_manager.add_deserializer(d_id, d_path)
+        write_dummy()
+        
+class ShutdownCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'shutdown'
+        
+    def execute(self):
+        _cleanup()
+        exit()
+        
+class PutSqlCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'putSql'
+        
+    def execute(self):
+        name = read_string()
+        data_bytes = read_bytearray()
+        data_frame = bytes_to_data_frame(data_bytes)
+        db_util = DBUtil(data_frame)
+        _exec_env[name] = db_util
+        _cleanup_object_names.append(name)
+        write_dummy()
+        
+class GetSqlCommandHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'getSql'
+        
+    def execute(self):
+        name = read_string()
+        db_util = get_variable(name)
+        db_util._writer.commit()
+        query = db_util.get_output_query()
+        write_string(query)
+
+
+
+# Define global command handlers
+_command_handlers = [ExecuteCommandHandler(),PutFlowVariablesCommandHandler(),
+                     GetFlowVariablesCommandHandler(),PutTableCommandHandler(),
+                     AppendToTableCommandHandler(),GetTableSizeCommandHandler(),
+                     GetTableCommandHandler(),GetTableChunkCommandHandler(),
+                     ListVariablesCommandHandler(),ResetCommandHandler(),
+                     HasAutoCompleteCommandHandler(),AutoCompleteCommandHandler(),
+                     GetImageCommandHandler(),GetObjectCommandHandler(),
+                     PutObjectCommandHandler(),AddSerializerCommandHandler(),
+                     AddDeserializerCommandHandler(),ShutdownCommandHandler(),
+                     PutSqlCommandHandler(),GetSqlCommandHandler()]
+
+if __name__=="__main__":
+    # Uncomment below and comment the run() call for profiling
+    # See https://docs.python.org/3/library/profile.html on how to interpet the result
+    #import cProfile
+    #profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
+    #cProfile.run('run()', filename=profilepath)
+    run()

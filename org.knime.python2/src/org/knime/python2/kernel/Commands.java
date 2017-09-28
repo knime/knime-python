@@ -51,6 +51,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Used for communicating with the python kernel via commands sent over sockets.
@@ -67,6 +70,12 @@ public class Commands {
 
     private final DataOutputStream m_bufferedOutToServer;
 
+    private final List<PythonToJavaMessageHandler> m_msgHandlers;
+
+    private boolean m_responseHandlingActive;
+
+    private boolean m_answered;
+
     /**
      * Constructor.
      *
@@ -78,6 +87,73 @@ public class Commands {
         m_inFromServer = inFromServer;
         m_bufferedInFromServer = new DataInputStream(m_inFromServer);
         m_bufferedOutToServer = new DataOutputStream(m_outToServer);
+        m_msgHandlers = new ArrayList<PythonToJavaMessageHandler>();
+        registerMessageHandler(new PythonToJavaMessageHandler("success") {
+
+            @Override
+            protected void handle(final PythonToJavaMessage msg) {}
+        });
+    }
+
+    /**
+     * Register a handler for dealing with a subset of possible {@link PythonToJavaMessage}s from python.
+     *
+     * @param handler handles {@link PythonToJavaMessage}s having a specific command
+     */
+    synchronized public void registerMessageHandler(final PythonToJavaMessageHandler handler) {
+        m_msgHandlers.add(handler);
+    }
+
+    /**
+     * Unregister an existing {@link PythonToJavaMessageHandler}. If it is not present in the internal list nothing happens.
+     *
+     * @param handler a {@link PythonToJavaMessageHandler}
+     */
+    synchronized public void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
+        m_msgHandlers.remove(handler);
+    }
+
+    /**
+     * Direct a {@link PythonToJavaMessage} to the appropriate registered {@link PythonToJavaMessageHandler}. If the message
+     * is a request it has to be answered by calling answer() exactly once.
+     *
+     * @param msg a message from the python process
+     * @return true if the message was a request, false otherwise
+     */
+    private boolean handleResponse(final PythonToJavaMessage msg) {
+        m_responseHandlingActive = true;
+        m_answered = false;
+        boolean handled = false;
+        for(PythonToJavaMessageHandler handler:m_msgHandlers) {
+            handled = handler.tryHandling(msg);
+            if(handled) {
+                break;
+            }
+        }
+        if(!handled) {
+            throw new IllegalStateException("Python response message was not handled. Command: " + msg.getCommand());
+        } else if(msg.isRequest() && !m_answered) {
+            throw new IllegalStateException("Python request was not answered. Command: " + msg.getCommand());
+        }
+        m_responseHandlingActive = false;
+        return msg.isRequest();
+    }
+
+    /**
+     * Answer the currently processed {@link PythonToJavaMessage} with the passed string.
+     * Can only be called once per message.
+     *
+     * @param answerStr an answer to the currently processed {@link PythonToJavaMessage}
+     * @throws IOException
+     */
+    public synchronized void answer(final String answerStr) throws IOException {
+        if(m_responseHandlingActive) {
+            writeString(answerStr);
+            m_answered = true;
+            m_responseHandlingActive = false;
+            return;
+        }
+        throw new IllegalStateException("answer() may only be called once while answering each ResponseMessage!");
     }
 
     /**
@@ -138,7 +214,7 @@ public class Commands {
      * Put a serialized KNIME table into the python workspace (as pandas.DataFrame). The table should be serialized
      * using the currently active serialization library.
      *
-     * @param name the name of the variable in pyhton workspace
+     * @param name the name of the variable in python workspace
      * @param table the serialized KNIME table as bytearray
      * @throws IOException
      */
@@ -146,7 +222,7 @@ public class Commands {
         writeString("putTable");
         writeString(name);
         writeBytes(table);
-        readBytes();
+        while(handleResponse(readResponseMessage())) {}
     }
 
     /**
@@ -161,7 +237,7 @@ public class Commands {
         writeString("appendToTable");
         writeString(name);
         writeBytes(table);
-        readBytes();
+        while(handleResponse(readResponseMessage())) {}
     }
 
     /**
@@ -185,8 +261,11 @@ public class Commands {
      * @throws IOException
      */
     synchronized public byte[] getTable(final String name) throws IOException {
+        //TODO rewrite in prepare / get
         writeString("getTable");
         writeString(name);
+        //success message is sent before table is transmitted
+        while(handleResponse(readResponseMessage())) {}
         return readBytes();
     }
 
@@ -204,6 +283,8 @@ public class Commands {
         writeString(name);
         writeInt(start);
         writeInt(end);
+        //success message is sent before table is transmitted
+        while(handleResponse(readResponseMessage())) {}
         return readBytes();
     }
 
@@ -429,6 +510,13 @@ public class Commands {
         writeSize(bytes.length, outputStream);
         outputStream.write(bytes);
         outputStream.flush();
+    }
+
+    private PythonToJavaMessage readResponseMessage() throws IOException {
+        byte[] bytes = readMessageBytes(m_bufferedInFromServer);
+        String str = new String(bytes, StandardCharsets.UTF_8);
+        String[] reqCmdVal = str.split(":");
+        return new PythonToJavaMessage(reqCmdVal[1], reqCmdVal[2], reqCmdVal[0].equals("r"));
     }
 
     /**
