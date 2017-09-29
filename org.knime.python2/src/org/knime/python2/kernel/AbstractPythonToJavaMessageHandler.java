@@ -44,24 +44,42 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 29, 2017 (dietzc): created
+ *   Sep 27, 2017 (clemens): created
  */
 package org.knime.python2.kernel;
 
 /**
- * Handles messages from python to java
+ * Handler class for reacting to python responses. NOTE: Not marking a message as handled will produce an error.
  *
- * @author Christian Dietz, KNIME GmbH
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonToJavaMessageHandler {
+abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessageHandler {
+
+    private String m_command;
 
     /**
-     * Handle a message if its command matches.
+     * Constructor.
      *
-     * @param msg a message
-     *
-     * @return true if handled.
+     * @param command the command to handle
      */
-    boolean tryHandle(final PythonToJavaMessage msg);
+    public AbstractPythonToJavaMessageHandler(final String command) {
+        m_command = command;
+    }
 
+
+    @Override
+    public boolean tryHandle(final PythonToJavaMessage msg) {
+        if(msg.getCommand().contentEquals(m_command)) {
+            handle(msg);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Processes the received message.
+     *
+     * @param msg a message received from python
+     */
+    protected abstract void handle(final PythonToJavaMessage msg);
 }

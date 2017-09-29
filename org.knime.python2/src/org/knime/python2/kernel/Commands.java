@@ -70,7 +70,7 @@ public class Commands {
 
     private final DataOutputStream m_bufferedOutToServer;
 
-    private final List<PythonToJavaMessageHandler> m_msgHandlers;
+    private final List<AbstractPythonToJavaMessageHandler> m_msgHandlers;
 
     private boolean m_responseHandlingActive;
 
@@ -87,8 +87,8 @@ public class Commands {
         m_inFromServer = inFromServer;
         m_bufferedInFromServer = new DataInputStream(m_inFromServer);
         m_bufferedOutToServer = new DataOutputStream(m_outToServer);
-        m_msgHandlers = new ArrayList<PythonToJavaMessageHandler>();
-        registerMessageHandler(new PythonToJavaMessageHandler("success") {
+        m_msgHandlers = new ArrayList<AbstractPythonToJavaMessageHandler>();
+        registerMessageHandler(new AbstractPythonToJavaMessageHandler("success") {
 
             @Override
             protected void handle(final PythonToJavaMessage msg) {}
@@ -100,21 +100,21 @@ public class Commands {
      *
      * @param handler handles {@link PythonToJavaMessage}s having a specific command
      */
-    synchronized public void registerMessageHandler(final PythonToJavaMessageHandler handler) {
+    synchronized public void registerMessageHandler(final AbstractPythonToJavaMessageHandler handler) {
         m_msgHandlers.add(handler);
     }
 
     /**
-     * Unregister an existing {@link PythonToJavaMessageHandler}. If it is not present in the internal list nothing happens.
+     * Unregister an existing {@link AbstractPythonToJavaMessageHandler}. If it is not present in the internal list nothing happens.
      *
-     * @param handler a {@link PythonToJavaMessageHandler}
+     * @param handler a {@link AbstractPythonToJavaMessageHandler}
      */
-    synchronized public void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
+    synchronized public void unregisterMessageHandler(final AbstractPythonToJavaMessageHandler handler) {
         m_msgHandlers.remove(handler);
     }
 
     /**
-     * Direct a {@link PythonToJavaMessage} to the appropriate registered {@link PythonToJavaMessageHandler}. If the message
+     * Direct a {@link PythonToJavaMessage} to the appropriate registered {@link AbstractPythonToJavaMessageHandler}. If the message
      * is a request it has to be answered by calling answer() exactly once.
      *
      * @param msg a message from the python process
@@ -124,8 +124,8 @@ public class Commands {
         m_responseHandlingActive = true;
         m_answered = false;
         boolean handled = false;
-        for(PythonToJavaMessageHandler handler:m_msgHandlers) {
-            handled = handler.tryHandling(msg);
+        for(AbstractPythonToJavaMessageHandler handler:m_msgHandlers) {
+            handled = handler.tryHandle(msg);
             if(handled) {
                 break;
             }

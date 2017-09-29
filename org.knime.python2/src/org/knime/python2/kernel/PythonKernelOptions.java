@@ -55,7 +55,7 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 /**
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version that should be used.
  *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ * @author Clemens von Schwerin, KNIME, Konstanz, Germany
  *
  */
 

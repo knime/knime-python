@@ -57,7 +57,6 @@ import org.knime.python2.PythonPreferencePage;
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
-
 public class FlowVariableOptions {
 
     private boolean m_overrulePreferencePage = false;

@@ -53,7 +53,7 @@ package org.knime.python2.kernel;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class PythonToJavaMessage {
+class PythonToJavaMessage {
 
     private String m_command;
     private String m_value;

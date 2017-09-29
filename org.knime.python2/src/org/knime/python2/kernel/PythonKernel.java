@@ -297,7 +297,7 @@ public class PythonKernel {
         }
         m_commands = new Commands(m_socket.getOutputStream(), m_socket.getInputStream());
 
-        m_commands.registerMessageHandler(new PythonToJavaMessageHandler("serializer_request") {
+        m_commands.registerMessageHandler(new AbstractPythonToJavaMessageHandler("serializer_request") {
 
             @Override
             protected void handle(final PythonToJavaMessage msg) {
@@ -315,7 +315,7 @@ public class PythonKernel {
             }
         });
 
-        m_commands.registerMessageHandler(new PythonToJavaMessageHandler("deserializer_request") {
+        m_commands.registerMessageHandler(new AbstractPythonToJavaMessageHandler("deserializer_request") {
 
             @Override
             protected void handle(final PythonToJavaMessage msg) {

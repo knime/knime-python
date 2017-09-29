@@ -62,6 +62,6 @@ public interface PythonKernelResponseHandler<T extends Object> {
      * @param response The response object (depends on command) or null if an exception was thrown
      * @param exception The exception that was thrown or null if no exception was thrown
      */
-    public void handleResponse(final T response, final Exception exception);
+    void handleResponse(final T response, final Exception exception);
 
 }

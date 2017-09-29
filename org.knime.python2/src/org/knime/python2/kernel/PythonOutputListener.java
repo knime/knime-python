@@ -53,13 +53,13 @@ package org.knime.python2.kernel;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public abstract class PythonOutputListener {
+public interface PythonOutputListener {
 
     /**
      * Is called after a full line of text was received from the python output stream
      *
      * @param msg the received line without terminator
      */
-    public abstract void messageReceived(String msg);
+    void messageReceived(String msg);
 
 }
