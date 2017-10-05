@@ -237,6 +237,14 @@ class Logger(object):
     def write(self, message):
         self.stdstream.write(message)
         self.sink.write(message)
+        
+    def writelines(self, sequence):
+        self.stdstream.writelines(sequence)
+        self.sink.writelines(sequence)
+        
+    def flush(self):
+        self.stdstream.flush()
+        self.sink.flush()
 
 # execute the given source code
 def execute(source_code):
