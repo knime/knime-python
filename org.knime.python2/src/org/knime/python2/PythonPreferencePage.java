@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------------------------
  *  Copyright by KNIME GmbH, Konstanz, Germany
- *  Website: http://www.knime.org; Email: contact@knime.org
+ *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, Version 3, as
@@ -269,7 +269,7 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
         final Link startScriptInfo = new Link(m_container, SWT.NONE);
         startScriptInfo.setLayoutData(gridData);
         final String message =
-                "See the <a href=\"http://tech.knime.org/faq#q28\">FAQ</a> for details on how to use a start script";
+                "See the <a href=\"https://www.knime.com/faq#q28\">FAQ</a> for details on how to use a start script";
         startScriptInfo.setText(message);
         final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
         startScriptInfo.setForeground(gray);
