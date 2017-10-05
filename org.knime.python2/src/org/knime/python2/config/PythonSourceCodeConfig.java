@@ -73,6 +73,8 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_SENTINEL_VALUE = "sentinelValue";
 
+    private static final String CFG_CHUNK_SIZE = "chunkSize";
+
     private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
 
     @Override
@@ -83,6 +85,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         settings.addBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, m_kernelOptions.getConvertMissingFromPython());
         settings.addString(CFG_SENTINEL_OPTION, m_kernelOptions.getSentinelOption().name());
         settings.addInt(CFG_SENTINEL_VALUE, m_kernelOptions.getSentinelValue());
+        settings.addInt(CFG_CHUNK_SIZE, m_kernelOptions.getChunkSize());
     }
 
     @Override
@@ -98,6 +101,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
             .valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
         m_kernelOptions
         .setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
+        m_kernelOptions.setChunkSize(settings.getInt(CFG_CHUNK_SIZE, PythonKernelOptions.DEFAULT_CHUNK_SIZE));
     }
 
     @Override
@@ -113,6 +117,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
             .valueOf(settings.getString(CFG_SENTINEL_OPTION, SerializationOptions.DEFAULT_SENTINEL_OPTION.name())));
         m_kernelOptions
         .setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
+        m_kernelOptions.setChunkSize(settings.getInt(CFG_CHUNK_SIZE, PythonKernelOptions.DEFAULT_CHUNK_SIZE));
     }
 
     /**
@@ -123,11 +128,12 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      * @param convertFromPython convert sentinel to missing values on the way from python to KNIME
      * @param sentinelOption the sentinel option
      * @param sentinelValue the sentinel value (only used if sentinelOption is CUSTOM)
+     * @param chunkSize the number of rows to transfer per chunk
      */
     public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython,
-        final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
+        final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue, final int chunkSize) {
         m_kernelOptions =
-                new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption, sentinelValue);
+                new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption, sentinelValue, chunkSize);
     }
 
     /**

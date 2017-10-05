@@ -125,7 +125,7 @@ public class PythonKernel {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-    private static final int CHUNK_SIZE = 500000;
+    //private static final int CHUNK_SIZE = 500000;
 
     private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
@@ -578,7 +578,7 @@ public class PythonKernel {
         }
         final int rowCount = (int) table.size();
         final int numberRows = Math.min(rowLimit, rowCount);
-        int numberChunks = (int)Math.ceil(numberRows / (double)CHUNK_SIZE);
+        int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
         if (numberChunks == 0) {
             numberChunks = 1;
         }
@@ -586,7 +586,7 @@ public class PythonKernel {
         final TableChunker tableChunker =
                 new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
         for (int i = 0; i < numberChunks; i++) {
-            final int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
+            final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
             final ExecutionMonitor chunkProgress =
                     serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
             final TableIterator tableIterator =
@@ -640,13 +640,13 @@ public class PythonKernel {
      */
     public void putData(final String name, final TableChunker tableChunker, final int rowsPerChunk) throws IOException {
         final int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
-        int numberChunks = (int)Math.ceil(numberRows / (double)CHUNK_SIZE);
+        int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
         if (numberChunks == 0) {
             numberChunks = 1;
         }
         int rowsDone = 0;
         for (int i = 0; i < numberChunks; i++) {
-            final int rowsInThisIteration = Math.min(numberRows - rowsDone, CHUNK_SIZE);
+            final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
             final TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
             final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
             rowsDone += rowsInThisIteration;
@@ -675,14 +675,14 @@ public class PythonKernel {
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         try {
             final int tableSize = m_commands.getTableSize(name);
-            int numberChunks = (int)Math.ceil(tableSize / (double)CHUNK_SIZE);
+            int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
             if (numberChunks == 0) {
                 numberChunks = 1;
             }
             BufferedDataTableCreator tableCreator = null;
             for (int i = 0; i < numberChunks; i++) {
-                final int start = CHUNK_SIZE * i;
-                final int end = Math.min(tableSize, (start + CHUNK_SIZE) - 1);
+                final int start = m_kernelOptions.getChunkSize() * i;
+                final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
                 final byte[] bytes = m_commands.getTableChunk(name, start, end);
                 serializationMonitor.setProgress((end + 1) / (double)tableSize);
                 if (tableCreator == null) {
@@ -711,14 +711,14 @@ public class PythonKernel {
      */
     public TableCreator<?> getData(final String name, final TableCreatorFactory tcf) throws IOException {
         final int tableSize = m_commands.getTableSize(name);
-        int numberChunks = (int)Math.ceil(tableSize / (double)CHUNK_SIZE);
+        int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
         if (numberChunks == 0) {
             numberChunks = 1;
         }
         TableCreator<?> tableCreator = null;
         for (int i = 0; i < numberChunks; i++) {
-            final int start = CHUNK_SIZE * i;
-            final int end = Math.min(tableSize, (start + CHUNK_SIZE) - 1);
+            final int start = m_kernelOptions.getChunkSize() * i;
+            final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
             final byte[] bytes = m_commands.getTableChunk(name, start, end);
             if (tableCreator == null) {
                 final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);

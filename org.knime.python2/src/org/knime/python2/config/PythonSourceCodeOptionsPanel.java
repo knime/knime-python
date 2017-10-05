@@ -60,7 +60,9 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -104,6 +106,8 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
     private JLabel m_missingWarningLabel;
 
     private int m_sentinelValue;
+
+    private JSpinner m_chunkSize;
 
     /**
      * Constructor.
@@ -172,15 +176,13 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
             @Override
             public void removeUpdate(final DocumentEvent e) {
                 updateSentinelValue();
-                getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-                    m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+                getSourceCodePanel().setKernelOptions(getSelectedOpitons());
             }
 
             @Override
             public void insertUpdate(final DocumentEvent e) {
                 updateSentinelValue();
-                getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-                    m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+                getSourceCodePanel().setKernelOptions(getSelectedOpitons());
             }
 
             @Override
@@ -199,6 +201,16 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         gbc.gridx = 0;
         gbc.gridy++;
         panel.add(missingPanel, gbc);
+
+        //Give user some control over the number of rows to transfer per chunk
+        final JPanel chunkingPanel = new JPanel(new FlowLayout());
+        chunkingPanel.setBorder(BorderFactory.createTitledBorder("Chunking"));
+        chunkingPanel.add(new JLabel("Rows per chunk: "));
+        m_chunkSize = new JSpinner(new SpinnerNumberModel(PythonKernelOptions.DEFAULT_CHUNK_SIZE, 1, Integer.MAX_VALUE, 1));
+        chunkingPanel.add(m_chunkSize);
+        gbc.gridx = 0;
+        gbc.gridy++;
+        panel.add(chunkingPanel, gbc);
 
         return panel;
     }
@@ -227,8 +239,8 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         }
         m_sentinelInput.setText(kopts.getSentinelValue() + "");
         m_sentinelValue = kopts.getSentinelValue();
-        getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-            m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+        m_chunkSize.setValue(kopts.getChunkSize());
+        getSourceCodePanel().setKernelOptions(getSelectedOpitons());
     }
 
     /**
@@ -238,7 +250,8 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
     public void saveSettingsTo(final PythonSourceCodeConfig config) {
         super.saveSettingsTo(config);
         config.setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-            m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+            m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue,
+            ((Integer)m_chunkSize.getValue()).intValue());
     }
 
     /**
@@ -267,8 +280,7 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         @Override
         public void actionPerformed(final ActionEvent e) {
 
-            getSourceCodePanel().setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
-                m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
+            getSourceCodePanel().setKernelOptions(getSelectedOpitons());
 
         }
 
@@ -299,6 +311,12 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         } else {
             return PythonKernelOptions.PythonVersionOption.PYTHON3;
         }
+    }
+
+    private PythonKernelOptions getSelectedOpitons() {
+        return new PythonKernelOptions(getSelectedPythonVersion(),
+            m_convertToPython.isSelected(), m_convertFromPython.isSelected(), getSelectedSentinelOption(),
+            m_sentinelValue, ((Integer)m_chunkSize.getValue()).intValue());
     }
 
 }

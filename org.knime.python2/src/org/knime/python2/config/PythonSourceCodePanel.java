@@ -65,7 +65,6 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTestResult;
-import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -547,17 +546,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     /**
      * Update the internal PythonKernelOptions object with the current configuration.
      *
-     * @param usePython3
-     * @param convertToPython
-     * @param convertFromPython
-     * @param sentinelOption
-     * @param sentinelValue
+     * @param pko the currently configured {@link PythonKernelOptions}
      */
-    public void setKernelOptions(final PythonKernelOptions.PythonVersionOption usePython3,
-        final boolean convertToPython, final boolean convertFromPython, final SentinelOption sentinelOption,
-        final int sentinelValue) {
-        final PythonKernelOptions pko =
-                new PythonKernelOptions(usePython3, convertToPython, convertFromPython, sentinelOption, sentinelValue);
+    public void setKernelOptions(final PythonKernelOptions pko) {
         pko.setFlowVariableOptions(m_flowVariableOptions);
         for(String module:m_kernelOptions.getAdditionalRequiredModules()) {
             pko.addRequiredModule(module);

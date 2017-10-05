@@ -70,6 +70,13 @@ public class PythonKernelOptions {
     private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
     /**
+     * The default number of rows to transfer per chunk.
+     */
+    public static final int DEFAULT_CHUNK_SIZE = 500000;
+
+    private int m_chunkSize = DEFAULT_CHUNK_SIZE;
+
+    /**
      * Default constructor. Consults the {@link PythonPreferencePage} for the default python version to use.
      */
     public PythonKernelOptions() {
@@ -84,14 +91,17 @@ public class PythonKernelOptions {
      * @param convertMissingFromPython convert sentinel to missing values on the way from python to KNIME
      * @param sentinelOption the sentinel option
      * @param sentinelValue the sentinel value (only used if sentinelOption is CUSTOM)
+     * @param chunkSize the number of rows to transfer per chunk
      */
     public PythonKernelOptions(final PythonVersionOption usePython3, final boolean convertMissingToPython,
-        final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
+        final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue,
+        final int chunkSize) {
         m_usePython3 = usePython3;
         m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
         m_serializationOptions.setConvertMissingToPython(convertMissingToPython);
         m_serializationOptions.setSentinelOption(sentinelOption);
         m_serializationOptions.setSentinelValue(sentinelValue);
+        m_chunkSize = chunkSize;
     }
 
     /**
@@ -101,7 +111,7 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions(final PythonKernelOptions other) {
         this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(),
-            other.getSentinelOption(), other.getSentinelValue());
+            other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize());
     }
 
     /**
@@ -310,6 +320,24 @@ public class PythonKernelOptions {
         } else {
             throw new IllegalStateException("No default python version available from preference page!");
         }
+    }
+
+    /**
+     * Sets the chunk size.
+     *
+     * @param chunkSize the new chunk size
+     */
+    public void setChunkSize(final int chunkSize) {
+        m_chunkSize = chunkSize;
+    }
+
+    /**
+     * Gets the chunk size.
+     *
+     * @return the chunk size
+     */
+    public int getChunkSize() {
+        return m_chunkSize;
     }
 
 }
