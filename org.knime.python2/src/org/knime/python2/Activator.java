@@ -54,6 +54,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
@@ -99,8 +100,14 @@ public class Activator implements BundleActivator {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                testPython2Installation(Collections.emptyList());
-                testPython3Installation(Collections.emptyList());
+                handleTestResult(testPython2Installation(Collections.emptyList()));
+                handleTestResult(testPython3Installation(Collections.emptyList()));
+            }
+
+            private void handleTestResult(final PythonKernelTestResult testResult) {
+                if (testResult.hasError()) {
+                    LOGGER.error(testResult.getMessage());
+                }
             }
         }).start();
         SerializationLibraryExtensions.init();
@@ -140,6 +147,7 @@ public class Activator implements BundleActivator {
      */
     private static synchronized PythonKernelTestResult testPythonInstallation(final String pythonCommand,
         final String testScript, final String arguments) {
+        final StringBuffer infoBuffer = new StringBuffer();
         try {
             // Start python kernel tester script
             final String scriptPath = getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
@@ -152,36 +160,33 @@ public class Activator implements BundleActivator {
             }
             final ProcessBuilder pb = new ProcessBuilder(pbargs);
 
-            StringBuffer buf = new StringBuffer();
-            buf.append("--Testing python executable--\n");
+            infoBuffer.append("Executed command: " + String.join(" ", pb.command()) + "\n");
             final Process process = pb.start();
-            buf.append("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":") + "\n");
-            buf.append("PATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
-            buf.append("Executing command: " + String.join(" ", pb.command()) + "\n");
+            infoBuffer.append("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":") + "\n");
+            infoBuffer.append("PATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
             //Get error output
             final StringWriter errorWriter = new StringWriter();
             IOUtils.copy(process.getErrorStream(), errorWriter, "UTF-8");
 
             String str = errorWriter.toString();
             if (!str.isEmpty()) {
-                buf.append("Error during execution: " + str + "\n");
+                infoBuffer.append("Error during execution: " + str + "\n");
             }
 
             // Get console output of script
             final StringWriter writer = new StringWriter();
             IOUtils.copy(process.getInputStream(), writer, "UTF-8");
             str = writer.toString();
-            buf.append("Raw test output: \n" + str + "\n");
-            buf.append("--End test--" + "\n");
+            infoBuffer.append("Raw test output: \n" + str + "\n");
             // Create test result with console output as message and error code
             // != 0 as error
-            return new PythonKernelTestResult(writer.toString(), buf.toString());
+            return new PythonKernelTestResult(writer.toString(), infoBuffer.toString(), Optional.empty());
         } catch (final IOException e) {
             //Error should be processed by calling method using PythonKernelTestResult
             //LOGGER.error(e.getMessage(), e);
             // Python could not be started
-            return new PythonKernelTestResult(
-                "IOException occured during python startup with command'" + pythonCommand + "'", "");
+            return new PythonKernelTestResult("", infoBuffer.toString(),
+                Optional.of("Could not find python executable at the given location."));
         }
     }
 

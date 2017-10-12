@@ -165,7 +165,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                             }
                             // Check if python kernel can run or not
                             if (result.hasError()) {
-                                setStatusMessage("Error during python start");
+                                setStatusMessage("Error during python start.");
+                                errorToConsole(result.getMessage());
                             } else {
                                 try {
                                     // Start kernel manager which will start the actual

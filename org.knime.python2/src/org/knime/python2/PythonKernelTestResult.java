@@ -47,6 +47,8 @@
  */
 package org.knime.python2;
 
+import java.util.Optional;
+
 /**
  * Results of a python test.
  *
@@ -58,35 +60,35 @@ public class PythonKernelTestResult {
 
     private String m_message;
 
-    private boolean m_error;
-
     /**
      * Creates a test result.
      *
-     * @param message The result message containing detailed information
+     * @param scriptOutput The result message containing detailed information
+     * @param config of python environment
+     * @param potential errorMessage in case of failure
      */
-    PythonKernelTestResult(final String message, final String info) {
-        final String[] lines = message.split("\\r?\\n");
-        String version = null;
-        m_message = "";
-        for (final String line : lines) {
-            if (version != null) {
-                m_message += line;
-            } else {
-                // Ignore everything before version, could be anaconda for example
-                final String trimmed = line.trim();
-                version = trimmed.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? trimmed : null;
+    PythonKernelTestResult(final String scriptOutput, final String config, final Optional<String> errorMessage) {
+        if (errorMessage.isPresent()) {
+            m_message = errorMessage.get() + "\n";
+            m_message += config;
+            m_version = null;
+        } else {
+            final String[] lines = scriptOutput.split("\\r?\\n");
+            String version = null;
+            m_message = "";
+            for (final String line : lines) {
+                if (version != null) {
+                    m_message += line;
+                } else {
+                    // Ignore everything before version, could be anaconda for example
+                    final String trimmed = line.trim();
+                    version = trimmed.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? trimmed : null;
+                }
             }
-        }
-        m_version = version;
-        if (m_version == null) {
-            m_error = true;
-            m_message = "Python installation could not be determined with the following settings: " + info;
-        }
-
-        // no lines allowed after version line (i.e. no error messages)
-        if (!m_message.isEmpty()) {
-            m_error = true;
+            m_version = version;
+            if (m_version == null) {
+                m_message = "Python installation could not be determined with the following settings: \n" + config;
+            }
         }
     }
 
@@ -114,6 +116,6 @@ public class PythonKernelTestResult {
      * @return true if the installation is not capable of running the python kernel, false otherwise
      */
     public boolean hasError() {
-        return m_error;
+        return m_message != null && !m_message.isEmpty();
     }
 }
