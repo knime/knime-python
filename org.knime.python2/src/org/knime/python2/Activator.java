@@ -151,34 +151,37 @@ public class Activator implements BundleActivator {
                 pbargs[i + 2] = args[i];
             }
             final ProcessBuilder pb = new ProcessBuilder(pbargs);
-            LOGGER.debug("--Testing python executable--");
+
+            StringBuffer buf = new StringBuffer();
+            buf.append("--Testing python executable--\n");
             final Process process = pb.start();
-            LOGGER.debug("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":"));
-            LOGGER.debug("PATH=" + pb.environment().getOrDefault("PATH", ":"));
-            LOGGER.debug("Executing command: " + String.join(" ", pb.command()));
+            buf.append("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":") + "\n");
+            buf.append("PATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
+            buf.append("Executing command: " + String.join(" ", pb.command()) + "\n");
             //Get error output
             final StringWriter errorWriter = new StringWriter();
             IOUtils.copy(process.getErrorStream(), errorWriter, "UTF-8");
 
             String str = errorWriter.toString();
-            if(!str.isEmpty()) {
-                LOGGER.debug("Error during execution: " + str);
+            if (!str.isEmpty()) {
+                buf.append("Error during execution: " + str + "\n");
             }
 
             // Get console output of script
             final StringWriter writer = new StringWriter();
             IOUtils.copy(process.getInputStream(), writer, "UTF-8");
             str = writer.toString();
-            LOGGER.debug("Raw test output: \n" + str);
-            LOGGER.debug("--End test--");
+            buf.append("Raw test output: \n" + str + "\n");
+            buf.append("--End test--" + "\n");
             // Create test result with console output as message and error code
             // != 0 as error
-            return new PythonKernelTestResult(writer.toString());
+            return new PythonKernelTestResult(writer.toString(), buf.toString());
         } catch (final IOException e) {
             //Error should be processed by calling method using PythonKernelTestResult
             //LOGGER.error(e.getMessage(), e);
             // Python could not be started
-            return new PythonKernelTestResult("Could not start Python with command '" + pythonCommand + "'");
+            return new PythonKernelTestResult(
+                "IOException occured during python startup with command'" + pythonCommand + "'", "");
         }
     }
 

@@ -65,7 +65,7 @@ public class PythonKernelTestResult {
      *
      * @param message The result message containing detailed information
      */
-    PythonKernelTestResult(final String message) {
+    PythonKernelTestResult(final String message, final String info) {
         final String[] lines = message.split("\\r?\\n");
         String version = null;
         m_message = "";
@@ -81,7 +81,7 @@ public class PythonKernelTestResult {
         m_version = version;
         if (m_version == null) {
             m_error = true;
-            m_message = "Could not find python executable at the given location.";
+            m_message = "Python installation could not be determined with the following settings: " + info;
         }
 
         // no lines allowed after version line (i.e. no error messages)
