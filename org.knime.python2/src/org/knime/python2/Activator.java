@@ -151,10 +151,26 @@ public class Activator implements BundleActivator {
                 pbargs[i + 2] = args[i];
             }
             final ProcessBuilder pb = new ProcessBuilder(pbargs);
+            LOGGER.debug("--Testing python executable--");
             final Process process = pb.start();
+            LOGGER.debug("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":"));
+            LOGGER.debug("PATH=" + pb.environment().getOrDefault("PATH", ":"));
+            LOGGER.debug("Executing command: " + String.join(" ", pb.command()));
+            //Get error output
+            final StringWriter errorWriter = new StringWriter();
+            IOUtils.copy(process.getErrorStream(), errorWriter, "UTF-8");
+
+            String str = errorWriter.toString();
+            if(!str.isEmpty()) {
+                LOGGER.debug("Error during execution: " + str);
+            }
+
             // Get console output of script
             final StringWriter writer = new StringWriter();
             IOUtils.copy(process.getInputStream(), writer, "UTF-8");
+            str = writer.toString();
+            LOGGER.debug("Raw test output: \n" + str);
+            LOGGER.debug("--End test--");
             // Create test result with console output as message and error code
             // != 0 as error
             return new PythonKernelTestResult(writer.toString());
