@@ -157,7 +157,7 @@ public class PythonKernel {
 
     private final InputStream m_stderrStream;
 
-    private final PythonOutputListener m_errorPrintListener;
+    private final ConfigurablePythonOutputListener m_errorPrintListener;
 
     /**
      * Creates a python kernel by starting a python process and connecting to it.
@@ -262,26 +262,7 @@ public class PythonKernel {
             }
         });
 
-        m_errorPrintListener = new PythonOutputListener() {
-
-            boolean m_lastStacktrace = false;
-
-            @Override
-            public void messageReceived(final String msg) {
-
-                if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
-                    LOGGER.error(msg);
-                    m_lastStacktrace = false;
-                } else {
-                    if (!m_lastStacktrace) {
-                        LOGGER.debug("Python error with stacktrace:\n");
-                        m_lastStacktrace = true;
-                    }
-                    LOGGER.debug(msg);
-                }
-            }
-        };
-
+        m_errorPrintListener = new ConfigurablePythonOutputListener();
         addStderrorListener(m_errorPrintListener);
 
         try {
@@ -369,7 +350,12 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public String[] execute(final String sourceCode) throws IOException {
+        //In execution mode only the warnings are logged to stdout.
+        //If an error occurs it is transferred via the socket and available at position 1 of the returned
+        //stringlist
+        m_errorPrintListener.setAllWarnings(true);
         final String[] output = m_commands.execute(sourceCode);
+        m_errorPrintListener.setAllWarnings(false);
         if (output[0].length() > 0) {
             LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
         }
@@ -394,7 +380,6 @@ public class PythonKernel {
             @Override
             public void run() {
                 String[] out;
-                removeStderrorListener(m_errorPrintListener);
                 try {
                     out = execute(sourceCode);
                     output.set(out);
@@ -405,7 +390,6 @@ public class PythonKernel {
                 } catch (final Exception e) {
                     exception.set(e);
                 }
-                addStderrorListener(m_errorPrintListener);
                 done.set(true);
                 // Wake up waiting thread
                 nodeExecutionThread.interrupt();
@@ -1148,5 +1132,43 @@ public class PythonKernel {
 
         });
         t2.start();
+    }
+
+    private class ConfigurablePythonOutputListener implements PythonOutputListener {
+
+        private boolean m_allWarning = false;
+        private boolean m_lastStackTrace = false;
+
+        /**
+         * Enables special handling of the stderror stream when custom source code is executed.
+         * @param on turn handling on / off
+         */
+        private void setAllWarnings(final boolean on) {
+            m_allWarning = on;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void messageReceived(final String msg) {
+
+            if(!m_allWarning) {
+                if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
+                    LOGGER.error(msg);
+                    m_lastStackTrace = false;
+                } else {
+                    if (!m_lastStackTrace) {
+                        LOGGER.debug("Python error with stacktrace:\n");
+                        m_lastStackTrace = true;
+                    }
+                    LOGGER.debug(msg);
+                }
+            } else {
+                LOGGER.warn(msg);
+            }
+
+        }
+
     }
 }

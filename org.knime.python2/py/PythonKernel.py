@@ -255,18 +255,16 @@ def execute(source_code):
     backupStdOut = sys.stdout
     sys.stdout = Logger(sys.stdout, output)
     
-    #log to stderr and error variable simultaneously
-    backupStdErr = sys.stderr
-    sys.stderr = Logger(sys.stderr, error)
-    
     # run execute with the provided source code
     try:
         exec(source_code, _exec_env, _exec_env)
     except Exception:
+        backupStdError = sys.stderr
+        sys.stderr = error
         traceback.print_exc()
+        sys.stderr = backupStdError
     
     sys.stdout = backupStdOut
-    sys.stderr = backupStdErr
     return [output.getvalue(), error.getvalue()]
 
 

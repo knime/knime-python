@@ -298,6 +298,8 @@ public abstract class SourceCodePanel extends JPanel {
 
     private final Style m_errorStyle;
 
+    private final Style m_warningStyle;
+
     private final RSyntaxTextArea m_editor;
 
     private final StatusBar m_statusBar = new StatusBar();
@@ -438,6 +440,9 @@ public abstract class SourceCodePanel extends JPanel {
         // Console style for errors with red text
         m_errorStyle = m_console.addStyle("errorstyle", null);
         StyleConstants.setForeground(m_errorStyle, Color.red);
+        // Console style for warnings with blue text
+        m_warningStyle = m_console.addStyle("warningstyle", null);
+        StyleConstants.setForeground(m_warningStyle, Color.blue);
         // Configure auto completion
         final CompletionProvider provider = createCompletionProvider();
         final AutoCompletion ac = new AutoCompletion(provider);
@@ -800,6 +805,29 @@ public abstract class SourceCodePanel extends JPanel {
                 }
             }
         });
+    }
+
+    /**
+     * Appends the given warning to the console.
+     *
+     * @param text The text to append
+     */
+    protected void warningToConsole(final String text) {
+        if ((text != null) && !text.trim().isEmpty()) {
+            runInUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    final StyledDocument doc = m_console.getStyledDocument();
+                    final String string = ScriptingNodeUtils.shortenString(text);
+                    try {
+                        // Warnings use warning style
+                        doc.insertString(doc.getLength(), string + "\n", m_warningStyle);
+                    } catch (final BadLocationException e) {
+                        //
+                    }
+                }
+            });
+        }
     }
 
     /**

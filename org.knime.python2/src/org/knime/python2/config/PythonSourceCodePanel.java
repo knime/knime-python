@@ -108,7 +108,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final PythonOutputListener m_stdoutToConsole;
 
-    private final PythonOutputListener m_stderrorToConsole;
+    private final ConfigurablePythonOutputListener m_stderrorToConsole;
 
     /**
      * Create a python source code panel.
@@ -129,13 +129,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             }
         };
 
-        m_stderrorToConsole = new PythonOutputListener() {
-
-            @Override
-            public void messageReceived(final String msg) {
-                errorToConsole(msg);
-            }
-        };
+        m_stderrorToConsole = new ConfigurablePythonOutputListener();
     }
 
     /**
@@ -276,6 +270,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             });
 
             // Execute will be run in a separate thread by the kernel manager
+            m_stderrorToConsole.setAllWarnings(true);
             m_kernelManager.execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
                 @Override
                 public void handleResponse(final String[] response, final Exception exception) {
@@ -287,14 +282,18 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         if (exception != null) {
                             logError(exception, "Error during execution");
                         } else {
-                            //messageToConsole(response[0]);
-                            //errorToConsole(response[1]);
-                            setStatusMessage("Execution successful");
+                            if(!response[1].isEmpty()) {
+                                errorToConsole(response[1]);
+                                setStatusMessage("Error during execution");
+                            } else {
+                                setStatusMessage("Execution successful");
+                            }
                         }
                         // Setting running to false will also update the
                         // variables
                         setRunning(false);
                     }
+                    m_stderrorToConsole.setAllWarnings(false);
                     m_lock.unlock();
                 }
             });
@@ -570,4 +569,28 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         m_kernelOptions.addRequiredModule(name);
     }
 
+    private class ConfigurablePythonOutputListener implements PythonOutputListener {
+
+        private boolean m_allWarnings = false;
+
+        /**
+         * Enables special handling of the stderror stream when custom source code is executed.
+         * @param on turn handling on / off
+         */
+        private void setAllWarnings(final boolean on) {
+            m_allWarnings = on;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void messageReceived(final String msg) {
+            if(!m_allWarnings) {
+                errorToConsole(msg);
+            } else {
+                warningToConsole(msg);
+            }
+        }
+    }
 }
