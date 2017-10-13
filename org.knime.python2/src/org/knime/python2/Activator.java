@@ -106,7 +106,7 @@ public class Activator implements BundleActivator {
 
             private void handleTestResult(final PythonKernelTestResult testResult) {
                 if (testResult.hasError()) {
-                    LOGGER.error(testResult.getMessage());
+                    //LOGGER.error(testResult.getMessage());
                 }
             }
         }).start();
