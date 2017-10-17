@@ -178,9 +178,12 @@ def bytes_to_data_frame(data_bytes):
 
 # Converts data_frame into a bytearray using the configured serialization library.
 # For extension types appropriate serializers are requested from the _type_extension_manager.
-# @param data_frame    a pandas DataFrame containing the table to serialize
-def data_frame_to_bytes(data_frame):
-    table = FromPandasTable(data_frame)
+# @param data_frame        a pandas DataFrame containing the table to serialize
+# @param start_row_number  the corresponding row number to the first row of the
+#                          dataframe. Differs from 0 as soon as a table chunk is
+#                          sent.
+def data_frame_to_bytes(data_frame, start_row_number=0):
+    table = FromPandasTable(data_frame, start_row_number)
     #Uncomment to profile serialization time
     #import cProfile
     #profilepath = os.path.join(os.path.expanduser('~'), 'profileres.txt')
@@ -655,7 +658,11 @@ class FromPandasTable:
     # Serializes objects having a type that is registered via the knimetopython
     # extension point to a bytes representation and adjusts the dataframe index
     # to reflect KNIME standard row indexing if necessary.
-    def __init__(self, data_frame):
+    # @param data_frame        a pandas DataFrame containing the table to serialize
+    # @param start_row_number  the corresponding row number to the first row of the
+    #                          dataframe. Differs from 0 as soon as a table chunk is
+    #                          sent.
+    def __init__(self, data_frame, start_row_number=0):
         self._data_frame = data_frame.copy()
         self._data_frame.columns = self._data_frame.columns.astype(str)
         self._column_types = []
@@ -666,18 +673,21 @@ class FromPandasTable:
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
         serialize_objects_to_bytes(self._data_frame, self._column_serializers)
-        self.standardize_default_indices()
+        self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
 
 
     # Replace default numeric indices with the KNIME standard row indices.
     # This means that if an index value is equal to the numeric index of
     # a row (N) it is replaced by 'RowN'.
-    def standardize_default_indices(self):
+    # @param start_row_number  the corresponding row number to the first row of the
+    #                          dataframe. Differs from 0 as soon as a table chunk is
+    #                          sent.
+    def standardize_default_indices(self, start_row_number):
         row_indices = []
         for i in range(len(self._data_frame.index)):
-            if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i:
-                row_indices.append(u'Row' + str(i))
+            if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i + start_row_number:
+                row_indices.append(u'Row' + str(i + start_row_number))
             else:
                 row_indices.append(str(self._data_frame.index[i]))
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
@@ -1122,7 +1132,7 @@ class GetTableChunkCommandHandler(CommandHandler):
         if type(data_frame) != pandas.core.frame.DataFrame:
             raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
         data_frame_chunk = data_frame[start:end+1]
-        data_bytes = data_frame_to_bytes(data_frame_chunk)
+        data_bytes = data_frame_to_bytes(data_frame_chunk, start)
         write_response_msg(SuccessResponse())
         write_bytearray(data_bytes)
         
