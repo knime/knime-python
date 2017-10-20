@@ -274,7 +274,7 @@ def deserialize_data_frame(path):
     global read_data_frame, read_types, read_serializers, _pandas_native_types_, path_to_mmap
     path_to_mmap = path
     with pyarrow.OSFile(path, 'rb') as f:
-        stream_reader = pyarrow.StreamReader(f)
+        stream_reader = pyarrow.RecordBatchStreamReader(f)
         arrowtable = stream_reader.read_all()
         #metadata 
         pandas_metadata = json.loads(arrowtable.schema.metadata[b'pandas'].decode('utf-8'))
@@ -672,7 +672,7 @@ def table_to_bytes(table):
     schema = schema.add_metadata(metadata)
             
     with pyarrow.OSFile(path, 'wb') as f:
-        stream_writer = pyarrow.StreamWriter(f, schema)
+        stream_writer = pyarrow.RecordBatchStreamWriter(f, schema)
         stream_writer.write_batch(batch)
         stream_writer.close()
     return bytearray(path, 'utf-8')

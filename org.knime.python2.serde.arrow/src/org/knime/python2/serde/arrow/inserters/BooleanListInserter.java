@@ -55,8 +55,6 @@ import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
-import com.google.common.primitives.Ints;
-
 /**
  * Manages the data transfer between the python table format and the arrow table format. Works on Integer[] cells.
  *
@@ -125,7 +123,7 @@ public class BooleanListInserter implements ArrowVectorInserter {
                 m_buffer.position(0);
             }
 
-            m_buffer.put(Ints.toByteArray(objs.length));
+            m_buffer.putInt(objs.length);
 
             m_buffer.put(m_primitives);
             m_buffer.put(cell.getBitEncodedMissingListValues());

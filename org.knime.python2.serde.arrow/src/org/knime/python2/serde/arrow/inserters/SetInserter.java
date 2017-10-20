@@ -55,8 +55,6 @@ import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
-import com.google.common.primitives.Ints;
-
 /**
  * Base class for ListTypes that are transferred between the python table format and the arrow table format.
  *
@@ -132,7 +130,7 @@ public abstract class SetInserter implements ArrowVectorInserter {
                 m_buffer.position(0);
             }
 
-            m_buffer.put(Ints.toByteArray(numAndLen[0]));
+            m_buffer.putInt(numAndLen[0]);
 
             boolean hasMissing = putCollection(m_buffer, cell);
             //entries + length (int32)
