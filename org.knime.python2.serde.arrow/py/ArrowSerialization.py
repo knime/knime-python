@@ -323,6 +323,7 @@ def deserialize_data_frame(path):
 
         #debug_util.breakpoint()
         #print('test')
+    os.remove(path)
         
         
 def to_pyarrow_type(type):
@@ -578,7 +579,7 @@ def table_to_bytes(table):
     if not path_to_mmap == None:
         path = path_to_mmap
     else:
-        path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)[1]
+        path = tempfile.SpooledTemporaryFile(mode='wb', suffix='.dat', prefix='arrow-memory-mapped')
     
     #empty dataframe ?
     if len(table._data_frame) == 0 or len(table._data_frame.columns) == 0:

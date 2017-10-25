@@ -78,6 +78,7 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.knime.core.util.FileUtil;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -175,8 +176,9 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
 
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
+        File file = null;
         try {
-            File file = File.createTempFile("arrow-memory-mapped", ".dat");
+            file = FileUtil.createTempFile("arrow-memory-mapped", ".dat", true);
             // TODO try to pass RandomAccessFile rather than fc + path
             try (RandomAccessFile raf = new RandomAccessFile(file, "rw"); FileChannel channel = raf.getChannel()) {
                 return tableToBytesDynamic(tableIterator, serializationOptions, channel, file.getAbsolutePath());
@@ -184,6 +186,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         } catch (IOException e) {
             // TODO Logging and better exception handling?
             throw new IllegalStateException(e);
+        } finally {
+            if (file != null) {
+                file.delete();
+            }
         }
     }
 
@@ -375,10 +381,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return path.getBytes("UTF-8");
     }
 
-    private ArrowStreamReader getReader(final String path) throws FileNotFoundException {
+    private ArrowStreamReader getReader(final File file) throws FileNotFoundException {
         if (m_streamReader == null) {
-            FileChannel fc = new RandomAccessFile(new File(path), "rw").getChannel();
-            ArrowStreamReader reader = new ArrowStreamReader(fc, new RootAllocator(Long.MAX_VALUE));
+            // TODO when do we actually close this guy?
+            ArrowStreamReader reader =
+                new ArrowStreamReader(new RandomAccessFile(file, "rw").getChannel(), new RootAllocator(Long.MAX_VALUE));
             m_streamReader = reader;
         }
         return m_streamReader;
@@ -391,8 +398,9 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         String path = new String(bytes);
         TableSpec spec = tableSpecFromBytes(bytes);
         if (spec.getNumberColumns() > 0) {
+            final File f = new File(path);
             try {
-                ArrowStreamReader reader = getReader(path);
+                ArrowStreamReader reader = getReader(f);
                 // Index is always string
                 VectorSchemaRoot root = reader.getVectorSchemaRoot();
                 Type[] types = spec.getColumnTypes();
@@ -487,11 +495,15 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 }
                 reader.close();
             } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
+                // TODO better logging
                 e.printStackTrace();
             } catch (IOException e) {
-                // TODO Auto-generated catch block
+                // TODO better logging
                 e.printStackTrace();
+            } finally {
+                if (f.exists()) {
+                    f.delete();
+                }
             }
         }
         m_streamReader = null;
@@ -504,9 +516,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         String path = new String(bytes);
         if (m_tableSpec == null) {
             m_fromPythonPath = path;
-            if (new File(m_fromPythonPath).exists()) {
+            final File f = new File(path);
+            if (f.exists()) {
                 try {
-                    ArrowStreamReader reader = getReader(path);
+                    ArrowStreamReader reader = getReader(f);
                     reader.loadNextBatch();
                     Schema schema = reader.getVectorSchemaRoot().getSchema();
                     Map<String, String> metadata = schema.getCustomMetadata();
@@ -554,6 +567,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     }
                 } catch (IOException e) {
                     //TODO is illegal state the correct exception here?
+                    //TODO better logging
                     throw new IllegalStateException(e);
                 }
             } else {
