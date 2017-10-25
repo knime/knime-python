@@ -3,6 +3,7 @@
 <plugin>
    <extension-point id="org.knime.python.typeextension.knimetopython" name="Python type extension (KNIME to Python)" schema="schema/typeextension.knimetopython.exsd"/>
    <extension-point id="org.knime.python.typeextension.pythontoknime" name="Python type extension (Python to KNIME)" schema="schema/typeextension.pythontoknime.exsd"/>
+   <extension-point id="org.knime.python.modules" name="org.knime.python.modules" schema="schema/modules.exsd"/>
    <extension
          point="org.knime.python.typeextension.pythontoknime">
       <type

@@ -2,7 +2,6 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension-point id="org.knime.python2.sourcecodetemplates" name="Source code templates extension" schema="schema/sourcecodetemplates.exsd"/>
-   <extension-point id="org.knime.python2.modules" name="Python modules extension" schema="schema/modules.exsd"/>
    <extension-point id="org.knime.python2.serializationlibrary" name="Python serialization library" schema="schema/serializationlibrary.exsd"/>
    <extension
          point="org.eclipse.ui.preferencePages">

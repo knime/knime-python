@@ -245,4 +245,42 @@ public class SerializationOptions {
         }
         return false;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (m_convertMissingFromPython ? 1231 : 1237);
+        result = prime * result + (m_convertMissingToPython ? 1231 : 1237);
+        result = prime * result + ((m_sentinelOption == null) ? 0 : m_sentinelOption.hashCode());
+        result = prime * result + m_sentinelValue;
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        SerializationOptions other = (SerializationOptions)obj;
+        if (m_convertMissingFromPython != other.m_convertMissingFromPython) {
+            return false;
+        }
+        if (m_convertMissingToPython != other.m_convertMissingToPython) {
+            return false;
+        }
+        if (m_sentinelOption != other.m_sentinelOption) {
+            return false;
+        }
+        if (m_sentinelValue != other.m_sentinelValue) {
+            return false;
+        }
+        return true;
+    }
 }

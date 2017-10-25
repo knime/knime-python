@@ -71,6 +71,16 @@ public class FlowVariableOptions {
     }
 
     /**
+     * Copy constructor.
+     *
+     * @param other the object to copy the attributes from
+     */
+    public FlowVariableOptions(final FlowVariableOptions other) {
+        m_overrulePreferencePage = other.getOverrulePreferencePage();
+        m_serializerId = other.getSerializerId();
+    }
+
+    /**
      * Indicates if the preference page options should be overruled.
      *
      * @return yes/no
@@ -123,6 +133,40 @@ public class FlowVariableOptions {
             throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
         }
         return options;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (m_overrulePreferencePage ? 1231 : 1237);
+        result = prime * result + ((m_serializerId == null) ? 0 : m_serializerId.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FlowVariableOptions other = (FlowVariableOptions)obj;
+        if (m_overrulePreferencePage != other.m_overrulePreferencePage) {
+            return false;
+        }
+        if (m_serializerId == null) {
+            if (other.m_serializerId != null) {
+                return false;
+            }
+        } else if (!m_serializerId.equals(other.m_serializerId)) {
+            return false;
+        }
+        return true;
     }
 
 }

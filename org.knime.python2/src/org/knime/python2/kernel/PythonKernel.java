@@ -322,6 +322,10 @@ public class PythonKernel {
         } catch (final Exception e) {
             //
         }
+        // Add custom module directories to the python workspace
+        if(!kernelOptions.getCustomModulePaths().isEmpty()) {
+            m_commands.setCustomModulePaths(String.join(";", kernelOptions.getCustomModulePaths()));
+        }
         // Python serializers
         /*for (final PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
             m_commands.addSerializer(typeExtension.getId(), typeExtension.getType(),

@@ -447,6 +447,18 @@ public class Commands {
         return readString();
     }
 
+    /**
+     * Transmit the paths to all custom module directories and make them available via the pythonpath.
+     *
+     * @param paths ';' separated list of directories
+     * @throws IOException
+     */
+    synchronized public void setCustomModulePaths(final String paths) throws IOException {
+        writeString("setCustomModulePaths");
+        writeString(paths);
+        readBytes();
+    }
+
     private byte[] stringToBytes(final String string) {
         return string.getBytes();
     }

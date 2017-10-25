@@ -1,14 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Schema file written by PDE -->
-<schema targetNamespace="org.knime.python" xmlns="http://www.w3.org/2001/XMLSchema">
+<schema targetNamespace="org.knime.python.typeextensions" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
       <appinfo>
-         <meta.schema plugin="org.knime.python" id="org.knime.python.module" name="Python module extension"/>
+         <meta.schema plugin="org.knime.python.typeextensions" id="org.knime.python.modules" name="Python module extension"/>
       </appinfo>
       <documentation>
-         WARNING: This extension point is deprecated. Please use org.knime.python2.modules instead.
-
-Module loadable with loadModule(&apos;name&apos;) from within a python script node.
+         Module loadable with &quot;loadModule(&apos;name&apos;)&quot; or &quot;import name&quot; from within a python script node.
       </documentation>
    </annotation>
 

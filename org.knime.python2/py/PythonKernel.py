@@ -150,10 +150,14 @@ def run():
     try:
         while 1:
             command = read_string()
+            handled = False
             for handler in _command_handlers:
                 if(handler.has_command(command)):
                     handler.execute()
+                    handled = True
                     break
+            if not handled:
+                raise LookupError('The command ' + command + ' was received but it cannot be handled by the Python Kernel.')
     finally:
         _connection.close()
 
@@ -1275,6 +1279,17 @@ class GetSqlCommandHandler(CommandHandler):
         query = db_util.get_output_query()
         write_string(query)
 
+# Reads the custom model directories (registred via the org.knime.python.modules
+# extension point) as comma separated list and adds them to the pythonpath
+class SetCustomModulePathsHandler(CommandHandler):
+    def __init__(self):
+        self._command = 'setCustomModulePaths'
+        
+    def execute(self):
+        paths = read_string()
+        for path in paths.split(';'):
+            sys.path.append(path)
+        write_dummy()
 
 
 # Define global command handlers
@@ -1287,7 +1302,8 @@ _command_handlers = [ExecuteCommandHandler(),PutFlowVariablesCommandHandler(),
                      GetImageCommandHandler(),GetObjectCommandHandler(),
                      PutObjectCommandHandler(),AddSerializerCommandHandler(),
                      AddDeserializerCommandHandler(),ShutdownCommandHandler(),
-                     PutSqlCommandHandler(),GetSqlCommandHandler()]
+                     PutSqlCommandHandler(),GetSqlCommandHandler(),
+                     SetCustomModulePathsHandler()]
 
 if __name__=="__main__":
     # Uncomment below and comment the run() call for profiling
