@@ -48,20 +48,15 @@
 package org.knime.python2;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
-import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
+import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.generic.templates.SourceCodeTemplatesExtensions;
 import org.osgi.framework.Bundle;
@@ -77,14 +72,6 @@ public class Activator implements BundleActivator {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
 
-    private static PythonKernelTestResult python2TestResult;
-
-    private static PythonKernelTestResult python3TestResult;
-
-    private static List<String> additionalModulesPython2;
-
-    private static List<String> additionalModulesPython3;
-
     /**
      * The id of the plugin activated by this class.
      */
@@ -99,13 +86,20 @@ public class Activator implements BundleActivator {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                handleTestResult(testPython2Installation(Collections.emptyList()));
-                handleTestResult(testPython3Installation(Collections.emptyList()));
-            }
+                PythonKernelTestResult python2Res =
+                    PythonKernelTester.testPython2Installation(Collections.emptyList(), false);
+                if (python2Res.hasError()) {
+                    LOGGER
+                        .debug("Your configured python installation has issues preventing the KNIME Python integration"
+                            + "\nIssue python version 2: " + python2Res.getErrorLog());
+                }
 
-            private void handleTestResult(final PythonKernelTestResult testResult) {
-                if (testResult.hasError()) {
-                    //LOGGER.error(testResult.getMessage());
+                PythonKernelTestResult python3Res =
+                    PythonKernelTester.testPython3Installation(Collections.emptyList(), false);
+                if (python3Res.hasError()) {
+                    LOGGER
+                        .debug("Your configured python installation has issues preventing the KNIME Python integration"
+                            + "\nIssue python version 3: " + python3Res.getErrorLog());
                 }
             }
         }).start();
@@ -136,131 +130,6 @@ public class Activator implements BundleActivator {
      */
     public static String getPython3Command() {
         return PythonPreferencePage.getPython3Path();
-    }
-
-    /**
-     * Tests if python can be started with the currently configured command and if all required modules are installed.
-     *
-     * @return {@link PythonKernelTestResult} that containes detailed test information
-     */
-    private static synchronized PythonKernelTestResult testPythonInstallation(final String pythonCommand,
-        final String testScript, final String arguments) {
-        final StringBuffer infoBuffer = new StringBuffer();
-        try {
-            // Start python kernel tester script
-            final String scriptPath = getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
-            String[] args = arguments.split(" ");
-            String[] pbargs = new String[args.length + 2];
-            pbargs[0] = pythonCommand;
-            pbargs[1] = scriptPath;
-            for (int i = 0; i < args.length; i++) {
-                pbargs[i + 2] = args[i];
-            }
-            final ProcessBuilder pb = new ProcessBuilder(pbargs);
-
-            infoBuffer.append("Executed command: " + String.join(" ", pb.command()) + "\n");
-            final Process process = pb.start();
-            infoBuffer.append("PYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":") + "\n");
-            infoBuffer.append("PATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
-            //Get error output
-            final StringWriter errorWriter = new StringWriter();
-            IOUtils.copy(process.getErrorStream(), errorWriter, "UTF-8");
-
-            String str = errorWriter.toString();
-            if (!str.isEmpty()) {
-                infoBuffer.append("Error during execution: " + str + "\n");
-            }
-
-            // Get console output of script
-            final StringWriter writer = new StringWriter();
-            IOUtils.copy(process.getInputStream(), writer, "UTF-8");
-            str = writer.toString();
-            infoBuffer.append("Raw test output: \n" + str + "\n");
-            // Create test result with console output as message and error code
-            // != 0 as error
-            return new PythonKernelTestResult(writer.toString(), infoBuffer.toString(), Optional.empty());
-        } catch (final IOException e) {
-            //Error should be processed by calling method using PythonKernelTestResult
-            //LOGGER.error(e.getMessage(), e);
-            // Python could not be started
-            return new PythonKernelTestResult("", infoBuffer.toString(),
-                Optional.of("Could not find python executable at the given location."));
-        }
-    }
-
-    /**
-     * Tests if python can be started with the currently configured command and if all required modules are installed.
-     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly - must not be null
-     *
-     * @return {@link PythonKernelTestResult} that containes detailed test information
-     */
-    public static synchronized PythonKernelTestResult testPython2Installation(final List<String> additionalRequiredModules) {
-        // If python test already succeeded we do not have to run it again
-        if ((python2TestResult != null) && !python2TestResult.hasError()
-                && additionalRequiredModules.containsAll(additionalModulesPython2)
-                && additionalModulesPython2.containsAll(additionalRequiredModules)) {
-            return python2TestResult;
-        }
-        additionalModulesPython2 = new ArrayList<String>(additionalRequiredModules);
-        String arguments = "2.7.0";
-        if (!additionalRequiredModules.isEmpty()) {
-            arguments += " -m";
-            for (String module : additionalRequiredModules) {
-                arguments += " " + module;
-            }
-        }
-        python2TestResult = testPythonInstallation(getPython2Command(), "PythonKernelTester.py", arguments);
-        return python2TestResult;
-    }
-
-    /**
-     * Delete the previous python test result and retest the python behind the new path.
-     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly - must not be null
-     * @return The new test result
-     */
-    public static synchronized PythonKernelTestResult retestPython2Installation(final List<String> additionalRequiredModules) {
-        python2TestResult = null;
-        return testPython2Installation(additionalRequiredModules);
-    }
-
-    /**
-     * Tests if python can be started with the currently configured command and if all required modules are installed.
-     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly - must not be null
-     *
-     * @return {@link PythonKernelTestResult} that containes detailed test information
-     */
-    public static synchronized PythonKernelTestResult testPython3Installation(final List<String> additionalRequiredModules) {
-        // If python test already succeeded we do not have to run it again
-        if ((python3TestResult != null) && !python3TestResult.hasError()
-                && additionalRequiredModules.containsAll(additionalModulesPython3)
-                && additionalModulesPython3.containsAll(additionalRequiredModules)) {
-            return python3TestResult;
-        }
-        additionalModulesPython3 = new ArrayList<String>(additionalRequiredModules);
-        String arguments = "3.1.0";
-        if (!additionalRequiredModules.isEmpty()) {
-            arguments += " -m";
-            for (String module : additionalRequiredModules) {
-                arguments += " " + module;
-            }
-        }
-        python3TestResult = testPythonInstallation(getPython3Command(), "PythonKernelTester.py", arguments);
-        return python3TestResult;
-    }
-
-    /**
-     * Delete the previous python test result and retest the python behind the new path.
-     * @param additionalRequiredModules additionalModules that should exist in the python installation in order
-     *                                  for the caller to work properly - must not be null
-     *
-     * @return The new test result
-     */
-    public static synchronized PythonKernelTestResult retestPython3Installation(final List<String> additionalRequiredModules) {
-        python3TestResult = null;
-        return testPython3Installation(additionalRequiredModules);
     }
 
     /**

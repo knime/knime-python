@@ -91,7 +91,8 @@ import org.knime.python.typeextension.PythonModuleExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;
-import org.knime.python2.PythonKernelTestResult;
+import org.knime.python2.PythonKernelTester;
+import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
@@ -174,16 +175,20 @@ public class PythonKernel {
         m_kernelOptions = kernelOptions;
         m_stdoutListeners = new ArrayList<PythonOutputListener>();
         m_stderrListeners = new ArrayList<PythonOutputListener>();
+
         final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
-            ? Activator.testPython3Installation(kernelOptions.getAdditionalRequiredModules())
-            : Activator.retestPython2Installation(kernelOptions.getAdditionalRequiredModules());
+            ? PythonKernelTester.testPython3Installation(kernelOptions.getAdditionalRequiredModules(), false)
+            : PythonKernelTester.testPython2Installation(kernelOptions.getAdditionalRequiredModules(), false);
+
         if (testResult.hasError()) {
-            throw new IOException("Could not start python kernel:\n" + testResult.getMessage());
+            throw new IOException("Could not start python kernel:\nError during python installation test: "
+                + testResult.getErrorLog() + "! See log for details.");
         }
         // Create serialization library instance
         m_serializationLibraryExtensions = new SerializationLibraryExtensions();
         m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(getSerializerId());
-        final String serializerPythonPath = SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
+        final String serializerPythonPath =
+            SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
         // Create socket to listen on
         m_serverSocket = new ServerSocket(0);
         final int port = m_serverSocket.getLocalPort();
@@ -194,8 +199,8 @@ public class PythonKernel {
         } catch (NumberFormatException ex) {
             m_serverSocket.setSoTimeout(Integer.parseInt(defTimeout));
             LOGGER.warn(
-                "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is " +
-                        "set to the default value " + defTimeout + "ms.");
+                "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is "
+                    + "set to the default value " + defTimeout + "ms.");
         }
         final AtomicReference<IOException> exception = new AtomicReference<IOException>();
         final Thread thread = new Thread(new Runnable() {
@@ -205,7 +210,7 @@ public class PythonKernel {
                     m_socket = m_serverSocket.accept();
                 } catch (final IOException e) {
                     m_socket = null;
-                    if(e instanceof SocketTimeoutException) {
+                    if (e instanceof SocketTimeoutException) {
                         exception.set(new IOException("The connection attempt "
                             + "timed out. Please consider increasing the socket timeout using the VM option "
                             + "'-Dknime.python.connecttimeout=<value-in-ms>'."));
@@ -529,7 +534,7 @@ public class PythonKernel {
      */
     private boolean isValidFlowVariableName(final String name) {
         if (name.startsWith(FlowVariable.Scope.Global.getPrefix())
-                || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
+            || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
             // name is reserved
             return false;
         }
@@ -555,24 +560,23 @@ public class PythonKernel {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         final CloseableRowIterator iterator = table.iterator();
-        if(table.size() > Integer.MAX_VALUE) {
+        if (table.size() > Integer.MAX_VALUE) {
             throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
         }
-        final int rowCount = (int) table.size();
+        final int rowCount = (int)table.size();
         final int numberRows = Math.min(rowLimit, rowCount);
         int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
         if (numberChunks == 0) {
             numberChunks = 1;
         }
         int rowsDone = 0;
-        final TableChunker tableChunker =
-                new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
+        final TableChunker tableChunker = new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
         for (int i = 0; i < numberChunks; i++) {
             final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
             final ExecutionMonitor chunkProgress =
-                    serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
+                serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
             final TableIterator tableIterator =
-                    ((BufferedDataTableChunker)tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
+                ((BufferedDataTableChunker)tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
             final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
             chunkProgress.setProgress(1);
             rowsDone += rowsInThisIteration;
@@ -603,8 +607,8 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
-            throws IOException {
-        if(table.size() > Integer.MAX_VALUE) {
+        throws IOException {
+        if (table.size() > Integer.MAX_VALUE) {
             throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
         }
         putDataTable(name, table, executionMonitor, (int)table.size());
@@ -878,7 +882,7 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
-            throws IOException {
+        throws IOException {
         final List<Map<String, String>> suggestions = new ArrayList<Map<String, String>>();
         if (m_hasAutocomplete) {
             final byte[] bytes = m_commands.autoComplete(sourceCode, line, column);
@@ -935,7 +939,7 @@ public class PythonKernel {
                         m_socket.close();
                     } catch (final Throwable t) {
                     }
-                    try{
+                    try {
                         m_stdoutStream.close();
                         m_stderrStream.close();
                     } catch (final Throwable t) {
@@ -1078,7 +1082,6 @@ public class PythonKernel {
         m_stderrListeners.remove(listener);
     }
 
-
     private synchronized void distributeStdoutMsg(final String msg) {
         for (PythonOutputListener listener : m_stdoutListeners) {
             listener.messageReceived(msg);
@@ -1134,10 +1137,12 @@ public class PythonKernel {
     private class ConfigurablePythonOutputListener implements PythonOutputListener {
 
         private boolean m_allWarning = false;
+
         private boolean m_lastStackTrace = false;
 
         /**
          * Enables special handling of the stderror stream when custom source code is executed.
+         *
          * @param on turn handling on / off
          */
         private void setAllWarnings(final boolean on) {
@@ -1150,7 +1155,7 @@ public class PythonKernel {
         @Override
         public void messageReceived(final String msg) {
 
-            if(!m_allWarning) {
+            if (!m_allWarning) {
                 if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
                     LOGGER.error(msg);
                     m_lastStackTrace = false;

@@ -63,8 +63,8 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
-import org.knime.python2.Activator;
-import org.knime.python2.PythonKernelTestResult;
+import org.knime.python2.PythonKernelTester;
+import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -149,17 +149,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     // This will return immediately if the test result was
                     // positive before
                     final PythonKernelTestResult result = m_kernelOptions.getUsePython3()
-                            ? Activator.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules()) :
-                                Activator.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules());
+                            ? PythonKernelTester.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules(), false) :
+                                PythonKernelTester.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules(), false);
                             // Display result message (this might just be a warning
                             // about missing optional modules)
-                            if (!result.getMessage().isEmpty()) {
-                                errorToConsole(result.getMessage());
-                            }
-                            // Check if python kernel can run or not
                             if (result.hasError()) {
+                                errorToConsole(result.getErrorLog()
+                                    + "\nPlease refer to the log file for more details.");
                                 setStatusMessage("Error during python start.");
-                                errorToConsole(result.getMessage());
                             } else {
                                 try {
                                     // Start kernel manager which will start the actual

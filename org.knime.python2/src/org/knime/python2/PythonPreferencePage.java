@@ -83,6 +83,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
+import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonPathEditor.PythonVersionId;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtension;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
@@ -94,7 +95,7 @@ import org.osgi.service.prefs.BackingStoreException;
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class PythonPreferencePage extends PreferencePage
-implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObserver {
+    implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObserver {
 
     /**
      * Python 2 executable path configuration string
@@ -135,7 +136,7 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
     private static String[] m_serializerNames;
 
     private final List<DefaultPythonVersionOption> m_defaultPythonVersionOptions =
-            new ArrayList<DefaultPythonVersionOption>();
+        new ArrayList<DefaultPythonVersionOption>();
 
     /**
      * Gets the currently configured python 2 path.
@@ -198,7 +199,6 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
      */
     @Override
     public boolean performOk() {
-        applyOptions();
         return true;
     }
 
@@ -207,7 +207,7 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
      */
     @Override
     protected void performApply() {
-        applyOptions();
+        //        applyOptions();
     }
 
     /**
@@ -269,7 +269,7 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
         final Link startScriptInfo = new Link(m_container, SWT.NONE);
         startScriptInfo.setLayoutData(gridData);
         final String message =
-                "See the <a href=\"https://www.knime.com/faq#q28\">FAQ</a> for details on how to use a start script";
+            "See the <a href=\"https://www.knime.com/faq#q28\">FAQ</a> for details on how to use a start script";
         startScriptInfo.setText(message);
         final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
         startScriptInfo.setForeground(gray);
@@ -436,23 +436,26 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
      */
     private void testPythonInstallation() {
         m_python2.setInfo("Testing Python 2 installation...");
-        m_python2.setError("");
+        m_python2.setError(null);
         m_python3.setInfo("Testing Python 3 installation...");
-        m_python3.setError("");
+        m_python3.setError(null);
         new Thread(new Runnable() {
             @Override
             public void run() {
-                PythonKernelTestResult python2Result = Activator.retestPython2Installation(Collections.emptyList());
-                PythonKernelTestResult python3Result = Activator.retestPython3Installation(Collections.emptyList());
+                final PythonKernelTestResult python2Error =
+                    PythonKernelTester.testPython2Installation(Collections.emptyList(), true);
+                final PythonKernelTestResult python3Error =
+                    PythonKernelTester.testPython3Installation(Collections.emptyList(), true);
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {
                         if (!getControl().isDisposed()) {
-                            setResult(python2Result, m_python2);
-                            setResult(python3Result, m_python3);
-                            if (python3Result.hasError()) {
+                            setResult(python2Error.getVersion(), python2Error.getErrorLog(), m_python2);
+                            if (python2Error.hasError()) {
                                 notifyChange(m_python2);
-                            } else if (python2Result.hasError()) {
+                            }
+                            setResult(python3Error.getVersion(), python3Error.getErrorLog(), m_python3);
+                            if (python3Error.hasError()) {
                                 notifyChange(m_python3);
                             }
                             refreshSizes();
@@ -468,9 +471,10 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
      *
      * @param result The test result
      */
-    private static void setResult(final PythonKernelTestResult result, final PythonPathEditor pythonPathEditor) {
-        pythonPathEditor.setInfo(result.getVersion() != null ? result.getVersion() : "");
-        pythonPathEditor.setError(result.getMessage());
+    private static void setResult(final String version, final String errorMessage,
+        final PythonPathEditor pythonPathEditor) {
+        pythonPathEditor.setInfo(version);
+        pythonPathEditor.setError(errorMessage);
     }
 
     /**
@@ -489,7 +493,6 @@ implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObs
         for (final DefaultPythonVersionOption anoption : m_defaultPythonVersionOptions) {
             anoption.updateDefaultPythonVersion(option);
         }
-
     }
 
     /**

@@ -120,7 +120,6 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
             }
         });
         m_pathEditor.setPropertyChangeListener(new IPropertyChangeListener() {
-
             @Override
             public void propertyChange(final PropertyChangeEvent event) {
                 notifyExecutableChange();
@@ -187,7 +186,11 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
      * @param info the new info message
      */
     public void setInfo(final String info) {
-        m_info.setText(info);
+        if (info == null) {
+            m_info.setText("");
+        } else {
+            m_info.setText(info);
+        }
         refreshSizes();
     }
 
@@ -197,7 +200,11 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
      * @param error the new error message
      */
     public void setError(final String error) {
-        m_error.setText(error);
+        if (error != null) {
+            m_error.setText(error);
+        } else {
+            m_error.setText("");
+        }
         refreshSizes();
     }
 
@@ -260,7 +267,7 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
      * Ids for different python versions. The string representations are used as header text.
      */
     enum PythonVersionId {
-        PYTHON2("Python 2"), PYTHON3("Python 3");
+            PYTHON2("Python 2"), PYTHON3("Python 3");
 
         private String m_id;
 
