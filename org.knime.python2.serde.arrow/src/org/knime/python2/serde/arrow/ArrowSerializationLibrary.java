@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -178,7 +179,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
         File file = null;
         try {
-            file = FileUtil.createTempFile("arrow-memory-mapped", ".dat", true);
+            file = FileUtil.createTempFile("arrow-memory-mapped-" + UUID.randomUUID().toString(), ".dat", true);
             // TODO try to pass RandomAccessFile rather than fc + path
             try (RandomAccessFile raf = new RandomAccessFile(file, "rw"); FileChannel channel = raf.getChannel()) {
                 return tableToBytesDynamic(tableIterator, serializationOptions, channel, file.getAbsolutePath());
