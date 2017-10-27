@@ -187,10 +187,6 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         } catch (IOException e) {
             // TODO Logging and better exception handling?
             throw new IllegalStateException(e);
-        } finally {
-            if (file != null) {
-                file.delete();
-            }
         }
     }
 
