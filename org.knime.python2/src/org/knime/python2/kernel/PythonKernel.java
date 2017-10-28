@@ -87,6 +87,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonModuleExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;

@@ -59,7 +59,6 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python.kernel.PythonModuleExtensions;
 import org.knime.python2.PythonPreferencePage;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -89,7 +88,6 @@ public class Activator implements BundleActivator {
             }
         }).start();
         SourceCodeTemplatesExtensions.init();
-        PythonModuleExtensions.init();
     }
 
     /**

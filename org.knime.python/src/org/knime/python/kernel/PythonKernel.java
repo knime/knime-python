@@ -122,6 +122,7 @@ import org.knime.python.kernel.proto.ProtobufVariableList.VariableList.Variable;
 import org.knime.python.port.PickledObject;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
+import org.knime.python.typeextension.PythonModuleExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.w3c.dom.svg.SVGDocument;
