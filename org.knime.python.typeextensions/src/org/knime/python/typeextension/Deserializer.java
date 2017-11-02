@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -56,7 +56,7 @@ import org.knime.core.data.filestore.FileStoreFactory;
  * Creates a KNIME value by deserializing a byte array created by the
  * corresponding Python serializer.
  * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 public interface Deserializer {
 

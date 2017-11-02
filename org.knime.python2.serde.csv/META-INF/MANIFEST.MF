@@ -4,7 +4,7 @@ Bundle-Name: KNIME Python Serialization (Labs) - CSV
 Bundle-SymbolicName: org.knime.python2.serde.csv;singleton:=true
 Bundle-Version: 3.5.0.qualifier
 Bundle-ClassPath: python-serde-csv.jar
-Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.python2.serde.csv
 Require-Bundle: org.knime.python2;bundle-version="[3.3.0,4.0.0)",
  org.apache.commons.lang3;bundle-version="3.2.1"

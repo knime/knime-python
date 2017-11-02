@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -50,7 +50,7 @@ package org.knime.python2.kernel;
 /**
  * Handler that handles responses from the python kernel.
  *
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  *
  * @param <T> Type of the response object
  */

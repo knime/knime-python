@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -116,14 +116,14 @@ import org.knime.python2.Activator;
 /**
  * Abstract source code panel as basis for source code panels for a specific programming language.
  *
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 public abstract class SourceCodePanel extends JPanel {
 
     /**
      * Represents a variable as it is displayed in the variables table.
      *
-     * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+     * @author Patrick Winter, KNIME AG, Zurich, Switzerland
      */
     public static class Variable {
 
@@ -178,7 +178,7 @@ public abstract class SourceCodePanel extends JPanel {
     /**
      * A status bar containing a status message, a progress bar for running processes and a stop button.
      *
-     * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+     * @author Patrick Winter, KNIME AG, Zurich, Switzerland
      */
     private static class StatusBar extends JPanel {
 

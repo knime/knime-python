@@ -10,7 +10,7 @@ Bundle-ClassPath: python-serde-arrow.jar,
  lib/arrow-vector-0.7.1.jar,
  lib/netty-buffer-4.1.16.Final.jar,
  lib/netty-common-4.1.16.Final.jar
-Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Require-Bundle: org.knime.python2;bundle-version="[3.4.0,4.0.0)",
  org.knime.core;bundle-version="[3.4.0,4.0.0)",
  org.apache.commons.lang3;bundle-version="[3.2.1,4.0.0)",

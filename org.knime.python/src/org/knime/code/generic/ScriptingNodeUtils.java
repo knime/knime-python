@@ -3,7 +3,7 @@ package org.knime.code.generic;
 /**
  * Utility methods for scripting nodes.
  *
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 public class ScriptingNodeUtils {
 

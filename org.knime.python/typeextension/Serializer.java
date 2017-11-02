@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -54,7 +54,7 @@ import org.knime.core.data.DataValue;
 /**
  * Serializes a KNIME value to bytes that can be interpreted by the corresponding Python deserializer.
  * 
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  *
  * @param <Value> The value type that can be handled by this serializer.
  */

@@ -3,7 +3,7 @@
       id="org.knime.features.python2"
       label="KNIME Python Integration (Labs, supports Python 2 &amp; 3)"
       version="3.5.0.qualifier"
-      provider-name="KNIME GmbH, Konstanz, Germany">
+      provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
       This plugin contains nodes that integrate Python into KNIME.
@@ -14,7 +14,7 @@ Supports Python 2 and 3.
    </description>
 
    <copyright>
-      Copyright by KNIME GmbH, Konstanz, Germany
+      Copyright by KNIME AG, Zurich, Switzerland
    </copyright>
 
    <license>

@@ -3,7 +3,7 @@
       id="org.knime.features.ext.jython"
       label="KNIME Jython Scripting (Legacy)"
       version="3.5.0.qualifier"
-      provider-name="KNIME GmbH, Konstanz, Germany"
+      provider-name="KNIME AG, Zurich, Switzerland"
       plugin="org.knime.ext.jython">
 
    <description url="http://www.knime.org/downloads/extensions">
@@ -12,7 +12,7 @@ The scripts run in the included Jython runtime.
    </description>
 
    <copyright>
-      Copyright by KNIME GmbH, Konstanz, Germany
+      Copyright by KNIME AG, Zurich, Switzerland
       Tripos Inc., USA.
    </copyright>
 

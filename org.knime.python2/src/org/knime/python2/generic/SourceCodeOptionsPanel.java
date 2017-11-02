@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -61,7 +61,7 @@ import javax.swing.event.ChangeListener;
 /**
  * Panel containing additinal options to the {@link SourceCodePanel}.
  *
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  *
  * @param <Panel> the associated {@link SourceCodePanel}'s type
  * @param <Config> the associated {@link SourceCodeConfig}'s type

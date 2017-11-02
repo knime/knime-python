@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -92,7 +92,7 @@ import org.osgi.service.prefs.BackingStoreException;
 /**
  * Preference page for python related configurations.
  *
- * @author Patrick Winter, KNIME.com, Zurich, Switzerland
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 public class PythonPreferencePage extends PreferencePage
     implements IWorkbenchPreferencePage, DefaultPythonVersionObserver, ExecutableObserver {
