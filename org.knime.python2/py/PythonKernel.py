@@ -1286,9 +1286,8 @@ class SetCustomModulePathsHandler(CommandHandler):
         self._command = 'setCustomModulePaths'
         
     def execute(self):
-        paths = read_string()
-        for path in paths.split(';'):
-            sys.path.append(path)
+        path = read_string()
+        sys.path.append(path)
         write_dummy()
 
 

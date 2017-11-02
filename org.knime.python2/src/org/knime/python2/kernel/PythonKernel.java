@@ -323,19 +323,11 @@ public class PythonKernel {
         } catch (final Exception e) {
             //
         }
-        // Add custom module directories to the python workspace
-        if(!kernelOptions.getCustomModulePaths().isEmpty()) {
-            m_commands.setCustomModulePaths(String.join(";", kernelOptions.getCustomModulePaths()));
+        // Add custom module directories to the pythonpath in the python workspace
+        String pythonpath = PythonModuleExtensions.getPythonPath();
+        if(!pythonpath.isEmpty()) {
+            m_commands.addToPythonPath(pythonpath);
         }
-        // Python serializers
-        /*for (final PythonToKnimeExtension typeExtension : PythonToKnimeExtensions.getExtensions()) {
-            m_commands.addSerializer(typeExtension.getId(), typeExtension.getType(),
-                typeExtension.getPythonSerializerPath());
-        }
-        // Python deserializers
-        for (final KnimeToPythonExtension typeExtension : KnimeToPythonExtensions.getExtensions()) {
-            m_commands.addDeserializer(typeExtension.getId(), typeExtension.getPythonDeserializerPath());
-        }*/
         //Add sentinel constants
         if (m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL) {
             m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");

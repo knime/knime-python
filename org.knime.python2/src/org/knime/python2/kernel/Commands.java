@@ -453,7 +453,7 @@ public class Commands {
      * @param paths ';' separated list of directories
      * @throws IOException
      */
-    synchronized public void setCustomModulePaths(final String paths) throws IOException {
+    synchronized public void addToPythonPath(final String paths) throws IOException {
         writeString("setCustomModulePaths");
         writeString(paths);
         readBytes();

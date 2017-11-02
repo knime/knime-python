@@ -45,21 +45,12 @@
 
 package org.knime.python2.kernel;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.PythonPreferencePage;
-import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
-import org.osgi.framework.Bundle;
 
 /**
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version that should be used.
@@ -78,8 +69,6 @@ public class PythonKernelOptions {
 
     private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
-    private List<String> m_customModulePaths = new ArrayList<String>();
-
     /**
      * The default number of rows to transfer per chunk.
      */
@@ -92,7 +81,6 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
-        m_customModulePaths = getCustomModulePathExtensions();
     }
 
     /**
@@ -114,7 +102,6 @@ public class PythonKernelOptions {
         m_serializationOptions.setSentinelOption(sentinelOption);
         m_serializationOptions.setSentinelValue(sentinelValue);
         m_chunkSize = chunkSize;
-        m_customModulePaths = getCustomModulePathExtensions();
     }
 
     /**
@@ -128,7 +115,6 @@ public class PythonKernelOptions {
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
         this.m_flowVariableOptions = new FlowVariableOptions(other.getFlowVariableOptions());
         this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
-        this.m_customModulePaths = new ArrayList<String>(other.getCustomModulePaths());
     }
 
     /**
@@ -357,31 +343,12 @@ public class PythonKernelOptions {
         return m_chunkSize;
     }
 
-    /**
-     * Add a custom module path that is made available in the pyhton workspace.
-     *
-     * @param path a module path
-     */
-    public void addCustomModulePath(final String path) {
-        m_customModulePaths.add(path);
-    }
-
-    /**
-     * Add a collection of custom module paths that are made available in the pyhton workspace.
-     *
-     * @param paths a collection of module paths
-     */
-    public void addCustomModulePaths(final Collection<String> paths) {
-        m_customModulePaths.addAll(paths);
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((m_additionalRequiredModules == null) ? 0 : m_additionalRequiredModules.hashCode());
         result = prime * result + m_chunkSize;
-        result = prime * result + ((m_customModulePaths == null) ? 0 : m_customModulePaths.hashCode());
         result = prime * result + ((m_flowVariableOptions == null) ? 0 : m_flowVariableOptions.hashCode());
         result = prime * result + ((m_serializationOptions == null) ? 0 : m_serializationOptions.hashCode());
         result = prime * result + ((m_usePython3 == null) ? 0 : m_usePython3.hashCode());
@@ -410,13 +377,6 @@ public class PythonKernelOptions {
         if (m_chunkSize != other.m_chunkSize) {
             return false;
         }
-        if (m_customModulePaths == null) {
-            if (other.m_customModulePaths != null) {
-                return false;
-            }
-        } else if (!m_customModulePaths.equals(other.m_customModulePaths)) {
-            return false;
-        }
         if (m_flowVariableOptions == null) {
             if (other.m_flowVariableOptions != null) {
                 return false;
@@ -435,48 +395,6 @@ public class PythonKernelOptions {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Get the collection of costume module paths to be made available in the pyhton workspace.
-     *
-     * @return the custom module paths
-     */
-    public List<String> getCustomModulePaths() {
-        return m_customModulePaths;
-    }
-
-    /**
-     * Iterate over all extensions on the modules extension point and collect the pathes to those modules.
-     *
-     * @return the paths to all custom modules
-     */
-    private List<String> getCustomModulePathExtensions() {
-        ArrayList<String> modules = new ArrayList<String>();
-        final IConfigurationElement[] configs =
-                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python.modules");
-        for (final IConfigurationElement config : configs) {
-            String path = config.getAttribute("path");
-            if(path != null) {
-                //based on : https://www.eclipse.org/forums/index.php/t/96945/
-                try {
-                    Bundle bundle = Platform.getBundle(config.getContributor().getName());
-                    URL pluginURL = FileLocator.resolve(bundle.getEntry("/"));
-                    String pluginInstallDir = pluginURL.getPath().trim();
-                    /* since path returned by URL::getPath starts with a forward slash, that
-                     * is not suitable to run commandlines on Windows-OS, but for Unix-based
-                     * OSes it is needed. So strip one character for windows. There seems
-                     * to be no other clean way of doing this. */
-                    if( Platform.getOS().compareTo(Platform.OS_WIN32) == 0 ) {
-                        pluginInstallDir = pluginInstallDir.substring(1);
-                    }
-                    modules.add(pluginInstallDir + path);
-                } catch(IOException ex) {
-                    NodeLogger.getLogger(PythonSourceCodeConfig.class).debug(ex.getStackTrace());
-                }
-            }
-        }
-        return modules;
     }
 
 }
