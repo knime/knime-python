@@ -514,7 +514,7 @@ def serialize_objects_to_bytes(data_frame, column_serializers):
                     lastp = int(i * 100/len(data_frame))
             # Using bracket acessor is necessary here for ensuring that there are
             # no unwanted type conversions
-            value = data_frame[column][i] 
+            value = data_frame[column][data_frame.index[i]]
             if value is not None:
                 if isinstance(value, list):
                     new_list = []
