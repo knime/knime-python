@@ -176,6 +176,7 @@ public class Commands {
     synchronized public String[] execute(final String sourceCode) throws IOException {
         writeString("execute");
         writeString(sourceCode);
+        while(handleResponse(readResponseMessage())) {}
         final String[] output = new String[2];
         output[0] = readString();
         output[1] = readString();

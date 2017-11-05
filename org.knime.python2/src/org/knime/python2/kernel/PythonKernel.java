@@ -143,7 +143,10 @@ public class PythonKernel {
 
     private boolean m_closed = false;
 
-    private final Commands m_commands;
+    /**
+     * Manages sending commands to the python process via a system socket.
+     */
+    protected final Commands m_commands;
 
     private final SerializationLibrary m_serializer;
 

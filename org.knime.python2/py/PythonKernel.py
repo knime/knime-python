@@ -325,7 +325,7 @@ class PythonKernel(Borg):
     
     def __init__(self):
         # global variables in the execution environment
-        self._exec_env = {}
+        self._exec_env = {'request_from_java': self.write_response_msg}
         # TCP connection
         self._connection = None
         self._cleanup_object_names = []
@@ -480,6 +480,7 @@ class PythonKernel(Borg):
             sys.stderr = backupStdError
         
         sys.stdout = backupStdOut
+        self.write_response_msg(SuccessResponse())
         return [output.getvalue(), error.getvalue()]
 
 
