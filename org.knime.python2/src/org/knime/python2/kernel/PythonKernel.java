@@ -223,7 +223,7 @@ public class PythonKernel {
         // Start listening
         thread.start();
         // Get path to python kernel script
-        final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
+        final String scriptPath = m_kernelOptions.getKernelScriptPath();
         // Start python kernel that listens to the given port
         // use the -u options to force python to not buffer stdout and stderror
         final ProcessBuilder pb = new ProcessBuilder(
@@ -232,7 +232,8 @@ public class PythonKernel {
         // Add all python modules to PYTHONPATH variable
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
-        final String externalPythonPath = PythonModuleExtensions.getPythonPath();
+        String externalPythonPath = PythonModuleExtensions.getPythonPath();
+        externalPythonPath += File.pathSeparator + Activator.getFile(Activator.PLUGIN_ID, "py").getAbsolutePath();
         if ((externalPythonPath != null) && !externalPythonPath.isEmpty()) {
             if (existingPath.isEmpty()) {
                 existingPath = externalPythonPath;

@@ -48,6 +48,7 @@ package org.knime.python2.kernel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.knime.python2.Activator;
 import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
@@ -69,6 +70,8 @@ public class PythonKernelOptions {
 
     private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
+    private String m_kernelScriptPath;
+
     /**
      * The default number of rows to transfer per chunk.
      */
@@ -81,6 +84,7 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
+        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
     }
 
     /**
@@ -102,6 +106,7 @@ public class PythonKernelOptions {
         m_serializationOptions.setSentinelOption(sentinelOption);
         m_serializationOptions.setSentinelValue(sentinelValue);
         m_chunkSize = chunkSize;
+        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
     }
 
     /**
@@ -115,6 +120,7 @@ public class PythonKernelOptions {
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
         this.m_flowVariableOptions = new FlowVariableOptions(other.getFlowVariableOptions());
         this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
+        this.m_kernelScriptPath = other.getKernelScriptPath();
     }
 
     /**
@@ -341,6 +347,24 @@ public class PythonKernelOptions {
      */
     public int getChunkSize() {
         return m_chunkSize;
+    }
+
+    /**
+     * Gets the kernel script path.
+     *
+     * @return the kernel script path
+     */
+    public String getKernelScriptPath() {
+        return m_kernelScriptPath;
+    }
+
+    /**
+     * Sets the kernel script path.
+     *
+     * @param kernelScriptPath the new kernel script path
+     */
+    public void setKernelScriptPath(final String kernelScriptPath) {
+        m_kernelScriptPath = kernelScriptPath;
     }
 
     @Override

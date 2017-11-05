@@ -3,6 +3,7 @@ import types
 import os
 import sys
 import debug_util
+from Borg import Borg
 
 # check if we are running python 2 or python 3
 _python3 = sys.version_info >= (3, 0)
@@ -11,14 +12,6 @@ if _python3:
     import importlib
 else:
     import imp
-
-# Singleton/BorgSingleton.py
-# Alex Martelli's 'Borg' singleton implementation
-
-class Borg:
-    _shared_state = {}
-    def __init__(self):
-        self.__dict__ = self._shared_state
 
 # Used for managing all registered serializers and deserializers.
 # Serializers and deserializers can be accessed using the identifier,
