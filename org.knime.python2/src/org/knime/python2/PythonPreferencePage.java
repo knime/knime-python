@@ -199,6 +199,7 @@ public class PythonPreferencePage extends PreferencePage
      */
     @Override
     public boolean performOk() {
+        applyOptions();
         return true;
     }
 
@@ -207,7 +208,8 @@ public class PythonPreferencePage extends PreferencePage
      */
     @Override
     protected void performApply() {
-        //        applyOptions();
+        applyOptions();
+        testPythonInstallation();
     }
 
     /**
@@ -219,18 +221,16 @@ public class PythonPreferencePage extends PreferencePage
         setPython3Path(getDefaultPython3Path());
         setSerializerId(getDefaultSerializerId());
         setDefaultPythonOption(getSelectedDefaultPythonOption());
-        testPythonInstallation();
     }
 
     /**
-     * Set the configuration according to the dialog state and test the python installation.
+     * Set the configuration according to the dialog state.
      */
     private void applyOptions() {
         setPython2Path(m_python2.getPythonPath());
         setPython3Path(m_python3.getPythonPath());
         setSerializerId(getSelectedSerializer());
         setDefaultPythonOption(getSelectedDefaultPythonOption());
-        testPythonInstallation();
     }
 
     private static String getDefaultPython2Path() {
@@ -527,6 +527,7 @@ public class PythonPreferencePage extends PreferencePage
     @Override
     public void executableUpdated() {
         applyOptions();
+        testPythonInstallation();
     }
 
 }
