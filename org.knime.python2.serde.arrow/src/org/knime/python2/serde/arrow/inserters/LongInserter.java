@@ -105,4 +105,12 @@ public class LongInserter implements ArrowVectorInserter {
         return m_vec;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() {
+        m_vec.close();
+    }
+
 }

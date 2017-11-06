@@ -381,6 +381,12 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         writer.close();
         fc.close();
 
+        //Close inserters to free memory
+        for(ArrowVectorInserter is:inserters) {
+            is.close();
+        }
+        rootAllocator.close();
+
         return path.getBytes("UTF-8");
     }
 

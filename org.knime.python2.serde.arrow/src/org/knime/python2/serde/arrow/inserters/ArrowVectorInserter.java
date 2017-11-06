@@ -62,4 +62,9 @@ public interface ArrowVectorInserter extends VectorInserter {
      */
     FieldVector retrieveVector();
 
+    /**
+     * Closes the underlying buffer. Important for freeing buffers after serialization.
+     */
+    void close();
+
 }

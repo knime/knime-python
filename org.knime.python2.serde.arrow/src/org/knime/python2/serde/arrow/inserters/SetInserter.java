@@ -156,4 +156,12 @@ public abstract class SetInserter implements ArrowVectorInserter {
     public FieldVector retrieveVector() {
         return m_vec;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() {
+        m_vec.close();
+    }
 }
