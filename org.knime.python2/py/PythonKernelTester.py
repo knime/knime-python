@@ -148,10 +148,8 @@ def check_version_python():
     min_version = min_python_version.split('.')
     version = sys.version_info
     smaller = False
-    bigger = False
     for i in range(len(min_version)):
         if int(version[i]) > int(min_version[i]):
-            bigger = True
             break
         if int(version[i]) < int(min_version[i]):
             smaller = True
@@ -159,7 +157,7 @@ def check_version_python():
     if smaller:
         add_to_message('Installed python version is ' + str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
                        + ', required minimum is ' + '.'.join(min_version))
-    if bigger:
+    if int(version[0]) > int(min_version[0]):
         add_to_message('Installed python version is ' + str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
                        + ', required major version is ' + str(min_version[0]))
 
