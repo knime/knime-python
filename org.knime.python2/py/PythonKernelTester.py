@@ -59,7 +59,7 @@ def main():
     python_version = sys.version_info
     print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
     if python_version[0] != check_python_version_num:
-        add_to_message('Python is required to have a major version of ' + str(check_python_version_num) + '. Use the options tab to choose the major version to use.')
+        add_to_message('Python is required to have a major version of ' + str(check_python_version_num) + '. The major version can be chosen in the options tab of the Python Nodes.')
     check_required_libs()
     print(_message)
     
