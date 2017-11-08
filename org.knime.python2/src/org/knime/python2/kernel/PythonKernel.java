@@ -123,7 +123,7 @@ import org.w3c.dom.svg.SVGDocument;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class PythonKernel {
+public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
@@ -1000,28 +1000,21 @@ public class PythonKernel {
      *
      * This shuts down the python background process and closes the sockets used for communication.
      */
-    public void close() {
+    @Override
+    public synchronized void close() {
         if (!m_closed) {
             m_closed = true;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    // Give it some time to finish writing into the stream
-                    try {
-                        Thread.sleep(1000);
-                    } catch (final InterruptedException e1) {
-                    }
                     // Send shutdown
                     try {
-                        m_commands.shutdown();
-                        // Give it some time to shutdown before we force it
-                        try {
-                            Thread.sleep(10000);
-                        } catch (final InterruptedException e) {
-                            //
+                        // Give it some time to finish writing into the stream
+                        Thread.sleep(1000);
+                        if(!m_commands.tryShutdown()) {
+                            LOGGER.warn("Python Kernel could not be shutdown gracefully. Killing process now!");
                         }
                     } catch (final Throwable t) {
-                        // continue with killing
                     }
                     try {
                         m_serverSocket.close();
@@ -1032,8 +1025,8 @@ public class PythonKernel {
                     } catch (final Throwable t) {
                     }
                     try {
-                        m_stdoutStream.close();
-                        m_stderrStream.close();
+                        m_stdoutListeners.clear();
+                        m_stderrListeners.clear();
                     } catch (final Throwable t) {
                     }
                     // If the original process was a script we have to kill the
@@ -1047,17 +1040,15 @@ public class PythonKernel {
                             } else {
                                 pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
                             }
-                            pb.start();
+                            Process p = pb.start();
+                            p.waitFor();
                         } catch (final IOException e) {
+                            //
+                        } catch (InterruptedException ex) {
                             //
                         }
                     } else if (m_process != null) {
                         m_process.destroy();
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (final InterruptedException e) {
-                        //
                     }
                 }
             }).start();

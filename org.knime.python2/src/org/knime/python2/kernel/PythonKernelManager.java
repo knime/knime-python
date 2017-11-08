@@ -67,7 +67,7 @@ import org.knime.python2.port.PickledObject;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class PythonKernelManager {
+public class PythonKernelManager implements AutoCloseable{
 
     private ThreadPool m_threadPool;
 
@@ -378,6 +378,7 @@ public class PythonKernelManager {
     /**
      * Closes the underling python kernel.
      */
+    @Override
     public synchronized void close() {
         m_threadPool.shutdown();
         m_threadPool = new ThreadPool(8);

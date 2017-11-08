@@ -83,9 +83,8 @@ class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         PickledObject object = null;
-        try {
+        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
@@ -99,8 +98,6 @@ class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
             object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new PortObject[]{new PickledObjectPortObject(object)};
     }

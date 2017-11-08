@@ -79,10 +79,10 @@ class PythonScript2In1OutNodeModel extends PythonNodeModel<PythonScript2In1OutNo
      * {@inheritDoc}
      */
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+        throws Exception {
         BufferedDataTable table = null;
-        try {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
@@ -94,12 +94,10 @@ class PythonScript2In1OutNodeModel extends PythonNodeModel<PythonScript2In1OutNo
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.4).setProgress(1);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables());
+                kernel.getFlowVariables(PythonScript2In1OutNodeConfig.getVariableNames().getFlowVariables());
             table = kernel.getDataTable(PythonScript2In1OutNodeConfig.getVariableNames().getOutputTables()[0], exec,
                 exec.createSubProgress(0.3));
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new BufferedDataTable[]{table};
     }

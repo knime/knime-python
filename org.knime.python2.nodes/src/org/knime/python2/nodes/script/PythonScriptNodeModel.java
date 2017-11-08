@@ -80,9 +80,8 @@ class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
      */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         BufferedDataTable table = null;
-        try {
+        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonScriptNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonScriptNodeConfig.getVariableNames().getInputTables()[0], inData[0],
@@ -96,8 +95,6 @@ class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
             table = kernel.getDataTable(PythonScriptNodeConfig.getVariableNames().getOutputTables()[0], exec,
                 exec.createSubProgress(0.3));
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new BufferedDataTable[]{table};
     }

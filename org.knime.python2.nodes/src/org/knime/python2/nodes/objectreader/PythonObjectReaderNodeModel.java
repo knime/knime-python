@@ -99,9 +99,8 @@ class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNode
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         PickledObject object = null;
-        try {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
@@ -109,12 +108,10 @@ class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNode
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.9).setProgress(1);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
+                kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
             object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new PortObject[]{new PickledObjectPortObject(object)};
     }

@@ -56,6 +56,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.knime.core.node.util.CheckUtils;
 
@@ -76,6 +79,8 @@ public class Commands {
 
     private final CommandsMessages m_messages;
 
+    private final Lock m_lock;
+
     /**
      * Constructor.
      *
@@ -83,6 +88,7 @@ public class Commands {
      * @param inFromServer input stream of the socket used for communication with the python kernel
      */
     public Commands(final OutputStream outToServer, final InputStream inFromServer) {
+        m_lock = new ReentrantLock();
         m_outToServer = outToServer;
         m_inFromServer = inFromServer;
         m_bufferedInFromServer = new DataInputStream(m_inFromServer);
@@ -103,8 +109,13 @@ public class Commands {
      * @return the process id
      * @throws IOException
      */
-    synchronized public int getPid() throws IOException {
-        return readInt();
+    public int getPid() throws IOException {
+        m_lock.lock();
+        try {
+            return readInt();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -114,14 +125,19 @@ public class Commands {
      * @return warning or error messages that were emitted during execution
      * @throws IOException
      */
-    synchronized public String[] execute(final String sourceCode) throws IOException {
-        writeString("execute");
-        writeString(sourceCode);
-        m_messages.waitForSuccessMessage();
-        final String[] output = new String[2];
-        output[0] = readString();
-        output[1] = readString();
-        return output;
+    public String[] execute(final String sourceCode) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("execute");
+            writeString(sourceCode);
+            m_messages.waitForSuccessMessage();
+            final String[] output = new String[2];
+            output[0] = readString();
+            output[1] = readString();
+            return output;
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -132,11 +148,16 @@ public class Commands {
      * @param variables the serialized variables table as bytearray
      * @throws IOException
      */
-    synchronized public void putFlowVariables(final String name, final byte[] variables) throws IOException {
-        writeString("putFlowVariables");
-        writeString(name);
-        writeBytes(variables);
-        readBytes();
+    public void putFlowVariables(final String name, final byte[] variables) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("putFlowVariables");
+            writeString(name);
+            writeBytes(variables);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -146,10 +167,15 @@ public class Commands {
      * @return the serialized variables table as bytearray
      * @throws IOException
      */
-    synchronized public byte[] getFlowVariables(final String name) throws IOException {
-        writeString("getFlowVariables");
-        writeString(name);
-        return readBytes();
+    public byte[] getFlowVariables(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getFlowVariables");
+            writeString(name);
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -160,11 +186,16 @@ public class Commands {
      * @param table the serialized KNIME table as bytearray
      * @throws IOException
      */
-    synchronized public void putTable(final String name, final byte[] table) throws IOException {
-        writeString("putTable");
-        writeString(name);
-        writeBytes(table);
-        m_messages.waitForSuccessMessage();
+    public void putTable(final String name, final byte[] table) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("putTable");
+            writeString(name);
+            writeBytes(table);
+            m_messages.waitForSuccessMessage();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -175,11 +206,16 @@ public class Commands {
      * @param table the serialized table chunk as bytearray
      * @throws IOException
      */
-    synchronized public void appendToTable(final String name, final byte[] table) throws IOException {
-        writeString("appendToTable");
-        writeString(name);
-        writeBytes(table);
-        m_messages.waitForSuccessMessage();
+    public void appendToTable(final String name, final byte[] table) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("appendToTable");
+            writeString(name);
+            writeBytes(table);
+            m_messages.waitForSuccessMessage();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -189,10 +225,15 @@ public class Commands {
      * @return the size in bytes
      * @throws IOException
      */
-    synchronized public int getTableSize(final String name) throws IOException {
-        writeString("getTableSize");
-        writeString(name);
-        return readInt();
+    public int getTableSize(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getTableSize");
+            writeString(name);
+            return readInt();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -202,13 +243,17 @@ public class Commands {
      * @return the serialized table as bytearray
      * @throws IOException
      */
-    synchronized public byte[] getTable(final String name) throws IOException {
-        //TODO rewrite in prepare / get
-        writeString("getTable");
-        writeString(name);
-        //success message is sent before table is transmitted
-        m_messages.waitForSuccessMessage();
-        return readBytes();
+    public byte[] getTable(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getTable");
+            writeString(name);
+            //success message is sent before table is transmitted
+            m_messages.waitForSuccessMessage();
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -220,14 +265,19 @@ public class Commands {
      * @return the serialized table as bytearray
      * @throws IOException
      */
-    synchronized public byte[] getTableChunk(final String name, final int start, final int end) throws IOException {
-        writeString("getTableChunk");
-        writeString(name);
-        writeInt(start);
-        writeInt(end);
-        //success message is sent before table is transmitted
-        m_messages.waitForSuccessMessage();
-        return readBytes();
+    public byte[] getTableChunk(final String name, final int start, final int end) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getTableChunk");
+            writeString(name);
+            writeInt(start);
+            writeInt(end);
+            //success message is sent before table is transmitted
+            m_messages.waitForSuccessMessage();
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -236,9 +286,14 @@ public class Commands {
      * @return the serialized list of variable names
      * @throws IOException
      */
-    synchronized public byte[] listVariables() throws IOException {
-        writeString("listVariables");
-        return readBytes();
+    public byte[] listVariables() throws IOException {
+        m_lock.lock();
+        try {
+            writeString("listVariables");
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -246,9 +301,14 @@ public class Commands {
      *
      * @throws IOException
      */
-    synchronized public void reset() throws IOException {
-        writeString("reset");
-        readBytes();
+    public void reset() throws IOException {
+        m_lock.lock();
+        try {
+            writeString("reset");
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -257,9 +317,14 @@ public class Commands {
      * @return autocompletion yes/no
      * @throws IOException
      */
-    synchronized public boolean hasAutoComplete() throws IOException {
-        writeString("hasAutoComplete");
-        return readInt() > 0;
+    public boolean hasAutoComplete() throws IOException {
+        m_lock.lock();
+        try {
+            writeString("hasAutoComplete");
+            return readInt() > 0;
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -271,13 +336,17 @@ public class Commands {
      * @return serialized list of autocompletion suggestions
      * @throws IOException
      */
-    synchronized public byte[] autoComplete(final String sourceCode, final int line, final int column)
-        throws IOException {
-        writeString("autoComplete");
-        writeString(sourceCode);
-        writeInt(line);
-        writeInt(column);
-        return readBytes();
+    public byte[] autoComplete(final String sourceCode, final int line, final int column) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("autoComplete");
+            writeString(sourceCode);
+            writeInt(line);
+            writeInt(column);
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -287,10 +356,15 @@ public class Commands {
      * @return a serialized image
      * @throws IOException
      */
-    synchronized public byte[] getImage(final String name) throws IOException {
-        writeString("getImage");
-        writeString(name);
-        return readBytes();
+    public byte[] getImage(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getImage");
+            writeString(name);
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -301,10 +375,15 @@ public class Commands {
      * @return a serialized python object
      * @throws IOException
      */
-    synchronized public byte[] getObject(final String name) throws IOException {
-        writeString("getObject");
-        writeString(name);
-        return readBytes();
+    public byte[] getObject(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getObject");
+            writeString(name);
+            return readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -315,11 +394,16 @@ public class Commands {
      * @param object a serialized python object
      * @throws IOException
      */
-    synchronized public void putObject(final String name, final byte[] object) throws IOException {
-        writeString("putObject");
-        writeString(name);
-        writeBytes(object);
-        readBytes();
+    public void putObject(final String name, final byte[] object) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("putObject");
+            writeString(name);
+            writeBytes(object);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -330,12 +414,17 @@ public class Commands {
      * @param path the path to the code file containing the serializer function
      * @throws IOException
      */
-    synchronized public void addSerializer(final String id, final String type, final String path) throws IOException {
-        writeString("addSerializer");
-        writeString(id);
-        writeString(type);
-        writeString(path);
-        readBytes();
+    public void addSerializer(final String id, final String type, final String path) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("addSerializer");
+            writeString(id);
+            writeString(type);
+            writeString(path);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -345,20 +434,38 @@ public class Commands {
      * @param path the path to the code file containing the deserializer function
      * @throws IOException
      */
-    synchronized public void addDeserializer(final String id, final String path) throws IOException {
-        writeString("addDeserializer");
-        writeString(id);
-        writeString(path);
-        readBytes();
+    public void addDeserializer(final String id, final String path) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("addDeserializer");
+            writeString(id);
+            writeString(path);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
-     * Shut down the python kernel to properly end the connection.
+     * Shut down the python kernel to properly end the connection. Waits 1s to get the lock
+     *
+     * @return shutdown successful yes / no
      *
      * @throws IOException
+     * @throws InterruptedException
      */
-    synchronized public void shutdown() throws IOException {
-        writeString("shutdown");
+     public synchronized boolean tryShutdown() throws IOException, InterruptedException {
+        if (m_lock.tryLock(1, TimeUnit.SECONDS)) {
+            try {
+                writeString("shutdown");
+                //Give some time to shutdown
+                Thread.sleep(1000);
+                return true;
+            } finally {
+                m_lock.unlock();
+            }
+        }
+        return false;
     }
 
     /**
@@ -369,11 +476,16 @@ public class Commands {
      *            dbidentifier
      * @throws IOException
      */
-    synchronized public void putSql(final String name, final byte[] sql) throws IOException {
-        writeString("putSql");
-        writeString(name);
-        writeBytes(sql);
-        readBytes();
+    public void putSql(final String name, final byte[] sql) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("putSql");
+            writeString(name);
+            writeBytes(sql);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -383,10 +495,15 @@ public class Commands {
      * @return the SQL query
      * @throws IOException
      */
-    synchronized public String getSql(final String name) throws IOException {
-        writeString("getSql");
-        writeString(name);
-        return readString();
+    public String getSql(final String name) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("getSql");
+            writeString(name);
+            return readString();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     /**
@@ -395,10 +512,15 @@ public class Commands {
      * @param paths ';' separated list of directories
      * @throws IOException
      */
-    synchronized public void addToPythonPath(final String paths) throws IOException {
-        writeString("setCustomModulePaths");
-        writeString(paths);
-        readBytes();
+    public void addToPythonPath(final String paths) throws IOException {
+        m_lock.lock();
+        try {
+            writeString("setCustomModulePaths");
+            writeString(paths);
+            readBytes();
+        } finally {
+            m_lock.unlock();
+        }
     }
 
     private byte[] stringToBytes(final String string) {
@@ -527,29 +649,44 @@ public class Commands {
 
         @Override
         public synchronized void registerMessageHandler(final PythonToJavaMessageHandler handler) {
-            if (!m_msgHandlers.contains(CheckUtils.checkNotNull(handler))) {
-                m_msgHandlers.add(handler);
+            m_commands.m_lock.lock();
+            try {
+                if (!m_msgHandlers.contains(CheckUtils.checkNotNull(handler))) {
+                    m_msgHandlers.add(handler);
+                }
+            } finally {
+                m_commands.m_lock.unlock();
             }
         }
 
         @Override
         public synchronized void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
-            m_msgHandlers.remove(CheckUtils.checkNotNull(handler));
+            m_commands.m_lock.lock();
+            try {
+                m_msgHandlers.remove(CheckUtils.checkNotNull(handler));
+            } finally {
+                m_commands.m_lock.unlock();
+            }
         }
 
         @Override
         public synchronized void answer(final JavaToPythonResponse response) throws IOException {
-            if (m_unansweredRequests.peek() != CheckUtils.checkNotNull(response).getOriginalMessage()) {
-                if (!m_unansweredRequests.contains(response.getOriginalMessage())) {
+            m_commands.m_lock.lock();
+            try {
+                if (m_unansweredRequests.peek() != CheckUtils.checkNotNull(response).getOriginalMessage()) {
+                    if (!m_unansweredRequests.contains(response.getOriginalMessage())) {
+                        throw new IllegalStateException(
+                            "Request message from Python may only be answered once. Response: " + response);
+                    }
                     throw new IllegalStateException(
-                        "Request message from Python may only be answered once. Response: " + response);
+                        "Only the most recent request message from Python may be answered. Response: " + response);
                 }
-                throw new IllegalStateException(
-                    "Only the most recent request message from Python may be answered. Response: " + response);
+                m_unansweredRequests.pop();
+                m_commands.writeString(response.getOriginalMessage().getCommand() + RESPONSE_SUFFIX);
+                m_commands.writeString(response.getReponse());
+            } finally {
+                m_commands.m_lock.unlock();
             }
-            m_unansweredRequests.pop();
-            m_commands.writeString(response.getOriginalMessage().getCommand() + RESPONSE_SUFFIX);
-            m_commands.writeString(response.getReponse());
         }
 
         private PythonToJavaMessage readMessage() throws IOException {

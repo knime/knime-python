@@ -93,10 +93,10 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         PythonKernelOptions options = getKernelOptions();
         options.addRequiredModule("jpype");
-        final PythonKernel kernel = new PythonKernel(options);
+
         final DatabasePortObject dbObj = (DatabasePortObject)inData[0];
         checkDBConnection(dbObj.getSpec());
-        try {
+        try(final PythonKernel kernel = new PythonKernel(options)) {
             kernel.putFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             final CredentialsProvider cp = getCredentialsProvider();
@@ -115,8 +115,6 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
             final DBReader reader = du.getReader(connOut);
             final DataTableSpec resultSpec = reader.getDataTableSpec(cp);
             return new PortObject[]{new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut))};
-        } finally {
-            kernel.close();
         }
     }
 

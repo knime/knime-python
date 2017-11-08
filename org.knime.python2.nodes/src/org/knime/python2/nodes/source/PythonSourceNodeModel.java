@@ -79,10 +79,10 @@ class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
      * {@inheritDoc}
      */
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+        throws Exception {
         BufferedDataTable table = null;
-        try {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
@@ -90,12 +90,10 @@ class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.7).setProgress(1);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables());
+                kernel.getFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables());
             table = kernel.getDataTable(PythonSourceNodeConfig.getVariableNames().getOutputTables()[0], exec,
                 exec.createSubProgress(0.3));
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new BufferedDataTable[]{table};
     }

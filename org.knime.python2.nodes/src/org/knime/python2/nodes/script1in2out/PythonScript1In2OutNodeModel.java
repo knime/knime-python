@@ -80,11 +80,10 @@ class PythonScript1In2OutNodeModel extends PythonNodeModel<PythonScript1In2OutNo
      */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         BufferedDataTable table1 = null;
         BufferedDataTable table2 = null;
-        try {
-            kernel.putFlowVariables(PythonScript1In2OutNodeConfig.getVariableNames().getFlowVariables(),
+        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        kernel.putFlowVariables(PythonScript1In2OutNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonScript1In2OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
                 exec.createSubProgress(0.3));
@@ -99,8 +98,6 @@ class PythonScript1In2OutNodeModel extends PythonNodeModel<PythonScript1In2OutNo
             table2 = kernel.getDataTable(PythonScript1In2OutNodeConfig.getVariableNames().getOutputTables()[1], exec,
                 exec.createSubProgress(0.15));
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new BufferedDataTable[]{table1, table2};
     }

@@ -98,9 +98,8 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         ImageContainer image = null;
-        try {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
@@ -111,12 +110,10 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
             exec.createSubProgress(0.6).setProgress(1);
             image = kernel.getImage(PythonViewNodeConfig.getVariableNames().getOutputImages()[0]);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables());
+                kernel.getFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables());
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
             m_image = image.getBufferedImage();
-        } finally {
-            kernel.close();
         }
         if (image.hasSvgDocument()) {
             return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()),
@@ -167,7 +164,7 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
      */
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+        throws IOException, CanceledExecutionException {
         super.loadInternals(nodeInternDir, exec);
         final File file = new File(nodeInternDir, "image.png");
         if (file.exists() && file.canRead()) {
@@ -182,7 +179,7 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
      */
     @Override
     protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+        throws IOException, CanceledExecutionException {
         super.saveInternals(nodeInternDir, exec);
         if (m_image != null) {
             final File file = new File(nodeInternDir, "image.png");

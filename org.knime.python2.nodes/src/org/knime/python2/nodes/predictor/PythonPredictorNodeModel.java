@@ -83,9 +83,8 @@ class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernel kernel = new PythonKernel(getKernelOptions());
         BufferedDataTable table = null;
-        try {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
             kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putObject(PythonPredictorNodeConfig.getVariableNames().getInputObjects()[0],
@@ -98,12 +97,10 @@ class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.4).setProgress(1);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables());
+                kernel.getFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables());
             table = kernel.getDataTable(PythonPredictorNodeConfig.getVariableNames().getOutputTables()[0], exec,
                 exec.createSubProgress(0.3));
             addNewVariables(variables);
-        } finally {
-            kernel.close();
         }
         return new BufferedDataTable[]{table};
     }
