@@ -48,6 +48,8 @@
  */
 package org.knime.python2;
 
+import org.knime.python2.PythonPathEditor.PythonVersionId;
+
 /**
  * Observes {@link ExecutableObservable}s managing the path to python executables. Executes a specific action if
  * notified by an observable.
@@ -57,8 +59,8 @@ package org.knime.python2;
 @SuppressWarnings("javadoc")
 interface ExecutableObserver {
     /**
-     * Used by an {@link ExecutableObservable} to notify this observer about a state change, i.e. an updated executable
-     * location.
+     * Used by an {@link ExecutableObservable} to notify this observer about a state change additionally indicating which
+     * python version changed, i.e. an updated executable location.
      */
-    public void executableUpdated();
+    public void executableUpdated(PythonVersionId pythonVersionId);
 }

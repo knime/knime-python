@@ -48,6 +48,8 @@
  */
 package org.knime.python2;
 
+import org.knime.python2.PythonPathEditor.PythonVersionId;
+
 /**
  * Manages the path to a python executable and notifies a {@link ExecutableObserver} if that path changes.
  *
@@ -63,7 +65,8 @@ interface ExecutableObservable {
     public void setExecutableObserver(ExecutableObserver obs);
 
     /**
-     * Notify the observer about a change in the executable path.
+     * Notify the observer about a change in the executable path additionally indicating which
+     * python version changed.
      */
-    public void notifyExecutableChange();
+    public void notifyExecutableChange(PythonVersionId pythonVersionId);
 }

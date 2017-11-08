@@ -432,20 +432,24 @@ public class PythonPreferencePage extends PreferencePage
     }
 
     /**
-     * Runs the python test in a separate thread.
+     * Runs the tests for python 2 and python 3 in separate threads.
      */
     private void testPythonInstallation() {
+        testPython2Installation();
+        testPython3Installation();
+    }
+
+    /**
+     * Runs the test for python 2 in a separate thread.
+     */
+    private void testPython2Installation() {
         m_python2.setInfo("Testing Python 2 installation...");
         m_python2.setError(null);
-        m_python3.setInfo("Testing Python 3 installation...");
-        m_python3.setError(null);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 final PythonKernelTestResult python2Error =
                     PythonKernelTester.testPython2Installation(Collections.emptyList(), true);
-                final PythonKernelTestResult python3Error =
-                    PythonKernelTester.testPython3Installation(Collections.emptyList(), true);
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {
@@ -454,6 +458,29 @@ public class PythonPreferencePage extends PreferencePage
                             if (python2Error.hasError()) {
                                 notifyChange(m_python2);
                             }
+                            refreshSizes();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * Runs the test for python 3 in a separate thread.
+     */
+    private void testPython3Installation() {
+        m_python3.setInfo("Testing Python 3 installation...");
+        m_python3.setError(null);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final PythonKernelTestResult python3Error =
+                    PythonKernelTester.testPython3Installation(Collections.emptyList(), true);
+                m_display.asyncExec(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!getControl().isDisposed()) {
                             setResult(python3Error.getVersion(), python3Error.getErrorLog(), m_python3);
                             if (python3Error.hasError()) {
                                 notifyChange(m_python3);
@@ -522,12 +549,22 @@ public class PythonPreferencePage extends PreferencePage
     }
 
     /**
-     * Validate if the executable paths point to correct python executables as soon as one of those paths is changed.
+     * Validate if the executable paths point to correct python executable for the specified python version as soon as
+     * the path is changed.
      */
     @Override
-    public void executableUpdated() {
+    public void executableUpdated(final PythonVersionId pythonVersionId) {
         applyOptions();
-        testPythonInstallation();
+        switch (pythonVersionId) {
+            case PYTHON2:
+                testPython2Installation();
+                break;
+            case PYTHON3:
+                testPython3Installation();
+                break;
+            default:
+                throw new IllegalArgumentException("No case defined for PythonVersionId: " + pythonVersionId);
+        }
     }
 
 }

@@ -113,7 +113,7 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
 
             @Override
             public void handleEvent(final Event event) {
-                notifyExecutableChange();
+                notifyExecutableChange(id);
                 if (event.detail == SWT.TRAVERSE_RETURN) {
                     event.doit = false;
                 }
@@ -122,7 +122,7 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
         m_pathEditor.setPropertyChangeListener(new IPropertyChangeListener() {
             @Override
             public void propertyChange(final PropertyChangeEvent event) {
-                notifyExecutableChange();
+                notifyExecutableChange(id);
             }
         });
         gridData = new GridData();
@@ -284,9 +284,9 @@ public class PythonPathEditor extends Composite implements DefaultPythonVersionO
      * {@inheritDoc}
      */
     @Override
-    public void notifyExecutableChange() {
+    public void notifyExecutableChange(final PythonVersionId pythonVersionId) {
         if (m_execObserver != null) {
-            m_execObserver.executableUpdated();
+            m_execObserver.executableUpdated(pythonVersionId);
         }
     }
 
