@@ -161,14 +161,19 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                 try {
                                     // Start kernel manager which will start the actual
                                     // kernel
-                                    m_kernelManager = new PythonKernelManager(m_kernelOptions);
-                                    setStatusMessage("Python successfully started");
-                                    putDataIntoPython();
-                                    setInteractive(true);
+                                    m_lock.lock();
+                                    try {
+                                        m_kernelRestarts++;
+                                        m_kernelManager = new PythonKernelManager(m_kernelOptions);
+                                        setStatusMessage("Python successfully started");
+                                    } finally {
+                                        m_lock.unlock();
+                                    }
                                     //Push python stdout content to console live
                                     m_kernelManager.addStdoutListener(m_stdoutToConsole);
                                     m_kernelManager.addStderrorListener(m_stderrorToConsole);
-
+                                    putDataIntoPython();
+                                    setInteractive(true);
                                 } catch (final IOException e) {
                                     logError(e, "Error during python start");
                                 }
@@ -185,12 +190,21 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     public void close() {
         super.close();
         if (m_kernelManager != null) {
-            setInteractive(false);
-            if (m_progressMonitor != null) {
-                m_progressMonitor.setCanceled(true);
+            m_lock.lock();
+            try {
+                if(m_kernelManager != null) {
+                    setInteractive(false);
+                    if (m_progressMonitor != null) {
+                        m_progressMonitor.setCanceled(true);
+                    }
+                    m_kernelManager.removeStdoutListener(m_stdoutToConsole);
+                    m_kernelManager.removeStderrorListener(m_stderrorToConsole);
+                    m_kernelManager.close();
+                    m_kernelManager = null;
+                }
+            }finally {
+                m_lock.unlock();
             }
-            m_kernelManager.close();
-            m_kernelManager = null;
         }
     }
 
@@ -201,7 +215,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     public void updateData(final BufferedDataTable[] inputData) {
         super.updateData(inputData);
         m_inputData = inputData;
-        putDataIntoPython();
+        //putDataIntoPython();
     }
 
     /**
@@ -209,7 +223,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     public void updateData() {
         super.updateData(m_inputData);
-        putDataIntoPython();
+        //putDataIntoPython();
     }
 
     /**
@@ -222,7 +236,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         super.updateData(inputData);
         m_inputData = inputData;
         m_pythonInputObjects = inputObjects;
-        putDataIntoPython();
+        //putDataIntoPython();
     }
 
     /**
@@ -246,11 +260,11 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     // if a response belongs to an old kernel
                     // instance
                     m_lock.lock();
-                    m_kernelRestarts++;
-                    // Disable interactivity while we restart
-                    // the kernel
-                    setInteractive(false);
                     try {
+                        m_kernelRestarts++;
+                        // Disable interactivity while we restart
+                        // the kernel
+                        setInteractive(false);
                         setStatusMessage("Restarting python...");
                         setRunning(false);
                         // Kernel manager will stop old python
@@ -261,8 +275,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         setInteractive(true);
                     } catch (final IOException e) {
                         logError(e, "Error during python restart");
+                    } finally {
+                        m_lock.unlock();
                     }
-                    m_lock.unlock();
                 }
             });
 
@@ -275,7 +290,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     // Check if kernel was restarted since start of the
                     // execution, if it was we don't care about the response
                     // anymore
-                    if (kernelRestarts == m_kernelRestarts) {
+                    if (m_kernelManager != null && kernelRestarts == m_kernelRestarts) {
                         if (exception != null) {
                             logError(exception, "Error during execution");
                         } else {
@@ -423,46 +438,51 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     // if a response belongs to an old kernel
                     // instance
                     m_lock.lock();
-                    m_kernelRestarts++;
-                    if (m_progressMonitor != null) {
-                        m_progressMonitor.setCanceled(true);
+                    try {
+                        m_kernelRestarts++;
+                        if (m_progressMonitor != null) {
+                            m_progressMonitor.setCanceled(true);
+                        }
+                        m_kernelManager.close();
+                        // Disable interactivity while we restart
+                        // the kernel
+                        setInteractive(false);
+                        setStatusMessage("Stopped python");
+                        setRunning(false);
+                    } finally {
+                        m_lock.unlock();
                     }
-                    m_kernelManager.close();
-                    // Disable interactivity while we restart
-                    // the kernel
-                    setInteractive(false);
-                    setStatusMessage("Stopped python");
-                    setRunning(false);
-                    m_lock.unlock();
                 }
             });
             setRunning(true);
             setStatusMessage("Loading input data into python");
             m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
+            int kernelRestarts = m_kernelRestarts;
             m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData,
                 getVariableNames().getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(),
                 m_pythonInputObjects, new PythonKernelResponseHandler<Void>() {
                 @Override
                 public void handleResponse(final Void response, final Exception exception) {
-                    if (exception != null) {
-                        if (m_progressMonitor != null) {
-                            m_progressMonitor.setCanceled(true);
+                    m_lock.lock();
+                    try {
+                        if (exception != null) {
+                            if(m_kernelManager != null && kernelRestarts == m_kernelRestarts) {
+                                if (m_progressMonitor != null) {
+                                    m_progressMonitor.setCanceled(true);
+                                }
+                                setInteractive(false);
+                                if ((exception.getCause() == null)
+                                        || !(exception.getCause() instanceof CanceledExecutionException)) {
+                                    logError(exception, "Error while loading input data into python");
+                                }
+                            }
+                        } else {
+                            setStatusMessage("Successfully loaded input data into python");
                         }
-                        if (m_kernelManager != null) {
-                            m_lock.lock();
-                            m_kernelManager.close();
-                            m_kernelManager = null;
-                            m_lock.unlock();
-                        }
-                        setInteractive(false);
-                        if ((exception.getCause() == null)
-                                || !(exception.getCause() instanceof CanceledExecutionException)) {
-                            logError(exception, "Error while loading input data into python");
-                        }
-                    } else {
-                        setStatusMessage("Successfully loaded input data into python");
+                        setRunning(false);
+                    } finally {
+                        m_lock.unlock();
                     }
-                    setRunning(false);
                 }
             }, new ExecutionMonitor(m_progressMonitor), getRowLimit());
             if(m_kernelManager != null) {
