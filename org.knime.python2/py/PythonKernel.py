@@ -725,7 +725,7 @@ class PythonKernel(Borg):
                         lastp = int(i * 100/len(data_frame))
                 # Using bracket acessor is necessary here for ensuring that there are
                 # no unwanted type conversions
-                value = data_frame[column][i] 
+                value = data_frame[column][data_frame.index[i]] 
                 if value is not None:
                     if isinstance(value, list):
                         new_list = []
@@ -766,7 +766,7 @@ class PythonKernel(Borg):
                 col_idx = data_frame.columns.get_loc(column)
                 # Using bracket acessor is necessary here for ensuring that there are
                 # no unwanted type conversions
-                value = data_frame[column][i] 
+                value = data_frame[column][data_frame.index[i]] 
                 if isinstance(value, numpy.float64) and numpy.isnan(value):
                     value = None
                 if value:
