@@ -115,6 +115,15 @@ public class SerializationLibraryExtensions {
     }
 
     /**
+     * Get the human readable name for a serialization library id.
+     * @param id a serialization library id
+     * @return a human readable name if id matches, null otherwise
+     */
+    public static String getNameForId(final String id) {
+        return extensions.get(id).getJavaSerializationLibraryFactory().getName();
+    }
+
+    /**
      * Get a collection of all available serialization library extensions.
      *
      * @return a collection of all available serialization library extensions

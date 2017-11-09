@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,51 +41,30 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Nov 9, 2017 (clemens): created
  */
+package org.knime.python2.extensions.serializationlibrary;
 
-package org.knime.python2.extensions.serializationlibrary.interfaces;
-
-import org.knime.python2.extensions.serializationlibrary.SerializationException;
-import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import java.io.IOException;
 
 /**
- * A serialization library used to encode and decode tables for data transfer between java and python.
+ * An exception that occured during the (de)serialization process.
  *
- * @author Patrick Winter
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface SerializationLibrary {
+public class SerializationException extends IOException {
+
+    private static final long serialVersionUID = 1L;
 
     /**
-     * Converts the given table into bytes for transfer to python.
-     *
-     * @param tableIterator Iterator for the table that should be converted.
-     * @param serializationOptions All options that control the serialization process.
-     * @return The bytes that should be send to python.
-     *
-     * @throws SerializationException if something went wrong during serialization
+     * Constructor.
+     * @param msg the error message
      */
-    byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) throws SerializationException;
-
-    /**
-     * Adds the rows contained in the bytes to the given {@link TableCreator}.
-     *
-     * @param tableCreator The {@link TableCreator} that the rows should be added to.
-     * @param serializationOptions All options that control the serialization process.
-     * @param bytes The bytes containing the encoded table.
-     *
-     * @throws SerializationException if something went wrong during deserialization
-     */
-    void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) throws SerializationException;
-
-    /**
-     * Extracts the {@link TableSpec} of the given table.
-     *
-     * @param bytes The encoded table.
-     * @return The {@link TableSpec} of the encoded table.
-     *
-     * @throws SerializationException if something went wrong during deserialization
-     */
-    TableSpec tableSpecFromBytes(byte[] bytes) throws SerializationException;
+    public SerializationException(final String msg) {
+        super(msg);
+    }
 
 }

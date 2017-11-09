@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -87,7 +88,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
      * @return The bytes that should be send to python.
      */
     @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
+    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
+            throws SerializationException{
         try {
             final File file = File.createTempFile("java-to-python-", ".csv");
             file.deleteOnExit();
@@ -324,6 +326,9 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             return file.getAbsolutePath().getBytes();
         } catch (final IOException e) {
             throw new RuntimeException(e);
+        } catch (NegativeArraySizeException ex) {
+            throw new SerializationException("The requested buffersize during serialization exceeds the maximum buffer size."
+                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
         }
     }
 

@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -125,8 +126,11 @@ import com.google.flatbuffers.FlatBufferBuilder;
 public class Flatbuffers implements SerializationLibrary {
 
     @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
+    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
+            throws SerializationException {
 
+        try
+        {
         final FlatBufferBuilder builder = new FlatBufferBuilder();
 
         List<FlatbuffersVectorInserter> inserters = new ArrayList<FlatbuffersVectorInserter>();
@@ -252,11 +256,16 @@ public class Flatbuffers implements SerializationLibrary {
         builder.finish(knimeTable);
 
         return builder.sizedByteArray();
+        } catch(AssertionError ex) {
+            //Assertion error is thrown if buffer cannot be grown
+            throw new SerializationException("The requested buffersize during serialization exceeds the maximum buffer size."
+                + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
+        }
     }
 
     @Override
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
-        final SerializationOptions serializationOptions) {
+        final SerializationOptions serializationOptions) throws SerializationException {
 
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
         final Map<String, Type> colTypes = new HashMap<>();
@@ -402,7 +411,7 @@ public class Flatbuffers implements SerializationLibrary {
     }
 
     @Override
-    public TableSpec tableSpecFromBytes(final byte[] bytes) {
+    public TableSpec tableSpecFromBytes(final byte[] bytes) throws SerializationException {
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
         final List<String> colNames = new ArrayList<>();

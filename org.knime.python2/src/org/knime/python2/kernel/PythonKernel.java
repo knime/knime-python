@@ -164,6 +164,12 @@ public class PythonKernel {
 
     private final ConfigurablePythonOutputListener m_errorPrintListener;
 
+    private final Thread m_processEndMonitorThread;
+
+    private List<ProcessEndAction> m_processEndActions;
+
+    private final ProcessEndAction m_segfaultDuringSerializationAction;
+
     /**
      * Creates a python kernel by starting a python process and connecting to it.
      *
@@ -189,7 +195,9 @@ public class PythonKernel {
         }
         // Create serialization library instance
         m_serializationLibraryExtensions = new SerializationLibraryExtensions();
-        m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(getSerializerId());
+        String serializerId = getSerializerId();
+        m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(serializerId);
+        LOGGER.debug("Using serialization library: " + SerializationLibraryExtensions.getNameForId(serializerId));
         final String serializerPythonPath =
             SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
         // Create socket to listen on
@@ -262,6 +270,48 @@ public class PythonKernel {
         m_stderrStream = m_process.getErrorStream();
 
         startPipeListeners();
+        //Capture process end and run registered actions
+        m_segfaultDuringSerializationAction = new ProcessEndAction() {
+
+            @Override
+            void runForExitCode(final int exitCode) {
+                //If an error was raised in python we already have a specific clue about the error. If not we should
+                //have a look at the exit code of the process.
+                if(m_errorPrintListener.wasErrorLogged()) {
+                    return;
+                }
+                //Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
+                //flatbuffers with exit code 0
+                if(exitCode == 139) {
+                    LOGGER.error("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
+                        + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
+                        + " the 'Options' tab of the configuration dialog.");
+                } else {
+                    LOGGER.error("Python process ended unexpectedly with exit code " + exitCode + ". This might be"
+                        + " caused by an oversized buffer allocation. Please consider lowering the 'Rows per chunk'"
+                        + " parameter in the 'Options' tab of the configuration dialog.");
+                }
+            }
+        };
+        m_processEndActions = new ArrayList<ProcessEndAction>();
+        m_processEndMonitorThread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    int exitCode = m_process.waitFor();
+                    synchronized(m_processEndActions) {
+                        for(ProcessEndAction action:m_processEndActions) {
+                            action.runForExitCode(exitCode);
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    // TODO Auto-generated catch block
+                }
+
+            }
+        });
+        m_processEndMonitorThread.start();
 
         //Log output and errors to console
         addStdoutListener(new PythonOutputListener() {
@@ -438,9 +488,10 @@ public class PythonKernel {
      * Serialize a collection of flow variables to a {@link Row}.
      *
      * @param flowVariables
-     * @return
+     * @return the serialized flow variables
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
-    private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) {
+    private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) throws IOException {
         final Type[] types = new Type[flowVariables.size()];
         final String[] columnNames = new String[flowVariables.size()];
         final RowImpl row = new RowImpl("0", flowVariables.size());
@@ -482,9 +533,10 @@ public class PythonKernel {
      *
      * @param bytes the serialized representation of the flow variables
      * @return a collection of {@link FlowVariable}s
+     * @throws IOException If an error occurred while communicating with the python kernel
      */
 
-    private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) {
+    private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) throws IOException {
         final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
         final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
         m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
@@ -665,7 +717,10 @@ public class PythonKernel {
         final ExecutionMonitor executionMonitor) throws PythonKernelException, IOException {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
+        ProcessEndAction pea = m_segfaultDuringSerializationAction;
+        m_errorPrintListener.resetErrorLoggedFlag();
         try {
+            addProcessEndAction(pea);
             final int tableSize = m_commands.getTableSize(name);
             int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
             if (numberChunks == 0) {
@@ -685,7 +740,9 @@ public class PythonKernel {
                 deserializationMonitor.setProgress((end + 1) / (double)tableSize);
             }
             if (tableCreator != null) {
-                return tableCreator.getTable();
+                BufferedDataTable table = tableCreator.getTable();
+                removeProcessEndAction(pea);
+                return table;
             }
             throw new PythonKernelException("Invalid serialized table received.");
         } catch (final EOFException ex) {
@@ -702,23 +759,29 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public TableCreator<?> getData(final String name, final TableCreatorFactory tcf) throws IOException {
-        final int tableSize = m_commands.getTableSize(name);
-        int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
-        if (numberChunks == 0) {
-            numberChunks = 1;
-        }
-        TableCreator<?> tableCreator = null;
-        for (int i = 0; i < numberChunks; i++) {
-            final int start = m_kernelOptions.getChunkSize() * i;
-            final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
-            final byte[] bytes = m_commands.getTableChunk(name, start, end);
-            if (tableCreator == null) {
-                final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-                tableCreator = tcf.createTableCreator(spec, tableSize);
+        ProcessEndAction pea = m_segfaultDuringSerializationAction;
+        try {
+            final int tableSize = m_commands.getTableSize(name);
+            int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
+            if (numberChunks == 0) {
+                numberChunks = 1;
             }
-            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+            TableCreator<?> tableCreator = null;
+            for (int i = 0; i < numberChunks; i++) {
+                final int start = m_kernelOptions.getChunkSize() * i;
+                final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
+                final byte[] bytes = m_commands.getTableChunk(name, start, end);
+                if (tableCreator == null) {
+                    final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+                    tableCreator = tcf.createTableCreator(spec, tableSize);
+                }
+                m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+            }
+            removeProcessEndAction(pea);
+            return tableCreator;
+        } catch(IOException ex) {
+            throw ex;
         }
-        return tableCreator;
     }
 
     /**
@@ -1140,11 +1203,47 @@ public class PythonKernel {
         t2.start();
     }
 
+    /**
+     * Add an action to run when the python process ends.
+     */
+    public void addProcessEndAction(final ProcessEndAction ac) {
+        synchronized (m_processEndActions) {
+            m_processEndActions.add(ac);
+        }
+    }
+
+    /**
+     * Add an action to run when the python process ends.
+     */
+    public void removeProcessEndAction(final ProcessEndAction ac) {
+        synchronized (m_processEndActions) {
+            m_processEndActions.remove(ac);
+        }
+    }
+
     private class ConfigurablePythonOutputListener implements PythonOutputListener {
 
         private boolean m_allWarning = false;
 
         private boolean m_lastStackTrace = false;
+
+        private AtomicBoolean m_errorWasLogged = new AtomicBoolean(false);
+
+        /**
+         * Reset the flag that is set if an error was logged.
+         */
+        public void resetErrorLoggedFlag() {
+            m_errorWasLogged.set(false);
+        }
+
+        /**
+         * Get a flag indicating if an error was logged.
+         *
+         * @return error was logged yes / no
+         */
+        public boolean wasErrorLogged() {
+            return m_errorWasLogged.get();
+        }
 
         /**
          * Enables special handling of the stderror stream when custom source code is executed.
@@ -1164,6 +1263,7 @@ public class PythonKernel {
             if (!m_allWarning) {
                 if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
                     LOGGER.error(msg);
+                    m_errorWasLogged.set(true);
                     m_lastStackTrace = false;
                 } else {
                     if (!m_lastStackTrace) {
@@ -1178,5 +1278,13 @@ public class PythonKernel {
 
         }
 
+    }
+
+    /**
+     * An action to run as soon as the python process exits.
+     */
+    private abstract class ProcessEndAction {
+
+        abstract void runForExitCode(int exitCode);
     }
 }

@@ -77,9 +77,11 @@ import org.apache.arrow.vector.stream.ArrowStreamReader;
 import org.apache.arrow.vector.stream.ArrowStreamWriter;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.OversizedAllocationException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.util.FileUtil;
+import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
@@ -110,6 +112,7 @@ import org.knime.python2.serde.arrow.extractors.MissingExtractor;
 import org.knime.python2.serde.arrow.extractors.StringExtractor;
 import org.knime.python2.serde.arrow.extractors.StringListExtractor;
 import org.knime.python2.serde.arrow.extractors.StringSetExtractor;
+import org.knime.python2.serde.arrow.inserters.ArrowVectorInserter;
 import org.knime.python2.serde.arrow.inserters.BooleanInserter;
 import org.knime.python2.serde.arrow.inserters.BooleanListInserter;
 import org.knime.python2.serde.arrow.inserters.BooleanSetInserter;
@@ -128,7 +131,6 @@ import org.knime.python2.serde.arrow.inserters.LongSetInserter;
 import org.knime.python2.serde.arrow.inserters.StringInserter;
 import org.knime.python2.serde.arrow.inserters.StringListInserter;
 import org.knime.python2.serde.arrow.inserters.StringSetInserter;
-import org.knime.python2.serde.arrow.inserters.ArrowVectorInserter;
 
 /**
  * @author Clemens von Schwerin, KNIME
@@ -176,7 +178,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions) {
+    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
+            throws SerializationException{
         File file = null;
         try {
             file = FileUtil.createTempFile("arrow-memory-mapped-" + UUID.randomUUID().toString(), ".dat", true);
@@ -187,6 +190,9 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         } catch (IOException e) {
             // TODO Logging and better exception handling?
             throw new IllegalStateException(e);
+        } catch (OversizedAllocationException ex) {
+            throw new SerializationException("The requested buffersize during serialization exceeds the maximum buffer size."
+                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
         }
     }
 
