@@ -120,7 +120,11 @@ public class SerializationLibraryExtensions {
      * @return a human readable name if id matches, null otherwise
      */
     public static String getNameForId(final String id) {
-        return extensions.get(id).getJavaSerializationLibraryFactory().getName();
+        SerializationLibraryExtension ext = extensions.get(id);
+        if(ext != null) {
+            return ext.getJavaSerializationLibraryFactory().getName();
+        }
+        return null;
     }
 
     /**

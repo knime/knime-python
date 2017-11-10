@@ -196,8 +196,20 @@ public class PythonKernel {
         // Create serialization library instance
         m_serializationLibraryExtensions = new SerializationLibraryExtensions();
         String serializerId = getSerializerId();
+        String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
+        if(serializerName == null) {
+            String msg;
+            if(serializerId == null) {
+                msg = "No serialization library was found. Please make sure to install at least one plugin containing one!";
+            } else {
+                msg = "The selected serialization library with id " + serializerId + " was not found. "
+                        + "Please make sure to install the correspondent plugin or select a different serialization "
+                        + "library in the python preference page.";
+            }
+            throw new IllegalStateException(msg);
+        }
+        LOGGER.debug("Using serialization library: " + serializerName);
         m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(serializerId);
-        LOGGER.debug("Using serialization library: " + SerializationLibraryExtensions.getNameForId(serializerId));
         final String serializerPythonPath =
             SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
         // Create socket to listen on
@@ -245,7 +257,7 @@ public class PythonKernel {
         existingPath = existingPath == null ? "" : existingPath;
         String externalPythonPath = PythonModuleExtensions.getPythonPath();
         externalPythonPath += File.pathSeparator + Activator.getFile(Activator.PLUGIN_ID, "py").getAbsolutePath();
-        if ((externalPythonPath != null) && !externalPythonPath.isEmpty()) {
+        if (!externalPythonPath.isEmpty()) {
             if (existingPath.isEmpty()) {
                 existingPath = externalPythonPath;
             } else {
@@ -254,10 +266,6 @@ public class PythonKernel {
         }
         existingPath = existingPath + File.pathSeparator;
         pb.environment().put("PYTHONPATH", existingPath);
-
-        // Uncomment for debugging
-        // pb.redirectOutput(Redirect.INHERIT);
-        // pb.redirectError(Redirect.INHERIT);
 
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
@@ -306,7 +314,7 @@ public class PythonKernel {
                         }
                     }
                 } catch (InterruptedException ex) {
-                    // TODO Auto-generated catch block
+                    LOGGER.warn("Kernel monitor thread was interrupted unexpectedly.");
                 }
 
             }
@@ -443,7 +451,7 @@ public class PythonKernel {
                     output.set(out);
                     // If the error log has content throw it as exception
                     if (!out[1].isEmpty()) {
-                        throw new Exception(out[1]);
+                        throw new PythonKernelException(out[1]);
                     }
                 } catch (final Exception e) {
                     exception.set(e);
@@ -1205,6 +1213,7 @@ public class PythonKernel {
 
     /**
      * Add an action to run when the python process ends.
+     * @param ac the action to run
      */
     public void addProcessEndAction(final ProcessEndAction ac) {
         synchronized (m_processEndActions) {
@@ -1213,7 +1222,8 @@ public class PythonKernel {
     }
 
     /**
-     * Add an action to run when the python process ends.
+     * Remove an action from the list of actions to run when the python process ends.
+     * @param ac the action to remove
      */
     public void removeProcessEndAction(final ProcessEndAction ac) {
         synchronized (m_processEndActions) {

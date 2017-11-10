@@ -446,10 +446,14 @@ class PythonKernel(Borg):
     # a column and each dict value a cell in the respective column. Thus the resulting
     # DataFrame will contain a single row.
     # @param dictionary    a python dictionary
-    def dict_to_data_frame(self, dictionary):
+    def flow_variables_dict_to_data_frame(self, dictionary):
         df = DataFrame()
         for key in dictionary:
-            df[key] = [dictionary[key]]
+            type = self.get_type_string(dictionary[key])
+            if type.find('int') >= 0 or type.find('float') >= 0:
+                df[key] = [dictionary[key]]
+            else:
+                df[key] = [str(dictionary[key])]
         return df
 
     # Is called on shutdown to clean up all variables that names are registered in 
@@ -1117,7 +1121,7 @@ class GetFlowVariablesCommandHandler(CommandHandler):
     def execute(self, kernel):
         name = kernel.read_string()
         current_variables = kernel.get_variable(name)
-        data_frame = kernel.dict_to_data_frame(current_variables)
+        data_frame = kernel.flow_variables_dict_to_data_frame(current_variables)
         data_bytes = kernel.data_frame_to_bytes(data_frame)
         kernel.write_bytearray(data_bytes)
         
