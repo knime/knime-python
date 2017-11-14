@@ -587,9 +587,13 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
-        final byte[] bytes = m_commands.getFlowVariables(name);
-        final Collection<FlowVariable> flowVariables = bytesToFlowVariables(bytes);
-        return flowVariables;
+        try {
+            final byte[] bytes = m_commands.getFlowVariables(name);
+            final Collection<FlowVariable> flowVariables = bytesToFlowVariables(bytes);
+            return flowVariables;
+        } catch(EOFException ex) {
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+        }
     }
 
     /**
@@ -718,11 +722,10 @@ public class PythonKernel {
      * @return The table
      * @param executionMonitor The monitor that will be updated about progress
      * @throws IOException If an error occurred while communicating with the python kernel
-     * @throws PythonKernelException If an error occurred in the python code
      *
      */
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
-        final ExecutionMonitor executionMonitor) throws PythonKernelException, IOException {
+        final ExecutionMonitor executionMonitor) throws IOException {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         ProcessEndAction pea = m_segfaultDuringSerializationAction;
@@ -802,16 +805,20 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public ImageContainer getImage(final String name) throws IOException {
-        final byte[] bytes = m_commands.getImage(name);
-        final String string = new String(bytes, "UTF-8");
-        if (string.startsWith("<?xml")) {
-            try {
-                return new ImageContainer(stringToSVG(string));
-            } catch (final TranscoderException e) {
-                throw new IOException(e.getMessage(), e);
+        try {
+            final byte[] bytes = m_commands.getImage(name);
+            final String string = new String(bytes, "UTF-8");
+            if (string.startsWith("<?xml")) {
+                try {
+                    return new ImageContainer(stringToSVG(string));
+                } catch (final TranscoderException e) {
+                    throw new IOException(e.getMessage(), e);
+                }
+            } else {
+                return new ImageContainer(ImageIO.read(new ByteArrayInputStream(bytes)));
             }
-        } else {
-            return new ImageContainer(ImageIO.read(new ByteArrayInputStream(bytes)));
+        } catch (final EOFException ex) {
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
         }
     }
 
@@ -845,17 +852,21 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
-        final byte[] bytes = m_commands.getObject(name);
-        final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-        final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
-        m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-        final Row row = tableCreator.getTable();
-        final int bytesIndex = spec.findColumn("bytes");
-        final int typeIndex = spec.findColumn("type");
-        final int representationIndex = spec.findColumn("representation");
-        final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
-        return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
-            row.getCell(representationIndex).getStringValue());
+        try {
+            final byte[] bytes = m_commands.getObject(name);
+            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+            final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
+            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+            final Row row = tableCreator.getTable();
+            final int bytesIndex = spec.findColumn("bytes");
+            final int typeIndex = spec.findColumn("type");
+            final int representationIndex = spec.findColumn("representation");
+            final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
+            return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
+                row.getCell(representationIndex).getStringValue());
+        } catch (final EOFException ex) {
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+        }
     }
 
     /**
@@ -920,22 +931,26 @@ public class PythonKernel {
      * @throws IOException If an error occurred while communicating with the python kernel
      */
     public List<Map<String, String>> listVariables() throws IOException {
-        final byte[] bytes = m_commands.listVariables();
-        final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-        final TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
-        m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-        final int nameIndex = spec.findColumn("name");
-        final int typeIndex = spec.findColumn("type");
-        final int valueIndex = spec.findColumn("value");
-        final List<Map<String, String>> variables = new ArrayList<Map<String, String>>();
-        for (final Row variable : tableCreator.getTable()) {
-            final Map<String, String> map = new HashMap<String, String>();
-            map.put("name", variable.getCell(nameIndex).getStringValue());
-            map.put("type", variable.getCell(typeIndex).getStringValue());
-            map.put("value", variable.getCell(valueIndex).getStringValue());
-            variables.add(map);
+        try {
+            final byte[] bytes = m_commands.listVariables();
+            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+            final TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
+            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+            final int nameIndex = spec.findColumn("name");
+            final int typeIndex = spec.findColumn("type");
+            final int valueIndex = spec.findColumn("value");
+            final List<Map<String, String>> variables = new ArrayList<Map<String, String>>();
+            for (final Row variable : tableCreator.getTable()) {
+                final Map<String, String> map = new HashMap<String, String>();
+                map.put("name", variable.getCell(nameIndex).getStringValue());
+                map.put("type", variable.getCell(typeIndex).getStringValue());
+                map.put("value", variable.getCell(valueIndex).getStringValue());
+                variables.add(map);
+            }
+            return variables;
+        } catch (final EOFException ex) {
+            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
         }
-        return variables;
     }
 
     /**
@@ -1066,10 +1081,9 @@ public class PythonKernel {
      * @param cp a credential provider for username and password
      * @param jars a list of jar files needed for invoking the jdbc driver on python side
      * @throws IOException If an error occurred while communicating with the python kernel
-     * @throws PythonKernelException If an error occurred in the python code
      */
     public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
-        final Collection<String> jars) throws PythonKernelException, IOException {
+        final Collection<String> jars) throws IOException {
         final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
             Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
         final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
@@ -1101,9 +1115,8 @@ public class PythonKernel {
      * @param name the name of the DBUtil variable in the python workspace
      * @return a SQL query string
      * @throws IOException If an error occurred while communicating with the python kernel
-     * @throws PythonKernelException If an error occurred in the python code
      */
-    public String getSql(final String name) throws PythonKernelException, IOException {
+    public String getSql(final String name) throws IOException {
         try {
             return m_commands.getSql(name);
         } catch (final EOFException ex) {

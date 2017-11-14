@@ -96,7 +96,7 @@ public class PythonKernelManager {
      *
      * @param name Name of the image
      * @return The image
-     * @throws IOException If an error occured
+     * @throws IOException If an error occurred
      */
     public synchronized ImageContainer getImage(final String name) throws IOException {
         return m_kernel.getImage(name);

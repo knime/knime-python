@@ -48,12 +48,14 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.IOException;
+
 /**
  * Exception thrown if there was an unexpected error while executing the PythonKernel.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class PythonKernelException extends Exception {
+public class PythonKernelException extends IOException {
     private static final long serialVersionUID = 1L;
 
     /**

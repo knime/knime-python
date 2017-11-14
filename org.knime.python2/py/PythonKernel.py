@@ -1164,6 +1164,9 @@ class GetTableCommandHandler(CommandHandler):
         debug_util.debug_msg('getTable\n')
         name = kernel.read_string()
         data_frame = kernel.get_variable(name)
+        import pandas
+        if type(data_frame) != pandas.core.frame.DataFrame:
+            raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
         data_bytes = kernel.data_frame_to_bytes(data_frame)
         kernel.write_message(SuccessMessage())
         kernel.write_bytearray(data_bytes)
