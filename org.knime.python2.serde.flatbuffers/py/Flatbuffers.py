@@ -237,779 +237,786 @@ def bytes_into_table(table, data_bytes):
 # @param data_bytes   the data_bytes
 # @return the bytes
 def table_to_bytes(table):
-   
-    #debug_util.debug_msg("Python->Flatbuffers: Starting table_to_bytes()")
-    builder = flatbuffers.Builder(1024)
     
-    #Row IDs
-    rowIdLength = list(map(len, table._row_indices))
-    offListOff = builder.CreateByteArray(np.array(rowIdLength, dtype='i4').tobytes())
-    strOff = builder.CreateString(''.join(table._row_indices))
+    try:
+   
+        #debug_util.debug_msg("Python->Flatbuffers: Starting table_to_bytes()")
+        builder = flatbuffers.Builder(1024)
         
-    KnimeTable.KnimeTableStartRowIDsVector(builder, 2)
-    builder.PrependInt32(offListOff)
-    builder.PrependInt32(strOff)
-    rowIdVecOffset = builder.EndVector(2)
+        #Row IDs
+        rowIdLength = list(map(len, table._row_indices))
+        offListOff = builder.CreateByteArray(np.array(rowIdLength, dtype='i4').tobytes())
+        strOff = builder.CreateString(''.join(table._row_indices))
+            
+        KnimeTable.KnimeTableStartRowIDsVector(builder, 2)
+        builder.PrependInt32(offListOff)
+        builder.PrependInt32(strOff)
+        rowIdVecOffset = builder.EndVector(2)
+           
+        #Column Names
+        colNameOffsets = []
        
-    #Column Names
-    colNameOffsets = []
-   
-    for colName in table.get_names():
-        nameOffset = builder.CreateString(str(colName))
-        colNameOffsets.append(nameOffset)
-                  
-    KnimeTable.KnimeTableStartColNamesVector(builder, len(colNameOffsets))
-    for colNameOffset in reversed(colNameOffsets):
-        builder.PrependUOffsetTRelative(colNameOffset) 
-    colNameVecOffset = builder.EndVector(len(colNameOffsets))
-      
-    colOffsetList = []
-    
-    serializers = table._column_serializers
-
-    
-   # debug_util.debug_msg("data_frame", table._data_frame)
-    for colIdx in range(0,table.get_number_columns()):
-        col = table._data_frame.iloc[:,colIdx]
-        if table.get_type(colIdx) == _types_.INTEGER:  
-            valVec = builder.CreateByteArray(np.array(col.values, dtype='i4').tobytes())
+        for colName in table.get_names():
+            nameOffset = builder.CreateString(str(colName))
+            colNameOffsets.append(nameOffset)
                       
-            IntColumn.IntColumnStart(builder)                             
-            IntColumn.IntColumnAddValues(builder, valVec)
-            colOffset = IntColumn.IntColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddIntColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.INTEGER_LIST:  
-            cellOffsets = []
-                     
-            for valIdx in range(0,len(col)):
-                cellVec = 0          
-                if col[valIdx] == None:
-                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
-                    builder.PrependInt32(-2147483648)
-                    cellVec = builder.EndVector(1)
-                else:
-                    cellMissing = []
-                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        if col[valIdx][cellIdx] == None:
-                            builder.PrependInt32(-2147483648)
-                            cellMissing.append(True)
-                        else:
-                            builder.PrependInt32(col[valIdx][cellIdx])
-                            cellMissing.append(False)
-                    cellVec = builder.EndVector(len(col[valIdx]))
-                    
-                    # the missing vector is already in reversed order
-                    IntegerCollectionCell.IntegerCollectionCellStartMissingVector(builder, len(col[valIdx]))
-                    for cellIdx in range(0, len(col[valIdx])):
-                        builder.PrependBool(cellMissing[cellIdx])
-                    cellMissingVec = builder.EndVector(len(col[valIdx]))
-                                 
-                IntegerCollectionCell.IntegerCollectionCellStart(builder)
-                IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
-                if col[valIdx] != None:
-                    IntegerCollectionCell.IntegerCollectionCellAddMissing(builder, cellMissingVec)
-                cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
-                        
-            IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))
-            
-            IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
-            
-            IntCollectionColumn.IntCollectionColumnStart(builder)    
-            IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)
-            IntCollectionColumn.IntCollectionColumnAddMissing(builder, missVec)                                  
-            colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddIntListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.INTEGER_SET:  
-            cellOffsets = []
-            
-            for valIdx in range(0,len(col)):
-                addMissingValue = False;     
-                if col[valIdx] == None:
-                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
-                    builder.PrependInt32(-2147483648)
-                    cellVec = builder.EndVector(1)
-                else:
-                    IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    numElems = 0
-                    for elem in col[valIdx]:
-                        if elem == None:
-                            addMissingValue = True
-                        else:                            
-                            builder.PrependInt32(elem)
-                            numElems += 1
-                    cellVec = builder.EndVector(numElems) 
-#                    debug_util.debug_msg("Python->Flatbuffers: (Integer Set)", col[valIdx])                   
-                
-                IntegerCollectionCell.IntegerCollectionCellStart(builder)
-                IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
-                IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, addMissingValue)
-                cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
-                        
-            IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))
-            
-            IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
-         
-            IntCollectionColumn.IntCollectionColumnStart(builder)    
-            IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)  
-            IntCollectionColumn.IntCollectionColumnAddMissing(builder,missVec)                                
-            colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddIntSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-
-            
-        elif table.get_type(colIdx) == _types_.BOOLEAN:  
-            missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
-            valVec = builder.CreateByteArray(col.fillna(False).values.tobytes())
-
-            BooleanColumn.BooleanColumnStart(builder)                             
-            BooleanColumn.BooleanColumnAddValues(builder, valVec)
-            BooleanColumn.BooleanColumnAddMissing(builder, missingVec)
-            colOffset = BooleanColumn.BooleanColumnEnd(builder)
-                       
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddBooleanColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.BOOLEAN_LIST:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-               # debug_util.debug_msg("Python->Flatbuffers: (Boolean List) col [", valIdx,"]", col[valIdx]) 
-                if col[valIdx] == None:
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
-                    builder.PrependBool(True)
-                    cellVec = builder.EndVector(1)
-                else: 
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    cellMissing = []
-                 #   debug_util.debug_msg("Python->Flatbuffers: (Boolean List) cell", col[valIdx])                 
-                    for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        if col[valIdx][cellIdx] == None:
-                            builder.PrependBool(False)
-                            cellMissing.append(True)
-                        else:
-                            builder.PrependBool(col[valIdx][cellIdx])
-                            cellMissing.append(False)
-                    cellVec = builder.EndVector(len(col[valIdx]))
-                #    debug_util.debug_msg("Python->Flatbuffers: (Boolean List) missing", cellMissing) 
-                    # the missing vector is already in reversed order
-                    BooleanCollectionCell.BooleanCollectionCellStartMissingVector(builder, len(col[valIdx]))
-                    for cellIdx in range(0, len(col[valIdx])):
-                        builder.PrependBool(cellMissing[cellIdx])
-                    cellMissingVec = builder.EndVector(len(col[valIdx]))
-                    
-                BooleanCollectionCell.BooleanCollectionCellStart(builder)
-                BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
-                if col[valIdx] != None:
-                    BooleanCollectionCell.BooleanCollectionCellAddMissing(builder,cellMissingVec)
-                cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
-                        
-       #     valVec = builder.EndVector(len(cellOffsets))
-                        
-                
-            BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets)) 
-            
-            BooleanCollectionColumn.BooleanCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
-              
-            BooleanCollectionColumn.BooleanCollectionColumnStart(builder)    
-            BooleanCollectionColumn.BooleanCollectionColumnAddValues(builder,valVec)
-            BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                                  
-            colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddBooleanListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.BOOLEAN_SET:  
-#            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Start)")       
-#            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Column Length):", len(col))
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-                addMissingValue = False
-
-                if col[valIdx] == None:
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
-                    builder.PrependBool(False)
-                    cellVec = builder.EndVector(1)
-                else: 
-                    BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    numElems = 0                
-                    for elem in col[valIdx]:
-                        if elem == None:
-                            addMissingValue = True
-                        else:
-                            builder.PrependBool(elem)
-                            numElems += 1
-                    cellVec = builder.EndVector(numElems)
-  
-                BooleanCollectionCell.BooleanCollectionCellStart(builder)
-                BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
-                BooleanCollectionCell.BooleanCollectionCellAddKeepDummy(builder, addMissingValue)
-                cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
-                                       
-            BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))    
-            
-            BooleanCollectionColumn.BooleanCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
+        KnimeTable.KnimeTableStartColNamesVector(builder, len(colNameOffsets))
+        for colNameOffset in reversed(colNameOffsets):
+            builder.PrependUOffsetTRelative(colNameOffset) 
+        colNameVecOffset = builder.EndVector(len(colNameOffsets))
           
-            BooleanCollectionColumn.BooleanCollectionColumnStart(builder)    
-            BooleanCollectionColumn.BooleanCollectionColumnAddValues(builder,valVec)   
-            BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                               
-            colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddBooleanSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-
-            
-        elif table.get_type(colIdx) == _types_.LONG:  
-            valVec = builder.CreateByteArray(col.values.tobytes())
+        colOffsetList = []
         
-            LongColumn.LongColumnStart(builder)                             
-            LongColumn.LongColumnAddValues(builder, valVec)
-            colOffset = LongColumn.LongColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddLongColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.LONG_LIST:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-               
-                if col[valIdx] == None:
-                    LongCollectionCell.LongCollectionCellStartValueVector(builder, 1)
-                    builder.PrependInt64(-9223372036854775808)
-                    cellVec = builder.EndVector(1)
-                else: 
-                    LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    cellMissing = []
-                    for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        if col[valIdx][cellIdx] == None:
-                            builder.PrependInt64(-9223372036854775808)
-                            cellMissing.append(True)
-                        else:
-                            builder.PrependInt64(col[valIdx][cellIdx])
-                            cellMissing.append(False)                 
-                    cellVec = builder.EndVector(len(col[valIdx]))
-                    
-                    # the missing vector is already in reversed order
-                    LongCollectionCell.LongCollectionCellStartMissingVector(builder, len(col[valIdx]))
-                    for cellIdx in range(0, len(col[valIdx])):
-                        builder.PrependBool(cellMissing[cellIdx])
-                    cellMissingVec = builder.EndVector(len(col[valIdx]))
-                    
-                LongCollectionCell.LongCollectionCellStart(builder)
-                LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
-                if col[valIdx] != None:
-                    LongCollectionCell.LongCollectionCellAddMissing(builder, cellMissingVec)
-                cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
-                        
-            LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))
-            
-            LongCollectionColumn.LongCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
+        serializers = table._column_serializers
     
-            
-            LongCollectionColumn.LongCollectionColumnStart(builder)    
-            LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec) 
-            LongCollectionColumn.LongCollectionColumnAddMissing(builder,missVec)                                 
-            colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddLongListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.LONG_SET:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-               
-                if col[valIdx] == None:
-                    LongCollectionCell.LongCollectionCellStartValueVector(builder, 1)
-                    builder.PrependInt64(-9223372036854775808)
-                    cellVec = builder.EndVector(1)
-                else: 
-                    addMissingValue = False
-                    LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    numElems = 0
-                    for elem in col[valIdx]:
-                        if elem == None:
-                            addMissingValue = True
-                        else:
-                            builder.PrependInt64(elem)
-                            numElems += 1                 
-                    cellVec = builder.EndVector(numElems)
-                    
-                LongCollectionCell.LongCollectionCellStart(builder)
-                LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
-                LongCollectionCell.LongCollectionCellAddKeepDummy(builder, addMissingValue)
-                cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
-                        
-            LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))    
-            
-            LongCollectionColumn.LongCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(cellOffsets))   
-              
-            LongCollectionColumn.LongCollectionColumnStart(builder)    
-            LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec) 
-            LongCollectionColumn.LongCollectionColumnAddMissing(builder,missVec)                                                             
-            colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder) 
-                      
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddLongSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
         
-        elif table.get_type(colIdx) == _types_.DOUBLE:
-            valVec = builder.CreateByteArray(col.values.tobytes())              
-                   
-            DoubleColumn.DoubleColumnStart(builder)                     
-            DoubleColumn.DoubleColumnAddValues(builder, valVec)
-            colOffset = DoubleColumn.DoubleColumnEnd(builder)
-            
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddDoubleColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.DOUBLE_LIST:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-               # debug_util.debug_msg("Python->Flatbuffers: (Double List)", col[valIdx])               
-                if col[valIdx] == None:
-                    DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
-                    builder.PrependFloat64(float('NaN'))                     
-                    cellVec = builder.EndVector(1)
-                else:
-                    DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    cellMissing = []
-                    for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        if col[valIdx][cellIdx] == None:
-                            builder.PrependFloat64(float('NaN'))
-                            cellMissing.append(True)
-                            #debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
-                        else:
-                            builder.PrependFloat64(col[valIdx][cellIdx])
-                            cellMissing.append(False)    
-                            #debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])                 
-                    cellVec = builder.EndVector(len(col[valIdx]))
-                    
-                #    debug_util.debug_msg("Python->Flatbuffers: (Double List Cell):", col[valIdx])
-                    # the missing vector is already in reversed order
-                    DoubleCollectionCell.DoubleCollectionCellStartMissingVector(builder, len(col[valIdx]))
-                    for cellIdx in range(0, len(col[valIdx])):
-                        builder.PrependBool(cellMissing[cellIdx])
-                    cellMissingVec = builder.EndVector(len(col[valIdx]))
-                                   
-                DoubleCollectionCell.DoubleCollectionCellStart(builder)
-                DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
-                if col[valIdx] != None:
-                    DoubleCollectionCell.DoubleCollectionCellAddMissing(builder, cellMissingVec)
-                cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
+       # debug_util.debug_msg("data_frame", table._data_frame)
+        for colIdx in range(0,table.get_number_columns()):
+            col = table._data_frame.iloc[:,colIdx]
+            if table.get_type(colIdx) == _types_.INTEGER:  
+                valVec = builder.CreateByteArray(np.array(col.values, dtype='i4').tobytes())
+                          
+                IntColumn.IntColumnStart(builder)                             
+                IntColumn.IntColumnAddValues(builder, valVec)
+                colOffset = IntColumn.IntColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddIntColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.INTEGER_LIST:  
+                cellOffsets = []
+                         
+                for valIdx in range(0,len(col)):
+                    cellVec = 0          
+                    if col[valIdx] == None:
+                        IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
+                        builder.PrependInt32(-2147483648)
+                        cellVec = builder.EndVector(1)
+                    else:
+                        cellMissing = []
+                        IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        for cellIdx in reversed(range(0, len(col[valIdx]))):
+                            if col[valIdx][cellIdx] == None:
+                                builder.PrependInt32(-2147483648)
+                                cellMissing.append(True)
+                            else:
+                                builder.PrependInt32(col[valIdx][cellIdx])
+                                cellMissing.append(False)
+                        cellVec = builder.EndVector(len(col[valIdx]))
                         
-            DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))   
-            
-            DoubleCollectionColumn.DoubleCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(col))                      
-            
-            DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
-            DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec) 
-            DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                 
-            colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddDoubleListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.DOUBLE_SET:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-                addMissingValue = False
-                if col[valIdx] == None:
-                    DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
-                    builder.PrependFloat64(float('NaN'))                     
-                    cellVec = builder.EndVector(1)
-                else:
-                    DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
-                    numElems = 0;
-                    for elem in col[valIdx]:
-                        if elem == None:
-                            addMissingValue = True
-                        else:
-                            builder.PrependFloat64(elem)  
-                            numElems += 1               
-                    cellVec = builder.EndVector(numElems)
-                    
-                DoubleCollectionCell.DoubleCollectionCellStart(builder)
-                DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
-                DoubleCollectionCell.DoubleCollectionCellAddKeepDummy(builder, addMissingValue)
-                cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
-                        
-            DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))
-                
-            DoubleCollectionColumn.DoubleCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(col))                      
-            
-            DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
-            DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec) 
-            DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                                                
-            colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddDoubleSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-                
-        elif table.get_type(colIdx) == _types_.STRING:
-            missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
-            col.fillna(value='', inplace=True)
-            
-            strLengths = list(map(len, col))
-            offStrLengths = builder.CreateByteArray(np.array(strLengths, dtype='i4').tobytes())
-            offStrBlob = builder.CreateString(''.join(col))
-            
-            StringColumn.StringColumnStartValuesVector(builder, 2)
-            builder.PrependInt32(offStrLengths)
-            builder.PrependInt32(offStrBlob)
-            valVec = builder.EndVector(2)
-                    
-            StringColumn.StringColumnStart(builder)        
-            StringColumn.StringColumnAddValues(builder, valVec)
-            StringColumn.StringColumnAddMissing(builder, missingVec)
-            colOffset = StringColumn.StringColumnEnd(builder)
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddStringColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.STRING_LIST:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-               
-                strOffsets = []
-                if col[valIdx] == None:
-                    strOffsets.append(builder.CreateString("Missing Value"))
-                
-#                debug_util.debug_msg("Python->Flatbuffers: (String List Cell):", col[valIdx])
-                else:
-                    cellMissing = []
-                    for strIdx in range(0, len(col[valIdx])):
-                        if col[valIdx][strIdx] == None:
-                            strOffsets.append(builder.CreateString("Missing Value"))
-                            cellMissing.append(True);
-                        else:
-                            strOffsets.append(builder.CreateString(col[valIdx][strIdx]))
-                            cellMissing.append(False)
-                            
-                     # the missing vector is *not* already in reversed order
-                    StringCollectionCell.StringCollectionCellStartMissingVector(builder, len(col[valIdx]))
-                    for cellIdx in reversed(range(0, len(col[valIdx]))):
-                        builder.PrependBool(cellMissing[cellIdx])
-                    cellMissingVec = builder.EndVector(len(col[valIdx]))                
-               
-                StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
-                for cellIdx in reversed(range(0, len(strOffsets))):
-                    builder.PrependUOffsetTRelative(strOffsets[cellIdx])
+                        # the missing vector is already in reversed order
+                        IntegerCollectionCell.IntegerCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                        for cellIdx in range(0, len(col[valIdx])):
+                            builder.PrependBool(cellMissing[cellIdx])
+                        cellMissingVec = builder.EndVector(len(col[valIdx]))
                                      
-                cellVec = builder.EndVector(len(strOffsets))
-                StringCollectionCell.StringCollectionCellStart(builder)
-                StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
-                if col[valIdx] != None:
-                    StringCollectionCell.StringCollectionCellAddMissing(builder, cellMissingVec)
-                cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
-                        
-            StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))  
-            
-            StringCollectionColumn.StringCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missingVec = builder.EndVector(len(col))                      
-            
-            StringCollectionColumn.StringCollectionColumnStart(builder)    
-            StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)
-            StringCollectionColumn.StringCollectionColumnAddMissing(builder,missingVec)                                  
-            colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddStringListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.STRING_SET:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-#                debug_util.debug_msg("Python->Flatbuffers: (String Set Cell):", col[valIdx])
-                strOffsets = []
-                if col[valIdx] == None:
-                    strOffsets.append(builder.CreateString("Missing Value"))
-                else:
-                    addMissingValue = False
-                    for elem in col[valIdx]:
-                        if elem == None:
-                            addMissingValue = True
-                        else:
-                            strOffsets.append(builder.CreateString(elem))
-               
-                StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
-                for cellIdx in reversed(range(0, len(strOffsets))):
-                    builder.PrependUOffsetTRelative(strOffsets[cellIdx])                                    
-                cellVec = builder.EndVector(len(strOffsets))
-                
-                StringCollectionCell.StringCollectionCellStart(builder)
-                StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
-                StringCollectionCell.StringCollectionCellAddKeepDummy(builder, addMissingValue)
-                cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
-                        
-            StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets))    
-            
-            StringCollectionColumn.StringCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missingVec = builder.EndVector(len(col))                      
-            
-            StringCollectionColumn.StringCollectionColumnStart(builder)    
-            StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)  
-            StringCollectionColumn.StringCollectionColumnAddMissing(builder, missingVec)                                
-            colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddStringSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.BYTES:
-          
-            bytesOffsets = []
-            missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
-            for idx in range(0, len(col)):
-                if col[idx] == None:
-                    bytesOffsets.append(get_empty_ByteCell(builder))
-                else:
-                    bytesOffsets.append(get_ByteCell(builder, col[idx]))
+                    IntegerCollectionCell.IntegerCollectionCellStart(builder)
+                    IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
+                    if col[valIdx] != None:
+                        IntegerCollectionCell.IntegerCollectionCellAddMissing(builder, cellMissingVec)
+                    cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                             
-            ByteColumn.ByteColumnStartValuesVector(builder, len(bytesOffsets))
-            for valIdx in reversed(range(0,len(bytesOffsets))):
-                builder.PrependUOffsetTRelative(bytesOffsets[valIdx])
-            valVec = builder.EndVector(len(bytesOffsets))
-                                   
-            serializerstr = ''
-            try:
-                serializerstr = serializers[table.get_names()[colIdx]]
-            except:
-                pass
-            if serializerstr != '':
-                serializer = builder.CreateString(serializerstr)
-            
-            ByteColumn.ByteColumnStart(builder)        
-            ByteColumn.ByteColumnAddValues(builder, valVec)
-            ByteColumn.ByteColumnAddMissing(builder, missingVec)
-            if serializerstr != '':
-                ByteColumn.ByteColumnAddSerializer(builder, serializer)
-            colOffset = ByteColumn.ByteColumnEnd(builder)
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddByteColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            #debug_util.debug_msg("Python->Flatbuffers: Ending BYTES")
-            
-        elif table.get_type(colIdx) == _types_.BYTES_LIST:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-                collOffsets = []
-                if col[valIdx] == None:                                                              
-                    collOffsets.append(get_empty_ByteCell(builder))                 
-                else:                 
-                    #debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
-                    cellMissing = []
-                    for cellIdx in range(0, len(col[valIdx])):
-                        cell = col[valIdx][cellIdx]
-                        #debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
-                        if cell == None:
-                            collOffsets.append(get_empty_ByteCell(builder))
-                            cellMissing.append(True)
-                        else:
-                            collOffsets.append(get_ByteCell(builder, bytearray(cell)))
-                            cellMissing.append(False)
+                IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))
+                
+                IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
+                
+                IntCollectionColumn.IntCollectionColumnStart(builder)    
+                IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)
+                IntCollectionColumn.IntCollectionColumnAddMissing(builder, missVec)                                  
+                colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddIntListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.INTEGER_SET:  
+                cellOffsets = []
+                
+                for valIdx in range(0,len(col)):
+                    addMissingValue = False;     
+                    if col[valIdx] == None:
+                        IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, 1)
+                        builder.PrependInt32(-2147483648)
+                        cellVec = builder.EndVector(1)
+                    else:
+                        IntegerCollectionCell.IntegerCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        numElems = 0
+                        for elem in col[valIdx]:
+                            if elem == None:
+                                addMissingValue = True
+                            else:                            
+                                builder.PrependInt32(elem)
+                                numElems += 1
+                        cellVec = builder.EndVector(numElems) 
+    #                    debug_util.debug_msg("Python->Flatbuffers: (Integer Set)", col[valIdx])                   
                     
-                    #debug_util.debug_msg("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
+                    IntegerCollectionCell.IntegerCollectionCellStart(builder)
+                    IntegerCollectionCell.IntegerCollectionCellAddValue(builder,cellVec)
+                    IntegerCollectionCell.IntegerCollectionCellAddKeepDummy(builder, addMissingValue)
+                    cellOffsets.append(IntegerCollectionCell.IntegerCollectionCellEnd(builder))
                             
-                    ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
-                    for cellIdx in reversed(range(0, len(cellMissing))):
-                         builder.PrependBool(cellMissing[cellIdx])                                    
-                    cellMissingVec = builder.EndVector(len(cellMissing))       
-                        
-                                 
-                    ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
-                    for cellIdx in reversed(range(0, len(collOffsets))):
-                        builder.PrependUOffsetTRelative(collOffsets[cellIdx])                                    
-                    cellVec = builder.EndVector(len(collOffsets))                   
+                IntCollectionColumn.IntCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))
                 
-                ByteCollectionCell.ByteCollectionCellStart(builder)
-                if col[valIdx] != None:
-                    ByteCollectionCell.ByteCollectionCellAddValue(builder, cellVec)
-                    ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
-                cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
-                        
-            ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets)) 
-            
-            ByteCollectionColumn.ByteCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(col))                      
-            
-            serializerstr = ''
-            try:
-                serializerstr = serializers[table.get_names()[colIdx]]
-            except:
-                pass
-            if serializerstr != '':
-                serializer = builder.CreateString(serializerstr)
-
-            ByteCollectionColumn.ByteCollectionColumnStart(builder)    
-            ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
-            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec)
-            if serializerstr != '':   
-                ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
-            colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
-                    
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddByteListColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-            
-        elif table.get_type(colIdx) == _types_.BYTES_SET:  
-            cellOffsets = []
-            for valIdx in range(0,len(col)):
-                collOffsets = []
-                if col[valIdx] == None:
-                    collOffsets.append(get_empty_ByteCell(builder))                   
-                else:                 
-             #       debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
-                    addMissingValue = False
-                    for cell in col[valIdx]:
-                        if cell == None:
-                            addMissingValue = True
-                        else:
-                            collOffsets.append(get_ByteCell(builder, bytearray(cell)))
-                                 
-                ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
-                for collIdx in reversed(range(0, len(collOffsets))):
-                    builder.PrependUOffsetTRelative(collOffsets[collIdx])                                    
-                cellVec = builder.EndVector(len(collOffsets))                   
-                
-                ByteCollectionCell.ByteCollectionCellStart(builder)
-                ByteCollectionCell.ByteCollectionCellAddValue(builder,cellVec)
-                ByteCollectionCell.ByteCollectionCellAddKeepDummy(builder,addMissingValue)
-                cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
-                        
-            ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
-            for valIdx in reversed(range(0,len(cellOffsets))):
-                builder.PrependUOffsetTRelative(cellOffsets[valIdx])
-            valVec = builder.EndVector(len(cellOffsets)) 
-            
-            ByteCollectionColumn.ByteCollectionColumnStartMissingVector(builder, len(col))
-            for missIdx in reversed(range(0,len(col))):
-                builder.PrependBool(col[missIdx] == None)
-            missVec = builder.EndVector(len(col))                      
-            
-            serializerstr = ''
-            try:
-                serializerstr = serializers[table.get_names()[colIdx]]
-            except:
-                pass
-            if serializerstr != '':
-                serializer = builder.CreateString(serializerstr)
-
-            ByteCollectionColumn.ByteCollectionColumnStart(builder)    
-            ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
-            ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec) 
-            if serializerstr != '':  
-                ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
-            colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
-                    
-            Column.ColumnStart(builder)
-            Column.ColumnAddType(builder, table.get_type(colIdx))
-            Column.ColumnAddByteSetColumn(builder, colOffset)
-            colOffsetList.append(Column.ColumnEnd(builder))
-
-
+                IntCollectionColumn.IntCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
              
+                IntCollectionColumn.IntCollectionColumnStart(builder)    
+                IntCollectionColumn.IntCollectionColumnAddValues(builder,valVec)  
+                IntCollectionColumn.IntCollectionColumnAddMissing(builder,missVec)                                
+                colOffset = IntCollectionColumn.IntCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddIntSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
     
-    KnimeTable.KnimeTableStartColumnsVector(builder, len(colOffsetList))
-    for colOffset in reversed(colOffsetList):
-        builder.PrependUOffsetTRelative(colOffset)    
-    colVecOffset = builder.EndVector(len(colOffsetList))
                 
-    KnimeTable.KnimeTableStart(builder)
-    KnimeTable.KnimeTableAddRowIDs(builder, rowIdVecOffset)
-    KnimeTable.KnimeTableAddColNames(builder, colNameVecOffset)
-    KnimeTable.KnimeTableAddColumns(builder, colVecOffset)
-    knimeTable = KnimeTable.KnimeTableEnd(builder)
-    builder.Finish(knimeTable)
-            
-  #  debug_util.debug_msg("Python->Flatbuffers Finished KnimeTable")
+            elif table.get_type(colIdx) == _types_.BOOLEAN:  
+                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+                valVec = builder.CreateByteArray(col.fillna(False).values.tobytes())
     
-    return builder.Output()
+                BooleanColumn.BooleanColumnStart(builder)                             
+                BooleanColumn.BooleanColumnAddValues(builder, valVec)
+                BooleanColumn.BooleanColumnAddMissing(builder, missingVec)
+                colOffset = BooleanColumn.BooleanColumnEnd(builder)
+                           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddBooleanColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.BOOLEAN_LIST:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                   # debug_util.debug_msg("Python->Flatbuffers: (Boolean List) col [", valIdx,"]", col[valIdx]) 
+                    if col[valIdx] == None:
+                        BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
+                        builder.PrependBool(True)
+                        cellVec = builder.EndVector(1)
+                    else: 
+                        BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        cellMissing = []
+                     #   debug_util.debug_msg("Python->Flatbuffers: (Boolean List) cell", col[valIdx])                 
+                        for cellIdx in reversed(range(0, len(col[valIdx]))):
+                            if col[valIdx][cellIdx] == None:
+                                builder.PrependBool(False)
+                                cellMissing.append(True)
+                            else:
+                                builder.PrependBool(col[valIdx][cellIdx])
+                                cellMissing.append(False)
+                        cellVec = builder.EndVector(len(col[valIdx]))
+                    #    debug_util.debug_msg("Python->Flatbuffers: (Boolean List) missing", cellMissing) 
+                        # the missing vector is already in reversed order
+                        BooleanCollectionCell.BooleanCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                        for cellIdx in range(0, len(col[valIdx])):
+                            builder.PrependBool(cellMissing[cellIdx])
+                        cellMissingVec = builder.EndVector(len(col[valIdx]))
+                        
+                    BooleanCollectionCell.BooleanCollectionCellStart(builder)
+                    BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
+                    if col[valIdx] != None:
+                        BooleanCollectionCell.BooleanCollectionCellAddMissing(builder,cellMissingVec)
+                    cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
+                            
+           #     valVec = builder.EndVector(len(cellOffsets))
+                            
+                    
+                BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets)) 
+                
+                BooleanCollectionColumn.BooleanCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
+                  
+                BooleanCollectionColumn.BooleanCollectionColumnStart(builder)    
+                BooleanCollectionColumn.BooleanCollectionColumnAddValues(builder,valVec)
+                BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                                  
+                colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddBooleanListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.BOOLEAN_SET:  
+    #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Start)")       
+    #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Column Length):", len(col))
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                    addMissingValue = False
+    
+                    if col[valIdx] == None:
+                        BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
+                        builder.PrependBool(False)
+                        cellVec = builder.EndVector(1)
+                    else: 
+                        BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        numElems = 0                
+                        for elem in col[valIdx]:
+                            if elem == None:
+                                addMissingValue = True
+                            else:
+                                builder.PrependBool(elem)
+                                numElems += 1
+                        cellVec = builder.EndVector(numElems)
+      
+                    BooleanCollectionCell.BooleanCollectionCellStart(builder)
+                    BooleanCollectionCell.BooleanCollectionCellAddValue(builder,cellVec)
+                    BooleanCollectionCell.BooleanCollectionCellAddKeepDummy(builder, addMissingValue)
+                    cellOffsets.append(BooleanCollectionCell.BooleanCollectionCellEnd(builder))
+                                           
+                BooleanCollectionColumn.BooleanCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))    
+                
+                BooleanCollectionColumn.BooleanCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
+              
+                BooleanCollectionColumn.BooleanCollectionColumnStart(builder)    
+                BooleanCollectionColumn.BooleanCollectionColumnAddValues(builder,valVec)   
+                BooleanCollectionColumn.BooleanCollectionColumnAddMissing(builder,missVec)                               
+                colOffset = BooleanCollectionColumn.BooleanCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddBooleanSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+    
+                
+            elif table.get_type(colIdx) == _types_.LONG:  
+                valVec = builder.CreateByteArray(col.values.tobytes())
+            
+                LongColumn.LongColumnStart(builder)                             
+                LongColumn.LongColumnAddValues(builder, valVec)
+                colOffset = LongColumn.LongColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddLongColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.LONG_LIST:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                   
+                    if col[valIdx] == None:
+                        LongCollectionCell.LongCollectionCellStartValueVector(builder, 1)
+                        builder.PrependInt64(-9223372036854775808)
+                        cellVec = builder.EndVector(1)
+                    else: 
+                        LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        cellMissing = []
+                        for cellIdx in reversed(range(0, len(col[valIdx]))):
+                            if col[valIdx][cellIdx] == None:
+                                builder.PrependInt64(-9223372036854775808)
+                                cellMissing.append(True)
+                            else:
+                                builder.PrependInt64(col[valIdx][cellIdx])
+                                cellMissing.append(False)                 
+                        cellVec = builder.EndVector(len(col[valIdx]))
+                        
+                        # the missing vector is already in reversed order
+                        LongCollectionCell.LongCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                        for cellIdx in range(0, len(col[valIdx])):
+                            builder.PrependBool(cellMissing[cellIdx])
+                        cellMissingVec = builder.EndVector(len(col[valIdx]))
+                        
+                    LongCollectionCell.LongCollectionCellStart(builder)
+                    LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                    if col[valIdx] != None:
+                        LongCollectionCell.LongCollectionCellAddMissing(builder, cellMissingVec)
+                    cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
+                            
+                LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))
+                
+                LongCollectionColumn.LongCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
+        
+                
+                LongCollectionColumn.LongCollectionColumnStart(builder)    
+                LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec) 
+                LongCollectionColumn.LongCollectionColumnAddMissing(builder,missVec)                                 
+                colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddLongListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.LONG_SET:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                   
+                    if col[valIdx] == None:
+                        LongCollectionCell.LongCollectionCellStartValueVector(builder, 1)
+                        builder.PrependInt64(-9223372036854775808)
+                        cellVec = builder.EndVector(1)
+                    else: 
+                        addMissingValue = False
+                        LongCollectionCell.LongCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        numElems = 0
+                        for elem in col[valIdx]:
+                            if elem == None:
+                                addMissingValue = True
+                            else:
+                                builder.PrependInt64(elem)
+                                numElems += 1                 
+                        cellVec = builder.EndVector(numElems)
+                        
+                    LongCollectionCell.LongCollectionCellStart(builder)
+                    LongCollectionCell.LongCollectionCellAddValue(builder,cellVec)
+                    LongCollectionCell.LongCollectionCellAddKeepDummy(builder, addMissingValue)
+                    cellOffsets.append(LongCollectionCell.LongCollectionCellEnd(builder))
+                            
+                LongCollectionColumn.LongCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))    
+                
+                LongCollectionColumn.LongCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(cellOffsets))   
+                  
+                LongCollectionColumn.LongCollectionColumnStart(builder)    
+                LongCollectionColumn.LongCollectionColumnAddValues(builder,valVec) 
+                LongCollectionColumn.LongCollectionColumnAddMissing(builder,missVec)                                                             
+                colOffset = LongCollectionColumn.LongCollectionColumnEnd(builder) 
+                          
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddLongSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+            
+            elif table.get_type(colIdx) == _types_.DOUBLE:
+                valVec = builder.CreateByteArray(col.values.tobytes())              
+                       
+                DoubleColumn.DoubleColumnStart(builder)                     
+                DoubleColumn.DoubleColumnAddValues(builder, valVec)
+                colOffset = DoubleColumn.DoubleColumnEnd(builder)
+                
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddDoubleColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.DOUBLE_LIST:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                   # debug_util.debug_msg("Python->Flatbuffers: (Double List)", col[valIdx])               
+                    if col[valIdx] == None:
+                        DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
+                        builder.PrependFloat64(float('NaN'))                     
+                        cellVec = builder.EndVector(1)
+                    else:
+                        DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        cellMissing = []
+                        for cellIdx in reversed(range(0, len(col[valIdx]))):
+                            if col[valIdx][cellIdx] == None:
+                                builder.PrependFloat64(float('NaN'))
+                                cellMissing.append(True)
+                                #debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
+                            else:
+                                builder.PrependFloat64(col[valIdx][cellIdx])
+                                cellMissing.append(False)    
+                                #debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])                 
+                        cellVec = builder.EndVector(len(col[valIdx]))
+                        
+                    #    debug_util.debug_msg("Python->Flatbuffers: (Double List Cell):", col[valIdx])
+                        # the missing vector is already in reversed order
+                        DoubleCollectionCell.DoubleCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                        for cellIdx in range(0, len(col[valIdx])):
+                            builder.PrependBool(cellMissing[cellIdx])
+                        cellMissingVec = builder.EndVector(len(col[valIdx]))
+                                       
+                    DoubleCollectionCell.DoubleCollectionCellStart(builder)
+                    DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                    if col[valIdx] != None:
+                        DoubleCollectionCell.DoubleCollectionCellAddMissing(builder, cellMissingVec)
+                    cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
+                            
+                DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))   
+                
+                DoubleCollectionColumn.DoubleCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(col))                      
+                
+                DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
+                DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec) 
+                DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                 
+                colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddDoubleListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.DOUBLE_SET:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                    addMissingValue = False
+                    if col[valIdx] == None:
+                        DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
+                        builder.PrependFloat64(float('NaN'))                     
+                        cellVec = builder.EndVector(1)
+                    else:
+                        DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, len(col[valIdx]))
+                        numElems = 0;
+                        for elem in col[valIdx]:
+                            if elem == None:
+                                addMissingValue = True
+                            else:
+                                builder.PrependFloat64(elem)  
+                                numElems += 1               
+                        cellVec = builder.EndVector(numElems)
+                        
+                    DoubleCollectionCell.DoubleCollectionCellStart(builder)
+                    DoubleCollectionCell.DoubleCollectionCellAddValue(builder,cellVec)
+                    DoubleCollectionCell.DoubleCollectionCellAddKeepDummy(builder, addMissingValue)
+                    cellOffsets.append(DoubleCollectionCell.DoubleCollectionCellEnd(builder))
+                            
+                DoubleCollectionColumn.DoubleCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))
+                    
+                DoubleCollectionColumn.DoubleCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(col))                      
+                
+                DoubleCollectionColumn.DoubleCollectionColumnStart(builder)    
+                DoubleCollectionColumn.DoubleCollectionColumnAddValues(builder,valVec) 
+                DoubleCollectionColumn.DoubleCollectionColumnAddMissing(builder, missVec)                                                                
+                colOffset = DoubleCollectionColumn.DoubleCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddDoubleSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                    
+            elif table.get_type(colIdx) == _types_.STRING:
+                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+                col.fillna(value='', inplace=True)
+                
+                strLengths = list(map(len, col))
+                offStrLengths = builder.CreateByteArray(np.array(strLengths, dtype='i4').tobytes())
+                offStrBlob = builder.CreateString(''.join(col))
+                
+                StringColumn.StringColumnStartValuesVector(builder, 2)
+                builder.PrependInt32(offStrLengths)
+                builder.PrependInt32(offStrBlob)
+                valVec = builder.EndVector(2)
+                        
+                StringColumn.StringColumnStart(builder)        
+                StringColumn.StringColumnAddValues(builder, valVec)
+                StringColumn.StringColumnAddMissing(builder, missingVec)
+                colOffset = StringColumn.StringColumnEnd(builder)
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddStringColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.STRING_LIST:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                   
+                    strOffsets = []
+                    if col[valIdx] == None:
+                        strOffsets.append(builder.CreateString("Missing Value"))
+                    
+    #                debug_util.debug_msg("Python->Flatbuffers: (String List Cell):", col[valIdx])
+                    else:
+                        cellMissing = []
+                        for strIdx in range(0, len(col[valIdx])):
+                            if col[valIdx][strIdx] == None:
+                                strOffsets.append(builder.CreateString("Missing Value"))
+                                cellMissing.append(True);
+                            else:
+                                strOffsets.append(builder.CreateString(col[valIdx][strIdx]))
+                                cellMissing.append(False)
+                                
+                         # the missing vector is *not* already in reversed order
+                        StringCollectionCell.StringCollectionCellStartMissingVector(builder, len(col[valIdx]))
+                        for cellIdx in reversed(range(0, len(col[valIdx]))):
+                            builder.PrependBool(cellMissing[cellIdx])
+                        cellMissingVec = builder.EndVector(len(col[valIdx]))                
+                   
+                    StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
+                    for cellIdx in reversed(range(0, len(strOffsets))):
+                        builder.PrependUOffsetTRelative(strOffsets[cellIdx])
+                                         
+                    cellVec = builder.EndVector(len(strOffsets))
+                    StringCollectionCell.StringCollectionCellStart(builder)
+                    StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                    if col[valIdx] != None:
+                        StringCollectionCell.StringCollectionCellAddMissing(builder, cellMissingVec)
+                    cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
+                            
+                StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))  
+                
+                StringCollectionColumn.StringCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missingVec = builder.EndVector(len(col))                      
+                
+                StringCollectionColumn.StringCollectionColumnStart(builder)    
+                StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)
+                StringCollectionColumn.StringCollectionColumnAddMissing(builder,missingVec)                                  
+                colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddStringListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.STRING_SET:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+    #                debug_util.debug_msg("Python->Flatbuffers: (String Set Cell):", col[valIdx])
+                    strOffsets = []
+                    if col[valIdx] == None:
+                        strOffsets.append(builder.CreateString("Missing Value"))
+                    else:
+                        addMissingValue = False
+                        for elem in col[valIdx]:
+                            if elem == None:
+                                addMissingValue = True
+                            else:
+                                strOffsets.append(builder.CreateString(elem))
+                   
+                    StringCollectionCell.StringCollectionCellStartValueVector(builder, len(strOffsets))
+                    for cellIdx in reversed(range(0, len(strOffsets))):
+                        builder.PrependUOffsetTRelative(strOffsets[cellIdx])                                    
+                    cellVec = builder.EndVector(len(strOffsets))
+                    
+                    StringCollectionCell.StringCollectionCellStart(builder)
+                    StringCollectionCell.StringCollectionCellAddValue(builder,cellVec)
+                    StringCollectionCell.StringCollectionCellAddKeepDummy(builder, addMissingValue)
+                    cellOffsets.append(StringCollectionCell.StringCollectionCellEnd(builder))
+                            
+                StringCollectionColumn.StringCollectionColumnStartValuesVector(builder, len(col))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets))    
+                
+                StringCollectionColumn.StringCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missingVec = builder.EndVector(len(col))                      
+                
+                StringCollectionColumn.StringCollectionColumnStart(builder)    
+                StringCollectionColumn.StringCollectionColumnAddValues(builder,valVec)  
+                StringCollectionColumn.StringCollectionColumnAddMissing(builder, missingVec)                                
+                colOffset = StringCollectionColumn.StringCollectionColumnEnd(builder)           
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddStringSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.BYTES:
+              
+                bytesOffsets = []
+                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+                for idx in range(0, len(col)):
+                    if col[idx] == None:
+                        bytesOffsets.append(get_empty_ByteCell(builder))
+                    else:
+                        bytesOffsets.append(get_ByteCell(builder, col[idx]))
+                                
+                ByteColumn.ByteColumnStartValuesVector(builder, len(bytesOffsets))
+                for valIdx in reversed(range(0,len(bytesOffsets))):
+                    builder.PrependUOffsetTRelative(bytesOffsets[valIdx])
+                valVec = builder.EndVector(len(bytesOffsets))
+                                       
+                serializerstr = ''
+                try:
+                    serializerstr = serializers[table.get_names()[colIdx]]
+                except:
+                    pass
+                if serializerstr != '':
+                    serializer = builder.CreateString(serializerstr)
+                
+                ByteColumn.ByteColumnStart(builder)        
+                ByteColumn.ByteColumnAddValues(builder, valVec)
+                ByteColumn.ByteColumnAddMissing(builder, missingVec)
+                if serializerstr != '':
+                    ByteColumn.ByteColumnAddSerializer(builder, serializer)
+                colOffset = ByteColumn.ByteColumnEnd(builder)
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddByteColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                #debug_util.debug_msg("Python->Flatbuffers: Ending BYTES")
+                
+            elif table.get_type(colIdx) == _types_.BYTES_LIST:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                    collOffsets = []
+                    if col[valIdx] == None:                                                              
+                        collOffsets.append(get_empty_ByteCell(builder))                 
+                    else:                 
+                        #debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                        cellMissing = []
+                        for cellIdx in range(0, len(col[valIdx])):
+                            cell = col[valIdx][cellIdx]
+                            #debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
+                            if cell == None:
+                                collOffsets.append(get_empty_ByteCell(builder))
+                                cellMissing.append(True)
+                            else:
+                                collOffsets.append(get_ByteCell(builder, bytearray(cell)))
+                                cellMissing.append(False)
+                        
+                        #debug_util.debug_msg("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
+                                
+                        ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
+                        for cellIdx in reversed(range(0, len(cellMissing))):
+                             builder.PrependBool(cellMissing[cellIdx])                                    
+                        cellMissingVec = builder.EndVector(len(cellMissing))       
+                            
+                                     
+                        ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
+                        for cellIdx in reversed(range(0, len(collOffsets))):
+                            builder.PrependUOffsetTRelative(collOffsets[cellIdx])                                    
+                        cellVec = builder.EndVector(len(collOffsets))                   
+                    
+                    ByteCollectionCell.ByteCollectionCellStart(builder)
+                    if col[valIdx] != None:
+                        ByteCollectionCell.ByteCollectionCellAddValue(builder, cellVec)
+                        ByteCollectionCell.ByteCollectionCellAddMissing(builder, cellMissingVec)
+                    cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
+                            
+                ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets)) 
+                
+                ByteCollectionColumn.ByteCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(col))                      
+                
+                serializerstr = ''
+                try:
+                    serializerstr = serializers[table.get_names()[colIdx]]
+                except:
+                    pass
+                if serializerstr != '':
+                    serializer = builder.CreateString(serializerstr)
+    
+                ByteCollectionColumn.ByteCollectionColumnStart(builder)    
+                ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
+                ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec)
+                if serializerstr != '':   
+                    ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
+                colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
+                        
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddByteListColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+                
+            elif table.get_type(colIdx) == _types_.BYTES_SET:  
+                cellOffsets = []
+                for valIdx in range(0,len(col)):
+                    collOffsets = []
+                    if col[valIdx] == None:
+                        collOffsets.append(get_empty_ByteCell(builder))                   
+                    else:                 
+                 #       debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
+                        addMissingValue = False
+                        for cell in col[valIdx]:
+                            if cell == None:
+                                addMissingValue = True
+                            else:
+                                collOffsets.append(get_ByteCell(builder, bytearray(cell)))
+                                     
+                    ByteCollectionCell.ByteCollectionCellStartValueVector(builder, len(collOffsets))
+                    for collIdx in reversed(range(0, len(collOffsets))):
+                        builder.PrependUOffsetTRelative(collOffsets[collIdx])                                    
+                    cellVec = builder.EndVector(len(collOffsets))                   
+                    
+                    ByteCollectionCell.ByteCollectionCellStart(builder)
+                    ByteCollectionCell.ByteCollectionCellAddValue(builder,cellVec)
+                    ByteCollectionCell.ByteCollectionCellAddKeepDummy(builder,addMissingValue)
+                    cellOffsets.append(ByteCollectionCell.ByteCollectionCellEnd(builder))
+                            
+                ByteCollectionColumn.ByteCollectionColumnStartValuesVector(builder, len(cellOffsets))
+                for valIdx in reversed(range(0,len(cellOffsets))):
+                    builder.PrependUOffsetTRelative(cellOffsets[valIdx])
+                valVec = builder.EndVector(len(cellOffsets)) 
+                
+                ByteCollectionColumn.ByteCollectionColumnStartMissingVector(builder, len(col))
+                for missIdx in reversed(range(0,len(col))):
+                    builder.PrependBool(col[missIdx] == None)
+                missVec = builder.EndVector(len(col))                      
+                
+                serializerstr = ''
+                try:
+                    serializerstr = serializers[table.get_names()[colIdx]]
+                except:
+                    pass
+                if serializerstr != '':
+                    serializer = builder.CreateString(serializerstr)
+    
+                ByteCollectionColumn.ByteCollectionColumnStart(builder)    
+                ByteCollectionColumn.ByteCollectionColumnAddValues(builder,valVec)
+                ByteCollectionColumn.ByteCollectionColumnAddMissing(builder,missVec) 
+                if serializerstr != '':  
+                    ByteCollectionColumn.ByteCollectionColumnAddSerializer(builder,serializer)                                         
+                colOffset = ByteCollectionColumn.ByteCollectionColumnEnd(builder)   
+                        
+                Column.ColumnStart(builder)
+                Column.ColumnAddType(builder, table.get_type(colIdx))
+                Column.ColumnAddByteSetColumn(builder, colOffset)
+                colOffsetList.append(Column.ColumnEnd(builder))
+    
+    
+                 
+        
+        KnimeTable.KnimeTableStartColumnsVector(builder, len(colOffsetList))
+        for colOffset in reversed(colOffsetList):
+            builder.PrependUOffsetTRelative(colOffset)    
+        colVecOffset = builder.EndVector(len(colOffsetList))
+                    
+        KnimeTable.KnimeTableStart(builder)
+        KnimeTable.KnimeTableAddRowIDs(builder, rowIdVecOffset)
+        KnimeTable.KnimeTableAddColNames(builder, colNameVecOffset)
+        KnimeTable.KnimeTableAddColumns(builder, colVecOffset)
+        knimeTable = KnimeTable.KnimeTableEnd(builder)
+        builder.Finish(knimeTable)
+                
+      #  debug_util.debug_msg("Python->Flatbuffers Finished KnimeTable")
+        
+        return builder.Output()
+    except flatbuffers.builder.BuilderSizeError:
+        raise BufferError("The requested buffersize during serialization exceeds the maximum buffer size."
+                + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.")
+    except:
+        raise
 
 # Create a {@link ByteCell} in the flatbuffers builder from a bytearray.
 # @param builder    the flatbuffers builder
