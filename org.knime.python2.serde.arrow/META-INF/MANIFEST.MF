@@ -3,13 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python Serialization (Labs) - Arrow
 Bundle-SymbolicName: org.knime.python2.serde.arrow;singleton:=true
 Bundle-Version: 3.5.0.qualifier
-Bundle-ClassPath: python-serde-arrow.jar,
- lib/arrow-format-0.7.1.jar,
- lib/arrow-memory-0.7.1.jar,
- lib/arrow-tools-0.7.1.jar,
- lib/arrow-vector-0.7.1.jar,
- lib/netty-buffer-4.1.16.Final.jar,
- lib/netty-common-4.1.16.Final.jar
+Bundle-ClassPath: python-serde-arrow.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Require-Bundle: org.knime.python2;bundle-version="[3.4.0,4.0.0)",
  org.knime.core;bundle-version="[3.4.0,4.0.0)",
