@@ -101,7 +101,6 @@ public abstract class ListInserter implements ArrowVectorInserter {
      *
      * @param buffer the internal {@link ByteBuffer}
      * @param cell the cell to process
-     * @return the object array corresponding to the inserted values (NOTE: ugly, will be changed)
      */
     protected abstract void putCollection(ByteBuffer buffer, Cell cell);
 
