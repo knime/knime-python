@@ -387,9 +387,7 @@ class PythonKernel(Borg):
                 if not handled:
                     raise LookupError('The command ' + command + ' was received but it cannot be handled by the Python Kernel.')
         finally:
-            self._connection.close()
             self._cleanup()
-            exit()
         
     def bytes_from_file(self, path):
         return open(path, 'rb').read()
