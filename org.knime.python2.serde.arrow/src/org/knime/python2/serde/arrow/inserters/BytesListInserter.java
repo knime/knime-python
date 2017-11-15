@@ -55,7 +55,7 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on Integer[] cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on byte[] list cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

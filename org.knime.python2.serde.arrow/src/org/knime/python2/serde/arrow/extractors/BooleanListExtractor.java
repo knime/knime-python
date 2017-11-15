@@ -55,9 +55,10 @@ import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
+import org.knime.python2.util.BitArray;
 
 /**
- * Base class for List types that are transferred between the arrow table format and the python table format.
+ * Manages the data transfer between the arrow table format and the python table format. Works on Boolean list vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -90,11 +91,7 @@ public class BooleanListExtractor implements VectorExtractor {
         int primLn = nVals / 8 + ((nVals % 8 == 0) ? 0 : 1);
         byte[] primitives = new byte[primLn];
         buffer.get(primitives);
-        // TODO support bit encoding in cell impl
-        boolean[] prims = new boolean[nVals];
-        for (int i = 0; i < nVals; i++) {
-            prims[i] = ((primitives[i / 8] & (1 << (i % 8))) > 0);
-        }
+        BitArray prims = new BitArray(primitives, nVals);
 
         byte[] missings = new byte[nVals / 8 + ((nVals % 8 == 0) ? 0 : 1)];
         buffer.get(missings);

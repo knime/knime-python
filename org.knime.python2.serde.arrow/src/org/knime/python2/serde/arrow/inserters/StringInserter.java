@@ -94,7 +94,6 @@ public class StringInserter implements ArrowVectorInserter {
             byte[] bVal = cell.getStringValue().getBytes(StandardCharsets.UTF_8);
             m_byteCount += bVal.length;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
             m_mutator.set(m_ctr, bVal);

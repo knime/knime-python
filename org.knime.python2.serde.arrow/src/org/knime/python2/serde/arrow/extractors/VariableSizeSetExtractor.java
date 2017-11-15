@@ -57,7 +57,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtrac
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Base class for Set types that are transferred between the arrow table format and the python table format.
+ * Base class for Sets of variable size types that are transferred between the arrow table format and the python table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -107,7 +107,9 @@ public abstract class VariableSizeSetExtractor implements VectorExtractor {
         m_ctr++;
         int nVals = buffer.asIntBuffer().get();
         buffer.position(4);
+        //template method
         boolean hasMissing = (buffer.get(4 + getValuesLength(buffer, nVals)) == 0);
+        //template method
         return extractArray(buffer, nVals, hasMissing);
 
     }

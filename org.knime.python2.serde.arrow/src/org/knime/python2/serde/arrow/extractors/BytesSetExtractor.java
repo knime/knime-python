@@ -56,7 +56,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the arrow table format and the python table format. Works on Integer set vectors.
+ * Manages the data transfer between the arrow table format and the python table format. Works on byte[] set vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

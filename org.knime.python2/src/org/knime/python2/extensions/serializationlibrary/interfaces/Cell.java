@@ -45,6 +45,8 @@
 
 package org.knime.python2.extensions.serializationlibrary.interfaces;
 
+import org.knime.python2.util.BitArray;
+
 /**
  * A cell containing a single value (or array of values).
  *
@@ -93,6 +95,12 @@ public interface Cell {
      *             {@link Type#BOOLEAN_LIST} or {@link Type#BOOLEAN_SET}.
      */
     boolean[] getBooleanArrayValue() throws IllegalStateException;
+
+    /**
+     * @return The bit encoded boolean array value of this cell.
+     * @throws IllegalStateException if stored object is not a {@link BitArray}
+     */
+    BitArray getBitEncodedArrayValue() throws IllegalStateException;
 
     /**
      * @return The integer value of this cell.

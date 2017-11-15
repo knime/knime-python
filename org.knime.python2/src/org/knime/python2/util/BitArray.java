@@ -56,12 +56,15 @@ public class BitArray {
 
     private byte[] m_values;
 
+    private int m_size;
+
     /**
      * Constructor.
      * @param size the number of elements in the array
      */
     public BitArray(final int size) {
         m_values = new byte[size / 8 + (size % 8 == 0 ? 0:1)];
+        m_size = size;
     }
 
     /**
@@ -70,10 +73,22 @@ public class BitArray {
      */
     public BitArray(final byte[] values) {
         m_values = values;
+        m_size = values.length * 8;
+    }
+
+    /**
+     * Constructor.
+     * @param values encoded byte array containing values
+     * @param size the number of elements encoded
+     */
+    public BitArray(final byte[] values, final int size) {
+        m_values = values;
+        m_size = size;
     }
 
     /**
      * Set the array at the given position to 1.
+     * NOTE: no range check is performed.
      * @param pos a position inside the array
      */
     public void setToOne(final int pos) {
@@ -82,6 +97,7 @@ public class BitArray {
 
     /**
      * Set the array at the given position to 0.
+     * NOTE: no range check is performed.
      * @param pos a position inside the array
      */
     public void setToZero(final int pos) {
@@ -90,6 +106,7 @@ public class BitArray {
 
     /**
      * Check the array at the given position.
+     * NOTE: no range check is performed.
      * @param pos a position inside the array
      * @return true if value at the given position is 1, false otherwise
      */
@@ -103,6 +120,43 @@ public class BitArray {
      */
     public byte[] getEncodedByteArray() {
         return m_values;
+    }
+
+    /**
+     * Converts the bit array to a boolean array interpreting each bit as a boolean value.
+     * @return a boolean array
+     */
+    public boolean[] asBooleanArray() {
+        boolean[] ret = new boolean[m_size];
+        for(int i=0; i < m_size; i++) {
+            ret[i] = oneAt(i);
+        }
+        return ret;
+    }
+
+    /**
+     * Create a bit array by encoding each element of the given boolean array in a single bit.
+     * @param ba a boolean array
+     * @return the created bit array
+     */
+    public static BitArray fromBooleanArray(final boolean[] ba) {
+        int primLn = ba.length / 8 + ((ba.length % 8 == 0) ? 0 : 1);
+        byte[] primitives = new byte[primLn];
+
+        for (int j = 0; j < ba.length; j++) {
+            if (ba[j]) {
+                primitives[j / 8] |= (1 << (j % 8));
+            }
+        }
+        return new BitArray(primitives, ba.length);
+    }
+
+    /**
+     * Get the size of the bit array.
+     * @return the size
+     */
+    public int getSize() {
+        return m_size;
     }
 
 }

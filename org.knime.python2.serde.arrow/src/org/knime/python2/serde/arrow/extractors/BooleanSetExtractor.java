@@ -55,9 +55,10 @@ import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
+import org.knime.python2.util.BitArray;
 
 /**
- * Base class for Set types that are transferred between the arrow table format and the python table format.
+ * Manages the data transfer between the arrow table format and the python table format. Works on Boolean set vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -93,12 +94,9 @@ public class BooleanSetExtractor implements VectorExtractor {
 
         byte[] primitives = new byte[primLn];
         buffer.get(primitives, 0, primLn);
-        // TODO ugly object types
-        boolean[] objs = new boolean[nVals];
-        for (int i = 0; i < nVals; i++) {
-            objs[i] = ((primitives[i / 8] & (1 << (i % 8))) > 0);
-        }
-        return new CellImpl(objs, hasMissing);
+        BitArray prims = new BitArray(primitives, nVals);
+
+        return new CellImpl(prims, hasMissing);
     }
 
 }

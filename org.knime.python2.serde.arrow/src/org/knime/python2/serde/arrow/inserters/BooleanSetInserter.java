@@ -54,9 +54,10 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
+import org.knime.python2.util.BitArray;
 
 /**
- * Base class for ListTypes that are transferred between the python table format and the arrow table format.
+ * Manages the data transfer between the python table format and the arrow table format. Works on Boolean set cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -91,7 +92,7 @@ public class BooleanSetInserter implements ArrowVectorInserter {
 
     @Override
     public void put(final Cell cell) {
-        // TODO check if I request capacity 63 and arrow allocates 64 but still returns 63 for capacity, if then it would make sense to allocate 64 anyway...
+
         if (m_ctr >= m_vec.getValueCapacity()) {
             m_vec.getValuesVector().getOffsetVector().reAlloc();
             m_vec.getValidityVector().reAlloc();
@@ -99,24 +100,14 @@ public class BooleanSetInserter implements ArrowVectorInserter {
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
 
-            //TODO ugly object types
-            boolean[] objs = cell.getBooleanArrayValue();
-            int primLn = objs.length / 8 + ((objs.length % 8 == 0) ? 0 : 1);
-            byte[] primitives = new byte[primLn];
-            boolean hasMissing = cell.hasMissingInSet();
-            //Put missing value to last array position
-            for(int j=0; j<objs.length; j++) {
-                if(objs[j]) {
-                    primitives[j / 8] |= (1 << (j % 8));
-                }
-            }
-            int valueLn = objs.length;
-            int size = valueLn / 8 + ((valueLn % 8 == 0) ? 0 : 1);
+            BitArray bitEncoded = cell.getBitEncodedArrayValue();
+            byte[] primitives = bitEncoded.getEncodedByteArray();
 
-            int len = 4 +  size + 1;
+            boolean hasMissing = cell.hasMissingInSet();
+
+            int len = 4 +  primitives.length + 1;
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
 
@@ -126,20 +117,15 @@ public class BooleanSetInserter implements ArrowVectorInserter {
                 m_buffer.position(0);
             }
 
-            m_buffer.putInt(valueLn);
-            m_buffer.put(primitives, 0, size);
+            m_buffer.putInt(bitEncoded.getSize());
+            m_buffer.put(primitives, 0, primitives.length);
 
             if(hasMissing) {
                 m_buffer.put((byte)0);
             } else {
                 m_buffer.put((byte)1);
             }
-            //TODO ?
-            //align to 64bit
-            /*int pos = byteBuffer.position();
-            if(pos % 8 != 0) {
-                byteBuffer.position(8 * (pos / 8 + 1));
-            }*/
+
             //assumption: m_mutator copies array
             m_mutator.set(m_ctr, m_buffer.array());
         }

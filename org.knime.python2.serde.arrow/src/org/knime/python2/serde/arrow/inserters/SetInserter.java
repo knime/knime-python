@@ -56,7 +56,7 @@ import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Base class for ListTypes that are transferred between the python table format and the arrow table format.
+ * Base class for Set types that are transferred between the python table format and the arrow table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -107,7 +107,7 @@ public abstract class SetInserter implements ArrowVectorInserter {
 
     @Override
     public void put(final Cell cell) {
-        // TODO check if I request capacity 63 and arrow allocates 64 but still returns 63 for capacity, if then it would make sense to allocate 64 anyway...
+
         if (m_ctr >= m_vec.getValueCapacity()) {
             m_vec.getValuesVector().getOffsetVector().reAlloc();
             m_vec.getValidityVector().reAlloc();
@@ -120,7 +120,6 @@ public abstract class SetInserter implements ArrowVectorInserter {
             int len = 4 + numAndLen[1] + 1;
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
 
@@ -140,12 +139,7 @@ public abstract class SetInserter implements ArrowVectorInserter {
             } else {
                 m_buffer.put((byte)1);
             }
-            //TODO ?
-            //align to 64bit
-            /*int pos = byteBuffer.position();
-            if(pos % 8 != 0) {
-                byteBuffer.position(8 * (pos / 8 + 1));
-            }*/
+
             //assumption: m_mutator copies array
             m_mutator.set(m_ctr, m_buffer.array());
         }

@@ -109,12 +109,15 @@ public abstract class ListExtractor implements VectorExtractor {
         ByteBuffer buffer = ByteBuffer.wrap(m_accessor.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
         int nVals = buffer.asIntBuffer().get();
         buffer.position(4);
+        //template method
         fillInternalArray(buffer, nVals);
+        //template method
         buffer.position(getValuesLength() + 4);
         byte[] missings = new byte[nVals / 8 + (nVals % 8 == 0 ? 0:1)];
         buffer.get(missings);
 
         m_ctr++;
+        //template method
         return getReturnValue(missings);
     }
 

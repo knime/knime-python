@@ -58,7 +58,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
 
 /**
  * Manages the data transfer between the arrow table format and the python table format.
- * Works on Long vectors.
+ * Works on String list vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */

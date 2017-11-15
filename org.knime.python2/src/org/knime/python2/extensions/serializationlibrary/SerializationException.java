@@ -51,7 +51,7 @@ package org.knime.python2.extensions.serializationlibrary;
 import java.io.IOException;
 
 /**
- * An exception that occured during the (de)serialization process.
+ * An exception that occurred during the (de)serialization process.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -65,6 +65,15 @@ public class SerializationException extends IOException {
      */
     public SerializationException(final String msg) {
         super(msg);
+    }
+
+    /**
+     * Constructor.
+     * @param msg the error message
+     * @param t the exception causing this exception to be thrown
+     */
+    public SerializationException(final String msg, final Throwable t) {
+        super(msg, t);
     }
 
 }

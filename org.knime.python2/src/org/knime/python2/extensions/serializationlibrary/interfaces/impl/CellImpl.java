@@ -48,6 +48,7 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.util.BitArray;
 
 /**
  * A cell implementation holding an object of any Type that is natively serializable via a {@link SerializationLibrary}.
@@ -87,7 +88,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer list.
+     * Instantiates a new cell impl with an boolean list.
      *
      * @param value the value
      * @param missings bit encoded missing values (0 missing, 1 available)
@@ -99,12 +100,37 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer set.
+     * Instantiates a new cell impl with an boolean set.
      *
      * @param value the value
      * @param hasMissing true if the set contains a missing value
      */
     public CellImpl(final boolean[] value, final boolean hasMissing) {
+        m_type = Type.BOOLEAN_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
+    }
+
+    /**
+     * Instantiates a new cell impl with an boolean list encoded in a {@link BitArray}.
+     *
+     * @param value the value
+     * @param missings bit encoded missing values (0 missing, 1 available)
+     */
+    public CellImpl(final BitArray value, final byte[] missings) {
+        m_type = Type.BOOLEAN_LIST;
+        m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with an boolean set encoded in a {@link BitArray}.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final BitArray value, final boolean hasMissing) {
         m_type = Type.BOOLEAN_SET;
         m_value = value;
         m_missing = new byte[1];
@@ -310,10 +336,22 @@ public class CellImpl implements Cell {
 
     @Override
     public boolean[] getBooleanArrayValue() throws IllegalStateException {
-        if (!(m_value instanceof boolean[])) {
-            throw new IllegalStateException("Requested boolean array value from cell with type: " + m_type);
+        if (m_value instanceof boolean[]) {
+            return (boolean[]) m_value;
+        } else if(m_value instanceof BitArray) {
+            return ((BitArray)m_value).asBooleanArray();
         }
-        return (boolean[])m_value;
+        throw new IllegalStateException("Requested boolean array value from cell with type: " + m_type);
+    }
+
+    @Override
+    public BitArray getBitEncodedArrayValue() throws IllegalStateException {
+        if(m_value instanceof BitArray) {
+            return (BitArray) m_value;
+        } else if(m_value instanceof boolean[]) {
+            return BitArray.fromBooleanArray((boolean[])m_value);
+        }
+        throw new IllegalStateException("Requested bit encoded boolean array value from cell with type: " + m_type);
     }
 
     @Override

@@ -269,7 +269,11 @@ def boolean_collection_generator(arrowcolumn, isset):
                 if hasMissing:
                     res.add(None)
                 yield res
-        
+
+# Deserialize the data contained in the specified file as pandas.DataFrame.
+# The data frame is written to the global read_data_frame to avoid multiple
+# deserialization attempts.
+# @param path the path to the file containing the serialized byte data
 def deserialize_data_frame(path):
     global read_data_frame, read_types, read_serializers, _pandas_native_types_, path_to_mmap
     path_to_mmap = path
@@ -319,13 +323,17 @@ def deserialize_data_frame(path):
             raise NameError('Variable indexcol has not been set properly, exiting!')
         
         if len(read_data_frame.columns) > 0:
-            read_data_frame.set_index(keys=indexcol, inplace=True)      
+            read_data_frame.set_index(keys=indexcol, inplace=True)
+        else:
+            read_data_frame = pandas.DataFrame(index=indexcol)
 
         #debug_util.breakpoint()
         #print('test')
     os.remove(path)
         
-        
+
+# Convert a simpletype to the corresponding pyarrow.DataType
+# @param type a SimpleType
 def to_pyarrow_type(type):
     if type == _types_.BOOLEAN:
         return pyarrow.bool_()
@@ -378,7 +386,6 @@ def binary_from_string_list_generator(column):
                 else:
                     column[j][idx] = ''
             
-            #TODO find a clean way for recursive list comprehension here
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
             for i in range(n_vals):
                 offsets[i + 1] = offsets[i] + len(column[j][i])
@@ -409,12 +416,10 @@ def binary_from_string_set_generator(column):
                 column[j].discard(None)
                 n_vals -= 1
                 
-            #TODO find a clean way for recursive list comprehension here
-            #TODO find a way to avoid list() usage
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
-            retls = list(column[j])
-            for i in range(n_vals):
-                offsets[i + 1] = offsets[i] + len(retls[i])
+            for i, elem in enumerate(column[j]):
+                offsets[i + 1] = offsets[i] + len(elem)
+                
             # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
                 values = bytes(bts for elem in column[j] for bts in elem.encode("utf-8"))
@@ -441,8 +446,7 @@ def binary_from_bytes_list_generator(column):
                     missings[idx // 8] += (1 << (idx % 8))
                 else:
                     column[j][idx] = b''
-                    
-            #TODO find a clean way for recursive list comprehension here       
+                          
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
             for i in range(n_vals):
                 offsets[i + 1] = offsets[i] + len(column[j][i])
@@ -471,12 +475,9 @@ def binary_from_bytes_set_generator(column):
                 column[j].discard(None)
                 n_vals -= 1
                 
-            #TODO find a clean way for recursive list comprehension here
-            #TODO find a way to avoid list() usage
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
-            retls = list(column[j])
-            for i in range(n_vals):
-                offsets[i + 1] = offsets[i] + len(retls[i])
+            for i, elem in enumerate(column[j]):
+                offsets[i + 1] = offsets[i] + len(elem)
 
             # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
@@ -538,8 +539,9 @@ def binary_from_set_generator(column, numpy_type):
                 hasMissing = np.uint8(0)
                 column[j].discard(None)
                 n_vals -= 1
-            #TODO can list() call be avoided ?
-            yield np.int32(n_vals).tobytes() + np.array(list(column[j]), dtype=numpy_type).tobytes() + hasMissing.tobytes()
+            np_set = np.empty(len(column[j]), dtype=numpy_type)
+            for i, elem in enumerate(column[j]): np_set[i] = elem
+            yield np.int32(n_vals).tobytes() + np_set.tobytes() + hasMissing.tobytes()
             
 # Generator converting values in a set type column to a binary representation 
 # having the format (length(values), values, missing_mask). Works on Boolean
@@ -557,7 +559,6 @@ def binary_from_boolean_set_generator(column):
                 hasMissing = np.uint8(0)
                 column[j].discard(None)
                 n_vals -= 1
-            #TODO can list() call be avoided ?
             if _python3:
                 yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(list(column[j]))) + hasMissing.tobytes()
             else:
@@ -565,47 +566,44 @@ def binary_from_boolean_set_generator(column):
                 for i, el in enumerate(bool_to_bits_generator(list(column[j]))): ar[i] = el
                 yield np.int32(n_vals).tobytes() + ar.tobytes() + hasMissing.tobytes()
 
+# Get the first element of the specified column that is not None.
+# @param column a pandas.Series
 def get_first_not_None(column):
     for elem in column:
         if not elem == None:
             return elem
     return None
 
-# Serialize a pandas.DataFrame into a memory mapped file
-# Return the path to the created memory mapped file as bytearray.
+# Serialize a pandas.DataFrame into a file
+# Return the path to the created file as bytearray.
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    #if not path_to_mmap == None:
-    #    path = path_to_mmap
-    #else:
     path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)[1]
     try:
-        #empty dataframe ?
-        if len(table._data_frame) == 0 or len(table._data_frame.columns) == 0:
-            os.remove(path)
-            return bytearray(path, 'utf-8')
         
         #Python2 workaround for strings -> convert all to unicode
         if not _python3:
             for i in range(len(table._data_frame.columns)):
-                if type(table._data_frame.iloc[0,i]) == str and table._column_types[i] == _types_.STRING:
+                if type(get_first_not_None(table._data_frame.iloc[:,i])) == str and table._column_types[i] == _types_.STRING:
                     for j in range(len(table._data_frame)):
                         table._data_frame.iloc[j,i] = unicode(table._data_frame.iloc[j,i])
             indexls = []
             for j in range(len(table._data_frame)):
                 indexls.append(unicode(table._data_frame.index[j]))
-            table._data_frame.set_index(keys=pandas.Series(indexls), inplace=True)
+            if indexls:
+                table._data_frame.set_index(keys=pandas.Series(indexls), inplace=True)
         
         mp = pyarrow.MemoryPool(2**64)
         col_arrays = []
         col_names = []
         all_names = []
         missing_names = []
-        if not table._data_frame.index.isnull().all():
-            col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.index, type=to_pyarrow_type(_types_.STRING), memory_pool=mp))
-            col_names.append("__index_level_0__")
-            all_names.append("__index_level_0__")
+
+        col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.index, type=to_pyarrow_type(_types_.STRING), memory_pool=mp))
+        col_names.append("__index_level_0__")
+        all_names.append("__index_level_0__")
+        # Serialize the dataframe into a list of pyarrow.Array column by column
         for i in range(len(table._data_frame.columns)):
             #missing column ? -> save name and don't send any buffer for column
             if(table._data_frame.iloc[:,i].isnull().all()):
@@ -637,41 +635,50 @@ def table_to_bytes(table):
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_string_set_generator(table._data_frame.iloc[:,i])))
             elif table.get_type(i) == _types_.BYTES_SET:
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_bytes_set_generator(table._data_frame.iloc[:,i])))
-            #Workaround until explicit typization can be done 
+            #Workaround until numpy typecasts are implemented in pyarrow 
             elif table.get_type(i) == _types_.INTEGER and table._data_frame.iloc[:,i].dtype == np.int64:
                 col_arrays.append(pyarrow.Array.from_pandas(np.array(table._data_frame.iloc[:,i], dtype=np.int32), memory_pool=mp))
             #Workaround until fixed in pyarrow ... it is assumed that the first non-None object is bytearray if any
             elif table.get_type(i) == _types_.BYTES and type(get_first_not_None(table._data_frame.iloc[:,i])) == bytearray:
                 col_arrays.append(pyarrow.Array.from_pandas(map(bytes, table._data_frame.iloc[:,i]), memory_pool=mp))
             #create pyarrow.Array
-            #TODO binary type not working ... why ?
-            #col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.iloc[:,i], type=to_pyarrow_type(table.get_type(i)), memory_pool=mp))
             else:
-                #debug_util.breakpoint()
-                col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.iloc[:,i], memory_pool=mp))
+                pa_type = to_pyarrow_type(table.get_type(i))
+                #pyarrow.binary() type is not allowed as argument for type atm
+                if pa_type == pyarrow.binary():
+                    col_arrays.append(pyarrow.BinaryArray.from_pandas(table._data_frame.iloc[:,i], memory_pool=mp))
+                else:
+                    col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.iloc[:,i], type=pa_type, memory_pool=mp))
             col_names.append(table.get_name(i))
             all_names.append(table.get_name(i))
         
-        batch = pyarrow.RecordBatch.from_arrays(col_arrays, col_names)
-        
-        #debug_util.breakpoint()
-        
-        #TODO add pandas and numpy types to columns
-        pandas_metadata = {"index_columns": [all_names[0]], "columns": [{"name": all_names[0], "metadata": {"serializer_id": "", "type_id": _types_.STRING}}], "missing_columns": missing_names}
+        #Construct metadata
+        custom_metadata = {"index_columns": [all_names[0]], 
+                           "columns": [{"name": all_names[0], "metadata": {"serializer_id": "", "type_id": _types_.STRING}}], 
+                           "missing_columns": missing_names, 
+                           "num_rows": len(table._data_frame)}
         
         real_col_names = list(table._data_frame.columns)
         for name in all_names[1:]:
             col_idx = real_col_names.index(name)
             if table.get_type(col_idx) in [_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET]:
-                pandas_metadata['columns'].append({"name": name, "metadata": {"serializer_id": table.get_column_serializers().get(name, ""), "type_id": table.get_type(col_idx)}})
+                custom_metadata['columns'].append({"name": name, "metadata": {"serializer_id": table.get_column_serializers().get(name, ""), "type_id": table.get_type(col_idx)}})
             else:
-                pandas_metadata['columns'].append({"name": name, "metadata": {"serializer_id": "", "type_id": table.get_type(col_idx)}})
+                custom_metadata['columns'].append({"name": name, "metadata": {"serializer_id": "", "type_id": table.get_type(col_idx)}})
         
-        metadata = {b'pandas': json.dumps(pandas_metadata).encode('utf-8')}
+        metadata = {b'ArrowSerializationLibrary': json.dumps(custom_metadata).encode('utf-8')}
+        
+        # Empty record batches are not supported, therefore add a dummy array if dataframe is empty
+        if not col_arrays:
+            col_arrays.append(pyarrow.array([], type=pyarrow.int32()))
+            col_names.append('dummy')
+        
+        batch = pyarrow.RecordBatch.from_arrays(col_arrays, col_names)
           
         schema = batch.schema.remove_metadata()
         schema = schema.add_metadata(metadata)
-                
+        
+        #Write data to file and return filepath
         with pyarrow.OSFile(path, 'wb') as f:
             stream_writer = pyarrow.RecordBatchStreamWriter(f, schema)
             stream_writer.write_batch(batch)

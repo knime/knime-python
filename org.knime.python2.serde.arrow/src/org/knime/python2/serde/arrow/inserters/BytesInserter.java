@@ -51,7 +51,7 @@ import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
- * Manages the data transfer between the python table format and the arrow table format. Works on Byte[] cells.
+ * Manages the data transfer between the python table format and the arrow table format. Works on byte[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -89,11 +89,10 @@ public class BytesInserter implements ArrowVectorInserter {
         }
         if (!cell.isMissing()) {
             //Implicitly assumed to be missing
-            //TODO ugly object type
+
             byte[] bVal = cell.getBytesValue();
             m_byteCount += bVal.length;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                //TODO realloc only content vector (not offset vector), if possible with factor 2^x
                 m_vec.getValuesVector().reAlloc();
             }
             m_mutator.set(m_ctr, bVal);

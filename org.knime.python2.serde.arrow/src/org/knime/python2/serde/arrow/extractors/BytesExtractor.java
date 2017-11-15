@@ -54,7 +54,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtrac
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
- * Manages the data transfer between the arrow table format and the python table format. Works on Long vectors.
+ * Manages the data transfer between the arrow table format and the python table format. Works on byte[] vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -82,7 +82,6 @@ public class BytesExtractor implements VectorExtractor {
         if (m_accessor.isNull(m_ctr)) {
             c = new CellImpl();
         } else {
-            //TODO ugly
             c = new CellImpl(m_accessor.getObject(m_ctr));
         }
         m_ctr++;
