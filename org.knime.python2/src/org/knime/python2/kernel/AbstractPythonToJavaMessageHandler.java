@@ -68,7 +68,7 @@ abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessage
 
 
     @Override
-    public boolean tryHandle(final PythonToJavaMessage msg) {
+    public boolean tryHandle(final PythonToJavaMessage msg) throws Exception {
         if(msg.getCommand().contentEquals(m_command)) {
             handle(msg);
             return true;
@@ -81,5 +81,5 @@ abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessage
      *
      * @param msg a message received from python
      */
-    protected abstract void handle(final PythonToJavaMessage msg);
+    protected abstract void handle(final PythonToJavaMessage msg) throws Exception;
 }

@@ -62,6 +62,6 @@ public interface PythonToJavaMessageHandler {
      *
      * @return true if handled.
      */
-    boolean tryHandle(final PythonToJavaMessage msg);
+    boolean tryHandle(final PythonToJavaMessage msg) throws Exception;
 
 }

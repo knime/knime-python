@@ -120,13 +120,17 @@ public class Commands {
      * @param msg a message from the python process
      * @return true if the message was a request, false otherwise
      */
-    private boolean handleResponse(final PythonToJavaMessage msg) {
         m_responseHandlingActive = true;
         m_answered = false;
+    private boolean handleResponse(final PythonToJavaMessage msg) throws IOException {
         boolean handled = false;
-        for(AbstractPythonToJavaMessageHandler handler:m_msgHandlers) {
-            handled = handler.tryHandle(msg);
-            if(handled) {
+        for (AbstractPythonToJavaMessageHandler handler : m_msgHandlers) {
+            try {
+                handled = handler.tryHandle(msg);
+            } catch (Exception ex) {
+                throw new IOException(ex.getMessage(), ex);
+            }
+            if (handled) {
                 break;
             }
         }
