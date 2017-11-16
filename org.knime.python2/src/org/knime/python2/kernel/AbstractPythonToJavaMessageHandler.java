@@ -49,9 +49,10 @@
 package org.knime.python2.kernel;
 
 /**
- * Handler class for reacting to python responses. NOTE: Not marking a message as handled will produce an error.
+ * Handler class for reacting to Python responses. NOTE: Not marking a message as handled will produce an error.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessageHandler {
 
@@ -79,7 +80,8 @@ public abstract class AbstractPythonToJavaMessageHandler implements PythonToJava
     /**
      * Processes the received message.
      *
-     * @param msg a message received from python
+     * @param msg a message received from Python
+     * @throws Exception if any exception occurs during handling
      */
     protected abstract void handle(final PythonToJavaMessage msg) throws Exception;
 }

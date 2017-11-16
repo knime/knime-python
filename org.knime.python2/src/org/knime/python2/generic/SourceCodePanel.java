@@ -61,7 +61,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -93,7 +92,6 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
@@ -105,7 +103,6 @@ import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.DataColumnSpecListCellRenderer;
@@ -281,13 +278,6 @@ public abstract class SourceCodePanel extends JPanel {
 
     private static final long serialVersionUID = -3216788918504383870L;
 
-    /**
-     * File containing the users spell checking dictionary.
-     */
-    private static final File USER_DICTIONARY =
-            new File(ResourcesPlugin.getWorkspace().getRoot().getLocation().toOSString(),
-                ".metadata" + File.separator + "dict" + File.separator + "userDictionary.txt");
-
     private static final String[] VARIABLES_COLUMN_NAMES = new String[]{"Name", "Type", "Value"};
 
     private boolean m_interactive = false;
@@ -318,8 +308,6 @@ public abstract class SourceCodePanel extends JPanel {
             return false;
         }
     };
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodePanel.class);
 
     private final JTable m_vars = new JTable(m_varsModel);
 
