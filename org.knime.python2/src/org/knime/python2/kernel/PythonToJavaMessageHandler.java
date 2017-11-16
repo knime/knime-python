@@ -49,19 +49,19 @@
 package org.knime.python2.kernel;
 
 /**
- * Handles messages from python to java
+ * Handles {@link PythonToJavaMessage messages from Python to Java}.
  *
- * @author Christian Dietz, KNIME GmbH
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public interface PythonToJavaMessageHandler {
 
     /**
-     * Handle a message if its command matches.
+     * Handle a message if its command matches. If the message {@link PythonToJavaMessage#isRequest() is a request}, it
+     * has to be {@link Messages#answer(JavaToPythonResponse) answered} exactly once during handling.
      *
      * @param msg a message
-     *
      * @return true if handled.
+     * @throws Exception if any exception occurs during handling
      */
     boolean tryHandle(final PythonToJavaMessage msg) throws Exception;
-
 }

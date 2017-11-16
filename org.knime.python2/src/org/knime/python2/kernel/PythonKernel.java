@@ -287,40 +287,35 @@ public class PythonKernel {
                 exception.get());
         }
         m_commands = new Commands(m_socket.getOutputStream(), m_socket.getInputStream());
+        Messages messages = m_commands.getMessages();
 
-        m_commands.registerMessageHandler(new AbstractPythonToJavaMessageHandler("serializer_request") {
+        messages.registerMessageHandler(new AbstractPythonToJavaMessageHandler("serializer_request") {
 
             @Override
-            protected void handle(final PythonToJavaMessage msg) {
-                try {
-                    for (PythonToKnimeExtension ext : PythonToKnimeExtensions.getExtensions()) {
-                        if (ext.getType().contentEquals(msg.getValue()) || ext.getId().contentEquals(msg.getValue())) {
-                            m_commands.answer(ext.getId() + ";" + ext.getType() + ";" + ext.getPythonSerializerPath());
-                            return;
-                        }
+            protected void handle(final PythonToJavaMessage msg) throws Exception {
+                for (PythonToKnimeExtension ext : PythonToKnimeExtensions.getExtensions()) {
+                    if (ext.getType().contentEquals(msg.getValue()) || ext.getId().contentEquals(msg.getValue())) {
+                        messages.answer(new DefaultJavaToPythonResponse(msg,
+                            ext.getId() + ";" + ext.getType() + ";" + ext.getPythonSerializerPath()));
+                        return;
                     }
-                    m_commands.answer(";;");
-                } catch (IOException ex) {
-                    // TODO Auto-generated catch block
                 }
+                messages.answer(new DefaultJavaToPythonResponse(msg, ";;"));
             }
         });
 
-        m_commands.registerMessageHandler(new AbstractPythonToJavaMessageHandler("deserializer_request") {
+        messages.registerMessageHandler(new AbstractPythonToJavaMessageHandler("deserializer_request") {
 
             @Override
-            protected void handle(final PythonToJavaMessage msg) {
-                try {
-                    for (KnimeToPythonExtension ext : KnimeToPythonExtensions.getExtensions()) {
-                        if (ext.getId().contentEquals(msg.getValue())) {
-                            m_commands.answer(ext.getId() + ";" + ext.getPythonDeserializerPath());
-                            return;
-                        }
+            protected void handle(final PythonToJavaMessage msg) throws Exception {
+                for (KnimeToPythonExtension ext : KnimeToPythonExtensions.getExtensions()) {
+                    if (ext.getId().contentEquals(msg.getValue())) {
+                        messages.answer(
+                            new DefaultJavaToPythonResponse(msg, ext.getId() + ";" + ext.getPythonDeserializerPath()));
+                        return;
                     }
-                    m_commands.answer(";");
-                } catch (IOException ex) {
-                    // TODO Auto-generated catch block
                 }
+                messages.answer(new DefaultJavaToPythonResponse(msg, ";"));
             }
         });
         // First get PID of Python process
@@ -346,6 +341,13 @@ public class PythonKernel {
             m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + "; LONG_SENTINEL = "
                 + m_kernelOptions.getSentinelValue());
         }
+    }
+
+    /**
+     * @return returns the kernel's messaging interface
+     */
+    public Messages getMessages() {
+        return m_commands.getMessages();
     }
 
     /**

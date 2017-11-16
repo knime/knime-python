@@ -44,69 +44,48 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2017 (clemens): created
+ *   Nov 16, 2017 (marcel): created
  */
 package org.knime.python2.kernel;
 
+import org.knime.core.node.util.CheckUtils;
+
 /**
- * Message class for wrapping command or status strings received from python.
+ * Default implementation of {@link JavaToPythonResponse}.
  *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class PythonToJavaMessage {
+public class DefaultJavaToPythonResponse implements JavaToPythonResponse {
 
-    private String m_command;
+    private PythonToJavaMessage m_originalMessage;
 
-    private String m_value;
-
-    private boolean m_isRequest;
+    private String m_response;
 
     /**
-     * Constructor.
+     * Creates a new instance of a {@link JavaToPythonResponse} to a specific {@link PythonToJavaMessage} that holds a
+     * simple response string.
      *
-     * @param command a command used for identifying how to process the message
-     * @param value the message payload
-     * @param isRequest true if the message is a request meaning the python process is waiting for an appropriate
-     *            response false otherwise
+     * @param originalMessage the message this response responds to
+     * @param response the actual response string
      */
-    public PythonToJavaMessage(final String command, final String value, final boolean isRequest) {
-        m_command = command;
-        m_value = value;
-        m_isRequest = isRequest;
+    public DefaultJavaToPythonResponse(final PythonToJavaMessage originalMessage, final String response) {
+        m_originalMessage = CheckUtils.checkNotNull(originalMessage);
+        m_response = CheckUtils.checkNotNull(response);
     }
 
-    /**
-     * Gets the command.
-     *
-     * @return the command
-     */
-    public String getCommand() {
-        return m_command;
+    @Override
+    public PythonToJavaMessage getOriginalMessage() {
+        return m_originalMessage;
     }
 
-    /**
-     * Gets the value.
-     *
-     * @return the value
-     */
-    public String getValue() {
-        return m_value;
+    @Override
+    public String getReponse() {
+        return m_response;
     }
 
-    /**
-     * Checks if is the message is a request.
-     *
-     * @return true, if request
-     */
-    public boolean isRequest() {
-        return m_isRequest;
-    }
-
-    /**
-     * @return the value-based representation of this message
-     */
     @Override
     public String toString() {
-        return String.join(":", isRequest() ? "r" : "s", m_command, m_value);
+        return m_response + " (response to message '" + m_originalMessage + "')";
     }
 }

@@ -44,69 +44,31 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2017 (clemens): created
+ *   Nov 16, 2017 (marcel): created
  */
 package org.knime.python2.kernel;
 
 /**
- * Message class for wrapping command or status strings received from python.
+ * Represents the response to a specific {@link PythonToJavaMessage} which will be sent to Python.
  *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class PythonToJavaMessage {
-
-    private String m_command;
-
-    private String m_value;
-
-    private boolean m_isRequest;
+public interface JavaToPythonResponse {
 
     /**
-     * Constructor.
-     *
-     * @param command a command used for identifying how to process the message
-     * @param value the message payload
-     * @param isRequest true if the message is a request meaning the python process is waiting for an appropriate
-     *            response false otherwise
+     * @return the original message this response responds to
      */
-    public PythonToJavaMessage(final String command, final String value, final boolean isRequest) {
-        m_command = command;
-        m_value = value;
-        m_isRequest = isRequest;
-    }
+    PythonToJavaMessage getOriginalMessage();
 
     /**
-     * Gets the command.
-     *
-     * @return the command
+     * @return the actual response string
      */
-    public String getCommand() {
-        return m_command;
-    }
+    String getReponse();
 
     /**
-     * Gets the value.
-     *
-     * @return the value
-     */
-    public String getValue() {
-        return m_value;
-    }
-
-    /**
-     * Checks if is the message is a request.
-     *
-     * @return true, if request
-     */
-    public boolean isRequest() {
-        return m_isRequest;
-    }
-
-    /**
-     * @return the value-based representation of this message
+     * @return the value-based representation of this response
      */
     @Override
-    public String toString() {
-        return String.join(":", isRequest() ? "r" : "s", m_command, m_value);
-    }
+    String toString();
 }

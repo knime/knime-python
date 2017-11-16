@@ -70,11 +70,7 @@ public class Commands {
 
     private final DataOutputStream m_bufferedOutToServer;
 
-    private final List<AbstractPythonToJavaMessageHandler> m_msgHandlers;
-
-    private boolean m_responseHandlingActive;
-
-    private boolean m_answered;
+    private final CommandsMessages m_messages;
 
     /**
      * Constructor.
@@ -87,72 +83,14 @@ public class Commands {
         m_inFromServer = inFromServer;
         m_bufferedInFromServer = new DataInputStream(m_inFromServer);
         m_bufferedOutToServer = new DataOutputStream(m_outToServer);
-        m_msgHandlers = new ArrayList<AbstractPythonToJavaMessageHandler>();
-        registerMessageHandler(new AbstractPythonToJavaMessageHandler("success") {
-
-            @Override
-            protected void handle(final PythonToJavaMessage msg) {}
-        });
+        m_messages = new CommandsMessages(this);
     }
 
     /**
-     * Register a handler for dealing with a subset of possible {@link PythonToJavaMessage}s from python.
-     *
-     * @param handler handles {@link PythonToJavaMessage}s having a specific command
+     * @return returns the command's messaging interface
      */
-    synchronized public void registerMessageHandler(final AbstractPythonToJavaMessageHandler handler) {
-        m_msgHandlers.add(handler);
-    }
-
-    /**
-     * Unregister an existing {@link AbstractPythonToJavaMessageHandler}. If it is not present in the internal list nothing happens.
-     *
-     * @param handler a {@link AbstractPythonToJavaMessageHandler}
-     */
-    synchronized public void unregisterMessageHandler(final AbstractPythonToJavaMessageHandler handler) {
-        m_msgHandlers.remove(handler);
-    }
-
-    /**
-     * Direct a {@link PythonToJavaMessage} to the appropriate registered {@link AbstractPythonToJavaMessageHandler}. If the message
-     * is a request it has to be answered by calling answer() exactly once.
-     *
-     * @param msg a message from the python process
-     * @return true if the message was a request, false otherwise
-     */
-        m_responseHandlingActive = true;
-        m_answered = false;
-    private boolean handleResponse(final PythonToJavaMessage msg) throws IOException {
-        boolean handled = false;
-        for (AbstractPythonToJavaMessageHandler handler : m_msgHandlers) {
-            try {
-                handled = handler.tryHandle(msg);
-            } catch (Exception ex) {
-                throw new IOException(ex.getMessage(), ex);
-            }
-            if (handled) {
-                break;
-            }
-        }
-        if(!handled) {
-            throw new IllegalStateException("Python response message was not handled. Command: " + msg.getCommand());
-        } else if(msg.isRequest() && !m_answered) {
-            throw new IllegalStateException("Python request was not answered. Command: " + msg.getCommand());
-        }
-        m_responseHandlingActive = false;
-        return msg.isRequest();
-    }
-
-    /**
-     * Answer the currently processed {@link PythonToJavaMessage} with the passed string.
-     * Can only be called once per message.
-     *
-     * @param answerStr an answer to the currently processed {@link PythonToJavaMessage}
-     * @throws IOException
-     */
-    public synchronized void answer(final PythonToJavaMessage msg, final String answerStr) throws IOException {
-        writeString(msg.getCommand() + "_response");
-        writeString(answerStr);
+    public Messages getMessages() {
+        return m_messages;
     }
 
     /**
@@ -175,7 +113,7 @@ public class Commands {
     synchronized public String[] execute(final String sourceCode) throws IOException {
         writeString("execute");
         writeString(sourceCode);
-        while(handleResponse(readResponseMessage())) {}
+        m_messages.waitForSuccessMessage();
         final String[] output = new String[2];
         output[0] = readString();
         output[1] = readString();
@@ -222,7 +160,7 @@ public class Commands {
         writeString("putTable");
         writeString(name);
         writeBytes(table);
-        while(handleResponse(readResponseMessage())) {}
+        m_messages.waitForSuccessMessage();
     }
 
     /**
@@ -237,7 +175,7 @@ public class Commands {
         writeString("appendToTable");
         writeString(name);
         writeBytes(table);
-        while(handleResponse(readResponseMessage())) {}
+        m_messages.waitForSuccessMessage();
     }
 
     /**
@@ -265,7 +203,7 @@ public class Commands {
         writeString("getTable");
         writeString(name);
         //success message is sent before table is transmitted
-        while(handleResponse(readResponseMessage())) {}
+        m_messages.waitForSuccessMessage();
         return readBytes();
     }
 
@@ -284,7 +222,7 @@ public class Commands {
         writeInt(start);
         writeInt(end);
         //success message is sent before table is transmitted
-        while(handleResponse(readResponseMessage())) {}
+        m_messages.waitForSuccessMessage();
         return readBytes();
     }
 
@@ -330,7 +268,7 @@ public class Commands {
      * @throws IOException
      */
     synchronized public byte[] autoComplete(final String sourceCode, final int line, final int column)
-            throws IOException {
+        throws IOException {
         writeString("autoComplete");
         writeString(sourceCode);
         writeInt(line);
@@ -524,13 +462,6 @@ public class Commands {
         outputStream.flush();
     }
 
-    private PythonToJavaMessage readResponseMessage() throws IOException {
-        byte[] bytes = readMessageBytes(m_bufferedInFromServer);
-        String str = new String(bytes, StandardCharsets.UTF_8);
-        String[] reqCmdVal = str.split(":");
-        return new PythonToJavaMessage(reqCmdVal[1], reqCmdVal[2], reqCmdVal[0].equals("r"));
-    }
-
     /**
      * Reads the next 32 bit from the input stream and interprets them as integer.
      *
@@ -561,4 +492,97 @@ public class Commands {
         return bytes;
     }
 
+    /**
+     * Commands-based implementation of {@link Messages}.
+     */
+    private static class CommandsMessages implements Messages {
+
+        private static final String SUCCESS_COMMAND = "success";
+
+        private static final String RESPONSE_SUFFIX = "_response";
+
+        private static final PythonToJavaMessageHandler SUCCESS_HANDLER =
+            new AbstractPythonToJavaMessageHandler(SUCCESS_COMMAND) {
+
+                @Override
+                protected void handle(final PythonToJavaMessage msg) {
+                    // no op
+                }
+            };
+
+        private final Commands m_commands;
+
+        private final List<PythonToJavaMessageHandler> m_msgHandlers = new ArrayList<>();
+
+        public CommandsMessages(final Commands commands) {
+            m_commands = commands;
+            registerMessageHandler(SUCCESS_HANDLER);
+        }
+
+        @Override
+        public void registerMessageHandler(final PythonToJavaMessageHandler handler) {
+            if (!m_msgHandlers.contains(handler)) {
+                m_msgHandlers.add(handler);
+            }
+        }
+
+        @Override
+        public void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
+            m_msgHandlers.remove(handler);
+        }
+
+        @Override
+        public void answer(final JavaToPythonResponse response) throws IOException {
+            // TODO: check if msg was already answered?
+            m_commands.writeString(response.getOriginalMessage().getCommand() + RESPONSE_SUFFIX);
+            m_commands.writeString(response.getReponse());
+        }
+
+        private PythonToJavaMessage readMessage() throws IOException {
+            byte[] bytes = readMessageBytes(m_commands.m_bufferedInFromServer);
+            String str = new String(bytes, StandardCharsets.UTF_8);
+            String[] reqCmdVal = str.split(":");
+            return new PythonToJavaMessage(reqCmdVal[1], reqCmdVal[2], reqCmdVal[0].equals("r"));
+        }
+
+        /**
+         * Direct a {@link PythonToJavaMessage} to the appropriate registered {@link PythonToJavaMessageHandler}. If the
+         * message is a request, it has to be answered by calling {@link #answer(JavaToPythonResponse)} exactly once.
+         *
+         * @param msg a message from the python process
+         */
+        private void handleMessage(final PythonToJavaMessage msg) throws IOException {
+            boolean handled = false;
+            for (PythonToJavaMessageHandler handler : m_msgHandlers) {
+                try {
+                    handled = handler.tryHandle(msg);
+                } catch (Exception ex) {
+                    throw new IOException(ex.getMessage(), ex);
+                }
+                if (handled) {
+                    break;
+                }
+            }
+            if (!handled) {
+                throw new IllegalStateException(
+                    "Python response message was not handled. Command: " + msg.getCommand());
+            }
+            // TODO: where to check if message was answered?
+        }
+
+        /**
+         * Waits for the Python process to signal termination of the most recent command's execution via a
+         * {@link #SUCCESS_COMMAND success message}. Any other {@link PythonToJavaMessage} will be passed through to its
+         * associated {@link PythonToJavaMessageHandler}.
+         *
+         * @throws IOException if any exception occurs during reading and handling messages
+         */
+        private void waitForSuccessMessage() throws IOException {
+            PythonToJavaMessage msg;
+            do {
+                msg = readMessage();
+                handleMessage(msg);
+            } while (!msg.getCommand().equals(SUCCESS_COMMAND));
+        }
+    }
 }

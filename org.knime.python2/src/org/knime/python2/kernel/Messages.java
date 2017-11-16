@@ -44,69 +44,49 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2017 (clemens): created
+ *   Nov 16, 2017 (marcel): created
  */
 package org.knime.python2.kernel;
 
+import java.io.IOException;
+
 /**
- * Message class for wrapping command or status strings received from python.
+ * Interface for message-based communication between Python and Java.<br>
+ * This complements the unidirectional "execute and fetch results" functionality provided by {@link Commands} by means
+ * of a bidirectional "message and response" mechanism.
+ * <P>
+ * {@link PythonToJavaMessage} represents a message that can be sent by Python during execution of a command and is
+ * received by Java. A message can be a {@link PythonToJavaMessage#isRequest() request} in which case it requires a
+ * {@link JavaToPythonResponse} from Java. On Java side, the message has to be handled by a registered
+ * {@link PythonToJavaMessageHandler} and - if it is a request - has to be {@link #answer(JavaToPythonResponse)
+ * answered} during {@link PythonToJavaMessageHandler#tryHandle(PythonToJavaMessage) handling}.
  *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public class PythonToJavaMessage {
-
-    private String m_command;
-
-    private String m_value;
-
-    private boolean m_isRequest;
+public interface Messages {
 
     /**
-     * Constructor.
+     * Register a handler for dealing with a subset of possible {@link PythonToJavaMessage}s from Python. If it is
+     * already present in the internal list, nothing happens.
      *
-     * @param command a command used for identifying how to process the message
-     * @param value the message payload
-     * @param isRequest true if the message is a request meaning the python process is waiting for an appropriate
-     *            response false otherwise
+     * @param handler handles {@link PythonToJavaMessage}s having a specific command
      */
-    public PythonToJavaMessage(final String command, final String value, final boolean isRequest) {
-        m_command = command;
-        m_value = value;
-        m_isRequest = isRequest;
-    }
+    void registerMessageHandler(PythonToJavaMessageHandler handler);
 
     /**
-     * Gets the command.
+     * Unregister an existing {@link PythonToJavaMessageHandler}. If it is not present in the internal list, nothing
+     * happens.
      *
-     * @return the command
+     * @param handler a {@link PythonToJavaMessageHandler}
      */
-    public String getCommand() {
-        return m_command;
-    }
+    void unregisterMessageHandler(final PythonToJavaMessageHandler handler);
 
     /**
-     * Gets the value.
+     * Sends a {@link JavaToPythonResponse} to a specific {@link PythonToJavaMessage} to Python.
      *
-     * @return the value
+     * @param response the response to send to Python
+     * @throws IOException if any exception occurs while answering
      */
-    public String getValue() {
-        return m_value;
-    }
-
-    /**
-     * Checks if is the message is a request.
-     *
-     * @return true, if request
-     */
-    public boolean isRequest() {
-        return m_isRequest;
-    }
-
-    /**
-     * @return the value-based representation of this message
-     */
-    @Override
-    public String toString() {
-        return String.join(":", isRequest() ? "r" : "s", m_command, m_value);
-    }
+    void answer(final JavaToPythonResponse response) throws IOException;
 }

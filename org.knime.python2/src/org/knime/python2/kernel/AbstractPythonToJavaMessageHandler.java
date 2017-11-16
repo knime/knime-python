@@ -53,7 +53,7 @@ package org.knime.python2.kernel;
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessageHandler {
+public abstract class AbstractPythonToJavaMessageHandler implements PythonToJavaMessageHandler {
 
     private String m_command;
 
