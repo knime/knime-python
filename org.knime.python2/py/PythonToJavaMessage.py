@@ -43,7 +43,7 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-# Used for defining responses that can be sent back to Java
+# Used for defining messages that can be sent to Java
 class PythonToJavaMessage(object):
     # @param cmd    a string command to trigger a certain Java response action
     # @param val    the value to process in Java, will be converted to string
@@ -64,11 +64,11 @@ class PythonToJavaMessage(object):
     
     # Parse the response coming back from Java. Returns None for messages
     # that are not requests.
-    def parse_response_string(self, val):
+    def process_response(self, val):
         return None
 
 # Used for indicating the successful termination of a command        
-class SuccessResponse(PythonToJavaMessage):
+class SuccessMessage(PythonToJavaMessage):
     def __init__(self):
         PythonToJavaMessage.__init__(self, 'success', '0', False)
 
@@ -78,7 +78,7 @@ class SerializerRequest(PythonToJavaMessage):
     def __init__(self, val):
         PythonToJavaMessage.__init__(self, 'serializer_request', val, True)
     
-    def parse_response_string(self, val):
+    def process_response(self, val):
         try:
             res = val.split(';')
             if(res[0] != ''):
@@ -92,7 +92,7 @@ class DeserializerRequest(PythonToJavaMessage):
     def __init__(self, val):
         PythonToJavaMessage.__init__(self, 'deserializer_request', val, True)
     
-    def parse_response_string(self, val):
+    def process_response(self, val):
         try:
             res = val.split(';')
             if(res[0] != ''):

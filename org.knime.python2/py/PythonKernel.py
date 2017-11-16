@@ -325,7 +325,7 @@ class PythonKernel(Borg):
     
     def __init__(self):
         # global variables in the execution environment
-        self._exec_env = {'request_from_java': self.write_response_msg}
+        self._exec_env = {'request_from_java': self.write_message}
         # TCP connection
         self._connection = None
         self._cleanup_object_names = []
@@ -334,7 +334,7 @@ class PythonKernel(Borg):
         self._serializer = None
         
         # Get the TypeExtensionManager instance
-        self._type_extension_manager = TypeExtensionManager(self.write_response_msg)
+        self._type_extension_manager = TypeExtensionManager(self.write_message)
         
         # Define global command handlers
         self._command_handlers = [ExecuteCommandHandler(),PutFlowVariablesCommandHandler(),
@@ -482,7 +482,7 @@ class PythonKernel(Borg):
             sys.stderr = backupStdError
         
         sys.stdout = backupStdOut
-        self.write_response_msg(SuccessResponse())
+        self.write_message(SuccessMessage())
         return [output.getvalue(), error.getvalue()]
 
 
@@ -857,22 +857,21 @@ class PythonKernel(Borg):
         self.write_data(data_bytes)
 
 
-    def read_response_msg(self, msg):
+    def read_response(self, msg):
         command_or_reponse = self.read_string()
         while not (command_or_reponse == msg._cmd + "_response"):
             self.run_command(command_or_reponse)
             command_or_reponse = self.read_string()
-        parsed = msg.parse_response_string(self.read_data().decode('utf-8'))
-        return parsed
+        return msg.process_response(self.read_data().decode('utf-8'))
 
 
-    # Write a ResponseMessage object
-    def write_response_msg(self, msg):
+    # Write a PythonToJavaMessage object
+    def write_message(self, msg):
         if not issubclass(type(msg), PythonToJavaMessage):
-            raise TypeError("write_response_msg was called with an object of a type not inheriting PythonToJavaMessage!")
+            raise TypeError("write_message was called with an object of a type not inheriting PythonToJavaMessage!")
         self.write_data(msg.to_string().encode('utf-8'))
         if msg.is_data_request():
-            return self.read_response_msg(msg)
+            return self.read_response(msg)
 
 
     # Get the {@link Simpletype} of a column in the passed dataframe and the serializer_id
@@ -1131,7 +1130,7 @@ class PutTableCommandHandler(CommandHandler):
         data_bytes = kernel.read_bytearray()
         data_frame = kernel.bytes_to_data_frame(data_bytes)
         kernel.put_variable(name, data_frame)
-        kernel.write_response_msg(SuccessResponse())
+        kernel.write_message(SuccessMessage())
         
 class AppendToTableCommandHandler(CommandHandler):
     def __init__(self):
@@ -1142,7 +1141,7 @@ class AppendToTableCommandHandler(CommandHandler):
         data_bytes = kernel.read_bytearray()
         data_frame = kernel.bytes_to_data_frame(data_bytes)
         kernel.append_to_table(name, data_frame)
-        kernel.write_response_msg(SuccessResponse())
+        kernel.write_message(SuccessMessage())
         
 class GetTableSizeCommandHandler(CommandHandler):
     def __init__(self):
@@ -1162,7 +1161,7 @@ class GetTableCommandHandler(CommandHandler):
         name = kernel.read_string()
         data_frame = kernel.get_variable(name)
         data_bytes = kernel.data_frame_to_bytes(data_frame)
-        kernel.write_response_msg(SuccessResponse())
+        kernel.write_message(SuccessMessage())
         kernel.write_bytearray(data_bytes)
         
 class GetTableChunkCommandHandler(CommandHandler):
@@ -1180,7 +1179,7 @@ class GetTableChunkCommandHandler(CommandHandler):
             raise TypeError("Expected pandas.DataFrame, got: " + str(type(data_frame)) + "\nPlease make sure your output_table is a pandas.DataFrame.")
         data_frame_chunk = data_frame[start:end+1]
         data_bytes = kernel.data_frame_to_bytes(data_frame_chunk, start)
-        kernel.write_response_msg(SuccessResponse())
+        kernel.write_message(SuccessMessage())
         kernel.write_bytearray(data_bytes)
         
 class ListVariablesCommandHandler(CommandHandler):
