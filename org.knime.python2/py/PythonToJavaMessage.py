@@ -46,11 +46,11 @@
 # Used for defining responses that can be sent back to Java
 class PythonToJavaMessage(object):
     # @param cmd    a string command to trigger a certain Java response action
-    # @param val    the value to process in Java
+    # @param val    the value to process in Java, will be converted to string
     # @param requestsData true - the message requests data from java, false otherwise
     def __init__(self, cmd, val, requestsData):
         self._cmd = cmd
-        self._val = val
+        self._val = str(val)
         self._requestsData = requestsData
     
     # Get the string representation of this message that can be sent over the
