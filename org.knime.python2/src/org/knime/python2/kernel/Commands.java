@@ -146,14 +146,9 @@ public class Commands {
      * @param answerStr an answer to the currently processed {@link PythonToJavaMessage}
      * @throws IOException
      */
-    public synchronized void answer(final String answerStr) throws IOException {
-        if(m_responseHandlingActive) {
-            writeString(answerStr);
-            m_answered = true;
-            m_responseHandlingActive = false;
-            return;
-        }
-        throw new IllegalStateException("answer() may only be called once while answering each ResponseMessage!");
+    public synchronized void answer(final PythonToJavaMessage msg, final String answerStr) throws IOException {
+        writeString(msg.getCommand() + "_response");
+        writeString(answerStr);
     }
 
     /**

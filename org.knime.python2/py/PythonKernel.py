@@ -858,6 +858,10 @@ class PythonKernel(Borg):
 
 
     def read_response_msg(self, msg):
+        command_or_reponse = self.read_string()
+        while not (command_or_reponse == msg._cmd + "_response"):
+            self.run_command(command_or_reponse)
+            command_or_reponse = self.read_string()
         parsed = msg.parse_response_string(self.read_data().decode('utf-8'))
         return parsed
 
