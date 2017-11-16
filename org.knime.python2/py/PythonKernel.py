@@ -377,18 +377,20 @@ class PythonKernel(Borg):
         self.write_integer(os.getpid())
         try:
             while 1:
-                command = self.read_string()
-                handled = False
-                for handler in self._command_handlers:
-                    if(handler.has_command(command)):
-                        handler.execute(self)
-                        handled = True
-                        break
-                if not handled:
-                    raise LookupError('The command ' + command + ' was received but it cannot be handled by the Python Kernel.')
+               self.run_command(self.read_string())
         finally:
             self._cleanup()
-        
+
+    def run_command(self, command):
+        handled = False
+        for handler in self._command_handlers:
+            if (handler.has_command(command)):
+                handler.execute(self)
+                handled = True
+                break
+        if not handled:
+            raise LookupError('The command ' + command + ' was received but it cannot be handled by the Python Kernel.')
+
     def bytes_from_file(self, path):
         return open(path, 'rb').read()
 
@@ -853,14 +855,20 @@ class PythonKernel(Borg):
 
     def write_bytearray(self, data_bytes):
         self.write_data(data_bytes)
-    
+
+
+    def read_response_msg(self, msg):
+        parsed = msg.parse_response_string(self.read_data().decode('utf-8'))
+        return parsed
+
+
     # Write a ResponseMessage object
     def write_response_msg(self, msg):
         if not issubclass(type(msg), PythonToJavaMessage):
             raise TypeError("write_response_msg was called with an object of a type not inheriting PythonToJavaMessage!")
         self.write_data(msg.to_string().encode('utf-8'))
         if msg.is_data_request():
-            return msg.parse_response_string(self.read_data().decode('utf-8'))
+            return self.read_response_msg(msg)
 
 
     # Get the {@link Simpletype} of a column in the passed dataframe and the serializer_id
