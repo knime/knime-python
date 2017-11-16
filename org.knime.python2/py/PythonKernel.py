@@ -965,7 +965,7 @@ class PythonKernel(Borg):
                             simple_type = Simpletype.BYTES_LIST
                 elif self.types_are_equivalent(col_type, str):
                     simple_type = Simpletype.STRING
-                elif self.types_are_equivalent(col_type, bytes) or self.types_are_equivalent(col_type, bytearray):
+                elif self.types_are_equivalent(col_type, bytes):
                     simple_type = Simpletype.BYTES
                 else:
                     type_string = self.get_type_string(self.first_valid_object(data_frame, column_name))
