@@ -52,8 +52,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+
+import org.knime.core.node.util.CheckUtils;
 
 /**
  * Used for communicating with the python kernel via commands sent over sockets.
@@ -514,26 +518,36 @@ public class Commands {
 
         private final List<PythonToJavaMessageHandler> m_msgHandlers = new ArrayList<>();
 
+        private final Deque<PythonToJavaMessage> m_unansweredRequests = new ArrayDeque<>();
+
         public CommandsMessages(final Commands commands) {
             m_commands = commands;
             registerMessageHandler(SUCCESS_HANDLER);
         }
 
         @Override
-        public void registerMessageHandler(final PythonToJavaMessageHandler handler) {
-            if (!m_msgHandlers.contains(handler)) {
+        public synchronized void registerMessageHandler(final PythonToJavaMessageHandler handler) {
+            if (!m_msgHandlers.contains(CheckUtils.checkNotNull(handler))) {
                 m_msgHandlers.add(handler);
             }
         }
 
         @Override
-        public void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
-            m_msgHandlers.remove(handler);
+        public synchronized void unregisterMessageHandler(final PythonToJavaMessageHandler handler) {
+            m_msgHandlers.remove(CheckUtils.checkNotNull(handler));
         }
 
         @Override
-        public void answer(final JavaToPythonResponse response) throws IOException {
-            // TODO: check if msg was already answered?
+        public synchronized void answer(final JavaToPythonResponse response) throws IOException {
+            if (m_unansweredRequests.peek() != CheckUtils.checkNotNull(response).getOriginalMessage()) {
+                if (!m_unansweredRequests.contains(response.getOriginalMessage())) {
+                    throw new IllegalStateException(
+                        "Request message from Python may only be answered once. Response: " + response);
+                }
+                throw new IllegalStateException(
+                    "Only the most recent request message from Python may be answered. Response: " + response);
+            }
+            m_unansweredRequests.pop();
             m_commands.writeString(response.getOriginalMessage().getCommand() + RESPONSE_SUFFIX);
             m_commands.writeString(response.getReponse());
         }
@@ -553,6 +567,9 @@ public class Commands {
          */
         private void handleMessage(final PythonToJavaMessage msg) throws IOException {
             boolean handled = false;
+            if (msg.isRequest()) {
+                m_unansweredRequests.push(msg);
+            }
             for (PythonToJavaMessageHandler handler : m_msgHandlers) {
                 try {
                     handled = handler.tryHandle(msg);
@@ -564,10 +581,12 @@ public class Commands {
                 }
             }
             if (!handled) {
-                throw new IllegalStateException(
-                    "Python response message was not handled. Command: " + msg.getCommand());
+                throw new IllegalStateException("Python message was not handled. Command: " + msg.getCommand());
             }
-            // TODO: where to check if message was answered?
+            if (m_unansweredRequests.peek() == msg) {
+                throw new IllegalStateException(
+                    "Python request message was not answered. Command: " + msg.getCommand());
+            }
         }
 
         /**
