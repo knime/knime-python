@@ -718,10 +718,11 @@ def table_to_bytes(table):
             elif table.get_type(colIdx) == _types_.STRING:
                 missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
                 col.fillna(value='', inplace=True)
-                
+            
+                col = [elem.encode('utf-8') for elem in col]
                 strLengths = list(map(len, col))
                 offStrLengths = builder.CreateByteArray(np.array(strLengths, dtype='i4').tobytes())
-                offStrBlob = builder.CreateString(''.join(col))
+                offStrBlob = builder.CreateByteArray(b''.join(col))
                 
                 StringColumn.StringColumnStartValuesVector(builder, 2)
                 builder.PrependInt32(offStrLengths)
