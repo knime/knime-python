@@ -391,7 +391,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             final Deserializer bytesDeserializer = m_pythonToKnimeExtensions
                                 .getDeserializer(PythonToKnimeExtensions.getExtension(bytesTypeId).getId());
                             try {
-                                if (cell.getBytesValue() == null) {
+                                if (cell.isMissing()) {
                                     cells[i] = new MissingCell(null);
                                 } else {
                                     cells[i] = bytesDeserializer.deserialize(cell.getBytesValue(), m_fileStoreFactory);
@@ -406,7 +406,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             }
                         } else {
                             try {
-                                if (cell.getBytesValue() == null) {
+                                if (cell.isMissing()) {
                                     cells[i] = new MissingCell(null);
                                 } else {
                                     cells[i] = new DenseByteVectorCellFactory(new DenseByteVector(cell.getBytesValue()))
@@ -424,7 +424,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             final Deserializer bytesListDeserializer = m_pythonToKnimeExtensions
                                 .getDeserializer(PythonToKnimeExtensions.getExtension(bytesListTypeId).getId());
                             final List<DataCell> listCells = new ArrayList<DataCell>();
-                            if (cell.getBytesArrayValue() == null) {
+                            if (cell.isMissing()) {
                                 cells[i] = new MissingCell(null);
                             } else {
                                 int blpos = 0;
@@ -450,7 +450,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                                 cells[i] = CollectionCellFactory.createListCell(listCells);
                             }
                         } else {
-                            if (cell.getBytesArrayValue() == null) {
+                            if (cell.isMissing()) {
                                 cells[i] = new MissingCell(null);
                             } else {
                                 final List<DataCell> listCells = new ArrayList<DataCell>();
@@ -477,7 +477,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             final Deserializer bytesSetDeserializer = m_pythonToKnimeExtensions
                                 .getDeserializer(PythonToKnimeExtensions.getExtension(bytesSetTypeId).getId());
                             final List<DataCell> setCells = new ArrayList<DataCell>();
-                            if (cell.getBytesArrayValue() == null) {
+                            if (cell.isMissing()) {
                                 cells[i] = new MissingCell(null);
                             } else {
                                 for (final byte[] value : cell.getBytesArrayValue()) {
@@ -501,7 +501,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             }
                         } else {
                             final List<DataCell> setCells = new ArrayList<DataCell>();
-                            if (cell.getBytesArrayValue() == null) {
+                            if (cell.isMissing()) {
                                 cells[i] = new MissingCell(null);
                             } else {
                                 for (final byte[] value : cell.getBytesArrayValue()) {

@@ -582,6 +582,7 @@ def table_to_bytes(table):
     path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)[1]
     try:
         
+        #debug_util.breakpoint()
         #Python2 workaround for strings -> convert all to unicode
         if not _python3:
             for i in range(len(table._data_frame.columns)):
@@ -640,7 +641,7 @@ def table_to_bytes(table):
                 col_arrays.append(pyarrow.Array.from_pandas(np.array(table._data_frame.iloc[:,i], dtype=np.int32), memory_pool=mp))
             #Workaround until fixed in pyarrow ... it is assumed that the first non-None object is bytearray if any
             elif table.get_type(i) == _types_.BYTES and type(get_first_not_None(table._data_frame.iloc[:,i])) == bytearray:
-                col_arrays.append(pyarrow.Array.from_pandas(map(bytes, table._data_frame.iloc[:,i]), memory_pool=mp))
+                col_arrays.append(pyarrow.Array.from_pandas(map(lambda x: x if x is None else bytes(x), table._data_frame.iloc[:,i]), memory_pool=mp))
             #create pyarrow.Array
             else:
                 pa_type = to_pyarrow_type(table.get_type(i))

@@ -54,12 +54,6 @@
             python-serializer="py/org/knime/python/typeextension/builtin/datetime2/DateTimeSerializer.py"
             python-type-identifier="pandas._libs.tslib.Timestamp">
       </type>
-      <type
-            id="org.knime.bytevector"
-            java-deserializer-factory="org.knime.python.typeextension.builtin.bytevector.ByteVectorDeserializerFactory"
-            python-serializer="py/org/knime/python/typeextension/builtin/bytevector/ByteVectorSerializer.py"
-            python-type-identifier="bytearray">
-      </type>
    </extension>
    <extension
          point="org.knime.python.typeextension.knimetopython">
