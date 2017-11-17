@@ -52,6 +52,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -86,7 +87,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private static final long serialVersionUID = -3111905445745421972L;
 
-    private PythonKernelManager m_kernelManager;
+    //private PythonKernelManager m_kernelManager;
+
+    private ConcurrentLinkedDeque<PythonKernelManager> m_kernelManagerQueue;
 
     private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
 
@@ -130,6 +133,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         };
 
         m_stderrorToConsole = new ConfigurablePythonOutputListener();
+        m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManager>();
     }
 
     /**
@@ -138,7 +142,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     @Override
     public void open() {
         super.open();
-        if (m_kernelManager == null) {
+
             setStatusMessage("Starting python...");
             // Start python in another thread, this might take a few seconds
             new Thread(new Runnable() {
@@ -164,14 +168,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     m_lock.lock();
                                     try {
                                         m_kernelRestarts++;
-                                        m_kernelManager = new PythonKernelManager(m_kernelOptions);
+                                        m_kernelManagerQueue.addLast(new PythonKernelManager(m_kernelOptions));
+                                        //Push python stdout content to console live
+                                        m_kernelManagerQueue.peekLast().addStdoutListener(m_stdoutToConsole);
+                                        m_kernelManagerQueue.peekLast().addStderrorListener(m_stderrorToConsole);
                                         setStatusMessage("Python successfully started");
                                     } finally {
                                         m_lock.unlock();
                                     }
-                                    //Push python stdout content to console live
-                                    m_kernelManager.addStdoutListener(m_stdoutToConsole);
-                                    m_kernelManager.addStderrorListener(m_stderrorToConsole);
                                     putDataIntoPython();
                                     setInteractive(true);
                                 } catch (final IOException e) {
@@ -180,7 +184,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                             }
                 }
             }).start();
-        }
     }
 
     /**
@@ -189,23 +192,33 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     @Override
     public void close() {
         super.close();
-        if (m_kernelManager != null) {
-            m_lock.lock();
-            try {
-                if(m_kernelManager != null) {
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                m_lock.lock();
+                try {
+                    PythonKernelManager manager = null;
+                    while(manager==null) {
+                        manager = m_kernelManagerQueue.pollFirst();
+                        if(manager == null) {
+                            Thread.sleep(1000);
+                        }
+                    }
                     setInteractive(false);
                     if (m_progressMonitor != null) {
                         m_progressMonitor.setCanceled(true);
                     }
-                    m_kernelManager.removeStdoutListener(m_stdoutToConsole);
-                    m_kernelManager.removeStderrorListener(m_stderrorToConsole);
-                    m_kernelManager.close();
-                    m_kernelManager = null;
+                    manager.removeStdoutListener(m_stdoutToConsole);
+                    manager.removeStderrorListener(m_stderrorToConsole);
+                    manager.close();
+                } catch (InterruptedException ex) {
+                    LOGGER.warn("Interrupted close method!");
+                }finally {
+                    m_lock.unlock();
                 }
-            }finally {
-                m_lock.unlock();
-            }
-        }
+            }}).start();
+
     }
 
     /**
@@ -244,71 +257,83 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     @Override
     protected void runExec(final String sourceCode) {
-        if (m_kernelManager != null) {
-            getProgressBar().setIndeterminate(true);
-            getProgressBar().setStringPainted(false);
-            // Keep number of restarts to later know if this execution still
-            // belongs to the current kernel instance
-            final int kernelRestarts = m_kernelRestarts;
-            // Enables the stop button
-            setRunning(true);
-            setStatusMessage("Executing...");
-            setStopCallback(new Runnable() {
-                @Override
-                public void run() {
-                    // The kernel restarts is necessary to know
-                    // if a response belongs to an old kernel
-                    // instance
-                    m_lock.lock();
-                    try {
-                        m_kernelRestarts++;
-                        // Disable interactivity while we restart
-                        // the kernel
-                        setInteractive(false);
-                        setStatusMessage("Restarting python...");
-                        setRunning(false);
-                        // Kernel manager will stop old python
-                        // kernel and start a new one
-                        m_kernelManager.switchToNewKernel(m_kernelOptions);
-                        setStatusMessage("Python successfully restarted");
-                        putDataIntoPython();
-                        setInteractive(true);
-                    } catch (final IOException e) {
-                        logError(e, "Error during python restart");
-                    } finally {
-                        m_lock.unlock();
-                    }
-                }
-            });
-
-            // Execute will be run in a separate thread by the kernel manager
-            m_stderrorToConsole.setAllWarnings(true);
-            m_kernelManager.execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
-                @Override
-                public void handleResponse(final String[] response, final Exception exception) {
-                    m_lock.lock();
-                    // Check if kernel was restarted since start of the
-                    // execution, if it was we don't care about the response
-                    // anymore
-                    if (m_kernelManager != null && kernelRestarts == m_kernelRestarts) {
-                        if (exception != null) {
-                            logError(exception, "Error during execution");
-                        } else {
-                            if(!response[1].isEmpty()) {
-                                errorToConsole(response[1]);
-                                setStatusMessage("Error during execution");
-                            } else {
-                                setStatusMessage("Execution successful");
+        if (m_kernelManagerQueue.peekLast() != null) {
+            m_lock.lock();
+            try {
+                if (m_kernelManagerQueue.peekLast() != null) {
+                    getProgressBar().setIndeterminate(true);
+                    getProgressBar().setStringPainted(false);
+                    // Keep number of restarts to later know if this execution still
+                    // belongs to the current kernel instance
+                    final int kernelRestarts = m_kernelRestarts;
+                    // Enables the stop button
+                    setRunning(true);
+                    setStatusMessage("Executing...");
+                    setStopCallback(new Runnable() {
+                        @Override
+                        public void run() {
+                            // The kernel restarts is necessary to know
+                            // if a response belongs to an old kernel
+                            // instance
+                            m_lock.lock();
+                            try {
+                                m_kernelRestarts++;
+                                // Disable interactivity while we restart
+                                // the kernel
+                                setInteractive(false);
+                                setStatusMessage("Restarting python...");
+                                setRunning(false);
+                                // Kernel manager will stop old python
+                                // kernel and start a new one
+                                if (m_kernelManagerQueue.peekLast() != null) {
+                                    m_kernelManagerQueue.peekLast().switchToNewKernel(m_kernelOptions);
+                                }
+                                setStatusMessage("Python successfully restarted");
+                                putDataIntoPython();
+                                setInteractive(true);
+                            } catch (final IOException e) {
+                                logError(e, "Error during python restart");
+                            } finally {
+                                m_lock.unlock();
                             }
                         }
-                        // Setting running to false will also update the
-                        // variables
-                        setRunning(false);
-                    }
-                    m_stderrorToConsole.setAllWarnings(false);
-                    m_lock.unlock();
+                    });
+
+                    // Execute will be run in a separate thread by the kernel manager
+                    m_stderrorToConsole.setAllWarnings(true);
+                    m_kernelManagerQueue.peekLast().execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
+                        @Override
+                        public void handleResponse(final String[] response, final Exception exception) {
+                            m_lock.lock();
+                            // Check if kernel was restarted since start of the
+                            // execution, if it was we don't care about the response
+                            // anymore
+                            try {
+                                if (m_kernelManagerQueue.peekLast() != null && kernelRestarts == m_kernelRestarts) {
+                                    if (exception != null) {
+                                        logError(exception, "Error during execution");
+                                    } else {
+                                        if (!response[1].isEmpty()) {
+                                            errorToConsole(response[1]);
+                                            setStatusMessage("Error during execution");
+                                        } else {
+                                            setStatusMessage("Execution successful");
+                                        }
+                                    }
+                                    // Setting running to false will also update the
+                                    // variables
+                                    setRunning(false);
+                                }
+                                m_stderrorToConsole.setAllWarnings(false);
+                            } finally {
+                                m_lock.unlock();
+                            }
+                        }
+                    });
                 }
-            });
+            } finally {
+                m_lock.unlock();
+            }
         }
     }
 
@@ -317,25 +342,34 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     @Override
     protected void updateVariables() {
-        if (m_kernelManager != null) {
-            m_kernelManager.listVariables(new PythonKernelResponseHandler<List<Map<String, String>>>() {
-                @Override
-                public void handleResponse(final List<Map<String, String>> response, final Exception exception) {
-                    if (exception != null) {
-                        setVariables(new Variable[0]);
-                    } else {
-                        // Create Variable array from response
-                        final Variable[] variables = new Variable[response.size()];
-                        for (int i = 0; i < variables.length; i++) {
-                            final Map<String, String> variable = response.get(i);
-                            variables[i] =
-                                    new Variable(variable.get("name"), variable.get("type"), variable.get("value"));
-                        }
-                        // Fill variable table
-                        setVariables(variables);
-                    }
+        if (m_kernelManagerQueue.peekLast() != null) {
+            m_lock.lock();
+            try {
+                if (m_kernelManagerQueue.peekLast() != null) {
+                    m_kernelManagerQueue.peekLast()
+                        .listVariables(new PythonKernelResponseHandler<List<Map<String, String>>>() {
+                            @Override
+                            public void handleResponse(final List<Map<String, String>> response,
+                                final Exception exception) {
+                                if (exception != null) {
+                                    setVariables(new Variable[0]);
+                                } else {
+                                    // Create Variable array from response
+                                    final Variable[] variables = new Variable[response.size()];
+                                    for (int i = 0; i < variables.length; i++) {
+                                        final Map<String, String> variable = response.get(i);
+                                        variables[i] = new Variable(variable.get("name"), variable.get("type"),
+                                            variable.get("value"));
+                                    }
+                                    // Fill variable table
+                                    setVariables(variables);
+                                }
+                            }
+                        });
                 }
-            });
+            } finally {
+                m_lock.unlock();
+            }
         } else {
             // If there is no kernel running we cannot have variables defined
             setVariables(new Variable[0]);
@@ -347,27 +381,34 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     @Override
     protected void runReset() {
-        if (m_kernelManager != null) {
-            if (m_pythonOptionsHaveChanged) {
-                m_pythonOptionsHaveChanged = false;
-                try {
-                    m_kernelManager.switchToNewKernel(m_kernelOptions);
-                } catch (final IOException e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            }
-            m_kernelManager.resetWorkspace(new PythonKernelResponseHandler<Void>() {
-                @Override
-                public void handleResponse(final Void response, final Exception exception) {
-                    if (exception != null) {
-                        logError(exception, null);
+        if (m_kernelManagerQueue.peekLast() != null) {
+            m_lock.lock();
+            try {
+                if (m_kernelManagerQueue.peekLast() != null) {
+                    if (m_pythonOptionsHaveChanged) {
+                        m_pythonOptionsHaveChanged = false;
+                        try {
+                            m_kernelManagerQueue.peekLast().switchToNewKernel(m_kernelOptions);
+                        } catch (final IOException e) {
+                            LOGGER.error(e.getMessage(), e);
+                        }
                     }
-                    // Update list of variables once the reset has finished
-                    updateVariables();
-                    // Put input data into python again
-                    putDataIntoPython();
+                    m_kernelManagerQueue.peekLast().resetWorkspace(new PythonKernelResponseHandler<Void>() {
+                        @Override
+                        public void handleResponse(final Void response, final Exception exception) {
+                            if (exception != null) {
+                                logError(exception, null);
+                            }
+                            // Update list of variables once the reset has finished
+                            updateVariables();
+                            // Put input data into python again
+                            putDataIntoPython();
+                        }
+                    });
                 }
-            });
+            } finally {
+                m_lock.unlock();
+            }
         }
     }
 
@@ -381,28 +422,37 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         final List<Completion> completions = new ArrayList<Completion>();
         // If no kernel is running we will simply return the empty list of
         // completions
-        if (m_kernelManager != null) {
-            m_kernelManager.autoComplete(sourceCode, line, column,
-                new PythonKernelResponseHandler<List<Map<String, String>>>() {
-                @Override
-                public void handleResponse(final List<Map<String, String>> response, final Exception exception) {
-                    if (exception == null) {
-                        for (final Map<String, String> completion : response) {
-                            String name = completion.get("name");
-                            final String type = completion.get("type");
-                            String doc = completion.get("doc").trim();
-                            if (type.equals("function")) {
-                                name += "()";
+        if (m_kernelManagerQueue.peekLast() != null) {
+            m_lock.lock();
+            try {
+                if (m_kernelManagerQueue.peekLast() != null) {
+                    m_kernelManagerQueue.peekLast().autoComplete(sourceCode, line, column,
+                        new PythonKernelResponseHandler<List<Map<String, String>>>() {
+                            @Override
+                            public void handleResponse(final List<Map<String, String>> response,
+                                final Exception exception) {
+                                if (exception == null) {
+                                    for (final Map<String, String> completion : response) {
+                                        String name = completion.get("name");
+                                        final String type = completion.get("type");
+                                        String doc = completion.get("doc").trim();
+                                        if (type.equals("function")) {
+                                            name += "()";
+                                        }
+                                        doc =
+                                            "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
+                                        completions.add(new BasicCompletion(provider, name, type, doc));
+                                    }
+                                }
+                                synchronized (completions) {
+                                    completions.notify();
+                                }
                             }
-                            doc = "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
-                            completions.add(new BasicCompletion(provider, name, type, doc));
-                        }
-                    }
-                    synchronized (completions) {
-                        completions.notify();
-                    }
+                        });
                 }
-            });
+            } finally {
+                m_lock.unlock();
+            }
             // We have to wait for the other thread to fill the list
             synchronized (completions) {
                 try {
@@ -430,7 +480,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * Puts the input data into python (if input data is available and the python kernel is running).
      */
     private void putDataIntoPython() {
-        if (m_kernelManager != null) {
+        if (m_kernelManagerQueue.peekLast() != null) {
             setStopCallback(new Runnable() {
                 @Override
                 public void run() {
@@ -443,7 +493,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         if (m_progressMonitor != null) {
                             m_progressMonitor.setCanceled(true);
                         }
-                        m_kernelManager.close();
+                        if(m_kernelManagerQueue.peekLast() != null) {
+                            m_kernelManagerQueue.peekLast().close();
+                        }
                         // Disable interactivity while we restart
                         // the kernel
                         setInteractive(false);
@@ -458,41 +510,46 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             setStatusMessage("Loading input data into python");
             m_progressMonitor = new JProgressBarProgressMonitor(getProgressBar());
             int kernelRestarts = m_kernelRestarts;
-            m_kernelManager.putData(getVariableNames().getInputTables(), m_inputData,
-                getVariableNames().getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(),
-                m_pythonInputObjects, new PythonKernelResponseHandler<Void>() {
-                @Override
-                public void handleResponse(final Void response, final Exception exception) {
-                    m_lock.lock();
-                    try {
-                        if (exception != null) {
-                            if(m_kernelManager != null && kernelRestarts == m_kernelRestarts) {
-                                if (m_progressMonitor != null) {
-                                    m_progressMonitor.setCanceled(true);
-                                }
-                                setInteractive(false);
-                                if ((exception.getCause() == null)
-                                        || !(exception.getCause() instanceof CanceledExecutionException)) {
-                                    logError(exception, "Error while loading input data into python");
-                                }
-                            }
-                        } else {
-                            setStatusMessage("Successfully loaded input data into python");
-                        }
-                        setRunning(false);
-                    } finally {
-                        m_lock.unlock();
-                    }
-                }
-            }, new ExecutionMonitor(m_progressMonitor), getRowLimit());
-            if(m_kernelManager != null) {
+            if (m_kernelManagerQueue.peekLast() != null) {
                 m_lock.lock();
-                if(m_kernelManager != null) {
-                    for (final WorkspacePreparer workspacePreparer : m_workspacePreparers) {
-                        workspacePreparer.prepareWorkspace(m_kernelManager.getKernel());
+                try {
+                    if (m_kernelManagerQueue.peekLast() != null) {
+                        m_kernelManagerQueue.peekLast().putData(getVariableNames().getInputTables(), m_inputData,
+                            getVariableNames().getFlowVariables(), getFlowVariables(),
+                            getVariableNames().getInputObjects(), m_pythonInputObjects,
+                            new PythonKernelResponseHandler<Void>() {
+                                @Override
+                                public void handleResponse(final Void response, final Exception exception) {
+                                    m_lock.lock();
+                                    try {
+                                        if (exception != null) {
+                                            if (m_kernelManagerQueue.peekLast() != null
+                                                && kernelRestarts == m_kernelRestarts) {
+                                                if (m_progressMonitor != null) {
+                                                    m_progressMonitor.setCanceled(true);
+                                                }
+                                                setInteractive(false);
+                                                if ((exception.getCause() == null)
+                                                    || !(exception.getCause() instanceof CanceledExecutionException)) {
+                                                    logError(exception, "Error while loading input data into python");
+                                                }
+                                            }
+                                        } else {
+                                            setStatusMessage("Successfully loaded input data into python");
+                                        }
+                                        setRunning(false);
+                                    } finally {
+                                        m_lock.unlock();
+                                    }
+                                }
+                            }, new ExecutionMonitor(m_progressMonitor), getRowLimit());
+                        for (final WorkspacePreparer workspacePreparer : m_workspacePreparers) {
+                            workspacePreparer.prepareWorkspace(m_kernelManagerQueue.peekLast().getKernel());
+                        }
                     }
+                } finally {
+                    m_lock.unlock();
                 }
-                m_lock.unlock();
             }
         }
     }
@@ -525,11 +582,19 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     @Override
     protected ImageContainer getOutImage(final String name) {
-        try {
-            return m_kernelManager.getImage(name);
-        } catch (final IOException e) {
-            return null;
+        if (m_kernelManagerQueue.peekLast() != null) {
+            m_lock.lock();
+            try {
+                if (m_kernelManagerQueue.peekLast() != null) {
+                    return m_kernelManagerQueue.peekLast().getImage(name);
+                }
+            } catch (final IOException e) {
+                return null;
+            } finally {
+                m_lock.unlock();
+            }
         }
+        return null;
     }
 
     /**
