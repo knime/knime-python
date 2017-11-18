@@ -1187,7 +1187,7 @@ public class PythonKernel implements AutoCloseable {
                         distributeStdoutMsg(msg);
                     }
                 } catch (IOException ex) {
-                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage());
+                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage(), ex);
                 }
 
             }
@@ -1206,7 +1206,7 @@ public class PythonKernel implements AutoCloseable {
                         distributeStderrorMsg(msg);
                     }
                 } catch (IOException ex) {
-                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage());
+                    LOGGER.debug("Exception during interactive logging: " + ex.getMessage(), ex);
                 }
 
             }
