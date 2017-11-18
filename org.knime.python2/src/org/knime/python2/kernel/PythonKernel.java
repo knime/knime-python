@@ -1010,7 +1010,7 @@ public class PythonKernel implements AutoCloseable {
                     // Send shutdown
                     try {
                         // Give it some time to finish writing into the stream
-                        Thread.sleep(1000);
+                        Thread.sleep(500);
                         if (!m_commands.tryShutdown()) {
                             LOGGER.debug("Python Kernel could not be shutdown gracefully. Killing process now!");
                         }
