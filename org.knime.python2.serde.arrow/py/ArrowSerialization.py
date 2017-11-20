@@ -601,9 +601,13 @@ def table_to_bytes(table):
         all_names = []
         missing_names = []
 
-        col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.index, type=to_pyarrow_type(_types_.STRING), memory_pool=mp))
-        col_names.append("__index_level_0__")
+        # add the index column to the list of columns
         all_names.append("__index_level_0__")
+        if len(table._data_frame.index) > 0:
+            col_names.append("__index_level_0__")
+            col_arrays.append(pyarrow.Array.from_pandas(table._data_frame.index, type=to_pyarrow_type(_types_.STRING), memory_pool=mp))
+        else:
+            missing_names.append("__index_level_0__")
         # Serialize the dataframe into a list of pyarrow.Array column by column
         for i in range(len(table._data_frame.columns)):
             #missing column ? -> save name and don't send any buffer for column
@@ -671,7 +675,7 @@ def table_to_bytes(table):
         
         # Empty record batches are not supported, therefore add a dummy array if dataframe is empty
         if not col_arrays:
-            col_arrays.append(pyarrow.array([], type=pyarrow.int32()))
+            col_arrays.append(pyarrow.array([0]))
             col_names.append('dummy')
         
         batch = pyarrow.RecordBatch.from_arrays(col_arrays, col_names)
