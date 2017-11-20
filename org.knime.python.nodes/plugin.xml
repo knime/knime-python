@@ -4,61 +4,61 @@
 <plugin>
    	<extension point="org.knime.workbench.repository.nodes">
    		<node
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.variables.PythonVariablesNodeFactory"/>
    		<node
            after="org.knime.python.nodes.variables.PythonVariablesNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.source.PythonSourceNodeFactory"/>
    		<node
            after="org.knime.python.nodes.source.PythonSourceNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.script.PythonScriptNodeFactory"/>
         <node
               after="org.knime.python.nodes.script.PythonScriptNodeFactory"
-              category-path="/scripting/python"
+              category-path="/scripting"
               deprecated="true"
               factory-class="org.knime.python.nodes.script1in2out.PythonScript1In2OutNodeFactory"/>         
    		<node
            after="org.knime.python.nodes.script1in2out.PythonScript1In2OutNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory"/>  		
         <node
               after="org.knime.python.nodes.script2in1out.PythonScript2In1OutNodeFactory"
-              category-path="/scripting/python"
+              category-path="/scripting"
               deprecated="true"
               factory-class="org.knime.python.nodes.script2in2out.PythonScript2In2OutNodeFactory"/>
    		<node
            after="org.knime.python.nodes.script2in2out.PythonScript2In2OutNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.view.PythonViewNodeFactory"/>
    		<node
            after="org.knime.python.nodes.view.PythonViewNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"/>
    		<node
            after="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"/>
    		<node
            after="org.knime.python.nodes.objectwriter.PythonObjectWriterNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.learner.PythonLearnerNodeFactory"/>
    		<node
            after="org.knime.python.nodes.learner.PythonLearnerNodeFactory"
-           category-path="/scripting/python"
+           category-path="/scripting"
            deprecated="true"
            factory-class="org.knime.python.nodes.predictor.PythonPredictorNodeFactory"/>
         <node
-              category-path="/scripting/python"
+              category-path="/scripting"
               deprecated="true"
               factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory"/>
 	</extension>
@@ -79,13 +79,5 @@
      </extension>
      <extension
            point="org.knime.workbench.repository.categories">
-        <category
-              description="Python nodes"
-              icon="icons/python.png"
-              level-id="python"
-              locked="false"
-              name="Python (major version 2)"
-              path="/scripting">
-        </category>
      </extension>
 </plugin>
