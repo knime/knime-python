@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
 <knimeNode icon="./pythonobjectwriter.png" type="Sink">
-	<name>Python Object Writer (Labs)</name>
+	<name>Python Object Writer</name>
 
 	<shortDescription>
 		Allows execution of a Python script in a local Python
