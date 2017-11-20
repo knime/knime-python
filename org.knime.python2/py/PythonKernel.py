@@ -158,11 +158,15 @@ class FromPandasTable:
         self._data_frame.columns = self._data_frame.columns.astype(str)
         self._column_types = []
         self._column_serializers = {}
-        for column in self._data_frame.columns:
+        for i, column in enumerate(self._data_frame.columns):
             column_type, serializer_id = kernel.simpletype_for_column(self._data_frame, column)
             self._column_types.append(column_type)
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
+            if not _python3:
+                if column_type == Simpletype.STRING and type(kernel.first_valid_object(data_frame, column)) == str:
+                    for j in range(len(self._data_frame)):
+                        self._data_frame.iloc[j,i] = unicode(self._data_frame.iloc[j,i], 'utf-8')
         kernel.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
@@ -180,7 +184,12 @@ class FromPandasTable:
             if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i + start_row_number:
                 row_indices.append(u'Row' + str(i + start_row_number))
             else:
-                row_indices.append(str(self._data_frame.index[i]))
+                if _python3:
+                    row_indices.append(str(self._data_frame.index[i]))
+                elif type(self._data_frame.index[i]) != unicode:
+                    row_indices.append(unicode(self._data_frame.index[i], 'utf-8'))
+                else:
+                    row_indices.append(self._data_frame.index[i])
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
     # Get the type of the column at the provided index in the internal data_frame.
@@ -854,7 +863,12 @@ class PythonKernel(Borg):
 
 
     def read_string(self):
-        return self.read_data().decode('utf-8')
+        try:
+            return self.read_data().decode('utf-8')
+        except UnicodeDecodeError:
+            raise UnicodeError("Received string from java that is not utf8-encoded!")
+        except:
+            raise
 
 
     def write_string(self, string):

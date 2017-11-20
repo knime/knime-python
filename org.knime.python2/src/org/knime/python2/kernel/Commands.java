@@ -524,7 +524,7 @@ public class Commands {
     }
 
     private byte[] stringToBytes(final String string) {
-        return string.getBytes();
+        return string.getBytes(StandardCharsets.UTF_8);
     }
 
     private String stringFromBytes(final byte[] bytes) {

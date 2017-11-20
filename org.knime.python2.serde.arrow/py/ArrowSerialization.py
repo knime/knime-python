@@ -583,17 +583,6 @@ def table_to_bytes(table):
     try:
         
         #debug_util.breakpoint()
-        #Python2 workaround for strings -> convert all to unicode
-        if not _python3:
-            for i in range(len(table._data_frame.columns)):
-                if type(get_first_not_None(table._data_frame.iloc[:,i])) == str and table._column_types[i] == _types_.STRING:
-                    for j in range(len(table._data_frame)):
-                        table._data_frame.iloc[j,i] = unicode(table._data_frame.iloc[j,i])
-            indexls = []
-            for j in range(len(table._data_frame)):
-                indexls.append(unicode(table._data_frame.index[j]))
-            if indexls:
-                table._data_frame.set_index(keys=pandas.Series(indexls), inplace=True)
         
         mp = pyarrow.MemoryPool(2**64)
         col_arrays = []
