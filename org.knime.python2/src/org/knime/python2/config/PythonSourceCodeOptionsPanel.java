@@ -109,13 +109,38 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
 
     private JSpinner m_chunkSize;
 
+    private JPanel m_versionPanel;
+
+    private final EnforcePythonVersion m_enforcedVersion;
+
+    /**
+     * Enum containing options for enforcing a python version.
+     */
+    public enum EnforcePythonVersion {
+        PYTHON2, PYTHON3, NONE;
+    }
+
+    /**
+     * Create a source code options panel.
+     *
+     * @param sourceCodePanel The corresponding source code panel
+     * @param version Whether to enforce a certain python version or give the user the option to choose
+     */
+    public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel, final EnforcePythonVersion version) {
+        super(sourceCodePanel);
+        m_enforcedVersion = version;
+        if(m_enforcedVersion != EnforcePythonVersion.NONE) {
+            m_versionPanel.setVisible(false);
+        }
+    }
+
     /**
      * Constructor.
      *
      * @param sourceCodePanel the associated source code panel
      */
     public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel) {
-        super(sourceCodePanel);
+        this(sourceCodePanel, EnforcePythonVersion.NONE);
     }
 
     /**
@@ -140,11 +165,11 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         gbc.weighty = 0;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        final JPanel versionPanel = new JPanel(new FlowLayout());
-        versionPanel.setBorder(BorderFactory.createTitledBorder("Use Python Version"));
-        versionPanel.add(m_python2);
-        versionPanel.add(m_python3);
-        panel.add(versionPanel, gbc);
+        m_versionPanel = new JPanel(new FlowLayout());
+        m_versionPanel.setBorder(BorderFactory.createTitledBorder("Use Python Version"));
+        m_versionPanel.add(m_python2);
+        m_versionPanel.add(m_python3);
+        panel.add(m_versionPanel, gbc);
         //Missing value handling for Int and Long
         final JPanel missingPanel = new JPanel(new GridLayout(0, 1));
         missingPanel.setBorder(BorderFactory.createTitledBorder("Missing Values (Int, Long)"));
@@ -303,13 +328,20 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
     }
 
     /**
-     * @return the {@link PythonVersionOption} associated with the current radio button selection
+     * Get the python version to use based on the EnforePythonVersion option or the user selection.
+     * @return the {@link PythonVersionOption} associated with the current EnforePythonVersion or radio button selection
      */
     private PythonKernelOptions.PythonVersionOption getSelectedPythonVersion() {
-        if (m_python2.isSelected()) {
+        if(m_enforcedVersion == EnforcePythonVersion.PYTHON2) {
             return PythonKernelOptions.PythonVersionOption.PYTHON2;
-        } else {
+        } else if (m_enforcedVersion == EnforcePythonVersion.PYTHON3) {
             return PythonKernelOptions.PythonVersionOption.PYTHON3;
+        } else {
+            if (m_python2.isSelected()) {
+                return PythonKernelOptions.PythonVersionOption.PYTHON2;
+            } else {
+                return PythonKernelOptions.PythonVersionOption.PYTHON3;
+            }
         }
     }
 
