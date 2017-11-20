@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python API (Labs)
+Bundle-Name: KNIME Python API
 Bundle-SymbolicName: org.knime.python2;singleton:=true
 Bundle-Version: 3.5.0.qualifier
 Bundle-ClassPath: knime-python2.jar

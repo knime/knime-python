@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python Serialization Libs (Labs) - Arrow
+Bundle-Name: KNIME Python Serialization Libs - Arrow
 Bundle-SymbolicName: org.knime.python2.serde.arrow.libs;singleton:=true
 Bundle-Version: 3.5.0.qualifier
 Bundle-ClassPath: lib/arrow-format-0.7.1.jar,

@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python Serialization (Labs) - Flatbuffers
+Bundle-Name: KNIME Python Serialization - Flatbuffers
 Bundle-SymbolicName: org.knime.python2.serde.flatbuffers;singleton:=true
 Bundle-Version: 3.5.0.qualifier
 Bundle-ClassPath: python-serde-flatbuffers.jar
