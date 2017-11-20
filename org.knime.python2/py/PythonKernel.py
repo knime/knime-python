@@ -509,6 +509,14 @@ class PythonKernel(Borg):
             return self._exec_env[name]
         else:
             raise NameError(name + ' is not defined.')
+        
+    # get the variable with the given name if available in the workspace
+    # or the default otherwise
+    def get_variable_or_default(self, name, default):
+        if name in self._exec_env:
+            return self._exec_env[name]
+        else:
+            return default
 
 
     # list all currently loaded modules and defined classes, functions and variables
@@ -1238,7 +1246,7 @@ class GetImageCommandHandler(CommandHandler):
         
     def execute(self, kernel):
         name = kernel.read_string()
-        image = kernel.get_variable(name)
+        image = kernel.get_variable_or_default(name, None)
         if _python3:
             if type(image) is bytes:
                 data_bytes = image

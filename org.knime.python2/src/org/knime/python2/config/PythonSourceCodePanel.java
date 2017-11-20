@@ -116,6 +116,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private AtomicBoolean m_resetInProgress;
 
+    private Variable[] m_variables;
+
     /**
      * Create a python source code panel.
      *
@@ -360,14 +362,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     setVariables(new Variable[0]);
                                 } else {
                                     // Create Variable array from response
-                                    final Variable[] variables = new Variable[response.size()];
-                                    for (int i = 0; i < variables.length; i++) {
+                                    m_variables = new Variable[response.size()];
+                                    for (int i = 0; i < m_variables.length; i++) {
                                         final Map<String, String> variable = response.get(i);
-                                        variables[i] = new Variable(variable.get("name"), variable.get("type"),
+                                        m_variables[i] = new Variable(variable.get("name"), variable.get("type"),
                                             variable.get("value"));
                                     }
                                     // Fill variable table
-                                    setVariables(variables);
+                                    setVariables(m_variables);
                                 }
                             }
                         });
@@ -377,7 +379,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             }
         } else {
             // If there is no kernel running we cannot have variables defined
-            setVariables(new Variable[0]);
+            m_variables = new Variable[0];
+            setVariables(m_variables);
         }
     }
 
@@ -592,8 +595,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         if (m_kernelManagerQueue.peekLast() != null) {
             m_lock.lock();
             try {
-                if (m_kernelManagerQueue.peekLast() != null) {
-                    return m_kernelManagerQueue.peekLast().getImage(name);
+                if (m_kernelManagerQueue.peekLast() != null && m_variables != null) {
+                    for(Variable v:m_variables) {
+                        if(v.getName().contentEquals(name)) {
+                            return m_kernelManagerQueue.peekLast().getImage(name);
+                        }
+                    }
                 }
             } catch (final IOException e) {
                 return null;

@@ -71,6 +71,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.node.port.inactive.InactiveBranchPortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.PythonKernel;
@@ -115,12 +116,16 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
             addNewVariables(variables);
             m_image = image.getBufferedImage();
         }
-        if (image.hasSvgDocument()) {
-            return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()),
-                new ImagePortObjectSpec(SvgCell.TYPE))};
+        if(m_image != null) {
+            if (image.hasSvgDocument()) {
+                return new PortObject[]{new ImagePortObject(new SvgImageContent(image.getSvgDocument()),
+                    new ImagePortObjectSpec(SvgCell.TYPE))};
+            } else {
+                return new PortObject[]{new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
+                    new ImagePortObjectSpec(PNGImageContent.TYPE))};
+            }
         } else {
-            return new PortObject[]{new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
-                new ImagePortObjectSpec(PNGImageContent.TYPE))};
+            return new PortObject[]{InactiveBranchPortObject.INSTANCE};
         }
     }
 
