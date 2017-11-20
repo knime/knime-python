@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -113,6 +114,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final ConfigurablePythonOutputListener m_stderrorToConsole;
 
+    private AtomicBoolean m_resetInProgress;
+
     /**
      * Create a python source code panel.
      *
@@ -134,6 +137,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
         m_stderrorToConsole = new ConfigurablePythonOutputListener();
         m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManager>();
+        m_resetInProgress = new AtomicBoolean(false);
     }
 
     /**
@@ -166,6 +170,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     // Start kernel manager which will start the actual
                                     // kernel
                                     m_lock.lock();
+                                    setRunning(false);
                                     try {
                                         m_kernelRestarts++;
                                         m_kernelManagerQueue.addLast(new PythonKernelManager(m_kernelOptions));
@@ -384,10 +389,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         if (m_kernelManagerQueue.peekLast() != null) {
             m_lock.lock();
             try {
+                m_resetInProgress.set(false);
                 if (m_kernelManagerQueue.peekLast() != null) {
                     if (m_pythonOptionsHaveChanged) {
                         m_pythonOptionsHaveChanged = false;
                         try {
+                            //m_kernelRestarts++;
                             m_kernelManagerQueue.peekLast().switchToNewKernel(m_kernelOptions);
                         } catch (final IOException e) {
                             LOGGER.error(e.getMessage(), e);
@@ -639,6 +646,18 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         } else {
             m_kernelOptions = pko;
             m_pythonOptionsHaveChanged = true;
+        }
+        if(m_pythonOptionsHaveChanged && !m_resetInProgress.get()) {
+            m_resetInProgress.set(true);
+            setRunning(true);
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    runReset();
+                }
+
+            }).start();
         }
     }
 
