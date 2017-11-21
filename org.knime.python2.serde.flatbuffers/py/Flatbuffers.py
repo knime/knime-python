@@ -244,9 +244,10 @@ def table_to_bytes(table):
         builder = flatbuffers.Builder(1024)
         
         #Row IDs
-        rowIdLength = list(map(len, table._row_indices))
+        idx_col = [elem.encode('utf-8') for elem in table._row_indices]
+        rowIdLength = list(map(len, idx_col))
         offListOff = builder.CreateByteArray(np.array(rowIdLength, dtype='i4').tobytes())
-        strOff = builder.CreateString(''.join(table._row_indices))
+        strOff = builder.CreateByteArray(b''.join(idx_col))
             
         KnimeTable.KnimeTableStartRowIDsVector(builder, 2)
         builder.PrependInt32(offListOff)
