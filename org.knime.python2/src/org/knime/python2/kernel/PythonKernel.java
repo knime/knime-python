@@ -294,7 +294,7 @@ public class PythonKernel implements AutoCloseable {
                     LOGGER.error("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
                         + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
                         + " the 'Options' tab of the configuration dialog.");
-                } else {
+                } else if(exitCode != 0) {
                     LOGGER.error("Python process ended unexpectedly with exit code " + exitCode + ". This might be"
                         + " caused by an oversized buffer allocation. Please consider lowering the 'Rows per chunk'"
                         + " parameter in the 'Options' tab of the configuration dialog.");
