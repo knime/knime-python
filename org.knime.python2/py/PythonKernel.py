@@ -164,9 +164,10 @@ class FromPandasTable:
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
             if not _python3:
-                if column_type == Simpletype.STRING and type(kernel.first_valid_object(data_frame, column)) == str:
+                if column_type == Simpletype.STRING and type(kernel.first_valid_object(self._data_frame, column)) == str:
                     for j in range(len(self._data_frame)):
-                        self._data_frame.iloc[j,i] = unicode(self._data_frame.iloc[j,i], 'utf-8')
+                        if self._data_frame.iat[j,i] != None:
+                            self._data_frame.iloc[j,i] = unicode(self._data_frame.iat[j,i], 'utf-8')
         kernel.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
