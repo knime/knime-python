@@ -166,7 +166,7 @@ class FromPandasTable:
             if not _python3:
                 if column_type == Simpletype.STRING and type(kernel.first_valid_object(self._data_frame, column)) == str:
                     for j in range(len(self._data_frame)):
-                        if self._data_frame.iat[j,i] != None:
+                        if not kernel.is_missing(self._data_frame.iat[j,i]):
                             self._data_frame.iloc[j,i] = unicode(self._data_frame.iat[j,i], 'utf-8')
         kernel.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
