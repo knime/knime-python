@@ -249,9 +249,17 @@ public class PythonKernel implements AutoCloseable {
         final String scriptPath = m_kernelOptions.getKernelScriptPath();
         // Start python kernel that listens to the given port
         // use the -u options to force python to not buffer stdout and stderror
-        final ProcessBuilder pb = new ProcessBuilder(
-            m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
-            scriptPath, "" + port, serializerPythonPath);
+        final ProcessBuilder pb;
+        if(!m_kernelOptions.getUsePython3()) {
+            //Python2 start without site to set default encoding to utf-8
+            pb = new ProcessBuilder(
+                m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
+                    "-S",scriptPath, "" + port, serializerPythonPath);
+        } else {
+            pb = new ProcessBuilder(
+                m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
+                    scriptPath, "" + port, serializerPythonPath);
+        }
         // Add all python modules to PYTHONPATH variable
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;

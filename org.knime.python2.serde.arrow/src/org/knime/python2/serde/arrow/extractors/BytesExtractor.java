@@ -48,6 +48,8 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.arrow.vector.NullableVarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
@@ -64,6 +66,8 @@ public class BytesExtractor implements VectorExtractor {
 
     private int m_ctr;
 
+    private boolean m_isString;
+
     /**
      * Constructor.
      *
@@ -71,6 +75,17 @@ public class BytesExtractor implements VectorExtractor {
      */
     public BytesExtractor(final NullableVarBinaryVector vector) {
         m_accessor = vector.getAccessor();
+        m_isString = false;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param vector the vector to extract from
+     */
+    public BytesExtractor(final NullableVarBinaryVector vector, final boolean isString) {
+        m_accessor = vector.getAccessor();
+        m_isString = isString;
     }
 
     /**
@@ -82,7 +97,12 @@ public class BytesExtractor implements VectorExtractor {
         if (m_accessor.isNull(m_ctr)) {
             c = new CellImpl();
         } else {
-            c = new CellImpl(m_accessor.getObject(m_ctr));
+            byte[] bts = m_accessor.getObject(m_ctr);
+            if(!m_isString) {
+                c = new CellImpl(bts);
+            } else {
+                c = new CellImpl(new String(bts, StandardCharsets.UTF_8));
+            }
         }
         m_ctr++;
         return c;

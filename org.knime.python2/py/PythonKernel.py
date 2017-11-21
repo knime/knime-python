@@ -44,6 +44,10 @@
 # ------------------------------------------------------------------------
 
 import sys
+_python3 = sys.version_info >= (3, 0)
+if not _python3:
+    sys.setdefaultencoding('utf-8')
+    import site
 import math
 import socket
 import struct
@@ -67,7 +71,7 @@ warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 
 # check if we are running python 2 or python 3
-_python3 = sys.version_info >= (3, 0)
+#_python3 = sys.version_info >= (3, 0)
 
 if _python3:
     from io import StringIO
@@ -163,11 +167,6 @@ class FromPandasTable:
             self._column_types.append(column_type)
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
-            if not _python3:
-                if column_type == Simpletype.STRING and type(kernel.first_valid_object(self._data_frame, column)) == str:
-                    for j in range(len(self._data_frame)):
-                        if not kernel.is_missing(self._data_frame.iat[j,i]):
-                            self._data_frame.iloc[j,i] = unicode(self._data_frame.iat[j,i], 'utf-8')
         kernel.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
@@ -185,12 +184,7 @@ class FromPandasTable:
             if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i + start_row_number:
                 row_indices.append(u'Row' + str(i + start_row_number))
             else:
-                if _python3:
-                    row_indices.append(str(self._data_frame.index[i]))
-                elif type(self._data_frame.index[i]) != unicode:
-                    row_indices.append(unicode(self._data_frame.index[i], 'utf-8'))
-                else:
-                    row_indices.append(self._data_frame.index[i])
+                row_indices.append(str(self._data_frame.index[i]))
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
     # Get the type of the column at the provided index in the internal data_frame.
@@ -358,6 +352,9 @@ class PythonKernel(Borg):
                              AddDeserializerCommandHandler(),ShutdownCommandHandler(),
                              PutSqlCommandHandler(),GetSqlCommandHandler(),
                              SetCustomModulePathsHandler()]
+        
+        if sys.getdefaultencoding() != 'utf-8':
+            warnings.warn('Your default encoding is not "utf-8". You may experience errors with non ascii characters!')
         
     def connect(self, parameters):
         self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -684,6 +681,7 @@ class PythonKernel(Borg):
             return math.isnan(value)
         except BaseException:
             return False
+                
 
     # gets the name of an object's type.
     # NOTE: the name of an object's type is not the fully qualified one returned by the type()

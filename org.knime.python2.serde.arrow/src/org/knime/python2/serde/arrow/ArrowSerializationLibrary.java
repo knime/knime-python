@@ -422,6 +422,14 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return path.getBytes("UTF-8");
     }
 
+    private VectorExtractor getStringOrByteextractor(final FieldVector vec) {
+        if(vec instanceof NullableVarCharVector) {
+            return new StringExtractor((NullableVarCharVector)vec);
+        } else {
+            return new BytesExtractor((NullableVarBinaryVector)vec, true);
+        }
+    }
+
     @Override
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
         final SerializationOptions serializationOptions) throws SerializationException {
@@ -439,7 +447,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
 
                 List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
                 // Index is always string
-                extractors.add(new StringExtractor((NullableVarCharVector)root.getVector(m_indexColumnName)));
+                extractors.add(getStringOrByteextractor(root.getVector(m_indexColumnName)));
 
                 //Setup an extractor for every column
                 for (int j = 0; j < spec.getNumberColumns(); j++) {
@@ -462,7 +470,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                 extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
                                 break;
                             case STRING:
-                                extractors.add(new StringExtractor((NullableVarCharVector)root.getVector(names[j])));
+                                extractors.add(getStringOrByteextractor(root.getVector(names[j])));
                                 break;
                             case BYTES:
                                 extractors.add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
