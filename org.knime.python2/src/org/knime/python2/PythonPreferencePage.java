@@ -456,7 +456,7 @@ public class PythonPreferencePage extends PreferencePage
                         if (!getControl().isDisposed()) {
                             setResult(python2Error.getVersion(), python2Error.getErrorLog(), m_python2);
                             if (python2Error.hasError()) {
-                                notifyChange(m_python2);
+                                notifyChange(m_python3);
                             }
                             refreshSizes();
                         }
@@ -483,7 +483,7 @@ public class PythonPreferencePage extends PreferencePage
                         if (!getControl().isDisposed()) {
                             setResult(python3Error.getVersion(), python3Error.getErrorLog(), m_python3);
                             if (python3Error.hasError()) {
-                                notifyChange(m_python3);
+                                notifyChange(m_python2);
                             }
                             refreshSizes();
                         }
