@@ -284,6 +284,8 @@ public abstract class SourceCodePanel extends JPanel {
 
     private boolean m_running = false;
 
+    private boolean m_stopped = true;
+
     private final Style m_normalStyle;
 
     private final Style m_errorStyle;
@@ -768,7 +770,7 @@ public abstract class SourceCodePanel extends JPanel {
                 // and no execution is currently running
                 m_execSelection.setEnabled(interactive && !m_running);
                 m_exec.setEnabled(interactive && !m_running);
-                m_reset.setEnabled(interactive && !m_running);
+                m_reset.setEnabled((m_stopped || interactive) && !m_running);
                 m_showImages.setEnabled(interactive && !m_running);
             }
         });
@@ -785,12 +787,30 @@ public abstract class SourceCodePanel extends JPanel {
             public void run() {
                 final boolean wasRunning = m_running;
                 m_running = running;
+                if(running) {
+                    m_stopped = false;
+                }
                 setInteractive(m_interactive);
                 m_statusBar.setRunning(running);
                 // Update variables if we just finished running
                 if (wasRunning && !running) {
                     updateVariables();
                 }
+            }
+        });
+    }
+
+    /**
+     * Set this panel to enable only the "Reset workspace" button.
+     */
+    protected void setStopped() {
+        runInUiThread(new Runnable() {
+            @Override
+            public void run() {
+                m_stopped = true;
+                m_statusBar.setRunning(false);
+                setInteractive(false);
+                setVariables(new Variable[0]);
             }
         });
     }

@@ -156,25 +156,6 @@ public class PythonKernelManager implements AutoCloseable{
     }
 
     /**
-     * Switches the underling python kernel and closes the old one.
-     *
-     * This can be used to shutdown an unresponsive kernel.
-     *
-     * @param kernelOptions all configurable options for the kernel
-     * @throws IOException If an error occurs during creation of the new python kernel
-     */
-    public synchronized void switchToNewKernel(final PythonKernelOptions kernelOptions) throws IOException {
-        m_kernel.close();
-        m_kernel = new PythonKernel(kernelOptions);
-        for(PythonOutputListener l:m_stdoutListeners) {
-            m_kernel.addStdoutListener(l);
-        }
-        for(PythonOutputListener l:m_stderrListeners) {
-            m_kernel.addStderrorListener(l);
-        }
-    }
-
-    /**
      * Execute the given source code.
      *
      * @param sourceCode The source code to execute
