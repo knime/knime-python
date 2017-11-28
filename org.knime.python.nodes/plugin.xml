@@ -77,7 +77,4 @@
               path="templates/">
         </directory>
      </extension>
-     <extension
-           point="org.knime.workbench.repository.categories">
-     </extension>
 </plugin>
