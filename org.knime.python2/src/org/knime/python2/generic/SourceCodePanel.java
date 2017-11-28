@@ -64,6 +64,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
@@ -337,7 +338,7 @@ public abstract class SourceCodePanel extends JPanel {
 
     private final JButton m_showImages = new JButton("Show Image");
 
-    private int m_rowLimit = Integer.MAX_VALUE;
+    private AtomicInteger m_rowLimit = new AtomicInteger(Integer.MAX_VALUE);
 
     private final VariableNames m_variableNames;
 
@@ -1030,8 +1031,8 @@ public abstract class SourceCodePanel extends JPanel {
      *
      * @param rowLimit The maximum number of rows per table
      */
-    void setRowLimit(final int rowLimit) {
-        m_rowLimit = rowLimit;
+    protected void setRowLimit(final int rowLimit) {
+        m_rowLimit.set(rowLimit);
     }
 
     /**
@@ -1040,7 +1041,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @return The maximum number of rows per table
      */
     protected int getRowLimit() {
-        return m_rowLimit;
+        return m_rowLimit.get();
     }
 
     /**

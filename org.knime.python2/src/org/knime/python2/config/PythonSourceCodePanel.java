@@ -204,8 +204,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                 // Start kernel manager which will start the actual
                                 // kernel
                                 m_lock.lock();
-                                setStatusMessage("Starting python...");
                                 try {
+                                    setStatusMessage("Starting python...");
+                                    m_resetInProgress.set(false);
                                     m_kernelRestarts++;
                                     m_kernelManagerQueue.addLast(new PythonKernelManagerWrapper(
                                         new PythonKernelManager(m_kernelOptions)));
@@ -400,7 +401,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         if (getKernelManagerWrapper() != null) {
             m_lock.lock();
             try {
-                m_resetInProgress.set(false);
                 if (getKernelManagerWrapper() != null) {
                     switchToNewKernel(m_kernelOptions);
                 }
@@ -488,6 +488,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 m_lock.lock();
                 try {
                     if (getKernelManager() != null) {
+                        //Don't push data if we are resetting the kernel anyways
+                        if(m_resetInProgress.get()) {
+                            return;
+                        }
                         getKernelManager().putData(getVariableNames().getInputTables(), m_inputData,
                             getVariableNames().getFlowVariables(), getFlowVariables(),
                             getVariableNames().getInputObjects(), m_pythonInputObjects,
@@ -509,6 +513,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                                 }
                                             }
                                         } else {
+                                            updateVariables();
                                             setStatusMessage("Successfully loaded input data into python");
                                         }
                                         setRunning(false);
@@ -619,7 +624,16 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             m_kernelOptions = pko;
             pythonOptionsHaveChanged = true;
         }
-        if(pythonOptionsHaveChanged && !m_resetInProgress.get()) {
+        if(pythonOptionsHaveChanged) {
+            runResetJob();
+        }
+    }
+
+    /**
+     * Runs the reset job for the dialog if its not already running.
+     */
+    private void runResetJob() {
+        if(getKernelManagerWrapper() != null && !m_resetInProgress.get()) {
             m_resetInProgress.set(true);
             setRunning(true);
             new Thread(new Runnable() {
@@ -659,6 +673,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             close();
             startKernelManagerAsync(kernelOptions);
         }
+    }
+
+    @Override
+    protected void setRowLimit(final int rowLimit) {
+        super.setRowLimit(rowLimit);
+        runResetJob();
     }
 
     private class ConfigurablePythonOutputListener implements PythonOutputListener {
