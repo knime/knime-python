@@ -615,6 +615,8 @@ class PythonKernel(Borg):
                                                  + col_type.__name__ + ' and ' + type(cell).__name__)
                         else:
                             col_type = type(cell)
+        if col_type == list or col_type == set:
+            raise ValueError('Output table contains a nested collection. Nested collections are not supported, yet!')
         return col_type
 
     # Returns the first object in a pandas DataFrame column that does not represent

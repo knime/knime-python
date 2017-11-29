@@ -472,6 +472,10 @@ public class BufferedDataTableIterator implements TableIterator {
             } else if (colSpec.getType().isCompatible(DoubleValue.class)) {
                 types[i] = Type.DOUBLE;
             } else if (colSpec.getType().isCollectionType()) {
+                if (colSpec.getType().getCollectionElementType().isCollectionType()) {
+                    //List in list not supported
+                    throw new IllegalStateException("Input table contains a nested collection. Nested collection types are not supported, yet!");
+                }
                 if (colSpec.getType().isCompatible(SetDataValue.class)) {
                     if (colSpec.getType().getCollectionElementType().isCompatible(BooleanValue.class)) {
                         types[i] = Type.BOOLEAN_SET;
