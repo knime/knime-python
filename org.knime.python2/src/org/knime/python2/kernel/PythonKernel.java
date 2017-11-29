@@ -65,6 +65,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,11 +82,13 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.util.ThreadPool;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
@@ -164,11 +169,11 @@ public class PythonKernel implements AutoCloseable {
 
     private final ConfigurablePythonOutputListener m_errorPrintListener;
 
-    private final Thread m_processEndMonitorThread;
-
     private List<ProcessEndAction> m_processEndActions;
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
+
+    private Future<PythonKernelException> m_pythonKernelMonitorResult;
 
     /**
      * Creates a python kernel by starting a python process and connecting to it.
@@ -290,7 +295,7 @@ public class PythonKernel implements AutoCloseable {
         m_segfaultDuringSerializationAction = new ProcessEndAction() {
 
             @Override
-            void runForExitCode(final int exitCode) {
+            void runForExitCode(final int exitCode) throws PythonKernelException {
                 //If an error was raised in python we already have a specific clue about the error. If not we should
                 //have a look at the exit code of the process.
                 if(m_errorPrintListener.wasErrorLogged()) {
@@ -299,35 +304,39 @@ public class PythonKernel implements AutoCloseable {
                 //Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
                 //flatbuffers with exit code 0
                 if(exitCode == 139) {
-                    LOGGER.error("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
+                    throw new PythonKernelException("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
                         + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
                         + " the 'Options' tab of the configuration dialog.");
                 } else if(exitCode != 0) {
-                    LOGGER.error("Python process ended unexpectedly with exit code " + exitCode + ". This might be"
+                    throw new PythonKernelException("Python process ended unexpectedly with exit code " + exitCode + ". This might be"
                         + " caused by an oversized buffer allocation. Please consider lowering the 'Rows per chunk'"
                         + " parameter in the 'Options' tab of the configuration dialog.");
                 }
             }
         };
         m_processEndActions = new ArrayList<ProcessEndAction>();
-        m_processEndMonitorThread = new Thread(new Runnable() {
+        ThreadPool pool = KNIMEConstants.GLOBAL_THREAD_POOL.createSubPool(1);
+        try {
+            m_pythonKernelMonitorResult = pool.submit(new Callable<PythonKernelException>() {
 
-            @Override
-            public void run() {
-                try {
+                @Override
+                public PythonKernelException call() throws Exception {
                     int exitCode = m_process.waitFor();
-                    synchronized(m_processEndActions) {
-                        for(ProcessEndAction action:m_processEndActions) {
-                            action.runForExitCode(exitCode);
+                    synchronized (m_processEndActions) {
+                        for (ProcessEndAction action : m_processEndActions) {
+                            try {
+                                action.runForExitCode(exitCode);
+                            } catch (PythonKernelException ex) {
+                                return ex;
+                            }
                         }
                     }
-                } catch (InterruptedException ex) {
-                    LOGGER.warn("Kernel monitor thread was interrupted unexpectedly.");
+                    return null;
                 }
-
-            }
-        });
-        m_processEndMonitorThread.start();
+            });
+        } catch (InterruptedException ex) {
+            LOGGER.warn("Kernel monitor thread was interrupted unexpectedly.");
+        }
 
         //Log output and errors to console
         addStdoutListener(new PythonOutputListener() {
@@ -600,7 +609,7 @@ public class PythonKernel implements AutoCloseable {
             final Collection<FlowVariable> flowVariables = bytesToFlowVariables(bytes);
             return flowVariables;
         } catch(EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -765,7 +774,7 @@ public class PythonKernel implements AutoCloseable {
             }
             throw new PythonKernelException("Invalid serialized table received.");
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -826,7 +835,7 @@ public class PythonKernel implements AutoCloseable {
                 return new ImageContainer(ImageIO.read(new ByteArrayInputStream(bytes)));
             }
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -873,7 +882,7 @@ public class PythonKernel implements AutoCloseable {
             return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
                 row.getCell(representationIndex).getStringValue());
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -957,7 +966,7 @@ public class PythonKernel implements AutoCloseable {
             }
             return variables;
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -1104,7 +1113,7 @@ public class PythonKernel implements AutoCloseable {
         try {
             m_commands.putSql(name, bytes);
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -1119,7 +1128,7 @@ public class PythonKernel implements AutoCloseable {
         try {
             return m_commands.getSql(name);
         } catch (final EOFException ex) {
-            throw new PythonKernelException("An exception occured while running the python kernel.", ex);
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -1243,6 +1252,18 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
+    private PythonKernelException getMostSpecificPythonKernelException(final EOFException ex) {
+        try {
+            if(m_pythonKernelMonitorResult.isDone() && m_pythonKernelMonitorResult.get() != null) {
+                return m_pythonKernelMonitorResult.get();
+            } else {
+                return new PythonKernelException("An exception occured while running the python kernel. See console and log for details.", ex);
+            }
+        } catch (InterruptedException | ExecutionException ex1) {
+            return new PythonKernelException("An exception occured while running the python kernel. See console and log for details.", ex);
+        }
+    }
+
     private class ConfigurablePythonOutputListener implements PythonOutputListener {
 
         private boolean m_allWarning = false;
@@ -1307,6 +1328,6 @@ public class PythonKernel implements AutoCloseable {
      */
     private abstract class ProcessEndAction {
 
-        abstract void runForExitCode(int exitCode);
+        abstract void runForExitCode(int exitCode) throws PythonKernelException;
     }
 }
