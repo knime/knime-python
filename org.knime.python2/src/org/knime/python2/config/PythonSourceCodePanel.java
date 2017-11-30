@@ -197,10 +197,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                             errorToConsole(result.getErrorLog()
                                 + "\nPlease refer to the log file for more details.");
                             m_kernelManagerQueue.addLast(new PythonKernelManagerWrapper(null));
+                            m_resetInProgress.set(false);
                             setStopped();
                             setStatusMessage("Error during python start.");
                         } else {
-                            try {
                                 // Start kernel manager which will start the actual
                                 // kernel
                                 m_lock.lock();
@@ -208,20 +208,31 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     setStatusMessage("Starting python...");
                                     m_resetInProgress.set(false);
                                     m_kernelRestarts++;
-                                    m_kernelManagerQueue.addLast(new PythonKernelManagerWrapper(
-                                        new PythonKernelManager(m_kernelOptions)));
-                                    //Push python stdout content to console live
-                                    getKernelManager().addStdoutListener(m_stdoutToConsole);
-                                    getKernelManager().addStderrorListener(m_stderrorToConsole);
-                                    setStatusMessage("Python successfully started");
+                                    PythonKernelManager manager = null;
+                                    try {
+                                        manager = new PythonKernelManager(m_kernelOptions);
+                                    } catch(Exception ex) {
+                                        errorToConsole("Could not start python kernel. Please refer to the KNIME console"
+                                            + " and log file for details.");
+                                        setStopped();
+                                        setStatusMessage("Error during python start");
+                                    } finally {
+                                        m_kernelManagerQueue.addLast(new PythonKernelManagerWrapper(
+                                            manager));
+                                    }
+                                    if(manager != null) {
+                                        //Push python stdout content to console live
+                                        manager.addStdoutListener(m_stdoutToConsole);
+                                        manager.addStderrorListener(m_stderrorToConsole);
+                                        setStatusMessage("Python successfully started");
+                                    }
                                 } finally {
                                     m_lock.unlock();
                                 }
-                                putDataIntoPython();
-                                setInteractive(true);
-                            } catch (final IOException e) {
-                                logError(e, "Error during python start");
-                            }
+                                if(getKernelManager() != null) {
+                                    putDataIntoPython();
+                                    setInteractive(true);
+                                }
                         }
             }
         }).start();
