@@ -255,15 +255,12 @@ public class PythonKernel implements AutoCloseable {
         // Start python kernel that listens to the given port
         // use the -u options to force python to not buffer stdout and stderror
         final ProcessBuilder pb;
-        if(!m_kernelOptions.getUsePython3()) {
+        if (!m_kernelOptions.getUsePython3()) {
             //Python2 start without site to set default encoding to utf-8
-            pb = new ProcessBuilder(
-                m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
-                    "-S",scriptPath, "" + port, serializerPythonPath);
+            pb = new ProcessBuilder(Activator.getPython2Command(), "-u", "-S", scriptPath, "" + port,
+                serializerPythonPath);
         } else {
-            pb = new ProcessBuilder(
-                m_kernelOptions.getUsePython3() ? Activator.getPython3Command() : Activator.getPython2Command(), "-u",
-                    scriptPath, "" + port, serializerPythonPath);
+            pb = new ProcessBuilder(Activator.getPython3Command(), "-u", scriptPath, "" + port, serializerPythonPath);
         }
         // Add all python modules to PYTHONPATH variable
         String existingPath = pb.environment().get("PYTHONPATH");
@@ -393,8 +390,12 @@ public class PythonKernel implements AutoCloseable {
                 messages.answer(new DefaultJavaToPythonResponse(msg, ";"));
             }
         });
-        // First get PID of Python process
-        m_pid = m_commands.getPid();
+        try {
+            // First get PID of Python process
+            m_pid = m_commands.getPid();
+        } catch (EOFException ex) {
+            throw new PythonKernelException("Could not start python kernel. See console and log file for more details.", ex);
+        }
         try {
             // Check if python kernel supports autocompletion (this depends
             // on the optional module Jedi)
