@@ -1251,6 +1251,12 @@ public class PythonKernel implements AutoCloseable {
 
     private PythonKernelException getMostSpecificPythonKernelException(final EOFException ex) {
         try {
+            if(!m_pythonKernelMonitorResult.isDone()) {
+
+                // TODO investigate if we can wait for the thread as well here?!
+                //Sleep 100ms to give monitor thread time to finish
+                Thread.sleep(100);
+            }
             if(m_pythonKernelMonitorResult.isDone() && m_pythonKernelMonitorResult.get() != null) {
                 return m_pythonKernelMonitorResult.get();
             } else {
