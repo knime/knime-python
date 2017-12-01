@@ -67,6 +67,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,13 +84,11 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.util.ThreadPool;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
@@ -312,28 +312,24 @@ public class PythonKernel implements AutoCloseable {
             }
         };
         m_processEndActions = new ArrayList<ProcessEndAction>();
-        ThreadPool pool = KNIMEConstants.GLOBAL_THREAD_POOL.createSubPool(1);
-        try {
-            m_pythonKernelMonitorResult = pool.submit(new Callable<PythonKernelException>() {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        m_pythonKernelMonitorResult = service.submit(new Callable<PythonKernelException>() {
 
-                @Override
-                public PythonKernelException call() throws Exception {
-                    int exitCode = m_process.waitFor();
-                    synchronized (m_processEndActions) {
-                        for (ProcessEndAction action : m_processEndActions) {
-                            try {
-                                action.runForExitCode(exitCode);
-                            } catch (PythonKernelException ex) {
-                                return ex;
-                            }
+            @Override
+            public PythonKernelException call() throws Exception {
+                int exitCode = m_process.waitFor();
+                synchronized (m_processEndActions) {
+                    for (ProcessEndAction action : m_processEndActions) {
+                        try {
+                            action.runForExitCode(exitCode);
+                        } catch (PythonKernelException ex) {
+                            return ex;
                         }
                     }
-                    return null;
                 }
-            });
-        } catch (InterruptedException ex) {
-            LOGGER.warn("Kernel monitor thread was interrupted unexpectedly.");
-        }
+                return null;
+            }
+        });
 
         //Log output and errors to console
         addStdoutListener(new PythonOutputListener() {
