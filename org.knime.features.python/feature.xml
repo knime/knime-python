@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.python"
-      label="KNIME Python Integration (legacy)"
+      label="KNIME Python Integration (deprecated)"
       version="3.5.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
-      This plugin contains nodes that integrate Python into KNIME.
+      This plugin contains nodes that integrate Python (major version 2) into KNIME.
 The scripts run in a local Python installation (not included).
    </description>
 
