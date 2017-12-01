@@ -6,9 +6,7 @@
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
-This plugin contains nodes that integrate Python (version 2 or 3) into KNIME.
-The library to use for transferring data between KNIME and Python can be chosen in the preferences.
-The scripts require a local Python installation (not included).
+      This plugin contains nodes that integrate Python (version 2 or 3) into KNIME. The library to use for transferring data between KNIME and Python can be chosen in the preferences. The scripts require a local Python installation (not included).
    </description>
 
    <copyright>
