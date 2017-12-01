@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.python"
-      label="KNIME Python Integration"
+      label="KNIME Python Integration (legacy)"
       version="3.5.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
