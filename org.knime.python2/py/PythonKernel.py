@@ -141,7 +141,10 @@ class Logger(object):
         
     def flush(self):
         self.stdstream.flush()
-        self.sink.flush()
+        self.sink.flush()      
+
+    def isatty(self):
+        return False
         
 # Wrapper class for data that should be serialized using the serialization library. 
 # Manages the serialization of extension types to bytes before using the 
