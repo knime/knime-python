@@ -2,12 +2,13 @@
 
 This repository contains:
 
-* KNIME Python Integration (major version 2)
 * KNIME Python Integration (major versions 2&3)
+* KNIME Python Integration (major version 2) - **deprecated**
 * KNIME Jython Integration
 
-The KNIME Python Integration (major version 2) is the current default Python Integration providing nodes to connect to python in the "Scripting" category of the node browser. Data transfer is based on google-protobuf. This Python Integration is no longer developed actively.
-The KNIME Python Integration (major versions 2&3) is a new Python Integration providing more memory-efficient and processing-time-efficient serialization. For this purpose the (de)serialization module is realized as a pluggable component using the Eclipse extension point mechanism on the Java side.
+The KNIME Python Integration (major version 2&3) is the current default Python Integration providing nodes to connect to python 2 and python 3 in the "Scripting" category of the node browser. Data transfer is based on a pluggable 
+component using the Eclipse extension point mechanism. Currently, three different (de)serialization modules are available (further explained below) which provide more memory-efficient and processing-time-efficient data transfer.
+The old KNIME Python Integration (major version 2) is deprecated and will no longer be actively developed.
 The "KNIME Jython Integration" includes three Snippet nodes providing capabilities to use Jython in KNIME.
 
 # Details
@@ -56,7 +57,9 @@ The node implementations may be found in the project *org.knime.python2.nodes*. 
 
 A detailed explanation of how to set up python with KNIME can be found here: [https://www.knime.com/blog/setting-up-the-knime-python-extension-revisited-for-python-30-and-20](https://www.knime.com/blog/setting-up-the-knime-python-extension-revisited-for-python-30-and-20) 
 
-## KNIME Python Integration (major version 2)
+## KNIME Python Integration (major version 2) - **deprecated**
+
+*NOTE: The KNIME Python Integration (major version 2) is deprecated. Please use the new version (major versions 2&3).*
 
 ### Contained Projects
 
