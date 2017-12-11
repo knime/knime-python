@@ -11,3 +11,4 @@ Require-Bundle: org.knime.base;bundle-version="[3.0.0,4.0.0)",
  org.knime.ext.svg;bundle-version="[3.0.0,4.0.0)"
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ClassPath: knime-python-nodes.jar
