@@ -579,7 +579,8 @@ def get_first_not_None(column):
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)[1]
+    fd, path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)
+    os.close(fd)
     try:
         
         #debug_util.breakpoint()
