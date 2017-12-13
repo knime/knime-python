@@ -209,7 +209,8 @@ def bytes_into_table(table, data_bytes):
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    path = tempfile.mkstemp(suffix='.csv', prefix='python-to-java-', text=True)[1]
+    fd, path = tempfile.mkstemp(suffix='.csv', prefix='python-to-java-', text=True)
+    os.close(fd)
     out_file = open(path, 'wb')
     types_line = '#'
     needs_copy = False
