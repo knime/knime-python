@@ -9,17 +9,11 @@
    </shortDescription>
 
    <fullDescription>
-      <intro>
-         This node allows custom creation of a (Python compatible)
-         deep
-         learning network in a local Python installation
-         via a
-         user-defined
-         script.
-         The path to the Python executable has to be
-         configured in
-         Preferences → KNIME → Python.
-      </intro>
+		<intro>
+			Allows execution of a Python script in a local Python
+			installation. The path to the Python executable has to be configured
+			in Preferences → KNIME → Python. This node supports Python 2 and 3.
+		</intro>
       <tab name="Script">
          <option name="Editor">
             The script in the editor panel in the center will be
