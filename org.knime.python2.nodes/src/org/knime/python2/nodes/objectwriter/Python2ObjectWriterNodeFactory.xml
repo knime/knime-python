@@ -64,8 +64,7 @@
       </tab>
       <tab name="Options">
          <option name="Row limit (dialog)">
-            Limits how many rows are loaded in the dialog.
-            Changes only take effect after reseting the workspace.
+			Unused in this node.
          </option>
          <option name="Use python version">
             Allows to choose the python version that
@@ -134,7 +133,7 @@
             <br />
             <br />
             Note: User defined templates can be found in the folder:
-            <i>knime-workspace/.metadata/knime/sourcecode-templates/dl-python-creator</i>
+            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-objectwriter</i>
          </option>
          <option name="Remove selected">
             Clicking on this button removes the selected template.

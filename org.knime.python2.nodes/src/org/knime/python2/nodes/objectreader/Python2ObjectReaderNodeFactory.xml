@@ -133,7 +133,7 @@
             <br />
             <br />
             Note: User defined templates can be found in the folder:
-            <i>knime-workspace/.metadata/knime/sourcecode-templates/dl-python-creator</i>
+            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-objectreader</i>
          </option>
          <option name="Remove selected">
             Clicking on this button removes the selected template.
