@@ -10,14 +10,13 @@
 
    <fullDescription>
 		<intro>
-			Add a comment to this line
 			Allows execution of a Python script in a local Python installation. 
 			The path to the Python executable has to be configured in 
 			Preferences → KNIME → Python. This node supports Python 2 and 3.
 		<br /><br />
 		<b>NOTICE:</b>
           The nodes uses the <a href="https://pypi.python.org/pypi/JayDeBeApi/">JayDeBeApi</a> library 
-          to establish a connection to the database via a JDBC connection which his included. However to use JayDeBeApi
+          to establish a connection to the database via a JDBC connection which is included. However to use JayDeBeApi
           <a href="http://jpype.sourceforge.net/">JPype</a> needs to be installed. For Windows precompiled
           libraries can be download from 
           <a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype">Unofficial Windows Binaries for Python Extension Packages</a>.
@@ -114,7 +113,7 @@
             <br />
             <br />
             Note: User defined templates can be found in the folder:
-            <i>knime-workspace/.metadata/knime/sourcecode-templates/dl-python-creator</i>
+            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script</i>
          </option>
          <option name="Remove selected">
             Clicking on this button removes the selected template.
