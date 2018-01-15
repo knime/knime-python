@@ -18,7 +18,7 @@
           The nodes uses the <a href="https://pypi.python.org/pypi/JayDeBeApi/">JayDeBeApi</a> library 
           to establish a connection to the database via a JDBC connection which is included. However to use JayDeBeApi
           <a href="http://jpype.sourceforge.net/">JPype</a> needs to be installed. For Windows precompiled
-          libraries can be download from 
+          libraries can be downloaded from 
           <a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype">Unofficial Windows Binaries for Python Extension Packages</a>.
 		</intro>
       <tab name="Script">
