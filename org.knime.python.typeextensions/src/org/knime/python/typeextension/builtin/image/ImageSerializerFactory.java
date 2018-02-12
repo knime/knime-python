@@ -57,6 +57,7 @@ import org.knime.base.data.xml.SvgImageContent;
 import org.knime.core.data.image.ImageContent;
 import org.knime.core.data.image.ImageValue;
 import org.knime.core.data.image.png.PNGImageContent;
+import org.knime.core.data.util.AutocloseableSupplier;
 import org.knime.python.typeextension.Serializer;
 import org.knime.python.typeextension.SerializerFactory;
 import org.w3c.dom.svg.SVGDocument;
@@ -87,16 +88,20 @@ public class ImageSerializerFactory extends SerializerFactory<ImageValue> {
                     return ((PNGImageContent) content).getByteArray();
                 } else if (content instanceof SvgImageContent) {
                     SvgImageContent svgContent = (SvgImageContent) content;
-                    SVGDocument svg = ((SvgCell) svgContent.toImageCell()).getDocument();
-                    TranscoderInput input = new TranscoderInput(svg);
-                    ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-                    TranscoderOutput output = new TranscoderOutput(ostream);
-                    PNGTranscoder converter = new PNGTranscoder();
-                    try {
-                        converter.transcode(input, output);
-                        return ostream.toByteArray();
-                    } catch (TranscoderException e) {
-                        throw new IOException(e);
+
+                    try (AutocloseableSupplier<SVGDocument> supplier = ((SvgCell) svgContent.toImageCell())
+                            .getDocumentSupplier()) {
+                        SVGDocument svg = supplier.get();
+                        TranscoderInput input = new TranscoderInput(svg);
+                        ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+                        TranscoderOutput output = new TranscoderOutput(ostream);
+                        PNGTranscoder converter = new PNGTranscoder();
+                        try {
+                            converter.transcode(input, output);
+                            return ostream.toByteArray();
+                        } catch (TranscoderException e) {
+                            throw new IOException(e);
+                        }
                     }
                 }
                 return null;
