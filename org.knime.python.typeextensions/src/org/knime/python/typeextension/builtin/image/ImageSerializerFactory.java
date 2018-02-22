@@ -57,7 +57,7 @@ import org.knime.base.data.xml.SvgImageContent;
 import org.knime.core.data.image.ImageContent;
 import org.knime.core.data.image.ImageValue;
 import org.knime.core.data.image.png.PNGImageContent;
-import org.knime.core.data.util.AutocloseableSupplier;
+import org.knime.core.data.util.LockedSupplier;
 import org.knime.python.typeextension.Serializer;
 import org.knime.python.typeextension.SerializerFactory;
 import org.w3c.dom.svg.SVGDocument;
@@ -89,7 +89,7 @@ public class ImageSerializerFactory extends SerializerFactory<ImageValue> {
                 } else if (content instanceof SvgImageContent) {
                     SvgImageContent svgContent = (SvgImageContent) content;
 
-                    try (AutocloseableSupplier<SVGDocument> supplier = ((SvgCell) svgContent.toImageCell())
+                    try (LockedSupplier<SVGDocument> supplier = ((SvgCell) svgContent.toImageCell())
                             .getDocumentSupplier()) {
                         SVGDocument svg = supplier.get();
                         TranscoderInput input = new TranscoderInput(svg);
