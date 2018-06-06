@@ -48,14 +48,15 @@
 package org.knime.python.typeextension.builtin.xml;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.knime.core.data.xml.XMLValue;
 import org.knime.python.typeextension.Serializer;
 import org.knime.python.typeextension.SerializerFactory;
 
 /**
- * Serialize {@link PNGImageContent} from KNIME to python.
- * 
+ * Serialize {@link XMLValue} from KNIME to python.
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -79,8 +80,8 @@ public class XMLSerializerFactory extends SerializerFactory<XMLValue> {
          * {@inheritDoc}
          */
         @Override
-        public byte[] serialize(XMLValue value) throws IOException {
-            return value.toString().getBytes();
+        public byte[] serialize(final XMLValue value) throws IOException {
+            return value.toString().getBytes(StandardCharsets.UTF_8);
         }
 
     }

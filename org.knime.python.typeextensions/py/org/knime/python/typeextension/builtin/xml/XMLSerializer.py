@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # ------------------------------------------------------------------------
 #  Copyright by KNIME AG, Zurich, Switzerland
 #  Website: http://www.knime.com; Email: contact@knime.com
@@ -42,6 +44,7 @@
 # ------------------------------------------------------------------------
 
 import xml.dom.minidom as xmldom
+
 
 def serialize(object_value):
 	return str(object_value.toxml()).encode('utf-8')

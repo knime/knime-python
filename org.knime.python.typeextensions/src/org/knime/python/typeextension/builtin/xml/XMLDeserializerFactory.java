@@ -48,6 +48,7 @@
 package org.knime.python.typeextension.builtin.xml;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamException;
@@ -62,7 +63,7 @@ import org.xml.sax.SAXException;
 
 /**
  * Deserialize {@link XMLCell} from python to KNIME.
- * 
+ *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
  */
 
@@ -86,9 +87,9 @@ public class XMLDeserializerFactory extends DeserializerFactory {
          * {@inheritDoc}
          */
         @Override
-        public DataCell deserialize(byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
+        public DataCell deserialize(final byte[] bytes, final FileStoreFactory fileStoreFactory) throws IOException {
             try {
-                return XMLCellFactory.create(new String(bytes));
+                return XMLCellFactory.create(new String(bytes, StandardCharsets.UTF_8));
             } catch (ParserConfigurationException | SAXException | XMLStreamException e) {
                 throw new IOException(e.getMessage(), e);
             }
