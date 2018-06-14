@@ -43,49 +43,27 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   Nov 16, 2017 (marcel): created
  */
 package org.knime.python2.kernel;
 
-import org.knime.core.node.util.CheckUtils;
+import static org.knime.python2.util.PythonUtils.Preconditions.checkNotNullOrEmpty;
 
 /**
- * Default implementation of {@link JavaToPythonResponse}.
- *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class DefaultJavaToPythonResponse implements JavaToPythonResponse {
+public class PythonCanceledExecutionException extends Exception implements PythonException {
 
-    private PythonToJavaMessage m_originalMessage;
+    private static final long serialVersionUID = 1L;
 
-    private String m_response;
+    public PythonCanceledExecutionException() {
+        this("Execution was canceled.");
+    }
 
     /**
-     * Creates a new instance of a {@link JavaToPythonResponse} to a specific {@link PythonToJavaMessage} that holds a
-     * simple response string.
-     *
-     * @param originalMessage the message this response responds to
-     * @param response the actual response string
+     * @param message must be neither <code>null</code> nor empty
      */
-    public DefaultJavaToPythonResponse(final PythonToJavaMessage originalMessage, final String response) {
-        m_originalMessage = CheckUtils.checkNotNull(originalMessage);
-        m_response = CheckUtils.checkNotNull(response);
-    }
-
-    @Override
-    public PythonToJavaMessage getOriginalMessage() {
-        return m_originalMessage;
-    }
-
-    @Override
-    public String getReponse() {
-        return m_response;
-    }
-
-    @Override
-    public String toString() {
-        return m_response + " (response to message '" + m_originalMessage + "')";
+    public PythonCanceledExecutionException(final String message) {
+        super(checkNotNullOrEmpty(message));
     }
 }

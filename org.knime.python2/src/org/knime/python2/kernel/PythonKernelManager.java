@@ -60,6 +60,7 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
 import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
 
 /**
@@ -67,15 +68,17 @@ import org.knime.python2.port.PickledObject;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class PythonKernelManager implements AutoCloseable{
+public class PythonKernelManager implements AutoCloseable {
 
     private ThreadPool m_threadPool;
 
-    private PythonKernel m_kernel;
+    private final PythonKernel m_kernel;
 
     private final List<PythonOutputListener> m_stdoutListeners;
 
     private final List<PythonOutputListener> m_stderrListeners;
+
+    private final Object m_listVariablesLock = new Object();
 
     /**
      * Creates a manager that will start a new python kernel.
@@ -284,20 +287,22 @@ public class PythonKernelManager implements AutoCloseable{
      * @param responseHandler Handler for the responded list of variables
      */
     public synchronized void
-    listVariables(final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
+        listVariables(final PythonKernelResponseHandler<List<Map<String, String>>> responseHandler) {
         final PythonKernel kernel = m_kernel;
         runInThread(new Runnable() {
             @Override
             public void run() {
-                List<Map<String, String>> response = null;
-                Exception exception = null;
-                try {
-                    response = kernel.listVariables();
-                } catch (final Exception e) {
-                    exception = e;
-                }
-                if (kernel.equals(m_kernel)) {
-                    responseHandler.handleResponse(response, exception);
+                synchronized (m_listVariablesLock) {
+                    List<Map<String, String>> response = null;
+                    Exception exception = null;
+                    try {
+                        response = kernel.listVariables();
+                    } catch (final Exception e) {
+                        exception = e;
+                    }
+                    if (kernel.equals(m_kernel)) {
+                        responseHandler.handleResponse(response, exception);
+                    }
                 }
             }
         });

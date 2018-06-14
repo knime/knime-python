@@ -44,49 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 16, 2017 (marcel): created
+ *   Jul 18, 2017 (clemens): created
  */
 package org.knime.python2.kernel;
 
 import java.io.IOException;
 
+import com.google.common.base.Strings;
+
 /**
- * Interface for message-based communication between Python and Java.<br>
- * This complements the unidirectional "execute and fetch results" functionality provided by {@link Commands} by means
- * of a bidirectional "message and response" mechanism.
- * <P>
- * {@link PythonToJavaMessage} represents a message that can be sent by Python during execution of a command and is
- * received by Java. A message can be a {@link PythonToJavaMessage#isRequest() request} in which case it requires a
- * {@link JavaToPythonResponse} from Java. On Java side, the message has to be handled by a registered
- * {@link PythonToJavaMessageHandler} and - if it is a request - has to be {@link #answer(JavaToPythonResponse)
- * answered} during {@link PythonToJavaMessageHandler#tryHandle(PythonToJavaMessage) handling}.
+ * Exception thrown if there was an I/O-related error while communicating with Python.
  *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public interface Messages {
+public final class PythonIOException extends IOException implements PythonException {
+
+    private static final long serialVersionUID = 1L;
+
+    private static String amendMessage(final String message) {
+        if (Strings.isNullOrEmpty(message)) {
+            return "An unknown exception occurred while interacting with Python. See log for details.";
+        } else {
+            return message;
+        }
+    }
 
     /**
-     * Register a handler for dealing with a subset of possible {@link PythonToJavaMessage}s from Python. If it is
-     * already present in the internal list, nothing happens.
-     *
-     * @param handler handles {@link PythonToJavaMessage}s having a specific command
+     * @param message a message indicating the cause of the exception
      */
-    void registerMessageHandler(PythonToJavaMessageHandler handler);
+    public PythonIOException(final String message) {
+        super(amendMessage(message));
+    }
 
     /**
-     * Unregister an existing {@link PythonToJavaMessageHandler}. If it is not present in the internal list, nothing
-     * happens.
-     *
-     * @param handler a {@link PythonToJavaMessageHandler}
+     * @param message a message indicating the cause of the exception
+     * @param cause the cause of the problem
      */
-    void unregisterMessageHandler(final PythonToJavaMessageHandler handler);
-
-    /**
-     * Sends a {@link JavaToPythonResponse} to a specific {@link PythonToJavaMessage} to Python.
-     *
-     * @param response the response to send to Python
-     * @throws IOException if any exception occurs while answering
-     */
-    void answer(final JavaToPythonResponse response) throws IOException;
+    public PythonIOException(final String message, final Throwable cause) {
+        super(amendMessage(message), cause);
+    }
 }

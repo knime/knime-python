@@ -52,14 +52,17 @@ package org.knime.python2.kernel;
  * A listener for receiving messages from a python output stream (stdout or stderror).
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public interface PythonOutputListener {
+
+    void setSilenced(boolean silenced);
 
     /**
      * Is called after a full line of text was received from the python output stream
      *
-     * @param msg the received line without terminator
+     * @param message the received line without terminator
      */
-    void messageReceived(String msg);
-
+    void messageReceived(String message);
 }

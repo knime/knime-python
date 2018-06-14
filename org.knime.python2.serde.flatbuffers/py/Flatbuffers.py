@@ -79,8 +79,8 @@ from flatbuffers import compat
 # ******************************************************
 
 import debug_util
-#debug_util.init_debug()
-debug_util.debug_msg('Flatbuffers enabled debugging!')
+# debug_util.init_debug()
+debug_util.debug_msg('Flatbuffers enabled debugging.')
 
 # ******************************************************
    

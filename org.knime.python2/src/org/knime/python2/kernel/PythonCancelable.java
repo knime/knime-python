@@ -43,37 +43,19 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   Jul 18, 2017 (clemens): created
  */
 package org.knime.python2.kernel;
 
-import java.io.IOException;
-
 /**
- * Exception thrown if there was an unexpected error while executing the PythonKernel.
- *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class PythonKernelException extends IOException {
-    private static final long serialVersionUID = 1L;
+public interface PythonCancelable {
 
     /**
-     * Creates a new Python exception.
+     * Checks if the execution has been canceled.
      *
-     * @param message a message indicating the cause of the exception
+     * @throws PythonCanceledExecutionException if the execution has been canceled.
      */
-    public PythonKernelException(final String message) {
-        super(message);
-    }
-
-    /**
-     * Creates a new Python exception.
-     *
-     * @param message a message indicating the cause of the exception
-     * @param cause the cause of the problem
-     */
-    public PythonKernelException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
+    void checkCanceled() throws PythonCanceledExecutionException;
 }

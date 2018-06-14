@@ -44,31 +44,25 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 16, 2017 (marcel): created
+ *   May 10, 2018 (marcel): created
  */
-package org.knime.python2.kernel;
+package org.knime.python2.kernel.messaging;
+
+import java.io.IOException;
 
 /**
- * Represents the response to a specific {@link PythonToJavaMessage} which will be sent to Python.
- *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface JavaToPythonResponse {
+public interface MessageSender {
 
     /**
-     * @return the original message this response responds to
+     * Sends the specified message. This method may or may not block while sending, depending on its specific
+     * implementation.
+     *
+     * @param message the message to send
+     * @throws IOException if sending the message failed for I/O reasons
+     * @throws InterruptedException if interrupted while blocking (optional)
      */
-    PythonToJavaMessage getOriginalMessage();
-
-    /**
-     * @return the actual response string
-     */
-    String getReponse();
-
-    /**
-     * @return the value-based representation of this response
-     */
-    @Override
-    String toString();
+    void send(Message message) throws IOException, InterruptedException;
 }

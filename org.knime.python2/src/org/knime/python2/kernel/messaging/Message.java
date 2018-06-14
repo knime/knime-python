@@ -44,24 +44,52 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 29, 2017 (dietzc): created
+ *   May 11, 2018 (marcel): created
  */
-package org.knime.python2.kernel;
+package org.knime.python2.kernel.messaging;
 
 /**
- * Handles {@link PythonToJavaMessage messages from Python to Java}.
+ * A message that can be sent to or received from Python. Contains a header that consists of named fields (string
+ * key-value pairs). May contain an arbitrary payload.
  *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonToJavaMessageHandler {
+public interface Message {
 
     /**
-     * Handle a message if its command matches. If the message {@link PythonToJavaMessage#isRequest() is a request}, it
-     * has to be {@link Messages#answer(JavaToPythonResponse) answered} exactly once during handling.
-     *
-     * @param msg a message
-     * @return true if handled.
-     * @throws Exception if any exception occurs during handling
+     * @return the message's identifier which is unique within the same kernel session
      */
-    boolean tryHandle(final PythonToJavaMessage msg) throws Exception;
+    int getId();
+
+    /**
+     * @return the message's category which is used to forward the message to appropriate message handlers on reception
+     */
+    String getCategory();
+
+    /**
+     * @return the message's header which consists of all {@link #getHeaderField(String) header fields} of this message,
+     *         this includes the {@link #getId() id} and the {@link #getCategory() category}
+     */
+    String getHeader();
+
+    /**
+     * Returns the value of the header field with the given key.
+     *
+     * @param fieldKey the field's key
+     * @return the field's value, may be <code>null</code> if the given key does not map to a field or if the field's
+     *         value is <code>null</code>
+     */
+    String getHeaderField(String fieldKey);
+
+    /**
+     * @return the message's payload, may be <code>null</code> if the message carries no payload
+     */
+    byte[] getPayload();
+
+    /**
+     * @return an informative description of this message, could e.g. forward to {@link #getHeader()}
+     */
+    @Override
+    String toString();
 }

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,28 +41,47 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   May 10, 2018 (marcel): created
  */
-package org.knime.python2.kernel;
+package org.knime.python2.kernel.messaging;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.knime.core.node.NodeLogger;
 
 /**
- * Handler that handles responses from the python kernel.
- *
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
- *
- * @param <T> Type of the response object
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonKernelResponseHandler<T extends Object> {
+final class DefaultMessageSender implements MessageSender {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(DefaultMessageSender.class);
+
+    private final DataOutputStream m_outToPython;
 
     /**
-     * Method that handles the received response of the python kernel.
-     *
-     * @param response The response object (depends on command) or null if an exception was thrown
-     * @param exception The exception that was thrown or null if no exception was thrown
+     * @param outToPython the output stream via which messages to Python are sent
      */
-    void handleResponse(final T response, final Exception exception);
+    public DefaultMessageSender(final OutputStream outToPython) {
+        m_outToPython = new DataOutputStream(outToPython);
+    }
 
+    @Override
+    public void send(final Message message) throws IOException {
+        LOGGER.debug("Java - Send message: " + message);
+        final byte[] header = message.getHeader().getBytes(StandardCharsets.UTF_8);
+        final byte[] payload = message.getPayload();
+        m_outToPython.writeInt(header.length);
+        m_outToPython.writeInt(payload != null ? payload.length : 0);
+        m_outToPython.write(header);
+        if (payload != null) {
+            m_outToPython.write(payload);
+        }
+    }
 }

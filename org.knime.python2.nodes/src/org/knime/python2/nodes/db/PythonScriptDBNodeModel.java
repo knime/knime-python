@@ -67,6 +67,7 @@ import org.knime.core.node.port.database.aggregation.DBAggregationFunctionFactor
 import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
@@ -103,7 +104,7 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
             final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
             final Collection<String> jars = getJars(connIn);
             kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
-            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
             final Collection<FlowVariable> variables =

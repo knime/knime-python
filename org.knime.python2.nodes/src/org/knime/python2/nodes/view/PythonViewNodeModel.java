@@ -74,6 +74,7 @@ import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.port.inactive.InactiveBranchPortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
 
@@ -105,7 +106,7 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
                 (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
-            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.6).setProgress(1);

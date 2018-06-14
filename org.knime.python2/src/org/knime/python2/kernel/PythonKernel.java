@@ -60,16 +60,18 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -120,149 +122,248 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSp
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TemporaryTableCreator;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.ScriptingNodeUtils;
+import org.knime.python2.kernel.messaging.AbstractRequestHandler;
+import org.knime.python2.kernel.messaging.DefaultMessage;
+import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
+import org.knime.python2.kernel.messaging.DefaultMessage.PayloadEncoder;
+import org.knime.python2.kernel.messaging.Message;
+import org.knime.python2.kernel.messaging.TaskHandler;
 import org.knime.python2.port.PickledObject;
+import org.knime.python2.util.PythonUtils;
 import org.w3c.dom.svg.SVGDocument;
 
 /**
- * Provides operations on a python kernel running in another process.
+ * Provides operations on a Python kernel running in another process.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-    //private static final int CHUNK_SIZE = 500000;
-
     private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
-    private final Process m_process;
-
-    private final ServerSocket m_serverSocket;
-
-    private Socket m_socket;
-
-    private boolean m_hasAutocomplete = false;
-
-    private int m_pid = -1;
-
-    private boolean m_closed = false;
-
     /**
-     * Manages sending commands to the python process via a system socket.
+     * @return the duration, in milliseconds, to wait when trying to establish a connection to Python
      */
-    protected final Commands m_commands;
-
-    private final SerializationLibrary m_serializer;
-
-    private final SerializationLibraryExtensions m_serializationLibraryExtensions;
+    public static int getConnectionTimeoutInMillis() {
+        final String defaultTimeout = "30000";
+        try {
+            final String timeout = System.getProperty("knime.python.connecttimeout", defaultTimeout);
+            return Integer.parseInt(timeout);
+        } catch (final NumberFormatException ex) {
+            LOGGER.warn(
+                "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is "
+                    + "set to the default value of " + defaultTimeout + " ms.");
+            return Integer.parseInt(defaultTimeout);
+        }
+    }
 
     private final PythonKernelOptions m_kernelOptions;
 
-    private final List<PythonOutputListener> m_stdoutListeners;
+    private final Process m_process;
 
-    private final List<PythonOutputListener> m_stderrListeners;
+    private final Integer m_pid; // Nullable.
+
+    private final ServerSocket m_serverSocket;
+
+    private final Socket m_socket;
+
+    private final PythonCommands m_commands;
+
+    private final SerializationLibrary m_serializer;
 
     private final InputStream m_stdoutStream;
 
     private final InputStream m_stderrStream;
 
+    private final List<PythonOutputListener> m_stdoutListeners = new ArrayList<>();
+
+    private final List<PythonOutputListener> m_stderrListeners = new ArrayList<>();
+
     private final ConfigurablePythonOutputListener m_errorPrintListener;
 
-    private List<ProcessEndAction> m_processEndActions;
+    private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();;
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
 
-    private Future<PythonKernelException> m_pythonKernelMonitorResult;
+    private final Future<PythonIOException> m_pythonKernelMonitorResult;
+
+    private final boolean m_hasAutocomplete;
+
+    private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
     /**
-     * Creates a python kernel by starting a python process and connecting to it.
-     *
-     * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the python process
-     * in the background
+     * Creates a new Python kernel by starting a Python process and connecting to it.
+     * <P>
+     * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
+     * in the background.
      *
      * @param kernelOptions all configurable options
-     *
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException if failed to setup the Python kernel
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = kernelOptions;
-        m_stdoutListeners = new ArrayList<PythonOutputListener>();
-        m_stderrListeners = new ArrayList<PythonOutputListener>();
 
-        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
-            ? PythonKernelTester.testPython3Installation(kernelOptions.getAdditionalRequiredModules(), false)
-            : PythonKernelTester.testPython2Installation(kernelOptions.getAdditionalRequiredModules(), false);
+        testInstallation();
 
-        if (testResult.hasError()) {
-            throw new IOException("Could not start python kernel:\nError during python installation test: "
-                + testResult.getErrorLog() + "! See log for details.");
-        }
-        // Create serialization library instance
-        m_serializationLibraryExtensions = new SerializationLibraryExtensions();
-        String serializerId = getSerializerId();
-        String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
-        if(serializerName == null) {
-            String msg;
-            if(serializerId == null) {
-                msg = "No serialization library was found. Please make sure to install at least one plugin containing one!";
-            } else {
-                msg = "The selected serialization library with id " + serializerId + " was not found. "
-                        + "Please make sure to install the correspondent plugin or select a different serialization "
-                        + "library in the python preference page.";
-            }
-            throw new IllegalStateException(msg);
-        }
-        LOGGER.debug("Using serialization library: " + serializerName);
-        m_serializer = m_serializationLibraryExtensions.getSerializationLibrary(serializerId);
-        final String serializerPythonPath =
-            SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
-        // Create socket to listen on
-        m_serverSocket = new ServerSocket(0);
-        final int port = m_serverSocket.getLocalPort();
-        final String defTimeout = "30000";
-        String timeout = System.getProperty("knime.python.connecttimeout", defTimeout);
         try {
-            m_serverSocket.setSoTimeout(Integer.parseInt(timeout));
-        } catch (NumberFormatException ex) {
-            m_serverSocket.setSoTimeout(Integer.parseInt(defTimeout));
-            LOGGER.warn(
-                "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is "
-                    + "set to the default value " + defTimeout + "ms.");
-        }
-        final AtomicReference<IOException> exception = new AtomicReference<IOException>();
-        final Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    m_socket = m_serverSocket.accept();
-                } catch (final IOException e) {
-                    m_socket = null;
-                    if (e instanceof SocketTimeoutException) {
-                        exception.set(new IOException("The connection attempt "
-                            + "timed out. Please consider increasing the socket timeout using the VM option "
-                            + "'-Dknime.python.connecttimeout=<value-in-ms>'."));
+            // Setup Python kernel:
+
+            // Create serialization library instance.
+            m_serializer = setupSerializationLibrary();
+
+            // Start socket creation. The created socket is used to communicate with the Python process that is created below.
+            m_serverSocket = new ServerSocket(0);
+            m_serverSocket.setSoTimeout(getConnectionTimeoutInMillis());
+            final Future<Socket> socketBeingSetup = setupSocket();
+
+            // Create Python process.
+            m_process = setupPythonProcess();
+
+            // Start listening to stdout and stderror pipes.
+            m_stdoutStream = m_process.getInputStream();
+            m_stderrStream = m_process.getErrorStream();
+            startPipeListeners();
+
+            // Monitor process termination and report possible errors.
+            m_segfaultDuringSerializationAction = setupSegfaultAction(); // Used in "getData" methods.
+            m_pythonKernelMonitorResult = setupProcessEndActions();
+
+            // Log output and errors to console.
+            addStdoutListener(new PythonOutputListener() {
+
+                private boolean m_silenced = false;
+
+                @Override
+                public void setSilenced(final boolean silenced) {
+                    m_silenced = silenced;
+                }
+
+                @Override
+                public void messageReceived(final String message) {
+                    if (!m_silenced) {
+                        LOGGER.info(message);
                     } else {
-                        exception.set(e);
+                        LOGGER.debug(message);
                     }
                 }
+            });
+            m_errorPrintListener = new ConfigurablePythonOutputListener();
+            addStderrorListener(m_errorPrintListener);
+
+            // Wait for Python to connect.
+            m_socket = socketBeingSetup.get();
+
+            // Setup command/message system.
+            m_commands = new PythonCommands(m_socket.getOutputStream(), m_socket.getInputStream(),
+                new PythonKernelExecutionMonitor());
+
+            // Setup request handlers.
+            setupSerializerRequestHandlers();
+
+            // Start commands/messaging system once everything is set up.
+            m_commands.start();
+
+            // PID of Python process.
+            m_pid = m_commands.getPid().get();
+            LOGGER.debug("Python PID: " + m_pid);
+
+            m_hasAutocomplete = checkHasAutoComplete();
+
+            // Add custom module directories to the PYTHONPATH in the Python workspace.
+            setupCustomModules();
+
+            setupSentinelConstants();
+        } catch (final Throwable t) {
+            // Close is not called by try-with-resources if an exception occurs during construction.
+            close();
+            if (t instanceof PythonIOException) {
+                throw (PythonIOException)t;
+            } else if (t instanceof Error) {
+                throw (Error)t;
+            } else {
+                throw new IOException("An exception occurred while setting up the Python kernel. " //
+                    + "See log for details.", t);
+            }
+        }
+    }
+
+    // Setup methods:
+
+    private void testInstallation() throws PythonIOException {
+        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
+            ? PythonKernelTester.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules(), false)
+            : PythonKernelTester.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules(), false);
+        if (testResult.hasError()) {
+            throw new PythonIOException("Could not start Python kernel. Error during Python installation test: "
+                + testResult.getErrorLog() + ". See log for details.");
+        }
+    }
+
+    private SerializationLibrary setupSerializationLibrary() throws PythonIOException {
+        final SerializationLibraryExtensions serializationLibraryExtension = new SerializationLibraryExtensions();
+        final String serializerId = getSerializerId();
+        final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
+        if (serializerName == null) {
+            final String message;
+            if (serializerId == null) {
+                message =
+                    "No serialization library was found. Please make sure to install at least one plugin containing one.";
+            } else {
+                message = "The selected serialization library with id " + serializerId + " was not found. "
+                    + "Please make sure to install the correspondent plugin or select a different serialization "
+                    + "library in the Python preference page.";
+            }
+            throw new PythonIOException(message);
+        }
+        LOGGER.debug("Using serialization library: " + serializerName + ".");
+        return serializationLibraryExtension.getSerializationLibrary(serializerId);
+    }
+
+    /**
+     * Get the id of the configured serialization library.
+     *
+     * @return a serialization library id
+     */
+    private String getSerializerId() {
+        if (m_kernelOptions.getOverrulePreferencePage()) {
+            return m_kernelOptions.getSerializerId();
+        }
+        return PythonPreferencePage.getSerializerId();
+    }
+
+    private Future<Socket> setupSocket() {
+        return Executors.newSingleThreadExecutor().submit(() -> {
+            try {
+                return m_serverSocket.accept();
+            } catch (final SocketTimeoutException ex) {
+                throw new PythonIOException("The connection attempt timed out. Please consider increasing the socket "
+                    + "timeout using the VM option '-Dknime.python.connecttimeout=<value-in-ms>'.");
             }
         });
-        // Start listening
-        thread.start();
-        // Get path to python kernel script
-        final String scriptPath = m_kernelOptions.getKernelScriptPath();
-        // Start python kernel that listens to the given port
-        // use the -u options to force python to not buffer stdout and stderror
+    }
+
+    private Process setupPythonProcess() throws IOException {
+        final String kernelScriptPath = m_kernelOptions.getKernelScriptPath();
+        final String port = Integer.toString(m_serverSocket.getLocalPort());
+        final String serializationLibraryPath =
+            SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
+        // Start Python kernel that listens to the given port.
+        // Use the -u options to force Python to not buffer stdout and stderror.
         final ProcessBuilder pb;
         if (!m_kernelOptions.getUsePython3()) {
-            //Python2 start without site to set default encoding to utf-8
-            pb = new ProcessBuilder(Activator.getPython2Command(), "-u", "-S", scriptPath, "" + port,
-                serializerPythonPath);
+            // Python2 start without site to set default encoding to utf-8.
+            pb = new ProcessBuilder(Activator.getPython2Command(), "-u", /*"-S",*/ kernelScriptPath, port,
+                serializationLibraryPath);
         } else {
-            pb = new ProcessBuilder(Activator.getPython3Command(), "-u", scriptPath, "" + port, serializerPythonPath);
+            pb = new ProcessBuilder(Activator.getPython3Command(), "-u", kernelScriptPath, port,
+                serializationLibraryPath);
         }
-        // Add all python modules to PYTHONPATH variable
+        // Add all python modules to PYTHONPATH variable.
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
         String externalPythonPath = PythonModuleExtensions.getPythonPath();
@@ -280,216 +381,168 @@ public class PythonKernel implements AutoCloseable {
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
 
-        // Start python
-        m_process = pb.start();
+        // Start Python.
+        return pb.start();
+    }
 
-        //Get stdout and stderror pipes and start listening to them
-        m_stdoutStream = m_process.getInputStream();
-        m_stderrStream = m_process.getErrorStream();
-
-        startPipeListeners();
-        //Capture process end and run registered actions
-        m_segfaultDuringSerializationAction = new ProcessEndAction() {
-
-            @Override
-            void runForExitCode(final int exitCode) throws PythonKernelException {
-                //If an error was raised in python we already have a specific clue about the error. If not we should
-                //have a look at the exit code of the process.
-                if(m_errorPrintListener.wasErrorLogged()) {
-                    return;
-                }
-                //Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
-                //flatbuffers with exit code 0
-                if(exitCode == 139) {
-                    throw new PythonKernelException("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
-                        + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
-                        + " the 'Options' tab of the configuration dialog.");
-                } else if(exitCode != 0) {
-                    throw new PythonKernelException("Python process ended unexpectedly with exit code " + exitCode + ". This might be"
+    private ProcessEndAction setupSegfaultAction() {
+        return exitCode -> {
+            // If an error was raised in Python we already have a specific clue about the error. If not we should
+            // have a look at the exit code of the process.
+            if (m_errorPrintListener.wasErrorLogged()) {
+                return;
+            }
+            // Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
+            // flatbuffers with exit code 0.
+            if (exitCode == 139) {
+                throw new PythonIOException("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
+                    + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
+                    + " the 'Options' tab of the configuration dialog.");
+            } else if (exitCode != 0) {
+                throw new PythonIOException(
+                    "Python process ended unexpectedly with exit code " + exitCode + ". This might be"
                         + " caused by an oversized buffer allocation. Please consider lowering the 'Rows per chunk'"
                         + " parameter in the 'Options' tab of the configuration dialog.");
-                }
             }
         };
-        m_processEndActions = new ArrayList<ProcessEndAction>();
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        m_pythonKernelMonitorResult = service.submit(new Callable<PythonKernelException>() {
+    }
+
+    private Future<PythonIOException> setupProcessEndActions() {
+        // Capture process end and run registered actions.
+        final ExecutorService service = Executors.newSingleThreadExecutor();
+        return service.submit(() -> {
+            final int exitCode = m_process.waitFor();
+            synchronized (m_processEndActions) {
+                for (final ProcessEndAction action : m_processEndActions) {
+                    action.runForExitCode(exitCode);
+                }
+            }
+            return null;
+        });
+    }
+
+    private void setupSerializerRequestHandlers() {
+        registerTaskHandler("serializer_request", new AbstractRequestHandler() {
 
             @Override
-            public PythonKernelException call() throws Exception {
-                int exitCode = m_process.waitFor();
-                synchronized (m_processEndActions) {
-                    for (ProcessEndAction action : m_processEndActions) {
-                        try {
-                            action.runForExitCode(exitCode);
-                        } catch (PythonKernelException ex) {
-                            return ex;
-                        }
+            protected Message respond(final Message request, final int responseMessageId) throws Exception {
+                final String payload = new PayloadDecoder(request.getPayload()).getNextString();
+                for (final PythonToKnimeExtension extension : PythonToKnimeExtensions.getExtensions()) {
+                    if (extension.getType().equals(payload) || extension.getId().equals(payload)) {
+                        final byte[] responsePayload = new PayloadEncoder() //
+                            .putString(extension.getId()) //
+                            .putString(extension.getType()) //
+                            .putString(extension.getPythonSerializerPath()) //
+                            .get();
+                        return createResponse(request, responseMessageId, true, responsePayload, null);
                     }
                 }
-                return null;
+                // TODO: Change to failure response without a payload (requires changes on Python side).
+                final byte[] emptyResponsePayload = new PayloadEncoder() //
+                    .putString("") //
+                    .putString("") //
+                    .putString("") //
+                    .get();
+                return createResponse(request, responseMessageId, true, emptyResponsePayload, null);
             }
         });
 
-        //Log output and errors to console
-        addStdoutListener(new PythonOutputListener() {
+        registerTaskHandler("deserializer_request", new AbstractRequestHandler() {
 
             @Override
-            public void messageReceived(final String msg) {
-                LOGGER.info(msg);
-            }
-        });
-
-        m_errorPrintListener = new ConfigurablePythonOutputListener();
-        addStderrorListener(m_errorPrintListener);
-
-        try {
-            // Wait for python to connect
-            thread.join();
-        } catch (final InterruptedException e) {
-        }
-        if (m_socket == null) {
-            // Python did not connect this kernel is invalid
-            close();
-            throw new IOException("Could not start python kernel. Cause: " + exception.get().getMessage(),
-                exception.get());
-        }
-        m_commands = new Commands(m_socket.getOutputStream(), m_socket.getInputStream());
-        Messages messages = m_commands.getMessages();
-
-        messages.registerMessageHandler(new AbstractPythonToJavaMessageHandler("serializer_request") {
-
-            @Override
-            protected void handle(final PythonToJavaMessage msg) throws Exception {
-                for (PythonToKnimeExtension ext : PythonToKnimeExtensions.getExtensions()) {
-                    if (ext.getType().contentEquals(msg.getValue()) || ext.getId().contentEquals(msg.getValue())) {
-                        messages.answer(new DefaultJavaToPythonResponse(msg,
-                            ext.getId() + ";" + ext.getType() + ";" + ext.getPythonSerializerPath()));
-                        return;
+            protected Message respond(final Message request, final int responseMessageId) throws ExecutionException {
+                final String payload = new PayloadDecoder(request.getPayload()).getNextString();
+                for (final KnimeToPythonExtension extension : KnimeToPythonExtensions.getExtensions()) {
+                    if (extension.getId().equals(payload)) {
+                        final byte[] responsePayload = new PayloadEncoder() //
+                            .putString(extension.getId()) //
+                            .putString(extension.getPythonDeserializerPath()) //
+                            .get();
+                        return createResponse(request, responseMessageId, true, responsePayload, null);
                     }
                 }
-                messages.answer(new DefaultJavaToPythonResponse(msg, ";;"));
+                // TODO: Change to failure response without a payload (requires changes on Python side).
+                final byte[] emptyResponsePayload = new PayloadEncoder() //
+                    .putString("") //
+                    .putString("") //
+                    .get();
+                return createResponse(request, responseMessageId, true, emptyResponsePayload, null);
             }
         });
+    }
 
-        messages.registerMessageHandler(new AbstractPythonToJavaMessageHandler("deserializer_request") {
+    private boolean checkHasAutoComplete() {
+        try {
+            // Check if Python kernel supports auto-completion (this depends on the optional module Jedi).
+            return m_commands.hasAutoComplete().get();
+        } catch (final Exception ex) {
+            LOGGER.debug("An exception occurred while checking the auto-completion capabilities of the Python kernel. "
+                + "Auto-completion will not be available.");
+            return false;
+        }
+    }
 
-            @Override
-            protected void handle(final PythonToJavaMessage msg) throws Exception {
-                for (KnimeToPythonExtension ext : KnimeToPythonExtensions.getExtensions()) {
-                    if (ext.getId().contentEquals(msg.getValue())) {
-                        messages.answer(
-                            new DefaultJavaToPythonResponse(msg, ext.getId() + ";" + ext.getPythonDeserializerPath()));
-                        return;
-                    }
-                }
-                messages.answer(new DefaultJavaToPythonResponse(msg, ";"));
-            }
-        });
-        try {
-            // First get PID of Python process
-            m_pid = m_commands.getPid();
-        } catch (EOFException ex) {
-            throw new PythonKernelException("Could not start python kernel. See console and log file for more details.", ex);
+    private void setupCustomModules() throws InterruptedException, ExecutionException {
+        final String pythonpath = PythonModuleExtensions.getPythonPath();
+        if (!pythonpath.isEmpty()) {
+            m_commands.addToPythonPath(pythonpath).get();
         }
-        try {
-            // Check if python kernel supports autocompletion (this depends
-            // on the optional module Jedi)
-            m_hasAutocomplete = m_commands.hasAutoComplete();
-        } catch (final Exception e) {
-            //
-        }
-        // Add custom module directories to the pythonpath in the python workspace
-        String pythonpath = PythonModuleExtensions.getPythonPath();
-        if(!pythonpath.isEmpty()) {
-            m_commands.addToPythonPath(pythonpath);
-        }
-        //Add sentinel constants
+    }
+
+    private void setupSentinelConstants() throws InterruptedException, ExecutionException {
         if (m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL) {
-            m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1");
+            m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1").get();
         } else if (m_kernelOptions.getSentinelOption() == SentinelOption.MIN_VAL) {
-            m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63");
+            m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63").get();
         } else {
             m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + "; LONG_SENTINEL = "
-                + m_kernelOptions.getSentinelValue());
+                + m_kernelOptions.getSentinelValue()).get();
         }
     }
+    // End of setup methods.
 
     /**
-     * @return returns the kernel's messaging interface
-     */
-    public Messages getMessages() {
-        return m_commands.getMessages();
-    }
-
-    /**
-     * Execute the given source code.
+     * Registers the given handler for the given task category if it is not yet covered by another handler.
      *
-     * @param sourceCode The source code to execute
-     * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @param taskCategory the {@link Message#getCategory() category} for which to register the handler
+     * @param handler the handler to register
+     * @return <code>true</code> if the task handler could be registered, <code>false</code> otherwise
      */
-    public String[] execute(final String sourceCode) throws IOException {
-        //In execution mode only the warnings are logged to stdout.
-        //If an error occurs it is transferred via the socket and available at position 1 of the returned
-        //stringlist
-        m_errorPrintListener.setAllWarnings(true);
-        final String[] output = m_commands.execute(sourceCode);
-        m_errorPrintListener.setAllWarnings(false);
-        if (output[0].length() > 0) {
-            LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
-        }
-        return output;
+    public boolean registerTaskHandler(final String taskCategory, final TaskHandler<?> handler) {
+        return m_commands.getMessageHandlers().registerMessageHandler(taskCategory,
+            m_commands.createTaskFactory(handler));
     }
 
     /**
-     * Execute the given source code while still checking if the given execution context has been canceled
+     * Unregisters the handler for the given task category if one is present.
      *
-     * @param sourceCode The source code to execute
-     * @param exec The execution context to check if execution has been canceled
-     * @return Standard console output
-     * @throws Exception If something goes wrong during execution or if execution has been canceled
+     * @param taskCategory the {@link Message#getCategory() category} for which to unregister the handler
+     * @return <code>true</code> if a task handler had been present and was unregistered, <code>false</code> otherwise
      */
-    public String[] execute(final String sourceCode, final ExecutionContext exec) throws Exception {
-        final AtomicBoolean done = new AtomicBoolean(false);
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
-        final Thread nodeExecutionThread = Thread.currentThread();
-        final AtomicReference<String[]> output = new AtomicReference<String[]>();
-        // Thread running the execute
-        ThreadUtils.threadWithContext(new Runnable() {
-            @Override
-            public void run() {
-                String[] out;
-                try {
-                    out = execute(sourceCode);
-                    output.set(out);
-                    // If the error log has content throw it as exception
-                    if (!out[1].isEmpty()) {
-                        throw new PythonKernelException(out[1]);
-                    }
-                } catch (final Exception e) {
-                    exception.set(e);
-                }
-                done.set(true);
-                // Wake up waiting thread
-                nodeExecutionThread.interrupt();
-            }
-        }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
-        // Wait until execution is done
-        while (done.get() != true) {
-            try {
-                // Wake up once a second to check if execution has been canceled
-                Thread.sleep(1000);
-            } catch (final InterruptedException e) {
-                // Happens if python thread is done
-            }
-            exec.checkCanceled();
+    public boolean unregisterTaskHandler(final String taskCategory) {
+        return m_commands.getMessageHandlers().unregisterMessageHandler(taskCategory);
+    }
+
+    /**
+     * Add an action to run when the python process ends.
+     *
+     * @param ac the action to run
+     */
+    public void addProcessEndAction(final ProcessEndAction ac) {
+        synchronized (m_processEndActions) {
+            m_processEndActions.add(ac);
         }
-        // If their was an exception in the execution thread throw it here
-        if (exception.get() != null) {
-            throw exception.get();
+    }
+
+    /**
+     * Remove an action from the list of actions to run when the python process ends.
+     *
+     * @param ac the action to remove
+     */
+    public void removeProcessEndAction(final ProcessEndAction ac) {
+        synchronized (m_processEndActions) {
+            m_processEndActions.remove(ac);
         }
-        return output.get();
     }
 
     /**
@@ -499,11 +552,14 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name The name of the dict
      * @param flowVariables The flow variables to put
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws ExecutionException
+     * @throws InterruptedException
      */
-    public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables) throws IOException {
+    public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables)
+        throws IOException, InterruptedException, ExecutionException {
         final byte[] bytes = flowVariablesToBytes(flowVariables);
-        m_commands.putFlowVariables(name, bytes);
+        m_commands.putFlowVariables(name, bytes).get();
     }
 
     /**
@@ -511,7 +567,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param flowVariables
      * @return the serialized flow variables
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) throws IOException {
         final Type[] types = new Type[flowVariables.size()];
@@ -551,19 +607,34 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
+     * Returns the list of defined flow variables
+     *
+     * @param name Variable name of the flow variable dict in Python
+     * @return Collection of flow variables
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
+        try {
+            final byte[] bytes = m_commands.getFlowVariables(name).get();
+            return bytesToFlowVariables(bytes);
+        } catch (EOFException | InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
      * Deserialize a collection of flow variables received from the python workspace.
      *
      * @param bytes the serialized representation of the flow variables
      * @return a collection of {@link FlowVariable}s
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
-
     private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) throws IOException {
         final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
         final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
         m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-        //Use LinkedHashSet for preserving insertion order
-        final Set<FlowVariable> flowVariables = new LinkedHashSet<FlowVariable>();
+        // Use LinkedHashSet for preserving insertion order.
+        final Set<FlowVariable> flowVariables = new LinkedHashSet<>();
         if (tableCreator.getTable() == null) {
             return flowVariables;
         }
@@ -594,35 +665,14 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
-     * Returns the list of defined flow variables
-     *
-     * @param name Variable name of the flow variable dict in Python
-     * @return Collection of flow variables
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
-        try {
-            final byte[] bytes = m_commands.getFlowVariables(name);
-            final Collection<FlowVariable> flowVariables = bytesToFlowVariables(bytes);
-            return flowVariables;
-        } catch(EOFException ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        }
-    }
-
-    /**
      * Check if input is a valid flow variable name.
      *
      * @param name a potential flow variable name
      * @return valid
      */
     private boolean isValidFlowVariableName(final String name) {
-        if (name.startsWith(FlowVariable.Scope.Global.getPrefix())
-            || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
-            // name is reserved
-            return false;
-        }
-        return true;
+        return !(name.startsWith(FlowVariable.Scope.Global.getPrefix())
+            || name.startsWith(FlowVariable.Scope.Local.getPrefix()));
     }
 
     /**
@@ -634,7 +684,7 @@ public class PythonKernel implements AutoCloseable {
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
      * @param rowLimit The amount of rows that will be transfered
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws IOException {
@@ -643,41 +693,49 @@ public class PythonKernel implements AutoCloseable {
         }
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-        final CloseableRowIterator iterator = table.iterator();
-        if (table.size() > Integer.MAX_VALUE) {
-            throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
-        }
-        final int rowCount = (int)table.size();
-        final int numberRows = Math.min(rowLimit, rowCount);
-        int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
-        if (numberChunks == 0) {
-            numberChunks = 1;
-        }
-        int rowsDone = 0;
-        final TableChunker tableChunker = new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
-        for (int i = 0; i < numberChunks; i++) {
-            final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
-            final ExecutionMonitor chunkProgress =
-                serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
-            final TableIterator tableIterator =
-                ((BufferedDataTableChunker)tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
-            final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
-            chunkProgress.setProgress(1);
-            rowsDone += rowsInThisIteration;
-            serializationMonitor.setProgress(rowsDone / (double)numberRows);
-            if (i == 0) {
-                m_commands.putTable(name, bytes);
-            } else {
-                m_commands.appendToTable(name, bytes);
+        try (final CloseableRowIterator iterator = table.iterator()) {
+            if (table.size() > Integer.MAX_VALUE) {
+                throw new IOException(
+                    "Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
             }
-            deserializationMonitor.setProgress(rowsDone / (double)numberRows);
-            try {
-                executionMonitor.checkCanceled();
-            } catch (final CanceledExecutionException e) {
-                throw new IOException(e.getMessage(), e);
+            final int rowCount = (int)table.size();
+            final int numberRows = Math.min(rowLimit, rowCount);
+            int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
+            if (numberChunks == 0) {
+                numberChunks = 1;
             }
+            int rowsDone = 0;
+            final TableChunker tableChunker =
+                new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
+            Future<Void> lastChunkCompleted = null;
+            for (int i = 0; i < numberChunks; i++) {
+                final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
+                final ExecutionMonitor chunkProgress =
+                    serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
+                final TableIterator tableIterator =
+                    ((BufferedDataTableChunker)tableChunker).nextChunk(rowsInThisIteration, chunkProgress);
+                final byte[] bytes =
+                    m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
+                chunkProgress.setProgress(1);
+                rowsDone += rowsInThisIteration;
+                serializationMonitor.setProgress(rowsDone / (double)numberRows);
+                if (i == 0) {
+                    lastChunkCompleted = m_commands.putTable(name, bytes);
+                } else {
+                    lastChunkCompleted.get();
+                    lastChunkCompleted = m_commands.appendToTable(name, bytes);
+                }
+                deserializationMonitor.setProgress(rowsDone / (double)numberRows);
+                try {
+                    executionMonitor.checkCanceled();
+                } catch (final CanceledExecutionException ex) {
+                    throw new IOException(ex.getMessage(), ex);
+                }
+            }
+            lastChunkCompleted.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
         }
-        iterator.close();
     }
 
     /**
@@ -688,7 +746,7 @@ public class PythonKernel implements AutoCloseable {
      * @param name The name of the table
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws IOException {
@@ -706,7 +764,7 @@ public class PythonKernel implements AutoCloseable {
      * @param name The name of the table
      * @param tableChunker A {@link TableChunker}
      * @param rowsPerChunk The number of rows to send per chunk
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public void putData(final String name, final TableChunker tableChunker, final int rowsPerChunk) throws IOException {
         final int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
@@ -715,16 +773,24 @@ public class PythonKernel implements AutoCloseable {
             numberChunks = 1;
         }
         int rowsDone = 0;
-        for (int i = 0; i < numberChunks; i++) {
-            final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
-            final TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
-            final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
-            rowsDone += rowsInThisIteration;
-            if (i == 0) {
-                m_commands.putTable(name, bytes);
-            } else {
-                m_commands.appendToTable(name, bytes);
+        Future<Void> lastChunkCompleted = null;
+        try {
+            for (int i = 0; i < numberChunks; i++) {
+                final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
+                final TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
+                final byte[] bytes =
+                    m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
+                rowsDone += rowsInThisIteration;
+                if (i == 0) {
+                    lastChunkCompleted = m_commands.putTable(name, bytes);
+                } else {
+                    lastChunkCompleted.get();
+                    lastChunkCompleted = m_commands.appendToTable(name, bytes);
+                }
             }
+            lastChunkCompleted.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -735,18 +801,18 @@ public class PythonKernel implements AutoCloseable {
      * @param exec The calling node's execution context
      * @return The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      *
      */
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
         final ExecutionMonitor executionMonitor) throws IOException {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-        ProcessEndAction pea = m_segfaultDuringSerializationAction;
+        final ProcessEndAction pea = m_segfaultDuringSerializationAction;
         m_errorPrintListener.resetErrorLoggedFlag();
         try {
             addProcessEndAction(pea);
-            final int tableSize = m_commands.getTableSize(name);
+            final int tableSize = m_commands.getTableSize(name).get();
             int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
             if (numberChunks == 0) {
                 numberChunks = 1;
@@ -755,7 +821,7 @@ public class PythonKernel implements AutoCloseable {
             for (int i = 0; i < numberChunks; i++) {
                 final int start = m_kernelOptions.getChunkSize() * i;
                 final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
-                final byte[] bytes = m_commands.getTableChunk(name, start, end);
+                final byte[] bytes = m_commands.getTableChunk(name, start, end).get();
                 serializationMonitor.setProgress((end + 1) / (double)tableSize);
                 if (tableCreator == null) {
                     final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
@@ -765,12 +831,12 @@ public class PythonKernel implements AutoCloseable {
                 deserializationMonitor.setProgress((end + 1) / (double)tableSize);
             }
             if (tableCreator != null) {
-                BufferedDataTable table = tableCreator.getTable();
+                final BufferedDataTable table = tableCreator.getTable();
                 removeProcessEndAction(pea);
                 return table;
             }
-            throw new PythonKernelException("Invalid serialized table received.");
-        } catch (final EOFException ex) {
+            throw new PythonIOException("Invalid serialized table received.");
+        } catch (final InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -780,13 +846,15 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name The name of the object to get
      * @return The object
-     * @param tcf A {@link TableCreatorFactory} that can be used to create the requested {@link TableCreator}
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @param tableCreatorFactory A {@link TableCreatorFactory} that can be used to create the requested
+     *            {@link TableCreator}
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
-    public TableCreator<?> getData(final String name, final TableCreatorFactory tcf) throws IOException {
-        ProcessEndAction pea = m_segfaultDuringSerializationAction;
+    public TableCreator<?> getData(final String name, final TableCreatorFactory tableCreatorFactory)
+        throws IOException {
+        final ProcessEndAction pea = m_segfaultDuringSerializationAction;
         try {
-            final int tableSize = m_commands.getTableSize(name);
+            final int tableSize = m_commands.getTableSize(name).get();
             int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
             if (numberChunks == 0) {
                 numberChunks = 1;
@@ -795,17 +863,151 @@ public class PythonKernel implements AutoCloseable {
             for (int i = 0; i < numberChunks; i++) {
                 final int start = m_kernelOptions.getChunkSize() * i;
                 final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
-                final byte[] bytes = m_commands.getTableChunk(name, start, end);
+                final byte[] bytes = m_commands.getTableChunk(name, start, end).get();
                 if (tableCreator == null) {
                     final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-                    tableCreator = tcf.createTableCreator(spec, tableSize);
+                    tableCreator = tableCreatorFactory.createTableCreator(spec, tableSize);
                 }
                 m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
             }
             removeProcessEndAction(pea);
             return tableCreator;
-        } catch(IOException ex) {
-            throw ex;
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
+     * Put a {@link PickledObject} into the python workspace.
+     *
+     * @param name the name of the variable in the python workspace
+     * @param object the {@link PickledObject}
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public void putObject(final String name, final PickledObject object) throws IOException {
+        try {
+            m_commands.putObject(name, object.getPickledObject()).get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
+     * Put a {@link PickledObject} into the python workspace in an extra thread and monitor the progress.
+     *
+     * @param name the name of the variable in the python workspace
+     * @param object the {@link PickledObject}
+     * @param exec the {@link ExecutionContext} of the calling node
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws CanceledExecutionException if canceled
+     */
+    public void putObject(final String name, final PickledObject object, final ExecutionContext exec)
+        throws IOException, CanceledExecutionException {
+        final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final Thread nodeExecutionThread = Thread.currentThread();
+        // Thread running the execute
+        new Thread(() -> {
+            try {
+                putObject(name, object);
+            } catch (final Exception ex) {
+                exception.set(ex);
+            }
+            done.set(true);
+            // Wake up waiting thread
+            nodeExecutionThread.interrupt();
+        }).start();
+        // Wait until execution is done
+        while (done.get() != true) {
+            try {
+                // Wake up once a second to check if execution has been canceled
+                Thread.sleep(1000);
+            } catch (final InterruptedException ex) {
+                // Happens if python thread is done
+            }
+            exec.checkCanceled();
+        }
+        // If there was an exception in the execution thread throw it here
+        if (exception.get() != null) {
+            throw getMostSpecificPythonKernelException(exception.get());
+        }
+    }
+
+    /**
+     * Get a {@link PickledObject} from the python workspace.
+     *
+     * @param name the name of the variable in the python workspace
+     * @param exec the {@link ExecutionContext} of the calling KNIME node
+     * @return a {@link PickledObject} containing the pickled object representation, the objects type and a string
+     *         representation of the object
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
+        try {
+            final byte[] bytes = m_commands.getObject(name).get();
+            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+            final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
+            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+            final Row row = tableCreator.getTable();
+            final int bytesIndex = spec.findColumn("bytes");
+            final int typeIndex = spec.findColumn("type");
+            final int representationIndex = spec.findColumn("representation");
+            final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
+            return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
+                row.getCell(representationIndex).getStringValue());
+        } catch (final InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
+     * Send a "SQL-Table" to the python workspace that is used to connect to a database.
+     *
+     * @param name the name of the variable in the python workspace
+     * @param conn the database connection to use
+     * @param cp a credential provider for username and password
+     * @param jars a list of jar files needed for invoking the jdbc driver on python side
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
+        final Collection<String> jars) throws IOException {
+        final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
+            Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
+        final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
+            "connectiontimeout", "autocommit", "timezone", "jars"};
+        final RowImpl row = new RowImpl("0", 10);
+        row.setCell(new CellImpl(conn.getDriver()), 0);
+        row.setCell(new CellImpl(conn.getJDBCUrl()), 1);
+        row.setCell(new CellImpl(conn.getUserName(cp)), 2);
+        row.setCell(new CellImpl(conn.getPassword(cp)), 3);
+        row.setCell(new CellImpl(conn.getQuery()), 4);
+        row.setCell(new CellImpl(conn.getDatabaseIdentifier()), 5);
+        row.setCell(new CellImpl(DatabaseConnectionSettings.getDatabaseTimeout()), 6);
+        row.setCell(new CellImpl(false), 7);
+        row.setCell(new CellImpl(conn.getTimezone()), 8);
+        row.setCell(new CellImpl(jars.toArray(new String[jars.size()]), false), 9);
+        final TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
+        final TableIterator tableIterator = new KeyValueTableIterator(spec, row);
+        final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
+        try {
+            m_commands.putSql(name, bytes).get();
+        } catch (final InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
+     * Gets a SQL query from the python workspace.
+     *
+     * @param name the name of the DBUtil variable in the python workspace
+     * @return a SQL query string
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public String getSql(final String name) throws IOException {
+        try {
+            return m_commands.getSql(name).get();
+        } catch (final InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -816,23 +1018,28 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name The name of the image
      * @return the image
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public ImageContainer getImage(final String name) throws IOException {
+        final byte[] bytes;
         try {
-            final byte[] bytes = m_commands.getImage(name);
+            bytes = m_commands.getImage(name).get();
+        } catch (final InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+        if (bytes != null) {
             final String string = new String(bytes, "UTF-8");
             if (string.startsWith("<?xml")) {
                 try {
                     return new ImageContainer(stringToSVG(string));
-                } catch (final TranscoderException e) {
-                    throw new IOException(e.getMessage(), e);
+                } catch (final TranscoderException ex) {
+                    throw new IOException(ex.getMessage(), ex);
                 }
             } else {
                 return new ImageContainer(ImageIO.read(new ByteArrayInputStream(bytes)));
             }
-        } catch (final EOFException ex) {
-            throw getMostSpecificPythonKernelException(ex);
+        } else {
+            return null;
         }
     }
 
@@ -857,123 +1064,34 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
-     * Get a {@link PickledObject} from the python workspace.
-     *
-     * @param name the name of the variable in the python workspace
-     * @param exec the {@link ExecutionContext} of the calling KNIME node
-     * @return a {@link PickledObject} containing the pickled object representation, the objects type and a string
-     *         representation of the object
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    public PickledObject getObject(final String name, final ExecutionContext exec) throws IOException {
-        try {
-            final byte[] bytes = m_commands.getObject(name);
-            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-            final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
-            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-            final Row row = tableCreator.getTable();
-            final int bytesIndex = spec.findColumn("bytes");
-            final int typeIndex = spec.findColumn("type");
-            final int representationIndex = spec.findColumn("representation");
-            final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
-            return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
-                row.getCell(representationIndex).getStringValue());
-        } catch (final EOFException ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        }
-    }
-
-    /**
-     * Put a {@link PickledObject} into the python workspace.
-     *
-     * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    public void putObject(final String name, final PickledObject object) throws IOException {
-        m_commands.putObject(name, object.getPickledObject());
-    }
-
-    /**
-     * Put a {@link PickledObject} into the python workspace in an extra thread and monitor the progress.
-     *
-     * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
-     * @param exec the {@link ExecutionContext} of the calling node
-     * @throws Exception if something went wrong
-     */
-    public void putObject(final String name, final PickledObject object, final ExecutionContext exec) throws Exception {
-        final AtomicBoolean done = new AtomicBoolean(false);
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>(null);
-        final Thread nodeExecutionThread = Thread.currentThread();
-        // Thread running the execute
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    putObject(name, object);
-                } catch (final Exception e) {
-                    exception.set(e);
-                }
-                done.set(true);
-                // Wake up waiting thread
-                nodeExecutionThread.interrupt();
-            }
-        }).start();
-        // Wait until execution is done
-        while (done.get() != true) {
-            try {
-                // Wake up once a second to check if execution has been canceled
-                Thread.sleep(1000);
-            } catch (final InterruptedException e) {
-                // Happens if python thread is done
-            }
-            exec.checkCanceled();
-        }
-        // If there was an exception in the execution thread throw it here
-        if (exception.get() != null) {
-            throw exception.get();
-        }
-    }
-
-    /**
      * Returns the list of all defined variables, functions, classes and loaded modules.
      *
      * Each variable map contains the fields 'name', 'type' and 'value'.
      *
      * @return List of variables currently defined in the workspace
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public List<Map<String, String>> listVariables() throws IOException {
         try {
-            final byte[] bytes = m_commands.listVariables();
+            final byte[] bytes = m_commands.listVariables().get();
             final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
             final TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
             m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
             final int nameIndex = spec.findColumn("name");
             final int typeIndex = spec.findColumn("type");
             final int valueIndex = spec.findColumn("value");
-            final List<Map<String, String>> variables = new ArrayList<Map<String, String>>();
+            final List<Map<String, String>> variables = new ArrayList<>();
             for (final Row variable : tableCreator.getTable()) {
-                final Map<String, String> map = new HashMap<String, String>();
+                final Map<String, String> map = new HashMap<>();
                 map.put("name", variable.getCell(nameIndex).getStringValue());
                 map.put("type", variable.getCell(typeIndex).getStringValue());
                 map.put("value", variable.getCell(valueIndex).getStringValue());
                 variables.add(map);
             }
             return variables;
-        } catch (final EOFException ex) {
+        } catch (final InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
-    }
-
-    /**
-     * Resets the workspace of the python kernel.
-     *
-     * @throws IOException If an error occured
-     */
-    public void resetWorkspace() throws IOException {
-        m_commands.reset();
     }
 
     /**
@@ -985,28 +1103,203 @@ public class PythonKernel implements AutoCloseable {
      * @param line Cursor position (line)
      * @param column Cursor position (column)
      * @return Possible auto completions.
-     * @throws IOException If an error occurred while communicating with the python kernel
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
      */
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
         throws IOException {
-        final List<Map<String, String>> suggestions = new ArrayList<Map<String, String>>();
-        if (m_hasAutocomplete) {
-            final byte[] bytes = m_commands.autoComplete(sourceCode, line, column);
-            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
-            final TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
-            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
-            final int nameIndex = spec.findColumn("name");
-            final int typeIndex = spec.findColumn("type");
-            final int docIndex = spec.findColumn("doc");
-            for (final Row suggestion : tableCreator.getTable()) {
-                final Map<String, String> map = new HashMap<String, String>();
-                map.put("name", suggestion.getCell(nameIndex).getStringValue());
-                map.put("type", suggestion.getCell(typeIndex).getStringValue());
-                map.put("doc", suggestion.getCell(docIndex).getStringValue());
-                suggestions.add(map);
+        try {
+            final List<Map<String, String>> suggestions = new ArrayList<>();
+            if (m_hasAutocomplete) {
+                final byte[] bytes = m_commands.autoComplete(sourceCode, line, column).get();
+                final TableSpec spec = m_serializer.tableSpecFromBytes(bytes);
+                final TemporaryTableCreator tableCreator = new TemporaryTableCreator(spec);
+                m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
+                final int nameIndex = spec.findColumn("name");
+                final int typeIndex = spec.findColumn("type");
+                final int docIndex = spec.findColumn("doc");
+                for (final Row suggestion : tableCreator.getTable()) {
+                    final Map<String, String> map = new HashMap<>();
+                    map.put("name", suggestion.getCell(nameIndex).getStringValue());
+                    map.put("type", suggestion.getCell(typeIndex).getStringValue());
+                    map.put("doc", suggestion.getCell(docIndex).getStringValue());
+                    suggestions.add(map);
+                }
+            }
+            return suggestions;
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
+    }
+
+    /**
+     * Returns a task that executes the given source code and handles messages coming from Python that concern the
+     * execution of the source code using the given handler.
+     *
+     * @param handler the handler that handles the source code execution
+     * @param sourceCode the source code to execute
+     *
+     * @return the result obtained by the handler
+     */
+    public <T> RunnableFuture<T> createExecutionTask(final TaskHandler<T> handler, final String sourceCode) {
+        // TODO: Execution & warning listeners, see #execute(String).
+        return m_commands.createTask(handler, m_commands.createExecuteCommand(sourceCode));
+    }
+
+    /**
+     * Execute the given source code.
+     *
+     * @param sourceCode The source code to execute
+     * @return Standard console output
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     */
+    public String[] execute(final String sourceCode) throws IOException {
+        // In execution mode only the warnings are logged to stdout.
+        // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
+        m_errorPrintListener.setAllWarnings(true);
+        try {
+            final String[] output = m_commands.execute(sourceCode).get();
+            m_errorPrintListener.setAllWarnings(false);
+            if (output[0].length() > 0) {
+                LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
+            }
+            return output;
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Python execution was interrupted. See log for details.", ex);
+        } catch (final ExecutionException ex) {
+            throw new IOException("Python execution failed. See log for details.", ex);
+        }
+    }
+
+    public String[] executeAsync(final String sourceCode) throws IOException {
+        // In execution mode only the warnings are logged to stdout.
+        // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
+        m_errorPrintListener.setAllWarnings(true);
+        try {
+            final String[] output = m_commands.executeAsync(sourceCode).get();
+            m_errorPrintListener.setAllWarnings(false);
+            if (output[0].length() > 0) {
+                LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
+            }
+            return output;
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Python execution was interrupted. See log for details.", ex);
+        } catch (final ExecutionException ex) {
+            throw new IOException("Python execution failed. See log for details.", ex);
+        }
+    }
+
+    /**
+     * Execute the given source code while still checking if the given execution context has been canceled
+     *
+     * @param sourceCode The source code to execute
+     * @param cancelable The cancelable to check if execution has been canceled
+     * @return Standard console output
+     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws CanceledExecutionException if canceled
+     */
+    public String[] execute(final String sourceCode, final PythonCancelable cancelable)
+        throws IOException, CanceledExecutionException {
+        final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final Thread nodeExecutionThread = Thread.currentThread();
+        final AtomicReference<String[]> output = new AtomicReference<>();
+        // Thread running the execute
+        ThreadUtils.threadWithContext(() -> {
+            String[] out;
+            try {
+                out = execute(sourceCode);
+                output.set(out);
+                // If the error log has content throw it as exception
+                if (!out[1].isEmpty()) {
+                    throw new PythonIOException(out[1]);
+                }
+            } catch (final Exception ex) {
+                exception.set(ex);
+            }
+            done.set(true);
+            // Wake up waiting thread
+            nodeExecutionThread.interrupt();
+        }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
+        // Wait until execution is done
+        while (!done.get()) {
+            try {
+                // Wake up once a second to check if execution has been canceled
+                Thread.sleep(1000);
+            } catch (final InterruptedException ex) {
+                // Happens if python thread is done
+            }
+            try {
+                // TODO: Refactor to use Python-specific canceled exception everywhere.
+                cancelable.checkCanceled();
+            } catch (final PythonCanceledExecutionException ex) {
+                throw new CanceledExecutionException(ex.getMessage());
             }
         }
-        return suggestions;
+        // If there was an exception in the execution thread throw it here
+        if (exception.get() != null) {
+            throw getMostSpecificPythonKernelException(exception.get());
+        }
+        return output.get();
+    }
+
+    public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
+            throws IOException, CanceledExecutionException {
+            final AtomicBoolean done = new AtomicBoolean(false);
+            final AtomicReference<Exception> exception = new AtomicReference<>(null);
+            final Thread nodeExecutionThread = Thread.currentThread();
+            final AtomicReference<String[]> output = new AtomicReference<>();
+            // Thread running the execute
+            ThreadUtils.threadWithContext(() -> {
+                String[] out;
+                try {
+                    out = executeAsync(sourceCode);
+                    output.set(out);
+                    // If the error log has content throw it as exception
+                    if (!out[1].isEmpty()) {
+                        throw new PythonIOException(out[1]);
+                    }
+                } catch (final Exception ex) {
+                    exception.set(ex);
+                }
+                done.set(true);
+                // Wake up waiting thread
+                nodeExecutionThread.interrupt();
+            }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
+            // Wait until execution is done
+            while (!done.get()) {
+                try {
+                    // Wake up once a second to check if execution has been canceled
+                    Thread.sleep(1000);
+                } catch (final InterruptedException ex) {
+                    // Happens if python thread is done
+                }
+                try {
+                    // TODO: Refactor to use Python-specific canceled exception everywhere.
+                    cancelable.checkCanceled();
+                } catch (final PythonCanceledExecutionException ex) {
+                    throw new CanceledExecutionException(ex.getMessage());
+                }
+            }
+            // If there was an exception in the execution thread throw it here
+            if (exception.get() != null) {
+                throw getMostSpecificPythonKernelException(exception.get());
+            }
+            return output.get();
+        }
+
+    /**
+     * Resets the workspace of the python kernel.
+     *
+     * @throws IOException If an error occured
+     */
+    public void resetWorkspace() throws IOException {
+        try {
+            m_commands.reset().get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        }
     }
 
     /**
@@ -1015,130 +1308,46 @@ public class PythonKernel implements AutoCloseable {
      * This shuts down the python background process and closes the sockets used for communication.
      */
     @Override
-    public synchronized void close() {
-        if (!m_closed) {
-            m_closed = true;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // Send shutdown
+    public void close() {
+        if (m_closed.compareAndSet(false, true)) {
+            new Thread(() -> {
+                // Order is intended.
+                PythonUtils.Misc.invokeSafely(LOGGER::debug,
+                    listeners -> listeners.forEach(
+                        listener -> PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true), listener)),
+                    m_stdoutListeners, m_stderrListeners);
+                PythonUtils.Misc.closeSafely(LOGGER::debug, m_commands, m_serverSocket, m_socket);
+                PythonUtils.Misc.invokeSafely(LOGGER::debug, List<PythonOutputListener>::clear, m_stdoutListeners,
+                    m_stderrListeners);
+                // If the original process was a script, we have to kill the actual Python process by PID.
+                if (m_pid != null) {
                     try {
-                        // Give it some time to finish writing into the stream
-                        Thread.sleep(500);
-                        if (!m_commands.tryShutdown()) {
-                            LOGGER.debug("Python Kernel could not be shutdown gracefully. Killing process now!");
+                        ProcessBuilder pb;
+                        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                            pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
+                        } else {
+                            pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
                         }
-                    } catch (final Throwable t) {
+                        final Process p = pb.start();
+                        p.waitFor();
+                    } catch (final IOException | SecurityException ex) {
+                        // Ignore.
+                    } catch (final InterruptedException ex) {
+                        // Closing the kernel should not be interrupted.
+                        Thread.currentThread().interrupt();
                     }
-                    try {
-                        m_serverSocket.close();
-                    } catch (final Throwable t) {
-                    }
-                    try {
-                        m_socket.close();
-                    } catch (final Throwable t) {
-                    }
-                    try {
-                        m_stdoutListeners.clear();
-                        m_stderrListeners.clear();
-                    } catch (final Throwable t) {
-                    }
-                    // If the original process was a script we have to kill the
-                    // actual
-                    // Python process by PID
-                    if (m_pid >= 0) {
-                        try {
-                            ProcessBuilder pb;
-                            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                                pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + m_pid);
-                            } else {
-                                pb = new ProcessBuilder("kill", "-KILL", "" + m_pid);
-                            }
-                            Process p = pb.start();
-                            p.waitFor();
-                        } catch (final IOException e) {
-                            //
-                        } catch (InterruptedException ex) {
-                            //
-                        }
-                    } else if (m_process != null) {
-                        m_process.destroy();
-                    }
+                }
+                if (m_process != null) {
+                    m_process.destroy();
                 }
             }).start();
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void finalize() throws Throwable {
         close();
         super.finalize();
-    }
-
-    /**
-     * Send a "SQL-Table" to the python workspace that is used to connect to a database.
-     *
-     * @param name the name of the variable in the python workspace
-     * @param conn the database connection to use
-     * @param cp a credential provider for username and password
-     * @param jars a list of jar files needed for invoking the jdbc driver on python side
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
-        final Collection<String> jars) throws IOException {
-        final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
-            Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
-        final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
-            "connectiontimeout", "autocommit", "timezone", "jars"};
-        final RowImpl row = new RowImpl("0", 10);
-        row.setCell(new CellImpl(conn.getDriver()), 0);
-        row.setCell(new CellImpl(conn.getJDBCUrl()), 1);
-        row.setCell(new CellImpl(conn.getUserName(cp)), 2);
-        row.setCell(new CellImpl(conn.getPassword(cp)), 3);
-        row.setCell(new CellImpl(conn.getQuery()), 4);
-        row.setCell(new CellImpl(conn.getDatabaseIdentifier()), 5);
-        row.setCell(new CellImpl(DatabaseConnectionSettings.getDatabaseTimeout()), 6);
-        row.setCell(new CellImpl(false), 7);
-        row.setCell(new CellImpl(conn.getTimezone()), 8);
-        row.setCell(new CellImpl(jars.toArray(new String[jars.size()]), false), 9);
-        final TableSpec spec = new TableSpecImpl(types, columnNames, new HashMap<String, String>());
-        final TableIterator tableIterator = new KeyValueTableIterator(spec, row);
-        final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions());
-        try {
-            m_commands.putSql(name, bytes);
-        } catch (final EOFException ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        }
-    }
-
-    /**
-     * Gets a SQL query from the python workspace.
-     *
-     * @param name the name of the DBUtil variable in the python workspace
-     * @return a SQL query string
-     * @throws IOException If an error occurred while communicating with the python kernel
-     */
-    public String getSql(final String name) throws IOException {
-        try {
-            return m_commands.getSql(name);
-        } catch (final EOFException ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        }
-    }
-
-    /**
-     * Get the id of the configured serialization library.
-     *
-     * @return a serialization library id
-     */
-    private String getSerializerId() {
-        if (m_kernelOptions.getOverrulePreferencePage()) {
-            return m_kernelOptions.getSerializerId();
-        }
-        return PythonPreferencePage.getSerializerId();
     }
 
     /**
@@ -1177,103 +1386,100 @@ public class PythonKernel implements AutoCloseable {
         m_stderrListeners.remove(listener);
     }
 
+    PythonCommands getCommands() {
+        return m_commands;
+    }
+
     private synchronized void distributeStdoutMsg(final String msg) {
-        for (PythonOutputListener listener : m_stdoutListeners) {
+        for (final PythonOutputListener listener : m_stdoutListeners) {
             listener.messageReceived(msg);
         }
     }
 
     private synchronized void distributeStderrorMsg(final String msg) {
-        for (PythonOutputListener listener : m_stderrListeners) {
+        for (final PythonOutputListener listener : m_stderrListeners) {
             listener.messageReceived(msg);
         }
     }
 
     private void startPipeListeners() {
-        Thread t = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                String msg;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(m_stdoutStream));
-                try {
-                    while ((msg = reader.readLine()) != null) {
-                        distributeStdoutMsg(msg);
-                    }
-                } catch (IOException ex) {
-                    LOGGER.warn("Exception during interactive logging: " + ex.getMessage(), ex);
+        new Thread(() -> {
+            String message;
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stdoutStream));
+            try {
+                while ((message = reader.readLine()) != null) {
+                    distributeStdoutMsg(message);
                 }
-
+            } catch (final IOException ex) {
+                LOGGER.warn("Exception during interactive logging: " + ex.getMessage(), ex);
             }
 
-        });
-        t.start();
+        }).start();
 
-        Thread t2 = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                String msg;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(m_stderrStream));
-                try {
-                    while ((msg = reader.readLine()) != null) {
-                        distributeStderrorMsg(msg);
-                    }
-                } catch (IOException ex) {
-                    LOGGER.debug("Exception during interactive logging: " + ex.getMessage(), ex);
+        new Thread(() -> {
+            String message;
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stderrStream));
+            try {
+                while ((message = reader.readLine()) != null) {
+                    distributeStderrorMsg(message);
                 }
-
+            } catch (final IOException ex) {
+                LOGGER.debug("Exception during interactive logging: " + ex.getMessage(), ex);
             }
 
-        });
-        t2.start();
+        }).start();
     }
 
-    /**
-     * Add an action to run when the python process ends.
-     * @param ac the action to run
-     */
-    public void addProcessEndAction(final ProcessEndAction ac) {
-        synchronized (m_processEndActions) {
-            m_processEndActions.add(ac);
-        }
-    }
-
-    /**
-     * Remove an action from the list of actions to run when the python process ends.
-     * @param ac the action to remove
-     */
-    public void removeProcessEndAction(final ProcessEndAction ac) {
-        synchronized (m_processEndActions) {
-            m_processEndActions.remove(ac);
-        }
-    }
-
-    private PythonKernelException getMostSpecificPythonKernelException(final EOFException ex) {
-        try {
-            if(!m_pythonKernelMonitorResult.isDone()) {
-
-                // TODO investigate if we can wait for the thread as well here?!
-                //Sleep 100ms to give monitor thread time to finish
+    private PythonIOException getMostSpecificPythonKernelException(final Exception exception) {
+        if (!m_pythonKernelMonitorResult.isDone()) {
+            try {
+                // Sleep a bit to give the monitor thread time to finish.
+                // TODO: Investigate if we can wait for the thread as well here?!
                 Thread.sleep(100);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
             }
-            if(m_pythonKernelMonitorResult.isDone() && m_pythonKernelMonitorResult.get() != null) {
-                return m_pythonKernelMonitorResult.get();
-            } else {
-                return new PythonKernelException("An exception occured while running the python kernel. See console and log for details.", ex);
-            }
-        } catch (InterruptedException | ExecutionException ex1) {
-            return new PythonKernelException("An exception occured while running the python kernel. See console and log for details.", ex);
         }
+        try {
+            if (m_pythonKernelMonitorResult.isDone() && m_pythonKernelMonitorResult.get() != null) {
+                return m_pythonKernelMonitorResult.get();
+            }
+        } catch (InterruptedException | ExecutionException ex) {
+            exception.addSuppressed(ex);
+            return new PythonIOException("An exception occured while running the Python kernel. See log for details.",
+                exception);
+        }
+        if (exception instanceof PythonIOException) {
+            return (PythonIOException)exception;
+        }
+        if (exception instanceof PythonException) {
+            return new PythonIOException(exception.getMessage(), exception);
+        }
+        return new PythonIOException("An exception occured while running the Python kernel. See log for details.",
+            exception);
     }
 
-    private class ConfigurablePythonOutputListener implements PythonOutputListener {
+    /**
+     * An action to run as soon as the python process exits. Allows to examine custom exit codes.
+     */
+    public static interface ProcessEndAction {
+
+        /**
+         * @param exitCode the exit code of the Python process
+         * @throws PythonIOException if the process end action detected a erroneous process end
+         */
+        void runForExitCode(int exitCode) throws PythonIOException;
+    }
+
+    private static class ConfigurablePythonOutputListener implements PythonOutputListener {
+
+        private boolean m_silenced = false;
 
         private boolean m_allWarning = false;
 
         private boolean m_lastStackTrace = false;
 
-        private AtomicBoolean m_errorWasLogged = new AtomicBoolean(false);
+        private final AtomicBoolean m_errorWasLogged = new AtomicBoolean(false);
 
         /**
          * Reset the flag that is set if an error was logged.
@@ -1291,6 +1497,11 @@ public class PythonKernel implements AutoCloseable {
             return m_errorWasLogged.get();
         }
 
+        @Override
+        public void setSilenced(final boolean silenced) {
+            m_silenced = silenced;
+        }
+
         /**
          * Enables special handling of the stderror stream when custom source code is executed.
          *
@@ -1300,37 +1511,58 @@ public class PythonKernel implements AutoCloseable {
             m_allWarning = on;
         }
 
-        /**
-         * {@inheritDoc}
-         */
         @Override
         public void messageReceived(final String msg) {
-
-            if (!m_allWarning) {
-                if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
-                    LOGGER.error(msg);
-                    m_errorWasLogged.set(true);
-                    m_lastStackTrace = false;
-                } else {
-                    if (!m_lastStackTrace) {
-                        LOGGER.debug("Python error with stacktrace:\n");
-                        m_lastStackTrace = true;
+            if (!m_silenced) {
+                if (!m_allWarning) {
+                    if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
+                        LOGGER.error(msg);
+                        m_errorWasLogged.set(true);
+                        m_lastStackTrace = false;
+                    } else {
+                        if (!m_lastStackTrace) {
+                            LOGGER.debug("Python error with stacktrace:\n");
+                            m_lastStackTrace = true;
+                        }
+                        LOGGER.debug(msg);
                     }
-                    LOGGER.debug(msg);
+                } else {
+                    LOGGER.warn(msg);
                 }
             } else {
-                LOGGER.warn(msg);
+                LOGGER.debug(msg);
             }
-
         }
-
     }
 
-    /**
-     * An action to run as soon as the python process exits.
-     */
-    private abstract class ProcessEndAction {
+    private static final class PythonKernelExecutionMonitor implements PythonExecutionMonitor {
 
-        abstract void runForExitCode(int exitCode) throws PythonKernelException;
+        private static final Message POISON_PILL = new DefaultMessage(1, "", null, null);
+
+        private final List<Exception> m_reportedExceptions = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public Message getPoisonPill() {
+            return POISON_PILL;
+        }
+
+        @Override
+        public void reportException(final Exception exception) {
+            m_reportedExceptions.add(exception);
+        }
+
+        @Override
+        public void checkExceptions() throws Exception {
+            synchronized (m_reportedExceptions) {
+                if (!m_reportedExceptions.isEmpty()) {
+                    final Iterator<Exception> i = m_reportedExceptions.iterator();
+                    final Exception ex = i.next();
+                    while (i.hasNext()) {
+                        ex.addSuppressed(i.next());
+                    }
+                    throw ex;
+                }
+            }
+        }
     }
 }

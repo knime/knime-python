@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------
 #  Copyright by KNIME AG, Zurich, Switzerland
 #  Website: http://www.knime.com; Email: contact@knime.com
@@ -42,41 +42,96 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-#Module encapsulating functionality used for debugging.
-#See: http://www.pydev.org/manual_adv_remote_debugger.html on how to setup
-#debugging.
+"""
+Module encapsulating functionality used for debugging.
+See: http://www.pydev.org/manual_adv_remote_debugger.html on how to setup debugging.
 
-REMOTE_DBG = False
+@author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+@author Patrick Winter, KNIME GmbH, Konstanz, Germany
+@author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+@author Christian Dietz, KNIME GmbH, Konstanz, Germany
+"""
 
-def init_debug():
-    global REMOTE_DBG
-    #Debugging already enabled ? -> nothing to do here
-    if REMOTE_DBG:
+from __future__ import print_function
+
+import sys
+import traceback
+
+_DEBUG_ENABLED = False
+_BREAKPOINTS_ENABLED = False
+_DEBUG_LOG_ENABLED = False
+_DEBUG_LOG_FILE = None
+_LOG_TO_STDERR = False
+
+
+def is_debug_enabled():
+    global _DEBUG_ENABLED
+    return _DEBUG_ENABLED
+
+
+def init_debug(enable_breakpoints=True, enable_debug_log=True, debug_log_to_stderr=False):
+    if is_debug_enabled():
         return
-    try:
-        # for infos see http://pydev.org/manual_adv_remote_debugger.html
-        # you have to create a new environment variable PYTHONPATH that points to the psrc folder
-        # located in ECLIPSE\plugins\org.python.pydev_xxx
-        import pydevd  # with the addon script.module.pydevd, only use `import pydevd`
 
-        # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console
-        pydevd.settrace('localhost', port=5678, suspend=False, stdoutToServer=True, stderrToServer=True)
-        REMOTE_DBG = True
-    except ImportError as e:
-        sys.stderr.write("Error: " +
-                         "You must add org.python.pydev.debug.pysrc to your PYTHONPATH. ".format(e))
-        pydevd = None
+    try:
+        # For infos see http://pydev.org/manual_adv_remote_debugger.html
+        # You have to create a new environment variable PYTHONPATH that points to the psrc folder located in
+        # ECLIPSE\plugins\org.python.pydev_xxx.
+        import pydevd  # With the addon script.module.pydevd, only use `import pydevd`.
+    except ImportError as ex:
+        import sys
+        sys.stderr.write(("Error '{0}': " +
+                          "You must add org.python.pydev.debug.pysrc to your PYTHONPATH.").format(ex))
         sys.exit(1)
-        
-def debug_msg(msg):
-    global REMOTE_DBG
-    if REMOTE_DBG:
-        print(msg)
-    
+
+    # stdoutToServer and stderrToServer redirect stdout and stderr to eclipse console.
+    # pydevd.settrace('localhost', port=5678, suspend=False, stdoutToServer=True, stderrToServer=True)
+
+    global _DEBUG_ENABLED
+    _DEBUG_ENABLED = True
+
+    global _BREAKPOINTS_ENABLED
+    _BREAKPOINTS_ENABLED = enable_breakpoints
+
+    global _DEBUG_LOG_ENABLED
+    _DEBUG_LOG_ENABLED = enable_debug_log
+
+    global _LOG_TO_STDERR
+    _LOG_TO_STDERR = debug_log_to_stderr
+
+    _write_debug_message('Python kernel enabled debugging. '
+                         + 'Breakpoints are ' + ('enabled' if _BREAKPOINTS_ENABLED else 'disabled') + '. '
+                         + 'Debug log is ' + ('enabled' if _DEBUG_LOG_ENABLED else 'disabled') + '.',
+                         _get_output_file())
+
+
 def breakpoint():
+    global _BREAKPOINTS_ENABLED
+    if not (is_debug_enabled() and _BREAKPOINTS_ENABLED):
+        return
+
     import pydevd
     pydevd.settrace('localhost', port=5678, suspend=True, stdoutToServer=True, stderrToServer=True)
-    
-def is_debug_enabled():
-    global REMOTE_DBG
-    return REMOTE_DBG
+    import threading
+    threading.settrace(pydevd.GetGlobalDebugger().trace_dispatch)
+
+
+def debug_msg(message, exc_info=False):
+    global _DEBUG_LOG_ENABLED
+    if not (is_debug_enabled() and _DEBUG_LOG_ENABLED):
+        return
+
+    file = _get_output_file()
+    _write_debug_message(message, file)
+    if exc_info:
+        traceback.print_exc(file=file)
+
+
+def _write_debug_message(message, file):
+    print(message, file=file)  # 'flush' keyword argument is not supported by Python 2.
+    file.flush()
+
+
+def _get_output_file():
+    global _LOG_TO_STDERR
+    return sys.stderr if _LOG_TO_STDERR else sys.stdout

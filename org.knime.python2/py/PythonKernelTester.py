@@ -59,10 +59,12 @@ def main():
     python_version = sys.version_info
     print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
     if python_version[0] != check_python_version_num:
-        add_to_message('Python is required to have a major version of ' + str(check_python_version_num) + '. The major version can be chosen in the options tab of the Python Nodes.')
+        add_to_message('Python is required to have a major version of ' + str(check_python_version_num)
+                       + '. The major version can be chosen in the options tab of the Python Nodes.')
     check_required_libs()
     print(_message)
-    
+
+
 # parse cmd arguments
 def parse_cmd_args():
     global min_python_version, check_python_version_num, additional_required_modules
@@ -75,7 +77,8 @@ def parse_cmd_args():
         elif mode == '-m':
             additional_required_modules.append(sys.argv[i])
         else:
-            raise ValueError('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\nOptional:\n-m\tlist of additional requierd modules (space separated)')
+            raise ValueError('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\n'
+                             + 'Optional:\n-m\tlist of additional requierd modules (space separated)')
 
 
 # check for all libs that are required by the python kernel
@@ -101,7 +104,7 @@ def check_required_libs():
     check_lib('numpy')
     if check_lib('pandas', ['DataFrame'], min_pandas_version):
         check_version_pandas()
-        
+
     for m in additional_required_modules:
         check_lib(m)
 
@@ -142,6 +145,7 @@ def lib_available(lib):
     local_env = {}
     exec('try:\n\timport ' + lib + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
     return local_env['success']
+
 
 # check that the installed python version is >= min_python_version
 def check_version_python():

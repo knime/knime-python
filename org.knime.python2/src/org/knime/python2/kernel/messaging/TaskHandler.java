@@ -44,69 +44,19 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 27, 2017 (clemens): created
+ *   May 22, 2018 (marcel): created
  */
-package org.knime.python2.kernel;
+package org.knime.python2.kernel.messaging;
+
+import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 
 /**
- * Message class for wrapping command or status strings received from python.
- *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class PythonToJavaMessage {
+public interface TaskHandler<T> {
 
-    private String m_command;
-
-    private String m_value;
-
-    private boolean m_isRequest;
-
-    /**
-     * Constructor.
-     *
-     * @param command a command used for identifying how to process the message
-     * @param value the message payload
-     * @param isRequest true if the message is a request meaning the python process is waiting for an appropriate
-     *            response false otherwise
-     */
-    public PythonToJavaMessage(final String command, final String value, final boolean isRequest) {
-        m_command = command;
-        m_value = value;
-        m_isRequest = isRequest;
-    }
-
-    /**
-     * Gets the command.
-     *
-     * @return the command
-     */
-    public String getCommand() {
-        return m_command;
-    }
-
-    /**
-     * Gets the value.
-     *
-     * @return the value
-     */
-    public String getValue() {
-        return m_value;
-    }
-
-    /**
-     * Checks if is the message is a request.
-     *
-     * @return true, if request
-     */
-    public boolean isRequest() {
-        return m_isRequest;
-    }
-
-    /**
-     * @return the value-based representation of this message
-     */
-    @Override
-    public String toString() {
-        return String.join(":", isRequest() ? "r" : "s", m_command, m_value);
-    }
+    Message handle(Message message, MessageHandlerCollection messageHandlers, IntSupplier messageIdSupplier,
+        Consumer<T> resultConsumer) throws Exception;
 }

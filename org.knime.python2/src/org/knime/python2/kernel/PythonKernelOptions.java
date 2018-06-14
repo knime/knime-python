@@ -84,7 +84,7 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
-        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
+        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
     }
 
     /**
@@ -106,7 +106,7 @@ public class PythonKernelOptions {
         m_serializationOptions.setSentinelOption(sentinelOption);
         m_serializationOptions.setSentinelValue(sentinelValue);
         m_chunkSize = chunkSize;
-        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernel.py").getAbsolutePath();
+        m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
     }
 
     /**

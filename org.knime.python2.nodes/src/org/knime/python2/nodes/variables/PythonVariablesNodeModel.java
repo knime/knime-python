@@ -59,6 +59,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
 
@@ -87,7 +88,7 @@ class PythonVariablesNodeModel extends PythonNodeModel<PythonVariablesNodeConfig
             kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             exec.createSubProgress(0.1).setProgress(1);
-            final String[] output = kernel.execute(getConfig().getSourceCode(), exec);
+            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.8).setProgress(1);
