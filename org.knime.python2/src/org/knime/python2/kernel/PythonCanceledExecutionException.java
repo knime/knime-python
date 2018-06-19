@@ -56,6 +56,9 @@ public class PythonCanceledExecutionException extends Exception implements Pytho
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Constructor
+     */
     public PythonCanceledExecutionException() {
         this("Execution was canceled.");
     }
