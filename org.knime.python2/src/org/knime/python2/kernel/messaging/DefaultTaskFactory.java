@@ -250,6 +250,11 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
             if (toSend != null) {
                 m_messageSender.send(toSend);
             }
+
+            // TODO double-check if unregistering here is OK. If we don't do that the handler will be kept in the list forever
+            if (m_taskCategory != null) {
+                m_messageHandlers.unregisterMessageHandler(m_taskCategory);
+            }
             return m_result;
         }
 
