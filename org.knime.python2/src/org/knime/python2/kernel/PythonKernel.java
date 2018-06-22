@@ -186,6 +186,8 @@ public class PythonKernel implements AutoCloseable {
 
     private final ConfigurablePythonOutputListener m_errorPrintListener;
 
+    private final PythonOutputListener m_defaultStdoutListener;
+
     private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();;
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
@@ -234,7 +236,7 @@ public class PythonKernel implements AutoCloseable {
             m_pythonKernelMonitorResult = setupProcessEndActions();
 
             // Log output and errors to console.
-            addStdoutListener(new PythonOutputListener() {
+            m_defaultStdoutListener = new PythonOutputListener() {
 
                 private boolean m_silenced = false;
 
@@ -251,7 +253,9 @@ public class PythonKernel implements AutoCloseable {
                         LOGGER.debug(message);
                     }
                 }
-            });
+            };
+            addStdoutListener(m_defaultStdoutListener);
+
             m_errorPrintListener = new ConfigurablePythonOutputListener();
             addStderrorListener(m_errorPrintListener);
 
@@ -1384,6 +1388,14 @@ public class PythonKernel implements AutoCloseable {
      */
     public synchronized void removeStderrorListener(final PythonOutputListener listener) {
         m_stderrListeners.remove(listener);
+    }
+
+    /**
+     * @return the default stdout listener which logs to the info log by default
+     * @since 3.6.0
+     */
+    public PythonOutputListener getDefaultStdoutListener() {
+        return m_defaultStdoutListener;
     }
 
     PythonCommands getCommands() {
