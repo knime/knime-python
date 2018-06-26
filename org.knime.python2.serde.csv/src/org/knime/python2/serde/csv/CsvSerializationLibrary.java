@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -345,7 +346,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
         final SerializationOptions serializationOptions) {
         try {
-            final File file = new File(new String(bytes));
+            final File file = new File(new String(bytes, StandardCharsets.UTF_8));
             file.deleteOnExit();
             final FileReader reader = new FileReader(file);
             final BufferedReader br = new BufferedReader(reader);
@@ -724,7 +725,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
     @Override
     public TableSpec tableSpecFromBytes(final byte[] bytes) {
         try {
-            final File file = new File(new String(bytes));
+            final File file = new File(new String(bytes, StandardCharsets.UTF_8));
             file.deleteOnExit();
             final FileReader reader = new FileReader(file);
             final BufferedReader br = new BufferedReader(reader);

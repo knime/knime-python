@@ -341,14 +341,8 @@ public final class PythonCommands implements AutoCloseable {
      */
     public synchronized Future<byte[]> autoComplete(final String sourceCode, final int line, final int column) {
         final byte[] payload = new PayloadEncoder().putString(sourceCode).putInt(line).putInt(column).get();
-        return createTask(new AbstractTaskHandler<byte[]>() {
-
-            @Override
-            protected byte[] handleSuccessMessage(final Message response) throws ExecutionException {
-                // Note that this behavior differs from the one of ByteArrayReturningPythonTaskHandler.
-                return response.getPayload();
-            }
-        }, new DefaultMessage(m_messaging.createNextMessageId(), "autoComplete", payload, null));
+        return createTask(new ByteArrayReturningTaskHandler(),
+            new DefaultMessage(m_messaging.createNextMessageId(), "autoComplete", payload, null));
     }
 
     /**

@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.StringReader;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -553,7 +554,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     @Override
     public TableSpec tableSpecFromBytes(final byte[] bytes) throws SerializationException {
 
-        String path = new String(bytes);
+        String path = new String(bytes, StandardCharsets.UTF_8);
         final File f = new File(path);
         try {
             ReadContext rc = ReadContextManager.createForFile(f);
