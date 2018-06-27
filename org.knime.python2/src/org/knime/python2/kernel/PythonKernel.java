@@ -184,9 +184,9 @@ public class PythonKernel implements AutoCloseable {
 
     private final List<PythonOutputListener> m_stderrListeners = new ArrayList<>();
 
-    private final ConfigurablePythonOutputListener m_errorPrintListener;
-
     private final PythonOutputListener m_defaultStdoutListener;
+
+    private final ConfigurablePythonOutputListener m_defaultStderrListener;
 
     private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();;
 
@@ -256,8 +256,8 @@ public class PythonKernel implements AutoCloseable {
             };
             addStdoutListener(m_defaultStdoutListener);
 
-            m_errorPrintListener = new ConfigurablePythonOutputListener();
-            addStderrorListener(m_errorPrintListener);
+            m_defaultStderrListener = new ConfigurablePythonOutputListener();
+            addStderrorListener(m_defaultStderrListener);
 
             // Wait for Python to connect.
             m_socket = socketBeingSetup.get();
@@ -393,7 +393,7 @@ public class PythonKernel implements AutoCloseable {
         return exitCode -> {
             // If an error was raised in Python we already have a specific clue about the error. If not we should
             // have a look at the exit code of the process.
-            if (m_errorPrintListener.wasErrorLogged()) {
+            if (m_defaultStderrListener.wasErrorLogged()) {
                 return;
             }
             // Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
@@ -813,7 +813,7 @@ public class PythonKernel implements AutoCloseable {
         final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
         final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
         final ProcessEndAction pea = m_segfaultDuringSerializationAction;
-        m_errorPrintListener.resetErrorLoggedFlag();
+        m_defaultStderrListener.resetErrorLoggedFlag();
         try {
             addProcessEndAction(pea);
             final int tableSize = m_commands.getTableSize(name).get();
@@ -1159,10 +1159,10 @@ public class PythonKernel implements AutoCloseable {
     public String[] execute(final String sourceCode) throws IOException {
         // In execution mode only the warnings are logged to stdout.
         // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
-        m_errorPrintListener.setAllWarnings(true);
+        routeErrorMessagesToWarningLog(true);
         try {
             final String[] output = m_commands.execute(sourceCode).get();
-            m_errorPrintListener.setAllWarnings(false);
+            routeErrorMessagesToWarningLog(false);
             if (output[0].length() > 0) {
                 LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
             }
@@ -1178,10 +1178,10 @@ public class PythonKernel implements AutoCloseable {
     public String[] executeAsync(final String sourceCode) throws IOException {
         // In execution mode only the warnings are logged to stdout.
         // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
-        m_errorPrintListener.setAllWarnings(true);
+        routeErrorMessagesToWarningLog(true);
         try {
             final String[] output = m_commands.executeAsync(sourceCode).get();
-            m_errorPrintListener.setAllWarnings(false);
+            routeErrorMessagesToWarningLog(false);
             if (output[0].length() > 0) {
                 LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
             }
@@ -1400,6 +1400,14 @@ public class PythonKernel implements AutoCloseable {
 
     PythonCommands getCommands() {
         return m_commands;
+    }
+
+    public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
+        for (PythonOutputListener listener : m_stderrListeners) {
+            if (listener instanceof ConfigurablePythonOutputListener) {
+                ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
+            }
+        }
     }
 
     private synchronized void distributeStdoutMsg(final String msg) {
