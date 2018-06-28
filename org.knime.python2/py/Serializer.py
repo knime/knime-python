@@ -240,6 +240,10 @@ class Serializer(object):
             # if table is empty we don't know the types so we make them strings
             simple_type = Simpletype.STRING
         else:
+            if isinstance(data_frame[column_name], DataFrame):
+                raise RuntimeError(
+                    "Output DataFrame contains other DataFrames in column '" + column_name + "'. "
+                    + "Nested DataFrames are not supported. Please create a flat output DataFrame.")
             if data_frame[column_name].dtype == 'bool':
                 simple_type = Simpletype.BOOLEAN
             elif data_frame[column_name].dtype == 'int32' or data_frame[column_name].dtype == 'int64':
