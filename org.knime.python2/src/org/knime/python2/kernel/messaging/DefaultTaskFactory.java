@@ -48,6 +48,9 @@
  */
 package org.knime.python2.kernel.messaging;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -115,7 +118,7 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
 
         private static final int RECEIVE_QUEUE_LENGTH = 10;
 
-        private final Message m_initiatingMessage;
+        private Message m_initiatingMessage;
 
         private final FutureTask<T> m_delegateTask = new FutureTask<>(this::runInternal);
 
@@ -132,6 +135,8 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
         private final PythonExecutionMonitor m_monitor;
 
         private final BlockingQueue<Message> m_receivedMessages = new ArrayBlockingQueue<>(RECEIVE_QUEUE_LENGTH);
+
+        private final List<String> m_registeredMessageCategories = new ArrayList<>(5);
 
         private final AtomicBoolean m_isRunningOrDone = new AtomicBoolean(false);
 
@@ -223,12 +228,17 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
             Message toSend = m_initiatingMessage;
             while (!m_isDone && !Thread.interrupted()) {
                 if (toSend != null) {
+                    String messageCategory = Integer.toString(toSend.getId());
                     if (m_taskCategory == null) {
-                        m_taskCategory = Integer.toString(toSend.getId());
-                        m_messageHandlers.registerMessageHandler(m_taskCategory, this);
+                        m_taskCategory = messageCategory;
+                    }
+                    // TODO: Only register for first sent message (i.e. task category) and replace subsequent
+                    // registrations by reply-to pattern.
+                    if (!m_messageHandlers.registerMessageHandler(messageCategory, this)) {
+                        throw new IllegalStateException(
+                            "Message handler for category '" + messageCategory + "' is already registered.");
                     } else {
-                        // TODO: Remove and replace by reply-to pattern.
-                        m_messageHandlers.registerMessageHandler(Integer.toString(toSend.getId()), this);
+                        m_registeredMessageCategories.add(messageCategory);
                     }
                     m_messageSender.send(toSend);
                 }
@@ -251,10 +261,16 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
                 m_messageSender.send(toSend);
             }
 
-            // TODO double-check if unregistering here is OK. If we don't do that the handler will be kept in the list forever
-            if (m_taskCategory != null) {
-                m_messageHandlers.unregisterMessageHandler(m_taskCategory);
+            // Unregister message handlers to remove references to this task instance.
+            for (Iterator<String> iter = m_registeredMessageCategories.listIterator(); iter.hasNext();) {
+                String messageCategory = iter.next();
+                m_messageHandlers.unregisterMessageHandler(messageCategory);
+                iter.remove();
             }
+
+            // Message may contain heavy payload. Dereference to obviate memory leak.
+            m_initiatingMessage = null;
+
             return m_result;
         }
 

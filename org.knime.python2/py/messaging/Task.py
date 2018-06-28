@@ -86,6 +86,7 @@ class Task(object):
         self._workspace = workspace
         self._executor = executor
         self._received_messages = receive_queue
+        self._registered_message_categories = []
         self._is_running_or_done = False
         self._is_running_or_done_lock = Lock()
         self._task_category = None
@@ -123,12 +124,15 @@ class Task(object):
         to_send = self._initiating_message
         while not self._delegate_task.is_done:
             if to_send is not None:
+                message_category = str(to_send.id)
                 if self._task_category is None:
-                    self._task_category = str(to_send.id)
-                    self._message_handlers.register_message_handler(self._task_category, self)
+                    self._task_category = message_category
+                # TODO: Only register for first sent message (i.e. task category) and replace subsequent
+                # registrations by reply-to pattern.
+                if not self._message_handlers.register_message_handler(message_category, self):
+                    raise RuntimeError("Message handler for category '" + message_category + "' is already registered.")
                 else:
-                    # TODO: Remove and replace by reply-to pattern.
-                    self._message_handlers.register_message_handler(str(to_send.id), self)
+                    self._registered_message_categories.append(message_category)
                 self._message_sender.send(to_send)
             import debug_util
             debug_util.debug_msg(
@@ -143,6 +147,14 @@ class Task(object):
         # This may happen if the act of responding to a message also marks (successful) termination of the task.
         if to_send is not None:
             self._message_sender.send(to_send)
+
+        # Unregister message handlers to remove references to this task instance.
+        for message_category in self._registered_message_categories:
+            self._message_handlers.unregister_message_handler(message_category)
+        del self._registered_message_categories[:]
+
+        # Message may contain heavy payload. Dereference to obviate memory leak.
+        self._initiating_message = None
 
     def _set_result(self, result):
         self._delegate_task.set(result)
