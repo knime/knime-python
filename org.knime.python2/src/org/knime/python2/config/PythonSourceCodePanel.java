@@ -447,30 +447,25 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         if (getKernelManager() != null) {
             m_lock.lock();
             try {
-                if (getKernelManager() != null) {
-                    getKernelManager().autoComplete(sourceCode, line, column,
-                        new PythonKernelResponseHandler<List<Map<String, String>>>() {
-                            @Override
-                            public void handleResponse(final List<Map<String, String>> response,
-                                final Exception exception) {
-                                if (exception == null) {
-                                    for (final Map<String, String> completion : response) {
-                                        String name = completion.get("name");
-                                        final String type = completion.get("type");
-                                        String doc = completion.get("doc").trim();
-                                        if (type.equals("function")) {
-                                            name += "()";
-                                        }
-                                        doc =
-                                            "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
-                                        completions.add(new BasicCompletion(provider, name, type, doc));
-                                    }
+                final PythonKernelManager kernelManager = getKernelManager();
+                if (kernelManager != null) {
+                    kernelManager.autoComplete(sourceCode, line, column, (response, exception) -> {
+                        if (exception == null) {
+                            for (final Map<String, String> completion : response) {
+                                String name = completion.get("name");
+                                final String type = completion.get("type");
+                                String doc = completion.get("doc").trim();
+                                if (type.equals("function")) {
+                                    name += "()";
                                 }
-                                synchronized (completions) {
-                                    completions.notify();
-                                }
+                                doc = "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
+                                completions.add(new BasicCompletion(provider, name, type, doc));
                             }
-                        });
+                        }
+                        synchronized (completions) {
+                            completions.notifyAll();
+                        }
+                    });
                 }
             } finally {
                 m_lock.unlock();
@@ -478,11 +473,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             // We have to wait for the other thread to fill the list
             synchronized (completions) {
                 try {
-                    // Since this is run in Swings UI thread, we don't want to
-                    // wait for to long
+                    // Since this is run in Swing's UI thread, we don't want to wait for too long.
                     completions.wait(2000);
                 } catch (final InterruptedException e) {
-                    //
+                    Thread.currentThread().interrupt();
                 }
             }
         }
