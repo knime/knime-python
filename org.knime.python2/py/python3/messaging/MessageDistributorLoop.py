@@ -50,6 +50,7 @@
 import threading
 
 from PythonUtils import invoke_safely
+from debug_util import debug_msg
 from python3.messaging.AbstractMessageLoop import AbstractMessageLoop
 
 
@@ -91,8 +92,9 @@ class MessageDistributorLoop(AbstractMessageLoop):
                 message = self._receiver.receive()
                 self._distributor.handle(message)
             except Exception as ex:
-                raise RuntimeError("Failed to distribute message " + (
-                    "'" + str(message) + "' " if message is not None else "") + "from Java. Cause: " + str(ex)) from ex
+                debug_msg("Failed to distribute message " + (
+                    "'" + str(message) + "' " if message is not None else "") + "from Java. Cause: " + str(ex))
+                raise ex
 
     def _close(self):
         with self._message_handlers_lock:

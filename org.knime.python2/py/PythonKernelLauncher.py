@@ -57,9 +57,10 @@ import EnvironmentHelper
 
 EnvironmentHelper.dummy_call()
 
-# Debugging:
+import sys
+import traceback
 
-import debug_util
+# Debugging:
 
 # Uncomment to enable debugging:
 # debug_util.init_debug(enable_breakpoints=False, enable_debug_log=True, debug_log_to_stderr=False)
@@ -82,5 +83,6 @@ if __name__ == "__main__":
         try:
             kernel.start()
         except BaseException as ex:
-            debug_util.debug_msg(str(ex), exc_info=True)
+            traceback.print_exc(file=sys.stdout)
+            sys.stdout.flush()
             raise ex

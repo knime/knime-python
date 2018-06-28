@@ -158,10 +158,7 @@ class PythonKernel(PythonKernelBase):
                 timeout_step = PythonKernel._MonitoredMessageQueue._TIMEOUT_STEP_IN_SEC
                 endtime = (time() + timeout) if timeout is not None else None
                 while True:
-                    try:
-                        self._monitor.check_exception()
-                    except BaseException as ex:
-                        raise RuntimeError(str(ex)) from ex
+                    self._monitor.check_exception()
                     if timeout is None:
                         remaining = timeout_step
                     else:
@@ -181,10 +178,7 @@ class PythonKernel(PythonKernelBase):
                 timeout_step = PythonKernel._MonitoredMessageQueue._TIMEOUT_STEP_IN_SEC
                 endtime = (time() + timeout) if timeout is not None else None
                 while True:
-                    try:
-                        self._monitor.check_exception()
-                    except BaseException as ex:
-                        raise RuntimeError(str(ex)) from ex
+                    self._monitor.check_exception()
                     if timeout is None:
                         remaining = timeout_step
                     else:
