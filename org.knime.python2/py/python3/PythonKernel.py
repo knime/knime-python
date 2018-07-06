@@ -59,10 +59,9 @@ from time import monotonic as time
 from PythonKernelBase import PythonKernelBase
 from debug_util import debug_msg
 from messaging.Message import Message
-from messaging.RequestHandlers import AutoCompleteRequestHandler
-from messaging.RequestHandlers import ExecuteRequestHandler
 from python3.messaging.PythonMessaging import PythonMessaging
 
+from messaging.RequestHandlers import _builtin_request_handlers
 
 class PythonKernel(PythonKernelBase):
     """
@@ -92,11 +91,20 @@ class PythonKernel(PythonKernelBase):
 
     def _setup_builtin_request_handlers(self):
         super(PythonKernel, self)._setup_builtin_request_handlers()
-        self.unregister_task_handler("execute")
-        self.register_task_handler("execute", ExecuteRequestHandler(), executor=self.execute_thread_executor)
-        self.unregister_task_handler("autoComplete")
-        self.register_task_handler("autoComplete", AutoCompleteRequestHandler(), executor=self.execute_thread_executor)
-
+        for k in ['putFlowVariables',
+                  'getFlowVariables',
+                  'putObject',
+                  'getObject',
+                  'putSql',
+                  'getSql',
+                  'getImage',
+                  'listVariables',
+                  'hasAutoComplete',
+                  'autoComplete',
+                  'execute']:
+            self.unregister_task_handler(k)
+            self.register_task_handler(k, _builtin_request_handlers[k], executor=self.execute_thread_executor)
+        
     def _create_execute_thread_executor(self):
         return PythonKernel._MonitoredThreadPoolExecutor(1, self._monitor)
 
