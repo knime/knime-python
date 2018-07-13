@@ -59,6 +59,7 @@ import org.knime.core.node.NodeView;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 public class Python2PredictorNodeFactory extends NodeFactory<PythonPredictorNodeModel> {
 
     /**

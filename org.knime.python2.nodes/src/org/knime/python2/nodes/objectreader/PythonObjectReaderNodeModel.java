@@ -72,6 +72,7 @@ import org.knime.python2.port.PickledObjectPortObject;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNodeConfig> {
 
     /**

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode icon="./pythonobjectreader.png" type="Source">
+   <name>Python Object Reader</name>
+
+   <shortDescription>
+      Allows execution of a Python script in a local Python
+      installation.
+   </shortDescription>
+
+   <fullDescription>
+		<intro>
+			Allows execution of a Python script in a local Python
+			installation. The path to the Python executable has to be configured
+			in Preferences → KNIME → Python. This node supports Python 2 and 3.
+		</intro>
+      <tab name="Script">
+         <option name="Editor">
+            The script in the editor panel in the center will be
+            executed to
+            generate this node's output.
+            "Execute script" will
+            execute the full
+            script while "Execute
+            selected lines"
+            will
+            only execute the currently
+            selected part of the
+            script.
+            <br />
+            <br />
+            The editor optionally provides autocompletion (CTRL + Space)
+            if the
+            Python module
+            <b>jedi</b>
+            is installed.
+         </option>
+         <option name="Flow variables">
+            The pane on the left side of the editor
+            panel
+            lists the available flow variables. A
+            double click on a
+            flow variable
+            will insert the corresponding identifier at the
+            current
+            cursor
+            position in the editor panel.
+         </option>
+         <option name="Workspace">
+            The pane on the right side of the editor
+            panel
+            is the workspace and lists the currently defined
+            identifiers in the
+            running Python instance. "Reset workspace"
+            will remove the
+            output of
+            all past script executions.
+         </option>
+         <option name="Console">
+            The console under the editor panel displays
+            standard output, standard
+            error, or other information.
+         </option>
+      </tab>
+      <tab name="Options">
+         <option name="Row limit (dialog)">
+            Unused in this node.
+         </option>
+         <option name="Use python version">
+            Allows to choose the python version that
+            should be used for
+            executing the kernel. Available
+            installations can be checked
+            under Preferences → KNIME →
+            Python.
+         </option>
+         <option name="Missing values (Int, Long)">
+            By default, Int and Long columns containing
+            missing values are
+            converted to doubles in Python, because
+            doubles
+            are the
+            only numeric type
+            containing a built-in missing
+            value
+            representation (NaN). Converting longs to doubles,
+            however,
+            introduces imprecision. The
+            conversion may be
+            avoided
+            by replacing
+            missing values with so-called sentinel values.
+            To convert missing
+            values to
+            sentinel values before script
+            execution, check the first
+            option, to convert sentinel values
+            back to missing values after
+            script execution, check the
+            second option. To select a sentinel
+            value, click on
+            MIN_VAL
+            (the smallest possible value for the
+            column's
+            data type),
+            MAX_VAL (the largest possible
+            value for the column's data
+            type), or a manually enter an integer in the text field.
+         </option>
+         <option name="Rows per chunk">
+            Large tables are broken into chunks when
+            they are transferred between
+            Python and Java. This option
+            controls how many rows are
+            included in
+            each chunk. The default
+            value is intended for tables containing few
+            columns having
+            numeric types. If larger data types like
+            images or text
+            are
+            transferred, a single chunk may exceed the
+            maximum allowed
+            buffer size. In this case lowering the value of this
+            parameter helps getting reasonably sized chunks.
+         </option>
+      </tab>
+      <tab name="Templates">
+         <option name="Create from editor...">
+            Clicking on this button creates a new template based on the
+            script in the editor panel of
+            the script tab.
+            <br />
+            <br />
+            Note: User defined templates can be found in the folder:
+            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-objectreader</i>
+         </option>
+         <option name="Remove selected">
+            Clicking on this button removes the selected template.
+            <br />
+            <br />
+            Note: Templates provided by plugins cannot be removed.
+         </option>
+         <option name="Apply selected">
+            Replaces the script in the editor panel of
+            the script tab with the selected template.
+         </option>
+      </tab>
+   </fullDescription>
+
+   <ports>
+      <outPort name="Object" index="0">
+         The object contained in the variable
+         <b>output_object</b>
+         .
+      </outPort>
+   </ports>
+   <views>
+      <view name="Standard output" index="0">
+         The text sent by Python to the standard output, during the execution of
+         this node.
+      </view>
+      <view name="Error output" index="1">
+         The text sent by Python to the error output, during the execution of
+         this node.
+      </view>
+   </views>
+</knimeNode>

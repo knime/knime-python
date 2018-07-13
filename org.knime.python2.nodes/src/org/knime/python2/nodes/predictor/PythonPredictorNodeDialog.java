@@ -69,6 +69,7 @@ import org.knime.python2.port.PickledObjectPortObject;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
 
     PythonSourceCodePanel m_sourceCodePanel;

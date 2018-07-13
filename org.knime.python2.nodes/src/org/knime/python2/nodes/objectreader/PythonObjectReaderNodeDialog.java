@@ -65,6 +65,7 @@ import org.knime.python2.kernel.FlowVariableOptions;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
     PythonSourceCodePanel m_sourceCodePanel;

@@ -10,16 +10,16 @@
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in1out.Python2Script2In1OutNodeFactory" after="org.knime.python2.nodes.script1in2out.Python2Script1In2OutNodeFactory"/>  		
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script2in2out.Python2Script2In2OutNodeFactory" after="org.knime.python2.nodes.script2in1out.Python2Script2In1OutNodeFactory"/>
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.view.Python2ViewNodeFactory" after="org.knime.python2.nodes.script2in2out.Python2Script2In2OutNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectreader.Python2ObjectReaderNodeFactory" after="org.knime.python2.nodes.view.Python2ViewNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectwriter.Python2ObjectWriterNodeFactory" after="org.knime.python2.nodes.objectreader.Python2ObjectReaderNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner.Python2LearnerNodeFactory" after="org.knime.python2.nodes.objectwriter.Python2ObjectWriterNodeFactory"/>
-   		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory" after="org.knime.python2.nodes.learner.Python2LearnerNodeFactory"/>
-     <node
-           after="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory"
-           category-path="/scripting/python"
-           deprecated="false"
-           factory-class="org.knime.python2.nodes.db.Python2ScriptDBNodeFactory">
-     </node>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectreader2.Python2ObjectReaderNodeFactory2" after="org.knime.python2.nodes.view.Python2ViewNodeFactory"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectwriter2.Python2ObjectWriterNodeFactory2" after="org.knime.python2.nodes.objectreader2.Python2ObjectReaderNodeFactory2"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner2.Python2LearnerNodeFactory2" after="org.knime.python2.nodes.objectwriter2.Python2ObjectWriterNodeFactory2"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor2.Python2PredictorNodeFactory2" after="org.knime.python2.nodes.learner2.Python2LearnerNodeFactory2"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.db.Python2ScriptDBNodeFactory" after="org.knime.python2.nodes.predictor2.Python2PredictorNodeFactory2"/>
+
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectreader.Python2ObjectReaderNodeFactory" deprecated="true"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.objectwriter.Python2ObjectWriterNodeFactory" deprecated="true"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner.Python2LearnerNodeFactory" deprecated="true"/>
+		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor.Python2PredictorNodeFactory" deprecated="true"/>
 	</extension>
 	<extension point="org.knime.workbench.repository.categories">
       	<category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/scripting" />

@@ -45,67 +45,33 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.objectwriter2;
 
-import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
-import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
+import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.generic.VariableNames;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+class PythonObjectWriterNodeConfig2 extends PythonSourceCodeConfig {
 
-    /**
-     * {@inheritDoc}
-     */
+    private static final VariableNames VARIABLE_NAMES =
+        new VariableNames("flow_variables", null, null, null, new String[]{"input_object"}, null);
+
     @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    protected String getDefaultSourceCode() {
+        return "import pickle\n" + "import os\n" + "# Path is workspace/python_object.pkl\n" + "path = "
+            + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl'\n"
+            + "# Save object as pickle file\n" + "pickle.dump(" + VARIABLE_NAMES.getInputObjects()[0]
+            + ", open(path, 'wb'), pickle.HIGHEST_PROTOCOL)\n";
     }
 
     /**
-     * {@inheritDoc}
+     * Get the variable names for this node
+     *
+     * @return The variable names
      */
-    @Override
-    public int getNrNodeViews() {
-        return 2;
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
-        if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
-        } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
-        }
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasDialog() {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
-    }
-
 }

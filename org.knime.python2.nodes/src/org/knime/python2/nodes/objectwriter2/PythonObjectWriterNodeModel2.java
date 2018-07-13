@@ -45,67 +45,59 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.objectwriter2;
 
-import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
-import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
+import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.nodes.PythonNodeModel;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+class PythonObjectWriterNodeModel2 extends PythonNodeModel<PythonObjectWriterNodeConfig2> {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    protected PythonObjectWriterNodeModel2() {
+        super(new PortType[]{PickledObjectFileStorePortObject.TYPE}, new PortType[0]);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int getNrNodeViews() {
-        return 2;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
-        if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
-        } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+            kernel.putFlowVariables(PythonObjectWriterNodeConfig2.getVariableNames().getFlowVariables(),
+                getAvailableFlowVariables().values());
+            kernel.putObject(PythonObjectWriterNodeConfig2.getVariableNames().getInputObjects()[0],
+                ((PickledObjectFileStorePortObject)inData[0]).getPickledObject(), exec);
+            exec.createSubProgress(0.1).setProgress(1);
+            final String[] output =
+                kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
+            final Collection<FlowVariable> variables =
+                kernel.getFlowVariables(PythonObjectWriterNodeConfig2.getVariableNames().getFlowVariables());
+            exec.createSubProgress(0.9).setProgress(1);
+            addNewVariables(variables);
         }
-        return null;
+        return new PortObject[0];
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean hasDialog() {
-        return true;
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new PortObjectSpec[0];
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
+    protected PythonObjectWriterNodeConfig2 createConfig() {
+        return new PythonObjectWriterNodeConfig2();
     }
-
 }

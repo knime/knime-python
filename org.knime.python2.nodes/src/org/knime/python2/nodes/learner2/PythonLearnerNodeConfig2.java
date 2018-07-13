@@ -45,67 +45,35 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.learner2;
 
-import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
-import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
+import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.generic.VariableNames;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+class PythonLearnerNodeConfig2 extends PythonSourceCodeConfig {
 
-    /**
-     * {@inheritDoc}
-     */
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
+        null, null, null, new String[]{"output_model"});
+
     @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    protected String getDefaultSourceCode() {
+        return "from numpy import array, ones, linalg\n" + "# Only use numeric columns\n" + "data = "
+            + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Use first column as value column\n"
+            + "value_column = data[data.columns[0]]\n" + "# Use second column as target column\n"
+            + "target_column = data[data.columns[1]]\n" + "A = array([array(value_column), ones(len(value_column))])\n"
+            + "# Calculate linear regression\n" + VARIABLE_NAMES.getOutputObjects()[0]
+            + " = linalg.lstsq(A.T, target_column)[0]\n";
     }
 
     /**
-     * {@inheritDoc}
+     * Get the variable names for this node
+     *
+     * @return The variable names
      */
-    @Override
-    public int getNrNodeViews() {
-        return 2;
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
-        if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
-        } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
-        }
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasDialog() {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
-    }
-
 }

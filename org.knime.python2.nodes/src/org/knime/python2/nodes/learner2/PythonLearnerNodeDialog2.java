@@ -45,76 +45,81 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
+package org.knime.python2.nodes.learner2;
 
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObject;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.nodes.PythonNodeModel;
-import org.knime.python2.port.PickledObject;
-import org.knime.python2.port.PickledObjectPortObject;
+import org.knime.python2.config.PythonSourceCodeOptionsPanel;
+import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
- * This is the model implementation.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
+class PythonLearnerNodeDialog2 extends DataAwareNodeDialogPane {
 
-    /**
-     * Constructor for the node model.
-     */
-    protected PythonLearnerNodeModel() {
-        super(new PortType[]{BufferedDataTable.TYPE}, new PortType[]{PickledObjectPortObject.TYPE});
-    }
+    PythonSourceCodePanel m_sourceCodePanel;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        PickledObject object = null;
-        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
-            kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),
-                getAvailableFlowVariables().values());
-            kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
-                (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
-            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-            exec.createSubProgress(0.6).setProgress(1);
-            final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
-            object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
-            exec.createSubProgress(0.1).setProgress(1);
-            addNewVariables(variables);
-        }
-        return new PortObject[]{new PickledObjectPortObject(object)};
-    }
+    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-        return new PortObjectSpec[]{null};
+    SourceCodeTemplatesPanel m_templatesPanel;
+
+    protected PythonLearnerNodeDialog2() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig2.getVariableNames(),
+            FlowVariableOptions.parse(getAvailableFlowVariables()));
+        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Options", m_sourceCodeOptionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
     }
 
     @Override
-    protected PythonLearnerNodeConfig createConfig() {
-        return new PythonLearnerNodeConfig();
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonLearnerNodeConfig2 config = new PythonLearnerNodeConfig2();
+        m_sourceCodePanel.saveSettingsTo(config);
+        m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
     }
 
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        final PythonLearnerNodeConfig2 config = new PythonLearnerNodeConfig2();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodePanel.updateFlowVariables(
+            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
+    }
+
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
+        throws NotConfigurableException {
+        loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec()});
+        m_sourceCodePanel.updateData(input);
+    }
+
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
+
+    @Override
+    public void onOpen() {
+        m_sourceCodePanel.open();
+    }
+
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 }

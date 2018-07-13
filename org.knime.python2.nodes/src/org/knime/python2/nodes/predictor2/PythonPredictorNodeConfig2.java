@@ -45,67 +45,40 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.predictor2;
 
-import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
-import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
+import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.generic.VariableNames;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+class PythonPredictorNodeConfig2 extends PythonSourceCodeConfig {
 
-    /**
-     * {@inheritDoc}
-     */
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
+        new String[]{"output_table"}, null, new String[]{"input_model"}, null);
+
     @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    protected String getDefaultSourceCode() {
+        return "from pandas import Series\n" + "# Only use numeric columns\n" + "data = "
+            + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Use first column as value\n"
+            + "value_column = data[data.columns[0]]\n" + "# List of predictions\n" + "predictions = []\n"
+            + "# prediction = value * m + c\n" + "# m is first value in model\n" + "m = "
+            + VARIABLE_NAMES.getInputObjects()[0] + "[0]\n" + "# c is second value in model\n" + "c = "
+            + VARIABLE_NAMES.getInputObjects()[0] + "[1]\n" + "# Iterate over values\n"
+            + "for i in range(len(value_column)):\n" + "\t# Calculate predictions\n"
+            + "\tpredictions.append(value_column[i]*m+c)\n" + "# Copy input table to output table\n"
+            + VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n"
+            + "# Append predictions\n" + VARIABLE_NAMES.getOutputTables()[0]
+            + "['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)\n";
     }
 
     /**
-     * {@inheritDoc}
+     * Get the variable names for this node
+     *
+     * @return The variable names
      */
-    @Override
-    public int getNrNodeViews() {
-        return 2;
+    static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
-        if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
-        } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
-        }
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasDialog() {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
-    }
-
 }

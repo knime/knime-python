@@ -50,6 +50,7 @@ package org.knime.python2.nodes.learner;
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
 
+@Deprecated
 class PythonLearnerNodeConfig extends PythonSourceCodeConfig {
 
     private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},

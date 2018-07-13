@@ -45,7 +45,9 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.predictor2;
+
+import java.io.IOException;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
@@ -53,21 +55,22 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.python2.kernel.FlowVariableOptions;
+import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
- * <code>NodeDialog</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-@Deprecated
-class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
+class PythonPredictorNodeDialog2 extends DataAwareNodeDialogPane {
 
     PythonSourceCodePanel m_sourceCodePanel;
 
@@ -75,76 +78,68 @@ class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
 
     SourceCodeTemplatesPanel m_templatesPanel;
 
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonLearnerNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig.getVariableNames(),
+    protected PythonPredictorNodeDialog2() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonPredictorNodeConfig2.getVariableNames(),
             FlowVariableOptions.parse(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
-        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
         addTab("Script", m_sourceCodePanel, false);
         addTab("Options", m_sourceCodeOptionsPanel, true);
         addTab("Templates", m_templatesPanel, true);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+        final PythonPredictorNodeConfig2 config = new PythonPredictorNodeConfig2();
         m_sourceCodePanel.saveSettingsTo(config);
         m_sourceCodeOptionsPanel.saveSettingsTo(config);
         config.saveTo(settings);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-        final PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        final PythonPredictorNodeConfig2 config = new PythonPredictorNodeConfig2();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
         m_sourceCodePanel.updateFlowVariables(
             getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
+        m_sourceCodePanel.updateData(new BufferedDataTable[]{null}, new PickledObject[]{null});
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
-            throws NotConfigurableException {
-        loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec()});
-        m_sourceCodePanel.updateData(input);
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
+        throws NotConfigurableException {
+        final PortObjectSpec[] specs = new PortObjectSpec[input.length];
+        for (int i = 0; i < specs.length; i++) {
+            specs[i] = input[i] == null ? null : input[i].getSpec();
+        }
+        loadSettingsFrom(settings, specs);
+        PickledObject pickledObject = null;
+        if (input[0] != null) {
+            try {
+                pickledObject = ((PickledObjectFileStorePortObject)input[0]).getPickledObject();
+            } catch (final IOException ex) {
+                throw new NotConfigurableException("Failed to load pickled object.");
+            }
+        }
+        m_sourceCodePanel.updateData(new BufferedDataTable[]{(BufferedDataTable)input[1]},
+            new PickledObject[]{pickledObject});
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean closeOnESC() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onOpen() {
         m_sourceCodePanel.open();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onClose() {
         m_sourceCodePanel.close();
     }
-
 }

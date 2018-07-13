@@ -45,67 +45,53 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.objectreader2;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
 import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
+import org.knime.core.node.ContextAwareNodeFactory;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+public class Python2ObjectReaderNodeFactory2 extends ContextAwareNodeFactory<PythonObjectReaderNodeModel2> {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    public PythonObjectReaderNodeModel2 createNodeModel() {
+        return new PythonObjectReaderNodeModel2();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getNrNodeViews() {
         return 2;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
+    public NodeView<PythonObjectReaderNodeModel2> createNodeView(final int viewIndex,
+        final PythonObjectReaderNodeModel2 nodeModel) {
         if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<>(nodeModel);
         } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
+            return new ExtToolStderrNodeView<>(nodeModel);
         }
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasDialog() {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
+        return new PythonObjectReaderNodeDialog2();
     }
 
+    @Override
+    public PythonObjectReaderNodeModel2 createNodeModel(final NodeCreationContext context) {
+        return new PythonObjectReaderNodeModel2(context);
+    }
 }

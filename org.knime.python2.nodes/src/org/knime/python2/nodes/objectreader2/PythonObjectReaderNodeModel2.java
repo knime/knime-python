@@ -45,15 +45,19 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.objectreader2;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.UUID;
 
-import org.knime.core.node.BufferedDataTable;
+import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -62,59 +66,59 @@ import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
 import org.knime.python2.port.PickledObject;
-import org.knime.python2.port.PickledObjectPortObject;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
- * This is the model implementation.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-class PythonLearnerNodeModel extends PythonNodeModel<PythonLearnerNodeConfig> {
+class PythonObjectReaderNodeModel2 extends PythonNodeModel<PythonObjectReaderNodeConfig2> {
 
-    /**
-     * Constructor for the node model.
-     */
-    protected PythonLearnerNodeModel() {
-        super(new PortType[]{BufferedDataTable.TYPE}, new PortType[]{PickledObjectPortObject.TYPE});
+    protected PythonObjectReaderNodeModel2() {
+        super(new PortType[0], new PortType[]{PickledObjectFileStorePortObject.TYPE});
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    protected PythonObjectReaderNodeModel2(final NodeCreationContext context) {
+        this();
+        URI uri;
+        try {
+            uri = context.getUrl().toURI();
+        } catch (final URISyntaxException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        if ((!uri.getScheme().equals("knime")) || (!uri.getHost().equals("LOCAL"))) {
+            throw new RuntimeException("Only pickle files in the local workspace are supported.");
+        }
+        getConfig().setSourceCode(PythonObjectReaderNodeConfig2.getDefaultSourceCode(uri.getPath()));
+    }
+
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         PickledObject object = null;
-        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
-            kernel.putFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables(),
+        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+            kernel.putFlowVariables(PythonObjectReaderNodeConfig2.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
-            kernel.putDataTable(PythonLearnerNodeConfig.getVariableNames().getInputTables()[0],
-                (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
-            setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
-            setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
-            exec.createSubProgress(0.6).setProgress(1);
+            final String[] output =
+                kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
+            setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
+            exec.createSubProgress(0.9).setProgress(1);
             final Collection<FlowVariable> variables =
-                    kernel.getFlowVariables(PythonLearnerNodeConfig.getVariableNames().getFlowVariables());
-            object = kernel.getObject(PythonLearnerNodeConfig.getVariableNames().getOutputObjects()[0], exec);
+                kernel.getFlowVariables(PythonObjectReaderNodeConfig2.getVariableNames().getFlowVariables());
+            object = kernel.getObject(PythonObjectReaderNodeConfig2.getVariableNames().getOutputObjects()[0], exec);
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
         }
-        return new PortObject[]{new PickledObjectPortObject(object)};
+        final FileStore fileStore = exec.createFileStore(UUID.randomUUID().toString());
+        return new PortObject[]{new PickledObjectFileStorePortObject(object, fileStore)};
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return new PortObjectSpec[]{null};
     }
 
     @Override
-    protected PythonLearnerNodeConfig createConfig() {
-        return new PythonLearnerNodeConfig();
+    protected PythonObjectReaderNodeConfig2 createConfig() {
+        return new PythonObjectReaderNodeConfig2();
     }
-
 }

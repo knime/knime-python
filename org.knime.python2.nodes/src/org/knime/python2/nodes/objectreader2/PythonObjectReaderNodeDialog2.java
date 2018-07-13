@@ -45,67 +45,72 @@
  * History
  *   Sep 25, 2014 (Patrick Winter): created
  */
-package org.knime.python2.nodes.learner;
+package org.knime.python2.nodes.objectreader2;
 
-import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
-import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
+import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.config.PythonSourceCodeOptionsPanel;
+import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-@Deprecated
-public class Python2LearnerNodeFactory extends NodeFactory<PythonLearnerNodeModel> {
+class PythonObjectReaderNodeDialog2 extends NodeDialogPane {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PythonLearnerNodeModel createNodeModel() {
-        return new PythonLearnerNodeModel();
+    PythonSourceCodePanel m_sourceCodePanel;
+
+    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+
+    SourceCodeTemplatesPanel m_templatesPanel;
+
+    protected PythonObjectReaderNodeDialog2() {
+        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig2.getVariableNames(),
+            FlowVariableOptions.parse(getAvailableFlowVariables()));
+        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
+        addTab("Script", m_sourceCodePanel, false);
+        addTab("Options", m_sourceCodeOptionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int getNrNodeViews() {
-        return 2;
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonObjectReaderNodeConfig2 config = new PythonObjectReaderNodeConfig2();
+        m_sourceCodePanel.saveSettingsTo(config);
+        m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public NodeView<PythonLearnerNodeModel> createNodeView(final int viewIndex,
-        final PythonLearnerNodeModel nodeModel) {
-        if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonLearnerNodeModel>(nodeModel);
-        } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonLearnerNodeModel>(nodeModel);
-        }
-        return null;
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        final PythonObjectReaderNodeConfig2 config = new PythonObjectReaderNodeConfig2();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateFlowVariables(
+            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean hasDialog() {
-        return true;
+    public boolean closeOnESC() {
+        return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog();
+    public void onOpen() {
+        m_sourceCodePanel.open();
     }
 
+    @Override
+    public void onClose() {
+        m_sourceCodePanel.close();
+    }
 }
