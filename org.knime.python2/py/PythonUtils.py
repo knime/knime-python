@@ -199,21 +199,21 @@ def get_type_string(data_object):
 
 def object_to_string(data_object):
     """
-    Convert data_object to a string representation.
+    Convert data_object to a (possibly truncated) string representation.
     """
     if EnvironmentHelper.is_python3():
         try:
-            return str(data_object)
+            object_as_string = str(data_object)
         except Exception:
             return ''
     else:
         try:
-            return unicode(data_object)
+            object_as_string = unicode(data_object)
         except UnicodeDecodeError:
-            return '(base64 encoded)\n' + base64.b64encode(data_object)
+            object_as_string = '(base64 encoded)\n' + base64.b64encode(data_object)
         except Exception:
             return ''
-
+    return (object_as_string[:996] + '\n...') if len(object_as_string) > 1000 else object_as_string
 
 def value_to_simpletype_value(value, simpletype):
     """
