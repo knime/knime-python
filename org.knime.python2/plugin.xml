@@ -16,7 +16,17 @@
          point="org.knime.core.PortType">
       <portType
             color="#1eb9dc"
+            hidden="false"
             name="Python"
+            objectClass="org.knime.python2.port.PickledObjectFileStorePortObject"
+            objectSerializer="org.knime.python2.port.PickledObjectFileStorePortObject$Serializer"
+            specClass="org.knime.python2.port.PickledObjectPortObjectSpec"
+            specSerializer="org.knime.python2.port.PickledObjectPortObjectSpec$Serializer">
+      </portType>
+      <portType
+            color="#1eb9dc"
+            hidden="true"
+            name="Python (deprecated)"
             objectClass="org.knime.python2.port.PickledObjectPortObject"
             objectSerializer="org.knime.python2.port.PickledObjectPortObject$Serializer"
             specClass="org.knime.python2.port.PickledObjectPortObjectSpec"

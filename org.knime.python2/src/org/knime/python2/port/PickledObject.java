@@ -47,6 +47,13 @@
  */
 package org.knime.python2.port;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.knime.core.node.InvalidSettingsException;
@@ -58,8 +65,9 @@ import org.knime.core.node.ModelContentWO;
  * representation.
  *
  * @author Patrick Winter, Universität Konstanz, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-
 public class PickledObject {
 
     private static final String CFG_PICKLED_OBJECT = "pickledObject";
@@ -92,11 +100,37 @@ public class PickledObject {
      *
      * @param model the model content to initialize the object from
      * @throws InvalidSettingsException
+     * @deprecated since 3.6.1 - use {@link #PickledObject(InputStream)} instead for performance reasons
      */
+    @Deprecated
     public PickledObject(final ModelContentRO model) throws InvalidSettingsException {
         m_pickledObject = model.getByteArray(CFG_PICKLED_OBJECT);
         m_type = model.getString(CFG_TYPE);
         m_stringRepresentation = model.getString(CFG_STRING_REPRESENTATION);
+    }
+
+    /**
+     * Reads a {@link PickledObject} from a given input stream.
+     *
+     * @param in the stream to read the pickled object from. It is the caller's responsibility to close the stream.
+     * @throws IOException if failed to read the pickled object from the given stream
+     * @since 3.6.1
+     * @see #save(OutputStream)
+     */
+    public PickledObject(final InputStream in) throws IOException {
+        final DataInputStream objIn = new DataInputStream(in);
+        final int pickledObjectLength = objIn.readInt();
+        m_pickledObject = new byte[pickledObjectLength];
+        if (objIn.read(m_pickledObject) < pickledObjectLength) {
+            throw new IOException("Failed to read in pickled object.");
+        }
+        m_type = objIn.readUTF();
+        final int stringRepresentationLength = objIn.readInt();
+        final byte[] stringRepresentationBytes = new byte[stringRepresentationLength];
+        if (objIn.read(stringRepresentationBytes) < stringRepresentationLength) {
+            throw new IOException("Failed to read in pickled object.");
+        }
+        m_stringRepresentation = new String(stringRepresentationBytes, StandardCharsets.UTF_8);
     }
 
     /**
@@ -139,7 +173,9 @@ public class PickledObject {
      * Save the pickled object as model content.
      *
      * @param model the content to save to
+     * @deprecated since 3.6.1 - use {@link #save(OutputStream)} instead for performance reasons
      */
+    @Deprecated
     public void save(final ModelContentWO model) {
         model.addByteArray(CFG_PICKLED_OBJECT, m_pickledObject);
         model.addString(CFG_TYPE, m_type);
@@ -147,8 +183,24 @@ public class PickledObject {
     }
 
     /**
-     * {@inheritDoc}
+     * Save the pickled object to an output stream.
+     *
+     * @param out the stream to write the pickled object to. It is the caller's responsibility to close the stream.
+     * @throws IOException if writing the pickled object to the given stream failed
+     * @since 3.6.1
+     * @see #PickledObject(InputStream)
      */
+    public void save(final OutputStream out) throws IOException {
+        final DataOutputStream objOut = new DataOutputStream(out);
+        objOut.writeInt(m_pickledObject.length);
+        objOut.write(m_pickledObject);
+        objOut.writeUTF(m_type);
+        // String representation can get pretty long. This may not be supported by DataOutputStream#writeUTF(String).
+        final byte[] stringRepresentationBytes = m_stringRepresentation.getBytes(StandardCharsets.UTF_8);
+        objOut.writeInt(stringRepresentationBytes.length);
+        objOut.write(stringRepresentationBytes);
+    }
+
     @Override
     public boolean equals(final Object obj) {
         if (this == obj) {
@@ -165,9 +217,6 @@ public class PickledObject {
         return eb.isEquals();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
         final HashCodeBuilder hcb = new HashCodeBuilder();
@@ -181,5 +230,4 @@ public class PickledObject {
     public String toString() {
         return m_type + "\n" + m_stringRepresentation;
     }
-
 }

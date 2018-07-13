@@ -71,7 +71,9 @@ import org.knime.core.node.port.PortTypeRegistry;
  * Port object containing a {@link PickledObject}.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @deprecated since 3.6.1 - use {@link PickledObjectFileStorePortObject} for performance reasons
  */
+@Deprecated
 public final class PickledObjectPortObject extends AbstractSimplePortObject {
     /**
      * The serializer for the PickeledObject port type
