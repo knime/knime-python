@@ -279,8 +279,8 @@ class Serializer(object):
                     simple_type = Simpletype.STRING
                 elif types_are_equivalent(column_type, bool):
                     simple_type = Simpletype.BOOLEAN
-                elif column_type is list or column_type is set:
-                    is_set = column_type is set
+                elif column_type is list or column_type is tuple or column_type is set or column_type is frozenset:
+                    is_set = column_type is set or column_type is frozenset
                     list_col_type = self.list_column_type(data_frame, column_name)
                     if list_col_type is None:
                         # column with only missing values, make it string
