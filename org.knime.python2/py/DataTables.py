@@ -70,7 +70,8 @@ class FromPandasTable:
     #                          dataframe. Differs from 0 as soon as a table chunk is
     #                          sent.
     def __init__(self, data_frame, serializer, start_row_number=0):
-        self._data_frame = data_frame.copy()
+        # Shallow copy because we modify columns (see below) and index (see standardize_default_indices(..)).
+        self._data_frame = data_frame.copy(deep=False)
         self._data_frame.columns = self._data_frame.columns.astype(str)
         self._column_types = []
         self._column_serializers = {}

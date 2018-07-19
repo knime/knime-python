@@ -1,5 +1,6 @@
 eclipse.preferences.version=1
 encoding//py/DBUtil.py=utf-8
+encoding//py/DataTables.py=utf-8
 encoding//py/EnvironmentHelper.py=utf-8
 encoding//py/PythonCommands.py=utf-8
 encoding//py/PythonKernelBase.py=utf-8
