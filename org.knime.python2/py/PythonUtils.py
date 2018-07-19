@@ -82,6 +82,16 @@ if not EnvironmentHelper.is_python3():
 if EnvironmentHelper.is_tslib_available():
     EQUIVALENT_TYPES.append([datetime, Timestamp])
 
+# Do not change those to sets. We need __eq__ comparison (overridden by numpy.dtypes), not __hash__.
+_BOOLEAN_TYPES = ('bool', "bool_", "bool8")
+_INTEGER_TYPES = ('byte', 'short', 'int',
+                  'intc', 'int_', 'longlong',
+                  'intp', 'int8', 'int16',
+                  'int32', 'int64', 'ubyte',
+                  'ushort', 'uintc', 'uint',
+                  'ulonglong', 'uintp', 'uint8',
+                  'uint16', 'uint32', 'uint64')
+
 
 class Simpletype:
     """
@@ -147,6 +157,14 @@ def is_numpy_type(data_type):
     Checks if the given type is a numpy type.
     """
     return data_type.__module__ == numpy.__name__
+
+
+def is_boolean_type(data_type):
+    return data_type in _BOOLEAN_TYPES
+
+
+def is_integer_type(data_type):
+    return data_type in _INTEGER_TYPES
 
 
 def types_are_equivalent(type_1, type_2):
