@@ -52,9 +52,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.kernel.PythonExecutionException;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
+import org.knime.python2.util.PythonNodeLogger;
 
 /**
  * Abstract base class for implementations of {@link TaskHandler}.
@@ -72,7 +72,7 @@ public abstract class AbstractTaskHandler<T> implements TaskHandler<T> {
 
     public static final String FIELD_KEY_REPLY_TO = "reply-to";
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractTaskHandler.class);
+    private static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(AbstractTaskHandler.class);
 
     @Override
     public Message handle(final Message message, final MessageHandlerCollection messageHandlers,

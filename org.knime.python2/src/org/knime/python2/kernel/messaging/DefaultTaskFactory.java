@@ -62,12 +62,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntSupplier;
 
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.kernel.PythonExecutionMonitor;
+import org.knime.python2.util.PythonNodeLogger;
 
 public final class DefaultTaskFactory<T> implements MessageHandler {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(DefaultTaskFactory.class);
+    private static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(DefaultTaskFactory.class);
 
     private final TaskHandler<T> m_delegateTaskHandler;
 

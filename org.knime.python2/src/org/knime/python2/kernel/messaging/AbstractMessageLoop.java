@@ -54,9 +54,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.kernel.PythonExecutionMonitor;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.util.PythonNodeLogger;
 import org.knime.python2.util.PythonUtils;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -67,7 +67,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 abstract class AbstractMessageLoop implements AutoCloseable {
 
-    protected static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
+    protected static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(PythonKernel.class);
 
     protected static void throwExceptionInLoop(final String errorMessage, final Exception cause) throws Exception {
         final String fullErrorMessage =

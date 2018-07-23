@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
-import org.knime.core.node.NodeLogger;
+import org.knime.python2.util.PythonNodeLogger;
 
 /**
  * Convenience base class for {@link MessageHandler message handlers} that answer a single request with a single
@@ -64,7 +64,7 @@ import org.knime.core.node.NodeLogger;
  */
 public abstract class AbstractRequestHandler extends AbstractTaskHandler<Void> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractRequestHandler.class);
+    private static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(AbstractRequestHandler.class);
 
     /**
      * Note: This method invokes {@link DefaultMessage#DefaultMessage(int, String, byte[], Map)} whose constraints apply

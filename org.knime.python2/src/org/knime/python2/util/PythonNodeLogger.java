@@ -44,44 +44,93 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 10, 2018 (marcel): created
+ *   Jul 23, 2018 (marcel): created
  */
-package org.knime.python2.kernel.messaging;
+package org.knime.python2.util;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-
-import org.knime.python2.util.PythonNodeLogger;
+import org.knime.core.node.NodeLogger;
 
 /**
+ * A logger whose debug log level can be enabled/disabled via a {@link #DEBUG_ENABLED global flag}. Method calls
+ * delegate to {@link NodeLogger}.<br>
+ * This class was introduced because (debug) logging in {@code org.knime.python2} is pretty scattered and we don't want
+ * all those debug entries pollute our test logs but still need them for actual debugging.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class DefaultMessageSender implements MessageSender {
-
-    private static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(DefaultMessageSender.class);
-
-    private final DataOutputStream m_outToPython;
+public final class PythonNodeLogger {
 
     /**
-     * @param outToPython the output stream via which messages to Python are sent
+     * Determines if the debug log level is enabled. This should only be set to {@code true} during actual debugging.
+     * Note that logging is also governed by {@link NodeLogger#isDebugEnabled()}.
      */
-    public DefaultMessageSender(final OutputStream outToPython) {
-        m_outToPython = new DataOutputStream(outToPython);
+    public static final boolean DEBUG_ENABLED = false;
+
+    /**
+     * @see PythonNodeLogger#getLogger(Class)
+     */
+    public static PythonNodeLogger getLogger(final Class<?> c) {
+        return new PythonNodeLogger(NodeLogger.getLogger(c));
     }
 
-    @Override
-    public void send(final Message message) throws IOException {
-        LOGGER.debug("Java - Send message: " + message);
-        final byte[] header = message.getHeader().getBytes(StandardCharsets.UTF_8);
-        final byte[] payload = message.getPayload();
-        m_outToPython.writeInt(header.length);
-        m_outToPython.writeInt(payload != null ? payload.length : 0);
-        m_outToPython.write(header);
-        if (payload != null) {
-            m_outToPython.write(payload);
+    /**
+     * @see PythonNodeLogger#getLogger(String)
+     */
+    public static PythonNodeLogger getLogger(final String s) {
+        return new PythonNodeLogger(NodeLogger.getLogger(s));
+    }
+
+    private final NodeLogger m_logger;
+
+    /**
+     * Creates a new {@link PythonNodeLogger} that wraps the given {@link NodeLogger}.
+     */
+    public PythonNodeLogger(final NodeLogger logger) {
+        m_logger = logger;
+    }
+
+    public void debug(final Object o) {
+        if (DEBUG_ENABLED) {
+            m_logger.debug(o);
         }
+    }
+
+    public void info(final Object o) {
+        m_logger.info(o);
+    }
+
+    public void warn(final Object o) {
+        m_logger.warn(o);
+    }
+
+    public void error(final Object o) {
+        m_logger.error(o);
+    }
+
+    public void fatal(final Object o) {
+        m_logger.fatal(o);
+    }
+
+    public void debug(final Object o, final Throwable t) {
+        if (DEBUG_ENABLED) {
+            m_logger.debug(o, t);
+        }
+    }
+
+    public void info(final Object o, final Throwable t) {
+        m_logger.info(o, t);
+    }
+
+    public void warn(final Object o, final Throwable t) {
+        m_logger.warn(o, t);
+    }
+
+    public void error(final Object o, final Throwable t) {
+        m_logger.error(o, t);
+    }
+
+    public void fatal(final Object o, final Throwable t) {
+        m_logger.fatal(o, t);
     }
 }

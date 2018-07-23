@@ -56,7 +56,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.knime.core.node.NodeLogger;
+import org.knime.python2.util.PythonNodeLogger;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -64,7 +64,7 @@ import org.knime.core.node.NodeLogger;
  */
 final class DefaultMessageReceiver implements MessageReceiver {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(DefaultMessageReceiver.class);
+    private static final PythonNodeLogger LOGGER = PythonNodeLogger.getLogger(DefaultMessageReceiver.class);
 
     private final DataInputStream m_inFromPython;
 
