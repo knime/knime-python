@@ -2,13 +2,13 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python nodes
 Bundle-SymbolicName: org.knime.python.nodes;singleton:=true
-Bundle-Version: 3.6.0.qualifier
+Bundle-Version: 3.7.0.qualifier
 Bundle-ClassPath: knime-python-nodes.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Require-Bundle: org.knime.base;bundle-version="[3.0.0,4.0.0)",
- org.knime.python;bundle-version="[3.0.0,4.0.0)",
- org.eclipse.core.resources;bundle-version="[3.7.101,4.0.0)",
- org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
- org.knime.ext.svg;bundle-version="[3.0.0,4.0.0)"
+  org.knime.python;bundle-version="[3.0.0,4.0.0)",
+  org.eclipse.core.resources;bundle-version="[3.7.101,4.0.0)",
+  org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
+  org.knime.ext.svg;bundle-version="[3.0.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
