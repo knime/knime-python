@@ -259,8 +259,30 @@ public class PythonKernel implements AutoCloseable {
             m_defaultStderrListener = new ConfigurablePythonOutputListener();
             addStderrorListener(m_defaultStderrListener);
 
-            // Wait for Python to connect.
-            m_socket = socketBeingSetup.get();
+            try {
+                // Wait for Python to connect.
+                m_socket = socketBeingSetup.get();
+            } catch (final ExecutionException e) {
+                if (e.getCause() instanceof SocketTimeoutException) {
+                    // Under some circumstances, the Python process may crash while we're trying to establish a socket
+                    // connection which causes the attempt to time out. We should not misinterpret that as a real time out.
+                    if (!isPythonProcessAlive()) {
+                        throw new PythonIOException(
+                            "The external Python process crashed for unknown reasons while KNIME "
+                                + "set up the Python environment. See log for details.",
+                            e);
+                    } else {
+                        throw new PythonIOException(
+                            "The connection attempt timed out. Please consider increasing the socket "
+                                + "timeout using the VM option '-Dknime.python.connecttimeout=<value-in-ms>'.\n"
+                                + "Also make sure that the communication between KNIME and Python is not blocked by a "
+                                + "firewall and that your hosts configuration is correct.",
+                            e);
+                    }
+                } else {
+                    throw e;
+                }
+            }
 
             // Setup command/message system.
             m_commands = new PythonCommands(m_socket.getOutputStream(), m_socket.getInputStream(),
@@ -282,9 +304,15 @@ public class PythonKernel implements AutoCloseable {
             setupCustomModules();
 
             setupSentinelConstants();
-        } catch (final Throwable t) {
+        } catch (Throwable t) {
             // Close is not called by try-with-resources if an exception occurs during construction.
             close();
+
+            // Unwrap exception that occurred during any async setup.
+            if (t instanceof ExecutionException && t.getCause() != null) {
+                t = t.getCause();
+            }
+
             if (t instanceof PythonIOException) {
                 throw (PythonIOException)t;
             } else if (t instanceof Error) {
@@ -341,14 +369,7 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private Future<Socket> setupSocket() {
-        return Executors.newSingleThreadExecutor().submit(() -> {
-            try {
-                return m_serverSocket.accept();
-            } catch (final SocketTimeoutException ex) {
-                throw new PythonIOException("The connection attempt timed out. Please consider increasing the socket "
-                    + "timeout using the VM option '-Dknime.python.connecttimeout=<value-in-ms>'.");
-            }
-        });
+        return Executors.newSingleThreadExecutor().submit(m_serverSocket::accept);
     }
 
     private Process setupPythonProcess() throws IOException {
@@ -502,6 +523,10 @@ public class PythonKernel implements AutoCloseable {
             m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + "; LONG_SENTINEL = "
                 + m_kernelOptions.getSentinelValue()).get();
         }
+    }
+
+    private boolean isPythonProcessAlive() {
+        return m_process != null && m_process.isAlive();
     }
     // End of setup methods.
 
@@ -836,12 +861,13 @@ public class PythonKernel implements AutoCloseable {
             }
             if (tableCreator != null) {
                 final BufferedDataTable table = tableCreator.getTable();
-                removeProcessEndAction(pea);
                 return table;
             }
             throw new PythonIOException("Invalid serialized table received.");
         } catch (final InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
+        } finally {
+            removeProcessEndAction(pea);
         }
     }
 
@@ -858,6 +884,7 @@ public class PythonKernel implements AutoCloseable {
         throws IOException {
         final ProcessEndAction pea = m_segfaultDuringSerializationAction;
         try {
+            addProcessEndAction(pea);
             final int tableSize = m_commands.getTableSize(name).get();
             int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
             if (numberChunks == 0) {
@@ -874,10 +901,11 @@ public class PythonKernel implements AutoCloseable {
                 }
                 m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions());
             }
-            removeProcessEndAction(pea);
             return tableCreator;
         } catch (InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
+        } finally {
+            removeProcessEndAction(pea);
         }
     }
 
