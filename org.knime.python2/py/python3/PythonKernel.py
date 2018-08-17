@@ -48,20 +48,22 @@
 """
 
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor
-from queue import Empty
-from queue import Full
-from queue import Queue
 from threading import Event
 from threading import RLock
 from time import monotonic as time
 
+from concurrent.futures import ThreadPoolExecutor
+from queue import Empty
+from queue import Full
+from queue import Queue
+
+from DBUtil import DBUtil
 from PythonKernelBase import PythonKernelBase
 from debug_util import debug_msg
 from messaging.Message import Message
+from messaging.RequestHandlers import _builtin_request_handlers
 from python3.messaging.PythonMessaging import PythonMessaging
 
-from messaging.RequestHandlers import _builtin_request_handlers
 
 class PythonKernel(PythonKernelBase):
     """
@@ -73,9 +75,16 @@ class PythonKernel(PythonKernelBase):
             super(PythonKernel, self).__init__()
             self._monitor = PythonKernel._ExecutionMonitor()
             self._is_running_or_closed_lock = RLock()
+            # SQL connections need to be closed by the same thread that opened them, which is the execute thread.
+            self._execute_thread_cleanup_object_names = set()
         except BaseException as ex:
             self.close()
             raise ex
+
+    def add_cleanup_object_name(self, variable_name):
+        if isinstance(self.get_variable(variable_name), DBUtil):
+            self._execute_thread_cleanup_object_names.add(variable_name)
+        super(PythonKernel, self).add_cleanup_object_name(variable_name)
 
     def start(self):
         with self._is_running_or_closed_lock:
@@ -84,6 +93,8 @@ class PythonKernel(PythonKernelBase):
         self._monitor.wait_for_close()
 
     def close(self):
+        # Note: This method may not be called from self._execute_thread_executor because some cleanup operations need
+        # to be forwarded to that executor which would cause a deadlock.
         with self._is_running_or_closed_lock:
             super(PythonKernel, self).close()
             # Hold lock. Make all that closing atomic.
@@ -104,7 +115,7 @@ class PythonKernel(PythonKernelBase):
                   'execute']:
             self.unregister_task_handler(k)
             self.register_task_handler(k, _builtin_request_handlers[k], executor=self.execute_thread_executor)
-        
+
     def _create_execute_thread_executor(self):
         return PythonKernel._MonitoredThreadPoolExecutor(1, self._monitor)
 
@@ -114,6 +125,12 @@ class PythonKernel(PythonKernelBase):
 
     def _create_messaging(self, connection):
         return PythonMessaging(connection, self._monitor)
+
+    def _cleanup_object(self, obj, obj_name):
+        if obj_name in self._execute_thread_cleanup_object_names:
+            self._execute_thread_executor.submit(obj._cleanup)
+        else:
+            super(PythonKernel, self)._cleanup_object(obj, obj_name)
 
     class _ExecutionMonitor(object):
 

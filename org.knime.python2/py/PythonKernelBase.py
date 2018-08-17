@@ -363,9 +363,12 @@ class PythonKernelBase(Borg):
                 obj = self.get_variable(name)
                 if obj is not None:
                     try:
-                        obj._cleanup()
+                        self._cleanup_object(obj, name)
                     except BaseException:
                         pass
+
+    def _cleanup_object(self, obj, obj_name):
+        obj._cleanup()
 
     # Logging:
 
