@@ -62,7 +62,6 @@ import org.knime.python.typeextensions.Activator;
  * point.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
- *
  */
 public class PythonModuleExtensions {
 
@@ -70,11 +69,14 @@ public class PythonModuleExtensions {
 
     private static Set<String> pythonModulePaths;
 
+    private PythonModuleExtensions() {
+    }
+
     /**
      * Add all additional python modules specified via the modules extension point to the PYTHONPATH
      */
-    public static void init() {
-        pythonModulePaths = new HashSet<String>();
+    public static synchronized void init() {
+        pythonModulePaths = new HashSet<>();
         final IConfigurationElement[] configs =
             Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python.modules");
         for (final IConfigurationElement config : configs) {
@@ -90,12 +92,14 @@ public class PythonModuleExtensions {
     }
 
     /**
-     * Gets the PYTHONPATH.
+     * Gets the PYTHONPATH. Calls {@link #init()} if it is not yet populated.
      *
      * @return the PYTHONPATH
      */
-    public static String getPythonPath() {
+    public static synchronized String getPythonPath() {
+        if (pythonModulePaths == null) {
+            init();
+        }
         return StringUtils.join(pythonModulePaths, File.pathSeparator);
     }
-
 }

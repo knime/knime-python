@@ -62,7 +62,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * Activator for this plugin.
- * 
+ *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
 public class Activator implements BundleActivator {
@@ -73,23 +73,20 @@ public class Activator implements BundleActivator {
 	 * Initialize administration for extension points on startup.
 	 */
 	@Override
-	public void start(BundleContext bundleContext) throws Exception {
-		// When this plugin is loaded test the python installation
+	public void start(final BundleContext bundleContext) throws Exception {
 		org.knime.python.typeextension.KnimeToPythonExtensions.init();
 		org.knime.python.typeextension.PythonToKnimeExtensions.init();
 		PythonModuleExtensions.init();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void stop(BundleContext bundleContext) throws Exception {
+	public void stop(final BundleContext bundleContext) throws Exception {
+	    // no op
 	}
 
 	/**
 	 * Returns the file contained in the plugin with the given ID.
-	 * 
+	 *
 	 * @param symbolicName
 	 *            ID of the plugin containing the file
 	 * @param relativePath
