@@ -135,8 +135,8 @@ import org.knime.python2.serde.arrow.inserters.StringListInserter;
 import org.knime.python2.serde.arrow.inserters.StringSetInserter;
 
 /**
- * Serializes tables to bytes and deserializes bytes to tables using the Apache Arrow Format.
- * The serialized data is written to temporary files, the file paths are shared via the command socket.
+ * Serializes tables to bytes and deserializes bytes to tables using the Apache Arrow Format. The serialized data is
+ * written to temporary files, the file paths are shared via the command socket.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
@@ -157,10 +157,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     private String[] m_missingColumnNames = null;
 
     private enum PandasType {
-        BOOL("bool"),
-        INT("int"),
-        UNICODE("unicode"),
-        BYTES("bytes");
+            BOOL("bool"), INT("int"), UNICODE("unicode"), BYTES("bytes");
 
         private final String m_id;
 
@@ -174,10 +171,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     private enum NumpyType {
-        OBJECT("object"),
-        INT32("int32"),
-        INT64("int64"),
-        FLOAT64("float64");
+            OBJECT("object"), INT32("int32"), INT64("int64"), FLOAT64("float64");
 
         private final String m_id;
 
@@ -191,9 +185,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     /**
-     * Builds a metadata tag in the following format:
-     * {"name": <name>, "pandas_type": <pandasType>, "numpy_type": <numpyType>,
-     * "metadata": {"type_id": <knimeType>, "serializer_id": <serializer>}}
+     * Builds a metadata tag in the following format: {"name": <name>, "pandas_type": <pandasType>, "numpy_type":
+     * <numpyType>, "metadata": {"type_id": <knimeType>, "serializer_id": <serializer>}}
      */
     private JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
         final NumpyType numpyType, final Type knimeType, final String serializer) {
@@ -215,7 +208,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
 
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
-            throws SerializationException{
+        throws SerializationException {
         File file = null;
         try {
             //Temporary files are used for data transfer
@@ -226,7 +219,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         } catch (IOException e) {
             throw new SerializationException("During serialization the following an error occured.", e);
         } catch (OversizedAllocationException ex) {
-            throw new SerializationException("The requested buffersize during serialization exceeds the maximum buffer size."
+            throw new SerializationException(
+                "The requested buffersize during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
         }
     }
@@ -246,8 +240,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         JsonArrayBuilder colBuilder = Json.createArrayBuilder();
         int numRows = tableIterator.getNumberRemainingRows();
         // Row ids
-        JsonObjectBuilder rowIdBuilder = createColumnMetadataBuilder(INDEX_COL_NAME, PandasType.UNICODE,
-            NumpyType.OBJECT, Type.STRING);
+        JsonObjectBuilder rowIdBuilder =
+            createColumnMetadataBuilder(INDEX_COL_NAME, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
         inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
         colBuilder.add(rowIdBuilder);
 
@@ -256,35 +250,30 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             JsonObjectBuilder colMetadataBuilder;
             switch (spec.getColumnTypes()[i]) {
                 case BOOLEAN:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BOOL,
-                            NumpyType.OBJECT, Type.BOOLEAN);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BOOL,
+                        NumpyType.OBJECT, Type.BOOLEAN);
                     inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator, numRows));
                     break;
                 case INTEGER:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                            NumpyType.INT32, Type.INTEGER);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                        NumpyType.INT32, Type.INTEGER);
                     inserters.add(
                         new IntegerInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
                     break;
                 case LONG:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                            NumpyType.INT64, Type.LONG);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                        NumpyType.INT64, Type.LONG);
                     inserters
                         .add(new LongInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
                     break;
                 case DOUBLE:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                            NumpyType.FLOAT64, Type.DOUBLE);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                        NumpyType.FLOAT64, Type.DOUBLE);
                     inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator, numRows));
                     break;
                 case STRING:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.UNICODE,
-                            NumpyType.OBJECT, Type.STRING);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.UNICODE,
+                        NumpyType.OBJECT, Type.STRING);
                     inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_STRING_VAL_BYTE_SIZE));
                     break;
@@ -295,72 +284,62 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case INTEGER_LIST:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.INTEGER_LIST);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.INTEGER_LIST);
                     inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case INTEGER_SET:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.INTEGER_SET);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.INTEGER_SET);
                     inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case LONG_LIST:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.LONG_LIST);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.LONG_LIST);
                     inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case LONG_SET:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.LONG_SET);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.LONG_SET);
                     inserters.add(new LongSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case DOUBLE_LIST:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.DOUBLE_LIST);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.DOUBLE_LIST);
                     inserters.add(new DoubleListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case DOUBLE_SET:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.DOUBLE_SET);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.DOUBLE_SET);
                     inserters.add(new DoubleSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case BOOLEAN_LIST:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.BOOLEAN_LIST);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.BOOLEAN_LIST);
                     inserters.add(new BooleanListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case BOOLEAN_SET:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.BOOLEAN_SET);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.BOOLEAN_SET);
                     inserters.add(new BooleanSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case STRING_LIST:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.STRING_LIST);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.STRING_LIST);
                     inserters.add(new StringListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
                 case STRING_SET:
-                    colMetadataBuilder =
-                        createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                            NumpyType.OBJECT, Type.STRING_SET);
+                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                        NumpyType.OBJECT, Type.STRING_SET);
                     inserters.add(new StringSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
@@ -415,7 +394,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         fc.close();
 
         //Close inserters to free memory
-        for(ArrowVectorInserter is:inserters) {
+        for (ArrowVectorInserter is : inserters) {
             is.close();
         }
         rootAllocator.close();
@@ -424,7 +403,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     private VectorExtractor getStringOrByteextractor(final FieldVector vec) {
-        if(vec instanceof NullableVarCharVector) {
+        if (vec instanceof NullableVarCharVector) {
             return new StringExtractor((NullableVarCharVector)vec);
         } else {
             return new BytesExtractor((NullableVarBinaryVector)vec, true);

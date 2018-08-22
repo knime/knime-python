@@ -65,22 +65,18 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-
 public class SerializationLibraryExtensions {
 
-    private static Map<String, SerializationLibraryExtension> extensions =
-            new HashMap<String, SerializationLibraryExtension>();
+    private static final Map<String, SerializationLibraryExtension> EXTENSIONS = new HashMap<>();
 
-    private final Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<String, SerializationLibrary>();
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(SerializationLibraryExtensions.class);
+    private final Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<>();
 
     /**
      * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
      */
     public static void init() {
         final IConfigurationElement[] configs =
-                Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.serializationlibrary");
+            Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.serializationlibrary");
         for (final IConfigurationElement config : configs) {
             try {
                 final Object o = config.createExecutableExtension("java-serializationlibrary-factory");
@@ -91,12 +87,12 @@ public class SerializationLibraryExtensions {
                     if (file != null) {
                         final SerializationLibraryFactory serializationLibrary = (SerializationLibraryFactory)o;
                         final String id = config.getAttribute("id");
-                        extensions.put(id,
+                        EXTENSIONS.put(id,
                             new SerializationLibraryExtension(id, file.getAbsolutePath(), serializationLibrary));
                     }
                 }
             } catch (final CoreException e) {
-                LOGGER.error(e.getMessage(), e);
+                NodeLogger.getLogger(SerializationLibraryExtensions.class).error(e.getMessage(), e);
             }
         }
     }
@@ -109,19 +105,20 @@ public class SerializationLibraryExtensions {
      */
     public SerializationLibrary getSerializationLibrary(final String id) {
         if (!m_serializationLibrary.containsKey(id)) {
-            m_serializationLibrary.put(id, extensions.get(id).getJavaSerializationLibraryFactory().createInstance());
+            m_serializationLibrary.put(id, EXTENSIONS.get(id).getJavaSerializationLibraryFactory().createInstance());
         }
         return m_serializationLibrary.get(id);
     }
 
     /**
      * Get the human readable name for a serialization library id.
+     *
      * @param id a serialization library id
      * @return a human readable name if id matches, null otherwise
      */
     public static String getNameForId(final String id) {
-        SerializationLibraryExtension ext = extensions.get(id);
-        if(ext != null) {
+        SerializationLibraryExtension ext = EXTENSIONS.get(id);
+        if (ext != null) {
             return ext.getJavaSerializationLibraryFactory().getName();
         }
         return null;
@@ -133,7 +130,7 @@ public class SerializationLibraryExtensions {
      * @return a collection of all available serialization library extensions
      */
     public static Collection<SerializationLibraryExtension> getExtensions() {
-        return extensions.values();
+        return EXTENSIONS.values();
     }
 
     /**
@@ -143,7 +140,6 @@ public class SerializationLibraryExtensions {
      * @return the serialization library path
      */
     public static String getSerializationLibraryPath(final String id) {
-        return extensions.get(id).getPythonSerializationLibraryPath();
+        return EXTENSIONS.get(id).getPythonSerializationLibraryPath();
     }
-
 }

@@ -90,7 +90,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
      */
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
-            throws SerializationException{
+        throws SerializationException {
         try {
             final File file = File.createTempFile("java-to-python-", ".csv");
             file.deleteOnExit();
@@ -120,7 +120,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                         value = "MissingCell";
                         final Type type = spec.getColumnTypes()[ctr];
                         if (serializationOptions.getConvertMissingToPython()
-                                && ((type == Type.INTEGER) || (type == Type.LONG))) {
+                            && ((type == Type.INTEGER) || (type == Type.LONG))) {
                             value = Long.toString(serializationOptions.getSentinelForType(type));
                         }
                     } else {
@@ -144,8 +144,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         booleanBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.BOOLEAN_SET && cell.hasMissingInSet()) {
-                                    if(booleanArray.length > 0) {
+                                if (type == Type.BOOLEAN_SET && cell.hasMissingInSet()) {
+                                    if (booleanArray.length > 0) {
                                         booleanBuilder.append(",");
                                     }
                                     booleanBuilder.append("None");
@@ -171,8 +171,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         integerBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.INTEGER_SET && cell.hasMissingInSet()) {
-                                    if(integerArray.length > 0) {
+                                if (type == Type.INTEGER_SET && cell.hasMissingInSet()) {
+                                    if (integerArray.length > 0) {
                                         integerBuilder.append(",");
                                     }
                                     integerBuilder.append("None");
@@ -198,8 +198,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         longBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.LONG_SET && cell.hasMissingInSet()) {
-                                    if(longArray.length > 0) {
+                                if (type == Type.LONG_SET && cell.hasMissingInSet()) {
+                                    if (longArray.length > 0) {
                                         longBuilder.append(",");
                                     }
                                     longBuilder.append("None");
@@ -244,8 +244,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         doubleBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.DOUBLE_SET && cell.hasMissingInSet()) {
-                                    if(doubleArray.length > 0) {
+                                if (type == Type.DOUBLE_SET && cell.hasMissingInSet()) {
+                                    if (doubleArray.length > 0) {
                                         doubleBuilder.append(",");
                                     }
                                     doubleBuilder.append("None");
@@ -276,8 +276,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         stringBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.STRING_SET && cell.hasMissingInSet()) {
-                                    if(stringArray.length > 0) {
+                                if (type == Type.STRING_SET && cell.hasMissingInSet()) {
+                                    if (stringArray.length > 0) {
                                         stringBuilder.append(",");
                                     }
                                     stringBuilder.append("None");
@@ -304,8 +304,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         bytesBuilder.append(",");
                                     }
                                 }
-                                if(type == Type.BYTES_SET && cell.hasMissingInSet()) {
-                                    if(bytesArray.length > 0) {
+                                if (type == Type.BYTES_SET && cell.hasMissingInSet()) {
+                                    if (bytesArray.length > 0) {
                                         bytesBuilder.append(",");
                                     }
                                     bytesBuilder.append("None");
@@ -328,7 +328,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
         } catch (final IOException e) {
             throw new RuntimeException(e);
         } catch (NegativeArraySizeException ex) {
-            throw new SerializationException("The requested buffersize during serialization exceeds the maximum buffer size."
+            throw new SerializationException(
+                "The requested buffersize during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
         }
     }
@@ -409,16 +410,17 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         booleanHasMissing = true;
                                     }
                                 }
-                                if(!booleanHasMissing) {
+                                if (!booleanHasMissing) {
                                     cell = new CellImpl(booleanSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(booleanSetArray, 0, booleanSetArray.length - 1), true);
+                                    cell = new CellImpl(
+                                        ArrayUtils.subarray(booleanSetArray, 0, booleanSetArray.length - 1), true);
                                 }
                                 break;
                             case INTEGER:
                                 final int intVal = Integer.parseInt(value);
                                 if (serializationOptions.getConvertMissingFromPython()
-                                        && serializationOptions.isSentinel(Type.INTEGER, intVal)) {
+                                    && serializationOptions.isSentinel(Type.INTEGER, intVal)) {
                                     cell = new CellImpl();
                                 } else {
                                     cell = new CellImpl(intVal);
@@ -460,16 +462,17 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         integerHasMissing = true;
                                     }
                                 }
-                                if(!integerHasMissing) {
+                                if (!integerHasMissing) {
                                     cell = new CellImpl(integerSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(integerSetArray, 0, integerSetArray.length - 1), true);
+                                    cell = new CellImpl(
+                                        ArrayUtils.subarray(integerSetArray, 0, integerSetArray.length - 1), true);
                                 }
                                 break;
                             case LONG:
                                 final long longVal = Long.parseLong(value.replace("L", ""));
                                 if (serializationOptions.getConvertMissingFromPython()
-                                        && serializationOptions.isSentinel(Type.LONG, longVal)) {
+                                    && serializationOptions.isSentinel(Type.LONG, longVal)) {
                                     cell = new CellImpl();
                                 } else {
                                     cell = new CellImpl(longVal);
@@ -511,10 +514,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         longHasMissing = true;
                                     }
                                 }
-                                if(!longHasMissing) {
+                                if (!longHasMissing) {
                                     cell = new CellImpl(longSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(longSetArray, 0, longSetArray.length - 1), true);
+                                    cell = new CellImpl(ArrayUtils.subarray(longSetArray, 0, longSetArray.length - 1),
+                                        true);
                                 }
                                 break;
                             case DOUBLE:
@@ -584,10 +588,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         doubleHasMissing = true;
                                     }
                                 }
-                                if(!doubleHasMissing) {
+                                if (!doubleHasMissing) {
                                     cell = new CellImpl(doubleSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
+                                    cell = new CellImpl(
+                                        ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
                                 }
                                 break;
                             case STRING:
@@ -634,7 +639,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 final String[] stringSetArray = new String[stringSetValues.length];
                                 boolean hasStringMissing = false;
                                 int posCtr = 0;
-                                for (String stringValue:stringSetValues) {
+                                for (String stringValue : stringSetValues) {
                                     stringSetArray[idxCtr] = stringValue;
                                     if (posCtr == 0) {
                                         stringSetArray[idxCtr] = stringValue.substring(1);
@@ -655,10 +660,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     }
                                     posCtr++;
                                 }
-                                if(!hasStringMissing) {
+                                if (!hasStringMissing) {
                                     cell = new CellImpl(stringSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(stringSetArray, 0, stringSetArray.length - 1), true);
+                                    cell = new CellImpl(
+                                        ArrayUtils.subarray(stringSetArray, 0, stringSetArray.length - 1), true);
                                 }
                                 break;
                             case BYTES:
@@ -700,10 +706,11 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                         bytesHasMissing = true;
                                     }
                                 }
-                                if(!bytesHasMissing) {
+                                if (!bytesHasMissing) {
                                     cell = new CellImpl(bytesSetArray, false);
                                 } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(bytesSetArray, 0, bytesSetArray.length - 1), true);
+                                    cell = new CellImpl(ArrayUtils.subarray(bytesSetArray, 0, bytesSetArray.length - 1),
+                                        true);
                                 }
                                 break;
                             default:

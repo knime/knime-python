@@ -41,16 +41,17 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-import pandas
-import tempfile
-import os
 import base64
+import os
+import tempfile
+
+import pandas
+
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 import debug_util
-
 
 _types_ = None
 _eval_types_ = None
@@ -113,6 +114,7 @@ def column_serializers_from_bytes(data_bytes):
             serializers[key_value[0]] = key_value[1]
     return serializers
 
+
 # Read the CSV serialized data into a pandas.DataFrame.
 # Delete the temporary CSV file afterwards.
 # @param table        a {@link ToPandasTable} wrapping the data frame and 
@@ -152,13 +154,13 @@ def bytes_into_table(table, data_bytes):
     except ValueError:
         data_frame = pandas.DataFrame()
     for i in range(len(types)):
-        #debug_util.breakpoint()
+        # debug_util.breakpoint()
         col_type_id = int(types[i])
         if col_type_id in _eval_types_:
             for j in range(len(data_frame)):
                 index = data_frame.index[j]
                 if str(data_frame[names[i]][index]) != 'nan':
-                    #debug_util.breakpoint()
+                    # debug_util.breakpoint()
                     data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
                 else:
                     data_frame.set_value(index, names[i], None)
@@ -195,14 +197,16 @@ def bytes_into_table(table, data_bytes):
                             bytes_set.add(None)
                     data_frame.set_value(index, names[i], bytes_set)
         elif col_type_id == _types_.DOUBLE:
-            data_frame.iloc[:,i] = data_frame.iloc[:,i].astype('float', copy=False)
-        #Check if column contains only missing values. If so make sure dtype is object.
-        elif col_type_id == _types_.STRING and data_frame.iloc[:,i].dtype != 'object' and data_frame.iloc[:,i].isnull().all():
-            data_frame.iloc[:,i] = [None] * len(data_frame)
-    #debug_util.breakpoint()
+            data_frame.iloc[:, i] = data_frame.iloc[:, i].astype('float', copy=False)
+        # Check if column contains only missing values. If so make sure dtype is object.
+        elif col_type_id == _types_.STRING and data_frame.iloc[:, i].dtype != 'object' and data_frame.iloc[:,
+                                                                                           i].isnull().all():
+            data_frame.iloc[:, i] = [None] * len(data_frame)
+    # debug_util.breakpoint()
     table._data_frame = data_frame
     in_file.close()
     os.remove(path)
+
 
 # Serialize a pandas.DataFrame into a temporary CSV file.
 # Return the path to the created file as bytearray.

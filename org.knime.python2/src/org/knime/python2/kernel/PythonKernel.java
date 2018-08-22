@@ -72,9 +72,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -145,7 +144,7 @@ public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-    private static final int WAIT_TIMEOUT_MILLISECONDS = 1000;
+    private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
 
     /**
      * @return the duration, in milliseconds, to wait when trying to establish a connection to Python
@@ -181,15 +180,15 @@ public class PythonKernel implements AutoCloseable {
 
     private final InputStream m_stderrStream;
 
-    private final List<PythonOutputListener> m_stdoutListeners = Collections.synchronizedList(new ArrayList<>());
+    private final List<PythonOutputListener> m_stdoutListeners = new ArrayList<>();
 
-    private final List<PythonOutputListener> m_stderrListeners = Collections.synchronizedList(new ArrayList<>());
+    private final List<PythonOutputListener> m_stderrListeners = new ArrayList<>();
 
     private final PythonOutputListener m_defaultStdoutListener;
 
     private final ConfigurablePythonOutputListener m_defaultStderrListener;
 
-    private final List<ProcessEndAction> m_processEndActions = Collections.synchronizedList(new ArrayList<>());
+    private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();;
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
 
@@ -198,9 +197,6 @@ public class PythonKernel implements AutoCloseable {
     private final boolean m_hasAutocomplete;
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
-
-    private final ExecutorService m_executorService =
-        ThreadUtils.executorServiceWithContext(Executors.newCachedThreadPool());
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -562,7 +558,9 @@ public class PythonKernel implements AutoCloseable {
      * @param ac the action to run
      */
     public void addProcessEndAction(final ProcessEndAction ac) {
-        m_processEndActions.add(ac);
+        synchronized (m_processEndActions) {
+            m_processEndActions.add(ac);
+        }
     }
 
     /**
@@ -571,7 +569,9 @@ public class PythonKernel implements AutoCloseable {
      * @param ac the action to remove
      */
     public void removeProcessEndAction(final ProcessEndAction ac) {
-        m_processEndActions.remove(ac);
+        synchronized (m_processEndActions) {
+            m_processEndActions.remove(ac);
+        }
     }
 
     /**
@@ -935,36 +935,31 @@ public class PythonKernel implements AutoCloseable {
      */
     public void putObject(final String name, final PickledObject object, final ExecutionContext exec)
         throws IOException, CanceledExecutionException {
-        // Remember exceptions
+        final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
-        // Start the thread
-        final Future<?> future = m_executorService.submit(() -> {
+        final Thread nodeExecutionThread = Thread.currentThread();
+        // Thread running the execute
+        new Thread(() -> {
             try {
                 putObject(name, object);
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-        });
-
-        // Wait for the thread
-        boolean done = false;
-        while (!done) {
+            done.set(true);
+            // Wake up waiting thread
+            nodeExecutionThread.interrupt();
+        }).start();
+        // Wait until execution is done
+        while (done.get() != true) {
             try {
-                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-                done = true;
-            } catch (final ExecutionException ex) {
-                // Can't happen because we catch every exception
-                throw new IllegalStateException("Implementation error.", ex);
-            } catch (final InterruptedException | TimeoutException ex) {
-                // The thread has been interrupted or is not done yet
-                if (ex instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                exec.checkCanceled();
+                // Wake up once a second to check if execution has been canceled
+                Thread.sleep(1000);
+            } catch (final InterruptedException ex) {
+                // Happens if python thread is done
             }
+            exec.checkCanceled();
         }
-
-        // If there was an exception in the execution thread, throw it here
+        // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
         }
@@ -1238,44 +1233,42 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
+        final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final Thread nodeExecutionThread = Thread.currentThread();
         final AtomicReference<String[]> output = new AtomicReference<>();
         // Thread running the execute
-        final Future<?> future = m_executorService.submit(() -> {
+        ThreadUtils.threadWithContext(() -> {
+            String[] out;
             try {
-                String[] out = execute(sourceCode);
+                out = execute(sourceCode);
                 output.set(out);
-                // If the error log has content, throw it as exception
+                // If the error log has content throw it as exception
                 if (!out[1].isEmpty()) {
                     throw new PythonIOException(out[1]);
                 }
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-        });
-
+            done.set(true);
+            // Wake up waiting thread
+            nodeExecutionThread.interrupt();
+        }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
         // Wait until execution is done
-        boolean done = false;
-        while (!done) {
+        while (!done.get()) {
             try {
-                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-                done = true;
-            } catch (final ExecutionException ex) {
-                // Can't happen because we catch every exception
-                throw new IllegalStateException("Implementation error.", ex);
-            } catch (final InterruptedException | TimeoutException ex) {
-                // The thread has been interrupted or is not done yet
-                if (ex instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                try {
-                    cancelable.checkCanceled();
-                } catch (PythonCanceledExecutionException ex1) {
-                    throw new CanceledExecutionException(ex.getMessage());
-                }
+                // Wake up once a second to check if execution has been canceled
+                Thread.sleep(1000);
+            } catch (final InterruptedException ex) {
+                // Happens if python thread is done
+            }
+            try {
+                // TODO: Refactor to use Python-specific canceled exception everywhere.
+                cancelable.checkCanceled();
+            } catch (final PythonCanceledExecutionException ex) {
+                throw new CanceledExecutionException(ex.getMessage());
             }
         }
-
         // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
@@ -1285,44 +1278,42 @@ public class PythonKernel implements AutoCloseable {
 
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
+        final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final Thread nodeExecutionThread = Thread.currentThread();
         final AtomicReference<String[]> output = new AtomicReference<>();
         // Thread running the execute
-        final Future<?> future = m_executorService.submit(() -> {
+        ThreadUtils.threadWithContext(() -> {
+            String[] out;
             try {
-                String[] out = executeAsync(sourceCode);
+                out = executeAsync(sourceCode);
                 output.set(out);
-                // If the error log has content, throw it as exception
+                // If the error log has content throw it as exception
                 if (!out[1].isEmpty()) {
                     throw new PythonIOException(out[1]);
                 }
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-        });
-
+            done.set(true);
+            // Wake up waiting thread
+            nodeExecutionThread.interrupt();
+        }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
         // Wait until execution is done
-        boolean done = false;
-        while (!done) {
+        while (!done.get()) {
             try {
-                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-                done = true;
-            } catch (final ExecutionException ex) {
-                // Can't happen because we catch every exception
-                throw new IllegalStateException("Implementation error.", ex);
-            } catch (final InterruptedException | TimeoutException ex) {
-                if (ex instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                // The thread has been interrupted or is not done yet
-                try {
-                    cancelable.checkCanceled();
-                } catch (PythonCanceledExecutionException ex1) {
-                    throw new CanceledExecutionException(ex.getMessage());
-                }
+                // Wake up once a second to check if execution has been canceled
+                Thread.sleep(1000);
+            } catch (final InterruptedException ex) {
+                // Happens if python thread is done
+            }
+            try {
+                // TODO: Refactor to use Python-specific canceled exception everywhere.
+                cancelable.checkCanceled();
+            } catch (final PythonCanceledExecutionException ex) {
+                throw new CanceledExecutionException(ex.getMessage());
             }
         }
-
         // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
@@ -1353,15 +1344,10 @@ public class PythonKernel implements AutoCloseable {
         if (m_closed.compareAndSet(false, true)) {
             new Thread(() -> {
                 // Order is intended.
-                synchronized (m_stderrListeners) {
-                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
-                        m_stderrListeners.toArray(new PythonOutputListener[0]));
-                }
-                synchronized (m_stdoutListeners) {
-                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
-                        m_stdoutListeners.toArray(new PythonOutputListener[0]));
-                }
-                PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
+                PythonUtils.Misc.invokeSafely(LOGGER::debug,
+                    listeners -> listeners.forEach(
+                        listener -> PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true), listener)),
+                    m_stdoutListeners, m_stderrListeners);
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_commands, m_serverSocket, m_socket);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, List<PythonOutputListener>::clear, m_stdoutListeners,
                     m_stderrListeners);
@@ -1401,7 +1387,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public void addStdoutListener(final PythonOutputListener listener) {
+    public synchronized void addStdoutListener(final PythonOutputListener listener) {
         m_stdoutListeners.add(listener);
     }
 
@@ -1410,7 +1396,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public void addStderrorListener(final PythonOutputListener listener) {
+    public synchronized void addStderrorListener(final PythonOutputListener listener) {
         m_stderrListeners.add(listener);
     }
 
@@ -1419,7 +1405,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public void removeStdoutListener(final PythonOutputListener listener) {
+    public synchronized void removeStdoutListener(final PythonOutputListener listener) {
         m_stdoutListeners.remove(listener);
     }
 
@@ -1428,7 +1414,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public void removeStderrorListener(final PythonOutputListener listener) {
+    public synchronized void removeStderrorListener(final PythonOutputListener listener) {
         m_stderrListeners.remove(listener);
     }
 
@@ -1445,28 +1431,22 @@ public class PythonKernel implements AutoCloseable {
     }
 
     public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
-        synchronized (m_stderrListeners) {
-            for (PythonOutputListener listener : m_stderrListeners) {
-                if (listener instanceof ConfigurablePythonOutputListener) {
-                    ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
-                }
+        for (PythonOutputListener listener : m_stderrListeners) {
+            if (listener instanceof ConfigurablePythonOutputListener) {
+                ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
             }
         }
     }
 
-    private void distributeStdoutMsg(final String msg) {
-        synchronized (m_stdoutListeners) {
-            for (final PythonOutputListener listener : m_stdoutListeners) {
-                listener.messageReceived(msg);
-            }
+    private synchronized void distributeStdoutMsg(final String msg) {
+        for (final PythonOutputListener listener : m_stdoutListeners) {
+            listener.messageReceived(msg);
         }
     }
 
-    private void distributeStderrorMsg(final String msg) {
-        synchronized (m_stderrListeners) {
-            for (final PythonOutputListener listener : m_stderrListeners) {
-                listener.messageReceived(msg);
-            }
+    private synchronized void distributeStderrorMsg(final String msg) {
+        for (final PythonOutputListener listener : m_stderrListeners) {
+            listener.messageReceived(msg);
         }
     }
 
