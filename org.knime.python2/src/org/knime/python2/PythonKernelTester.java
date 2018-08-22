@@ -174,6 +174,8 @@ public class PythonKernelTester {
                 testResultOutputBuffer.append("Error during execution: " + errorMessage + "\n");
             }
 
+            errorMessage = decorateErrorMessageForKnownProblems(errorMessage);
+
             // Get console output of script
             final StringWriter writer = new StringWriter();
             IOUtils.copy(process.getInputStream(), writer, "UTF-8");
@@ -217,6 +219,28 @@ public class PythonKernelTester {
             return new PythonKernelTestResult(testResultOutputBuffer.toString(),
                 "Could not find python executable at the given location: " + pythonCommand + ".", null);
         }
+    }
+
+    private static String decorateErrorMessageForKnownProblems(final String errorMessage) {
+        String decoratedErrorMessage = errorMessage;
+
+        // Check if conda's "activate" could not be found:
+        String condaActivateCommand = "activate";
+        // Typical error messages:
+        // Windows: 'activate' is not recognized as an internal or external command, operable program or batch file.
+        // Max: activate: no such file or directory
+        // Linux: activate: No such file or directory
+        // We just check if we can find the command name, a false positive does not really hurt.
+        if (decoratedErrorMessage.contains(condaActivateCommand)) {
+            String condaActivateDecoration =
+                "\nPlease make sure to add the path of the directory that contains conda's '" + condaActivateCommand
+                    + "' command to PATH\nas described in the Python 2 and Python 3 setup "
+                    + "guide that can be found on the KNIME website.\n"
+                    + "Also make sure that the path to that directory is absolute, not relative.";
+            decoratedErrorMessage += condaActivateDecoration;
+        }
+
+        return decoratedErrorMessage;
     }
 
     /**
