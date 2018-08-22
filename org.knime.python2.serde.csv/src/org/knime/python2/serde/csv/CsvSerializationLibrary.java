@@ -72,6 +72,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.util.BitArray;
+import org.knime.python2.util.PythonUtils;
 
 /**
  * Used for (de)serializing KNIME tables via CSV files.
@@ -91,246 +92,252 @@ public class CsvSerializationLibrary implements SerializationLibrary {
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
         throws SerializationException {
+        File file = null;
         try {
-            final File file = File.createTempFile("java-to-python-", ".csv");
+            file = File.createTempFile("java-to-python-", ".csv");
             file.deleteOnExit();
-            final FileWriter writer = new FileWriter(file);
-            String types = "#";
-            String names = "";
-            final TableSpec spec = tableIterator.getTableSpec();
-            for (int i = 0; i < spec.getNumberColumns(); i++) {
-                types += "," + spec.getColumnTypes()[i].getId();
-                names += "," + spec.getColumnNames()[i];
-            }
-            String serializers = "#";
-            for (final Entry<String, String> entry : spec.getColumnSerializers().entrySet()) {
-                serializers += ',' + entry.getKey() + '=' + entry.getValue();
-            }
-            writer.write(types + "\n");
-            writer.write(serializers + "\n");
-            writer.write(names + "\n");
-            int ctr;
-            while (tableIterator.hasNext()) {
-                final Row row = tableIterator.next();
-                String line = row.getRowKey();
-                ctr = 0;
-                for (final Cell cell : row) {
-                    String value = "";
-                    if (cell.isMissing()) {
-                        value = "MissingCell";
-                        final Type type = spec.getColumnTypes()[ctr];
-                        if (serializationOptions.getConvertMissingToPython()
-                            && ((type == Type.INTEGER) || (type == Type.LONG))) {
-                            value = Long.toString(serializationOptions.getSentinelForType(type));
-                        }
-                    } else {
-                        Type type = cell.getColumnType();
-                        switch (type) {
-                            case BOOLEAN:
-                                value = cell.getBooleanValue() ? "True" : "False";
-                                break;
-                            case BOOLEAN_LIST:
-                            case BOOLEAN_SET:
-                                final boolean[] booleanArray = cell.getBooleanArrayValue();
-                                final StringBuilder booleanBuilder = new StringBuilder();
-                                booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "[" : "{");
-                                for (int i = 0; i < booleanArray.length; i++) {
-                                    if (type == Type.BOOLEAN_LIST && cell.isMissing(i)) {
-                                        booleanBuilder.append("None");
-                                    } else {
-                                        booleanBuilder.append(booleanArray[i] ? "True" : "False");
-                                    }
-                                    if ((i + 1) < booleanArray.length) {
-                                        booleanBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.BOOLEAN_SET && cell.hasMissingInSet()) {
-                                    if (booleanArray.length > 0) {
-                                        booleanBuilder.append(",");
-                                    }
-                                    booleanBuilder.append("None");
-                                }
-                                booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "]" : "}");
-                                value = booleanBuilder.toString();
-                                break;
-                            case INTEGER:
-                                value = Integer.toString(cell.getIntegerValue());
-                                break;
-                            case INTEGER_LIST:
-                            case INTEGER_SET:
-                                final int[] integerArray = cell.getIntegerArrayValue();
-                                final StringBuilder integerBuilder = new StringBuilder();
-                                integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "[" : "{");
-                                for (int i = 0; i < integerArray.length; i++) {
-                                    if (type == Type.INTEGER_LIST && cell.isMissing(i)) {
-                                        integerBuilder.append("None");
-                                    } else {
-                                        integerBuilder.append(Integer.toString(integerArray[i]));
-                                    }
-                                    if ((i + 1) < integerArray.length) {
-                                        integerBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.INTEGER_SET && cell.hasMissingInSet()) {
-                                    if (integerArray.length > 0) {
-                                        integerBuilder.append(",");
-                                    }
-                                    integerBuilder.append("None");
-                                }
-                                integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "]" : "}");
-                                value = integerBuilder.toString();
-                                break;
-                            case LONG:
-                                value = Long.toString(cell.getLongValue());
-                                break;
-                            case LONG_LIST:
-                            case LONG_SET:
-                                final long[] longArray = cell.getLongArrayValue();
-                                final StringBuilder longBuilder = new StringBuilder();
-                                longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "[" : "{");
-                                for (int i = 0; i < longArray.length; i++) {
-                                    if (type == Type.LONG_LIST && cell.isMissing(i)) {
-                                        longBuilder.append("None");
-                                    } else {
-                                        longBuilder.append(Long.toString(longArray[i]));
-                                    }
-                                    if ((i + 1) < longArray.length) {
-                                        longBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.LONG_SET && cell.hasMissingInSet()) {
-                                    if (longArray.length > 0) {
-                                        longBuilder.append(",");
-                                    }
-                                    longBuilder.append("None");
-                                }
-                                longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "]" : "}");
-                                value = longBuilder.toString();
-                                break;
-                            case DOUBLE:
-                                final double doubleValue = cell.getDoubleValue();
-                                if (Double.isInfinite(doubleValue)) {
-                                    if (doubleValue > 0) {
-                                        value = "inf";
-                                    } else {
-                                        value = "-inf";
-                                    }
-                                } else if (Double.isNaN(doubleValue)) {
-                                    value = "NaN";
-                                } else {
-                                    value = Double.toString(doubleValue);
-                                }
-                                break;
-                            case DOUBLE_LIST:
-                            case DOUBLE_SET:
-                                final double[] doubleArray = cell.getDoubleArrayValue();
-                                final StringBuilder doubleBuilder = new StringBuilder();
-                                doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "[" : "{");
-                                for (int i = 0; i < doubleArray.length; i++) {
-                                    if (type == Type.DOUBLE_LIST && cell.isMissing(i)) {
-                                        doubleBuilder.append("None");
-                                    } else {
-                                        String doubleVal = Double.toString(doubleArray[i]);
-                                        if (doubleVal.equals("NaN")) {
-                                            doubleVal = "float('nan')";
-                                        } else if (doubleVal.equals("-Infinity")) {
-                                            doubleVal = "float('-inf')";
-                                        } else if (doubleVal.equals("Infinity")) {
-                                            doubleVal = "float('inf')";
-                                        }
-                                        doubleBuilder.append(doubleVal);
-                                    }
-                                    if ((i + 1) < doubleArray.length) {
-                                        doubleBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.DOUBLE_SET && cell.hasMissingInSet()) {
-                                    if (doubleArray.length > 0) {
-                                        doubleBuilder.append(",");
-                                    }
-                                    doubleBuilder.append("None");
-                                }
-                                doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "]" : "}");
-                                value = doubleBuilder.toString();
-                                break;
-                            case STRING:
-                                value = cell.getStringValue();
-                                break;
-                            case STRING_LIST:
-                            case STRING_SET:
-                                final String[] stringArray = cell.getStringArrayValue();
-                                final StringBuilder stringBuilder = new StringBuilder();
-                                stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "[" : "{");
-                                for (int i = 0; i < stringArray.length; i++) {
-                                    String stringValue = stringArray[i];
-                                    if (type == Type.STRING_LIST && cell.isMissing(i)) {
-                                        stringBuilder.append("None");
-                                    } else {
-                                        stringValue = stringValue.replace("\\", "\\\\");
-                                        stringValue = stringValue.replace("'", "\\'");
-                                        stringValue = stringValue.replace("\r", "\\r");
-                                        stringValue = stringValue.replace("\n", "\\n");
-                                        stringBuilder.append("'" + stringValue + "'");
-                                    }
-                                    if ((i + 1) < stringArray.length) {
-                                        stringBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.STRING_SET && cell.hasMissingInSet()) {
-                                    if (stringArray.length > 0) {
-                                        stringBuilder.append(",");
-                                    }
-                                    stringBuilder.append("None");
-                                }
-                                stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "]" : "}");
-                                value = stringBuilder.toString();
-                                break;
-                            case BYTES:
-                                value = bytesToBase64(cell.getBytesValue());
-                                break;
-                            case BYTES_LIST:
-                            case BYTES_SET:
-                                final byte[][] bytesArray = cell.getBytesArrayValue();
-                                final StringBuilder bytesBuilder = new StringBuilder();
-                                bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "[" : "{");
-                                for (int i = 0; i < bytesArray.length; i++) {
-                                    final byte[] bytesValue = bytesArray[i];
-                                    if (type == Type.BYTES_LIST && cell.isMissing(i)) {
-                                        bytesBuilder.append("None");
-                                    } else {
-                                        bytesBuilder.append("'" + bytesToBase64(bytesValue) + "'");
-                                    }
-                                    if ((i + 1) < bytesArray.length) {
-                                        bytesBuilder.append(",");
-                                    }
-                                }
-                                if (type == Type.BYTES_SET && cell.hasMissingInSet()) {
-                                    if (bytesArray.length > 0) {
-                                        bytesBuilder.append(",");
-                                    }
-                                    bytesBuilder.append("None");
-                                }
-                                bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "]" : "}");
-                                value = bytesBuilder.toString();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    value = escapeValue(value);
-                    line += "," + value;
-                    ctr++;
+            try (final FileWriter writer = new FileWriter(file)) {
+                String types = "#";
+                String names = "";
+                final TableSpec spec = tableIterator.getTableSpec();
+                for (int i = 0; i < spec.getNumberColumns(); i++) {
+                    types += "," + spec.getColumnTypes()[i].getId();
+                    names += "," + spec.getColumnNames()[i];
                 }
-                writer.write(line + "\n");
+                String serializers = "#";
+                for (final Entry<String, String> entry : spec.getColumnSerializers().entrySet()) {
+                    serializers += ',' + entry.getKey() + '=' + entry.getValue();
+                }
+                writer.write(types + "\n");
+                writer.write(serializers + "\n");
+                writer.write(names + "\n");
+                int ctr;
+                while (tableIterator.hasNext()) {
+                    final Row row = tableIterator.next();
+                    String line = row.getRowKey();
+                    ctr = 0;
+                    for (final Cell cell : row) {
+                        String value = "";
+                        if (cell.isMissing()) {
+                            value = "MissingCell";
+                            final Type type = spec.getColumnTypes()[ctr];
+                            if (serializationOptions.getConvertMissingToPython()
+                                && ((type == Type.INTEGER) || (type == Type.LONG))) {
+                                value = Long.toString(serializationOptions.getSentinelForType(type));
+                            }
+                        } else {
+                            Type type = cell.getColumnType();
+                            switch (type) {
+                                case BOOLEAN:
+                                    value = cell.getBooleanValue() ? "True" : "False";
+                                    break;
+                                case BOOLEAN_LIST:
+                                case BOOLEAN_SET:
+                                    final boolean[] booleanArray = cell.getBooleanArrayValue();
+                                    final StringBuilder booleanBuilder = new StringBuilder();
+                                    booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "[" : "{");
+                                    for (int i = 0; i < booleanArray.length; i++) {
+                                        if (type == Type.BOOLEAN_LIST && cell.isMissing(i)) {
+                                            booleanBuilder.append("None");
+                                        } else {
+                                            booleanBuilder.append(booleanArray[i] ? "True" : "False");
+                                        }
+                                        if ((i + 1) < booleanArray.length) {
+                                            booleanBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.BOOLEAN_SET && cell.hasMissingInSet()) {
+                                        if (booleanArray.length > 0) {
+                                            booleanBuilder.append(",");
+                                        }
+                                        booleanBuilder.append("None");
+                                    }
+                                    booleanBuilder.append(cell.getColumnType() == Type.BOOLEAN_LIST ? "]" : "}");
+                                    value = booleanBuilder.toString();
+                                    break;
+                                case INTEGER:
+                                    value = Integer.toString(cell.getIntegerValue());
+                                    break;
+                                case INTEGER_LIST:
+                                case INTEGER_SET:
+                                    final int[] integerArray = cell.getIntegerArrayValue();
+                                    final StringBuilder integerBuilder = new StringBuilder();
+                                    integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "[" : "{");
+                                    for (int i = 0; i < integerArray.length; i++) {
+                                        if (type == Type.INTEGER_LIST && cell.isMissing(i)) {
+                                            integerBuilder.append("None");
+                                        } else {
+                                            integerBuilder.append(Integer.toString(integerArray[i]));
+                                        }
+                                        if ((i + 1) < integerArray.length) {
+                                            integerBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.INTEGER_SET && cell.hasMissingInSet()) {
+                                        if (integerArray.length > 0) {
+                                            integerBuilder.append(",");
+                                        }
+                                        integerBuilder.append("None");
+                                    }
+                                    integerBuilder.append(cell.getColumnType() == Type.INTEGER_LIST ? "]" : "}");
+                                    value = integerBuilder.toString();
+                                    break;
+                                case LONG:
+                                    value = Long.toString(cell.getLongValue());
+                                    break;
+                                case LONG_LIST:
+                                case LONG_SET:
+                                    final long[] longArray = cell.getLongArrayValue();
+                                    final StringBuilder longBuilder = new StringBuilder();
+                                    longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "[" : "{");
+                                    for (int i = 0; i < longArray.length; i++) {
+                                        if (type == Type.LONG_LIST && cell.isMissing(i)) {
+                                            longBuilder.append("None");
+                                        } else {
+                                            longBuilder.append(Long.toString(longArray[i]));
+                                        }
+                                        if ((i + 1) < longArray.length) {
+                                            longBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.LONG_SET && cell.hasMissingInSet()) {
+                                        if (longArray.length > 0) {
+                                            longBuilder.append(",");
+                                        }
+                                        longBuilder.append("None");
+                                    }
+                                    longBuilder.append(cell.getColumnType() == Type.LONG_LIST ? "]" : "}");
+                                    value = longBuilder.toString();
+                                    break;
+                                case DOUBLE:
+                                    final double doubleValue = cell.getDoubleValue();
+                                    if (Double.isInfinite(doubleValue)) {
+                                        if (doubleValue > 0) {
+                                            value = "inf";
+                                        } else {
+                                            value = "-inf";
+                                        }
+                                    } else if (Double.isNaN(doubleValue)) {
+                                        value = "NaN";
+                                    } else {
+                                        value = Double.toString(doubleValue);
+                                    }
+                                    break;
+                                case DOUBLE_LIST:
+                                case DOUBLE_SET:
+                                    final double[] doubleArray = cell.getDoubleArrayValue();
+                                    final StringBuilder doubleBuilder = new StringBuilder();
+                                    doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "[" : "{");
+                                    for (int i = 0; i < doubleArray.length; i++) {
+                                        if (type == Type.DOUBLE_LIST && cell.isMissing(i)) {
+                                            doubleBuilder.append("None");
+                                        } else {
+                                            String doubleVal = Double.toString(doubleArray[i]);
+                                            if (doubleVal.equals("NaN")) {
+                                                doubleVal = "float('nan')";
+                                            } else if (doubleVal.equals("-Infinity")) {
+                                                doubleVal = "float('-inf')";
+                                            } else if (doubleVal.equals("Infinity")) {
+                                                doubleVal = "float('inf')";
+                                            }
+                                            doubleBuilder.append(doubleVal);
+                                        }
+                                        if ((i + 1) < doubleArray.length) {
+                                            doubleBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.DOUBLE_SET && cell.hasMissingInSet()) {
+                                        if (doubleArray.length > 0) {
+                                            doubleBuilder.append(",");
+                                        }
+                                        doubleBuilder.append("None");
+                                    }
+                                    doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "]" : "}");
+                                    value = doubleBuilder.toString();
+                                    break;
+                                case STRING:
+                                    value = cell.getStringValue();
+                                    break;
+                                case STRING_LIST:
+                                case STRING_SET:
+                                    final String[] stringArray = cell.getStringArrayValue();
+                                    final StringBuilder stringBuilder = new StringBuilder();
+                                    stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "[" : "{");
+                                    for (int i = 0; i < stringArray.length; i++) {
+                                        String stringValue = stringArray[i];
+                                        if (type == Type.STRING_LIST && cell.isMissing(i)) {
+                                            stringBuilder.append("None");
+                                        } else {
+                                            stringValue = stringValue.replace("\\", "\\\\");
+                                            stringValue = stringValue.replace("'", "\\'");
+                                            stringValue = stringValue.replace("\r", "\\r");
+                                            stringValue = stringValue.replace("\n", "\\n");
+                                            stringBuilder.append("'" + stringValue + "'");
+                                        }
+                                        if ((i + 1) < stringArray.length) {
+                                            stringBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.STRING_SET && cell.hasMissingInSet()) {
+                                        if (stringArray.length > 0) {
+                                            stringBuilder.append(",");
+                                        }
+                                        stringBuilder.append("None");
+                                    }
+                                    stringBuilder.append(cell.getColumnType() == Type.STRING_LIST ? "]" : "}");
+                                    value = stringBuilder.toString();
+                                    break;
+                                case BYTES:
+                                    value = bytesToBase64(cell.getBytesValue());
+                                    break;
+                                case BYTES_LIST:
+                                case BYTES_SET:
+                                    final byte[][] bytesArray = cell.getBytesArrayValue();
+                                    final StringBuilder bytesBuilder = new StringBuilder();
+                                    bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "[" : "{");
+                                    for (int i = 0; i < bytesArray.length; i++) {
+                                        final byte[] bytesValue = bytesArray[i];
+                                        if (type == Type.BYTES_LIST && cell.isMissing(i)) {
+                                            bytesBuilder.append("None");
+                                        } else {
+                                            bytesBuilder.append("'" + bytesToBase64(bytesValue) + "'");
+                                        }
+                                        if ((i + 1) < bytesArray.length) {
+                                            bytesBuilder.append(",");
+                                        }
+                                    }
+                                    if (type == Type.BYTES_SET && cell.hasMissingInSet()) {
+                                        if (bytesArray.length > 0) {
+                                            bytesBuilder.append(",");
+                                        }
+                                        bytesBuilder.append("None");
+                                    }
+                                    bytesBuilder.append(cell.getColumnType() == Type.BYTES_LIST ? "]" : "}");
+                                    value = bytesBuilder.toString();
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        value = escapeValue(value);
+                        line += "," + value;
+                        ctr++;
+                    }
+                    writer.write(line + "\n");
+                }
             }
-            writer.close();
             return file.getAbsolutePath().getBytes();
         } catch (final IOException e) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new RuntimeException(e);
         } catch (NegativeArraySizeException ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException(
                 "The requested buffersize during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
+        } catch (Exception ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
+            throw ex;
         }
     }
 
@@ -346,415 +353,419 @@ public class CsvSerializationLibrary implements SerializationLibrary {
     @Override
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
         final SerializationOptions serializationOptions) {
+        File file = null;
         try {
-            final File file = new File(new String(bytes, StandardCharsets.UTF_8));
+            file = new File(new String(bytes, StandardCharsets.UTF_8));
             file.deleteOnExit();
-            final FileReader reader = new FileReader(file);
-            final BufferedReader br = new BufferedReader(reader);
-            final List<String> types = parseLine(br);
-            final List<String> serializers = parseLine(br);
-            final List<String> names = parseLine(br);
-            List<String> values;
-            while ((values = parseLine(br)) != null) {
-                final Row row = new RowImpl(values.get(0), values.size() - 1);
-                for (int i = 0; i < (values.size() - 1); i++) {
-                    final String columnName = tableCreator.getTableSpec().getColumnNames()[i];
-                    final Type type = tableCreator.getTableSpec().getColumnTypes()[i];
-                    Cell cell;
-                    String value = values.get(i + 1);
-                    if (value.equals("MissingCell")) {
-                        if (type == Type.DOUBLE) {
-                            cell = new CellImpl(Double.NaN);
+            try (final BufferedReader br = new BufferedReader(new FileReader(file))) {
+                final List<String> types = parseLine(br);
+                final List<String> serializers = parseLine(br);
+                final List<String> names = parseLine(br);
+                List<String> values;
+                while ((values = parseLine(br)) != null) {
+                    final Row row = new RowImpl(values.get(0), values.size() - 1);
+                    for (int i = 0; i < (values.size() - 1); i++) {
+                        final String columnName = tableCreator.getTableSpec().getColumnNames()[i];
+                        final Type type = tableCreator.getTableSpec().getColumnTypes()[i];
+                        Cell cell;
+                        String value = values.get(i + 1);
+                        if (value.equals("MissingCell")) {
+                            if (type == Type.DOUBLE) {
+                                cell = new CellImpl(Double.NaN);
+                            } else {
+                                cell = new CellImpl();
+                            }
                         } else {
-                            cell = new CellImpl();
-                        }
-                    } else {
-                        int idxCtr = 0;
-                        switch (type) {
-                            case BOOLEAN:
-                                cell = new CellImpl(value.equals("True") ? true : false);
-                                break;
-                            case BOOLEAN_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] booleanValues = value.split(",");
-                                final boolean[] booleanArray = new boolean[booleanValues.length];
-                                BitArray booleanMissings = new BitArray(booleanValues.length);
-                                for (int j = 0; j < booleanArray.length; j++) {
-                                    booleanValues[j] = booleanValues[j].trim();
-                                    if (!booleanValues[j].equals("None")) {
-                                        booleanMissings.setToOne(j);
-                                        booleanArray[j] = booleanValues[j].equals("True");
-                                    }
-                                }
-                                cell = new CellImpl(booleanArray, booleanMissings.getEncodedByteArray());
-                                break;
-                            case BOOLEAN_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] booleanSetValues = value.split(",");
-                                final boolean[] booleanSetArray = new boolean[booleanSetValues.length];
-                                boolean booleanHasMissing = false;
-                                for (String bsValue : booleanSetValues) {
-                                    bsValue = bsValue.trim();
-                                    if (!bsValue.equals("None")) {
-                                        booleanSetArray[idxCtr] = bsValue.equals("True");
-                                        idxCtr++;
+                            int idxCtr = 0;
+                            switch (type) {
+                                case BOOLEAN:
+                                    cell = new CellImpl(value.equals("True") ? true : false);
+                                    break;
+                                case BOOLEAN_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
                                     } else {
-                                        booleanHasMissing = true;
+                                        value = value.substring(1, value.length() - 1);
                                     }
-                                }
-                                if (!booleanHasMissing) {
-                                    cell = new CellImpl(booleanSetArray, false);
-                                } else {
-                                    cell = new CellImpl(
-                                        ArrayUtils.subarray(booleanSetArray, 0, booleanSetArray.length - 1), true);
-                                }
-                                break;
-                            case INTEGER:
-                                final int intVal = Integer.parseInt(value);
-                                if (serializationOptions.getConvertMissingFromPython()
-                                    && serializationOptions.isSentinel(Type.INTEGER, intVal)) {
-                                    cell = new CellImpl();
-                                } else {
-                                    cell = new CellImpl(intVal);
-                                }
-                                break;
-                            case INTEGER_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] integerValues = value.split(",");
-                                final int[] integerArray = new int[integerValues.length];
-                                BitArray integerMissings = new BitArray(integerValues.length);
-                                for (int j = 0; j < integerArray.length; j++) {
-                                    integerValues[j] = integerValues[j].trim();
-                                    if (!integerValues[j].equals("None")) {
-                                        integerMissings.setToOne(j);
-                                        integerArray[j] = Integer.parseInt(integerValues[j]);
-                                    }
-                                }
-                                cell = new CellImpl(integerArray, integerMissings.getEncodedByteArray());
-                                break;
-                            case INTEGER_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] integerSetValues = value.split(",");
-                                final int[] integerSetArray = new int[integerSetValues.length];
-                                boolean integerHasMissing = false;
-                                for (String bsValue : integerSetValues) {
-                                    bsValue = bsValue.trim();
-                                    if (!bsValue.equals("None")) {
-                                        integerSetArray[idxCtr] = Integer.parseInt(bsValue);
-                                        idxCtr++;
-                                    } else {
-                                        integerHasMissing = true;
-                                    }
-                                }
-                                if (!integerHasMissing) {
-                                    cell = new CellImpl(integerSetArray, false);
-                                } else {
-                                    cell = new CellImpl(
-                                        ArrayUtils.subarray(integerSetArray, 0, integerSetArray.length - 1), true);
-                                }
-                                break;
-                            case LONG:
-                                final long longVal = Long.parseLong(value.replace("L", ""));
-                                if (serializationOptions.getConvertMissingFromPython()
-                                    && serializationOptions.isSentinel(Type.LONG, longVal)) {
-                                    cell = new CellImpl();
-                                } else {
-                                    cell = new CellImpl(longVal);
-                                }
-                                break;
-                            case LONG_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] longValues = value.split(",");
-                                final long[] longArray = new long[longValues.length];
-                                BitArray longMissings = new BitArray(longValues.length);
-                                for (int j = 0; j < longArray.length; j++) {
-                                    longValues[j] = longValues[j].trim();
-                                    if (!longValues[j].equals("None")) {
-                                        longMissings.setToOne(j);
-                                        longArray[j] = Long.parseLong(longValues[j].replace("L", ""));
-                                    }
-                                }
-                                cell = new CellImpl(longArray, longMissings.getEncodedByteArray());
-                                break;
-                            case LONG_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] longSetValues = value.split(",");
-                                final long[] longSetArray = new long[longSetValues.length];
-                                boolean longHasMissing = false;
-                                for (String bsValue : longSetValues) {
-                                    bsValue = bsValue.trim();
-                                    if (!bsValue.equals("None")) {
-                                        longSetArray[idxCtr] = Long.parseLong(bsValue.replace("L", ""));
-                                        idxCtr++;
-                                    } else {
-                                        longHasMissing = true;
-                                    }
-                                }
-                                if (!longHasMissing) {
-                                    cell = new CellImpl(longSetArray, false);
-                                } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(longSetArray, 0, longSetArray.length - 1),
-                                        true);
-                                }
-                                break;
-                            case DOUBLE:
-                                double doubleValue;
-                                if (value.equals("inf")) {
-                                    doubleValue = Double.POSITIVE_INFINITY;
-                                } else if (value.equals("-inf")) {
-                                    doubleValue = Double.NEGATIVE_INFINITY;
-                                } else if (value.equals("NaN") || value.contentEquals("nan")) {
-                                    doubleValue = Double.NaN;
-                                } else {
-                                    doubleValue = Double.parseDouble(value);
-                                }
-                                cell = new CellImpl(doubleValue);
-                                break;
-                            case DOUBLE_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] doubleValues = value.split(",");
-                                final double[] doubleArray = new double[doubleValues.length];
-                                BitArray doubleMissings = new BitArray(doubleValues.length);
-                                for (int j = 0; j < doubleArray.length; j++) {
-                                    doubleValues[j] = doubleValues[j].trim();
-                                    if (!doubleValues[j].equals("None")) {
-                                        doubleMissings.setToOne(j);
-                                        final String doubleVal = doubleValues[j];
-                                        if (doubleVal.equals("nan")) {
-                                            doubleArray[j] = Double.NaN;
-                                        } else if (doubleVal.equals("inf")) {
-                                            doubleArray[j] = Double.POSITIVE_INFINITY;
-                                        } else if (doubleVal.equals("-inf")) {
-                                            doubleArray[j] = Double.NEGATIVE_INFINITY;
-                                        } else {
-                                            doubleArray[j] = Double.parseDouble(doubleVal);
+                                    final String[] booleanValues = value.split(",");
+                                    final boolean[] booleanArray = new boolean[booleanValues.length];
+                                    BitArray booleanMissings = new BitArray(booleanValues.length);
+                                    for (int j = 0; j < booleanArray.length; j++) {
+                                        booleanValues[j] = booleanValues[j].trim();
+                                        if (!booleanValues[j].equals("None")) {
+                                            booleanMissings.setToOne(j);
+                                            booleanArray[j] = booleanValues[j].equals("True");
                                         }
                                     }
-                                }
-                                cell = new CellImpl(doubleArray, doubleMissings.getEncodedByteArray());
-                                break;
-                            case DOUBLE_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] doubleSetValues = value.split(",");
-                                final double[] doubleSetArray = new double[doubleSetValues.length];
-                                boolean doubleHasMissing = false;
-                                for (String bsValue : doubleSetValues) {
-                                    bsValue = bsValue.trim();
-                                    if (!bsValue.equals("None")) {
-                                        final String doubleVal = bsValue;
-                                        if (doubleVal.equals("nan")) {
-                                            doubleSetArray[idxCtr] = Double.NaN;
-                                        } else if (doubleVal.equals("inf")) {
-                                            doubleSetArray[idxCtr] = Double.POSITIVE_INFINITY;
-                                        } else if (doubleVal.equals("-inf")) {
-                                            doubleSetArray[idxCtr] = Double.NEGATIVE_INFINITY;
+                                    cell = new CellImpl(booleanArray, booleanMissings.getEncodedByteArray());
+                                    break;
+                                case BOOLEAN_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] booleanSetValues = value.split(",");
+                                    final boolean[] booleanSetArray = new boolean[booleanSetValues.length];
+                                    boolean booleanHasMissing = false;
+                                    for (String bsValue : booleanSetValues) {
+                                        bsValue = bsValue.trim();
+                                        if (!bsValue.equals("None")) {
+                                            booleanSetArray[idxCtr] = bsValue.equals("True");
+                                            idxCtr++;
                                         } else {
-                                            doubleSetArray[idxCtr] = Double.parseDouble(doubleVal);
+                                            booleanHasMissing = true;
                                         }
-                                        idxCtr++;
+                                    }
+                                    if (!booleanHasMissing) {
+                                        cell = new CellImpl(booleanSetArray, false);
                                     } else {
-                                        doubleHasMissing = true;
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(booleanSetArray, 0, booleanSetArray.length - 1), true);
                                     }
-                                }
-                                if (!doubleHasMissing) {
-                                    cell = new CellImpl(doubleSetArray, false);
-                                } else {
-                                    cell = new CellImpl(
-                                        ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
-                                }
-                                break;
-                            case STRING:
-                                cell = new CellImpl(value);
-                                break;
-                            case STRING_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                value = value.replaceAll("None", "'None'");
-                                final String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
-                                final String[] stringArray = new String[stringValues.length];
-                                BitArray stringMissings = new BitArray(stringValues.length);
-                                for (int j = 0; j < stringArray.length; j++) {
-                                    stringArray[j] = stringValues[j];
-                                    if (j == 0) {
-                                        stringArray[j] = stringArray[j].substring(1);
-                                    }
-                                    if (j == (stringArray.length - 1)) {
-                                        stringArray[j] = stringArray[j].substring(0, stringArray[j].length() - 1);
-                                    }
-                                    if (!(stringArray[j].equals("None") || stringArray[j].equals("'None'"))) {
-                                        //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
-                                        stringArray[j] = stringArray[j].replace("\\\\", "\\");
-                                        stringArray[j] = stringArray[j].replace("\\'", "'");
-                                        stringArray[j] = stringArray[j].replace("\\r", "\r");
-                                        stringArray[j] = stringArray[j].replace("\\n", "\n");
-                                        stringArray[j] = stringArray[j].replace("\\t", "\t");
-                                        stringMissings.setToOne(j);
-                                    }
-                                }
-                                cell = new CellImpl(stringArray, stringMissings.getEncodedByteArray());
-                                break;
-                            case STRING_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                value = value.replaceAll("None", "'None'");
-                                final String[] stringSetValues = value.split("(', '|', \"|\", '|\", \")");
-                                final String[] stringSetArray = new String[stringSetValues.length];
-                                boolean hasStringMissing = false;
-                                int posCtr = 0;
-                                for (String stringValue : stringSetValues) {
-                                    stringSetArray[idxCtr] = stringValue;
-                                    if (posCtr == 0) {
-                                        stringSetArray[idxCtr] = stringValue.substring(1);
-                                    }
-                                    if (posCtr == (stringSetArray.length - 1)) {
-                                        stringSetArray[idxCtr] = stringValue.substring(0, stringValue.length() - 1);
-                                    }
-                                    if (!(stringValue.equals("None") || stringValue.contentEquals("'None'"))) {
-                                        //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
-                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\\\", "\\");
-                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\'", "'");
-                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\r", "\r");
-                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\n", "\n");
-                                        stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\t", "\t");
-                                        idxCtr++;
+                                    break;
+                                case INTEGER:
+                                    final int intVal = Integer.parseInt(value);
+                                    if (serializationOptions.getConvertMissingFromPython()
+                                        && serializationOptions.isSentinel(Type.INTEGER, intVal)) {
+                                        cell = new CellImpl();
                                     } else {
-                                        hasStringMissing = true;
+                                        cell = new CellImpl(intVal);
                                     }
-                                    posCtr++;
-                                }
-                                if (!hasStringMissing) {
-                                    cell = new CellImpl(stringSetArray, false);
-                                } else {
-                                    cell = new CellImpl(
-                                        ArrayUtils.subarray(stringSetArray, 0, stringSetArray.length - 1), true);
-                                }
-                                break;
-                            case BYTES:
-                                cell = new CellImpl(bytesFromBase64(value));
-                                break;
-                            case BYTES_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] bytesValues = value.split(",");
-                                final byte[][] bytesArray = new byte[bytesValues.length][];
-                                BitArray bytesMissings = new BitArray(bytesValues.length);
-                                for (int j = 0; j < bytesArray.length; j++) {
-                                    bytesValues[j] = bytesValues[j].trim();
-                                    if (!bytesValues[j].equals("None")) {
-                                        bytesMissings.setToOne(j);
-                                        bytesArray[j] = bytesFromBase64(bytesValues[j]);
-                                    }
-                                }
-                                cell = new CellImpl(bytesArray, bytesMissings.getEncodedByteArray());
-                                break;
-                            case BYTES_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
-                                final String[] bytesSetValues = value.split(",");
-                                final byte[][] bytesSetArray = new byte[bytesSetValues.length][];
-                                boolean bytesHasMissing = false;
-                                for (String bsValue : bytesSetValues) {
-                                    bsValue = bsValue.trim();
-                                    if (!bsValue.equals("None")) {
-                                        bytesSetArray[idxCtr] = bytesFromBase64(bsValue);
-                                        idxCtr++;
+                                    break;
+                                case INTEGER_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
                                     } else {
-                                        bytesHasMissing = true;
+                                        value = value.substring(1, value.length() - 1);
                                     }
-                                }
-                                if (!bytesHasMissing) {
-                                    cell = new CellImpl(bytesSetArray, false);
-                                } else {
-                                    cell = new CellImpl(ArrayUtils.subarray(bytesSetArray, 0, bytesSetArray.length - 1),
-                                        true);
-                                }
-                                break;
-                            default:
-                                cell = new CellImpl(columnName);
-                                break;
+                                    final String[] integerValues = value.split(",");
+                                    final int[] integerArray = new int[integerValues.length];
+                                    BitArray integerMissings = new BitArray(integerValues.length);
+                                    for (int j = 0; j < integerArray.length; j++) {
+                                        integerValues[j] = integerValues[j].trim();
+                                        if (!integerValues[j].equals("None")) {
+                                            integerMissings.setToOne(j);
+                                            integerArray[j] = Integer.parseInt(integerValues[j]);
+                                        }
+                                    }
+                                    cell = new CellImpl(integerArray, integerMissings.getEncodedByteArray());
+                                    break;
+                                case INTEGER_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] integerSetValues = value.split(",");
+                                    final int[] integerSetArray = new int[integerSetValues.length];
+                                    boolean integerHasMissing = false;
+                                    for (String bsValue : integerSetValues) {
+                                        bsValue = bsValue.trim();
+                                        if (!bsValue.equals("None")) {
+                                            integerSetArray[idxCtr] = Integer.parseInt(bsValue);
+                                            idxCtr++;
+                                        } else {
+                                            integerHasMissing = true;
+                                        }
+                                    }
+                                    if (!integerHasMissing) {
+                                        cell = new CellImpl(integerSetArray, false);
+                                    } else {
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(integerSetArray, 0, integerSetArray.length - 1), true);
+                                    }
+                                    break;
+                                case LONG:
+                                    final long longVal = Long.parseLong(value.replace("L", ""));
+                                    if (serializationOptions.getConvertMissingFromPython()
+                                        && serializationOptions.isSentinel(Type.LONG, longVal)) {
+                                        cell = new CellImpl();
+                                    } else {
+                                        cell = new CellImpl(longVal);
+                                    }
+                                    break;
+                                case LONG_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] longValues = value.split(",");
+                                    final long[] longArray = new long[longValues.length];
+                                    BitArray longMissings = new BitArray(longValues.length);
+                                    for (int j = 0; j < longArray.length; j++) {
+                                        longValues[j] = longValues[j].trim();
+                                        if (!longValues[j].equals("None")) {
+                                            longMissings.setToOne(j);
+                                            longArray[j] = Long.parseLong(longValues[j].replace("L", ""));
+                                        }
+                                    }
+                                    cell = new CellImpl(longArray, longMissings.getEncodedByteArray());
+                                    break;
+                                case LONG_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] longSetValues = value.split(",");
+                                    final long[] longSetArray = new long[longSetValues.length];
+                                    boolean longHasMissing = false;
+                                    for (String bsValue : longSetValues) {
+                                        bsValue = bsValue.trim();
+                                        if (!bsValue.equals("None")) {
+                                            longSetArray[idxCtr] = Long.parseLong(bsValue.replace("L", ""));
+                                            idxCtr++;
+                                        } else {
+                                            longHasMissing = true;
+                                        }
+                                    }
+                                    if (!longHasMissing) {
+                                        cell = new CellImpl(longSetArray, false);
+                                    } else {
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(longSetArray, 0, longSetArray.length - 1), true);
+                                    }
+                                    break;
+                                case DOUBLE:
+                                    double doubleValue;
+                                    if (value.equals("inf")) {
+                                        doubleValue = Double.POSITIVE_INFINITY;
+                                    } else if (value.equals("-inf")) {
+                                        doubleValue = Double.NEGATIVE_INFINITY;
+                                    } else if (value.equals("NaN") || value.contentEquals("nan")) {
+                                        doubleValue = Double.NaN;
+                                    } else {
+                                        doubleValue = Double.parseDouble(value);
+                                    }
+                                    cell = new CellImpl(doubleValue);
+                                    break;
+                                case DOUBLE_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] doubleValues = value.split(",");
+                                    final double[] doubleArray = new double[doubleValues.length];
+                                    BitArray doubleMissings = new BitArray(doubleValues.length);
+                                    for (int j = 0; j < doubleArray.length; j++) {
+                                        doubleValues[j] = doubleValues[j].trim();
+                                        if (!doubleValues[j].equals("None")) {
+                                            doubleMissings.setToOne(j);
+                                            final String doubleVal = doubleValues[j];
+                                            if (doubleVal.equals("nan")) {
+                                                doubleArray[j] = Double.NaN;
+                                            } else if (doubleVal.equals("inf")) {
+                                                doubleArray[j] = Double.POSITIVE_INFINITY;
+                                            } else if (doubleVal.equals("-inf")) {
+                                                doubleArray[j] = Double.NEGATIVE_INFINITY;
+                                            } else {
+                                                doubleArray[j] = Double.parseDouble(doubleVal);
+                                            }
+                                        }
+                                    }
+                                    cell = new CellImpl(doubleArray, doubleMissings.getEncodedByteArray());
+                                    break;
+                                case DOUBLE_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] doubleSetValues = value.split(",");
+                                    final double[] doubleSetArray = new double[doubleSetValues.length];
+                                    boolean doubleHasMissing = false;
+                                    for (String bsValue : doubleSetValues) {
+                                        bsValue = bsValue.trim();
+                                        if (!bsValue.equals("None")) {
+                                            final String doubleVal = bsValue;
+                                            if (doubleVal.equals("nan")) {
+                                                doubleSetArray[idxCtr] = Double.NaN;
+                                            } else if (doubleVal.equals("inf")) {
+                                                doubleSetArray[idxCtr] = Double.POSITIVE_INFINITY;
+                                            } else if (doubleVal.equals("-inf")) {
+                                                doubleSetArray[idxCtr] = Double.NEGATIVE_INFINITY;
+                                            } else {
+                                                doubleSetArray[idxCtr] = Double.parseDouble(doubleVal);
+                                            }
+                                            idxCtr++;
+                                        } else {
+                                            doubleHasMissing = true;
+                                        }
+                                    }
+                                    if (!doubleHasMissing) {
+                                        cell = new CellImpl(doubleSetArray, false);
+                                    } else {
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
+                                    }
+                                    break;
+                                case STRING:
+                                    cell = new CellImpl(value);
+                                    break;
+                                case STRING_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    value = value.replaceAll("None", "'None'");
+                                    final String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
+                                    final String[] stringArray = new String[stringValues.length];
+                                    BitArray stringMissings = new BitArray(stringValues.length);
+                                    for (int j = 0; j < stringArray.length; j++) {
+                                        stringArray[j] = stringValues[j];
+                                        if (j == 0) {
+                                            stringArray[j] = stringArray[j].substring(1);
+                                        }
+                                        if (j == (stringArray.length - 1)) {
+                                            stringArray[j] = stringArray[j].substring(0, stringArray[j].length() - 1);
+                                        }
+                                        if (!(stringArray[j].equals("None") || stringArray[j].equals("'None'"))) {
+                                            //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+                                            stringArray[j] = stringArray[j].replace("\\\\", "\\");
+                                            stringArray[j] = stringArray[j].replace("\\'", "'");
+                                            stringArray[j] = stringArray[j].replace("\\r", "\r");
+                                            stringArray[j] = stringArray[j].replace("\\n", "\n");
+                                            stringArray[j] = stringArray[j].replace("\\t", "\t");
+                                            stringMissings.setToOne(j);
+                                        }
+                                    }
+                                    cell = new CellImpl(stringArray, stringMissings.getEncodedByteArray());
+                                    break;
+                                case STRING_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    value = value.replaceAll("None", "'None'");
+                                    final String[] stringSetValues = value.split("(', '|', \"|\", '|\", \")");
+                                    final String[] stringSetArray = new String[stringSetValues.length];
+                                    boolean hasStringMissing = false;
+                                    int posCtr = 0;
+                                    for (String stringValue : stringSetValues) {
+                                        stringSetArray[idxCtr] = stringValue;
+                                        if (posCtr == 0) {
+                                            stringSetArray[idxCtr] = stringValue.substring(1);
+                                        }
+                                        if (posCtr == (stringSetArray.length - 1)) {
+                                            stringSetArray[idxCtr] = stringValue.substring(0, stringValue.length() - 1);
+                                        }
+                                        if (!(stringValue.equals("None") || stringValue.contentEquals("'None'"))) {
+                                            //stringArray[j] = stringArray[j].substring(1, stringArray[j].length()-1);
+                                            stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\\\", "\\");
+                                            stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\'", "'");
+                                            stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\r", "\r");
+                                            stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\n", "\n");
+                                            stringSetArray[idxCtr] = stringSetArray[idxCtr].replace("\\t", "\t");
+                                            idxCtr++;
+                                        } else {
+                                            hasStringMissing = true;
+                                        }
+                                        posCtr++;
+                                    }
+                                    if (!hasStringMissing) {
+                                        cell = new CellImpl(stringSetArray, false);
+                                    } else {
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(stringSetArray, 0, stringSetArray.length - 1), true);
+                                    }
+                                    break;
+                                case BYTES:
+                                    cell = new CellImpl(bytesFromBase64(value));
+                                    break;
+                                case BYTES_LIST:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] bytesValues = value.split(",");
+                                    final byte[][] bytesArray = new byte[bytesValues.length][];
+                                    BitArray bytesMissings = new BitArray(bytesValues.length);
+                                    for (int j = 0; j < bytesArray.length; j++) {
+                                        bytesValues[j] = bytesValues[j].trim();
+                                        if (!bytesValues[j].equals("None")) {
+                                            bytesMissings.setToOne(j);
+                                            bytesArray[j] = bytesFromBase64(bytesValues[j]);
+                                        }
+                                    }
+                                    cell = new CellImpl(bytesArray, bytesMissings.getEncodedByteArray());
+                                    break;
+                                case BYTES_SET:
+                                    if (value.startsWith("set([")) {
+                                        value = value.substring(5, value.length() - 2);
+                                    } else {
+                                        value = value.substring(1, value.length() - 1);
+                                    }
+                                    final String[] bytesSetValues = value.split(",");
+                                    final byte[][] bytesSetArray = new byte[bytesSetValues.length][];
+                                    boolean bytesHasMissing = false;
+                                    for (String bsValue : bytesSetValues) {
+                                        bsValue = bsValue.trim();
+                                        if (!bsValue.equals("None")) {
+                                            bytesSetArray[idxCtr] = bytesFromBase64(bsValue);
+                                            idxCtr++;
+                                        } else {
+                                            bytesHasMissing = true;
+                                        }
+                                    }
+                                    if (!bytesHasMissing) {
+                                        cell = new CellImpl(bytesSetArray, false);
+                                    } else {
+                                        cell = new CellImpl(
+                                            ArrayUtils.subarray(bytesSetArray, 0, bytesSetArray.length - 1), true);
+                                    }
+                                    break;
+                                default:
+                                    cell = new CellImpl(columnName);
+                                    break;
+                            }
                         }
+                        row.setCell(cell, i);
                     }
-                    row.setCell(cell, i);
+                    tableCreator.addRow(row);
                 }
-                tableCreator.addRow(row);
             }
-            br.close();
-            file.delete();
         } catch (final IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
         }
     }
 
     @Override
     public TableSpec tableSpecFromBytes(final byte[] bytes) {
+        File file = null;
         try {
-            final File file = new File(new String(bytes, StandardCharsets.UTF_8));
+            file = new File(new String(bytes, StandardCharsets.UTF_8));
             file.deleteOnExit();
-            final FileReader reader = new FileReader(file);
-            final BufferedReader br = new BufferedReader(reader);
-            final List<String> typeValues = parseLine(br);
-            final List<String> serializerValues = parseLine(br);
-            final List<String> nameValues = parseLine(br);
-            final Type[] types = new Type[typeValues.size() - 1];
-            final String[] names = new String[types.length];
-            for (int i = 0; i < types.length; i++) {
-                types[i] = Type.getTypeForId(Integer.parseInt(typeValues.get(i + 1)));
-                names[i] = nameValues.get(i + 1);
+            try (final BufferedReader br = new BufferedReader(new FileReader(file))) {
+                final List<String> typeValues = parseLine(br);
+                final List<String> serializerValues = parseLine(br);
+                final List<String> nameValues = parseLine(br);
+                final Type[] types = new Type[typeValues.size() - 1];
+                final String[] names = new String[types.length];
+                for (int i = 0; i < types.length; i++) {
+                    types[i] = Type.getTypeForId(Integer.parseInt(typeValues.get(i + 1)));
+                    names[i] = nameValues.get(i + 1);
+                }
+                final Map<String, String> serializers = new HashMap<String, String>();
+                for (int i = 1; i < serializerValues.size(); i++) {
+                    final String[] keyValuePair = serializerValues.get(i).split("=");
+                    serializers.put(keyValuePair[0], keyValuePair[1]);
+                }
+                return new TableSpecImpl(types, names, serializers);
             }
-            final Map<String, String> serializers = new HashMap<String, String>();
-            for (int i = 1; i < serializerValues.size(); i++) {
-                final String[] keyValuePair = serializerValues.get(i).split("=");
-                serializers.put(keyValuePair[0], keyValuePair[1]);
-            }
-            final TableSpec spec = new TableSpecImpl(types, names, serializers);
-            br.close();
-            return spec;
         } catch (final IOException e) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new RuntimeException(e);
+        } catch (Exception ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
+            throw ex;
         }
     }
 
@@ -814,5 +825,4 @@ public class CsvSerializationLibrary implements SerializationLibrary {
         }
         return Base64.getDecoder().decode(base64.getBytes());
     }
-
 }

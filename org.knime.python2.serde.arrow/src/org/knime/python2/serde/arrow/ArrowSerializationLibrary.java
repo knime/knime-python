@@ -133,6 +133,7 @@ import org.knime.python2.serde.arrow.inserters.LongSetInserter;
 import org.knime.python2.serde.arrow.inserters.StringInserter;
 import org.knime.python2.serde.arrow.inserters.StringListInserter;
 import org.knime.python2.serde.arrow.inserters.StringSetInserter;
+import org.knime.python2.util.PythonUtils;
 
 /**
  * Serializes tables to bytes and deserializes bytes to tables using the Apache Arrow Format. The serialized data is
@@ -217,188 +218,193 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 return tableToBytesDynamic(tableIterator, serializationOptions, channel, file.getAbsolutePath());
             }
         } catch (IOException e) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("During serialization the following an error occured.", e);
         } catch (OversizedAllocationException ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException(
                 "The requested buffersize during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
+        } catch (Exception ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
+            throw ex;
         }
     }
 
     private byte[] tableToBytesDynamic(final TableIterator tableIterator,
         final SerializationOptions serializationOptions, final FileChannel fc, final String path) throws IOException {
+        try (RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE)) {
+            List<ArrowVectorInserter> inserters = null;
+            try {
+                final String INDEX_COL_NAME = "__index_level_0__";
+                //Metadata is transferred in JSON format
+                JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
+                TableSpec spec = tableIterator.getTableSpec();
+                inserters = new ArrayList<>();
+                JsonArrayBuilder icBuilder = Json.createArrayBuilder();
 
-        final String INDEX_COL_NAME = "__index_level_0__";
-        //Metadata is transferred in JSON format
-        JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
-        TableSpec spec = tableIterator.getTableSpec();
-        List<ArrowVectorInserter> inserters = new ArrayList<>();
-        JsonArrayBuilder icBuilder = Json.createArrayBuilder();
-        RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
-        icBuilder.add(INDEX_COL_NAME);
-        metadataBuilder.add("index_columns", icBuilder);
-        JsonArrayBuilder colBuilder = Json.createArrayBuilder();
-        int numRows = tableIterator.getNumberRemainingRows();
-        // Row ids
-        JsonObjectBuilder rowIdBuilder =
-            createColumnMetadataBuilder(INDEX_COL_NAME, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
-        inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
-        colBuilder.add(rowIdBuilder);
+                icBuilder.add(INDEX_COL_NAME);
+                metadataBuilder.add("index_columns", icBuilder);
+                JsonArrayBuilder colBuilder = Json.createArrayBuilder();
+                int numRows = tableIterator.getNumberRemainingRows();
+                // Row ids
+                JsonObjectBuilder rowIdBuilder =
+                    createColumnMetadataBuilder(INDEX_COL_NAME, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
+                inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
+                colBuilder.add(rowIdBuilder);
 
-        // Create Inserters and metadata
-        for (int i = 0; i < spec.getNumberColumns(); i++) {
-            JsonObjectBuilder colMetadataBuilder;
-            switch (spec.getColumnTypes()[i]) {
-                case BOOLEAN:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BOOL,
-                        NumpyType.OBJECT, Type.BOOLEAN);
-                    inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator, numRows));
-                    break;
-                case INTEGER:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                        NumpyType.INT32, Type.INTEGER);
-                    inserters.add(
-                        new IntegerInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
-                    break;
-                case LONG:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                        NumpyType.INT64, Type.LONG);
-                    inserters
-                        .add(new LongInserter(spec.getColumnNames()[i], rootAllocator, numRows, serializationOptions));
-                    break;
-                case DOUBLE:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
-                        NumpyType.FLOAT64, Type.DOUBLE);
-                    inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator, numRows));
-                    break;
-                case STRING:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.UNICODE,
-                        NumpyType.OBJECT, Type.STRING);
-                    inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_STRING_VAL_BYTE_SIZE));
-                    break;
-                case BYTES:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.BYTES, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
-                    inserters.add(new BytesInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case INTEGER_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.INTEGER_LIST);
-                    inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case INTEGER_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.INTEGER_SET);
-                    inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case LONG_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.LONG_LIST);
-                    inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case LONG_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.LONG_SET);
-                    inserters.add(new LongSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case DOUBLE_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.DOUBLE_LIST);
-                    inserters.add(new DoubleListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case DOUBLE_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.DOUBLE_SET);
-                    inserters.add(new DoubleSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case BOOLEAN_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.BOOLEAN_LIST);
-                    inserters.add(new BooleanListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case BOOLEAN_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.BOOLEAN_SET);
-                    inserters.add(new BooleanSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case STRING_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.STRING_LIST);
-                    inserters.add(new StringListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case STRING_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.STRING_SET);
-                    inserters.add(new StringSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case BYTES_LIST:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.BYTES_LIST, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
-                    inserters.add(new BytesListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                case BYTES_SET:
-                    colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
-                        NumpyType.OBJECT, Type.BYTES_SET, spec.getColumnSerializers().get(spec.getColumnNames()[i]));
-                    inserters.add(new BytesSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
-                        ASSUMED_BYTES_VAL_BYTE_SIZE));
-                    break;
-                default:
-                    throw new IllegalStateException(
-                        "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+                // Create Inserters and metadata
+                for (int i = 0; i < spec.getNumberColumns(); i++) {
+                    JsonObjectBuilder colMetadataBuilder;
+                    switch (spec.getColumnTypes()[i]) {
+                        case BOOLEAN:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BOOL,
+                                NumpyType.OBJECT, Type.BOOLEAN);
+                            inserters.add(new BooleanInserter(spec.getColumnNames()[i], rootAllocator, numRows));
+                            break;
+                        case INTEGER:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                                NumpyType.INT32, Type.INTEGER);
+                            inserters.add(new IntegerInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                serializationOptions));
+                            break;
+                        case LONG:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                                NumpyType.INT64, Type.LONG);
+                            inserters.add(new LongInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                serializationOptions));
+                            break;
+                        case DOUBLE:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                                NumpyType.FLOAT64, Type.DOUBLE);
+                            inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator, numRows));
+                            break;
+                        case STRING:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i],
+                                PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
+                            inserters.add(new StringInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_STRING_VAL_BYTE_SIZE));
+                            break;
+                        case BYTES:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.BYTES,
+                                spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+                            inserters.add(new BytesInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case INTEGER_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.INTEGER_LIST);
+                            inserters.add(new IntListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case INTEGER_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.INTEGER_SET);
+                            inserters.add(new IntSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case LONG_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.LONG_LIST);
+                            inserters.add(new LongListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case LONG_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.LONG_SET);
+                            inserters.add(new LongSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case DOUBLE_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.DOUBLE_LIST);
+                            inserters.add(new DoubleListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case DOUBLE_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.DOUBLE_SET);
+                            inserters.add(new DoubleSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case BOOLEAN_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.BOOLEAN_LIST);
+                            inserters.add(new BooleanListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case BOOLEAN_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.BOOLEAN_SET);
+                            inserters.add(new BooleanSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case STRING_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.STRING_LIST);
+                            inserters.add(new StringListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case STRING_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.STRING_SET);
+                            inserters.add(new StringSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case BYTES_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.BYTES_LIST,
+                                spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+                            inserters.add(new BytesListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case BYTES_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.BYTES_SET,
+                                spec.getColumnSerializers().get(spec.getColumnNames()[i]));
+                            inserters.add(new BytesSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        default:
+                            throw new IllegalStateException(
+                                "Serialization is not implemented for type: " + spec.getColumnTypes()[i].name());
+                    }
+                    colBuilder.add(colMetadataBuilder);
+                }
+                metadataBuilder.add("columns", colBuilder);
+
+                //Iterate over table and put every cell in an arrow buffer using the inserters
+                while (tableIterator.hasNext()) {
+                    Row row = tableIterator.next();
+                    inserters.get(0).put(new CellImpl(row.getRowKey()));
+
+                    for (int i = 0; i < spec.getNumberColumns(); i++) {
+                        inserters.get(i + 1).put(row.getCell(i));
+                    }
+                }
+
+                //Build final representation and transmit
+                Map<String, String> metadata = new HashMap<String, String>();
+                metadata.put("pandas", metadataBuilder.build().toString());
+
+                List<FieldVector> vecs = new ArrayList<FieldVector>();
+                List<Field> fields = new ArrayList<Field>();
+                for (int i = 0; i < inserters.size(); i++) {
+                    final FieldVector vec = inserters.get(i).retrieveVector();
+                    vecs.add(vec);
+                    fields.add(vec.getField());
+                }
+                Schema schema = new Schema(fields, metadata);
+                try (ArrowStreamWriter writer =
+                    new ArrowStreamWriter(new VectorSchemaRoot(schema, vecs, numRows), null, fc)) {
+                    writer.writeBatch();
+                }
+            } finally {
+                // Close inserters to free memory.
+                PythonUtils.Misc.invokeSafely(null, ArrowVectorInserter::close, inserters);
             }
-            colBuilder.add(colMetadataBuilder);
         }
-        metadataBuilder.add("columns", colBuilder);
-
-        //Iterate over table and put every cell in an arrow buffer using the inserters
-        while (tableIterator.hasNext()) {
-            Row row = tableIterator.next();
-            inserters.get(0).put(new CellImpl(row.getRowKey()));
-
-            for (int i = 0; i < spec.getNumberColumns(); i++) {
-                inserters.get(i + 1).put(row.getCell(i));
-            }
-        }
-
-        //Build final representation and transmit
-        Map<String, String> metadata = new HashMap<String, String>();
-        metadata.put("pandas", metadataBuilder.build().toString());
-
-        List<FieldVector> vecs = new ArrayList<FieldVector>();
-        List<Field> fields = new ArrayList<Field>();
-        for (int i = 0; i < inserters.size(); i++) {
-            final FieldVector vec = inserters.get(i).retrieveVector();
-            vecs.add(vec);
-            fields.add(vec.getField());
-        }
-
-        Schema schema = new Schema(fields, metadata);
-        VectorSchemaRoot vsr = new VectorSchemaRoot(schema, vecs, numRows);
-        ArrowStreamWriter writer = new ArrowStreamWriter(vsr, null, fc);
-
-        writer.writeBatch();
-        writer.close();
-        fc.close();
-
-        //Close inserters to free memory
-        for (ArrowVectorInserter is : inserters) {
-            is.close();
-        }
-        rootAllocator.close();
-
         return path.getBytes("UTF-8");
     }
 
@@ -415,130 +421,132 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         final SerializationOptions serializationOptions) throws SerializationException {
         String path = new String(bytes);
         TableSpec spec = tableSpecFromBytes(bytes);
-        final File f = new File(path);
+        final File file = new File(path);
         try {
-            ReadContext rc = ReadContextManager.createForFile(f);
+            ReadContext rc = ReadContextManager.createForFile(file);
             if (spec.getNumberColumns() > 0 && rc.getNumRows() > 0) {
+                try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
+                    VectorSchemaRoot root = reader.getVectorSchemaRoot();
+                    Type[] types = spec.getColumnTypes();
+                    String[] names = spec.getColumnNames();
 
-                ArrowStreamReader reader = ReadContextManager.createForFile(f).getReader();
-                VectorSchemaRoot root = reader.getVectorSchemaRoot();
-                Type[] types = spec.getColumnTypes();
-                String[] names = spec.getColumnNames();
+                    List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
+                    // Index is always string
+                    extractors.add(getStringOrByteextractor(root.getVector(m_indexColumnName)));
 
-                List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
-                // Index is always string
-                extractors.add(getStringOrByteextractor(root.getVector(m_indexColumnName)));
-
-                //Setup an extractor for every column
-                for (int j = 0; j < spec.getNumberColumns(); j++) {
-                    if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
-                        extractors.add(new MissingExtractor());
-                    } else {
-                        switch (types[j]) {
-                            case BOOLEAN:
-                                extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER:
-                                extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
-                                    serializationOptions));
-                                break;
-                            case LONG:
-                                extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
-                                    serializationOptions));
-                                break;
-                            case DOUBLE:
-                                extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
-                                break;
-                            case STRING:
-                                extractors.add(getStringOrByteextractor(root.getVector(names[j])));
-                                break;
-                            case BYTES:
-                                extractors.add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER_LIST:
-                                extractors.add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER_SET:
-                                extractors.add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case LONG_LIST:
-                                extractors
-                                    .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case LONG_SET:
-                                extractors.add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case DOUBLE_LIST:
-                                extractors
-                                    .add(new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case DOUBLE_SET:
-                                extractors
-                                    .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BOOLEAN_LIST:
-                                extractors
-                                    .add(new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BOOLEAN_SET:
-                                extractors
-                                    .add(new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case STRING_LIST:
-                                extractors
-                                    .add(new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case STRING_SET:
-                                extractors
-                                    .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BYTES_LIST:
-                                extractors
-                                    .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BYTES_SET:
-                                extractors
-                                    .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                break;
-                            default:
-                                throw new IllegalStateException(
-                                    "Deserialization is not implemented for type: " + types[j]);
+                    //Setup an extractor for every column
+                    for (int j = 0; j < spec.getNumberColumns(); j++) {
+                        if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
+                            extractors.add(new MissingExtractor());
+                        } else {
+                            switch (types[j]) {
+                                case BOOLEAN:
+                                    extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
+                                    break;
+                                case INTEGER:
+                                    extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
+                                        serializationOptions));
+                                    break;
+                                case LONG:
+                                    extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
+                                        serializationOptions));
+                                    break;
+                                case DOUBLE:
+                                    extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
+                                    break;
+                                case STRING:
+                                    extractors.add(getStringOrByteextractor(root.getVector(names[j])));
+                                    break;
+                                case BYTES:
+                                    extractors
+                                        .add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case INTEGER_LIST:
+                                    extractors
+                                        .add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case INTEGER_SET:
+                                    extractors
+                                        .add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case LONG_LIST:
+                                    extractors
+                                        .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case LONG_SET:
+                                    extractors
+                                        .add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case DOUBLE_LIST:
+                                    extractors.add(
+                                        new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case DOUBLE_SET:
+                                    extractors
+                                        .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case BOOLEAN_LIST:
+                                    extractors.add(
+                                        new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case BOOLEAN_SET:
+                                    extractors.add(
+                                        new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case STRING_LIST:
+                                    extractors.add(
+                                        new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case STRING_SET:
+                                    extractors
+                                        .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case BYTES_LIST:
+                                    extractors
+                                        .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                case BYTES_SET:
+                                    extractors
+                                        .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    break;
+                                default:
+                                    throw new IllegalStateException(
+                                        "Deserialization is not implemented for type: " + types[j]);
+                            }
                         }
                     }
-                }
 
-                //Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
-                //further processing
-                for (int i = 0; i < root.getRowCount(); i++) {
-                    Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
-                    for (int j = 0; j < spec.getNumberColumns(); j++) {
-                        row.setCell(extractors.get(j + 1).extract(), j);
+                    //Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
+                    //further processing
+                    for (int i = 0; i < root.getRowCount(); i++) {
+                        Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
+                        for (int j = 0; j < spec.getNumberColumns(); j++) {
+                            row.setCell(extractors.get(j + 1).extract(), j);
+                        }
+                        tableCreator.addRow(row);
                     }
-                    tableCreator.addRow(row);
                 }
-                reader.close();
             }
         } catch (IOException e) {
             throw new SerializationException("An error occurred during deserialization.", e);
         } finally {
-            if (!ReadContextManager.destroy(f)) {
-                NodeLogger.getLogger(ArrowSerializationLibrary.class).warn("Could not destroy content object.");
-            }
-            if (f.exists()) {
-                f.delete();
-            }
+            PythonUtils.Misc.invokeSafely(null, f -> {
+                if (!ReadContextManager.destroy(f)) {
+                    NodeLogger.getLogger(ArrowSerializationLibrary.class).warn("Could not destroy content object.");
+                }
+            }, file);
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
         }
     }
 
     @Override
     public TableSpec tableSpecFromBytes(final byte[] bytes) throws SerializationException {
-
         String path = new String(bytes, StandardCharsets.UTF_8);
-        final File f = new File(path);
+        final File file = new File(path);
         try {
-            ReadContext rc = ReadContextManager.createForFile(f);
+            ReadContext rc = ReadContextManager.createForFile(file);
             if (rc.getTableSpec() == null) {
-                if (f.exists()) {
+                if (file.exists()) {
                     ArrowStreamReader reader = rc.getReader();
                     reader.loadNextBatch();
                     Schema schema = reader.getVectorSchemaRoot().getSchema();
@@ -597,11 +605,13 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             if (rc.getTableSpec() == null) {
                 throw new IllegalStateException("Could not build TableSpec!");
             }
-
             return rc.getTableSpec();
-
         } catch (IOException ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during deserialization.", ex);
+        } catch (Exception ex) {
+            PythonUtils.Misc.invokeSafely(null, File::delete, file);
+            throw ex;
         }
     }
 }

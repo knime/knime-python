@@ -41,8 +41,10 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
+import atexit
 import json
 import os
+import shutil
 import struct
 import sys
 import tempfile
@@ -50,6 +52,8 @@ import tempfile
 import numpy as np
 import pandas
 import pyarrow
+
+import PythonUtils
 
 try:
     from StringIO import StringIO
@@ -61,6 +65,8 @@ _python3 = sys.version_info >= (3, 0)
 _types_ = None
 _pandas_native_types_ = None
 _bytes_types_ = None
+
+_temp_dir = None
 
 read_data_frame = None
 read_types = []
@@ -117,12 +123,15 @@ def column_serializers_from_bytes(data_bytes):
 def bytes_into_table(table, data_bytes):
     global read_data_frame, read_types, read_serializers
     path = data_bytes.decode('utf-8')
-    if read_data_frame is None:
-        deserialize_data_frame(path)
-    table._data_frame = read_data_frame
-    read_data_frame = None
-    read_types = []
-    read_serializers = {}
+    try:
+        if read_data_frame is None:
+            deserialize_data_frame(path)
+        table._data_frame = read_data_frame
+        read_data_frame = None
+        read_types = []
+        read_serializers = {}
+    finally:
+        PythonUtils.invoke_safely(None, os.remove, path)
 
 
 # Generator function for collection columns of type Integer, Long, Double.
@@ -335,8 +344,6 @@ def deserialize_data_frame(path):
             read_data_frame = pandas.DataFrame(index=indexcol)
 
             # debug_util.breakpoint()
-            # print('test')
-    os.remove(path)
 
 
 # Convert a simpletype to the corresponding pyarrow.DataType
@@ -594,11 +601,14 @@ def get_first_not_None(column):
 # @param table    a {@link FromPandasTable} wrapping the data frame and 
 #                 managing the serialization of extension types 
 def table_to_bytes(table):
-    fd, path = tempfile.mkstemp(suffix='.dat', prefix='arrow-memory-mapped', text=False)
-    os.close(fd)
+    global _temp_dir
+    if _temp_dir is None or not os.path.exists(_temp_dir):
+        _temp_dir = tempfile.mkdtemp(prefix='knime-python-')
+        # Delete temporary directory upon Python shutdown.
+        atexit.register(close)
+    fd, path = tempfile.mkstemp(suffix='.dat', prefix='python-to-java-', dir=_temp_dir, text=False)
     try:
-
-        # debug_util.breakpoint()
+        os.close(fd)
 
         mp = pyarrow.MemoryPool(2 ** 64)
         col_arrays = []
@@ -715,6 +725,12 @@ def table_to_bytes(table):
             stream_writer.write_batch(batch)
             stream_writer.close()
         return bytearray(path, 'utf-8')
-    except Exception as error:
-        os.remove(path)
-        raise error
+    except BaseException:
+        PythonUtils.invoke_safely(None, os.remove, path)
+        raise
+
+
+def close():
+    global _temp_dir
+    # Remove entire temporary directory.
+    PythonUtils.invoke_safely(None, lambda p: shutil.rmtree(p, ignore_errors=True), _temp_dir)

@@ -48,6 +48,7 @@
  */
 package org.knime.python2.util;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -170,6 +171,24 @@ public final class PythonUtils {
          */
         public static Error closeSafely(final BiConsumer<String, Exception> exceptionConsumer,
             final AutoCloseable... closeables) {
+            if (closeables == null) {
+                return null;
+            }
+            return closeSafely(exceptionConsumer, Arrays.asList(closeables));
+        }
+
+        /**
+         * @param exceptionConsumer may be <code>null</code>. If non-<code>null</code>, is used to report exceptions
+         *            that occur while closing the individual given closeables.
+         * @param closeables the resources to {@link AutoCloseable#close() close}. May be <code>null</code>, individual
+         *            closeables may be <code>null</code>.
+         * @return an error if any occurred, <code>null</code> otherwise. If non-<code>null</code>, it is recommended to
+         *         rethrow that error. If multiple errors occurred, the first one is returned and the others are added
+         *         as {@link Error#addSuppressed(Throwable) suppressed} if possible.
+         *
+         */
+        public static Error closeSafely(final BiConsumer<String, Exception> exceptionConsumer,
+            final Iterable<? extends AutoCloseable> closeables) {
             return invokeSafely(exceptionConsumer, closeable -> {
                 try {
                     closeable.close();
@@ -191,7 +210,25 @@ public final class PythonUtils {
          */
         @SafeVarargs
         public static <T> Error invokeSafely(final BiConsumer<String, Exception> exceptionConsumer,
-            final Consumer<T> method, final T... invokees) {
+            final Consumer<? super T> method, final T... invokees) {
+            if (invokees == null) {
+                return null;
+            }
+            return invokeSafely(exceptionConsumer, method, Arrays.asList(invokees));
+        }
+
+        /**
+         * @param exceptionConsumer may be <code>null</code>. If non-<code>null</code>, is used to report exceptions
+         *            that occur while invoking the given method on the individual given invokees.
+         * @param method the method to invoke, may be <code>null</code>
+         * @param invokees the objects on which to invoke the given method. May be <code>null</code>, individual objects
+         *            may be <code>null</code>.
+         * @return an error if any occurred, <code>null</code> otherwise. If non-<code>null</code>, it is recommended to
+         *         rethrow that error. If multiple errors occurred, the first one is returned and the others are added
+         *         as {@link Error#addSuppressed(Throwable) suppressed} if possible.
+         */
+        public static <T> Error invokeSafely(final BiConsumer<String, Exception> exceptionConsumer,
+            final Consumer<? super T> method, final Iterable<? extends T> invokees) {
             if (method == null || invokees == null) {
                 return null;
             }
