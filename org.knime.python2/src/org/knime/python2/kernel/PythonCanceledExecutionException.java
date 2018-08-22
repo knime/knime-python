@@ -46,7 +46,7 @@
  */
 package org.knime.python2.kernel;
 
-import static org.knime.python2.util.PythonUtils.Preconditions.checkNotNullOrEmpty;
+import com.google.common.base.Strings;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -56,17 +56,22 @@ public class PythonCanceledExecutionException extends Exception implements Pytho
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Constructor
-     */
+    private static String amendMessage(final String message) {
+        if (Strings.isNullOrEmpty(message)) {
+            return "Execution was canceled.";
+        } else {
+            return message;
+        }
+    }
+
     public PythonCanceledExecutionException() {
-        this("Execution was canceled.");
+        this(null);
     }
 
     /**
-     * @param message must be neither <code>null</code> nor empty
+     * @param message the message
      */
     public PythonCanceledExecutionException(final String message) {
-        super(checkNotNullOrEmpty(message));
+        super(amendMessage(message));
     }
 }

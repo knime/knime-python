@@ -63,7 +63,7 @@ public final class PythonIOException extends IOException implements PythonExcept
 
     private static String amendMessage(final String message) {
         if (Strings.isNullOrEmpty(message)) {
-            return "An unknown exception occurred while interacting with Python. See log for details.";
+            return "An exception occured while running the Python kernel. See log for details.";
         } else {
             return message;
         }
@@ -74,6 +74,13 @@ public final class PythonIOException extends IOException implements PythonExcept
      */
     public PythonIOException(final String message) {
         super(amendMessage(message));
+    }
+
+    /**
+     * @param cause the cause of the problem
+     */
+    public PythonIOException(final Throwable cause) {
+        this(null, cause);
     }
 
     /**

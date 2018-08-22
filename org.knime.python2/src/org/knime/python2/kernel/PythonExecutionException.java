@@ -62,7 +62,7 @@ public final class PythonExecutionException extends ExecutionException implement
 
     private static String amendMessage(final String message) {
         if (Strings.isNullOrEmpty(message)) {
-            return "An unknown exception occurred while interacting with Python. See log for details.";
+            return "An exception occured while running the Python kernel. See log for details.";
         } else {
             return message;
         }
@@ -72,7 +72,14 @@ public final class PythonExecutionException extends ExecutionException implement
      * @param message the message
      */
     public PythonExecutionException(final String message) {
-        this(amendMessage(message), new RuntimeException(amendMessage(message)));
+        this(message, new RuntimeException(amendMessage(message)));
+    }
+
+    /**
+     * @param cause the cause of the problem
+     */
+    public PythonExecutionException(final Throwable cause) {
+        this(null, cause);
     }
 
     /**

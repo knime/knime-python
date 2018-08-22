@@ -51,13 +51,18 @@ package org.knime.python2.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.knime.core.util.ThreadUtils;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonExecutionException;
@@ -210,61 +215,57 @@ public final class PythonUtils {
         }
 
         /**
-         * Runs a task in a worker thread and blocks until the task is finished, an exception occurs, or execution is
-         * canceled. The worker thread is {@link Thread#interrupt() interrupted} if a cancellation occurs.
+         * Submits the given task to the given executor service and blocks until the task is finished, an exception
+         * occurs, or the execution is canceled. The task is {@link Thread#interrupt() interrupted} if a cancellation
+         * occurs.
          *
-         * @param callable the task to run cancelable
+         * @param task the task to run cancelable
+         * @param executorService the executor service to which to submit the task
          * @param cancelable the cancelable to check for cancellation
          * @return the result of the task, if any
-         * @throws PythonExecutionException if any exception occurred during execution
-         * @throws PythonCanceledExecutionException if canceled
+         * @throws RejectedExecutionException if the task cannot be submitted to the executor service
+         * @throws PythonExecutionException if any exception occurred during execution (except cancellation, see below)
+         * @throws PythonCanceledExecutionException if canceled, is also thrown if the task itself terminates due to
+         *             {@link PythonCanceledExecutionException}, {@link CanceledExecutionException}, or
+         *             {@link CancellationException}
          */
-        public static <T> T executeCancelable(final Callable<T> callable, final PythonCancelable cancelable)
-            throws PythonExecutionException, PythonCanceledExecutionException {
-            final Thread clientThread = Thread.currentThread();
-            final AtomicBoolean done = new AtomicBoolean(false);
-            final AtomicReference<T> output = new AtomicReference<>();
-            final AtomicReference<Exception> exception = new AtomicReference<>(null);
-            // Worker thread.
-            Thread worker = ThreadUtils.threadWithContext(() -> {
+        public static <T> T executeCancelable(final Callable<T> task, final ExecutorService executorService,
+            final PythonCancelable cancelable) throws PythonExecutionException, PythonCanceledExecutionException {
+            Future<T> future = executorService.submit(task);
+            // Wait until execution is done or cancelled.
+            final int waitTimeoutMilliseconds = 1000;
+            while (true) {
                 try {
-                    output.set(callable.call());
-                } catch (final Exception ex) {
-                    exception.set(ex);
-                }
-                done.set(true);
-                // Wake up the waiting client thread.
-                clientThread.interrupt();
-            }, "KNIME-Python-Worker-" + UNIQUE_THREAD_ID.incrementAndGet());
-            worker.start();
-            // Wait until worker thread is done or execution is cancelled.
-            while (!done.get()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (final InterruptedException ex) {
-                    if (!done.get()) {
+                    return future.get(waitTimeoutMilliseconds, TimeUnit.MILLISECONDS);
+                } catch (TimeoutException | InterruptedException ex) {
+                    // The current thread has been interrupted or the task is not done yet.
+                    if (ex instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
-                    // Else we were most likely interrupted by the worker thread.
-                }
-                try {
-                    cancelable.checkCanceled();
-                } catch (PythonCanceledExecutionException ex) {
-                    worker.interrupt();
-                    throw ex;
+                    try {
+                        cancelable.checkCanceled();
+                    } catch (PythonCanceledExecutionException cancellation) {
+                        // Execution was canceled, cancel task.
+                        future.cancel(true);
+                        throw cancellation;
+                    }
+                } catch (CancellationException ex) {
+                    // Should not happen since the handle to the future is local to this method.
+                    throw new PythonCanceledExecutionException();
+                } catch (ExecutionException wrapper) {
+                    // Unwrap execution exception.
+                    Throwable ex = wrapper.getCause() != null ? wrapper.getCause() : wrapper;
+                    if (ex instanceof PythonCanceledExecutionException) {
+                        // May happen if the executed task checks for cancellation itself.
+                        throw (PythonCanceledExecutionException)ex;
+                    } else if (ex instanceof CanceledExecutionException || ex instanceof CancellationException) {
+                        // May happen if the executed task checks for cancellation itself.
+                        throw new PythonCanceledExecutionException(ex.getMessage());
+                    } else {
+                        throw new PythonExecutionException(ex.getMessage(), ex);
+                    }
                 }
             }
-            // If there was an exception in the worker thread, throw it here.
-            Exception ex = exception.get();
-            if (ex != null) {
-                if (ex instanceof PythonCanceledExecutionException) {
-                    // May happen if the executed task checks for cancellation itself.
-                    throw (PythonCanceledExecutionException)ex;
-                } else {
-                    throw new PythonExecutionException(ex.getMessage(), ex);
-                }
-            }
-            return output.get();
         }
 
         /**

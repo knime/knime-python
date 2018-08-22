@@ -52,6 +52,14 @@ package org.knime.python2.kernel;
  */
 public interface PythonCancelable {
 
+    public static final PythonCancelable NOT_CANCELABLE = new PythonCancelable() {
+
+        @Override
+        public void checkCanceled() throws PythonCanceledExecutionException {
+            // Does not cancel.
+        }
+    };
+
     /**
      * Checks if the execution has been canceled.
      *
