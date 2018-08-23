@@ -47,44 +47,56 @@ package org.knime.python2.extensions.serializationlibrary.interfaces;
 
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
 
 /**
  * A serialization library used to encode and decode tables for data transfer between java and python.
  *
- * @author Patrick Winter
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public interface SerializationLibrary {
 
     /**
-     * Converts the given table into bytes for transfer to python.
+     * Converts the given table into bytes for transfer to python. Implementing classes are expected to cancel
+     * serialization in a timely manner if demanded.
      *
      * @param tableIterator Iterator for the table that should be converted.
      * @param serializationOptions All options that control the serialization process.
+     * @param cancelable Can be used to cancel the serialization.
      * @return The bytes that should be send to python.
-     *
      * @throws SerializationException if something went wrong during serialization
+     * @throws PythonCanceledExecutionException if serialization was canceled
      */
-    byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions) throws SerializationException;
+    byte[] tableToBytes(TableIterator tableIterator, SerializationOptions serializationOptions,
+        PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException;
 
     /**
-     * Adds the rows contained in the bytes to the given {@link TableCreator}.
+     * Adds the rows contained in the bytes to the given {@link TableCreator}. Implementing classes are expected to
+     * cancel deserialization in a timely manner if demanded.
      *
      * @param tableCreator The {@link TableCreator} that the rows should be added to.
      * @param serializationOptions All options that control the serialization process.
+     * @param cancelable Can be used to cancel the deserialization.
      * @param bytes The bytes containing the encoded table.
-     *
      * @throws SerializationException if something went wrong during deserialization
+     * @throws PythonCanceledExecutionException if deserialization was canceled
      */
-    void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions) throws SerializationException;
+    void bytesIntoTable(TableCreator<?> tableCreator, byte[] bytes, SerializationOptions serializationOptions,
+        PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException;
 
     /**
-     * Extracts the {@link TableSpec} of the given table.
+     * Extracts the {@link TableSpec} of the given table. Implementing classes are expected to cancel deserialization in
+     * a timely manner if demanded.
      *
      * @param bytes The encoded table.
+     * @param cancelable Can be used to cancel the deserialization.
      * @return The {@link TableSpec} of the encoded table.
-     *
      * @throws SerializationException if something went wrong during deserialization
+     * @throws PythonCanceledExecutionException if deserialization was canceled
      */
-    TableSpec tableSpecFromBytes(byte[] bytes) throws SerializationException;
-
+    TableSpec tableSpecFromBytes(byte[] bytes, PythonCancelable cancelable)
+        throws SerializationException, PythonCanceledExecutionException;
 }

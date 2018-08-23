@@ -55,7 +55,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -94,6 +94,9 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtrac
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
+import org.knime.python2.kernel.PythonExecutionException;
 import org.knime.python2.serde.arrow.ReadContextManager.ReadContext;
 import org.knime.python2.serde.arrow.extractors.BooleanExtractor;
 import org.knime.python2.serde.arrow.extractors.BooleanListExtractor;
@@ -140,22 +143,19 @@ import org.knime.python2.util.PythonUtils;
  * written to temporary files, the file paths are shared via the command socket.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class ArrowSerializationLibrary implements SerializationLibrary {
 
-    /*Note: should be a power of 2*/
-    private final static int ASSUMED_ROWID_VAL_BYTE_SIZE = 4;
+    /* Note: should be a power of 2 */
+    private static final int ASSUMED_ROWID_VAL_BYTE_SIZE = 4;
 
-    /*Note: should be a power of 2*/
-    private final static int ASSUMED_STRING_VAL_BYTE_SIZE = 64;
+    /* Note: should be a power of 2 */
+    private static final int ASSUMED_STRING_VAL_BYTE_SIZE = 64;
 
-    /*Note: should be a power of 2*/
-    private final static int ASSUMED_BYTES_VAL_BYTE_SIZE = 32;
-
-    //NOTE: we will never get a multi-index due to index standardization in FromPandasTable
-    private String m_indexColumnName = null;
-
-    private String[] m_missingColumnNames = null;
+    /* Note: should be a power of 2 */
+    private static final int ASSUMED_BYTES_VAL_BYTE_SIZE = 32;
 
     private enum PandasType {
             BOOL("bool"), INT("int"), UNICODE("unicode"), BYTES("bytes");
@@ -189,7 +189,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
      * Builds a metadata tag in the following format: {"name": <name>, "pandas_type": <pandasType>, "numpy_type":
      * <numpyType>, "metadata": {"type_id": <knimeType>, "serializer_id": <serializer>}}
      */
-    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
+    private static JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
         final NumpyType numpyType, final Type knimeType, final String serializer) {
         JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
         colMetadataBuilder.add("name", name);
@@ -202,58 +202,82 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return colMetadataBuilder;
     }
 
-    private JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
+    private static JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
         final NumpyType numpyType, final Type knimeType) {
         return createColumnMetadataBuilder(name, pandasType, numpyType, knimeType, "");
     }
 
+    /**
+     * The root directory in which the temporary files used for data transfer are stored. Will be populated during the
+     * first call of {@link #tableToBytes(TableIterator, SerializationOptions, PythonCancelable)}.
+     */
+    private File m_tempDir;
+
+    // Note: we will never get a multi-index due to index standardization in FromPandasTable.
+    private String m_indexColumnName = null;
+
+    private String[] m_missingColumnNames = null;
+
     @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
-        throws SerializationException {
+    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions,
+        final PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException {
         File file = null;
         try {
-            //Temporary files are used for data transfer
-            file = FileUtil.createTempFile("arrow-memory-mapped-" + UUID.randomUUID().toString(), ".dat", true);
-            try (RandomAccessFile raf = new RandomAccessFile(file, "rw"); FileChannel channel = raf.getChannel()) {
-                return tableToBytesDynamic(tableIterator, serializationOptions, channel, file.getAbsolutePath());
+            // Temporary files are used for data transfer.
+            if (m_tempDir == null || !m_tempDir.exists()) {
+                // Deleted upon JVM shutdown (or #close()).
+                m_tempDir = FileUtil.createTempDir("knime-python-");
             }
-        } catch (IOException e) {
+            file = FileUtil.createTempFile("java-to-python-", ".dat", m_tempDir, false);
+            final File finalFile = file;
+            return PythonUtils.Misc.executeCancelable(() -> {
+                try (RandomAccessFile raf = new RandomAccessFile(finalFile, "rw");
+                        FileChannel channel = raf.getChannel()) {
+                    return tableToBytesInternal(tableIterator, serializationOptions, channel,
+                        finalFile.getAbsolutePath());
+                }
+            }, cancelable);
+        } catch (IOException | PythonExecutionException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
-            throw new SerializationException("During serialization the following an error occured.", e);
+            throw new SerializationException("An error occurred during serialization. See log for errors.", e);
         } catch (OversizedAllocationException ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException(
-                "The requested buffersize during serialization exceeds the maximum buffer size."
-                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
+                "The requested buffer size during serialization exceeds the maximum buffer size."
+                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the"
+                    + " configuration dialog.");
         } catch (Exception ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw ex;
         }
     }
 
-    private byte[] tableToBytesDynamic(final TableIterator tableIterator,
+    /**
+     * Possibly interrupted by {@link #tableToBytes(TableIterator, SerializationOptions, PythonCancelable)}.
+     */
+    private static byte[] tableToBytesInternal(final TableIterator tableIterator,
         final SerializationOptions serializationOptions, final FileChannel fc, final String path) throws IOException {
         try (RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE)) {
             List<ArrowVectorInserter> inserters = null;
             try {
-                final String INDEX_COL_NAME = "__index_level_0__";
-                //Metadata is transferred in JSON format
+                final String indexColName = "__index_level_0__";
+                // Metadata is transferred in JSON format.
                 JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
                 TableSpec spec = tableIterator.getTableSpec();
                 inserters = new ArrayList<>();
                 JsonArrayBuilder icBuilder = Json.createArrayBuilder();
 
-                icBuilder.add(INDEX_COL_NAME);
+                icBuilder.add(indexColName);
                 metadataBuilder.add("index_columns", icBuilder);
                 JsonArrayBuilder colBuilder = Json.createArrayBuilder();
                 int numRows = tableIterator.getNumberRemainingRows();
                 // Row ids
                 JsonObjectBuilder rowIdBuilder =
-                    createColumnMetadataBuilder(INDEX_COL_NAME, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
-                inserters.add(new StringInserter(INDEX_COL_NAME, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
+                    createColumnMetadataBuilder(indexColName, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
+                inserters.add(new StringInserter(indexColName, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
                 colBuilder.add(rowIdBuilder);
 
-                // Create Inserters and metadata
+                // Create inserters and metadata.
                 for (int i = 0; i < spec.getNumberColumns(); i++) {
                     JsonObjectBuilder colMetadataBuilder;
                     switch (spec.getColumnTypes()[i]) {
@@ -374,24 +398,27 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 }
                 metadataBuilder.add("columns", colBuilder);
 
-                //Iterate over table and put every cell in an arrow buffer using the inserters
+                // Iterate over table and put every cell in an arrow buffer using the inserters.
                 while (tableIterator.hasNext()) {
+                    if (Thread.interrupted()) {
+                        // Stop serialization if canceled by client.
+                        throw new CancellationException("Serialization canceled by client.");
+                    }
                     Row row = tableIterator.next();
                     inserters.get(0).put(new CellImpl(row.getRowKey()));
-
                     for (int i = 0; i < spec.getNumberColumns(); i++) {
                         inserters.get(i + 1).put(row.getCell(i));
                     }
                 }
 
-                //Build final representation and transmit
-                Map<String, String> metadata = new HashMap<String, String>();
+                // Build final representation and transmit.
+                Map<String, String> metadata = new HashMap<>();
                 metadata.put("pandas", metadataBuilder.build().toString());
 
-                List<FieldVector> vecs = new ArrayList<FieldVector>();
-                List<Field> fields = new ArrayList<Field>();
+                List<FieldVector> vecs = new ArrayList<>();
+                List<Field> fields = new ArrayList<>();
                 for (int i = 0; i < inserters.size(); i++) {
-                    final FieldVector vec = inserters.get(i).retrieveVector();
+                    final FieldVector vec = inserters.get(i).retrieveVector(); // Closed via inserters.
                     vecs.add(vec);
                     fields.add(vec.getField());
                 }
@@ -408,7 +435,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         return path.getBytes("UTF-8");
     }
 
-    private VectorExtractor getStringOrByteextractor(final FieldVector vec) {
+    private static VectorExtractor getStringOrByteExtractor(final FieldVector vec) {
         if (vec instanceof NullableVarCharVector) {
             return new StringExtractor((NullableVarCharVector)vec);
         } else {
@@ -418,117 +445,19 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
 
     @Override
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
-        final SerializationOptions serializationOptions) throws SerializationException {
-        String path = new String(bytes);
-        TableSpec spec = tableSpecFromBytes(bytes);
-        final File file = new File(path);
+        final SerializationOptions serializationOptions, final PythonCancelable cancelable)
+        throws SerializationException, PythonCanceledExecutionException {
+        File file = null;
         try {
-            ReadContext rc = ReadContextManager.createForFile(file);
-            if (spec.getNumberColumns() > 0 && rc.getNumRows() > 0) {
-                try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
-                    VectorSchemaRoot root = reader.getVectorSchemaRoot();
-                    Type[] types = spec.getColumnTypes();
-                    String[] names = spec.getColumnNames();
-
-                    List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
-                    // Index is always string
-                    extractors.add(getStringOrByteextractor(root.getVector(m_indexColumnName)));
-
-                    //Setup an extractor for every column
-                    for (int j = 0; j < spec.getNumberColumns(); j++) {
-                        if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
-                            extractors.add(new MissingExtractor());
-                        } else {
-                            switch (types[j]) {
-                                case BOOLEAN:
-                                    extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
-                                    break;
-                                case INTEGER:
-                                    extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
-                                        serializationOptions));
-                                    break;
-                                case LONG:
-                                    extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
-                                        serializationOptions));
-                                    break;
-                                case DOUBLE:
-                                    extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
-                                    break;
-                                case STRING:
-                                    extractors.add(getStringOrByteextractor(root.getVector(names[j])));
-                                    break;
-                                case BYTES:
-                                    extractors
-                                        .add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case INTEGER_LIST:
-                                    extractors
-                                        .add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case INTEGER_SET:
-                                    extractors
-                                        .add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case LONG_LIST:
-                                    extractors
-                                        .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case LONG_SET:
-                                    extractors
-                                        .add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case DOUBLE_LIST:
-                                    extractors.add(
-                                        new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case DOUBLE_SET:
-                                    extractors
-                                        .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case BOOLEAN_LIST:
-                                    extractors.add(
-                                        new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case BOOLEAN_SET:
-                                    extractors.add(
-                                        new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case STRING_LIST:
-                                    extractors.add(
-                                        new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case STRING_SET:
-                                    extractors
-                                        .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case BYTES_LIST:
-                                    extractors
-                                        .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                case BYTES_SET:
-                                    extractors
-                                        .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
-                                    break;
-                                default:
-                                    throw new IllegalStateException(
-                                        "Deserialization is not implemented for type: " + types[j]);
-                            }
-                        }
-                    }
-
-                    //Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
-                    //further processing
-                    for (int i = 0; i < root.getRowCount(); i++) {
-                        Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
-                        for (int j = 0; j < spec.getNumberColumns(); j++) {
-                            row.setCell(extractors.get(j + 1).extract(), j);
-                        }
-                        tableCreator.addRow(row);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new SerializationException("An error occurred during deserialization.", e);
+            file = new File(new String(bytes, StandardCharsets.UTF_8));
+            File finalFile = file;
+            TableSpec spec = tableSpecFromBytes(bytes, cancelable);
+            PythonUtils.Misc.executeCancelable(() -> {
+                bytesIntoTableInternal(tableCreator, serializationOptions, spec, finalFile);
+                return null;
+            }, cancelable);
+        } catch (PythonExecutionException e) {
+            throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
             PythonUtils.Misc.invokeSafely(null, f -> {
                 if (!ReadContextManager.destroy(f)) {
@@ -539,64 +468,185 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         }
     }
 
+    /**
+     * Possibly interrupted by {@link #bytesIntoTable(TableCreator, byte[], SerializationOptions, PythonCancelable)}.
+     */
+    private void bytesIntoTableInternal(final TableCreator<?> tableCreator,
+        final SerializationOptions serializationOptions, final TableSpec spec, final File file) throws IOException {
+        ReadContext rc = ReadContextManager.createForFile(file);
+        if (spec.getNumberColumns() > 0 && rc.getNumRows() > 0) {
+            try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
+                VectorSchemaRoot root = reader.getVectorSchemaRoot(); // Will be closed by reader.
+                Type[] types = spec.getColumnTypes();
+                String[] names = spec.getColumnNames();
+
+                List<VectorExtractor> extractors = new ArrayList<>();
+                // Index is always string.
+                extractors.add(getStringOrByteExtractor(root.getVector(m_indexColumnName)));
+
+                // Setup an extractor for every column.
+                for (int j = 0; j < spec.getNumberColumns(); j++) {
+                    if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
+                        extractors.add(new MissingExtractor());
+                    } else {
+                        switch (types[j]) {
+                            case BOOLEAN:
+                                extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
+                                break;
+                            case INTEGER:
+                                extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
+                                    serializationOptions));
+                                break;
+                            case LONG:
+                                extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
+                                    serializationOptions));
+                                break;
+                            case DOUBLE:
+                                extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
+                                break;
+                            case STRING:
+                                extractors.add(getStringOrByteExtractor(root.getVector(names[j])));
+                                break;
+                            case BYTES:
+                                extractors.add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case INTEGER_LIST:
+                                extractors.add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case INTEGER_SET:
+                                extractors.add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case LONG_LIST:
+                                extractors
+                                    .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case LONG_SET:
+                                extractors.add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case DOUBLE_LIST:
+                                extractors
+                                    .add(new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case DOUBLE_SET:
+                                extractors
+                                    .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BOOLEAN_LIST:
+                                extractors
+                                    .add(new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BOOLEAN_SET:
+                                extractors
+                                    .add(new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case STRING_LIST:
+                                extractors
+                                    .add(new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case STRING_SET:
+                                extractors
+                                    .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BYTES_LIST:
+                                extractors
+                                    .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case BYTES_SET:
+                                extractors
+                                    .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            default:
+                                throw new IllegalStateException(
+                                    "Deserialization is not implemented for type: " + types[j]);
+                        }
+                    }
+                }
+                // Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
+                // further processing
+                for (int i = 0; i < root.getRowCount(); i++) {
+                    if (Thread.interrupted()) {
+                        // Stop deserialization if canceled by client.
+                        throw new CancellationException("Deserialization canceled by client.");
+                    }
+                    Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
+                    for (int j = 0; j < spec.getNumberColumns(); j++) {
+                        row.setCell(extractors.get(j + 1).extract(), j);
+                    }
+                    tableCreator.addRow(row);
+                }
+            }
+        }
+    }
+
     @Override
-    public TableSpec tableSpecFromBytes(final byte[] bytes) throws SerializationException {
+    public TableSpec tableSpecFromBytes(final byte[] bytes, final PythonCancelable cancelable)
+        // Note: We don't implement cancellation here, because reading the spec should be cancelable in a timely manner
+        // anyway.
+        throws SerializationException {
         String path = new String(bytes, StandardCharsets.UTF_8);
         final File file = new File(path);
         try {
             ReadContext rc = ReadContextManager.createForFile(file);
             if (rc.getTableSpec() == null) {
                 if (file.exists()) {
-                    ArrowStreamReader reader = rc.getReader();
-                    reader.loadNextBatch();
-                    Schema schema = reader.getVectorSchemaRoot().getSchema();
-                    Map<String, String> metadata = schema.getCustomMetadata();
-                    Map<String, String> columnSerializers = new HashMap<String, String>();
-                    //Build the table spec out of the metadata available in JSON format
-                    //Format: {"ArrowSerializationLibrary": {"index_columns": String[1], "columns": Column[?],
-                    //              "missing_columns": String[?], "num_rows": int}}
-                    //Column format: {"name": String, "metadata": {"serializer_id": String, "type_id": int}}
-                    String custom_metadata = metadata.get("ArrowSerializationLibrary");
-                    if (custom_metadata != null) {
-                        JsonReader jsreader = Json.createReader(new StringReader(custom_metadata));
-                        JsonObject jpandas_metadata = jsreader.readObject();
-                        JsonArray index_cols = jpandas_metadata.getJsonArray("index_columns");
-                        JsonArray cols = jpandas_metadata.getJsonArray("columns");
-                        JsonArray missing_cols = jpandas_metadata.getJsonArray("missing_columns");
-                        rc.setNumRows(jpandas_metadata.getInt("num_rows"));
-                        String[] names = new String[cols.size() - index_cols.size()];
-                        Type[] types = new Type[cols.size() - index_cols.size()];
-                        int noIdxCtr = 0;
-                        for (int i = 0; i < cols.size(); i++) {
-                            JsonObject col = cols.getJsonObject(i);
-                            boolean contained = false;
-                            for (int j = 0; j < index_cols.size(); j++) {
-                                if (index_cols.getString(j).contentEquals(col.getString("name"))) {
-                                    contained = true;
-                                    break;
+                    ArrowStreamReader reader = null;
+                    try {
+                        reader = rc.getReader();
+                        reader.loadNextBatch();
+                        Schema schema = reader.getVectorSchemaRoot().getSchema();
+                        Map<String, String> metadata = schema.getCustomMetadata();
+                        Map<String, String> columnSerializers = new HashMap<>();
+                        // Build the table spec out of the metadata available in JSON format
+                        // Format: {"ArrowSerializationLibrary": {"index_columns": String[1], "columns": Column[?],
+                        //          "missing_columns": String[?], "num_rows": int}}
+                        // Column format: {"name": String, "metadata": {"serializer_id": String, "type_id": int}}
+                        String customMetadata = metadata.get("ArrowSerializationLibrary");
+                        if (customMetadata != null) {
+                            try (JsonReader jsreader = Json.createReader(new StringReader(customMetadata))) {
+                                JsonObject jpandasMetadata = jsreader.readObject();
+                                JsonArray indexCols = jpandasMetadata.getJsonArray("index_columns");
+                                JsonArray cols = jpandasMetadata.getJsonArray("columns");
+                                JsonArray missingCols = jpandasMetadata.getJsonArray("missing_columns");
+                                rc.setNumRows(jpandasMetadata.getInt("num_rows"));
+                                String[] names = new String[cols.size() - indexCols.size()];
+                                Type[] types = new Type[cols.size() - indexCols.size()];
+                                int noIdxCtr = 0;
+                                for (int i = 0; i < cols.size(); i++) {
+                                    JsonObject col = cols.getJsonObject(i);
+                                    boolean contained = false;
+                                    for (int j = 0; j < indexCols.size(); j++) {
+                                        if (indexCols.getString(j).contentEquals(col.getString("name"))) {
+                                            contained = true;
+                                            break;
+                                        }
+                                    }
+                                    if (contained) {
+                                        m_indexColumnName = col.getString("name");
+                                        continue;
+                                    }
+                                    names[noIdxCtr] = col.getString("name");
+                                    JsonObject typeObj = col.getJsonObject("metadata");
+                                    types[noIdxCtr] = Type.getTypeForId(typeObj.getInt("type_id"));
+                                    if (types[noIdxCtr] == Type.BYTES || types[noIdxCtr] == Type.BYTES_LIST
+                                        || types[noIdxCtr] == Type.BYTES_SET) {
+                                        String serializerId = col.getJsonObject("metadata").getString("serializer_id");
+                                        if (!StringUtils.isBlank(serializerId)) {
+                                            columnSerializers.put(names[noIdxCtr], serializerId);
+                                        }
+                                    }
+                                    noIdxCtr++;
                                 }
-                            }
-                            if (contained) {
-                                m_indexColumnName = col.getString("name");
-                                continue;
-                            }
-                            names[noIdxCtr] = col.getString("name");
-                            JsonObject typeObj = col.getJsonObject("metadata");
-                            types[noIdxCtr] = Type.getTypeForId(typeObj.getInt("type_id"));
-                            if (types[noIdxCtr] == Type.BYTES || types[noIdxCtr] == Type.BYTES_LIST
-                                || types[noIdxCtr] == Type.BYTES_SET) {
-                                String serializerId = col.getJsonObject("metadata").getString("serializer_id");
-                                if (!StringUtils.isBlank(serializerId)) {
-                                    columnSerializers.put(names[noIdxCtr], serializerId);
+                                m_missingColumnNames = new String[missingCols.size()];
+                                for (int i = 0; i < missingCols.size(); i++) {
+                                    m_missingColumnNames[i] = missingCols.getString(i);
                                 }
+                                rc.setTableSpec(new TableSpecImpl(types, names, columnSerializers));
                             }
-                            noIdxCtr++;
                         }
-                        m_missingColumnNames = new String[missing_cols.size()];
-                        for (int i = 0; i < missing_cols.size(); i++) {
-                            m_missingColumnNames[i] = missing_cols.getString(i);
-                        }
-                        rc.setTableSpec(new TableSpecImpl(types, names, columnSerializers));
+                    } catch (Exception ex) {
+                        // Only close reader on exception. Otherwise it will be closed in #bytesIntoTableInternal(..).
+                        PythonUtils.Misc.closeSafely(null, reader);
+                        throw ex;
                     }
                 } else {
                     rc.setTableSpec(new TableSpecImpl(new Type[0], new String[0], null));

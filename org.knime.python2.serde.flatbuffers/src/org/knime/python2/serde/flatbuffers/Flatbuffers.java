@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
@@ -62,6 +63,9 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
+import org.knime.python2.kernel.PythonExecutionException;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanExtractor;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanListExtractor;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanSetExtractor;
@@ -113,170 +117,192 @@ import org.knime.python2.serde.flatbuffers.inserters.LongSetInserter;
 import org.knime.python2.serde.flatbuffers.inserters.StringInserter;
 import org.knime.python2.serde.flatbuffers.inserters.StringListInserter;
 import org.knime.python2.serde.flatbuffers.inserters.StringSetInserter;
+import org.knime.python2.util.PythonUtils;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
- * Serializes KNIME tables using the google flatbuffers library according to the shema found in:
+ * Serializes KNIME tables using the Google Flatbuffers library according to the schema found in:
  * flatbuffersSchema/schemaCol.fbs
  *
  * @author Oliver Sampson, University of Konstanz
- *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class Flatbuffers implements SerializationLibrary {
 
     @Override
-    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions)
-        throws SerializationException {
+    public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions,
+        final PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException {
         try {
-            final FlatBufferBuilder builder = new FlatBufferBuilder();
-
-            List<FlatbuffersVectorInserter> inserters = new ArrayList<FlatbuffersVectorInserter>();
-
-            Type[] types = tableIterator.getTableSpec().getColumnTypes();
-            String[] names = tableIterator.getTableSpec().getColumnNames();
-            Map<String, String> serializers = tableIterator.getTableSpec().getColumnSerializers();
-            int numRows = tableIterator.getNumberRemainingRows();
-            for (int i = 0; i < types.length; i++) {
-                switch (types[i]) {
-                    case BOOLEAN: {
-                        inserters.add(new BooleanInserter(numRows));
-                        break;
-                    }
-                    case BOOLEAN_LIST: {
-                        inserters.add(new BooleanListInserter(numRows));
-                        break;
-                    }
-                    case BOOLEAN_SET: {
-                        inserters.add(new BooleanSetInserter(numRows));
-                        break;
-                    }
-                    case INTEGER: {
-                        inserters.add(new IntInserter(numRows, serializationOptions));
-                        break;
-                    }
-                    case INTEGER_LIST: {
-                        inserters.add(new IntListInserter(numRows));
-                        break;
-                    }
-                    case INTEGER_SET: {
-                        inserters.add(new IntSetInserter(numRows));
-                        break;
-                    }
-                    case LONG: {
-                        inserters.add(new LongInserter(numRows, serializationOptions));
-                        break;
-                    }
-                    case LONG_LIST: {
-                        inserters.add(new LongListInserter(numRows));
-                        break;
-                    }
-                    case LONG_SET: {
-                        inserters.add(new LongSetInserter(numRows));
-                        break;
-                    }
-                    case DOUBLE: {
-                        inserters.add(new DoubleInserter(numRows));
-                        break;
-                    }
-                    case DOUBLE_LIST: {
-                        inserters.add(new DoubleListInserter(numRows));
-                        break;
-                    }
-                    case DOUBLE_SET: {
-                        inserters.add(new DoubleSetInserter(numRows));
-                        break;
-                    }
-                    case STRING: {
-                        inserters.add(new StringInserter(numRows));
-                        break;
-                    }
-                    case STRING_LIST: {
-                        inserters.add(new StringListInserter(numRows));
-                        break;
-                    }
-                    case STRING_SET: {
-                        inserters.add(new StringSetInserter(numRows));
-                        break;
-                    }
-                    case BYTES: {
-                        inserters.add(new BytesInserter(numRows, serializers.get(names[i])));
-                        break;
-                    }
-                    case BYTES_LIST: {
-                        inserters.add(new BytesListInserter(numRows, serializers.get(names[i])));
-                        break;
-                    }
-                    case BYTES_SET: {
-                        inserters.add(new BytesSetInserter(numRows, serializers.get(names[i])));
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            }
-
-            final int[] rowIdOffsets = new int[numRows];
-
-            int rowIdx = 0;
-            // Convert the rows to columns
-            while (tableIterator.hasNext()) {
-                final Row row = tableIterator.next();
-                rowIdOffsets[rowIdx] = builder.createString(row.getRowKey());
-
-                for (int i = 0; i < inserters.size(); i++) {
-                    inserters.get(i).put(row.getCell(i));
-                }
-                rowIdx++;
-            }
-            int numCols = tableIterator.getTableSpec().getNumberColumns();
-            final int[] colOffsets = new int[numCols];
-            final int[] colNameOffsets = new int[numCols];
-
-            int colIdx = 0;
-            for (final FlatbuffersVectorInserter inserter : inserters) {
-                colOffsets[colIdx] = inserter.createColumn(builder);
-                colNameOffsets[colIdx] = builder.createString(names[colIdx]);
-                colIdx++;
-            }
-
-            final int rowIdVecOffset = KnimeTable.createRowIDsVector(builder, rowIdOffsets);
-
-            final int colNameVecOffset = KnimeTable.createColNamesVector(builder, colNameOffsets);
-
-            final int colVecOffset = KnimeTable.createColumnsVector(builder, colOffsets);
-
-            KnimeTable.startKnimeTable(builder);
-            KnimeTable.addRowIDs(builder, rowIdVecOffset);
-            KnimeTable.addColNames(builder, colNameVecOffset);
-            KnimeTable.addColumns(builder, colVecOffset);
-            final int knimeTable = KnimeTable.endKnimeTable(builder);
-            builder.finish(knimeTable);
-
-            return builder.sizedByteArray();
+            return PythonUtils.Misc.executeCancelable(() -> tableToBytesInternal(tableIterator, serializationOptions),
+                cancelable);
+        } catch (PythonExecutionException ex) {
+            throw new SerializationException("An error occurred during serialization. See log for errors.", ex);
         } catch (AssertionError ex) {
-            //Assertion error is thrown if buffer cannot be grown
+            // Assertion error is thrown if buffer cannot be grown.
             throw new SerializationException(
-                "The requested buffersize during serialization exceeds the maximum buffer size."
-                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the configuration dialog.");
+                "The requested buffer size during serialization exceeds the maximum buffer size."
+                    + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the"
+                    + " configuration dialog.");
         }
+    }
+
+    /**
+     * Possibly interrupted by {@link #tableToBytes(TableIterator, SerializationOptions, PythonCancelable)}.
+     */
+    private static byte[] tableToBytesInternal(final TableIterator tableIterator,
+        final SerializationOptions serializationOptions) {
+        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        List<FlatbuffersVectorInserter> inserters = new ArrayList<>();
+
+        Type[] types = tableIterator.getTableSpec().getColumnTypes();
+        String[] names = tableIterator.getTableSpec().getColumnNames();
+        Map<String, String> serializers = tableIterator.getTableSpec().getColumnSerializers();
+        int numRows = tableIterator.getNumberRemainingRows();
+        for (int i = 0; i < types.length; i++) {
+            switch (types[i]) {
+                case BOOLEAN: {
+                    inserters.add(new BooleanInserter(numRows));
+                    break;
+                }
+                case BOOLEAN_LIST: {
+                    inserters.add(new BooleanListInserter(numRows));
+                    break;
+                }
+                case BOOLEAN_SET: {
+                    inserters.add(new BooleanSetInserter(numRows));
+                    break;
+                }
+                case INTEGER: {
+                    inserters.add(new IntInserter(numRows, serializationOptions));
+                    break;
+                }
+                case INTEGER_LIST: {
+                    inserters.add(new IntListInserter(numRows));
+                    break;
+                }
+                case INTEGER_SET: {
+                    inserters.add(new IntSetInserter(numRows));
+                    break;
+                }
+                case LONG: {
+                    inserters.add(new LongInserter(numRows, serializationOptions));
+                    break;
+                }
+                case LONG_LIST: {
+                    inserters.add(new LongListInserter(numRows));
+                    break;
+                }
+                case LONG_SET: {
+                    inserters.add(new LongSetInserter(numRows));
+                    break;
+                }
+                case DOUBLE: {
+                    inserters.add(new DoubleInserter(numRows));
+                    break;
+                }
+                case DOUBLE_LIST: {
+                    inserters.add(new DoubleListInserter(numRows));
+                    break;
+                }
+                case DOUBLE_SET: {
+                    inserters.add(new DoubleSetInserter(numRows));
+                    break;
+                }
+                case STRING: {
+                    inserters.add(new StringInserter(numRows));
+                    break;
+                }
+                case STRING_LIST: {
+                    inserters.add(new StringListInserter(numRows));
+                    break;
+                }
+                case STRING_SET: {
+                    inserters.add(new StringSetInserter(numRows));
+                    break;
+                }
+                case BYTES: {
+                    inserters.add(new BytesInserter(numRows, serializers.get(names[i])));
+                    break;
+                }
+                case BYTES_LIST: {
+                    inserters.add(new BytesListInserter(numRows, serializers.get(names[i])));
+                    break;
+                }
+                case BYTES_SET: {
+                    inserters.add(new BytesSetInserter(numRows, serializers.get(names[i])));
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        final int[] rowIdOffsets = new int[numRows];
+        int rowIdx = 0;
+        // Convert the rows to columns.
+        while (tableIterator.hasNext()) {
+            if (Thread.interrupted()) {
+                // Stop serialization if canceled by client.
+                throw new CancellationException("Serialization canceled by client.");
+            }
+            final Row row = tableIterator.next();
+            rowIdOffsets[rowIdx] = builder.createString(row.getRowKey());
+
+            for (int i = 0; i < inserters.size(); i++) {
+                inserters.get(i).put(row.getCell(i));
+            }
+            rowIdx++;
+        }
+
+        int numCols = tableIterator.getTableSpec().getNumberColumns();
+        final int[] colOffsets = new int[numCols];
+        final int[] colNameOffsets = new int[numCols];
+        int colIdx = 0;
+        for (final FlatbuffersVectorInserter inserter : inserters) {
+            colOffsets[colIdx] = inserter.createColumn(builder);
+            colNameOffsets[colIdx] = builder.createString(names[colIdx]);
+            colIdx++;
+        }
+
+        final int rowIdVecOffset = KnimeTable.createRowIDsVector(builder, rowIdOffsets);
+        final int colNameVecOffset = KnimeTable.createColNamesVector(builder, colNameOffsets);
+        final int colVecOffset = KnimeTable.createColumnsVector(builder, colOffsets);
+
+        KnimeTable.startKnimeTable(builder);
+        KnimeTable.addRowIDs(builder, rowIdVecOffset);
+        KnimeTable.addColNames(builder, colNameVecOffset);
+        KnimeTable.addColumns(builder, colVecOffset);
+        final int knimeTable = KnimeTable.endKnimeTable(builder);
+        builder.finish(knimeTable);
+
+        return builder.sizedByteArray();
     }
 
     @Override
     public void bytesIntoTable(final TableCreator<?> tableCreator, final byte[] bytes,
-        final SerializationOptions serializationOptions) throws SerializationException {
+        final SerializationOptions serializationOptions, final PythonCancelable cancelable)
+        throws SerializationException, PythonCanceledExecutionException {
+        try {
+            PythonUtils.Misc.executeCancelable(() -> {
+                bytesIntoTableInternal(tableCreator, bytes, serializationOptions);
+                return null;
+            }, cancelable);
+        } catch (PythonExecutionException ex) {
+            throw new SerializationException("An error occurred during deserialization. See log for details.", ex);
+        }
+    }
 
+    private static void bytesIntoTableInternal(final TableCreator<?> tableCreator, final byte[] bytes,
+        final SerializationOptions serializationOptions) {
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
-        final Map<String, Type> colTypes = new HashMap<>();
-
-        List<VectorExtractor> extractors = new ArrayList<VectorExtractor>();
-
         if (table.colNamesLength() == 0) {
             return;
         }
-
+        final Map<String, Type> colTypes = new HashMap<>();
+        List<VectorExtractor> extractors = new ArrayList<>();
         for (int j = 0; j < table.columnsLength(); j++) {
-
             final Column col = table.columns(j);
             switch (Type.getTypeForId(col.type())) {
                 case BOOLEAN: {
@@ -398,9 +424,11 @@ public class Flatbuffers implements SerializationLibrary {
 
         final int numRows = table.rowIDsLength();
         final int numCols = table.colNamesLength();
-
         for (int rowCount = 0; rowCount < numRows; rowCount++) {
-            //final Row r = new RowImpl(table.rowIDs(rowCount), numCols);
+            if (Thread.interrupted()) {
+                // Stop serialization if canceled by client.
+                throw new CancellationException("Deserialization canceled by client.");
+            }
             final Row r = new RowImpl(table.rowID(rowCount), numCols);
             for (int colCount = 0; colCount < numCols; colCount++) {
                 r.setCell(extractors.get(colCount).extract(), colCount);
@@ -410,23 +438,23 @@ public class Flatbuffers implements SerializationLibrary {
     }
 
     @Override
-    public TableSpec tableSpecFromBytes(final byte[] bytes) throws SerializationException {
+    public TableSpec tableSpecFromBytes(final byte[] bytes, final PythonCancelable cancelable)
+        throws SerializationException {
+        // Note: We don't implement cancellation here, because reading the spec should be cancelable in a timely manner
+        // anyway.
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
 
         final List<String> colNames = new ArrayList<>();
         final Type[] types = new Type[table.colNamesLength()];
-
-        final Map<String, String> serializers = new HashMap<>();
-
         for (int h = 0; h < table.colNamesLength(); h++) {
             final String colName = table.colNames(h);
             colNames.add(colName);
         }
 
+        final Map<String, String> serializers = new HashMap<>();
         for (int j = 0; j < table.columnsLength(); j++) {
             final Column col = table.columns(j);
             types[j] = Type.getTypeForId(col.type());
-
             switch (Type.getTypeForId(col.type())) {
                 case BYTES: {
                     serializers.put(colNames.get(j), col.byteColumn().serializer());
@@ -442,9 +470,7 @@ public class Flatbuffers implements SerializationLibrary {
                 }
                 default:
                     break;
-
             }
-
         }
 
         return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), serializers);

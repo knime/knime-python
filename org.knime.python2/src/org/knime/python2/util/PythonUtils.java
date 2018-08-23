@@ -50,8 +50,17 @@ package org.knime.python2.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.knime.core.util.ThreadUtils;
+import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
+import org.knime.python2.kernel.PythonExecutionException;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -156,6 +165,8 @@ public final class PythonUtils {
 
     public static class Misc {
 
+        private static final AtomicLong UNIQUE_THREAD_ID = new AtomicLong();
+
         private Misc() {
         }
 
@@ -196,6 +207,64 @@ public final class PythonUtils {
                     throw new RuntimeException(ex.getMessage(), ex);
                 }
             }, closeables);
+        }
+
+        /**
+         * Runs a task in a worker thread and blocks until the task is finished, an exception occurs, or execution is
+         * canceled. The worker thread is {@link Thread#interrupt() interrupted} if a cancellation occurs.
+         *
+         * @param callable the task to run cancelable
+         * @param cancelable the cancelable to check for cancellation
+         * @return the result of the task, if any
+         * @throws PythonExecutionException if any exception occurred during execution
+         * @throws PythonCanceledExecutionException if canceled
+         */
+        public static <T> T executeCancelable(final Callable<T> callable, final PythonCancelable cancelable)
+            throws PythonExecutionException, PythonCanceledExecutionException {
+            final Thread clientThread = Thread.currentThread();
+            final AtomicBoolean done = new AtomicBoolean(false);
+            final AtomicReference<T> output = new AtomicReference<>();
+            final AtomicReference<Exception> exception = new AtomicReference<>(null);
+            // Worker thread.
+            Thread worker = ThreadUtils.threadWithContext(() -> {
+                try {
+                    output.set(callable.call());
+                } catch (final Exception ex) {
+                    exception.set(ex);
+                }
+                done.set(true);
+                // Wake up the waiting client thread.
+                clientThread.interrupt();
+            }, "KNIME-Python-Worker-" + UNIQUE_THREAD_ID.incrementAndGet());
+            worker.start();
+            // Wait until worker thread is done or execution is cancelled.
+            while (!done.get()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (final InterruptedException ex) {
+                    if (!done.get()) {
+                        Thread.currentThread().interrupt();
+                    }
+                    // Else we were most likely interrupted by the worker thread.
+                }
+                try {
+                    cancelable.checkCanceled();
+                } catch (PythonCanceledExecutionException ex) {
+                    worker.interrupt();
+                    throw ex;
+                }
+            }
+            // If there was an exception in the worker thread, throw it here.
+            Exception ex = exception.get();
+            if (ex != null) {
+                if (ex instanceof PythonCanceledExecutionException) {
+                    // May happen if the executed task checks for cancellation itself.
+                    throw (PythonCanceledExecutionException)ex;
+                } else {
+                    throw new PythonExecutionException(ex.getMessage(), ex);
+                }
+            }
+            return output.get();
         }
 
         /**
