@@ -50,7 +50,6 @@ import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RunnableFuture;
 
 import org.knime.core.node.NodeLogger;
@@ -129,7 +128,7 @@ public final class PythonCommands implements AutoCloseable {
     /**
      * @return a runnable future that returns the Python kernel's process id
      */
-    public synchronized Future<Integer> getPid() {
+    public synchronized RunnableFuture<Integer> getPid() {
         return createTask(new IntReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getpid", null, null));
     }
@@ -142,7 +141,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param variables the serialized variables table as byte array
      * @return a runnable future that puts the flow variables into the Python workspace
      */
-    public synchronized Future<Void> putFlowVariables(final String name, final byte[] variables) {
+    public synchronized RunnableFuture<Void> putFlowVariables(final String name, final byte[] variables) {
         final byte[] payload = new PayloadEncoder().putBytes(variables).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
             "putFlowVariables", payload, ImmutableMap.of(PAYLOAD_NAME, name)));
@@ -154,7 +153,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the variable name of the flow variables dictionary in the Python workspace
      * @return a runnable future that returns the flow variables from the Python workspace
      */
-    public synchronized Future<byte[]> getFlowVariables(final String name) {
+    public synchronized RunnableFuture<byte[]> getFlowVariables(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getFlowVariables", payload, null));
@@ -168,7 +167,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param table the serialized KNIME table as byte array
      * @return a runnable future that puts the table into the Python workspace
      */
-    public synchronized Future<Void> putTable(final String name, final byte[] table) {
+    public synchronized RunnableFuture<Void> putTable(final String name, final byte[] table) {
         // FIXME: Avoid array creation. We effectively double the memory requirements of "table".
         final byte[] payload = new PayloadEncoder().putBytes(table).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
@@ -183,7 +182,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param table the serialized table chunk as byte array
      * @return a runnable future that appends the chunk of table rows to the table
      */
-    public synchronized Future<Void> appendToTable(final String name, final byte[] table) {
+    public synchronized RunnableFuture<Void> appendToTable(final String name, final byte[] table) {
         // FIXME: Avoid array creation. We effectively double the memory requirements of "table".
         final byte[] payload = new PayloadEncoder().putBytes(table).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
@@ -196,7 +195,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the variable name of the table in the Python workspace
      * @return a runnable future that returns the table's size in bytes
      */
-    public synchronized Future<Integer> getTableSize(final String name) {
+    public synchronized RunnableFuture<Integer> getTableSize(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new IntReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getTableSize", payload, null));
@@ -208,7 +207,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the variable name of the table in the Python workspace
      * @return a runnable future that returns the serialized table as byte array
      */
-    public synchronized Future<byte[]> getTable(final String name) {
+    public synchronized RunnableFuture<byte[]> getTable(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getTable", payload, null));
@@ -222,7 +221,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param end the last row of the chunk
      * @return a runnable future that returns the serialized table chunk as byte array
      */
-    public synchronized Future<byte[]> getTableChunk(final String name, final int start, final int end) {
+    public synchronized RunnableFuture<byte[]> getTableChunk(final String name, final int start, final int end) {
         final byte[] payload = new PayloadEncoder().putString(name).putInt(start).putInt(end).get();
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getTableChunk", payload, null));
@@ -236,7 +235,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param object the serialized Python object
      * @return a runnable future that puts the serialized Python object in the Python workspace
      */
-    public synchronized Future<Void> putObject(final String name, final byte[] object) {
+    public synchronized RunnableFuture<Void> putObject(final String name, final byte[] object) {
         final byte[] payload = new PayloadEncoder().putBytes(object).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
             "putObject", payload, ImmutableMap.of(PAYLOAD_NAME, name)));
@@ -249,7 +248,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the variable name of the object in the Python workspace
      * @return a runnable future that returns the serialized Python object
      */
-    public synchronized Future<byte[]> getObject(final String name) {
+    public synchronized RunnableFuture<byte[]> getObject(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "getObject", payload, null));
@@ -264,7 +263,7 @@ public final class PythonCommands implements AutoCloseable {
      *            dbidentifier</tt>
      * @return a runnable future that puts the connection information and query in the Python workspace
      */
-    public synchronized Future<Void> putSql(final String name, final byte[] sql) {
+    public synchronized RunnableFuture<Void> putSql(final String name, final byte[] sql) {
         final byte[] payload = new PayloadEncoder().putBytes(sql).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
             "putSql", payload, ImmutableMap.of(PAYLOAD_NAME, name)));
@@ -276,7 +275,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the name of the variable in the Python workspace
      * @return a runnable future that returns the SQL query from the Python workspace
      */
-    public synchronized Future<String> getSql(final String name) {
+    public synchronized RunnableFuture<String> getSql(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new AbstractTaskHandler<String>() {
 
@@ -293,7 +292,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param name the variable name of the image in the Python workspace
      * @return a runnable future that returns the serialized image
      */
-    public synchronized Future<byte[]> getImage(final String name) {
+    public synchronized RunnableFuture<byte[]> getImage(final String name) {
         final byte[] payload = new PayloadEncoder().putString(name).get();
         return createTask(new AbstractTaskHandler<byte[]>() {
 
@@ -311,7 +310,7 @@ public final class PythonCommands implements AutoCloseable {
      *
      * @return a runnable future that returns the serialized list of variable names
      */
-    public synchronized Future<byte[]> listVariables() {
+    public synchronized RunnableFuture<byte[]> listVariables() {
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "listVariables", null, null));
     }
@@ -321,7 +320,7 @@ public final class PythonCommands implements AutoCloseable {
      *
      * @return a runnable future that returns if Python supports auto-completion
      */
-    public synchronized Future<Boolean> hasAutoComplete() {
+    public synchronized RunnableFuture<Boolean> hasAutoComplete() {
         return createTask(new AbstractTaskHandler<Boolean>() {
 
             @Override
@@ -339,7 +338,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param column the cursor position in the line
      * @return a runnable future that returns the serialized list of auto-completion suggestions
      */
-    public synchronized Future<byte[]> autoComplete(final String sourceCode, final int line, final int column) {
+    public synchronized RunnableFuture<byte[]> autoComplete(final String sourceCode, final int line, final int column) {
         final byte[] payload = new PayloadEncoder().putString(sourceCode).putInt(line).putInt(column).get();
         return createTask(new ByteArrayReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "autoComplete", payload, null));
@@ -353,7 +352,8 @@ public final class PythonCommands implements AutoCloseable {
      * @param path the path to the code file containing the serializer function
      * @return a runnable future that adds the serializer to the Python workspace
      */
-    public synchronized Future<Void> addSerializer(final String serializerId, final String typeId, final String path) {
+    public synchronized RunnableFuture<Void> addSerializer(final String serializerId, final String typeId,
+        final String path) {
         final byte[] payload = new PayloadEncoder().putString(serializerId).putString(typeId).putString(path).get();
         return createTask(new VoidReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "addSerializer", payload, null));
@@ -366,7 +366,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param path the path to the code file containing the deserializer function
      * @return a runnable future that adds the deserializer to the Python workspace
      */
-    public synchronized Future<Void> addDeserializer(final String deserializerId, final String path) {
+    public synchronized RunnableFuture<Void> addDeserializer(final String deserializerId, final String path) {
         final byte[] payload = new PayloadEncoder().putString(deserializerId).putString(path).get();
         return createTask(new VoidReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "addDeserializer", payload, null));
@@ -379,7 +379,7 @@ public final class PythonCommands implements AutoCloseable {
      * @param paths a semicolon-separated list of directories
      * @return a runnable future that adds the paths to the <code>PYTHONPATH</code>
      */
-    public synchronized Future<Void> addToPythonPath(final String paths) {
+    public synchronized RunnableFuture<Void> addToPythonPath(final String paths) {
         final byte[] payload = new PayloadEncoder().putString(paths).get();
         return createTask(new VoidReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "setCustomModulePaths", payload, null));
@@ -392,7 +392,7 @@ public final class PythonCommands implements AutoCloseable {
      * @return a runnable future that executes the snippet and returns output and error/warning messages that were
      *         emitted during execution
      */
-    public synchronized Future<String[]> execute(final String sourceCode) {
+    public synchronized RunnableFuture<String[]> execute(final String sourceCode) {
         return createTask(new AbstractTaskHandler<String[]>() {
 
             @Override
@@ -406,7 +406,7 @@ public final class PythonCommands implements AutoCloseable {
         }, createExecuteCommand(sourceCode));
     }
 
-    public synchronized Future<String[]> executeAsync(final String sourceCode) {
+    public synchronized RunnableFuture<String[]> executeAsync(final String sourceCode) {
         return createTask(new AbstractTaskHandler<String[]>() {
 
             @Override
@@ -425,7 +425,7 @@ public final class PythonCommands implements AutoCloseable {
      *
      * @return a runnable future that resets the Python workspace
      */
-    public synchronized Future<Void> reset() {
+    public synchronized RunnableFuture<Void> reset() {
         return createTask(new VoidReturningTaskHandler(),
             new DefaultMessage(m_messaging.createNextMessageId(), "reset", null, null));
     }
