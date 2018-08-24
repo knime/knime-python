@@ -58,9 +58,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.util.FileUtil;
+import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -79,6 +82,8 @@ import org.knime.python2.kernel.PythonExecutionException;
 import org.knime.python2.util.BitArray;
 import org.knime.python2.util.PythonUtils;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 /**
  * Used for (de)serializing KNIME tables via CSV files.
  *
@@ -87,6 +92,10 @@ import org.knime.python2.util.PythonUtils;
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class CsvSerializationLibrary implements SerializationLibrary {
+
+    /** Used to make (de-)serialization cancelable. */
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
+        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-csv-serde-%d").build()));
 
     /**
      * The root directory in which the temporary files used for data transfer are stored. Will be populated during the
@@ -115,7 +124,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             file = FileUtil.createTempFile("java-to-python-", ".csv", m_tempDir, false);
             final File finalFile = file;
             return PythonUtils.Misc.executeCancelable(
-                () -> tableToBytesInternal(tableIterator, serializationOptions, finalFile), cancelable);
+                () -> tableToBytesInternal(tableIterator, serializationOptions, finalFile), m_executorService,
+                cancelable);
         } catch (final IOException | PythonExecutionException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
@@ -392,7 +402,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, serializationOptions, finalFile);
                 return null;
-            }, cancelable);
+            }, m_executorService, cancelable);
         } catch (final PythonExecutionException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
@@ -874,5 +884,13 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             base64 = base64.substring(1, base64.length() - 1);
         }
         return Base64.getDecoder().decode(base64.getBytes());
+    }
+
+    @Override
+    public void close() throws Exception {
+        PythonUtils.Misc.invokeSafely(null, ExecutorService::shutdownNow, m_executorService);
+        if (m_tempDir != null) {
+            PythonUtils.Misc.invokeSafely(null, FileUtil::deleteRecursively, m_tempDir);
+        }
     }
 }

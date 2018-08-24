@@ -131,7 +131,7 @@ def bytes_into_table(table, data_bytes):
         read_types = []
         read_serializers = {}
     finally:
-        PythonUtils.invoke_safely(None, os.remove, path)
+        PythonUtils.invoke_safely(None, os.remove, [path])
 
 
 # Generator function for collection columns of type Integer, Long, Double.
@@ -726,11 +726,11 @@ def table_to_bytes(table):
             stream_writer.close()
         return bytearray(path, 'utf-8')
     except BaseException:
-        PythonUtils.invoke_safely(None, os.remove, path)
+        PythonUtils.invoke_safely(None, os.remove, [path])
         raise
 
 
 def close():
     global _temp_dir
     # Remove entire temporary directory.
-    PythonUtils.invoke_safely(None, lambda p: shutil.rmtree(p, ignore_errors=True), _temp_dir)
+    PythonUtils.invoke_safely(None, lambda p: shutil.rmtree(p, ignore_errors=True), [_temp_dir])

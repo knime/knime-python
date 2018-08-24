@@ -51,7 +51,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -119,6 +122,7 @@ import org.knime.python2.serde.flatbuffers.inserters.StringListInserter;
 import org.knime.python2.serde.flatbuffers.inserters.StringSetInserter;
 import org.knime.python2.util.PythonUtils;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
@@ -131,12 +135,16 @@ import com.google.flatbuffers.FlatBufferBuilder;
  */
 public class Flatbuffers implements SerializationLibrary {
 
+    /** Used to make (de-)serialization cancelable. */
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(Executors
+        .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-flatbuffers-serde-%d").build()));
+
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions,
         final PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(() -> tableToBytesInternal(tableIterator, serializationOptions),
-                cancelable);
+                m_executorService, cancelable);
         } catch (PythonExecutionException ex) {
             throw new SerializationException("An error occurred during serialization. See log for errors.", ex);
         } catch (AssertionError ex) {
@@ -288,7 +296,7 @@ public class Flatbuffers implements SerializationLibrary {
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, bytes, serializationOptions);
                 return null;
-            }, cancelable);
+            }, m_executorService, cancelable);
         } catch (PythonExecutionException ex) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", ex);
         }
@@ -474,5 +482,10 @@ public class Flatbuffers implements SerializationLibrary {
         }
 
         return new TableSpecImpl(types, colNames.toArray(new String[colNames.size()]), serializers);
+    }
+
+    @Override
+    public void close() throws Exception {
+        PythonUtils.Misc.invokeSafely(null, ExecutorService::shutdownNow, m_executorService);
     }
 }

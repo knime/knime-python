@@ -64,12 +64,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  * Class administrating all {@link SerializationLibraryExtension}s.
  *
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class SerializationLibraryExtensions {
 
     private static final Map<String, SerializationLibraryExtension> EXTENSIONS = new HashMap<>();
-
-    private final Map<String, SerializationLibrary> m_serializationLibrary = new HashMap<>();
 
     /**
      * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
@@ -98,16 +98,18 @@ public class SerializationLibraryExtensions {
     }
 
     /**
-     * Get a serialization library instance by id. The instance is only created if the id has not been requested before.
+     * Creates a new serialization library instance from the extension of the given id.
      *
-     * @param id the library's id
+     * @param id the library extension's id
      * @return a serialization library
+     * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public SerializationLibrary getSerializationLibrary(final String id) {
-        if (!m_serializationLibrary.containsKey(id)) {
-            m_serializationLibrary.put(id, EXTENSIONS.get(id).getJavaSerializationLibraryFactory().createInstance());
+        SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        if (extension == null) {
+            throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
         }
-        return m_serializationLibrary.get(id);
+        return extension.getJavaSerializationLibraryFactory().createInstance();
     }
 
     /**
@@ -138,8 +140,13 @@ public class SerializationLibraryExtensions {
      *
      * @param id the library's id
      * @return the serialization library path
+     * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static String getSerializationLibraryPath(final String id) {
-        return EXTENSIONS.get(id).getPythonSerializationLibraryPath();
+        SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        if (extension == null) {
+            throw new IllegalArgumentException("No serialization library path available for id '" + id + "'.");
+        }
+        return extension.getPythonSerializationLibraryPath();
     }
 }

@@ -218,7 +218,7 @@ def bytes_into_table(table, data_bytes):
             # debug_util.breakpoint()
             table._data_frame = data_frame
     finally:
-        PythonUtils.invoke_safely(None, os.remove, path)
+        PythonUtils.invoke_safely(None, os.remove, [path])
 
 
 # Serialize a pandas.DataFrame into a temporary CSV file.
@@ -291,11 +291,11 @@ def table_to_bytes(table):
             out_file.write(out_buffer.getvalue().encode('utf-8'))
         return bytearray(path, 'utf-8')
     except BaseException:
-        PythonUtils.invoke_safely(None, os.remove, path)
+        PythonUtils.invoke_safely(None, os.remove, [path])
         raise
 
 
 def close():
     global _temp_dir
     # Remove entire temporary directory.
-    PythonUtils.invoke_safely(None, lambda p: shutil.rmtree(p, ignore_errors=True), _temp_dir)
+    PythonUtils.invoke_safely(None, lambda p: shutil.rmtree(p, ignore_errors=True), [_temp_dir])

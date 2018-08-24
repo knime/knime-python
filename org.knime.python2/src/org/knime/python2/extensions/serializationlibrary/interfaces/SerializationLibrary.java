@@ -57,7 +57,7 @@ import org.knime.python2.kernel.PythonCanceledExecutionException;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface SerializationLibrary {
+public interface SerializationLibrary extends AutoCloseable {
 
     /**
      * Converts the given table into bytes for transfer to python. Implementing classes are expected to cancel
