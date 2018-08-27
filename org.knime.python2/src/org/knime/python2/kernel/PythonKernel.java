@@ -72,8 +72,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -144,7 +145,7 @@ public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-    private static final AtomicInteger THREAD_UNIQUE_ID = new AtomicInteger();
+    private static final int WAIT_TIMEOUT_MILLISECONDS = 1000;
 
     /**
      * @return the duration, in milliseconds, to wait when trying to establish a connection to Python
@@ -197,6 +198,10 @@ public class PythonKernel implements AutoCloseable {
     private final boolean m_hasAutocomplete;
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
+
+    // TODO use this executor service where possible
+    // TODO can we use a multithread pool?
+    private final ExecutorService m_executorService = Executors.newSingleThreadExecutor();
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -935,30 +940,34 @@ public class PythonKernel implements AutoCloseable {
      */
     public void putObject(final String name, final PickledObject object, final ExecutionContext exec)
         throws IOException, CanceledExecutionException {
-        final AtomicBoolean done = new AtomicBoolean(false);
+        // Remember exceptions
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
-        final Thread nodeExecutionThread = Thread.currentThread();
-        // Thread running the execute
-        new Thread(() -> {
+        // Start the thread
+        final Future<?> future = m_executorService.submit(() -> {
             try {
                 putObject(name, object);
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-            done.set(true);
-            // Wake up waiting thread
-            nodeExecutionThread.interrupt();
-        }).start();
-        // Wait until execution is done
-        while (done.get() != true) {
+        });
+
+        // Wait for the thread
+        boolean done = false;
+        while (!done) {
             try {
-                // Wake up once a second to check if execution has been canceled
-                Thread.sleep(1000);
+                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+                done = true;
+            } catch (final ExecutionException ex) {
+                // Can't happen because we catch every exception
             } catch (final InterruptedException ex) {
-                // Happens if python thread is done
+                // The thread has been interrupted
+                exec.checkCanceled();
+            } catch (final TimeoutException ex) {
+                // Not done yet -> Check if the execution has been canceled
+                exec.checkCanceled();
             }
-            exec.checkCanceled();
         }
+
         // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
@@ -1233,12 +1242,12 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
-        final AtomicBoolean done = new AtomicBoolean(false);
+
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
-        final Thread nodeExecutionThread = Thread.currentThread();
         final AtomicReference<String[]> output = new AtomicReference<>();
+
         // Thread running the execute
-        ThreadUtils.threadWithContext(() -> {
+        final Future<?> future = m_executorService.submit(ThreadUtils.runnableWithContext(() -> {
             String[] out;
             try {
                 out = execute(sourceCode);
@@ -1250,25 +1259,27 @@ public class PythonKernel implements AutoCloseable {
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-            done.set(true);
-            // Wake up waiting thread
-            nodeExecutionThread.interrupt();
-        }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
+        }));
+
         // Wait until execution is done
-        while (!done.get()) {
+        boolean done = false;
+        while (!done) {
             try {
-                // Wake up once a second to check if execution has been canceled
-                Thread.sleep(1000);
-            } catch (final InterruptedException ex) {
-                // Happens if python thread is done
-            }
-            try {
-                // TODO: Refactor to use Python-specific canceled exception everywhere.
-                cancelable.checkCanceled();
-            } catch (final PythonCanceledExecutionException ex) {
-                throw new CanceledExecutionException(ex.getMessage());
+                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+                done = true;
+            } catch (final ExecutionException ex) {
+                // Can't happen because we catch every exception
+            } catch (final InterruptedException | TimeoutException ex) {
+                // The thread has been interrupted or is not done yet
+                try {
+                    // TODO: Refactor to use Python-specific canceled exception everywhere.
+                    cancelable.checkCanceled();
+                } catch (PythonCanceledExecutionException ex1) {
+                    throw new CanceledExecutionException(ex.getMessage());
+                }
             }
         }
+
         // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
@@ -1277,49 +1288,50 @@ public class PythonKernel implements AutoCloseable {
     }
 
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
-            throws IOException, CanceledExecutionException {
-            final AtomicBoolean done = new AtomicBoolean(false);
-            final AtomicReference<Exception> exception = new AtomicReference<>(null);
-            final Thread nodeExecutionThread = Thread.currentThread();
-            final AtomicReference<String[]> output = new AtomicReference<>();
-            // Thread running the execute
-            ThreadUtils.threadWithContext(() -> {
-                String[] out;
-                try {
-                    out = executeAsync(sourceCode);
-                    output.set(out);
-                    // If the error log has content throw it as exception
-                    if (!out[1].isEmpty()) {
-                        throw new PythonIOException(out[1]);
-                    }
-                } catch (final Exception ex) {
-                    exception.set(ex);
+        throws IOException, CanceledExecutionException {
+
+        final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final AtomicReference<String[]> output = new AtomicReference<>();
+
+        // Thread running the execute
+        final Future<?> future = m_executorService.submit(ThreadUtils.runnableWithContext(() -> {
+            String[] out;
+            try {
+                out = executeAsync(sourceCode);
+                output.set(out);
+                // If the error log has content throw it as exception
+                if (!out[1].isEmpty()) {
+                    throw new PythonIOException(out[1]);
                 }
-                done.set(true);
-                // Wake up waiting thread
-                nodeExecutionThread.interrupt();
-            }, "KNIME-Python-Exec-" + THREAD_UNIQUE_ID.incrementAndGet()).start();
-            // Wait until execution is done
-            while (!done.get()) {
-                try {
-                    // Wake up once a second to check if execution has been canceled
-                    Thread.sleep(1000);
-                } catch (final InterruptedException ex) {
-                    // Happens if python thread is done
-                }
+            } catch (final Exception ex) {
+                exception.set(ex);
+            }
+        }));
+
+        // Wait until execution is done
+        boolean done = false;
+        while (!done) {
+            try {
+                future.get(WAIT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+                done = true;
+            } catch (final ExecutionException ex) {
+                // Can't happen because we catch every exception
+            } catch (final InterruptedException | TimeoutException ex) {
+                // The thread has been interrupted or is not done yet
                 try {
                     // TODO: Refactor to use Python-specific canceled exception everywhere.
                     cancelable.checkCanceled();
-                } catch (final PythonCanceledExecutionException ex) {
+                } catch (PythonCanceledExecutionException ex1) {
                     throw new CanceledExecutionException(ex.getMessage());
                 }
             }
-            // If there was an exception in the execution thread throw it here
-            if (exception.get() != null) {
-                throw getMostSpecificPythonKernelException(exception.get());
-            }
-            return output.get();
         }
+        // If there was an exception in the execution thread throw it here
+        if (exception.get() != null) {
+            throw getMostSpecificPythonKernelException(exception.get());
+        }
+        return output.get();
+    }
 
     /**
      * Resets the workspace of the python kernel.
@@ -1373,6 +1385,9 @@ public class PythonKernel implements AutoCloseable {
                     m_process.destroy();
                 }
             }).start();
+
+            // Shutdown the executor pool
+            m_executorService.shutdown();
         }
     }
 
