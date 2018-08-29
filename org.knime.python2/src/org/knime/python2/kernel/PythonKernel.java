@@ -189,7 +189,7 @@ public class PythonKernel implements AutoCloseable {
 
     private final ConfigurablePythonOutputListener m_defaultStderrListener;
 
-    private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();;
+    private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
 
@@ -199,9 +199,8 @@ public class PythonKernel implements AutoCloseable {
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
-    // TODO use this executor service where possible
-    // TODO can we use a multithread pool?
-    private final ExecutorService m_executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService m_executorService =
+        ThreadUtils.executorServiceWithContext(Executors.newCachedThreadPool());
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -959,16 +958,17 @@ public class PythonKernel implements AutoCloseable {
                 done = true;
             } catch (final ExecutionException ex) {
                 // Can't happen because we catch every exception
-            } catch (final InterruptedException ex) {
-                // The thread has been interrupted
-                exec.checkCanceled();
-            } catch (final TimeoutException ex) {
-                // Not done yet -> Check if the execution has been canceled
+                throw new IllegalStateException("Implementation error.", ex);
+            } catch (final InterruptedException | TimeoutException ex) {
+                // The thread has been interrupted or is not done yet
+                if (ex instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
                 exec.checkCanceled();
             }
         }
 
-        // If there was an exception in the execution thread throw it here
+        // If there was an exception in the execution thread, throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
         }
@@ -1242,24 +1242,21 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
-
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
         final AtomicReference<String[]> output = new AtomicReference<>();
-
         // Thread running the execute
-        final Future<?> future = m_executorService.submit(ThreadUtils.runnableWithContext(() -> {
-            String[] out;
+        final Future<?> future = m_executorService.submit(() -> {
             try {
-                out = execute(sourceCode);
+                String[] out = execute(sourceCode);
                 output.set(out);
-                // If the error log has content throw it as exception
+                // If the error log has content, throw it as exception
                 if (!out[1].isEmpty()) {
                     throw new PythonIOException(out[1]);
                 }
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-        }));
+        });
 
         // Wait until execution is done
         boolean done = false;
@@ -1269,10 +1266,13 @@ public class PythonKernel implements AutoCloseable {
                 done = true;
             } catch (final ExecutionException ex) {
                 // Can't happen because we catch every exception
+                throw new IllegalStateException("Implementation error.", ex);
             } catch (final InterruptedException | TimeoutException ex) {
                 // The thread has been interrupted or is not done yet
+                if (ex instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
                 try {
-                    // TODO: Refactor to use Python-specific canceled exception everywhere.
                     cancelable.checkCanceled();
                 } catch (PythonCanceledExecutionException ex1) {
                     throw new CanceledExecutionException(ex.getMessage());
@@ -1289,24 +1289,21 @@ public class PythonKernel implements AutoCloseable {
 
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
-
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
         final AtomicReference<String[]> output = new AtomicReference<>();
-
         // Thread running the execute
-        final Future<?> future = m_executorService.submit(ThreadUtils.runnableWithContext(() -> {
-            String[] out;
+        final Future<?> future = m_executorService.submit(() -> {
             try {
-                out = executeAsync(sourceCode);
+                String[] out = executeAsync(sourceCode);
                 output.set(out);
-                // If the error log has content throw it as exception
+                // If the error log has content, throw it as exception
                 if (!out[1].isEmpty()) {
                     throw new PythonIOException(out[1]);
                 }
             } catch (final Exception ex) {
                 exception.set(ex);
             }
-        }));
+        });
 
         // Wait until execution is done
         boolean done = false;
@@ -1316,16 +1313,20 @@ public class PythonKernel implements AutoCloseable {
                 done = true;
             } catch (final ExecutionException ex) {
                 // Can't happen because we catch every exception
+                throw new IllegalStateException("Implementation error.", ex);
             } catch (final InterruptedException | TimeoutException ex) {
+                if (ex instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
                 // The thread has been interrupted or is not done yet
                 try {
-                    // TODO: Refactor to use Python-specific canceled exception everywhere.
                     cancelable.checkCanceled();
                 } catch (PythonCanceledExecutionException ex1) {
                     throw new CanceledExecutionException(ex.getMessage());
                 }
             }
         }
+
         // If there was an exception in the execution thread throw it here
         if (exception.get() != null) {
             throw getMostSpecificPythonKernelException(exception.get());
@@ -1360,6 +1361,7 @@ public class PythonKernel implements AutoCloseable {
                     listeners -> listeners.forEach(
                         listener -> PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true), listener)),
                     m_stdoutListeners, m_stderrListeners);
+                PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_commands, m_serverSocket, m_socket);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, List<PythonOutputListener>::clear, m_stdoutListeners,
                     m_stderrListeners);
@@ -1385,9 +1387,6 @@ public class PythonKernel implements AutoCloseable {
                     m_process.destroy();
                 }
             }).start();
-
-            // Shutdown the executor pool
-            m_executorService.shutdown();
         }
     }
 
