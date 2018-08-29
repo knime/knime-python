@@ -344,9 +344,7 @@ def load_module_from_path(path):
 def invoke_safely(exception_consumer, method, invokees):
     if method is None or invokees is None:
         return None
-    try:
-        iter(invokees)
-    except TypeError:
+    if not isinstance(invokees, list):
         invokees = [invokees]
     error = None
     for i in invokees:
