@@ -85,4 +85,4 @@ if __name__ == "__main__":
         except BaseException as ex:
             traceback.print_exc(file=sys.stdout)
             sys.stdout.flush()
-            raise ex
+            raise

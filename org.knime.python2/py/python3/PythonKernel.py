@@ -79,7 +79,7 @@ class PythonKernel(PythonKernelBase):
             self._execute_thread_cleanup_object_names = set()
         except BaseException as ex:
             self.close()
-            raise ex
+            raise
 
     def add_cleanup_object_name(self, variable_name):
         if isinstance(self.get_variable(variable_name), DBUtil):
@@ -232,4 +232,4 @@ class PythonKernel(PythonKernelBase):
                 return fn(*args, **kwargs)
             except BaseException as ex:
                 self._monitor.report_exception(ex)
-                raise ex
+                raise

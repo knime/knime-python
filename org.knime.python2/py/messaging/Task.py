@@ -182,7 +182,7 @@ class Task(object):
                 import debug_util
                 # debug_util.breakpoint()
                 debug_util.debug_msg("An exception occurred while running a task. Cause: " + str(ex), exc_info=True)
-                raise ex
+                raise
 
         def get(self):
             with self._condition:

@@ -94,7 +94,7 @@ class MessageDistributorLoop(AbstractMessageLoop):
             except Exception as ex:
                 debug_msg("Failed to distribute message " + (
                     "'" + str(message) + "' " if message is not None else "") + "from Java. Cause: " + str(ex))
-                raise ex
+                raise
 
     def _close(self):
         with self._message_handlers_lock:

@@ -123,7 +123,7 @@ class AbstractMessageLoop(object):
             self._loop()
         except BaseException as ex:
             self._monitor.report_exception(ex, message=self.__class__.__name__ + " terminated.")
-            raise ex
+            raise
         finally:
             try:
                 self.close()
