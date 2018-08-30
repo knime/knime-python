@@ -129,13 +129,13 @@ public class CsvSerializationLibrary implements SerializationLibrary {
         } catch (final IOException | PythonExecutionException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
-        } catch (NegativeArraySizeException ex) {
+        } catch (final NegativeArraySizeException ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException(
                 "The requested buffer size during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the"
                     + " configuration dialog.");
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw ex;
         }
@@ -180,7 +180,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                             value = Long.toString(serializationOptions.getSentinelForType(type));
                         }
                     } else {
-                        Type type = cell.getColumnType();
+                        final Type type = cell.getColumnType();
                         switch (type) {
                             case BOOLEAN:
                                 value = cell.getBooleanValue() ? "True" : "False";
@@ -451,7 +451,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 final String[] booleanValues = value.split(",");
                                 final boolean[] booleanArray = new boolean[booleanValues.length];
-                                BitArray booleanMissings = new BitArray(booleanValues.length);
+                                final BitArray booleanMissings = new BitArray(booleanValues.length);
                                 for (int j = 0; j < booleanArray.length; j++) {
                                     booleanValues[j] = booleanValues[j].trim();
                                     if (!booleanValues[j].equals("None")) {
@@ -503,7 +503,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 final String[] integerValues = value.split(",");
                                 final int[] integerArray = new int[integerValues.length];
-                                BitArray integerMissings = new BitArray(integerValues.length);
+                                final BitArray integerMissings = new BitArray(integerValues.length);
                                 for (int j = 0; j < integerArray.length; j++) {
                                     integerValues[j] = integerValues[j].trim();
                                     if (!integerValues[j].equals("None")) {
@@ -555,7 +555,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 final String[] longValues = value.split(",");
                                 final long[] longArray = new long[longValues.length];
-                                BitArray longMissings = new BitArray(longValues.length);
+                                final BitArray longMissings = new BitArray(longValues.length);
                                 for (int j = 0; j < longArray.length; j++) {
                                     longValues[j] = longValues[j].trim();
                                     if (!longValues[j].equals("None")) {
@@ -611,7 +611,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 final String[] doubleValues = value.split(",");
                                 final double[] doubleArray = new double[doubleValues.length];
-                                BitArray doubleMissings = new BitArray(doubleValues.length);
+                                final BitArray doubleMissings = new BitArray(doubleValues.length);
                                 for (int j = 0; j < doubleArray.length; j++) {
                                     doubleValues[j] = doubleValues[j].trim();
                                     if (!doubleValues[j].equals("None")) {
@@ -676,7 +676,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 value = value.replaceAll("None", "'None'");
                                 final String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
                                 final String[] stringArray = new String[stringValues.length];
-                                BitArray stringMissings = new BitArray(stringValues.length);
+                                final BitArray stringMissings = new BitArray(stringValues.length);
                                 for (int j = 0; j < stringArray.length; j++) {
                                     stringArray[j] = stringValues[j];
                                     if (j == 0) {
@@ -708,7 +708,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 final String[] stringSetArray = new String[stringSetValues.length];
                                 boolean hasStringMissing = false;
                                 int posCtr = 0;
-                                for (String stringValue : stringSetValues) {
+                                for (final String stringValue : stringSetValues) {
                                     stringSetArray[idxCtr] = stringValue;
                                     if (posCtr == 0) {
                                         stringSetArray[idxCtr] = stringValue.substring(1);
@@ -747,7 +747,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 final String[] bytesValues = value.split(",");
                                 final byte[][] bytesArray = new byte[bytesValues.length][];
-                                BitArray bytesMissings = new BitArray(bytesValues.length);
+                                final BitArray bytesMissings = new BitArray(bytesValues.length);
                                 for (int j = 0; j < bytesArray.length; j++) {
                                     bytesValues[j] = bytesValues[j].trim();
                                     if (!bytesValues[j].equals("None")) {
@@ -823,7 +823,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
         } catch (final IOException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw ex;
         }

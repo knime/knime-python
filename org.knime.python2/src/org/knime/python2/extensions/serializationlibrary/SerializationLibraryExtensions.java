@@ -105,7 +105,7 @@ public class SerializationLibraryExtensions {
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public SerializationLibrary getSerializationLibrary(final String id) {
-        SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
         if (extension == null) {
             throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
         }
@@ -119,7 +119,7 @@ public class SerializationLibraryExtensions {
      * @return a human readable name if id matches, null otherwise
      */
     public static String getNameForId(final String id) {
-        SerializationLibraryExtension ext = EXTENSIONS.get(id);
+        final SerializationLibraryExtension ext = EXTENSIONS.get(id);
         if (ext != null) {
             return ext.getJavaSerializationLibraryFactory().getName();
         }
@@ -143,7 +143,7 @@ public class SerializationLibraryExtensions {
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static String getSerializationLibraryPath(final String id) {
-        SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
         if (extension == null) {
             throw new IllegalArgumentException("No serialization library path available for id '" + id + "'.");
         }

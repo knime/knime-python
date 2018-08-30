@@ -145,9 +145,9 @@ public class Flatbuffers implements SerializationLibrary {
         try {
             return PythonUtils.Misc.executeCancelable(() -> tableToBytesInternal(tableIterator, serializationOptions),
                 m_executorService, cancelable);
-        } catch (PythonExecutionException ex) {
+        } catch (final PythonExecutionException ex) {
             throw new SerializationException("An error occurred during serialization. See log for errors.", ex);
-        } catch (AssertionError ex) {
+        } catch (final AssertionError ex) {
             // Assertion error is thrown if buffer cannot be grown.
             throw new SerializationException(
                 "The requested buffer size during serialization exceeds the maximum buffer size."
@@ -162,12 +162,12 @@ public class Flatbuffers implements SerializationLibrary {
     private static byte[] tableToBytesInternal(final TableIterator tableIterator,
         final SerializationOptions serializationOptions) {
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        List<FlatbuffersVectorInserter> inserters = new ArrayList<>();
+        final List<FlatbuffersVectorInserter> inserters = new ArrayList<>();
 
-        Type[] types = tableIterator.getTableSpec().getColumnTypes();
-        String[] names = tableIterator.getTableSpec().getColumnNames();
-        Map<String, String> serializers = tableIterator.getTableSpec().getColumnSerializers();
-        int numRows = tableIterator.getNumberRemainingRows();
+        final Type[] types = tableIterator.getTableSpec().getColumnTypes();
+        final String[] names = tableIterator.getTableSpec().getColumnNames();
+        final Map<String, String> serializers = tableIterator.getTableSpec().getColumnSerializers();
+        final int numRows = tableIterator.getNumberRemainingRows();
         for (int i = 0; i < types.length; i++) {
             switch (types[i]) {
                 case BOOLEAN: {
@@ -264,7 +264,7 @@ public class Flatbuffers implements SerializationLibrary {
             rowIdx++;
         }
 
-        int numCols = tableIterator.getTableSpec().getNumberColumns();
+        final int numCols = tableIterator.getTableSpec().getNumberColumns();
         final int[] colOffsets = new int[numCols];
         final int[] colNameOffsets = new int[numCols];
         int colIdx = 0;
@@ -297,7 +297,7 @@ public class Flatbuffers implements SerializationLibrary {
                 bytesIntoTableInternal(tableCreator, bytes, serializationOptions);
                 return null;
             }, m_executorService, cancelable);
-        } catch (PythonExecutionException ex) {
+        } catch (final PythonExecutionException ex) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", ex);
         }
     }
@@ -309,7 +309,7 @@ public class Flatbuffers implements SerializationLibrary {
             return;
         }
         final Map<String, Type> colTypes = new HashMap<>();
-        List<VectorExtractor> extractors = new ArrayList<>();
+        final List<VectorExtractor> extractors = new ArrayList<>();
         for (int j = 0; j < table.columnsLength(); j++) {
             final Column col = table.columns(j);
             switch (Type.getTypeForId(col.type())) {

@@ -630,7 +630,7 @@ public class PythonKernel implements AutoCloseable {
         try {
             return m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions(),
                 PythonCancelable.NOT_CANCELABLE);
-        } catch (PythonCanceledExecutionException ignore) {
+        } catch (final PythonCanceledExecutionException ignore) {
             // Does not happen.
             throw new IllegalStateException("Implementation error.");
         }
@@ -694,7 +694,7 @@ public class PythonKernel implements AutoCloseable {
                 }
             }
             return flowVariables;
-        } catch (PythonCanceledExecutionException ignore) {
+        } catch (final PythonCanceledExecutionException ignore) {
             // Does not happen.
             throw new IllegalStateException("Implementation error.");
         }
@@ -732,7 +732,7 @@ public class PythonKernel implements AutoCloseable {
             throw new IOException("Table " + name + " is not available.");
         }
         try {
-            PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
+            final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
             final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
             final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
             try (final CloseableRowIterator iterator = table.iterator()) {
@@ -773,9 +773,9 @@ public class PythonKernel implements AutoCloseable {
                 }
                 waitForFutureCancelable(putChunkTask, cancelable);
             }
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -841,9 +841,9 @@ public class PythonKernel implements AutoCloseable {
                 }
             }
             waitForFutureCancelable(putChunkTask, cancelable);
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw ex;
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -864,7 +864,7 @@ public class PythonKernel implements AutoCloseable {
         final ExecutionMonitor executionMonitor) throws IOException, CanceledExecutionException {
         // TODO: Use #getData(..) internally.
         try {
-            PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
+            final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
             final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
             final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
             final ProcessEndAction pea = m_segfaultDuringSerializationAction;
@@ -898,9 +898,9 @@ public class PythonKernel implements AutoCloseable {
             } finally {
                 removeProcessEndAction(pea);
             }
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -939,9 +939,9 @@ public class PythonKernel implements AutoCloseable {
                 m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions(), cancelable);
             }
             return tableCreator;
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw ex;
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         } finally {
             removeProcessEndAction(pea);
@@ -981,9 +981,9 @@ public class PythonKernel implements AutoCloseable {
                 putObject(name, object);
                 return null;
             }, m_executorService, new PythonExecutionMonitorCancelable(executionMonitor));
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1002,7 +1002,7 @@ public class PythonKernel implements AutoCloseable {
      */
     public PickledObject getObject(final String name, final ExecutionMonitor executionMonitor)
         throws IOException, CanceledExecutionException {
-        PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
+        final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
         try {
             final byte[] bytes = PythonUtils.Misc.executeCancelable(() -> m_commands.getObject(name).get(),
                 m_executorService, cancelable);
@@ -1016,9 +1016,9 @@ public class PythonKernel implements AutoCloseable {
             final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
             return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
                 row.getCell(representationIndex).getStringValue());
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1055,7 +1055,7 @@ public class PythonKernel implements AutoCloseable {
             final byte[] bytes = m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions(),
                 PythonCancelable.NOT_CANCELABLE);
             m_commands.putSql(name, bytes).get();
-        } catch (PythonCanceledExecutionException ignore) {
+        } catch (final PythonCanceledExecutionException ignore) {
             // Does not happen.
             throw new IllegalStateException("Implementation error.");
         } catch (final Exception ex) {
@@ -1100,7 +1100,7 @@ public class PythonKernel implements AutoCloseable {
             } else {
                 return null;
             }
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1122,9 +1122,9 @@ public class PythonKernel implements AutoCloseable {
         try {
             return PythonUtils.Misc.executeCancelable(() -> getImage(name), m_executorService,
                 new PythonExecutionMonitorCancelable(executionMonitor));
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1171,7 +1171,7 @@ public class PythonKernel implements AutoCloseable {
                 variables.add(map);
             }
             return variables;
-        } catch (PythonCanceledExecutionException ignore) {
+        } catch (final PythonCanceledExecutionException ignore) {
             // Does not happen.
             throw new IllegalStateException("Implementation error.");
         } catch (final Exception ex) {
@@ -1212,10 +1212,10 @@ public class PythonKernel implements AutoCloseable {
                 }
             }
             return suggestions;
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             // Does not happen.
             throw new IllegalStateException("Implementation error.");
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1272,9 +1272,9 @@ public class PythonKernel implements AutoCloseable {
         throws IOException, CanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(() -> execute(sourceCode), m_executorService, cancelable);
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1319,9 +1319,9 @@ public class PythonKernel implements AutoCloseable {
         throws IOException, CanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(() -> executeAsync(sourceCode), m_executorService, cancelable);
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1334,7 +1334,7 @@ public class PythonKernel implements AutoCloseable {
     public void resetWorkspace() throws IOException {
         try {
             m_commands.reset().get();
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -1442,7 +1442,7 @@ public class PythonKernel implements AutoCloseable {
 
     public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
         synchronized (m_stderrListeners) {
-            for (PythonOutputListener listener : m_stderrListeners) {
+            for (final PythonOutputListener listener : m_stderrListeners) {
                 if (listener instanceof ConfigurablePythonOutputListener) {
                     ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
                 }
@@ -1496,7 +1496,7 @@ public class PythonKernel implements AutoCloseable {
 
     private PythonIOException getMostSpecificPythonKernelException(final Exception exception) {
         // Unwrap exceptions that occurred during any async execution.
-        Throwable exc = exception instanceof ExecutionException && exception.getCause() != null //
+        final Throwable exc = exception instanceof ExecutionException && exception.getCause() != null //
             ? exception.getCause() //
             : exception;
 
@@ -1511,7 +1511,7 @@ public class PythonKernel implements AutoCloseable {
         }
         try {
             if (m_pythonKernelMonitorResult.isDone()) {
-                PythonIOException result = m_pythonKernelMonitorResult.get();
+                final PythonIOException result = m_pythonKernelMonitorResult.get();
                 if (result != null) {
                     return result;
                 }
@@ -1533,7 +1533,7 @@ public class PythonKernel implements AutoCloseable {
         throws PythonExecutionException, PythonCanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(future::get, m_executorService, cancelable);
-        } catch (PythonCanceledExecutionException ex) {
+        } catch (final PythonCanceledExecutionException ex) {
             future.cancel(true);
             throw ex;
         }
@@ -1542,7 +1542,7 @@ public class PythonKernel implements AutoCloseable {
     /**
      * An action to run as soon as the python process exits. Allows to examine custom exit codes.
      */
-    public static interface ProcessEndAction {
+    public interface ProcessEndAction {
 
         /**
          * @param exitCode the exit code of the Python process

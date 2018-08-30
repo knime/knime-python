@@ -196,11 +196,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
      */
     private static JsonObjectBuilder createColumnMetadataBuilder(final String name, final PandasType pandasType,
         final NumpyType numpyType, final Type knimeType, final String serializer) {
-        JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder colMetadataBuilder = Json.createObjectBuilder();
         colMetadataBuilder.add("name", name);
         colMetadataBuilder.add("pandas_type", pandasType.getId());
         colMetadataBuilder.add("numpy_type", numpyType.getId());
-        JsonObjectBuilder knimeMetadataBuilder = Json.createObjectBuilder();
+        final JsonObjectBuilder knimeMetadataBuilder = Json.createObjectBuilder();
         knimeMetadataBuilder.add("type_id", knimeType.getId());
         knimeMetadataBuilder.add("serializer_id", serializer);
         colMetadataBuilder.add("metadata", knimeMetadataBuilder);
@@ -249,13 +249,13 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         } catch (IOException | PythonExecutionException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
-        } catch (OversizedAllocationException ex) {
+        } catch (final OversizedAllocationException ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException(
                 "The requested buffer size during serialization exceeds the maximum buffer size."
                     + " Please consider decreasing the 'Rows per chunk' parameter in the 'Options' tab of the"
                     + " configuration dialog.");
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw ex;
         }
@@ -271,17 +271,17 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             try {
                 final String indexColName = "__index_level_0__";
                 // Metadata is transferred in JSON format.
-                JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
-                TableSpec spec = tableIterator.getTableSpec();
+                final JsonObjectBuilder metadataBuilder = Json.createObjectBuilder();
+                final TableSpec spec = tableIterator.getTableSpec();
                 inserters = new ArrayList<>();
-                JsonArrayBuilder icBuilder = Json.createArrayBuilder();
+                final JsonArrayBuilder icBuilder = Json.createArrayBuilder();
 
                 icBuilder.add(indexColName);
                 metadataBuilder.add("index_columns", icBuilder);
-                JsonArrayBuilder colBuilder = Json.createArrayBuilder();
-                int numRows = tableIterator.getNumberRemainingRows();
+                final JsonArrayBuilder colBuilder = Json.createArrayBuilder();
+                final int numRows = tableIterator.getNumberRemainingRows();
                 // Row ids
-                JsonObjectBuilder rowIdBuilder =
+                final JsonObjectBuilder rowIdBuilder =
                     createColumnMetadataBuilder(indexColName, PandasType.UNICODE, NumpyType.OBJECT, Type.STRING);
                 inserters.add(new StringInserter(indexColName, rootAllocator, numRows, ASSUMED_ROWID_VAL_BYTE_SIZE));
                 colBuilder.add(rowIdBuilder);
@@ -413,7 +413,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         // Stop serialization if canceled by client.
                         throw new CancellationException("Serialization canceled by client.");
                     }
-                    Row row = tableIterator.next();
+                    final Row row = tableIterator.next();
                     inserters.get(0).put(new CellImpl(row.getRowKey()));
                     for (int i = 0; i < spec.getNumberColumns(); i++) {
                         inserters.get(i + 1).put(row.getCell(i));
@@ -421,17 +421,17 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 }
 
                 // Build final representation and transmit.
-                Map<String, String> metadata = new HashMap<>();
+                final Map<String, String> metadata = new HashMap<>();
                 metadata.put("pandas", metadataBuilder.build().toString());
 
-                List<FieldVector> vecs = new ArrayList<>();
-                List<Field> fields = new ArrayList<>();
+                final List<FieldVector> vecs = new ArrayList<>();
+                final List<Field> fields = new ArrayList<>();
                 for (int i = 0; i < inserters.size(); i++) {
                     final FieldVector vec = inserters.get(i).retrieveVector(); // Closed via inserters.
                     vecs.add(vec);
                     fields.add(vec.getField());
                 }
-                Schema schema = new Schema(fields, metadata);
+                final Schema schema = new Schema(fields, metadata);
                 try (ArrowStreamWriter writer =
                     new ArrowStreamWriter(new VectorSchemaRoot(schema, vecs, numRows), null, fc)) {
                     writer.writeBatch();
@@ -459,13 +459,13 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         File file = null;
         try {
             file = new File(new String(bytes, StandardCharsets.UTF_8));
-            File finalFile = file;
-            TableSpec spec = tableSpecFromBytes(bytes, cancelable);
+            final File finalFile = file;
+            final TableSpec spec = tableSpecFromBytes(bytes, cancelable);
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, serializationOptions, spec, finalFile);
                 return null;
             }, m_executorService, cancelable);
-        } catch (PythonExecutionException e) {
+        } catch (final PythonExecutionException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
             PythonUtils.Misc.invokeSafely(null, f -> {
@@ -482,14 +482,14 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
      */
     private void bytesIntoTableInternal(final TableCreator<?> tableCreator,
         final SerializationOptions serializationOptions, final TableSpec spec, final File file) throws IOException {
-        ReadContext rc = ReadContextManager.createForFile(file);
+        final ReadContext rc = ReadContextManager.createForFile(file);
         if (spec.getNumberColumns() > 0 && rc.getNumRows() > 0) {
             try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
-                VectorSchemaRoot root = reader.getVectorSchemaRoot(); // Will be closed by reader.
-                Type[] types = spec.getColumnTypes();
-                String[] names = spec.getColumnNames();
+                final VectorSchemaRoot root = reader.getVectorSchemaRoot(); // Will be closed by reader.
+                final Type[] types = spec.getColumnTypes();
+                final String[] names = spec.getColumnNames();
 
-                List<VectorExtractor> extractors = new ArrayList<>();
+                final List<VectorExtractor> extractors = new ArrayList<>();
                 // Index is always string.
                 extractors.add(getStringOrByteExtractor(root.getVector(m_indexColumnName)));
 
@@ -577,7 +577,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         // Stop deserialization if canceled by client.
                         throw new CancellationException("Deserialization canceled by client.");
                     }
-                    Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
+                    final Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
                     for (int j = 0; j < spec.getNumberColumns(); j++) {
                         row.setCell(extractors.get(j + 1).extract(), j);
                     }
@@ -592,36 +592,36 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         // Note: We don't implement cancellation here, because reading the spec should be cancelable in a timely manner
         // anyway.
         throws SerializationException {
-        String path = new String(bytes, StandardCharsets.UTF_8);
+        final String path = new String(bytes, StandardCharsets.UTF_8);
         final File file = new File(path);
         try {
-            ReadContext rc = ReadContextManager.createForFile(file);
+            final ReadContext rc = ReadContextManager.createForFile(file);
             if (rc.getTableSpec() == null) {
                 if (file.exists()) {
                     ArrowStreamReader reader = null;
                     try {
                         reader = rc.getReader();
                         reader.loadNextBatch();
-                        Schema schema = reader.getVectorSchemaRoot().getSchema();
-                        Map<String, String> metadata = schema.getCustomMetadata();
-                        Map<String, String> columnSerializers = new HashMap<>();
+                        final Schema schema = reader.getVectorSchemaRoot().getSchema();
+                        final Map<String, String> metadata = schema.getCustomMetadata();
+                        final Map<String, String> columnSerializers = new HashMap<>();
                         // Build the table spec out of the metadata available in JSON format
                         // Format: {"ArrowSerializationLibrary": {"index_columns": String[1], "columns": Column[?],
                         //          "missing_columns": String[?], "num_rows": int}}
                         // Column format: {"name": String, "metadata": {"serializer_id": String, "type_id": int}}
-                        String customMetadata = metadata.get("ArrowSerializationLibrary");
+                        final String customMetadata = metadata.get("ArrowSerializationLibrary");
                         if (customMetadata != null) {
                             try (JsonReader jsreader = Json.createReader(new StringReader(customMetadata))) {
-                                JsonObject jpandasMetadata = jsreader.readObject();
-                                JsonArray indexCols = jpandasMetadata.getJsonArray("index_columns");
-                                JsonArray cols = jpandasMetadata.getJsonArray("columns");
-                                JsonArray missingCols = jpandasMetadata.getJsonArray("missing_columns");
+                                final JsonObject jpandasMetadata = jsreader.readObject();
+                                final JsonArray indexCols = jpandasMetadata.getJsonArray("index_columns");
+                                final JsonArray cols = jpandasMetadata.getJsonArray("columns");
+                                final JsonArray missingCols = jpandasMetadata.getJsonArray("missing_columns");
                                 rc.setNumRows(jpandasMetadata.getInt("num_rows"));
-                                String[] names = new String[cols.size() - indexCols.size()];
-                                Type[] types = new Type[cols.size() - indexCols.size()];
+                                final String[] names = new String[cols.size() - indexCols.size()];
+                                final Type[] types = new Type[cols.size() - indexCols.size()];
                                 int noIdxCtr = 0;
                                 for (int i = 0; i < cols.size(); i++) {
-                                    JsonObject col = cols.getJsonObject(i);
+                                    final JsonObject col = cols.getJsonObject(i);
                                     boolean contained = false;
                                     for (int j = 0; j < indexCols.size(); j++) {
                                         if (indexCols.getString(j).contentEquals(col.getString("name"))) {
@@ -634,11 +634,12 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                         continue;
                                     }
                                     names[noIdxCtr] = col.getString("name");
-                                    JsonObject typeObj = col.getJsonObject("metadata");
+                                    final JsonObject typeObj = col.getJsonObject("metadata");
                                     types[noIdxCtr] = Type.getTypeForId(typeObj.getInt("type_id"));
                                     if (types[noIdxCtr] == Type.BYTES || types[noIdxCtr] == Type.BYTES_LIST
                                         || types[noIdxCtr] == Type.BYTES_SET) {
-                                        String serializerId = col.getJsonObject("metadata").getString("serializer_id");
+                                        final String serializerId =
+                                            col.getJsonObject("metadata").getString("serializer_id");
                                         if (!StringUtils.isBlank(serializerId)) {
                                             columnSerializers.put(names[noIdxCtr], serializerId);
                                         }
@@ -652,7 +653,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                                 rc.setTableSpec(new TableSpecImpl(types, names, columnSerializers));
                             }
                         }
-                    } catch (Exception ex) {
+                    } catch (final Exception ex) {
                         // Only close reader on exception. Otherwise it will be closed in #bytesIntoTableInternal(..).
                         PythonUtils.Misc.closeSafely(null, reader);
                         throw ex;
@@ -665,10 +666,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 throw new IllegalStateException("Could not build TableSpec!");
             }
             return rc.getTableSpec();
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during deserialization.", ex);
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw ex;
         }

@@ -231,7 +231,7 @@ public final class PythonUtils {
          */
         public static <T> T executeCancelable(final Callable<T> task, final ExecutorService executorService,
             final PythonCancelable cancelable) throws PythonExecutionException, PythonCanceledExecutionException {
-            Future<T> future = executorService.submit(task);
+            final Future<T> future = executorService.submit(task);
             // Wait until execution is done or cancelled.
             final int waitTimeoutMilliseconds = 1000;
             while (true) {
@@ -244,17 +244,17 @@ public final class PythonUtils {
                     }
                     try {
                         cancelable.checkCanceled();
-                    } catch (PythonCanceledExecutionException cancellation) {
+                    } catch (final PythonCanceledExecutionException cancellation) {
                         // Execution was canceled, cancel task.
                         future.cancel(true);
                         throw cancellation;
                     }
-                } catch (CancellationException ex) {
+                } catch (final CancellationException ex) {
                     // Should not happen since the handle to the future is local to this method.
                     throw new PythonCanceledExecutionException();
-                } catch (ExecutionException wrapper) {
+                } catch (final ExecutionException wrapper) {
                     // Unwrap execution exception.
-                    Throwable ex = wrapper.getCause() != null ? wrapper.getCause() : wrapper;
+                    final Throwable ex = wrapper.getCause() != null ? wrapper.getCause() : wrapper;
                     if (ex instanceof PythonCanceledExecutionException) {
                         // May happen if the executed task checks for cancellation itself.
                         throw (PythonCanceledExecutionException)ex;
