@@ -129,6 +129,8 @@ import org.knime.python2.port.PickledObject;
 import org.knime.python2.util.PythonUtils;
 import org.w3c.dom.svg.SVGDocument;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 /**
  * Provides operations on a Python kernel running in another process.
  *
@@ -194,8 +196,8 @@ public class PythonKernel implements AutoCloseable {
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
     /** Used to make kernel operations cancelable. */
-    private final ExecutorService m_executorService =
-        ThreadUtils.executorServiceWithContext(Executors.newCachedThreadPool());
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build()));
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -1239,7 +1241,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param sourceCode The source code to execute
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws IOException If an error occurred while communicating with the Python kernel
      */
     public String[] execute(final String sourceCode) throws IOException {
         // In execution mode only the warnings are logged to stdout.
@@ -1264,14 +1266,21 @@ public class PythonKernel implements AutoCloseable {
      * @param sourceCode The source code to execute
      * @param cancelable The cancelable to check if execution has been canceled
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws IOException If an error occurred while communicating with the Python kernel or while executing the task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(() -> execute(sourceCode), m_executorService, cancelable);
+            return PythonUtils.Misc.executeCancelable(() -> {
+                final String[] out = execute(sourceCode);
+                // If the error log has content, throw it as exception.
+                if (!out[1].isEmpty()) {
+                    throw new PythonIOException(out[1]);
+                }
+                return out;
+            }, m_executorService, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
@@ -1284,7 +1293,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param sourceCode The source code to execute
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the Python kernel or while executing the task
+     * @throws IOException If an error occurred while communicating with the Python kernel
      */
     public String[] executeAsync(final String sourceCode) throws IOException {
         // In execution mode only the warnings are logged to stdout.
@@ -1318,7 +1327,14 @@ public class PythonKernel implements AutoCloseable {
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(() -> executeAsync(sourceCode), m_executorService, cancelable);
+            return PythonUtils.Misc.executeCancelable(() -> {
+                final String[] out = executeAsync(sourceCode);
+                // If the error log has content, throw it as exception.
+                if (!out[1].isEmpty()) {
+                    throw new PythonIOException(out[1]);
+                }
+                return out;
+            }, m_executorService, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
