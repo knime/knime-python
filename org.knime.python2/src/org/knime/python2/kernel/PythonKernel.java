@@ -181,15 +181,15 @@ public class PythonKernel implements AutoCloseable {
 
     private final InputStream m_stderrStream;
 
-    private final List<PythonOutputListener> m_stdoutListeners = new ArrayList<>();
+    private final List<PythonOutputListener> m_stdoutListeners = Collections.synchronizedList(new ArrayList<>());
 
-    private final List<PythonOutputListener> m_stderrListeners = new ArrayList<>();
+    private final List<PythonOutputListener> m_stderrListeners = Collections.synchronizedList(new ArrayList<>());
 
     private final PythonOutputListener m_defaultStdoutListener;
 
     private final ConfigurablePythonOutputListener m_defaultStderrListener;
 
-    private final List<ProcessEndAction> m_processEndActions = new ArrayList<>();
+    private final List<ProcessEndAction> m_processEndActions = Collections.synchronizedList(new ArrayList<>());
 
     private final ProcessEndAction m_segfaultDuringSerializationAction;
 
@@ -562,9 +562,7 @@ public class PythonKernel implements AutoCloseable {
      * @param ac the action to run
      */
     public void addProcessEndAction(final ProcessEndAction ac) {
-        synchronized (m_processEndActions) {
-            m_processEndActions.add(ac);
-        }
+        m_processEndActions.add(ac);
     }
 
     /**
@@ -573,9 +571,7 @@ public class PythonKernel implements AutoCloseable {
      * @param ac the action to remove
      */
     public void removeProcessEndAction(final ProcessEndAction ac) {
-        synchronized (m_processEndActions) {
-            m_processEndActions.remove(ac);
-        }
+        m_processEndActions.remove(ac);
     }
 
     /**
@@ -1357,10 +1353,14 @@ public class PythonKernel implements AutoCloseable {
         if (m_closed.compareAndSet(false, true)) {
             new Thread(() -> {
                 // Order is intended.
-                PythonUtils.Misc.invokeSafely(LOGGER::debug,
-                    listeners -> listeners.forEach(
-                        listener -> PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true), listener)),
-                    m_stdoutListeners, m_stderrListeners);
+                synchronized (m_stderrListeners) {
+                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
+                        m_stderrListeners.toArray(new PythonOutputListener[0]));
+                }
+                synchronized (m_stdoutListeners) {
+                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
+                        m_stdoutListeners.toArray(new PythonOutputListener[0]));
+                }
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_commands, m_serverSocket, m_socket);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, List<PythonOutputListener>::clear, m_stdoutListeners,
@@ -1401,7 +1401,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public synchronized void addStdoutListener(final PythonOutputListener listener) {
+    public void addStdoutListener(final PythonOutputListener listener) {
         m_stdoutListeners.add(listener);
     }
 
@@ -1410,7 +1410,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public synchronized void addStderrorListener(final PythonOutputListener listener) {
+    public void addStderrorListener(final PythonOutputListener listener) {
         m_stderrListeners.add(listener);
     }
 
@@ -1419,7 +1419,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public synchronized void removeStdoutListener(final PythonOutputListener listener) {
+    public void removeStdoutListener(final PythonOutputListener listener) {
         m_stdoutListeners.remove(listener);
     }
 
@@ -1428,7 +1428,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param listener a {@link PythonOutputListener}
      */
-    public synchronized void removeStderrorListener(final PythonOutputListener listener) {
+    public void removeStderrorListener(final PythonOutputListener listener) {
         m_stderrListeners.remove(listener);
     }
 
@@ -1445,22 +1445,28 @@ public class PythonKernel implements AutoCloseable {
     }
 
     public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
-        for (PythonOutputListener listener : m_stderrListeners) {
-            if (listener instanceof ConfigurablePythonOutputListener) {
-                ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
+        synchronized (m_stderrListeners) {
+            for (PythonOutputListener listener : m_stderrListeners) {
+                if (listener instanceof ConfigurablePythonOutputListener) {
+                    ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
+                }
             }
         }
     }
 
-    private synchronized void distributeStdoutMsg(final String msg) {
-        for (final PythonOutputListener listener : m_stdoutListeners) {
-            listener.messageReceived(msg);
+    private void distributeStdoutMsg(final String msg) {
+        synchronized (m_stdoutListeners) {
+            for (final PythonOutputListener listener : m_stdoutListeners) {
+                listener.messageReceived(msg);
+            }
         }
     }
 
-    private synchronized void distributeStderrorMsg(final String msg) {
-        for (final PythonOutputListener listener : m_stderrListeners) {
-            listener.messageReceived(msg);
+    private void distributeStderrorMsg(final String msg) {
+        synchronized (m_stderrListeners) {
+            for (final PythonOutputListener listener : m_stderrListeners) {
+                listener.messageReceived(msg);
+            }
         }
     }
 
