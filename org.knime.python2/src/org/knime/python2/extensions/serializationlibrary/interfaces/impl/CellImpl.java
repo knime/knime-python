@@ -185,7 +185,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer list.
+     * Instantiates a new cell impl with a long list.
      *
      * @param value the value
      * @param missings bit encoded missing values (0 missing, 1 available)
@@ -197,7 +197,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer set.
+     * Instantiates a new cell impl with a long set.
      *
      * @param value the value
      * @param hasMissing true if the set contains a missing value
@@ -221,7 +221,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer list.
+     * Instantiates a new cell impl with a double list.
      *
      * @param value the value
      * @param missings bit encoded missing values (0 missing, 1 available)
@@ -233,7 +233,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer set.
+     * Instantiates a new cell impl with a double set.
      *
      * @param value the value
      * @param hasMissing true if the set contains a missing value
@@ -244,6 +244,43 @@ public class CellImpl implements Cell {
         m_missing = new byte[1];
         m_missing[0] = hasMissing ? B_ZERO:B_ONE;
     }
+
+    /**
+     * Instantiates a new cell impl.
+     *
+     * @param value the value
+     */
+    public CellImpl(final float value) {
+        m_type = Type.FLOAT;
+        m_value = value;
+        m_missing = null;
+    }
+
+    /**
+     * Instantiates a new cell impl with a float list.
+     *
+     * @param value the value
+     * @param missings bit encoded missing values (0 missing, 1 available)
+     */
+    public CellImpl(final float[] value, final byte[] missings) {
+        m_type = Type.FLOAT_LIST;
+        m_value = value;
+        m_missing = missings;
+    }
+
+    /**
+     * Instantiates a new cell impl with a float set.
+     *
+     * @param value the value
+     * @param hasMissing true if the set contains a missing value
+     */
+    public CellImpl(final float[] value, final boolean hasMissing) {
+        m_type = Type.FLOAT_SET;
+        m_value = value;
+        m_missing = new byte[1];
+        m_missing[0] = hasMissing ? B_ZERO:B_ONE;
+    }
+
     /**
      * Instantiates a new cell impl.
      *
@@ -256,7 +293,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer list.
+     * Instantiates a new cell impl with a string list.
      *
      * @param value the value
      * @param missings bit encoded missing values (0 missing, 1 available)
@@ -268,7 +305,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer set.
+     * Instantiates a new cell impl with a string set.
      *
      * @param value the value
      * @param hasMissing true if the set contains a missing value
@@ -292,7 +329,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer list.
+     * Instantiates a new cell impl with an byte array list.
      *
      * @param value the value
      * @param missings bit encoded missing values (0 missing, 1 available)
@@ -304,7 +341,7 @@ public class CellImpl implements Cell {
     }
 
     /**
-     * Instantiates a new cell impl with an integer set.
+     * Instantiates a new cell impl with a byte array set.
      *
      * @param value the value
      * @param hasMissing true if the set contains a missing value
@@ -400,6 +437,22 @@ public class CellImpl implements Cell {
             throw new IllegalStateException("Requested double array value from cell with type: " + m_type);
         }
         return (double[])m_value;
+    }
+
+    @Override
+    public float getFloatValue() throws IllegalStateException {
+        if (!(m_value instanceof Float)) {
+            throw new IllegalStateException("Requested float value from cell with type: " + m_type);
+        }
+        return (float)m_value;
+    }
+
+    @Override
+    public float[] getFloatArrayValue() throws IllegalStateException {
+        if (!(m_value instanceof float[])) {
+            throw new IllegalStateException("Requested float array value from cell with type: " + m_type);
+        }
+        return (float[])m_value;
     }
 
     @Override
