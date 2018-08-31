@@ -145,6 +145,20 @@ public interface Cell {
     double[] getDoubleArrayValue() throws IllegalStateException;
 
     /**
+     * @return The float value of this cell.
+     * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
+     *             {@link Type#FLOAT}.
+     */
+    float getFloatValue() throws IllegalStateException;
+
+    /**
+     * @return The float array value of this cell.
+     * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
+     *             {@link Type#FLOAT_LIST} or {@link Type#FLOAT_SET}.
+     */
+    float[] getFloatArrayValue() throws IllegalStateException;
+
+    /**
      * @return The string value of this cell.
      * @throws IllegalStateException If {@link #isMissing()} is true or {@link #getColumnType()} is not
      *             {@link Type#STRING}.
