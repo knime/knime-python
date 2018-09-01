@@ -370,16 +370,42 @@ def binary_from_list_generator(column, numpy_type):
             yield None
         else:
             n_vals = len(column[j])
+
             missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
             for idx in range(n_vals):
                 if not column[j][idx] == None:
                     missings[idx // 8] += (1 << (idx % 8))
-                else:
-                    column[j][idx] = 0
-            yield np.int32(n_vals).tobytes() + np.array(column[j], dtype=numpy_type).tobytes() + missings.tobytes()
+
+            values = np.array([elem if elem is not None else 0 for elem in column[j]], dtype=numpy_type).tobytes()
+
+            yield np.int32(n_vals).tobytes() + values + missings.tobytes()
 
 
-# Generator converting values in a list type column to a binary representation 
+# Generator converting values in a set type column to a binary representation
+# having the format (length(values), values, missing_mask)
+# @param column      the column to convert (a pandas.Series)
+# @param numpy_type  the numpy_type of the primitive collection entries
+def binary_from_set_generator(column, numpy_type):
+    for j in range(len(column)):
+        if column[j] == None:
+            yield None
+        else:
+            n_vals = len(column[j])
+            hasMissing = np.uint8(1)
+            if None in column[j]:
+                hasMissing = np.uint8(0)
+                n_vals -= 1
+            np_set = np.empty(len(column[j]), dtype=numpy_type)
+            i = 0
+            for elem in column[j]:
+                if elem is not None:
+                    np_set[i] = elem
+                    i += 1
+
+            yield np.int32(n_vals).tobytes() + np_set.tobytes() + hasMissing.tobytes()
+
+
+# Generator converting values in a list type column to a binary representation
 # having the format (length(values), offsets, values, missing_mask). Works on 
 # String lists.
 # @param column      the column to convert (a pandas.Series)
@@ -394,18 +420,17 @@ def binary_from_string_list_generator(column):
             for idx in range(n_vals):
                 if not column[j][idx] == None:
                     missings[idx // 8] += (1 << (idx % 8))
-                else:
-                    column[j][idx] = ''
 
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
             for i in range(n_vals):
-                offsets[i + 1] = offsets[i] + len(column[j][i])
-            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+                cell = column[j][i]
+                offsets[i + 1] = offsets[i] + (len(cell) if cell is not None else 0)
+                # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
-                values = bytes(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                values = bytes(bts for elem in column[j] if elem is not None for bts in elem.encode("utf-8"))
                 yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + missings.tobytes()
             else:
-                values = b''.join(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                values = b''.join(bts for elem in column[j] if elem is not None for bts in elem.encode("utf-8"))
                 yield np.int32(n_vals).tobytes() + offsets.tobytes() + values.encode("utf-8") + missings.tobytes()
 
 
@@ -423,19 +448,21 @@ def binary_from_string_set_generator(column):
             hasMissing = np.uint8(1)
             if None in column[j]:
                 hasMissing = np.uint8(0)
-                column[j].discard(None)
                 n_vals -= 1
 
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
-            for i, elem in enumerate(column[j]):
-                offsets[i + 1] = offsets[i] + len(elem)
+            i = 0
+            for elem in column[j]:
+                if elem is not None:
+                    offsets[i + 1] = offsets[i] + len(elem)
+                    i += 1
 
             # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
-                values = bytes(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                values = bytes(bts for elem in column[j] if elem is not None for bts in elem.encode("utf-8"))
                 yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + hasMissing.tobytes()
             else:
-                values = b''.join(bts for elem in column[j] for bts in elem.encode("utf-8"))
+                values = b''.join(bts for elem in column[j] if elem is not None for bts in elem.encode("utf-8"))
                 yield np.int32(n_vals).tobytes() + offsets.tobytes() + values.encode("utf-8") + hasMissing.tobytes()
 
 
@@ -454,17 +481,16 @@ def binary_from_bytes_list_generator(column):
             for idx in range(n_vals):
                 if not column[j][idx] == None:
                     missings[idx // 8] += (1 << (idx % 8))
-                else:
-                    column[j][idx] = b''
 
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
             for i in range(n_vals):
-                offsets[i + 1] = offsets[i] + len(column[j][i])
-            # Get all strings in the current list as one bytelist of utf-8 encoded bytes
+                cell = column[j][i]
+                offsets[i + 1] = offsets[i] + (len(cell) if cell is not None else 0)
+                # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
-                values = bytes(bts for elem in column[j] for bts in elem)
+                values = bytes(bts for elem in column[j] if elem is not None for bts in elem)
             else:
-                values = b''.join(bts for elem in column[j] for bts in elem)
+                values = b''.join(bts for elem in column[j] if elem is not None for bts in elem)
 
             yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + missings.tobytes()
 
@@ -483,33 +509,22 @@ def binary_from_bytes_set_generator(column):
             hasMissing = np.uint8(1)
             if None in column[j]:
                 hasMissing = np.uint8(0)
-                column[j].discard(None)
                 n_vals -= 1
 
             offsets = np.zeros(n_vals + 1, dtype=np.int32)
-            for i, elem in enumerate(column[j]):
-                offsets[i + 1] = offsets[i] + len(elem)
+            i = 0
+            for elem in column[j]:
+                if elem is not None:
+                    offsets[i + 1] = offsets[i] + len(elem)
+                    i += 1
 
             # Get all strings in the current list as one bytelist of utf-8 encoded bytes
             if _python3:
-                values = bytes(bts for elem in column[j] for bts in elem)
+                values = bytes(bts for elem in column[j] if elem is not None for bts in elem)
             else:
-                values = b''.join(bts for elem in column[j] for bts in elem)
+                values = b''.join(bts for elem in column[j] if elem is not None for bts in elem)
 
             yield np.int32(n_vals).tobytes() + offsets.tobytes() + values + hasMissing.tobytes()
-
-
-# Converts a list of booleans to a bit-representation
-def bool_to_bits_generator(cell):
-    cur_byte = np.uint8(0)
-    for i in range(len(cell)):
-        if cell[i]:
-            cur_byte |= (1 << (i % 8))
-        if i % 8 == 7:
-            yield cur_byte
-            cur_byte = np.uint8(0)
-    if not (len(cell) % 8 == 0):
-        yield cur_byte
 
 
 # Generator converting values in a list type column to a binary representation 
@@ -527,8 +542,6 @@ def binary_from_boolean_list_generator(column):
             for idx in range(n_vals):
                 if not column[j][idx] == None:
                     missings[idx // 8] += (1 << (idx % 8))
-                else:
-                    column[j][idx] = False
 
             if _python3:
                 yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(column[j])) + missings.tobytes()
@@ -536,26 +549,6 @@ def binary_from_boolean_list_generator(column):
                 ar = np.zeros(val_len, dtype=np.uint8)
                 for i, el in enumerate(bool_to_bits_generator(column[j])): ar[i] = el
                 yield np.int32(n_vals).tobytes() + ar.tobytes() + missings.tobytes()
-
-
-# Generator converting values in a set type column to a binary representation 
-# having the format (length(values), values, missing_mask)
-# @param column      the column to convert (a pandas.Series)
-# @param numpy_type  the numpy_type of the primitive collection entries
-def binary_from_set_generator(column, numpy_type):
-    for j in range(len(column)):
-        if column[j] == None:
-            yield None
-        else:
-            n_vals = len(column[j])
-            hasMissing = np.uint8(1)
-            if None in column[j]:
-                hasMissing = np.uint8(0)
-                column[j].discard(None)
-                n_vals -= 1
-            np_set = np.empty(len(column[j]), dtype=numpy_type)
-            for i, elem in enumerate(column[j]): np_set[i] = elem
-            yield np.int32(n_vals).tobytes() + np_set.tobytes() + hasMissing.tobytes()
 
 
 # Generator converting values in a set type column to a binary representation 
@@ -572,14 +565,38 @@ def binary_from_boolean_set_generator(column):
             hasMissing = np.uint8(1)
             if None in column[j]:
                 hasMissing = np.uint8(0)
-                column[j].discard(None)
                 n_vals -= 1
+
+            cell_as_list = None
+            if hasMissing == 1:
+                cell_as_list = list(column[j])
+            else:
+                cell_as_list = n_vals * [None]
+                i = 0
+                for elem in column[j]:
+                    if elem is not None:
+                        cell_as_list[i] = elem
+                        i = i + 1
+
             if _python3:
-                yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(list(column[j]))) + hasMissing.tobytes()
+                yield np.int32(n_vals).tobytes() + bytes(bool_to_bits_generator(cell_as_list)) + hasMissing.tobytes()
             else:
                 ar = np.zeros(val_len, dtype=np.uint8)
-                for i, el in enumerate(bool_to_bits_generator(list(column[j]))): ar[i] = el
+                for i, el in enumerate(bool_to_bits_generator(cell_as_list)): ar[i] = el
                 yield np.int32(n_vals).tobytes() + ar.tobytes() + hasMissing.tobytes()
+
+
+# Converts a list of booleans to a bit-representation
+def bool_to_bits_generator(cell):
+    cur_byte = np.uint8(0)
+    for i in range(len(cell)):
+        if cell[i]:
+            cur_byte |= (1 << (i % 8))
+        if i % 8 == 7:
+            yield cur_byte
+            cur_byte = np.uint8(0)
+    if not (len(cell) % 8 == 0):
+        yield cur_byte
 
 
 # Get the first element of the specified column that is not None.
@@ -619,6 +636,7 @@ def table_to_bytes(table):
                                                         memory_pool=mp))
         else:
             missing_names.append("__index_level_0__")
+
         # Serialize the dataframe into a list of pyarrow.Array column by column
         for i in range(len(table._data_frame.columns)):
             # missing column ? -> save name and don't send any buffer for column
