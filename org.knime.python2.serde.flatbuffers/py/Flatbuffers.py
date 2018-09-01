@@ -67,7 +67,6 @@ from knimetable import StringCollectionCell
 from knimetable import StringCollectionColumn
 from knimetable import StringColumn
 
-
 _types_ = None
 
 
@@ -575,7 +574,11 @@ def table_to_bytes(table):
                 colOffsetList.append(Column.ColumnEnd(builder))
 
             elif table.get_type(colIdx) == _types_.DOUBLE or table.get_type(colIdx) == _types_.FLOAT:
-                valVec = builder.CreateByteArray(col.values.tobytes())
+                bytes = (col.values.tobytes() if table.get_type(colIdx) == _types_.DOUBLE
+                         # Set to double to fix encoding problems.
+                         else np.array(col.values, dtype='f8', copy=False).tobytes())
+
+                valVec = builder.CreateByteArray(bytes)
 
                 DoubleColumn.DoubleColumnStart(builder)
                 DoubleColumn.DoubleColumnAddValues(builder, valVec)
