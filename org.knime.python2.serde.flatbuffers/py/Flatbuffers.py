@@ -191,15 +191,15 @@ def bytes_into_table(table, data_bytes):
             colVec = col.LongSetColumn()
             colVec.AddValuesAsColumn(df, j, False)        
          
-        elif col.Type() == _types_.DOUBLE:
+        elif col.Type() == _types_.DOUBLE or col.Type() == _types_.FLOAT:
             colVec = col.DoubleColumn()
             colVec.AddValuesAsColumn(df, j)
             
-        elif col.Type() == _types_.DOUBLE_LIST:
+        elif col.Type() == _types_.DOUBLE_LIST or col.Type() == _types_.FLOAT_LIST:
             colVec = col.DoubleListColumn()
             colVec.AddValuesAsColumn(df, j, True)
             
-        elif col.Type() == _types_.DOUBLE_SET:
+        elif col.Type() == _types_.DOUBLE_SET or col.Type() == _types_.FLOAT_SET:
             colVec = col.DoubleSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
                        
@@ -607,7 +607,7 @@ def table_to_bytes(table):
                 Column.ColumnAddLongSetColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
             
-            elif table.get_type(colIdx) == _types_.DOUBLE:
+            elif table.get_type(colIdx) == _types_.DOUBLE or table.get_type(colIdx) == _types_.FLOAT:
                 valVec = builder.CreateByteArray(col.values.tobytes())              
                        
                 DoubleColumn.DoubleColumnStart(builder)                     
@@ -619,7 +619,7 @@ def table_to_bytes(table):
                 Column.ColumnAddDoubleColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
                 
-            elif table.get_type(colIdx) == _types_.DOUBLE_LIST:  
+            elif table.get_type(colIdx) == _types_.DOUBLE_LIST or table.get_type(colIdx) == _types_.FLOAT_LIST:  
                 cellOffsets = []
                 for valIdx in range(0,len(col)):
                    # debug_util.debug_msg("Python->Flatbuffers: (Double List)", col[valIdx])               
@@ -673,7 +673,7 @@ def table_to_bytes(table):
                 Column.ColumnAddDoubleListColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
                 
-            elif table.get_type(colIdx) == _types_.DOUBLE_SET:  
+            elif table.get_type(colIdx) == _types_.DOUBLE_SET or table.get_type(colIdx) == _types_.FLOAT_SET:  
                 cellOffsets = []
                 for valIdx in range(0,len(col)):
                     addMissingValue = False
