@@ -44,7 +44,6 @@
 import numpy as np
 from pandas import DataFrame
 
-import debug_util
 import flatbuffers
 from knimetable import BooleanCollectionCell
 from knimetable import BooleanCollectionColumn
@@ -68,13 +67,6 @@ from knimetable import StringCollectionCell
 from knimetable import StringCollectionColumn
 from knimetable import StringColumn
 
-# ******************************************************
-# Remote debugging section
-# ******************************************************
-# debug_util.init_debug()
-debug_util.debug_msg('Flatbuffers enabled debugging.')
-
-# ******************************************************
 
 _types_ = None
 
@@ -126,9 +118,6 @@ def column_serializers_from_bytes(data_bytes):
 #                     managing the deserialization of extension types
 # @param data_bytes   the data_bytes
 def bytes_into_table(table, data_bytes):
-    # debug_util.debug_msg("Starting bytes_into_table()")
-
-
     knimeTable = KnimeTable.KnimeTable.GetRootAsKnimeTable(data_bytes, 0)
 
     rowIds = []
@@ -141,7 +130,6 @@ def bytes_into_table(table, data_bytes):
     for j in range(0, knimeTable.ColNamesLength()):
         colNames.append(knimeTable.ColNames(j).decode('utf-8'))
 
-    # debug_util.debug_msg("Flatbuffers->Python: Column Length() ", knimeTable.ColumnsLength())
     df = DataFrame(columns=colNames, index=rowIds)
 
     for j in range(0, knimeTable.ColumnsLength()):
@@ -183,15 +171,15 @@ def bytes_into_table(table, data_bytes):
             colVec = col.LongSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
 
-        elif col.Type() == _types_.DOUBLE:
+        elif col.Type() == _types_.DOUBLE or col.Type() == _types_.FLOAT:
             colVec = col.DoubleColumn()
             colVec.AddValuesAsColumn(df, j)
 
-        elif col.Type() == _types_.DOUBLE_LIST:
+        elif col.Type() == _types_.DOUBLE_LIST or col.Type() == _types_.FLOAT_LIST:
             colVec = col.DoubleListColumn()
             colVec.AddValuesAsColumn(df, j, True)
 
-        elif col.Type() == _types_.DOUBLE_SET:
+        elif col.Type() == _types_.DOUBLE_SET or col.Type() == _types_.FLOAT_SET:
             colVec = col.DoubleSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
 
@@ -207,7 +195,6 @@ def bytes_into_table(table, data_bytes):
             colVec = col.StringSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
 
-
         elif col.Type() == _types_.BYTES:
             colVec = col.ByteColumn()
             colVec.AddValuesAsColumn(df, j)
@@ -220,7 +207,6 @@ def bytes_into_table(table, data_bytes):
             colVec = col.ByteSetColumn()
             colVec.AddValuesAsColumn(df, j, False)
 
-    # debug_util.breakpoint()
     table._data_frame = df
 
 
@@ -232,7 +218,6 @@ def bytes_into_table(table, data_bytes):
 def table_to_bytes(table):
     try:
 
-        # debug_util.debug_msg("Python->Flatbuffers: Starting table_to_bytes()")
         builder = flatbuffers.Builder(1024)
 
         # Row IDs
@@ -262,7 +247,6 @@ def table_to_bytes(table):
 
         serializers = table._column_serializers
 
-        # debug_util.debug_msg("data_frame", table._data_frame)
         for colIdx in range(0, table.get_number_columns()):
             col = table._data_frame.iloc[:, colIdx]
             if table.get_type(colIdx) == _types_.INTEGER:
@@ -347,7 +331,6 @@ def table_to_bytes(table):
                                 builder.PrependInt32(elem)
                                 numElems += 1
                         cellVec = builder.EndVector(numElems)
-                        #                    debug_util.debug_msg("Python->Flatbuffers: (Integer Set)", col[valIdx])
 
                     IntegerCollectionCell.IntegerCollectionCellStart(builder)
                     IntegerCollectionCell.IntegerCollectionCellAddValue(builder, cellVec)
@@ -391,7 +374,6 @@ def table_to_bytes(table):
             elif table.get_type(colIdx) == _types_.BOOLEAN_LIST:
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
-                    # debug_util.debug_msg("Python->Flatbuffers: (Boolean List) col [", valIdx,"]", col[valIdx])
                     if col[valIdx] == None:
                         BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, 1)
                         builder.PrependBool(True)
@@ -399,7 +381,6 @@ def table_to_bytes(table):
                     else:
                         BooleanCollectionCell.BooleanCollectionCellStartValueVector(builder, len(col[valIdx]))
                         cellMissing = []
-                        #   debug_util.debug_msg("Python->Flatbuffers: (Boolean List) cell", col[valIdx])
                         for cellIdx in reversed(range(0, len(col[valIdx]))):
                             if col[valIdx][cellIdx] == None:
                                 builder.PrependBool(False)
@@ -408,7 +389,6 @@ def table_to_bytes(table):
                                 builder.PrependBool(col[valIdx][cellIdx])
                                 cellMissing.append(False)
                         cellVec = builder.EndVector(len(col[valIdx]))
-                        #    debug_util.debug_msg("Python->Flatbuffers: (Boolean List) missing", cellMissing)
                         # the missing vector is already in reversed order
                         BooleanCollectionCell.BooleanCollectionCellStartMissingVector(builder, len(col[valIdx]))
                         for cellIdx in range(0, len(col[valIdx])):
@@ -443,8 +423,6 @@ def table_to_bytes(table):
                 colOffsetList.append(Column.ColumnEnd(builder))
 
             elif table.get_type(colIdx) == _types_.BOOLEAN_SET:
-                #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Start)")
-                #            debug_util.debug_msg("Python->Flatbuffers: (Boolean Set Column Length):", len(col))
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
                     addMissingValue = False
@@ -596,7 +574,7 @@ def table_to_bytes(table):
                 Column.ColumnAddLongSetColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
 
-            elif table.get_type(colIdx) == _types_.DOUBLE:
+            elif table.get_type(colIdx) == _types_.DOUBLE or table.get_type(colIdx) == _types_.FLOAT:
                 valVec = builder.CreateByteArray(col.values.tobytes())
 
                 DoubleColumn.DoubleColumnStart(builder)
@@ -608,10 +586,9 @@ def table_to_bytes(table):
                 Column.ColumnAddDoubleColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
 
-            elif table.get_type(colIdx) == _types_.DOUBLE_LIST:
+            elif table.get_type(colIdx) == _types_.DOUBLE_LIST or table.get_type(colIdx) == _types_.FLOAT_LIST:
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
-                    # debug_util.debug_msg("Python->Flatbuffers: (Double List)", col[valIdx])
                     if col[valIdx] == None:
                         DoubleCollectionCell.DoubleCollectionCellStartValueVector(builder, 1)
                         builder.PrependFloat64(float('NaN'))
@@ -623,14 +600,11 @@ def table_to_bytes(table):
                             if col[valIdx][cellIdx] == None:
                                 builder.PrependFloat64(float('NaN'))
                                 cellMissing.append(True)
-                                # debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
                             else:
                                 builder.PrependFloat64(col[valIdx][cellIdx])
                                 cellMissing.append(False)
-                                # debug_util.debug_msg("Python->Flatbuffers: (Double List Cell) [", cellIdx, "]", col[valIdx][cellIdx])
                         cellVec = builder.EndVector(len(col[valIdx]))
 
-                        #    debug_util.debug_msg("Python->Flatbuffers: (Double List Cell):", col[valIdx])
                         # the missing vector is already in reversed order
                         DoubleCollectionCell.DoubleCollectionCellStartMissingVector(builder, len(col[valIdx]))
                         for cellIdx in range(0, len(col[valIdx])):
@@ -662,7 +636,7 @@ def table_to_bytes(table):
                 Column.ColumnAddDoubleListColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
 
-            elif table.get_type(colIdx) == _types_.DOUBLE_SET:
+            elif table.get_type(colIdx) == _types_.DOUBLE_SET or table.get_type(colIdx) == _types_.FLOAT_SET:
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
                     addMissingValue = False
@@ -735,8 +709,6 @@ def table_to_bytes(table):
                     strOffsets = []
                     if col[valIdx] == None:
                         strOffsets.append(builder.CreateString("Missing Value"))
-
-                        #                debug_util.debug_msg("Python->Flatbuffers: (String List Cell):", col[valIdx])
                     else:
                         cellMissing = []
                         for strIdx in range(0, len(col[valIdx])):
@@ -786,7 +758,6 @@ def table_to_bytes(table):
             elif table.get_type(colIdx) == _types_.STRING_SET:
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
-                    #                debug_util.debug_msg("Python->Flatbuffers: (String Set Cell):", col[valIdx])
                     strOffsets = []
                     if col[valIdx] == None:
                         strOffsets.append(builder.CreateString("Missing Value"))
@@ -860,8 +831,6 @@ def table_to_bytes(table):
                 Column.ColumnAddType(builder, table.get_type(colIdx))
                 Column.ColumnAddByteColumn(builder, colOffset)
                 colOffsetList.append(Column.ColumnEnd(builder))
-                # debug_util.debug_msg("Python->Flatbuffers: Ending BYTES")
-
             elif table.get_type(colIdx) == _types_.BYTES_LIST:
                 cellOffsets = []
                 for valIdx in range(0, len(col)):
@@ -869,19 +838,15 @@ def table_to_bytes(table):
                     if col[valIdx] == None:
                         collOffsets.append(get_empty_ByteCell(builder))
                     else:
-                        # debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
                         cellMissing = []
                         for cellIdx in range(0, len(col[valIdx])):
                             cell = col[valIdx][cellIdx]
-                            # debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): cell [", cellIdx, "]", cell)
                             if cell == None:
                                 collOffsets.append(get_empty_ByteCell(builder))
                                 cellMissing.append(True)
                             else:
                                 collOffsets.append(get_ByteCell(builder, bytearray(cell)))
                                 cellMissing.append(False)
-
-                        # debug_util.debug_msg("Python->Flatbuffers: (BYTES List): cellMissing", cellMissing)
 
                         ByteCollectionCell.ByteCollectionCellStartMissingVector(builder, len(cellMissing))
                         for cellIdx in reversed(range(0, len(cellMissing))):
@@ -936,7 +901,6 @@ def table_to_bytes(table):
                     if col[valIdx] == None:
                         collOffsets.append(get_empty_ByteCell(builder))
                     else:
-                        #       debug_util.debug_msg("Python->Flatbuffers: (BYTES List Cell): col[valIdx]", col[valIdx])
                         addMissingValue = False
                         for cell in col[valIdx]:
                             if cell == None:
@@ -995,8 +959,6 @@ def table_to_bytes(table):
         KnimeTable.KnimeTableAddColumns(builder, colVecOffset)
         knimeTable = KnimeTable.KnimeTableEnd(builder)
         builder.Finish(knimeTable)
-
-        #  debug_util.debug_msg("Python->Flatbuffers Finished KnimeTable")
 
         return builder.Output()
     except flatbuffers.builder.BuilderSizeError:
