@@ -68,6 +68,7 @@ import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.NullableBigIntVector;
 import org.apache.arrow.vector.NullableBitVector;
+import org.apache.arrow.vector.NullableFloat4Vector;
 import org.apache.arrow.vector.NullableFloat8Vector;
 import org.apache.arrow.vector.NullableIntVector;
 import org.apache.arrow.vector.NullableVarBinaryVector;
@@ -104,6 +105,9 @@ import org.knime.python2.serde.arrow.extractors.BytesSetExtractor;
 import org.knime.python2.serde.arrow.extractors.DoubleExtractor;
 import org.knime.python2.serde.arrow.extractors.DoubleListExtractor;
 import org.knime.python2.serde.arrow.extractors.DoubleSetExtractor;
+import org.knime.python2.serde.arrow.extractors.FloatExtractor;
+import org.knime.python2.serde.arrow.extractors.FloatListExtractor;
+import org.knime.python2.serde.arrow.extractors.FloatSetExtractor;
 import org.knime.python2.serde.arrow.extractors.IntListExtractor;
 import org.knime.python2.serde.arrow.extractors.IntSetExtractor;
 import org.knime.python2.serde.arrow.extractors.IntegerExtractor;
@@ -124,6 +128,9 @@ import org.knime.python2.serde.arrow.inserters.BytesSetInserter;
 import org.knime.python2.serde.arrow.inserters.DoubleInserter;
 import org.knime.python2.serde.arrow.inserters.DoubleListInserter;
 import org.knime.python2.serde.arrow.inserters.DoubleSetInserter;
+import org.knime.python2.serde.arrow.inserters.FloatInserter;
+import org.knime.python2.serde.arrow.inserters.FloatListInserter;
+import org.knime.python2.serde.arrow.inserters.FloatSetInserter;
 import org.knime.python2.serde.arrow.inserters.IntListInserter;
 import org.knime.python2.serde.arrow.inserters.IntSetInserter;
 import org.knime.python2.serde.arrow.inserters.IntegerInserter;
@@ -139,6 +146,8 @@ import org.knime.python2.serde.arrow.inserters.StringSetInserter;
  * The serialized data is written to temporary files, the file paths are shared via the command socket.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class ArrowSerializationLibrary implements SerializationLibrary {
 
@@ -174,10 +183,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     private enum NumpyType {
-        OBJECT("object"),
-        INT32("int32"),
-        INT64("int64"),
-        FLOAT64("float64");
+            OBJECT("object"), INT32("int32"), INT64("int64"), FLOAT64("float64"), FLOAT32("float32");
 
         private final String m_id;
 
@@ -281,6 +287,11 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             NumpyType.FLOAT64, Type.DOUBLE);
                     inserters.add(new DoubleInserter(spec.getColumnNames()[i], rootAllocator, numRows));
                     break;
+                        case FLOAT:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.INT,
+                                NumpyType.FLOAT32, Type.FLOAT);
+                            inserters.add(new FloatInserter(spec.getColumnNames()[i], rootAllocator, numRows));
+                            break;
                 case STRING:
                     colMetadataBuilder =
                         createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.UNICODE,
@@ -336,6 +347,18 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     inserters.add(new DoubleSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
                         ASSUMED_BYTES_VAL_BYTE_SIZE));
                     break;
+                        case FLOAT_LIST:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.FLOAT_LIST);
+                            inserters.add(new FloatListInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
+                        case FLOAT_SET:
+                            colMetadataBuilder = createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
+                                NumpyType.OBJECT, Type.FLOAT_SET);
+                            inserters.add(new FloatSetInserter(spec.getColumnNames()[i], rootAllocator, numRows,
+                                ASSUMED_BYTES_VAL_BYTE_SIZE));
+                            break;
                 case BOOLEAN_LIST:
                     colMetadataBuilder =
                         createColumnMetadataBuilder(spec.getColumnNames()[i], PandasType.BYTES,
@@ -470,6 +493,9 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             case DOUBLE:
                                 extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
                                 break;
+                            case FLOAT:
+                                extractors.add(new FloatExtractor((NullableFloat4Vector)root.getVector(names[j])));
+                                break;
                             case STRING:
                                 extractors.add(getStringOrByteextractor(root.getVector(names[j])));
                                 break;
@@ -496,6 +522,14 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                             case DOUBLE_SET:
                                 extractors
                                     .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case FLOAT_LIST:
+                                extractors
+                                    .add(new FloatListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                break;
+                            case FLOAT_SET:
+                                extractors
+                                    .add(new FloatSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
                                 break;
                             case BOOLEAN_LIST:
                                 extractors
