@@ -62,7 +62,8 @@ import traceback
 
 # Debugging:
 
-# Uncomment to enable debugging:
+# Uncomment to enable debugging; you may want to enable breakpoints:
+# import debug_util
 # debug_util.init_debug(enable_breakpoints=False, enable_debug_log=True, debug_log_to_stderr=False)
 
 # Start Python kernel:
