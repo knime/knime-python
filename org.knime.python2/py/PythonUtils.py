@@ -133,7 +133,11 @@ def is_collection(data_type):
     """
     Checks if the given type is a collection type.
     """
-    return data_type is list or data_type is set or data_type is dict or data_type is tuple
+    return (data_type is list #
+            or data_type is tuple #
+            or data_type is set #
+            or data_type is frozenset #
+            or data_type is dict)
 
 
 def is_missing(value):
@@ -165,8 +169,10 @@ def is_nat(value):
 
 def is_numpy_type(data_type):
     """
-    Checks if the given type is a numpy type.
+    Checks if the given type is a numpy type, or, if it's an instance of a class, checks if its class is a numpy type.
     """
+    if not inspect.isclass(data_type):
+        data_type = type(data_type)
     return data_type.__module__ == numpy.__name__
 
 
@@ -174,6 +180,8 @@ def is_boolean_type(data_type):
     return data_type in _BOOLEAN_TYPES
 
 
+def is_double_type(data_type):
+    return data_type in _DOUBLE_TYPES
 
 
 def is_float_type(data_type):
@@ -232,6 +240,7 @@ def object_to_string(data_object):
             return ''
     return (object_as_string[:996] + '\n...') if len(object_as_string) > 1000 else object_as_string
 
+
 def value_to_simpletype_value(value, simpletype):
     """
     Convert a value into a given {@link Simpletype}.
@@ -285,16 +294,16 @@ def value_to_simpletype_value(value, simpletype):
             else:
                 value_set.add(int(inner_value))
         return value_set
-    elif simpletype == Simpletype.DOUBLE:
+    elif simpletype == Simpletype.DOUBLE or simpletype == Simpletype.FLOAT:
         float_value = float(value)
         return float_value
-    elif simpletype == Simpletype.DOUBLE_LIST:
+    elif simpletype == Simpletype.DOUBLE_LIST or simpletype == Simpletype.FLOAT_LIST:
         for i in range(0, len(value)):
             if value[i] is not None:
                 float_value = float(value[i])
                 value[i] = float_value
         return value
-    elif simpletype == Simpletype.DOUBLE_SET:
+    elif simpletype == Simpletype.DOUBLE_SET or simpletype == Simpletype.FLOAT_SET:
         value_set = set()
         for inner_value in value:
             if inner_value is None:

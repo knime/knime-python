@@ -58,8 +58,11 @@ from DataTables import ToPandasTable
 from PythonUtils import Simpletype
 from PythonUtils import get_type_string
 from PythonUtils import is_boolean_type
+from PythonUtils import is_double_type
+from PythonUtils import is_float_type
 from PythonUtils import is_integer_type
 from PythonUtils import is_missing
+from PythonUtils import is_numpy_type
 from PythonUtils import types_are_equivalent
 
 _INT_32_MIN = -2147483648
@@ -215,7 +218,7 @@ class Serializer(object):
             simpletype = self.simpletype_for_column(data_frame, column)[0]
             if simpletype == Simpletype.INTEGER:
                 flow_variables[column] = int(data_frame[column][0])
-            elif simpletype == Simpletype.DOUBLE:
+            elif simpletype == Simpletype.DOUBLE or simpletype == Simpletype.FLOAT:
                 flow_variables[column] = float(data_frame[column][0])
             else:
                 flow_variables[column] = str(data_frame[column][0])
@@ -238,9 +241,9 @@ class Serializer(object):
 
     def simpletype_for_column(self, data_frame, column_name):
         """
-        Get the {@link Simpletype} of a column in the passed dataframe and the serializer_id if available (only
+        Get the {@link Simpletype} of a column in the passed data frame and the serializer_id if available (only
         interesting for extension types that are transferred as bytes).
-        @param data_frame the dataframe containing the columns to evaluate
+        @param data_frame the data frame containing the columns to evaluate
         @param column_name the name of the column in data_frame to evaluate
         @return tuple containing the {@link SimpleType} and the serializer_id (or None) of the column
         """
@@ -249,11 +252,12 @@ class Serializer(object):
         column_serializer = None
         is_too_big_number = False
         if len(data_frame.index) == 0:
-            # if table is empty we don't know the types so we make them strings
+            # If the table is empty, we don't know the types so we make them strings.
             simple_type = Simpletype.STRING
         else:
             column = data_frame[column_name]
-            if isinstance(column, DataFrame):
+            if Serializer._is_nested(column):
+                # We don't allow nested data frames for now.
                 raise RuntimeError(
                     "Output DataFrame contains other DataFrames in column '" + column_name + "'. "
                     + "Nested DataFrames are not supported. Please create a flat output DataFrame.")
@@ -261,87 +265,72 @@ class Serializer(object):
             if is_boolean_type(column_type):
                 simple_type = Simpletype.BOOLEAN
             elif is_integer_type(column_type):
-                minvalue = column[column.idxmin()]
-                maxvalue = column[column.idxmax()]
-                if _INT_32_MIN <= minvalue and maxvalue <= _INT_32_MAX:
-                    simple_type = Simpletype.INTEGER
-                else:
-                    if _INT_64_MIN <= minvalue and maxvalue <= _INT_64_MAX:
-                        simple_type = Simpletype.LONG
-                    else:
-                        is_too_big_number = True  # Big int. Maybe handled by an extension (below).
-            elif column_type == 'double' or self.column_type(data_frame, column_name) == float:
+                simple_type, is_too_big_number = Serializer._get_integer_type(column)
+            elif is_float_type(column_type):
+                simple_type = Simpletype.FLOAT
+            elif is_double_type(column_type):
                 simple_type = Simpletype.DOUBLE
             else:
-                column_type = self.column_type(data_frame, column_name)
+                # We don't recognize the column's dtype or the dtype is too generic/not specified (e.g., 'object').
+                # Look at the column's elements to infer the type. The inferred type will either be a Python class type
+                # (e.g., in case of Python builtins or extension types) or, if the elements are numpy scalars, a numpy
+                # dtype.
+                column_type = Serializer._scan_column_for_type(data_frame, column_name)
                 if column_type is None:
-                    # column with only missing values, make it string
+                    # Column with only missing values, make it string.
                     simple_type = Simpletype.STRING
-                elif types_are_equivalent(column_type, bool):
+                elif types_are_equivalent(column_type, bool) or is_boolean_type(column_type):
                     simple_type = Simpletype.BOOLEAN
-                elif column_type is list or column_type is tuple or column_type is set or column_type is frozenset:
-                    is_set = column_type is set or column_type is frozenset
-                    list_col_type = self.list_column_type(data_frame, column_name)
+                elif types_are_equivalent(column_type, int) or is_integer_type(column_type):
+                    simple_type, is_too_big_number = Serializer._get_integer_type(column)
+                elif is_float_type(column_type):
+                    simple_type = Simpletype.FLOAT
+                elif types_are_equivalent(column_type, float) or is_double_type(column_type):
+                    simple_type = Simpletype.DOUBLE
+                elif Serializer._is_collection_type(column_type):
+                    is_set = Serializer._is_set_type(column_type)
+                    list_col_type = Serializer._scan_list_column_for_element_type(data_frame, column_name)
                     if list_col_type is None:
-                        # column with only missing values, make it string
-                        if is_set:
-                            simple_type = Simpletype.STRING_SET
-                        else:
-                            simple_type = Simpletype.STRING_LIST
-                    elif types_are_equivalent(list_col_type, bool):
-                        if is_set:
-                            simple_type = Simpletype.BOOLEAN_SET
-                        else:
-                            simple_type = Simpletype.BOOLEAN_LIST
-                    elif types_are_equivalent(list_col_type, int):
-                        minvalue = 0
-                        maxvalue = 0
-                        for list_cell in column:
-                            if list_cell is not None:
-                                for cell in list_cell:
-                                    if cell is not None:
-                                        minvalue = min(minvalue, cell)
-                                        maxvalue = max(maxvalue, cell)
-                        if _INT_32_MIN <= minvalue and maxvalue <= _INT_32_MAX:
-                            if is_set:
-                                simple_type = Simpletype.INTEGER_SET
-                            else:
-                                simple_type = Simpletype.INTEGER_LIST
-                        else:
-                            if _INT_64_MIN <= minvalue and maxvalue <= _INT_64_MAX:
-                                if is_set:
-                                    simple_type = Simpletype.LONG_SET
-                                else:
-                                    simple_type = Simpletype.LONG_LIST
-                            else:
-                                is_too_big_number = True  # Big int. Maybe handled by an extension (below).
-                    elif types_are_equivalent(list_col_type, float):
-                        if is_set:
-                            simple_type = Simpletype.DOUBLE_SET
-                        else:
-                            simple_type = Simpletype.DOUBLE_LIST
+                        # Column with only missing values, make it string.
+                        simple_type = Simpletype.STRING_SET if is_set else Simpletype.STRING_LIST
+                    elif types_are_equivalent(list_col_type, bool) or is_boolean_type(list_col_type):
+                        simple_type = Simpletype.BOOLEAN_SET if is_set else Simpletype.BOOLEAN_LIST
+                    elif types_are_equivalent(list_col_type, int) or is_integer_type(list_col_type):
+                        simple_type, is_too_big_number = Serializer._get_integer_list_type(column, is_set)
+                    elif is_float_type(list_col_type):
+                        simple_type = Simpletype.FLOAT_SET if is_set else Simpletype.FLOAT_LIST
+                    elif types_are_equivalent(list_col_type, float) or is_double_type(list_col_type):
+                        simple_type = Simpletype.DOUBLE_SET if is_set else Simpletype.DOUBLE_LIST
                     elif types_are_equivalent(list_col_type, str):
-                        if is_set:
-                            simple_type = Simpletype.STRING_SET
-                        else:
-                            simple_type = Simpletype.STRING_LIST
+                        simple_type = Simpletype.STRING_SET if is_set else Simpletype.STRING_LIST
                     else:
-                        type_string = get_type_string(self.first_valid_list_object(data_frame, column_name))
-                        column_serializer = self._type_extension_manager.get_serializer_id_by_type(type_string)
+                        type_string = get_type_string(Serializer._first_valid_list_object(data_frame, column_name))
+                        try:
+                            column_serializer = self._type_extension_manager.get_serializer_id_by_type(type_string)
+                        except LookupError as cause:
+                            if is_too_big_number:
+                                e = ValueError(
+                                    "Column \"" + str(column_name) + "\" contains numbers that are too large " +
+                                    "(or too small) to be represented in KNIME.")
+                            else:
+                                e = LookupError(
+                                    str(cause) + "\nUnsupported element type in collection column: \"" + str(
+                                        column_name) + "\", column type: \"" + str(
+                                        column_type) + "\", element type: \"" + str(list_col_type) + "\".")
+                            e.__cause__ = None  # Hide context to make error log more readable.
+                            raise e
                         if column_serializer is None:
-                            raise ValueError('Column ' + str(column_name) + ' has unsupported type ' + type_string)
-                        if is_set:
-                            simple_type = Simpletype.BYTES_SET
-                        else:
-                            simple_type = Simpletype.BYTES_LIST
+                            raise ValueError('Collection column "' + str(
+                                column_name) + '" has unsupported element type "' + type_string + '".')
+                        simple_type = Simpletype.BYTES_SET if is_set else Simpletype.BYTES_LIST
                 elif types_are_equivalent(column_type, str):
                     simple_type = Simpletype.STRING
                 elif types_are_equivalent(column_type, bytes) or types_are_equivalent(column_type, bytearray):
-                    # NOTE: raw bytestring requested here -> no serializer
+                    # Raw bytes, no serializer needed.
                     simple_type = Simpletype.BYTES
         if simple_type is None:
-            # Not a simple type. Check if there's an extension that can handle the column type.
-            type_string = get_type_string(self.first_valid_object(data_frame, column_name))
+            # Not a simple or collection type. Check if there's an extension that can handle the column type.
+            type_string = get_type_string(Serializer._first_valid_object(data_frame, column_name))
             try:
                 column_serializer = self._type_extension_manager.get_serializer_id_by_type(type_string)
             except LookupError as cause:
@@ -350,7 +339,8 @@ class Serializer(object):
                                    "(or too small) to be represented in KNIME.")
                 else:
                     e = LookupError(
-                        str(cause) + " Column: \"" + str(column_name) + "\", column type: \"" + str(
+                        str(cause) + "\nUnsupported column type in column: \"" + str(
+                            column_name) + "\", column type: \"" + str(
                             column_type) + "\".")
                 e.__cause__ = None  # Hide context to make error log more readable.
                 raise e
@@ -364,10 +354,39 @@ class Serializer(object):
             simple_type = Simpletype.BYTES
         return simple_type, column_serializer
 
+    # Helper methods:
+
     @staticmethod
-    def column_type(data_frame, column_name):
+    def _is_nested(column):
+        return isinstance(column, DataFrame)
+
+    @staticmethod
+    def _get_integer_type(column):
+        simple_type = None
+        is_too_big_number = False
+        minvalue = column[column.idxmin()]
+        maxvalue = column[column.idxmax()]
+        if Serializer._is_in_int32_range(minvalue, maxvalue):
+            simple_type = Simpletype.INTEGER
+        elif Serializer._is_in_int64_range(minvalue, maxvalue):
+            simple_type = Simpletype.LONG
+        else:
+            # Big int. Not covered by builtin serializers, but maybe by an extension (below).
+            is_too_big_number = True
+        return simple_type, is_too_big_number
+
+    @staticmethod
+    def _is_in_int32_range(minvalue, maxvalue):
+        return _INT_32_MIN <= minvalue and maxvalue <= _INT_32_MAX
+
+    @staticmethod
+    def _is_in_int64_range(minvalue, maxvalue):
+        return _INT_64_MIN <= minvalue and maxvalue <= _INT_64_MAX
+
+    @staticmethod
+    def _scan_column_for_type(data_frame, column_name):
         """
-        Get the type of a column (fails if multiple types are found).
+        Get the type of a column (fails if multiple types are found). Numpy scalar types are converted to dtypes.
         """
         col_type = None
         for cell in data_frame[column_name]:
@@ -378,12 +397,33 @@ class Serializer(object):
                                          + col_type.__name__ + ' and ' + type(cell).__name__)
                 else:
                     col_type = type(cell)
+        col_type = Serializer._convert_to_dtype_if_numpy_type(col_type)
         return col_type
 
     @staticmethod
-    def list_column_type(data_frame, column_name):
+    def _convert_to_dtype_if_numpy_type(col_type):
         """
-        Get the type of a list column (fails if multiple types are found).
+        Converts numpy types into dtypes.
+        """
+        if col_type is not None and is_numpy_type(col_type):
+            try:
+                col_type = numpy.dtype(col_type)
+            except Exception:
+                pass
+        return col_type
+
+    @staticmethod
+    def _is_collection_type(column_type):
+        return column_type is list or column_type is tuple or column_type is set or column_type is frozenset
+
+    @staticmethod
+    def _is_set_type(column_type):
+        return column_type is set or column_type is frozenset
+
+    @staticmethod
+    def _scan_list_column_for_element_type(data_frame, column_name):
+        """
+        Get the type of a list column (fails if multiple types are found). Numpy scalar types are converted to dtypes.
         """
         col_type = None
         for list_cell in data_frame[column_name]:
@@ -397,11 +437,33 @@ class Serializer(object):
                         else:
                             col_type = type(cell)
         if col_type == list or col_type == set:
-            raise ValueError('Output table contains a nested collection. Nested collections are not supported, yet!')
+            raise ValueError('Output table contains a nested collection. Nested collections are not yet supported.')
+        col_type = Serializer._convert_to_dtype_if_numpy_type(col_type)
         return col_type
 
     @staticmethod
-    def first_valid_object(data_frame, column_name):
+    def _get_integer_list_type(column, is_set):
+        simple_type = None
+        is_too_big_number = False
+        minvalue = 0
+        maxvalue = 0
+        for list_cell in column:
+            if list_cell is not None:
+                for cell in list_cell:
+                    if cell is not None:
+                        minvalue = min(minvalue, cell)
+                        maxvalue = max(maxvalue, cell)
+        if Serializer._is_in_int32_range(minvalue, maxvalue):
+            simple_type = Simpletype.INTEGER_SET if is_set else Simpletype.INTEGER_LIST
+        elif Serializer._is_in_int64_range(minvalue, maxvalue):
+            simple_type = Simpletype.LONG_SET if is_set else Simpletype.LONG_LIST
+        else:
+            # Big int. Not covered by builtin serializers, but maybe by an extension (below).
+            is_too_big_number = True
+        return simple_type, is_too_big_number
+
+    @staticmethod
+    def _first_valid_object(data_frame, column_name):
         """
         Returns the first object in a pandas DataFrame column that does not represent a missing type (None, NaN or NaT).
         """
@@ -411,7 +473,7 @@ class Serializer(object):
         return None
 
     @staticmethod
-    def first_valid_list_object(data_frame, column_name):
+    def _first_valid_list_object(data_frame, column_name):
         """
         Returns the first object contained in a list in a pandas DataFrame column that does not represent a missing type
         (None, NaN or NaT).
