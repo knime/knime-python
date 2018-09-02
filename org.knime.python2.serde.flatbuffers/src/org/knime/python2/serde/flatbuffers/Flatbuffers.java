@@ -206,15 +206,18 @@ public class Flatbuffers implements SerializationLibrary {
                     inserters.add(new LongSetInserter(numRows));
                     break;
                 }
-                case DOUBLE: {
+                case DOUBLE:
+                case FLOAT: {
                     inserters.add(new DoubleInserter(numRows));
                     break;
                 }
-                case DOUBLE_LIST: {
+                case DOUBLE_LIST:
+                case FLOAT_LIST: {
                     inserters.add(new DoubleListInserter(numRows));
                     break;
                 }
-                case DOUBLE_SET: {
+                case DOUBLE_SET:
+                case FLOAT_SET: {
                     inserters.add(new DoubleSetInserter(numRows));
                     break;
                 }
@@ -367,20 +370,23 @@ public class Flatbuffers implements SerializationLibrary {
                     extractors.add(new LongSetExtractor(colVec));
                     break;
                 }
-                case DOUBLE: {
+                case DOUBLE:
+                case FLOAT: {
                     final DoubleColumn colVec = col.doubleColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE);
                     extractors.add(new DoubleExtractor(colVec));
 
                     break;
                 }
-                case DOUBLE_LIST: {
+                case DOUBLE_LIST:
+                case FLOAT_LIST: {
                     final DoubleCollectionColumn colVec = col.doubleListColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE_LIST);
                     extractors.add(new DoubleListExtractor(colVec));
                     break;
                 }
-                case DOUBLE_SET: {
+                case DOUBLE_SET:
+                case FLOAT_SET: {
                     final DoubleCollectionColumn colVec = col.doubleSetColumn();
                     colTypes.put(table.colNames(j), Type.DOUBLE_SET);
                     extractors.add(new DoubleSetExtractor(colVec));
