@@ -686,6 +686,11 @@ public class PythonKernel implements AutoCloseable {
                             flowVariables.add(new FlowVariable(columnName, cell.getDoubleValue()));
                         }
                         break;
+                    case FLOAT:
+                        if (isValidFlowVariableName(columnName)) {
+                            flowVariables.add(new FlowVariable(columnName, cell.getFloatValue()));
+                        }
+                        break;
                     case STRING:
                         if (isValidFlowVariableName(columnName)) {
                             flowVariables.add(new FlowVariable(columnName, cell.getStringValue()));
