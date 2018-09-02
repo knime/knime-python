@@ -75,7 +75,8 @@ def init(types):
     global _types_, _pandas_native_types_, _bytes_types_
     _types_ = types
     _pandas_native_types_ = {_types_.INTEGER, _types_.LONG, _types_.DOUBLE,
-                             _types_.STRING, _types_.BYTES, _types_.BOOLEAN}
+                             _types_.STRING, _types_.BYTES, _types_.BOOLEAN,
+                             _types_.FLOAT}
     _bytes_types_ = {_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET}
 
 
@@ -124,7 +125,7 @@ def bytes_into_table(table, data_bytes):
     read_types = []
     read_serializers = {}
                 
-# Generator function for collection columns of type Integer, Long, Double.
+# Generator function for collection columns of type Integer, Long, Double, Float.
 # @param arrowcolumn    the pyarrow.Column to extract the values from
 # @param isset          are the column values sets or lists
 # @param entry_len      the length of a single primitive inside every collection (e.g. 4 for Integer collections)
@@ -305,6 +306,8 @@ def deserialize_data_frame(path):
                     dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.LONG_SET, 8, 'q')) 
                 elif coltype == _types_.DOUBLE_LIST or coltype == _types_.DOUBLE_SET:
                     dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.DOUBLE_SET, 8, 'd')) 
+                elif coltype == _types_.FLOAT_LIST or coltype == _types_.FLOAT_SET:
+                    dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.FLOAT_SET, 4, 'f'))
                 elif coltype == _types_.BOOLEAN_LIST or coltype == _types_.BOOLEAN_SET:
                     dfcol = pandas.Series(boolean_collection_generator(arrowcolumn, coltype == _types_.BOOLEAN_SET)) 
                 elif coltype == _types_.STRING_LIST or coltype == _types_.STRING_SET:
@@ -343,6 +346,8 @@ def to_pyarrow_type(type):
         return pyarrow.int64()
     elif type == _types_.DOUBLE:
         return pyarrow.float64()
+    elif type == _types_.FLOAT:
+        return pyarrow.float32()
     elif type == _types_.STRING:
         return pyarrow.string()
     else:
@@ -350,7 +355,7 @@ def to_pyarrow_type(type):
 
 # Generator converting values in a list type column to a binary representation 
 # having the format (length(values), values, missing_mask). Works on Integer,
-# Long and Double lists.
+# Long, Double, and Float lists.
 # @param column      the column to convert (a pandas.Series)
 # @param numpy_type  the numpy_type of the primitive collection entries
 def binary_from_list_generator(column, numpy_type):
@@ -612,6 +617,9 @@ def table_to_bytes(table):
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:,i], '<i8')))
             elif table.get_type(i) == _types_.DOUBLE_LIST:
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:,i], '<f8')))
+            elif table.get_type(i) == _types_.FLOAT_LIST:
+                col_arrays.append(
+                    pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:, i], '<f4')))
             elif table.get_type(i) == _types_.BOOLEAN_LIST:
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_boolean_list_generator(table._data_frame.iloc[:,i])))
             elif table.get_type(i) == _types_.STRING_LIST:
@@ -624,6 +632,9 @@ def table_to_bytes(table):
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:,i], '<i8')))
             elif table.get_type(i) == _types_.DOUBLE_SET:
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:,i], '<f8')))
+            elif table.get_type(i) == _types_.FLOAT_SET:
+                col_arrays.append(
+                    pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:, i], '<f4')))
             elif table.get_type(i) == _types_.BOOLEAN_SET:
                 col_arrays.append(pyarrow.Array.from_pandas(binary_from_boolean_set_generator(table._data_frame.iloc[:,i])))
             elif table.get_type(i) == _types_.STRING_SET:
