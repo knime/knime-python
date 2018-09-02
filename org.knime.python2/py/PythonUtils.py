@@ -65,6 +65,7 @@ else:
     NaT = None
 
 import base64
+import inspect
 import math
 import numpy
 import os
@@ -83,7 +84,14 @@ if EnvironmentHelper.is_tslib_available():
     EQUIVALENT_TYPES.append([datetime, Timestamp])
 
 # Do not change those to sets. We need __eq__ comparison (overridden by numpy.dtypes), not __hash__.
-_BOOLEAN_TYPES = ('bool', "bool_", "bool8")
+# See https://docs.scipy.org/doc/numpy-1.14.2/reference/arrays.scalars.html.
+_BOOLEAN_TYPES = ('bool', 'bool_', 'bool8')
+
+_DOUBLE_TYPES = ('float', 'float_', 'double',
+                 'float64')
+
+_FLOAT_TYPES = ('half', 'single', 'float16', 'float32')
+
 _INTEGER_TYPES = ('byte', 'short', 'int',
                   'intc', 'int_', 'longlong',
                   'intp', 'int8', 'int16',
@@ -107,7 +115,7 @@ class Simpletype:
     LONG = 7
     LONG_LIST = 8
     LONG_SET = 9
-    DOUBLE = 10
+    DOUBLE = 10  # np.float64 and Python floats
     DOUBLE_LIST = 11
     DOUBLE_SET = 12
     STRING = 13
@@ -116,6 +124,9 @@ class Simpletype:
     BYTES = 16
     BYTES_LIST = 17
     BYTES_SET = 18
+    FLOAT = 19  # np.float32 and smaller numpy floats
+    FLOAT_LIST = 20
+    FLOAT_SET = 21
 
 
 def is_collection(data_type):
@@ -161,6 +172,12 @@ def is_numpy_type(data_type):
 
 def is_boolean_type(data_type):
     return data_type in _BOOLEAN_TYPES
+
+
+
+
+def is_float_type(data_type):
+    return data_type in _FLOAT_TYPES
 
 
 def is_integer_type(data_type):
