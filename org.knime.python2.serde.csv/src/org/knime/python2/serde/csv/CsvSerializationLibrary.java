@@ -253,6 +253,52 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 doubleBuilder.append(cell.getColumnType() == Type.DOUBLE_LIST ? "]" : "}");
                                 value = doubleBuilder.toString();
                                 break;
+                            case FLOAT:
+                                final float floatValue = cell.getFloatValue();
+                                if (Float.isInfinite(floatValue)) {
+                                    if (floatValue > 0) {
+                                        value = "inf";
+                                    } else {
+                                        value = "-inf";
+                                    }
+                                } else if (Float.isNaN(floatValue)) {
+                                    value = "NaN";
+                                } else {
+                                    value = Float.toString(floatValue);
+                                }
+                                break;
+                            case FLOAT_LIST:
+                            case FLOAT_SET:
+                                final float[] floatArray = cell.getFloatArrayValue();
+                                final StringBuilder floatBuilder = new StringBuilder();
+                                floatBuilder.append(cell.getColumnType() == Type.FLOAT_LIST ? "[" : "{");
+                                for (int i = 0; i < floatArray.length; i++) {
+                                    if (type == Type.FLOAT_LIST && cell.isMissing(i)) {
+                                        floatBuilder.append("None");
+                                    } else {
+                                        String floatVal = Float.toString(floatArray[i]);
+                                        if (floatVal.equals("NaN")) {
+                                            floatVal = "float('nan')";
+                                        } else if (floatVal.equals("-Infinity")) {
+                                            floatVal = "float('-inf')";
+                                        } else if (floatVal.equals("Infinity")) {
+                                            floatVal = "float('inf')";
+                                        }
+                                        floatBuilder.append(floatVal);
+                                    }
+                                    if ((i + 1) < floatArray.length) {
+                                        floatBuilder.append(",");
+                                    }
+                                }
+                                if (type == Type.FLOAT_SET && cell.hasMissingInSet()) {
+                                    if (floatArray.length > 0) {
+                                        floatBuilder.append(",");
+                                    }
+                                    floatBuilder.append("None");
+                                }
+                                floatBuilder.append(cell.getColumnType() == Type.FLOAT_LIST ? "]" : "}");
+                                value = floatBuilder.toString();
+                                break;
                             case STRING:
                                 value = cell.getStringValue();
                                 break;
@@ -364,6 +410,8 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                     if (value.equals("MissingCell")) {
                         if (type == Type.DOUBLE) {
                             cell = new CellImpl(Double.NaN);
+                        } else if (type == Type.FLOAT) {
+                            cell = new CellImpl(Float.NaN);
                         } else {
                             cell = new CellImpl();
                         }
@@ -588,6 +636,80 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                     cell = new CellImpl(doubleSetArray, false);
                                 } else {
                                     cell = new CellImpl(ArrayUtils.subarray(doubleSetArray, 0, doubleSetArray.length - 1), true);
+                                }
+                                break;
+                            case FLOAT:
+                                float floatValue;
+                                if (value.equals("inf")) {
+                                    floatValue = Float.POSITIVE_INFINITY;
+                                } else if (value.equals("-inf")) {
+                                    floatValue = Float.NEGATIVE_INFINITY;
+                                } else if (value.equals("NaN") || value.contentEquals("nan")) {
+                                    floatValue = Float.NaN;
+                                } else {
+                                    floatValue = Float.parseFloat(value);
+                                }
+                                cell = new CellImpl(floatValue);
+                                break;
+                            case FLOAT_LIST:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] floatValues = value.split(",");
+                                final float[] floatArray = new float[floatValues.length];
+                                final BitArray floatMissings = new BitArray(floatValues.length);
+                                for (int j = 0; j < floatArray.length; j++) {
+                                    floatValues[j] = floatValues[j].trim();
+                                    if (!floatValues[j].equals("None")) {
+                                        floatMissings.setToOne(j);
+                                        final String floatVal = floatValues[j];
+                                        if (floatVal.equals("nan")) {
+                                            floatArray[j] = Float.NaN;
+                                        } else if (floatVal.equals("inf")) {
+                                            floatArray[j] = Float.POSITIVE_INFINITY;
+                                        } else if (floatVal.equals("-inf")) {
+                                            floatArray[j] = Float.NEGATIVE_INFINITY;
+                                        } else {
+                                            floatArray[j] = Float.parseFloat(floatVal);
+                                        }
+                                    }
+                                }
+                                cell = new CellImpl(floatArray, floatMissings.getEncodedByteArray());
+                                break;
+                            case FLOAT_SET:
+                                if (value.startsWith("set([")) {
+                                    value = value.substring(5, value.length() - 2);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                final String[] floatSetValues = value.split(",");
+                                final float[] floatSetArray = new float[floatSetValues.length];
+                                boolean floatHasMissings = false;
+                                for (String bsValue : floatSetValues) {
+                                    bsValue = bsValue.trim();
+                                    if (!bsValue.equals("None")) {
+                                        final String floatVal = bsValue;
+                                        if (floatVal.equals("nan")) {
+                                            floatSetArray[idxCtr] = Float.NaN;
+                                        } else if (floatVal.equals("inf")) {
+                                            floatSetArray[idxCtr] = Float.POSITIVE_INFINITY;
+                                        } else if (floatVal.equals("-inf")) {
+                                            floatSetArray[idxCtr] = Float.NEGATIVE_INFINITY;
+                                        } else {
+                                            floatSetArray[idxCtr] = Float.parseFloat(floatVal);
+                                        }
+                                        idxCtr++;
+                                    } else {
+                                        floatHasMissings = true;
+                                    }
+                                }
+                                if (!floatHasMissings) {
+                                    cell = new CellImpl(floatSetArray, false);
+                                } else {
+                                    cell = new CellImpl(ArrayUtils.subarray(floatSetArray, 0, floatSetArray.length - 1),
+                                        true);
                                 }
                                 break;
                             case STRING:
