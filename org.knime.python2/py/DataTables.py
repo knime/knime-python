@@ -169,17 +169,20 @@ class ToPandasTable:
         dtypes = {}
         for i in range(len(column_names)):
             name = column_names[i]
-            if column_types[i] == Simpletype.BOOLEAN:
-                col_type = numpy.bool
-            elif column_types[i] == Simpletype.INTEGER:
-                col_type = numpy.int32
-            elif column_types[i] == Simpletype.LONG:
-                col_type = numpy.int64
-            elif column_types[i] == Simpletype.DOUBLE:
-                col_type = numpy.float64
+            column_simple_type = column_types[i]
+            if column_simple_type == Simpletype.BOOLEAN:
+                column_dtype = numpy.bool
+            elif column_simple_type == Simpletype.INTEGER:
+                column_dtype = numpy.int32
+            elif column_simple_type == Simpletype.LONG:
+                column_dtype = numpy.int64
+            elif column_simple_type == Simpletype.DOUBLE:
+                column_dtype = numpy.float64
+            elif column_simple_type == Simpletype.FLOAT:
+                column_dtype = numpy.float32
             else:
-                col_type = numpy.str
-            dtypes[name] = col_type
+                column_dtype = numpy.str
+            dtypes[name] = column_dtype
         self._dtypes = dtypes
         self._column_names = column_names
         self._data_frame = DataFrame(columns=column_names)
