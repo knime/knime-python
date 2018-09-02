@@ -47,6 +47,7 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
 import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.HashMap;
@@ -349,6 +350,44 @@ public class BufferedDataTableIterator implements TableIterator {
                     row.setCell(new CellImpl(values, hasMissing), i);
                 }
 
+            } else if (type == Type.FLOAT) {
+                // Use DoubleValue for now.
+                final float value = (float)((DoubleValue)dataCell).getDoubleValue();
+                row.setCell(new CellImpl(value), i);
+            } else if (type == Type.FLOAT_LIST) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                final float[] values = new float[colCell.size()];
+                final byte[] missings = new byte[colCell.size() / 8 + (colCell.size() % 8 == 0 ? 0 : 1)];
+                int j = 0;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        // Use DoubleValue for now.
+                        values[j] = (float)((DoubleValue)innerCell).getDoubleValue();
+                        missings[j / 8] += (1 << (j % 8));
+                    }
+                    j++;
+                }
+                row.setCell(new CellImpl(values, missings), i);
+            } else if (type == Type.FLOAT_SET) {
+                final CollectionDataValue colCell = (CollectionDataValue)dataCell;
+                FloatBuffer buff = FloatBuffer.allocate(colCell.size());
+                boolean hasMissing = false;
+                for (final DataCell innerCell : colCell) {
+                    if (!innerCell.isMissing()) {
+                        // Use DoubleValue for now.
+                        buff.put((float)((DoubleValue)innerCell).getDoubleValue());
+                    } else {
+                        hasMissing = true;
+                    }
+                }
+                if (!hasMissing) {
+                    row.setCell(new CellImpl(buff.array(), hasMissing), i);
+                } else {
+                    float[] values = new float[colCell.size() - 1];
+                    buff.position(0);
+                    buff.get(values);
+                    row.setCell(new CellImpl(values, hasMissing), i);
+                }
             } else if (type == Type.STRING) {
                 String value;
                 if (dataCell.getType().isCompatible(StringValue.class)) {
@@ -455,8 +494,8 @@ public class BufferedDataTableIterator implements TableIterator {
      * @param dataRow a {@link DataTableSpec}
      * @return a {@link TableSpec}
      */
-
     static TableSpec dataTableSpecToTableSpec(final DataTableSpec dataTableSpec) {
+        // TODO: We do not yet implement Type.FLOAT, FLOAT_LIST, and FLOAT_SET here.
         final Type[] types = new Type[dataTableSpec.getNumColumns()];
         final String[] names = new String[dataTableSpec.getNumColumns()];
         final Map<String, String> columnSerializers = new HashMap<String, String>();

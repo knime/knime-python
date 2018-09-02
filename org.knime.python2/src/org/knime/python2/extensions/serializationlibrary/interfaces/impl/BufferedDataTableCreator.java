@@ -124,6 +124,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
      */
     public BufferedDataTableCreator(final TableSpec spec, final ExecutionContext context,
         final ExecutionMonitor executionMonitor, final int tableSize) {
+        // TODO: We treat Type.FLOAT, FLOAT_LIST, and FLOAT_SET like their double counterparts here.
         m_tableSize = tableSize;
         m_executionMonitor = executionMonitor;
         m_fileStoreFactory = FileStoreFactory.createWorkflowFileStoreFactory(context);
@@ -170,13 +171,16 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                         new DataColumnSpecCreator(columnName, SetCell.getCollectionType(LongCell.TYPE)).createSpec();
                     break;
                 case DOUBLE:
+                case FLOAT:
                     colSpecs[i] = new DataColumnSpecCreator(columnName, DoubleCell.TYPE).createSpec();
                     break;
                 case DOUBLE_LIST:
+                case FLOAT_LIST:
                     colSpecs[i] =
                         new DataColumnSpecCreator(columnName, ListCell.getCollectionType(DoubleCell.TYPE)).createSpec();
                     break;
                 case DOUBLE_SET:
+                case FLOAT_SET:
                     colSpecs[i] =
                         new DataColumnSpecCreator(columnName, SetCell.getCollectionType(DoubleCell.TYPE)).createSpec();
                     break;
@@ -358,6 +362,35 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             doubleSetCells.add(new MissingCell(null));
                         }
                         cells[i] = CollectionCellFactory.createSetCell(doubleSetCells);
+                        break;
+                    case FLOAT:
+                        // Use DoubleCell for now.
+                        cells[i] = new DoubleCell(cell.getFloatValue());
+                        break;
+                    case FLOAT_LIST:
+                        final List<DataCell> floatListCells = new ArrayList<>();
+                        int fpos = 0;
+                        for (final float value : cell.getFloatArrayValue()) {
+                            if (cell.isMissing(fpos)) {
+                                floatListCells.add(new MissingCell(null));
+                            } else {
+                                // Use DoubleCell for now.
+                                floatListCells.add(new DoubleCell(value));
+                            }
+                            fpos++;
+                        }
+                        cells[i] = CollectionCellFactory.createListCell(floatListCells);
+                        break;
+                    case FLOAT_SET:
+                        final List<DataCell> floatSetCells = new ArrayList<>();
+                        for (final float value : cell.getFloatArrayValue()) {
+                            // Use DoubleCell for now.
+                            floatSetCells.add(new DoubleCell(value));
+                        }
+                        if (cell.hasMissingInSet()) {
+                            floatSetCells.add(new MissingCell(null));
+                        }
+                        cells[i] = CollectionCellFactory.createSetCell(floatSetCells);
                         break;
                     case STRING:
                         cells[i] = new StringCell(cell.getStringValue());
