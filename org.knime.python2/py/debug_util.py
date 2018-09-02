@@ -74,9 +74,9 @@ def init_debug(enable_breakpoints=True, enable_debug_log=True, debug_log_to_stde
         return
 
     try:
-        # For infos see http://pydev.org/manual_adv_remote_debugger.html
-        # You have to create a new environment variable PYTHONPATH that points to the psrc folder located in
-        # ECLIPSE\plugins\org.python.pydev_xxx.
+        # For more information. please see http://pydev.org/manual_adv_remote_debugger.html.
+        # You have to create and export a new environment variable PYTHONPATH that points to the pysrc folder located in
+        # <eclipse>\plugins\org.python.pydev.core_xxx. (E.g. within a startup script that calls the Python binary.)
         import pydevd  # With the addon script.module.pydevd, only use `import pydevd`.
     except ImportError as ex:
         import sys
