@@ -167,13 +167,11 @@ def bytes_into_table(table, data_bytes):
             except ValueError:
                 data_frame = pandas.DataFrame()
             for i in range(len(types)):
-                # debug_util.breakpoint()
                 col_type_id = int(types[i])
                 if col_type_id in _eval_types_:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
                         if str(data_frame[names[i]][index]) != 'nan':
-                            # debug_util.breakpoint()
                             data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
                         else:
                             data_frame.set_value(index, names[i], None)
@@ -215,7 +213,6 @@ def bytes_into_table(table, data_bytes):
                 elif col_type_id == _types_.STRING and data_frame.iloc[:, i].dtype != 'object' and data_frame.iloc[:,
                                                                                                    i].isnull().all():
                     data_frame.iloc[:, i] = [None] * len(data_frame)
-            # debug_util.breakpoint()
             table._data_frame = data_frame
     finally:
         PythonUtils.invoke_safely(None, os.remove, [path])
