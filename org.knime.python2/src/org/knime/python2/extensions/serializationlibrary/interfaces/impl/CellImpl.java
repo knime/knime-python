@@ -45,6 +45,9 @@
 
 package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
@@ -57,6 +60,30 @@ import org.knime.python2.util.BitArray;
  */
 
 public class CellImpl implements Cell {
+
+    /**
+     * For testing purposes.
+     *
+     * @return true if both cell implementations are equal, false otherwise
+     */
+    static boolean cellImplEquals(final CellImpl a, final CellImpl b) {
+        if (a == b) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        if (a.m_type != b.m_type) {
+            return false;
+        }
+        if (!Objects.deepEquals(a.m_value, b.m_value)) {
+            return false;
+        }
+        if (!Arrays.equals(a.m_missing, b.m_missing)) {
+            return false;
+        }
+        return true;
+    }
 
     private final Type m_type;
 

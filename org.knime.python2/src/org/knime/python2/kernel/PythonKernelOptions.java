@@ -45,6 +45,8 @@
 
 package org.knime.python2.kernel;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -238,6 +240,15 @@ public class PythonKernelOptions {
      */
     public SerializationOptions getSerializationOptions() {
         return m_serializationOptions;
+    }
+
+    /**
+     * Sets the serialization options.
+     *
+     * @param options the new serialization options
+     */
+    public void setSerializationOptions(final SerializationOptions options) {
+        m_serializationOptions = checkNotNull(options);
     }
 
     /**
