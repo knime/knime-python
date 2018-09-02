@@ -80,7 +80,8 @@ def init(types):
     global _types_, _pandas_native_types_, _bytes_types_
     _types_ = types
     _pandas_native_types_ = {_types_.INTEGER, _types_.LONG, _types_.DOUBLE,
-                             _types_.STRING, _types_.BYTES, _types_.BOOLEAN}
+                             _types_.STRING, _types_.BYTES, _types_.BOOLEAN,
+                             _types_.FLOAT}
     _bytes_types_ = {_types_.BYTES, _types_.BYTES_LIST, _types_.BYTES_SET}
 
 
@@ -134,7 +135,7 @@ def bytes_into_table(table, data_bytes):
         PythonUtils.invoke_safely(None, os.remove, [path])
 
 
-# Generator function for collection columns of type Integer, Long, Double.
+# Generator function for collection columns of type Integer, Long, Double, Float.
 # @param arrowcolumn    the pyarrow.Column to extract the values from
 # @param isset          are the column values sets or lists
 # @param entry_len      the length of a single primitive inside every collection (e.g. 4 for Integer collections)
@@ -146,7 +147,6 @@ def collection_generator(arrowcolumn, isset, entry_len, format_char):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # debug_util.breakpoint()
             # buffer: length(values) int32, values [int32], missing [bit]
             # get length(values)
             n_vals = struct.unpack(">i", py_obj[:4])[0]
@@ -165,7 +165,6 @@ def collection_generator(arrowcolumn, isset, entry_len, format_char):
                 else:
                     hasMissing = (py_obj[4 + entry_len * n_vals] == b'\x00')
                 res = set(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
-                # debug_util.breakpoint()
                 if hasMissing:
                     res.add(None)
                 yield res
@@ -181,7 +180,6 @@ def string_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # debug_util.breakpoint()
             # buffer: length(values) int32, values [int32], missing [bit]
             # get length(values)
             n_vals = struct.unpack(">i", py_obj[:4])[0]
@@ -204,7 +202,6 @@ def string_collection_generator(arrowcolumn, isset):
                     hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
                 res = set(
                     py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in range(n_vals))
-                # debug_util.breakpoint()
                 if hasMissing:
                     res.add(None)
                 yield res
@@ -220,7 +217,6 @@ def bytes_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # debug_util.breakpoint()
             # buffer: length(values) int32, values [int32], missing [bit]
             # get length(values)
             n_vals = struct.unpack(">i", py_obj[:4])[0]
@@ -241,7 +237,6 @@ def bytes_collection_generator(arrowcolumn, isset):
                 else:
                     hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
                 res = set(py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals))
-                # debug_util.breakpoint()
                 if hasMissing:
                     res.add(None)
                 yield res
@@ -306,7 +301,6 @@ def deserialize_data_frame(path):
             if ser_id != '':
                 read_serializers[col['name']] = ser_id
 
-        # debug_util.breakpoint()
         # data
         read_data_frame = pandas.DataFrame()
         for arrowcolumn in arrowtable.itercolumns():
@@ -321,6 +315,8 @@ def deserialize_data_frame(path):
                     dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.LONG_SET, 8, 'q'))
                 elif coltype == _types_.DOUBLE_LIST or coltype == _types_.DOUBLE_SET:
                     dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.DOUBLE_SET, 8, 'd'))
+                elif coltype == _types_.FLOAT_LIST or coltype == _types_.FLOAT_SET:
+                    dfcol = pandas.Series(collection_generator(arrowcolumn, coltype == _types_.FLOAT_SET, 4, 'f'))
                 elif coltype == _types_.BOOLEAN_LIST or coltype == _types_.BOOLEAN_SET:
                     dfcol = pandas.Series(boolean_collection_generator(arrowcolumn, coltype == _types_.BOOLEAN_SET))
                 elif coltype == _types_.STRING_LIST or coltype == _types_.STRING_SET:
@@ -343,8 +339,6 @@ def deserialize_data_frame(path):
         else:
             read_data_frame = pandas.DataFrame(index=indexcol)
 
-            # debug_util.breakpoint()
-
 
 # Convert a simpletype to the corresponding pyarrow.DataType
 # @param type a SimpleType
@@ -357,6 +351,8 @@ def to_pyarrow_type(type):
         return pyarrow.int64()
     elif type == _types_.DOUBLE:
         return pyarrow.float64()
+    elif type == _types_.FLOAT:
+        return pyarrow.float32()
     elif type == _types_.STRING:
         return pyarrow.string()
     else:
@@ -365,7 +361,7 @@ def to_pyarrow_type(type):
 
 # Generator converting values in a list type column to a binary representation
 # having the format (length(values), values, missing_mask). Works on Integer,
-# Long and Double lists.
+# Long, Double, and Float lists.
 # @param column      the column to convert (a pandas.Series)
 # @param numpy_type  the numpy_type of the primitive collection entries
 def binary_from_list_generator(column, numpy_type):
@@ -392,7 +388,6 @@ def binary_from_string_list_generator(column):
         if column[j] == None:
             yield None
         else:
-            # debug_util.breakpoint()
             n_vals = len(column[j])
 
             missings = np.zeros(shape=((n_vals // 8) + (1 if n_vals % 8 != 0 else 0)), dtype=np.uint8)
@@ -641,6 +636,9 @@ def table_to_bytes(table):
             elif table.get_type(i) == _types_.DOUBLE_LIST:
                 col_arrays.append(
                     pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:, i], '<f8')))
+            elif table.get_type(i) == _types_.FLOAT_LIST:
+                col_arrays.append(
+                    pyarrow.Array.from_pandas(binary_from_list_generator(table._data_frame.iloc[:, i], '<f4')))
             elif table.get_type(i) == _types_.BOOLEAN_LIST:
                 col_arrays.append(
                     pyarrow.Array.from_pandas(binary_from_boolean_list_generator(table._data_frame.iloc[:, i])))
@@ -659,6 +657,9 @@ def table_to_bytes(table):
             elif table.get_type(i) == _types_.DOUBLE_SET:
                 col_arrays.append(
                     pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:, i], '<f8')))
+            elif table.get_type(i) == _types_.FLOAT_SET:
+                col_arrays.append(
+                    pyarrow.Array.from_pandas(binary_from_set_generator(table._data_frame.iloc[:, i], '<f4')))
             elif table.get_type(i) == _types_.BOOLEAN_SET:
                 col_arrays.append(
                     pyarrow.Array.from_pandas(binary_from_boolean_set_generator(table._data_frame.iloc[:, i])))
