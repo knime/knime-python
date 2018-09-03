@@ -67,17 +67,17 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableBigIntVector;
-import org.apache.arrow.vector.NullableBitVector;
-import org.apache.arrow.vector.NullableFloat4Vector;
-import org.apache.arrow.vector.NullableFloat8Vector;
-import org.apache.arrow.vector.NullableIntVector;
-import org.apache.arrow.vector.NullableVarBinaryVector;
-import org.apache.arrow.vector.NullableVarCharVector;
+import org.apache.arrow.vector.Float4Vector;
+import org.apache.arrow.vector.Float8Vector;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.VarBinaryVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.stream.ArrowStreamReader;
-import org.apache.arrow.vector.stream.ArrowStreamWriter;
+import org.apache.arrow.vector.ipc.ArrowStreamReader;
+import org.apache.arrow.vector.ipc.ArrowStreamWriter;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.util.OversizedAllocationException;
@@ -469,10 +469,10 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     private static VectorExtractor getStringOrByteExtractor(final FieldVector vec) {
-        if (vec instanceof NullableVarCharVector) {
-            return new StringExtractor((NullableVarCharVector)vec);
+        if (vec instanceof VarCharVector) {
+            return new StringExtractor((VarCharVector)vec);
         } else {
-            return new BytesExtractor((NullableVarBinaryVector)vec, true);
+            return new BytesExtractor((VarBinaryVector)vec, true);
         }
     }
 
@@ -524,80 +524,80 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     } else {
                         switch (types[j]) {
                             case BOOLEAN:
-                                extractors.add(new BooleanExtractor((NullableBitVector)root.getVector(names[j])));
+                                extractors.add(new BooleanExtractor((BitVector)root.getVector(names[j])));
                                 break;
                             case INTEGER:
-                                extractors.add(new IntegerExtractor((NullableIntVector)root.getVector(names[j]),
+                                extractors.add(new IntegerExtractor((IntVector)root.getVector(names[j]),
                                     serializationOptions));
                                 break;
                             case LONG:
-                                extractors.add(new LongExtractor((NullableBigIntVector)root.getVector(names[j]),
+                                extractors.add(new LongExtractor((BigIntVector)root.getVector(names[j]),
                                     serializationOptions));
                                 break;
                             case DOUBLE:
-                                extractors.add(new DoubleExtractor((NullableFloat8Vector)root.getVector(names[j])));
+                                extractors.add(new DoubleExtractor((Float8Vector)root.getVector(names[j])));
                                 break;
                             case FLOAT:
-                                extractors.add(new FloatExtractor((NullableFloat4Vector)root.getVector(names[j])));
+                                extractors.add(new FloatExtractor((Float4Vector)root.getVector(names[j])));
                                 break;
                             case STRING:
                                 extractors.add(getStringOrByteExtractor(root.getVector(names[j])));
                                 break;
                             case BYTES:
-                                extractors.add(new BytesExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                extractors.add(new BytesExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case INTEGER_LIST:
-                                extractors.add(new IntListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                extractors.add(new IntListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case INTEGER_SET:
-                                extractors.add(new IntSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                extractors.add(new IntSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case LONG_LIST:
                                 extractors
-                                    .add(new LongListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new LongListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case LONG_SET:
-                                extractors.add(new LongSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                extractors.add(new LongSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case DOUBLE_LIST:
                                 extractors
-                                    .add(new DoubleListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new DoubleListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case DOUBLE_SET:
                                 extractors
-                                    .add(new DoubleSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new DoubleSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case FLOAT_LIST:
                                 extractors
-                                    .add(new FloatListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new FloatListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case FLOAT_SET:
                                 extractors
-                                    .add(new FloatSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new FloatSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case BOOLEAN_LIST:
                                 extractors
-                                    .add(new BooleanListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new BooleanListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case BOOLEAN_SET:
                                 extractors
-                                    .add(new BooleanSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new BooleanSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case STRING_LIST:
                                 extractors
-                                    .add(new StringListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new StringListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case STRING_SET:
                                 extractors
-                                    .add(new StringSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new StringSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case BYTES_LIST:
                                 extractors
-                                    .add(new BytesListExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new BytesListExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             case BYTES_SET:
                                 extractors
-                                    .add(new BytesSetExtractor((NullableVarBinaryVector)root.getVector(names[j])));
+                                    .add(new BytesSetExtractor((VarBinaryVector)root.getVector(names[j])));
                                 break;
                             default:
                                 throw new IllegalStateException(

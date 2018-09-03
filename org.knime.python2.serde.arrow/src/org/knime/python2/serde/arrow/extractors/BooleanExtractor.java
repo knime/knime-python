@@ -48,7 +48,7 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
-import org.apache.arrow.vector.NullableBitVector;
+import org.apache.arrow.vector.BitVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -57,10 +57,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Manages the data transfer between the arrow table format and the python table format. Works on Boolean vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class BooleanExtractor implements VectorExtractor {
 
-    private final NullableBitVector.Accessor m_accessor;
+    private final BitVector m_vector;
 
     private int m_ctr;
 
@@ -69,8 +71,8 @@ public class BooleanExtractor implements VectorExtractor {
      *
      * @param vector the vector to extract from
      */
-    public BooleanExtractor(final NullableBitVector vector) {
-        m_accessor = vector.getAccessor();
+    public BooleanExtractor(final BitVector vector) {
+        m_vector = vector;
     }
 
     /**
@@ -79,10 +81,10 @@ public class BooleanExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
         Cell c;
-        if (m_accessor.isNull(m_ctr)) {
+        if (m_vector.isNull(m_ctr)) {
             c = new CellImpl();
         } else {
-            c = new CellImpl(m_accessor.get(m_ctr) > 0);
+            c = new CellImpl(m_vector.get(m_ctr) > 0);
         }
         m_ctr++;
         return c;

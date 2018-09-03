@@ -51,7 +51,7 @@ package org.knime.python2.serde.arrow.extractors;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.arrow.vector.VarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -60,10 +60,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Base class for Sets of variable size types that are transferred between the arrow table format and the python table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public abstract class VariableSizeSetExtractor implements VectorExtractor {
 
-    private final NullableVarBinaryVector.Accessor m_accessor;
+    private final VarBinaryVector m_vector;
 
     private int m_ctr;
 
@@ -72,8 +74,8 @@ public abstract class VariableSizeSetExtractor implements VectorExtractor {
      *
      * @param vector the vector to extract from
      */
-    protected VariableSizeSetExtractor(final NullableVarBinaryVector vector) {
-        m_accessor = vector.getAccessor();
+    protected VariableSizeSetExtractor(final VarBinaryVector vector) {
+        m_vector = vector;
     }
 
     /**
@@ -98,12 +100,12 @@ public abstract class VariableSizeSetExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
 
-        if (m_accessor.isNull(m_ctr)) {
+        if (m_vector.isNull(m_ctr)) {
             m_ctr++;
             return new CellImpl();
         }
 
-        ByteBuffer buffer = ByteBuffer.wrap(m_accessor.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.wrap(m_vector.getObject(m_ctr)).order(ByteOrder.LITTLE_ENDIAN);
         m_ctr++;
         int nVals = buffer.asIntBuffer().get();
         buffer.position(4);

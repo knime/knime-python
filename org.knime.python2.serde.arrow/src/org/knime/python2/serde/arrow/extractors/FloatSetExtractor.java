@@ -51,7 +51,7 @@ package org.knime.python2.serde.arrow.extractors;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.arrow.vector.VarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -64,7 +64,7 @@ public final class FloatSetExtractor extends FixedSizeSetExtractor {
     /**
      * @param vector the vector from which to extract float set cells
      */
-    public FloatSetExtractor(final NullableVarBinaryVector vector) {
+    public FloatSetExtractor(final VarBinaryVector vector) {
         super(vector);
     }
 

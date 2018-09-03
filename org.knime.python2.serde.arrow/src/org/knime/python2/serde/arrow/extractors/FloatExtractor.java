@@ -48,7 +48,7 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
-import org.apache.arrow.vector.NullableFloat4Vector;
+import org.apache.arrow.vector.Float4Vector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -59,22 +59,22 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  */
 public final class FloatExtractor implements VectorExtractor {
 
-    private final NullableFloat4Vector.Accessor m_accessor;
+    private final Float4Vector m_vector;
 
     private int m_nextCellIndex = 0;
 
     /**
      * @param vector the vector from which to extract float cells
      */
-    public FloatExtractor(final NullableFloat4Vector vector) {
-        m_accessor = vector.getAccessor();
+    public FloatExtractor(final Float4Vector vector) {
+        m_vector = vector;
     }
 
     @Override
     public Cell extract() {
-        final Cell cell = m_accessor.isNull(m_nextCellIndex) //
+        final Cell cell = m_vector.isNull(m_nextCellIndex) //
             ? new CellImpl(Float.NaN) //
-            : new CellImpl(m_accessor.get(m_nextCellIndex));
+            : new CellImpl(m_vector.get(m_nextCellIndex));
         m_nextCellIndex++;
         return cell;
     }

@@ -46,8 +46,8 @@
 package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableBigIntVector;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
@@ -56,12 +56,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
  * Manages the data transfer between the python table format and the arrow table format. Works on Long cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class LongInserter implements ArrowVectorInserter {
 
-    private final NullableBigIntVector m_vec;
-
-    private final NullableBigIntVector.Mutator m_mutator;
+    private final BigIntVector m_vec;
 
     private final SerializationOptions m_serializationOptions;
 
@@ -80,9 +80,8 @@ public class LongInserter implements ArrowVectorInserter {
     public LongInserter(final String name, final BufferAllocator allocator, final int numRows,
         final SerializationOptions serializationOptions) {
 
-        m_vec = new NullableBigIntVector(name, allocator);
+        m_vec = new BigIntVector(name, allocator);
         m_vec.allocateNew(numRows);
-        m_mutator = m_vec.getMutator();
         m_serializationOptions = serializationOptions;
         m_longSentinel = m_serializationOptions.getSentinelForType(Type.LONG);
     }
@@ -91,13 +90,13 @@ public class LongInserter implements ArrowVectorInserter {
     public void put(final Cell cell) {
         if (cell.isMissing()) {
             if (m_serializationOptions.getConvertMissingToPython()) {
-                m_mutator.set(m_ctr, m_longSentinel);
+                m_vec.set(m_ctr, m_longSentinel);
             }
         } else {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getLongValue());
+            m_vec.set(m_ctr, cell.getLongValue());
         }
-        m_mutator.setValueCount(++m_ctr);
+        m_vec.setValueCount(++m_ctr);
     }
 
     @Override

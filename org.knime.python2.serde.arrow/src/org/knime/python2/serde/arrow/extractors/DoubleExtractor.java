@@ -48,7 +48,7 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
-import org.apache.arrow.vector.NullableFloat8Vector;
+import org.apache.arrow.vector.Float8Vector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.VectorExtractor;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
@@ -57,10 +57,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Manages the data transfer between the arrow table format and the python table format. Works on Double vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class DoubleExtractor implements VectorExtractor {
 
-    private final NullableFloat8Vector.Accessor m_accessor;
+    private final Float8Vector m_vector;
 
     private int m_ctr;
 
@@ -69,8 +71,8 @@ public class DoubleExtractor implements VectorExtractor {
      *
      * @param vector the vector to extract from
      */
-    public DoubleExtractor(final NullableFloat8Vector vector) {
-        m_accessor = vector.getAccessor();
+    public DoubleExtractor(final Float8Vector vector) {
+        m_vector = vector;
     }
 
     /**
@@ -79,10 +81,10 @@ public class DoubleExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
         Cell c;
-        if (m_accessor.isNull(m_ctr)) {
+        if (m_vector.isNull(m_ctr)) {
             c = new CellImpl(Double.NaN);
         } else {
-            c = new CellImpl(m_accessor.get(m_ctr));
+            c = new CellImpl(m_vector.get(m_ctr));
         }
         m_ctr++;
         return c;

@@ -46,20 +46,20 @@
 package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableBitVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
  * Manages the data transfer between the python table format and the arrow table format. Works on Boolean cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class BooleanInserter implements ArrowVectorInserter {
 
-    private final NullableBitVector m_vec;
-
-    private final NullableBitVector.Mutator m_mutator;
+    private final BitVector m_vec;
 
     private int m_ctr;
 
@@ -72,18 +72,17 @@ public class BooleanInserter implements ArrowVectorInserter {
      */
     public BooleanInserter(final String name, final BufferAllocator allocator, final int numRows) {
 
-        m_vec = new NullableBitVector(name, allocator);
+        m_vec = new BitVector(name, allocator);
         m_vec.allocateNew(numRows);
-        m_mutator = m_vec.getMutator();
     }
 
     @Override
     public void put(final Cell cell) {
         if (!cell.isMissing()) {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getBooleanValue() ? 1 : 0);
+            m_vec.set(m_ctr, cell.getBooleanValue() ? 1 : 0);
         }
-        m_mutator.setValueCount(++m_ctr);
+        m_vec.setValueCount(++m_ctr);
     }
 
     @Override

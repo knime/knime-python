@@ -50,7 +50,7 @@ package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableFloat4Vector;
+import org.apache.arrow.vector.Float4Vector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
@@ -59,9 +59,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  */
 public final class FloatInserter implements ArrowVectorInserter {
 
-    private final NullableFloat4Vector m_vector;
-
-    private final NullableFloat4Vector.Mutator m_mutator;
+    private final Float4Vector m_vector;
 
     private int m_nextCellIndex = 0;
 
@@ -71,17 +69,16 @@ public final class FloatInserter implements ArrowVectorInserter {
      * @param numCells the number of cells inside the managed vector
      */
     public FloatInserter(final String vectorName, final BufferAllocator allocator, final int numCells) {
-        m_vector = new NullableFloat4Vector(vectorName, allocator);
+        m_vector = new Float4Vector(vectorName, allocator);
         m_vector.allocateNew(numCells);
-        m_mutator = m_vector.getMutator();
     }
 
     @Override
     public void put(final Cell cell) {
         if (!cell.isMissing()) {
-            m_mutator.set(m_nextCellIndex, cell.getFloatValue());
+            m_vector.set(m_nextCellIndex, cell.getFloatValue());
         } // Else skip cell which makes it missing.
-        m_mutator.setValueCount(++m_nextCellIndex);
+        m_vector.setValueCount(++m_nextCellIndex);
     }
 
     @Override

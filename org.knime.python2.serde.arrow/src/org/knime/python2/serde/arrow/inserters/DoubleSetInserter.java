@@ -58,6 +58,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
  * Manages the data transfer between the python table format and the arrow table format. Works on Double set cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class DoubleSetInserter extends SetInserter {
 

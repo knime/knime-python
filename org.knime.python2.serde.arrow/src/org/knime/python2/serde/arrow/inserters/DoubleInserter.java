@@ -47,19 +47,19 @@ package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableFloat8Vector;
+import org.apache.arrow.vector.Float8Vector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
  * Manages the data transfer between the python table format and the arrow table format. Works on Double cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class DoubleInserter implements ArrowVectorInserter {
 
-    private final NullableFloat8Vector m_vec;
-
-    private final NullableFloat8Vector.Mutator m_mutator;
+    private final Float8Vector m_vec;
 
     private int m_ctr;
 
@@ -72,18 +72,17 @@ public class DoubleInserter implements ArrowVectorInserter {
      */
     public DoubleInserter(final String name, final BufferAllocator allocator, final int numRows) {
 
-        m_vec = new NullableFloat8Vector(name, allocator);
+        m_vec = new Float8Vector(name, allocator);
         m_vec.allocateNew(numRows);
-        m_mutator = m_vec.getMutator();
     }
 
     @Override
     public void put(final Cell cell) {
         if (!cell.isMissing()) {
             //missing is implicitly assumed
-            m_mutator.set(m_ctr, cell.getDoubleValue());
+            m_vec.set(m_ctr, cell.getDoubleValue());
         }
-        m_mutator.setValueCount(++m_ctr);
+        m_vec.setValueCount(++m_ctr);
     }
 
     @Override

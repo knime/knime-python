@@ -48,7 +48,7 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
-import org.apache.arrow.vector.NullableIntVector;
+import org.apache.arrow.vector.IntVector;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
@@ -59,10 +59,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Manages the data transfer between the arrow table format and the python table format. Works on Integer vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class IntegerExtractor implements VectorExtractor {
 
-    private final NullableIntVector.Accessor m_accessor;
+    private final IntVector m_vector;
 
     private final SerializationOptions m_serializationOptions;
 
@@ -74,8 +76,8 @@ public class IntegerExtractor implements VectorExtractor {
      * @param vector the vector to extract from
      * @param opts additional serialization options
      */
-    public IntegerExtractor(final NullableIntVector vector, final SerializationOptions opts) {
-        m_accessor = vector.getAccessor();
+    public IntegerExtractor(final IntVector vector, final SerializationOptions opts) {
+        m_vector = vector;
         m_serializationOptions = opts;
     }
 
@@ -85,10 +87,10 @@ public class IntegerExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
         Cell c;
-        if (m_accessor.isNull(m_ctr)) {
+        if (m_vector.isNull(m_ctr)) {
             c = new CellImpl();
         } else {
-            int val = m_accessor.get(m_ctr);
+            int val = m_vector.get(m_ctr);
             if (m_serializationOptions.getConvertMissingFromPython()
                 && m_serializationOptions.isSentinel(Type.INTEGER, val)) {
                 c = new CellImpl();

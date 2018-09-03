@@ -56,6 +56,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Utility extractor that always returns a Cell wrapping a MissingValue.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class MissingExtractor implements VectorExtractor {
 

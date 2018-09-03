@@ -622,7 +622,7 @@ def table_to_bytes(table):
     try:
         os.close(fd)
 
-        mp = pyarrow.MemoryPool(2 ** 64)
+        mp = pyarrow.default_memory_pool()
         col_arrays = []
         col_names = []
         all_names = []

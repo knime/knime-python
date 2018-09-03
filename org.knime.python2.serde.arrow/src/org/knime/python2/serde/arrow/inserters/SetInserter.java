@@ -52,19 +52,19 @@ import java.nio.ByteBuffer;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.arrow.vector.VarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
  * Base class for Set types that are transferred between the python table format and the arrow table format.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public abstract class SetInserter implements ArrowVectorInserter {
 
-    private final NullableVarBinaryVector m_vec;
-
-    private final NullableVarBinaryVector.Mutator m_mutator;
+    private final VarBinaryVector m_vec;
 
     private int m_ctr;
 
@@ -83,9 +83,8 @@ public abstract class SetInserter implements ArrowVectorInserter {
     protected SetInserter(final String name, final BufferAllocator allocator, final int numRows,
         final int bytesPerCellAssumption) {
 
-        m_vec = new NullableVarBinaryVector(name, allocator);
+        m_vec = new VarBinaryVector(name, allocator);
         m_vec.allocateNew(bytesPerCellAssumption * numRows, numRows);
-        m_mutator = m_vec.getMutator();
     }
 
     /**
@@ -109,18 +108,17 @@ public abstract class SetInserter implements ArrowVectorInserter {
     public void put(final Cell cell) {
 
         if (m_ctr >= m_vec.getValueCapacity()) {
-            m_vec.getValuesVector().getOffsetVector().reAlloc();
-            m_vec.getValidityVector().reAlloc();
+            m_vec.reallocValidityAndOffsetBuffers();
         }
         if (!cell.isMissing()) {
-            //Implicitly assumed to be missing
+            // Implicitly assumed to be missing.
 
             int[] numAndLen = fillInternalArrayAndGetSize(cell);
 
             int len = 4 + numAndLen[1] + 1;
             m_byteCount += len;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                m_vec.getValuesVector().reAlloc();
+                m_vec.reallocDataBuffer();
             }
 
             if (m_buffer == null || m_buffer.capacity() != len) {
@@ -140,10 +138,11 @@ public abstract class SetInserter implements ArrowVectorInserter {
                 m_buffer.put((byte)1);
             }
 
-            //assumption: m_mutator copies array
-            m_mutator.set(m_ctr, m_buffer.array());
+            // Assumption: array content is coped to target buffer,
+            // i.e., array can be reused by us (see above).
+            m_vec.set(m_ctr, m_buffer.array());
         }
-        m_mutator.setValueCount(++m_ctr);
+        m_vec.setValueCount(++m_ctr);
     }
 
     @Override

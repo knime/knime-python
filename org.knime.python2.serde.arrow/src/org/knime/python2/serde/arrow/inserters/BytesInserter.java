@@ -47,19 +47,19 @@ package org.knime.python2.serde.arrow.inserters;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.arrow.vector.VarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 
 /**
  * Manages the data transfer between the python table format and the arrow table format. Works on byte[] cells.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class BytesInserter implements ArrowVectorInserter {
 
-    private final NullableVarBinaryVector m_vec;
-
-    private final NullableVarBinaryVector.Mutator m_mutator;
+    private final VarBinaryVector m_vec;
 
     private int m_ctr;
 
@@ -76,28 +76,26 @@ public class BytesInserter implements ArrowVectorInserter {
     public BytesInserter(final String name, final BufferAllocator allocator, final int numRows,
         final int bytesPerCellAssumption) {
 
-        m_vec = new NullableVarBinaryVector(name, allocator);
+        m_vec = new VarBinaryVector(name, allocator);
         m_vec.allocateNew(bytesPerCellAssumption * numRows, numRows);
-        m_mutator = m_vec.getMutator();
     }
 
     @Override
     public void put(final Cell cell) {
         if (m_ctr >= m_vec.getValueCapacity()) {
-            m_vec.getValuesVector().getOffsetVector().reAlloc();
-            m_vec.getValidityVector().reAlloc();
+            m_vec.reallocValidityAndOffsetBuffers();
         }
         if (!cell.isMissing()) {
-            //Implicitly assumed to be missing
+            // Implicitly assumed to be missing.
 
             byte[] bVal = cell.getBytesValue();
             m_byteCount += bVal.length;
             while (m_byteCount > m_vec.getByteCapacity()) {
-                m_vec.getValuesVector().reAlloc();
+                m_vec.reallocDataBuffer();
             }
-            m_mutator.set(m_ctr, bVal);
+            m_vec.set(m_ctr, bVal);
         }
-        m_mutator.setValueCount(++m_ctr);
+        m_vec.setValueCount(++m_ctr);
     }
 
     @Override

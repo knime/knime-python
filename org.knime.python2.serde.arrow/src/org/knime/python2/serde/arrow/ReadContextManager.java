@@ -56,7 +56,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.stream.ArrowStreamReader;
+import org.apache.arrow.vector.ipc.ArrowStreamReader;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
 

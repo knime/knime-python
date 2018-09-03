@@ -48,7 +48,7 @@
  */
 package org.knime.python2.serde.arrow.extractors;
 
-import org.apache.arrow.vector.NullableBigIntVector;
+import org.apache.arrow.vector.BigIntVector;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
@@ -60,10 +60,12 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Works on Long vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class LongExtractor implements VectorExtractor {
 
-    private final NullableBigIntVector.Accessor m_accessor;
+    private final BigIntVector m_vector;
     private final SerializationOptions m_serializationOptions;
     private int m_ctr;
 
@@ -72,8 +74,8 @@ public class LongExtractor implements VectorExtractor {
      * @param vector the vector to extract from
      * @param opts additional serialization options
      */
-    public LongExtractor(final NullableBigIntVector vector, final SerializationOptions opts) {
-        m_accessor = vector.getAccessor();
+    public LongExtractor(final BigIntVector vector, final SerializationOptions opts) {
+        m_vector = vector;
         m_serializationOptions = opts;
     }
 
@@ -83,10 +85,10 @@ public class LongExtractor implements VectorExtractor {
     @Override
     public Cell extract() {
         Cell c;
-        if(m_accessor.isNull(m_ctr)) {
+        if(m_vector.isNull(m_ctr)) {
             c = new CellImpl();
         } else {
-            long val = m_accessor.get(m_ctr);
+            long val = m_vector.get(m_ctr);
             if (m_serializationOptions.getConvertMissingFromPython()
                     && m_serializationOptions.isSentinel(Type.LONG, val)) {
                 c = new CellImpl();

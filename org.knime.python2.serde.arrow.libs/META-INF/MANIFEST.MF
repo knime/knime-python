@@ -7,8 +7,8 @@ Bundle-ClassPath: lib/arrow-format-0.10.0.jar,
  lib/arrow-memory-0.10.0.jar,
  lib/arrow-tools-0.10.0.jar,
  lib/arrow-vector-0.10.0.jar,
- lib/netty-buffer-4.1.16.Final.jar,
- lib/netty-common-4.1.16.Final.jar
+ lib/netty-buffer-4.1.17.Final.jar,
+ lib/netty-common-4.1.17.Final.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Require-Bundle: org.knime.python2;bundle-version="[3.4.0,4.0.0)",
  org.knime.core;bundle-version="[3.4.0,4.0.0)",

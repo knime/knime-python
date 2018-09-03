@@ -51,7 +51,7 @@ package org.knime.python2.serde.arrow.extractors;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import org.apache.arrow.vector.NullableVarBinaryVector;
+import org.apache.arrow.vector.VarBinaryVector;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
@@ -59,6 +59,8 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImp
  * Manages the data transfer between the arrow table format and the python table format. Works on byte[] lists vectors.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class BytesListExtractor extends ListExtractor {
 
@@ -71,7 +73,7 @@ public class BytesListExtractor extends ListExtractor {
      *
      * @param vector the vector to extract from
      */
-    public BytesListExtractor(final NullableVarBinaryVector vector) {
+    public BytesListExtractor(final VarBinaryVector vector) {
         super(vector);
     }
 
