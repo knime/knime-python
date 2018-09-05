@@ -147,27 +147,30 @@ def collection_generator(arrowcolumn, isset, entry_len, format_char):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # buffer: length(values) int32, values [int32], missing [bit]
-            # get length(values)
-            n_vals = struct.unpack(">i", py_obj[:4])[0]
-            # get values
-            if not isset:
-                res = list(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
-                # get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[4 + entry_len * n_vals:], dtype=np.uint8)
-                for i in range(n_vals):
-                    if missings[i // 8] & (1 << (i % 8)) == 0:
-                        res[i] = None
-                yield res
+            if py_obj is None:
+                yield None
             else:
-                if _python3:
-                    hasMissing = (np.uint8(py_obj[4 + entry_len * n_vals]) == 0)
+                # buffer: length(values) int32, values [int32], missing [bit]
+                # get length(values)
+                n_vals = struct.unpack(">i", py_obj[:4])[0]
+                # get values
+                if not isset:
+                    res = list(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
+                    # get missings and set corresponding value to None if required
+                    missings = np.fromstring(py_obj[4 + entry_len * n_vals:], dtype=np.uint8)
+                    for i in range(n_vals):
+                        if missings[i // 8] & (1 << (i % 8)) == 0:
+                            res[i] = None
+                    yield res
                 else:
-                    hasMissing = (py_obj[4 + entry_len * n_vals] == b'\x00')
-                res = set(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
-                if hasMissing:
-                    res.add(None)
-                yield res
+                    if _python3:
+                        hasMissing = (np.uint8(py_obj[4 + entry_len * n_vals]) == 0)
+                    else:
+                        hasMissing = (py_obj[4 + entry_len * n_vals] == b'\x00')
+                    res = set(struct.unpack(">%d%s" % (n_vals, format_char), py_obj[4:4 + entry_len * n_vals]))
+                    if hasMissing:
+                        res.add(None)
+                    yield res
 
 
 # Generator function for collection columns of type String.
@@ -180,31 +183,34 @@ def string_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # buffer: length(values) int32, values [int32], missing [bit]
-            # get length(values)
-            n_vals = struct.unpack(">i", py_obj[:4])[0]
-            val_offset = 4 + 4 * (n_vals + 1)
-            offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
-            # get values
-            if not isset:
-                res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in
-                       range(n_vals)]
-                # get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
-                for i in range(n_vals):
-                    if missings[i // 8] & (1 << (i % 8)) == 0:
-                        res[i] = None
-                yield res
+            if py_obj is None:
+                yield None
             else:
-                if _python3:
-                    hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                # buffer: length(values) int32, values [int32], missing [bit]
+                # get length(values)
+                n_vals = struct.unpack(">i", py_obj[:4])[0]
+                val_offset = 4 + 4 * (n_vals + 1)
+                offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
+                # get values
+                if not isset:
+                    res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in
+                           range(n_vals)]
+                    # get missings and set corresponding value to None if required
+                    missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
+                    for i in range(n_vals):
+                        if missings[i // 8] & (1 << (i % 8)) == 0:
+                            res[i] = None
+                    yield res
                 else:
-                    hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
-                res = set(
-                    py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in range(n_vals))
-                if hasMissing:
-                    res.add(None)
-                yield res
+                    if _python3:
+                        hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                    else:
+                        hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
+                    res = set(
+                        py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]].decode("utf-8") for i in range(n_vals))
+                    if hasMissing:
+                        res.add(None)
+                    yield res
 
 
 # Generator function for collection columns of type String.
@@ -217,29 +223,32 @@ def bytes_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # buffer: length(values) int32, values [int32], missing [bit]
-            # get length(values)
-            n_vals = struct.unpack(">i", py_obj[:4])[0]
-            val_offset = 4 + 4 * (n_vals + 1)
-            offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
-            # get values
-            if not isset:
-                res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals)]
-                # get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
-                for i in range(n_vals):
-                    if missings[i // 8] & (1 << (i % 8)) == 0:
-                        res[i] = None
-                yield res
+            if py_obj is None:
+                yield None
             else:
-                if _python3:
-                    hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                # buffer: length(values) int32, values [int32], missing [bit]
+                # get length(values)
+                n_vals = struct.unpack(">i", py_obj[:4])[0]
+                val_offset = 4 + 4 * (n_vals + 1)
+                offsets = struct.unpack(">%di" % (n_vals + 1), py_obj[4:val_offset])
+                # get values
+                if not isset:
+                    res = [py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals)]
+                    # get missings and set corresponding value to None if required
+                    missings = np.fromstring(py_obj[val_offset + offsets[-1]:], dtype=np.uint8)
+                    for i in range(n_vals):
+                        if missings[i // 8] & (1 << (i % 8)) == 0:
+                            res[i] = None
+                    yield res
                 else:
-                    hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
-                res = set(py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals))
-                if hasMissing:
-                    res.add(None)
-                yield res
+                    if _python3:
+                        hasMissing = (np.uint8(py_obj[val_offset + offsets[-1]]) == 0)
+                    else:
+                        hasMissing = (py_obj[val_offset + offsets[-1]] == b'\x00')
+                    res = set(py_obj[val_offset + offsets[i]:val_offset + offsets[i + 1]] for i in range(n_vals))
+                    if hasMissing:
+                        res.add(None)
+                    yield res
 
 
 # Generator function for Boolean collection columns.
@@ -252,33 +261,36 @@ def boolean_collection_generator(arrowcolumn, isset):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
-            # buffer: length(values) int32, values [int32], missing [bit]
-            # get length(values)
-            n_vals = struct.unpack(">i", py_obj[:4])[0]
-            val_ln = n_vals // 8 + (0 if n_vals % 8 == 0 else 1)
-            missing_start = 4 + val_ln
-            if _python3:
-                rbytes = py_obj[4:missing_start]
+            if py_obj is None:
+                yield None
             else:
-                rbytes = np.fromstring(py_obj[4:missing_start], dtype='i1')
-            # get values
-            if not isset:
-                res = [((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals)]
-                # get missings and set corresponding value to None if required
-                missings = np.fromstring(py_obj[missing_start:], dtype=np.uint8)
-                for i in range(n_vals):
-                    if missings[i // 8] & (1 << (i % 8)) == 0:
-                        res[i] = None
-                yield res
-            else:
+                # buffer: length(values) int32, values [int32], missing [bit]
+                # get length(values)
+                n_vals = struct.unpack(">i", py_obj[:4])[0]
+                val_ln = n_vals // 8 + (0 if n_vals % 8 == 0 else 1)
+                missing_start = 4 + val_ln
                 if _python3:
-                    hasMissing = (np.uint8(py_obj[missing_start]) == 0)
+                    rbytes = py_obj[4:missing_start]
                 else:
-                    hasMissing = (py_obj[missing_start] == b'\x00')
-                res = set(((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals))
-                if hasMissing:
-                    res.add(None)
-                yield res
+                    rbytes = np.fromstring(py_obj[4:missing_start], dtype='i1')
+                # get values
+                if not isset:
+                    res = [((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals)]
+                    # get missings and set corresponding value to None if required
+                    missings = np.fromstring(py_obj[missing_start:], dtype=np.uint8)
+                    for i in range(n_vals):
+                        if missings[i // 8] & (1 << (i % 8)) == 0:
+                            res[i] = None
+                    yield res
+                else:
+                    if _python3:
+                        hasMissing = (np.uint8(py_obj[missing_start]) == 0)
+                    else:
+                        hasMissing = (py_obj[missing_start] == b'\x00')
+                    res = set(((rbytes[j // 8] & (1 << (j % 8))) > 0) for j in range(n_vals))
+                    if hasMissing:
+                        res.add(None)
+                    yield res
 
 
 # Deserialize the data contained in the specified file as pandas.DataFrame.
