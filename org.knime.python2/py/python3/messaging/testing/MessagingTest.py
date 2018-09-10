@@ -65,7 +65,7 @@ def test_request_from_java_to_python(workspace):
     class _RequestHandler(AbstractRequestHandler):
         def _respond(self, request, response_message_id, workspace):
             workspace.unregister_task_handler("my-request-from-java")
-            payload = PayloadEncoder().put_string("my-reponse-from-python").payload
+            payload = PayloadEncoder().put_string("my-response-from-python").payload
             return AbstractRequestHandler._create_response(request, response_message_id, response_payload=payload)
 
     workspace.register_task_handler("my-request-from-java", _RequestHandler())

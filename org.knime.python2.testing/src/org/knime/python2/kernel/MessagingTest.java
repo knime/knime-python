@@ -58,6 +58,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.python2.kernel.PythonKernelOptions.PythonVersionOption;
 import org.knime.python2.kernel.messaging.AbstractRequestHandler;
 import org.knime.python2.kernel.messaging.AbstractTaskHandler;
@@ -87,10 +88,12 @@ public final class MessagingTest {
 	}
 
 	@Test
-	public void testRequestFromJavaToPython() throws IOException, InterruptedException, ExecutionException {
-		final String setupSourceCode = "import messaging.testing.MessagingTest as MessagingTest\n" //
+	public void testRequestFromJavaToPython()
+			throws IOException, CanceledExecutionException, InterruptedException, ExecutionException {
+		final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 				+ "MessagingTest.test_request_from_java_to_python(globals()['workspace'])";
-		m_kernel.execute(setupSourceCode);
+		// Use cancelable method overload to throw exception on error.
+		m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
 
 		final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
@@ -101,11 +104,12 @@ public final class MessagingTest {
 		}, new DefaultMessage(m_kernel.getCommands().getMessaging().createNextMessageId(), "my-request-from-java", null,
 				null));
 
-		Assert.assertEquals("my-reponse-from-python", myTask.get());
+		Assert.assertEquals("my-response-from-python", myTask.get());
 	}
 
 	@Test
-	public void testRequestFromPythonToJava() throws IOException {
+	public void testRequestFromPythonToJava()
+			throws IOException, CanceledExecutionException, InterruptedException, ExecutionException {
 		try {
 			m_kernel.registerTaskHandler("my-request-from-python", new AbstractRequestHandler() {
 
@@ -116,9 +120,9 @@ public final class MessagingTest {
 				}
 			});
 
-			final String sourceCode = "import messaging.testing.MessagingTest as MessagingTest\n" //
+			final String sourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 					+ "MessagingTest.test_request_from_python_to_java(globals()['workspace'])";
-			final String[] output = m_kernel.execute(sourceCode);
+			final String[] output = m_kernel.execute(sourceCode, PythonCancelable.NOT_CANCELABLE);
 			Assert.assertTrue(output[0].contains("my-response-from-java"));
 		} finally {
 			m_kernel.unregisterTaskHandler("my-request-from-python");
@@ -126,10 +130,11 @@ public final class MessagingTest {
 	}
 
 	@Test
-	public void testNestedRequestFromJavaToPython() throws IOException, InterruptedException, ExecutionException {
-		final String setupSourceCode = "import messaging.testing.MessagingTest as MessagingTest\n" //
+	public void testNestedRequestFromJavaToPython()
+			throws IOException, CanceledExecutionException, InterruptedException, ExecutionException {
+		final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 				+ "MessagingTest.test_nested_request_from_java_to_python(globals()['workspace'])";
-		m_kernel.execute(setupSourceCode);
+		m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
 
 		final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
@@ -172,7 +177,7 @@ public final class MessagingTest {
 
 	@Test
 	public void testRequestFromJavaThatCausesRequestFromPython()
-			throws IOException, InterruptedException, ExecutionException {
+			throws IOException, CanceledExecutionException, InterruptedException, ExecutionException {
 		try {
 			m_kernel.registerTaskHandler("caused-request-from-python", new AbstractRequestHandler() {
 
@@ -183,9 +188,9 @@ public final class MessagingTest {
 				}
 			});
 
-			final String setupSourceCode = "import messaging.testing.MessagingTest as MessagingTest\n" //
+			final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 					+ "MessagingTest.test_request_from_java_that_causes_request_from_python(globals()['workspace'])";
-			m_kernel.execute(setupSourceCode);
+			m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
 
 			final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
