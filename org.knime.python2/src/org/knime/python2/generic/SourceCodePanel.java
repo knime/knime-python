@@ -345,6 +345,13 @@ public abstract class SourceCodePanel extends JPanel {
     private int[] m_tableEnds;
 
     /**
+     * Protected editor Buttons, that can be overwritten
+     */
+    protected JPanel m_editorButtons;
+
+    private JPanel m_workspacePanel;
+
+    /**
      * Create a source code panel for the given language style.
      *
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}
@@ -381,21 +388,21 @@ public abstract class SourceCodePanel extends JPanel {
         editorWorkspaceSplit.setOneTouchExpandable(true);
         editorWorkspaceSplit.setDividerSize(8);
         final RTextScrollPane editorScrollPane = new RTextScrollPane(m_editor);
-        final JPanel editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-        editorButtons.add(m_exec);
-        editorButtons.add(m_execSelection);
+        m_editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+        m_editorButtons.add(m_exec);
+        m_editorButtons.add(m_execSelection);
         final JPanel editorPanel = new JPanel(new BorderLayout());
         editorPanel.add(editorScrollPane, BorderLayout.CENTER);
-        editorPanel.add(editorButtons, BorderLayout.SOUTH);
+        editorPanel.add(m_editorButtons, BorderLayout.SOUTH);
         final JPanel workspaceButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
         workspaceButtons.add(m_reset);
         if (m_variableNames.getOutputImages().length > 0) {
             workspaceButtons.add(m_showImages);
             initShowImages();
         }
-        final JPanel workspacePanel = new JPanel(new BorderLayout());
-        workspacePanel.add(new JScrollPane(m_vars), BorderLayout.CENTER);
-        workspacePanel.add(workspaceButtons, BorderLayout.SOUTH);
+        m_workspacePanel = new JPanel(new BorderLayout());
+        m_workspacePanel.add(new JScrollPane(m_vars), BorderLayout.CENTER);
+        m_workspacePanel.add(workspaceButtons, BorderLayout.SOUTH);
         editorScrollPane.setFoldIndicatorEnabled(true);
         m_listEditorSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         m_listEditorSplit.setResizeWeight(0.3);
@@ -405,7 +412,7 @@ public abstract class SourceCodePanel extends JPanel {
         m_listEditorSplit.setRightComponent(editorPanel);
         m_listEditorSplit.setDividerLocation(200);
         editorWorkspaceSplit.setLeftComponent(m_listEditorSplit);
-        editorWorkspaceSplit.setRightComponent(workspacePanel);
+        editorWorkspaceSplit.setRightComponent(m_workspacePanel);
         editorWorkspaceSplit.setDividerLocation(700);
         final JPanel consoleButtons = new JPanel(new FlowLayout(FlowLayout.LEADING));
         consoleButtons.add(m_clearConsole);
@@ -1076,7 +1083,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @return a preconfigured editor widget component
      */
     public static RSyntaxTextArea createEditor(final String syntaxStyle) {
-        final RSyntaxTextArea editor = new RSyntaxTextArea();
+        final RSyntaxTextArea editor = new PythonTextArea();
         editor.setSyntaxEditingStyle(syntaxStyle);
         editor.setCodeFoldingEnabled(true);
         editor.setAntiAliasingEnabled(true);
@@ -1090,4 +1097,12 @@ public abstract class SourceCodePanel extends JPanel {
         return editor;
     }
 
+    /**
+     * Sets the workspacePanel to the visibility given value
+     *
+     * @param show whether to show the interactive components
+     */
+    public void showWorkspacePanel(final boolean show) {
+        m_workspacePanel.setVisible(show);
+    }
 }

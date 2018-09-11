@@ -47,6 +47,10 @@
  */
 package org.knime.python2.generic;
 
+import javax.swing.text.BadLocationException;
+
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.knime.base.node.jsnippet.guarded.GuardedDocument;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -58,15 +62,29 @@ import org.knime.core.node.NodeSettingsWO;
  */
 public class SourceCodeConfig {
 
+
+
     static final int DEFAULT_ROW_LIMIT = 1000;
 
     private static final String CFG_SOURCE_CODE = "sourceCode";
 
-    private String m_sourceCode = getDefaultSourceCode();
+    private GuardedDocument m_document = new GuardedDocument(SyntaxConstants.SYNTAX_STYLE_PYTHON);
 
     private static final String CFG_ROW_LIMIT = "rowLimit";
 
     private int m_rowLimit = DEFAULT_ROW_LIMIT;
+
+    /**
+     *Constructor that initializes the document
+     */
+    public SourceCodeConfig() {
+        try {
+            m_document.replace(0, m_document.getLength(), getDefaultSourceCode(), null);
+        } catch (BadLocationException ex) {
+            //this should not happen
+            throw new IllegalStateException(ex);
+        }
+    }
 
     /**
      * Save configuration to the given node settings.
@@ -74,7 +92,12 @@ public class SourceCodeConfig {
      * @param settings The settings to save to
      */
     public void saveTo(final NodeSettingsWO settings) {
-        settings.addString(CFG_SOURCE_CODE, m_sourceCode);
+        try {
+            settings.addString(CFG_SOURCE_CODE, m_document.getText(0, m_document.getLength()));
+        } catch (BadLocationException ex) {
+          //this should not happen
+            throw new IllegalStateException(ex);
+        }
         settings.addInt(CFG_ROW_LIMIT, m_rowLimit);
     }
 
@@ -85,7 +108,13 @@ public class SourceCodeConfig {
      * @throws InvalidSettingsException If the settings are invalid
      */
     public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_sourceCode = settings.getString(CFG_SOURCE_CODE);
+        String sourceCode = settings.getString(CFG_SOURCE_CODE);
+        try {
+            m_document.replace(0, m_document.getLength(), sourceCode, null);
+        } catch (BadLocationException ex) {
+            //this should not happen
+            throw new IllegalStateException(ex);
+        }
         m_rowLimit = settings.getInt(CFG_ROW_LIMIT);
     }
 
@@ -95,7 +124,13 @@ public class SourceCodeConfig {
      * @param settings The settings to load from
      */
     public void loadFromInDialog(final NodeSettingsRO settings) {
-        m_sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
+        String sourceCode = settings.getString(CFG_SOURCE_CODE, getDefaultSourceCode());
+        try {
+            m_document.replace(0, m_document.getLength(), sourceCode, null);
+        } catch (BadLocationException ex) {
+            //this should not happen
+            throw new IllegalStateException(ex);
+        }
         m_rowLimit = settings.getInt(CFG_ROW_LIMIT, DEFAULT_ROW_LIMIT);
     }
 
@@ -105,7 +140,12 @@ public class SourceCodeConfig {
      * @return The source code
      */
     public String getSourceCode() {
-        return m_sourceCode;
+        try {
+            return m_document.getText(0, m_document.getLength());
+        } catch (BadLocationException ex) {
+          //this should not happen
+            throw new IllegalStateException(ex);
+        }
     }
 
     /**
@@ -114,9 +154,27 @@ public class SourceCodeConfig {
      * @param sourceCode The source code
      */
     public void setSourceCode(final String sourceCode) {
-        m_sourceCode = sourceCode;
+        try {
+            m_document.replace(0, m_document.getLength(), sourceCode, null);
+        } catch (BadLocationException ex) {
+            //this should not happen
+            throw new IllegalStateException(ex);
+        }
     }
 
+    /**
+     * @return the guardedDoc
+     */
+    public GuardedDocument getDoc() {
+        return m_document;
+    }
+
+    /**
+     * @param document the guardedDoc to set
+     */
+    public void setDoc(final GuardedDocument document) {
+        m_document = document;
+    }
     /**
      * Return the row limit.
      *
