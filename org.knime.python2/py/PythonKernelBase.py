@@ -278,8 +278,7 @@ class PythonKernelBase(Borg):
             exec(source_code, self._exec_env, self._exec_env)
         except Exception:
             # Print failing source code to simplify debugging.
-            sys.stdout.write("Source code that caused failure:\n")
-            sys.stdout.write(source_code + "\n")
+            debug_msg("Source code that caused failure:\n" + source_code)
             backup_std_error = sys.stderr
             sys.stderr = error
             traceback.print_exc()
