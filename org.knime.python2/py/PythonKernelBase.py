@@ -293,6 +293,13 @@ class PythonKernelBase(Borg):
         Reset the current workspace.
         """
         self._exec_env = {"workspace": self}
+        try:
+            import knime_jupyter
+            knime_jupyter.__implementation__._resolve_knime_url = (
+                lambda url: self._commands.resolve_knime_url(url).get())
+            self._exec_env[knime_jupyter.__name__] = knime_jupyter
+        except Exception:
+            warnings.warn("Failed to initialize Jupyter notebook support.")
 
     # Life cycle:
 

@@ -13,6 +13,8 @@
 			Allows execution of a Python script in a local Python installation. 
 			The path to the Python executable has to be configured in 
 			Preferences → KNIME → Python. This node supports Python 2 and 3.
+			It also allows to import Jupyter notebooks as Python modules via the
+			knime_jupyter module that is part of the Python workspace.
 		<br /><br />
 		<b>NOTICE:</b>
           The nodes uses the <a href="https://pypi.python.org/pypi/JayDeBeApi/">JayDeBeApi</a> library 
