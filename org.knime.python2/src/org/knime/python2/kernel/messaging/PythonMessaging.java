@@ -167,13 +167,6 @@ public final class PythonMessaging implements MessageSender, MessageHandlerColle
 
     private void sendShutdownMessage() {
         try {
-            // Give Python some time to finish writing into the stream.
-            Thread.sleep(500);
-        } catch (final InterruptedException ex) {
-            // Closing the messaging system should not be interrupted.
-            Thread.currentThread().interrupt();
-        }
-        try {
             final Message message = new DefaultMessage(createNextMessageId(), "shutdown", null, null);
             send(message);
         } catch (final IOException ex) {

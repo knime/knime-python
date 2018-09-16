@@ -430,6 +430,17 @@ public final class PythonCommands implements AutoCloseable {
             new DefaultMessage(m_messaging.createNextMessageId(), "reset", null, null));
     }
 
+    /**
+     * Creates a runnable future that cleans up all registered external resources (e.g., database connections) on Python
+     * side.
+     *
+     * @return a runnable future that cleans up all registered external resources on Python side
+     */
+    public synchronized RunnableFuture<Void> cleanUp() {
+        return createTask(new VoidReturningTaskHandler(),
+            new DefaultMessage(m_messaging.createNextMessageId(), "cleanup", null, null));
+    }
+
     public synchronized void start() {
         m_messaging.start();
     }
