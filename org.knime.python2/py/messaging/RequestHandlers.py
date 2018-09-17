@@ -99,6 +99,7 @@ class AbstractRequestHandler(AbstractTaskHandler):
 
 _PAYLOAD_NAME = "payload_name"
 
+
 class GetPidRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
         pid = os.getpid()
@@ -355,7 +356,12 @@ class ExecuteRequestHandler(AbstractRequestHandler):
 class ResetRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
         workspace.reset()
+        return AbstractRequestHandler._create_response(request, response_message_id)
 
+
+class CleanupRequestHandler(AbstractRequestHandler):
+    def _respond(self, request, response_message_id, workspace):
+        workspace._cleanup()
         return AbstractRequestHandler._create_response(request, response_message_id)
 
 
@@ -388,6 +394,7 @@ _builtin_request_handlers = {'getpid': GetPidRequestHandler(),
                              'execute': ExecuteRequestHandler(),
                              'execute_async': ExecuteRequestHandler(),
                              'reset': ResetRequestHandler(),
+                             'cleanup': CleanupRequestHandler(),
                              'shutdown': ShutdownRequestHandler()}
 
 

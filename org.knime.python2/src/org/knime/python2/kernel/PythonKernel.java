@@ -133,6 +133,9 @@ import org.knime.python2.port.PickledObject;
 import org.knime.python2.util.PythonUtils;
 import org.w3c.dom.svg.SVGDocument;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.google.common.util.concurrent.UncheckedTimeoutException;
+
 /**
  * Provides operations on a Python kernel running in another process.
  *
@@ -1356,6 +1359,21 @@ public class PythonKernel implements AutoCloseable {
     @Override
     public void close() {
         if (m_closed.compareAndSet(false, true)) {
+            // Closing the database connections must be done synchronously. Otherwise Python database testflows fail
+            // because the test framework's database janitors try to clean up the databases before the connections are
+            // closed.
+            PythonUtils.Misc.invokeSafely(LOGGER::debug, c -> {
+                try {
+                    c.cleanUp().get(500, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException ex) {
+                    throw new UncheckedExecutionException(ex);
+                } catch (TimeoutException ex) {
+                    throw new UncheckedTimeoutException(ex);
+                }
+            }, m_commands);
+            // Async. closing.
             new Thread(() -> {
                 // Order is intended.
                 synchronized (m_stderrListeners) {

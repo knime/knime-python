@@ -145,7 +145,7 @@ abstract class AbstractMessageLoop implements AutoCloseable {
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdown, m_executor);
                 try {
                     if (!(m_executor.awaitTermination(1, TimeUnit.SECONDS))) {
-                        PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdown, m_executor);
+                        PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executor);
                     }
                 } catch (final InterruptedException ex) {
                     Thread.currentThread().interrupt();
