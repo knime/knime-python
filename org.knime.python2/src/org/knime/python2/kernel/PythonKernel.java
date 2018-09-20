@@ -150,6 +150,9 @@ public class PythonKernel implements AutoCloseable {
 
     private static final int WAIT_TIMEOUT_MILLISECONDS = 1000;
 
+    // Do not change. Used on Python side.
+    private static final String WARNING_MESSAGE_PREFIX = "[WARN]";
+
     /**
      * @return the duration, in milliseconds, to wait when trying to establish a connection to Python
      */
@@ -253,9 +256,13 @@ public class PythonKernel implements AutoCloseable {
                 }
 
                 @Override
-                public void messageReceived(final String message) {
+                public void messageReceived(final String message, final boolean isWarningMessage) {
                     if (!m_silenced) {
-                        LOGGER.info(message);
+                        if (isWarningMessage) {
+                            LOGGER.warn(message);
+                        } else {
+                            LOGGER.info(message);
+                        }
                     } else {
                         LOGGER.debug(message);
                     }
@@ -1478,19 +1485,35 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private void distributeStdoutMsg(final String msg) {
+        final boolean isWarningMessage = isWarningMessage(msg);
+        final String message = isWarningMessage //
+            ? stripWarningMessagePrefix(msg) //
+            : msg;
         synchronized (m_stdoutListeners) {
             for (final PythonOutputListener listener : m_stdoutListeners) {
-                listener.messageReceived(msg);
+                listener.messageReceived(message, isWarningMessage);
             }
         }
     }
 
     private void distributeStderrorMsg(final String msg) {
+        final boolean isWarningMessage = isWarningMessage(msg);
+        final String message = isWarningMessage //
+            ? stripWarningMessagePrefix(msg) //
+            : msg;
         synchronized (m_stderrListeners) {
             for (final PythonOutputListener listener : m_stderrListeners) {
-                listener.messageReceived(msg);
+                listener.messageReceived(message, isWarningMessage);
             }
         }
+    }
+
+    private boolean isWarningMessage(final String message) {
+        return message.startsWith(WARNING_MESSAGE_PREFIX);
+    }
+
+    private String stripWarningMessagePrefix(final String message) {
+        return message.substring(WARNING_MESSAGE_PREFIX.length(), message.length());
     }
 
     private void startPipeListeners() {
@@ -1603,9 +1626,11 @@ public class PythonKernel implements AutoCloseable {
         }
 
         @Override
-        public void messageReceived(final String msg) {
+        public void messageReceived(final String msg, final boolean isWarningMessage) {
             if (!m_silenced) {
-                if (!m_allWarning) {
+                if (m_allWarning || isWarningMessage) {
+                    LOGGER.warn(msg);
+                } else {
                     if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
                         LOGGER.error(msg);
                         m_errorWasLogged.set(true);
@@ -1617,8 +1642,6 @@ public class PythonKernel implements AutoCloseable {
                         }
                         LOGGER.debug(msg);
                     }
-                } else {
-                    LOGGER.warn(msg);
                 }
             } else {
                 LOGGER.debug(msg);
