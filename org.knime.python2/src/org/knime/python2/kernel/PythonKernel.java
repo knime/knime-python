@@ -187,7 +187,7 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonOutputListener m_defaultStdoutListener;
 
-    private final ConfigurablePythonOutputListener m_defaultStderrListener;
+    private final ConfigurableErrorLogger m_defaultStderrListener;
 
     private final List<ProcessEndAction> m_processEndActions = Collections.synchronizedList(new ArrayList<>());
 
@@ -261,7 +261,7 @@ public class PythonKernel implements AutoCloseable {
             };
             addStdoutListener(m_defaultStdoutListener);
 
-            m_defaultStderrListener = new ConfigurablePythonOutputListener();
+            m_defaultStderrListener = new ConfigurableErrorLogger();
             addStderrorListener(m_defaultStderrListener);
 
             try {
@@ -1483,8 +1483,8 @@ public class PythonKernel implements AutoCloseable {
     public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
         synchronized (m_stderrListeners) {
             for (final PythonOutputListener listener : m_stderrListeners) {
-                if (listener instanceof ConfigurablePythonOutputListener) {
-                    ((ConfigurablePythonOutputListener)listener).setAllWarnings(routeToWarningLog);
+                if (listener instanceof ConfigurableErrorLogger) {
+                    ((ConfigurableErrorLogger)listener).setAllWarnings(routeToWarningLog);
                 }
             }
         }
@@ -1591,7 +1591,7 @@ public class PythonKernel implements AutoCloseable {
         void runForExitCode(int exitCode) throws PythonIOException;
     }
 
-    private static class ConfigurablePythonOutputListener implements PythonOutputListener {
+    private static class ConfigurableErrorLogger implements PythonOutputListener {
 
         private boolean m_silenced = false;
 
