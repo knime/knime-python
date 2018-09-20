@@ -63,6 +63,7 @@ public interface PythonOutputListener {
      * Is called after a full line of text was received from the python output stream
      *
      * @param message the received line without terminator
+     * @param isWarningMessage true if the message is a warning, false otherwise (regular output or exception)
      */
-    void messageReceived(String message);
+    void messageReceived(String message, boolean isWarningMessage);
 }

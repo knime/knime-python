@@ -163,9 +163,13 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             }
 
             @Override
-            public void messageReceived(final String msg) {
+            public void messageReceived(final String msg, final boolean isWarningMessage) {
                 if (!m_silenced) {
-                    messageToConsole(msg);
+                    if (isWarningMessage) {
+                        warningToConsole(msg);
+                    } else {
+                        messageToConsole(msg);
+                    }
                 }
             }
         };
@@ -719,12 +723,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }
 
         @Override
-        public void messageReceived(final String msg) {
+        public void messageReceived(final String msg, final boolean isWarningMessage) {
             if (!m_silenced) {
-                if (!m_allWarnings) {
-                    errorToConsole(msg);
-                } else {
+                if (m_allWarnings || isWarningMessage) {
                     warningToConsole(msg);
+                } else {
+                    errorToConsole(msg);
                 }
             } else {
                 LOGGER.debug(msg);
