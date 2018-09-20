@@ -82,6 +82,41 @@ if __name__ == "__main__":
 
     with PythonKernel() as kernel:
         try:
+            # Hook into warning delivery.
+            import warnings
+
+            default_showwarning = warnings.showwarning
+
+
+            def showwarning_hook(message, category, filename, lineno, file=None, line=None):
+                """
+                Copied from warnings.showwarning.
+                We use this hook to prefix warning messages with "[WARN]". This makes them easier identifiable on Java
+                side and helps printing them using the correct log level.
+                Providing a custom hook is supported as per the API documentations:
+                https://docs.python.org/2/library/warnings.html#warnings.showwarning
+                https://docs.python.org/3/library/warnings.html#warnings.showwarning
+                """
+                try:
+                    if file is None:
+                        file = sys.stderr
+                        if file is None:
+                            # sys.stderr is None when run with pythonw.exe - warnings get lost
+                            return
+                    try:
+                        # Do not change the prefix. Expected on Java side.
+                        file.write("[WARN]" + warnings.formatwarning(message, category, filename, lineno, line))
+                    except OSError:
+                        pass  # the file (probably stderr) is invalid - this warning gets lost.
+                except Exception:
+                    # Fall back to default implementation.
+                    return default_showwarning(message, category, filename, lineno, file, line)
+
+
+            warnings.showwarning = showwarning_hook
+        except BaseException:
+            pass
+        try:
             kernel.start()
         except BaseException as ex:
             traceback.print_exc(file=sys.stdout)
