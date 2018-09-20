@@ -110,7 +110,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final PythonOutputListener m_stdoutToConsole;
 
-    private final ConfigurablePythonOutputListener m_stderrorToConsole;
+    private final ConfigurableErrorLogger m_stderrorToConsole;
 
     private final AtomicBoolean m_resetInProgress;
 
@@ -170,7 +170,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             }
         };
 
-        m_stderrorToConsole = new ConfigurablePythonOutputListener();
+        m_stderrorToConsole = new ConfigurableErrorLogger();
         m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManagerWrapper>();
         m_resetInProgress = new AtomicBoolean(false);
     }
@@ -698,7 +698,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         runResetJob();
     }
 
-    private class ConfigurablePythonOutputListener implements PythonOutputListener {
+    private class ConfigurableErrorLogger implements PythonOutputListener {
 
         private boolean m_allWarnings = false;
 
