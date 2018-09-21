@@ -93,7 +93,7 @@ public final class MessagingTest {
 		final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 				+ "MessagingTest.test_request_from_java_to_python(globals()['workspace'])";
 		// Use cancelable method overload to throw exception on error.
-		m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
+		m_kernel.execute(setupSourceCode);
 
 		final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
@@ -122,7 +122,7 @@ public final class MessagingTest {
 
 			final String sourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 					+ "MessagingTest.test_request_from_python_to_java(globals()['workspace'])";
-			final String[] output = m_kernel.execute(sourceCode, PythonCancelable.NOT_CANCELABLE);
+			final String[] output = m_kernel.execute(sourceCode);
 			Assert.assertTrue(output[0].contains("my-response-from-java"));
 		} finally {
 			m_kernel.unregisterTaskHandler("my-request-from-python");
@@ -134,7 +134,7 @@ public final class MessagingTest {
 			throws IOException, CanceledExecutionException, InterruptedException, ExecutionException {
 		final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 				+ "MessagingTest.test_nested_request_from_java_to_python(globals()['workspace'])";
-		m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
+		m_kernel.execute(setupSourceCode);
 
 		final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
@@ -190,7 +190,7 @@ public final class MessagingTest {
 
 			final String setupSourceCode = "import python3.messaging.testing.MessagingTest as MessagingTest\n" //
 					+ "MessagingTest.test_request_from_java_that_causes_request_from_python(globals()['workspace'])";
-			m_kernel.execute(setupSourceCode, PythonCancelable.NOT_CANCELABLE);
+			m_kernel.execute(setupSourceCode);
 
 			final RunnableFuture<String> myTask = m_kernel.getCommands().createTask(new AbstractTaskHandler<String>() {
 
