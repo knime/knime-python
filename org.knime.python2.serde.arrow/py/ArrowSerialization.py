@@ -390,7 +390,7 @@ def binary_from_set_generator(column, numpy_type):
             if None in column[j]:
                 hasMissing = np.uint8(0)
                 n_vals -= 1
-            np_set = np.empty(len(column[j]), dtype=numpy_type)
+            np_set = np.empty(n_vals, dtype=numpy_type)
             i = 0
             for elem in column[j]:
                 if elem is not None:
