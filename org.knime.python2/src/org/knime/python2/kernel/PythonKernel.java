@@ -58,6 +58,8 @@ import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,6 +93,7 @@ import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
+import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
 import org.knime.python.typeextension.PythonModuleExtensions;
@@ -320,7 +323,7 @@ public class PythonKernel implements AutoCloseable {
                 new PythonKernelExecutionMonitor());
 
             // Setup request handlers.
-            setupSerializerRequestHandlers();
+            setupRequestHandlers();
 
             // Start commands/messaging system once everything is set up.
             m_commands.start();
@@ -340,9 +343,7 @@ public class PythonKernel implements AutoCloseable {
             close();
 
             // Unwrap exception that occurred during any async setup.
-            if (t instanceof ExecutionException && t.getCause() != null) {
-                t = t.getCause();
-            }
+            t = PythonUtils.Misc.unwrapExecutionException(t).orElse(t);
 
             if (t instanceof PythonIOException) {
                 throw (PythonIOException)t;
@@ -477,7 +478,7 @@ public class PythonKernel implements AutoCloseable {
         });
     }
 
-    private void setupSerializerRequestHandlers() {
+    private void setupRequestHandlers() {
         registerTaskHandler("serializer_request", new AbstractRequestHandler() {
 
             @Override
@@ -523,6 +524,26 @@ public class PythonKernel implements AutoCloseable {
                     .putString("") //
                     .get();
                 return createResponse(request, responseMessageId, true, emptyResponsePayload, null);
+            }
+        });
+
+        registerTaskHandler("resolve_knime_url", new AbstractRequestHandler() {
+
+            @Override
+            protected Message respond(final Message request, final int responseMessageId) {
+                final String uriString = new PayloadDecoder(request.getPayload()).getNextString();
+                try {
+                    final URI uri = new URI(uriString);
+                    final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
+                    final String path = file.getAbsolutePath();
+                    final byte[] responsePayload = new PayloadEncoder().putString(path).get();
+                    return createResponse(request, responseMessageId, true, responsePayload, null);
+                } catch (URISyntaxException | IOException | SecurityException ex) {
+                    final String errorMessage = "Failed to resolve KNIME URL '" + uriString + "'.";
+                    LOGGER.debug(errorMessage, ex);
+                    final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).get();
+                    return createResponse(request, responseMessageId, false, errorPayload, null);
+                }
             }
         });
     }
@@ -1597,10 +1618,7 @@ public class PythonKernel implements AutoCloseable {
 
     private PythonIOException getMostSpecificPythonKernelException(final Exception exception) {
         // Unwrap exceptions that occurred during any async execution.
-        final Throwable exc = exception instanceof ExecutionException && exception.getCause() != null //
-            ? exception.getCause() //
-            : exception;
-
+        final Throwable exc = PythonUtils.Misc.unwrapExecutionException(exception).orElse(exception);
         if (!m_pythonKernelMonitorResult.isDone()) {
             try {
                 // Sleep a bit to give the monitor thread time to finish.

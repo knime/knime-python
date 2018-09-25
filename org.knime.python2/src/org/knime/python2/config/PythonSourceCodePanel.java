@@ -65,6 +65,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.ThreadUtils;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.generic.ImageContainer;
@@ -195,7 +196,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private void startKernelManagerAsync(final PythonKernelOptions kernelOptions) {
         // Start python in another thread, this might take a few seconds
-        new Thread(new Runnable() {
+        ThreadUtils.threadWithContext(new Runnable() {
             @Override
             public void run() {
                 setInteractive(false);

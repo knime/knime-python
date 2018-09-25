@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
+import org.knime.python2.kernel.messaging.DefaultMessage.PayloadEncoder;
 import org.knime.python2.util.PythonNodeLogger;
 
 /**
@@ -106,11 +107,20 @@ public abstract class AbstractRequestHandler extends AbstractTaskHandler<Void> {
     @Override
     protected boolean handleCustomMessage(final Message message, final IntSupplier responseMessageIdSupplier,
         final Consumer<Message> responseConsumer, final Consumer<Void> resultConsumer) throws Exception {
-        LOGGER.debug("Java - Respond to message: " + message);
-        Message response = respond(message, responseMessageIdSupplier.getAsInt());
-        LOGGER.debug("Java - Responded to message: " + message + ", response: " + response);
-        responseConsumer.accept(response);
-        resultConsumer.accept(null); // We are done after the response is sent.
+        final int responseMessageId = responseMessageIdSupplier.getAsInt();
+        try {
+            LOGGER.debug("Java - Respond to message: " + message);
+            Message response = respond(message, responseMessageId);
+            LOGGER.debug("Java - Responded to message: " + message + ", response: " + response);
+            responseConsumer.accept(response);
+        } catch (Exception ex) {
+            LOGGER.debug(ex);
+            // Inform Python that handling the request did not work.
+            final Message errorResponse = createResponse(message, responseMessageId, false,
+                new PayloadEncoder().putString(ex.getMessage()).get(), null);
+            responseConsumer.accept(errorResponse);
+        }
+        resultConsumer.accept(null); // We are done after the response (either success or failure) is sent.
         return true;
     }
 }

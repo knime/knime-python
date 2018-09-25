@@ -125,7 +125,12 @@ public abstract class AbstractTaskHandler<T> implements TaskHandler<T> {
      * @throws Exception if any exception occurs while handling the message, e.g. an exception that explains the failure
      */
     protected void handleFailureMessage(final Message message) throws Exception {
-        final String errorMessage = new PayloadDecoder(message.getPayload()).getNextString();
+        final String errorMessage;
+        if (message.getPayload() != null) {
+            errorMessage = new PayloadDecoder(message.getPayload()).getNextString();
+        } else {
+            errorMessage = "Python task failed for unknown reasons.";
+        }
         throw new PythonExecutionException(errorMessage);
     }
 

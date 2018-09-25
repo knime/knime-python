@@ -72,7 +72,7 @@ public final class PythonExecutionException extends ExecutionException implement
      * @param message the message
      */
     public PythonExecutionException(final String message) {
-        this(message, new RuntimeException(amendMessage(message)));
+        this(message, new PythonIOException(amendMessage(message)));
     }
 
     /**
