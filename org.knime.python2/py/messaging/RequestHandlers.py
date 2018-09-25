@@ -87,11 +87,21 @@ class AbstractRequestHandler(AbstractTaskHandler):
 
     def _handle_custom_message(self, message, response_message_id_supplier, response_consumer, result_consumer,
                                workspace):
-        debug_msg("Python - Respond to message: " + str(message))
-        response = self._respond(message, response_message_id_supplier(), workspace)
-        debug_msg("Python - Responded to message: " + str(message) + ", response: " + str(response))
-        response_consumer[0] = response
-        result_consumer(None)  # We are done after the response is sent.
+        response_message_id = response_message_id_supplier()
+        try:
+            debug_msg("Python - Respond to message: " + str(message))
+            response = self._respond(message, response_message_id, workspace)
+            debug_msg("Python - Responded to message: " + str(message) + ", response: " + str(response))
+            response_consumer[0] = response
+        except Exception as ex:
+            error_message = str(ex)
+            debug_msg(error_message, exc_info=True)
+            # Inform Java that handling the request did not work.
+            error_response = AbstractRequestHandler._create_response(message, response_message_id, success=False,
+                                                                     response_payload=_create_string_payload(
+                                                                         error_message))
+            response_consumer[0] = error_response
+        result_consumer(None)  # We are done after the response (either success or failure) is sent.
         return True
 
 

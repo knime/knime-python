@@ -86,7 +86,10 @@ class AbstractTaskHandler(object):
         return None
 
     def _handle_failure_message(self, message):
-        error_message = PayloadDecoder(message.payload).get_next_string()
+        if message.payload is not None:
+            error_message = PayloadDecoder(message.payload).get_next_string()
+        else:
+            error_message = "Java task failed for unknown reasons."
         raise RuntimeError(error_message)
 
     def _handle_custom_message(self, message, response_message_id_supplier, response_consumer, result_consumer,

@@ -50,6 +50,8 @@
 from threading import Condition
 from threading import Lock
 
+from debug_util import debug_msg
+
 
 class TaskFactory(object):
     def __init__(self, task_handler, message_sender, message_handlers, receive_queue_factory, message_id_supplier,
@@ -92,16 +94,14 @@ class Task(object):
         self._task_category = None
 
     def run(self):
-        import debug_util
-        debug_util.debug_msg("Python - Now inside 'run'.")
+        debug_msg("Python - Now inside 'run'.")
         with self._is_running_or_done_lock:
             if self._is_running_or_done:
-                debug_util.debug_msg("Python - Already running. Return.")
+                debug_msg("Python - Already running. Return.")
                 return
             else:
                 self._is_running_or_done = True
-        import debug_util
-        debug_util.debug_msg("Python - Start running task, initiating message: " + str(self._initiating_message))
+        debug_msg("Python - Start running task, initiating message: " + str(self._initiating_message))
         self._executor.submit(self._delegate_task.run)
 
     def get(self):
@@ -109,18 +109,16 @@ class Task(object):
         return self._delegate_task.get()
 
     def handle(self, message):
-        import debug_util
-        debug_util.debug_msg(
+        debug_msg(
             "Python - Enqueue message for task, message: " + str(message) + ", initiating message: " + str(
                 self._initiating_message))
         self._received_messages.put(message)
-        debug_util.debug_msg("Python - Now calling 'run'.")
+        debug_msg("Python - Now calling 'run'.")
         self.run()  # Start task if not already running.
         return True
 
     def _run_internal(self):
-        import debug_util
-        debug_util.debug_msg("Python - Run task, initiating message: " + str(self._initiating_message))
+        debug_msg("Python - Run task, initiating message: " + str(self._initiating_message))
         to_send = self._initiating_message
         while not self._delegate_task.is_done:
             if to_send is not None:
@@ -134,11 +132,10 @@ class Task(object):
                 else:
                     self._registered_message_categories.append(message_category)
                 self._message_sender.send(to_send)
-            import debug_util
-            debug_util.debug_msg(
+            debug_msg(
                 "Python - Wait for message in task, initiating message: " + str(self._initiating_message))
             received = self._received_messages.get()
-            debug_util.debug_msg(
+            debug_msg(
                 "Python - Received message in task, message: " + str(received) + ", initiating message: " + str(
                     self._initiating_message))
             to_send = self._delegate_task_handler.handle(
@@ -169,6 +166,7 @@ class Task(object):
             self._runnable = runnable
             self._is_done = False
             self._result = None
+            self._exception = None
             self._condition = Condition()
 
         @property
@@ -179,26 +177,35 @@ class Task(object):
             try:
                 self._runnable()
             except BaseException as ex:
-                import debug_util
-                # debug_util.breakpoint()
-                debug_util.debug_msg("An exception occurred while running a task. Cause: " + str(ex), exc_info=True)
+                self.set_exception(ex)
+                debug_msg("An exception occurred while running a task. Cause: " + str(ex), exc_info=True)
                 raise
 
         def get(self):
             with self._condition:
                 __counter = 0
                 while not self.is_done:
-                    import debug_util
                     __counter += 1
-                    debug_util.debug_msg("Python - Wait for result (" + str(__counter) + ").")
+                    debug_msg("Python - Wait for result (" + str(__counter) + ").")
                     self._condition.wait()
+                exception = self._exception
                 result = self._result
-            return result
+            if exception is not None:
+                raise exception
+            else:
+                return result
 
         def set(self, result):
             with self._condition:
-                import debug_util
-                debug_util.debug_msg("Python - Set result: " + str(result))
+                debug_msg("Python - Set result: " + str(result))
                 self._result = result
                 self._is_done = True
                 self._condition.notify()
+
+        def set_exception(self, exception):
+            with self._condition:
+                if self._exception is None and exception is not None:
+                    debug_msg("Python - Set exception: " + str(exception))
+                    self._exception = exception
+                    self._is_done = True
+                    self._condition.notify()

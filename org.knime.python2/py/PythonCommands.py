@@ -91,6 +91,14 @@ class PythonCommands(object):
         return self.create_task(PythonCommands._DeserializerRequestTaskHandler(),
                                 Message(self._messaging.create_next_message_id(), "deserializer_request", payload))
 
+    def resolve_knime_url(self, url):
+        """
+        :param url: File must exist as Java side tries to download remote files to a temporary location.
+        """
+        payload = PayloadEncoder().put_string(url).payload
+        return self.create_task(PythonCommands._ResolveKnimeUrlTaskHandler(),
+                                Message(self._messaging.create_next_message_id(), "resolve_knime_url", payload))
+
     def start(self):
         self._messaging.start()
 
@@ -115,3 +123,7 @@ class PythonCommands(object):
             values.append(payload_decoder.get_next_string())
             values.append(payload_decoder.get_next_string())
             return values
+
+    class _ResolveKnimeUrlTaskHandler(AbstractTaskHandler):
+        def _handle_success_message(self, message):
+            return PayloadDecoder(message.payload).get_next_string()

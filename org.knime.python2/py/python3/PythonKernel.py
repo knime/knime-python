@@ -121,7 +121,7 @@ class PythonKernel(PythonKernelBase):
 
     def _create_executor(self):
         number_threads = multiprocessing.cpu_count() * 2 - 1
-        return PythonKernel._MonitoredThreadPoolExecutor(number_threads, self._monitor)
+        return ThreadPoolExecutor(number_threads)
 
     def _create_messaging(self, connection):
         return PythonMessaging(connection, self._monitor)
