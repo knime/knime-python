@@ -127,7 +127,11 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     m_progressMonitor.setCanceled(true);
                 }
                 if (getKernelManager() != null) {
-                    getKernelManager().close();
+                    try {
+                        getKernelManager().close();
+                    } catch (IllegalStateException ex) {
+                        errorToConsole(ex.getMessage());
+                    }
                 }
                 // Disable interactivity while we restart
                 // the kernel
@@ -139,7 +143,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 m_lock.unlock();
             }
         }
-
     };
 
     /**
@@ -285,7 +288,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 }
             }
         }).start();
-
     }
 
     /**

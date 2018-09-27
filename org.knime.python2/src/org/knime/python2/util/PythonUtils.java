@@ -50,6 +50,7 @@ package org.knime.python2.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -253,8 +254,7 @@ public final class PythonUtils {
                     // Should not happen since the handle to the future is local to this method.
                     throw new PythonCanceledExecutionException();
                 } catch (final ExecutionException wrapper) {
-                    // Unwrap execution exception.
-                    final Throwable ex = wrapper.getCause() != null ? wrapper.getCause() : wrapper;
+                    final Throwable ex = unwrapExecutionException(wrapper).orElse(wrapper);
                     if (ex instanceof PythonCanceledExecutionException) {
                         // May happen if the executed task checks for cancellation itself.
                         throw (PythonCanceledExecutionException)ex;
@@ -334,6 +334,26 @@ public final class PythonUtils {
                 }
             }
             return error;
+        }
+
+        /**
+         * Finds the topmost throwable in a {@link Throwable#getCause() stack} of throwables that is not an
+         * {@link ExecutionException}.
+         *
+         * @param throwable the topmost throwable in the stack of throwables
+         * @return an optional that contains the throwable if one is found
+         */
+        public static Optional<Throwable> unwrapExecutionException(final Throwable throwable) {
+            if (throwable == null) {
+                return Optional.empty();
+            }
+            Throwable t = throwable;
+            do {
+                if (!(t instanceof ExecutionException)) {
+                    return Optional.of(t);
+                }
+            } while (t != t.getCause() && (t = t.getCause()) != null);
+            return Optional.empty();
         }
     }
 }

@@ -57,6 +57,7 @@ import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
 import org.knime.python2.generic.ImageContainer;
@@ -362,13 +363,20 @@ public class PythonKernelManager implements AutoCloseable {
     }
 
     /**
-     * Closes the underling python kernel.
+     * Closes the underlying Python kernel.
+     *
+     * @throws IllegalStateException if an exception occurred while cleaning up the Python kernel
      */
     @Override
     public synchronized void close() {
         m_threadPool.shutdown();
         m_threadPool = new ThreadPool(8);
-        m_kernel.close();
+        try {
+            m_kernel.close();
+        } catch (PythonKernelCleanupException ex) {
+            NodeLogger.getLogger(PythonKernelManager.class).error(ex.getMessage(), ex);
+            throw new IllegalStateException(ex.getMessage(), ex);
+        }
     }
 
     /**

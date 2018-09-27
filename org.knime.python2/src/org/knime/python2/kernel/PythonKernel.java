@@ -132,8 +132,6 @@ import org.knime.python2.util.PythonUtils;
 import org.w3c.dom.svg.SVGDocument;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.google.common.util.concurrent.UncheckedTimeoutException;
 
 /**
  * Provides operations on a Python kernel running in another process.
@@ -147,6 +145,10 @@ public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
+    private static final String CONNECT_TIMEOUT_VM_OPT = "knime.python.connecttimeout";
+
+    private static final String CLEANUP_TIMEOUT_VM_OPT = "knime.python.cleanuptimeout";
+
     // Do not change. Used on Python side.
     private static final String WARNING_MESSAGE_PREFIX = "[WARN]";
 
@@ -156,12 +158,29 @@ public class PythonKernel implements AutoCloseable {
     public static int getConnectionTimeoutInMillis() {
         final String defaultTimeout = "30000";
         try {
-            final String timeout = System.getProperty("knime.python.connecttimeout", defaultTimeout);
+            final String timeout = System.getProperty(CONNECT_TIMEOUT_VM_OPT, defaultTimeout);
             return Integer.parseInt(timeout);
         } catch (final NumberFormatException ex) {
-            LOGGER.warn(
-                "The VM option -Dknime.python.connecttimeout is set to a non-integer value. The connecttimeout is "
-                    + "set to the default value of " + defaultTimeout + " ms.");
+            LOGGER.warn("The VM option -D" + CONNECT_TIMEOUT_VM_OPT
+                + " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout
+                + " ms.");
+            return Integer.parseInt(defaultTimeout);
+        }
+    }
+
+    /**
+     * @return the duration, in milliseconds, to wait when trying to cleanup resources (e.g., close database
+     *         connections) upon Python kernel shutdown
+     */
+    public static int getCleanupTimeoutInMillis() {
+        final String defaultTimeout = "30000";
+        try {
+            final String timeout = System.getProperty(CLEANUP_TIMEOUT_VM_OPT, defaultTimeout);
+            return Integer.parseInt(timeout);
+        } catch (final NumberFormatException ex) {
+            LOGGER.warn("The VM option -D" + CLEANUP_TIMEOUT_VM_OPT
+                + " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout
+                + " ms.");
             return Integer.parseInt(defaultTimeout);
         }
     }
@@ -286,7 +305,7 @@ public class PythonKernel implements AutoCloseable {
                     } else {
                         throw new PythonIOException(
                             "The connection attempt timed out. Please consider increasing the socket "
-                                + "timeout using the VM option '-Dknime.python.connecttimeout=<value-in-ms>'.\n"
+                                + "timeout using the VM option '-D" + CONNECT_TIMEOUT_VM_OPT + "=<value-in-ms>'.\n"
                                 + "Also make sure that the communication between KNIME and Python is not blocked by a "
                                 + "firewall and that your hosts configuration is correct.",
                             e);
@@ -1372,27 +1391,41 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
-     * Shuts down the python kernel.
+     * Shuts down the Python kernel.
      *
-     * This shuts down the python background process and closes the sockets used for communication.
+     * This shuts down the Python background process and closes the sockets used for communication.
+     *
+     * @throws PythonKernelCleanupException if an error occurs while cleaning up external resources (e.g., closing
+     *             database connections), contains an error message that is suitable to be shown to the user
      */
     @Override
-    public void close() {
+    public void close() throws PythonKernelCleanupException {
         if (m_closed.compareAndSet(false, true)) {
+            // Sleep independent of any cleanup. This is needed to give the Python kernel some time to finish
+            // write into streams, etc. before all systems are shut down.
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+
             // Closing the database connections must be done synchronously. Otherwise Python database testflows fail
             // because the test framework's database janitors try to clean up the databases before the connections are
-            // closed.
-            PythonUtils.Misc.invokeSafely(LOGGER::debug, c -> {
-                try {
-                    c.cleanUp().get(500, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException ex) {
-                    throw new UncheckedExecutionException(ex);
-                } catch (TimeoutException ex) {
-                    throw new UncheckedTimeoutException(ex);
-                }
-            }, m_commands);
+            // closed. Exceptions that occur during cleanup should be propagated to the user since external resources
+            // (e.g., databases) could be affected.
+            PythonKernelCleanupException cleanupException = null;
+            try {
+                m_commands.cleanUp().get(getCleanupTimeoutInMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException ex) {
+                cleanupException = new PythonKernelCleanupException("An attempt to clean up Python timed out. "
+                    + "Please consider increasing the cleanup timeout using the VM option '-D" + CLEANUP_TIMEOUT_VM_OPT
+                    + "=<value-in-ms>'.", ex);
+            } catch (Throwable t) {
+                t = PythonUtils.Misc.unwrapExecutionException(t).orElse(t);
+                cleanupException =
+                    new PythonKernelCleanupException("Failed to clean up Python. See log for details.", t);
+            }
+
             // Async. closing.
             new Thread(() -> {
                 // Order is intended.
@@ -1430,6 +1463,11 @@ public class PythonKernel implements AutoCloseable {
                     m_process.destroy();
                 }
             }).start();
+
+            // (Re-)Throw exception after the rest of the kernel shutdown was initiated.
+            if (cleanupException != null) {
+                throw cleanupException;
+            }
         }
     }
 

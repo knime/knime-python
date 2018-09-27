@@ -69,6 +69,7 @@ import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
 
@@ -116,6 +117,9 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
             final DBReader reader = du.getReader(connOut);
             final DataTableSpec resultSpec = reader.getDataTableSpec(cp);
             return new PortObject[]{new DatabasePortObject(new DatabasePortObjectSpec(resultSpec, connOut))};
+        } catch (PythonKernelCleanupException ex) {
+            throw new PythonKernelCleanupException(ex.getMessage() + "\nDatabase connections that were opened during "
+                + "the run of the Python script may not have been closed properly.", ex);
         }
     }
 
