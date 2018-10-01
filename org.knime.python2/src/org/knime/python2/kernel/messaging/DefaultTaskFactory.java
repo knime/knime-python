@@ -199,6 +199,7 @@ public final class DefaultTaskFactory<T> implements MessageHandler {
         @Override
         public T get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
+            run(); // Start task if not already running.
             return m_delegateTask.get(timeout, unit);
         }
 
