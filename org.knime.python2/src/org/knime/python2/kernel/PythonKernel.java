@@ -82,14 +82,17 @@ import javax.imageio.ImageIO;
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
+import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.database.DatabaseConnectionSettings;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
@@ -531,15 +534,26 @@ public class PythonKernel implements AutoCloseable {
 
             @Override
             protected Message respond(final Message request, final int responseMessageId) {
-                final String uriString = new PayloadDecoder(request.getPayload()).getNextString();
+                String uriString = new PayloadDecoder(request.getPayload()).getNextString();
                 try {
+                    try {
+                        CheckUtils.checkSourceFile(uriString);
+                    } catch (InvalidSettingsException ex) {
+                        if (Platform.OS_WIN32.equals(Platform.getOS()) && uriString != null) {
+                            uriString = uriString.replace("\\", "/");
+                            CheckUtils.checkSourceFile(uriString);
+                        } else {
+                            throw ex;
+                        }
+                    }
                     final URI uri = new URI(uriString);
                     final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
                     final String path = file.getAbsolutePath();
                     final byte[] responsePayload = new PayloadEncoder().putString(path).get();
                     return createResponse(request, responseMessageId, true, responsePayload, null);
-                } catch (URISyntaxException | IOException | SecurityException ex) {
-                    final String errorMessage = "Failed to resolve KNIME URL '" + uriString + "'.";
+                } catch (InvalidSettingsException | URISyntaxException | IOException | SecurityException ex) {
+                    final String errorMessage =
+                        "Failed to resolve KNIME URL '" + uriString + "'. Details: " + ex.getMessage();
                     LOGGER.debug(errorMessage, ex);
                     final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).get();
                     return createResponse(request, responseMessageId, false, errorPayload, null);
