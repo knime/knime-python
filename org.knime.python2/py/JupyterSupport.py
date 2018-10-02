@@ -55,6 +55,7 @@ from __future__ import absolute_import
 
 import io
 import os
+import posixpath
 import sys
 import types
 
@@ -117,12 +118,12 @@ def _standardize_input(notebook_directory, notebook_name, notebook_version):
 
     notebook_directory = str(notebook_directory)
     notebook_name = str(notebook_name)
+    notebook_path = None
 
-    notebook_path = os.path.join(notebook_directory, notebook_name)
-
-    if notebook_path.startswith("knime://"):
+    if notebook_directory.startswith("knime:"):
         exception = None
         try:
+            notebook_path = posixpath.join(notebook_directory, notebook_name)
             notebook_path = _resolve_knime_url(notebook_path)
         except Exception as ex:
             exception = ex
@@ -133,6 +134,8 @@ def _standardize_input(notebook_directory, notebook_name, notebook_version):
         if not EnvironmentHelper.is_python3():
             # Java always returns a unicode string, Python 2 wants non-unicode.
             notebook_path = str(notebook_path)
+    else:
+        notebook_path = os.path.join(notebook_directory, notebook_name)
 
     if not os.path.isfile(notebook_path):
         raise ValueError("Notebook path '" + notebook_path + "' does not point to an existing file.")
