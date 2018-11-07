@@ -55,7 +55,7 @@ Allows to load Jupyter notebooks as Python modules and to print the content of J
 import JupyterSupport as __implementation__
 
 
-def load_notebook(notebook_directory, notebook_name, notebook_version=None):
+def load_notebook(notebook_directory, notebook_name, notebook_version=None, only_include_tag=None):
     """
     Loads the Jupyter notebook located in the given directory and of the given file name and returns it as Python
     module. The module contains the content of each code cell of the notebook. In particular, top-level definitions
@@ -64,14 +64,18 @@ def load_notebook(notebook_directory, notebook_name, notebook_version=None):
                                The KNIME URL protocol (knime://) is supported. Should be a string.
     :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
     :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-    from file. Only use this option if you experience compatibility issues (e.g., if KNIME doesn't understand the
-    notebook format). Should be an integer.
+                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
+                             doesn't understand the notebook format). Should be an integer.
+    :param only_include_tag: Only load cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
+                             This is useful to mark cells that are intended to be used in a Python module and
+                             exclude other, unmarked, cells, e.g., ones that do visualization or contain demo code.
+                             Defaults to 'None' in which case all code cells are included. Should be a string.
     :return: The Jupyter notebook as Python module.
     """
-    return __implementation__.load_notebook(notebook_directory, notebook_name, notebook_version)
+    return __implementation__.load_notebook(notebook_directory, notebook_name, notebook_version, only_include_tag)
 
 
-def print_notebook(notebook_directory, notebook_name, notebook_version=None):
+def print_notebook(notebook_directory, notebook_name, notebook_version=None, only_include_tag=None):
     """
     Prints the type and textual content of each cell of the Jupyter notebook in the given directory and of the given
     file name to the console.
@@ -79,8 +83,10 @@ def print_notebook(notebook_directory, notebook_name, notebook_version=None):
                                The KNIME URL protocol (knime://) is supported. Should be a string.
     :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
     :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-    from file. Only use this option if you experience compatibility issues (e.g., if KNIME doesn't understand the
-    notebook format). Should be an integer.
+                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
+                             doesn't understand the notebook format). Should be an integer.
+    :param only_include_tag: Only print cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
+                             Defaults to 'None' in which case all cells are included. Should be a string.
     :return: The string that was printed to the console.
     """
-    return __implementation__.print_notebook(notebook_directory, notebook_name, notebook_version)
+    return __implementation__.print_notebook(notebook_directory, notebook_name, notebook_version, only_include_tag)

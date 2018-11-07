@@ -58,6 +58,7 @@ import os
 import posixpath
 import sys
 import types
+import warnings
 
 import EnvironmentHelper
 
@@ -80,23 +81,35 @@ except Exception as ex:
     _dependencies_import_errors.add(str(ex))
 
 
-def load_notebook(notebook_directory, notebook_name, notebook_version=None):
+def load_notebook(notebook_directory, notebook_name, notebook_version=None, only_include_tag=None):
     _check_availability()
     # User-facing; standardize input.
-    notebook_path, notebook_version = _standardize_input(notebook_directory, notebook_name, notebook_version)
-    return _NotebookLoader(notebook_path, notebook_version).load_notebook_module()
+    notebook_path, notebook_version, only_include_tag = _standardize_input(notebook_directory, notebook_name,
+                                                                           notebook_version,
+                                                                           only_include_tag)
+    return _NotebookLoader(notebook_path, notebook_version).load_notebook_module(only_include_tag=only_include_tag)
 
 
-def print_notebook(notebook_directory, notebook_name, notebook_version=None):
+def print_notebook(notebook_directory, notebook_name, notebook_version=None, only_include_tag=None):
     _check_availability()
     # User-facing; standardize input.
-    notebook_path, notebook_version = _standardize_input(notebook_directory, notebook_name, notebook_version)
+    notebook_path, notebook_version, only_include_tag = _standardize_input(notebook_directory, notebook_name,
+                                                                           notebook_version,
+                                                                           only_include_tag)
     notebook = _load_notebook_from_path(notebook_path, notebook_version)
     cells = _get_notebook_cells(notebook)
     notebook_lines = ["Notebook at path '" + notebook_path + "':"]
     for i, cell in enumerate(cells):
-        notebook_lines.append("Cell #" + str(i) + " (" + cell.cell_type + "):")
-        notebook_lines.append(_get_notebook_cell_source(cell))
+        # If we are only including particular tags, check now.
+        if _include_cell(cell, only_include_tag):
+            notebook_lines.append("Cell #" + str(i) + " (" + cell.cell_type + "):")
+            notebook_lines.append(_get_notebook_cell_source(cell))
+    if len(notebook_lines) == 1:
+        # Inform user that notebook is empty.
+        if only_include_tag is not None:
+            notebook_lines.append("<no included cells>")
+        else:
+            notebook_lines.append("<empty>")
     notebook_string = '\n'.join(notebook_lines)
     print(notebook_string)
     return notebook_string
@@ -110,7 +123,7 @@ def _check_availability():
                          + "\n".join(_dependencies_import_errors))
 
 
-def _standardize_input(notebook_directory, notebook_name, notebook_version):
+def _standardize_input(notebook_directory, notebook_name, notebook_version, only_include_tag):
     if notebook_directory is None:
         raise ValueError("Notebook directory must not be None.")
     if notebook_name is None:
@@ -151,7 +164,10 @@ def _standardize_input(notebook_directory, notebook_name, notebook_version):
         if notebook_version is None:
             raise ValueError("Notebook version must be an integer or castable to an integer.")
 
-    return notebook_path, notebook_version
+    if only_include_tag is not None:
+        only_include_tag = str(only_include_tag)
+
+    return notebook_path, notebook_version, only_include_tag
 
 
 def _load_notebook_from_path(notebook_path, notebook_version):
@@ -169,6 +185,11 @@ def _get_notebook_cells(notebook):
         return cells
     else:
         _raise_notebook_format_not_understood()
+
+
+def _include_cell(cell, only_include_tag):
+    return not (only_include_tag is not None and (
+            'tags' not in cell.metadata or only_include_tag not in cell.metadata['tags']))
 
 
 def _get_notebook_cell_source(cell):
@@ -197,7 +218,7 @@ class _NotebookLoader(object):
         self._notebook_path = notebook_path
         self._notebook_version = notebook_version
 
-    def load_notebook_module(self):
+    def load_notebook_module(self, only_include_tag=None):
         notebook = _load_notebook_from_path(self._notebook_path, self._notebook_version)
 
         # Create the module and add it to sys.modules.
@@ -210,21 +231,27 @@ class _NotebookLoader(object):
         # Extra work to ensure that magics that would affect the user_ns actually affect the notebook module's ns.
         save_user_ns = self._shell.user_ns
         self._shell.user_ns = notebook_module.__dict__
+        module_is_populated = False
         try:
             cells = _get_notebook_cells(notebook)
             for cell in cells:
                 if cell.cell_type == 'code':
-                    # Transform the input to executable Python code.
-                    code = self._shell.input_transformer_manager.transform_cell(_get_notebook_cell_source(cell))
-                    # Run the code.
-                    try:
-                        exec(code, notebook_module.__dict__)
-                    except Exception:
-                        print("Failing noteboook code:\n" + code)
-                        raise
+                    # If we are only including particular tags, check now.
+                    if _include_cell(cell, only_include_tag):
+                        # Transform the input to executable Python code.
+                        code = self._shell.input_transformer_manager.transform_cell(_get_notebook_cell_source(cell))
+                        # Run the code.
+                        try:
+                            exec(code, notebook_module.__dict__)
+                            module_is_populated = True
+                        except Exception:
+                            print("Failing noteboook code:\n" + code)
+                            raise
         finally:
             self._shell.user_ns = save_user_ns
-
+        if not module_is_populated:
+            # Inform user that notebook module is empty.
+            warnings.warn("Importing the Jupyter notebook resulted in an empty Python module.")
         return notebook_module
 
 
