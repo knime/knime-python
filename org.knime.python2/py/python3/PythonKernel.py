@@ -48,20 +48,14 @@
 """
 
 import multiprocessing
-from threading import Event
-from threading import RLock
-from time import monotonic as time
-
 from concurrent.futures import ThreadPoolExecutor
-from queue import Empty
-from queue import Full
-from queue import Queue
+from threading import RLock
 
 from DBUtil import DBUtil
 from PythonKernelBase import PythonKernelBase
-from debug_util import debug_msg
-from messaging.Message import Message
 from messaging.RequestHandlers import _builtin_request_handlers
+from python3._ExecutionMonitor import _ExecutionMonitor
+from python3._QueuedExecutor import _QueuedExecutor
 from python3.messaging.PythonMessaging import PythonMessaging
 
 
@@ -73,7 +67,8 @@ class PythonKernel(PythonKernelBase):
     def __init__(self):
         try:
             super(PythonKernel, self).__init__()
-            self._monitor = PythonKernel._ExecutionMonitor()
+            self._monitor = _ExecutionMonitor()
+            self._execution_queue = self._monitor.create_message_queue(0)
             self._is_running_or_closed_lock = RLock()
             # SQL connections need to be closed by the same thread that opened them, which is the execute thread.
             self._execute_thread_cleanup_object_names = set()
@@ -89,6 +84,7 @@ class PythonKernel(PythonKernelBase):
     def start(self):
         with self._is_running_or_closed_lock:
             super(PythonKernel, self).start()
+            self.execute_thread_executor.start()
         # Do not hold lock while waiting for shutdown.
         self._monitor.wait_for_close()
 
@@ -117,7 +113,7 @@ class PythonKernel(PythonKernelBase):
             self.register_task_handler(k, _builtin_request_handlers[k], executor=self.execute_thread_executor)
 
     def _create_execute_thread_executor(self):
-        return PythonKernel._MonitoredThreadPoolExecutor(1, self._monitor)
+        return _QueuedExecutor(self._execution_queue, self._monitor)
 
     def _create_executor(self):
         number_threads = multiprocessing.cpu_count() * 2 - 1
@@ -131,105 +127,3 @@ class PythonKernel(PythonKernelBase):
             self._execute_thread_executor.submit(obj._cleanup)
         else:
             super(PythonKernel, self)._cleanup_object(obj, obj_name)
-
-    class _ExecutionMonitor(object):
-
-        _POISON_PILL = Message(-1, "", None, None)
-
-        def __init__(self):
-            self._close = Event()
-            self._exception = None
-
-        @property
-        def poison_pill(self):
-            return PythonKernel._ExecutionMonitor._POISON_PILL
-
-        def create_message_queue(self, length):
-            return PythonKernel._MonitoredMessageQueue(length, self)
-
-        def report_close(self):
-            self._close.set()
-
-        def report_exception(self, exception, message=None):
-            if self._exception is None and exception is not None:
-                self._exception = exception
-                try:
-                    if message is not None:
-                        error_message = message + " Cause: " + str(exception)
-                    else:
-                        error_message = "An exception occurred: " + str(exception)
-                    debug_msg(error_message, exc_info=True)
-                except BaseException:
-                    pass
-                self.report_close()
-
-        def check_exception(self):
-            if self._exception is not None:
-                raise self._exception
-
-        def wait_for_close(self):
-            self._close.wait()
-            self.check_exception()
-
-    class _MonitoredMessageQueue(Queue):
-
-        _TIMEOUT_STEP_IN_SEC = 0.1
-
-        def __init__(self, length, monitor):
-            super(PythonKernel._MonitoredMessageQueue, self).__init__(length)
-            self._monitor = monitor
-
-        def put(self, item, block=True, timeout=None):
-            if not block:
-                return super(PythonKernel._MonitoredMessageQueue, self).put(item, block, timeout)
-            else:
-                timeout_step = PythonKernel._MonitoredMessageQueue._TIMEOUT_STEP_IN_SEC
-                endtime = (time() + timeout) if timeout is not None else None
-                while True:
-                    self._monitor.check_exception()
-                    if timeout is None:
-                        remaining = timeout_step
-                    else:
-                        remaining = endtime - time()
-                    try:
-                        return super(PythonKernel._MonitoredMessageQueue, self).put(item, block,
-                                                                                    timeout_step
-                                                                                    if remaining > timeout_step
-                                                                                    else remaining)
-                    except Full:
-                        continue
-
-        def get(self, block=True, timeout=None):
-            if not block:
-                return super(PythonKernel._MonitoredMessageQueue, self).get(block, timeout)
-            else:
-                timeout_step = PythonKernel._MonitoredMessageQueue._TIMEOUT_STEP_IN_SEC
-                endtime = (time() + timeout) if timeout is not None else None
-                while True:
-                    self._monitor.check_exception()
-                    if timeout is None:
-                        remaining = timeout_step
-                    else:
-                        remaining = endtime - time()
-                    try:
-                        return super(PythonKernel._MonitoredMessageQueue, self).get(block,
-                                                                                    timeout_step
-                                                                                    if remaining > timeout_step
-                                                                                    else remaining)
-                    except Empty:
-                        continue
-
-    class _MonitoredThreadPoolExecutor(ThreadPoolExecutor):
-        def __init__(self, max_workers, monitor):
-            super(PythonKernel._MonitoredThreadPoolExecutor, self).__init__(max_workers)
-            self._monitor = monitor
-
-        def submit(self, fn, *args, **kwargs):
-            super(PythonKernel._MonitoredThreadPoolExecutor, self).submit(self._monitored_fn, fn, *args, **kwargs)
-
-        def _monitored_fn(self, fn, *args, **kwargs):
-            try:
-                return fn(*args, **kwargs)
-            except BaseException as ex:
-                self._monitor.report_exception(ex)
-                raise
