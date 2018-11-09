@@ -47,7 +47,7 @@
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
 
-from MainThreadExecutor import MainThreadExecutor
+from python2.SynchronousExecutor import SynchronousExecutor
 from PythonKernelBase import PythonKernelBase
 from python2.messaging.PythonMessaging import PythonMessaging
 
@@ -64,10 +64,10 @@ class PythonKernel(PythonKernelBase):
             self.close()
 
     def _create_execute_thread_executor(self):
-        return MainThreadExecutor()
+        return SynchronousExecutor()
 
     def _create_executor(self):
-        return MainThreadExecutor()
+        return SynchronousExecutor()
 
     def _create_messaging(self, connection):
         return PythonMessaging(connection)

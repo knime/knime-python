@@ -48,14 +48,13 @@
 """
 
 
-class MainThreadExecutor(object):
+class SynchronousExecutor(object):
     """
     Dummy executor that mimics a part of the interface of Python 3 futures.ThreadPoolExecutor.
     """
 
-    def __init__(self, monitor=None):
+    def __init__(self):
         self._shutdown = False
-        self._monitor = monitor
 
     def __enter__(self):
         return self
@@ -69,10 +68,8 @@ class MainThreadExecutor(object):
         """
         if self._shutdown:
             raise RuntimeError('cannot schedule new futures after shutdown')
-        future = MainThreadExecutor._ImmediatelyCompletingFuture(fn, *args, **kwargs)
+        future = SynchronousExecutor._ImmediatelyCompletingFuture(fn, *args, **kwargs)
         if future.exception() is not None:
-            if self._monitor is not None:
-                self._monitor.report_exception(future.exception())
             raise future.exception()
         else:
             return future
