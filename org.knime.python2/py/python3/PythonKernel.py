@@ -84,8 +84,8 @@ class PythonKernel(PythonKernelBase):
     def start(self):
         with self._is_running_or_closed_lock:
             super(PythonKernel, self).start()
-            self.execute_thread_executor.start()
-        # Do not hold lock while waiting for shutdown.
+        # Call to start is blocking (main execution loop).
+        self.execute_thread_executor.start()
         self._monitor.wait_for_close()
 
     def close(self):
