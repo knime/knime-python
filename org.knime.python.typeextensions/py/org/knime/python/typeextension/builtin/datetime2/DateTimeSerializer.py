@@ -42,10 +42,14 @@
 # ------------------------------------------------------------------------
 
 try:
-    from pandas.tslib import Timestamp
+    from pandas._libs.tslibs.timestamps import Timestamp
     _tslib_available = True
 except ImportError:
-    _tslib_available = False
+    try:
+        from pandas.tslib import Timestamp
+        _tslib_available = True
+    except ImportError:
+        _tslib_available = False
 
 def serialize(object_value):
     if _tslib_available and type(object_value) is Timestamp:
