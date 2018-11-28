@@ -51,6 +51,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
 import org.knime.core.node.NodeLogger;
@@ -63,9 +65,7 @@ import org.knime.core.node.NodeLogger;
 
 public class PythonKernelTester {
 
-    private static PythonKernelTestResult m_python2TestResult = null;
-
-    private static PythonKernelTestResult m_python3TestResult = null;
+    private final static Map<String, PythonKernelTestResult> TEST_RESULTS = new ConcurrentHashMap<>();
 
     private static List<String> m_additionalModulesPython2;
 
@@ -75,19 +75,21 @@ public class PythonKernelTester {
 
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
+     * @param python2Command the python2 command to test
      *
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order for the
      *            caller to work properly - must not be null
      * @param force force the test to be issued again even if the same configuration was tested before
      * @return true if an error occured, false otherwise
      */
-    public static synchronized PythonKernelTestResult
-        testPython2Installation(final String python2Command, final List<String> additionalRequiredModules, final boolean force) {
+    public static synchronized PythonKernelTestResult testPython2Installation(final String python2Command,
+        final List<String> additionalRequiredModules, final boolean force) {
         // If python test already succeeded we do not have to run it again
-        if (!force && (m_python2TestResult != null) && !m_python2TestResult.hasError()
+        PythonKernelTestResult result = TEST_RESULTS.get(python2Command);
+        if (!force && (result != null) && !result.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython2)
             && m_additionalModulesPython2.containsAll(additionalRequiredModules)) {
-            return m_python2TestResult;
+            return result;
         }
 
         m_additionalModulesPython2 = new ArrayList<String>(additionalRequiredModules);
@@ -98,29 +100,32 @@ public class PythonKernelTester {
                 arguments += " " + module;
             }
         }
-        m_python2TestResult = testPythonInstallation(python2Command, "PythonKernelTester.py", arguments);
+        result = testPythonInstallation(python2Command, "PythonKernelTester.py", arguments);
         //If there is something wrong with the python installation log the testconfiguration
-        if (m_python2TestResult.hasError()) {
-            logDetailedInfo("Error occurred during testing Python2 installation", m_python2TestResult);
+        if (result.hasError()) {
+            logDetailedInfo("Error occurred during testing Python2 installation", result);
         }
-        return m_python2TestResult;
+        TEST_RESULTS.put(python2Command, result);
+        return result;
     }
 
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
      *
+     * @param python3Command the python3 command to test
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order for the
      *            caller to work properly - must not be null
      * @param force force the test to be issued again even if the same configuration was tested before
      * @return true if an error occured, false otherwise
      */
-    public static synchronized PythonKernelTestResult
-        testPython3Installation(final String python3Command, final List<String> additionalRequiredModules, final boolean force) {
+    public static synchronized PythonKernelTestResult testPython3Installation(final String python3Command,
+        final List<String> additionalRequiredModules, final boolean force) {
         // If python test already succeeded we do not have to run it again
-        if (!force && (m_python3TestResult != null) && !m_python3TestResult.hasError()
+        PythonKernelTestResult result = TEST_RESULTS.get(python3Command);
+        if (!force && (result != null) && !result.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython3)
             && m_additionalModulesPython3.containsAll(additionalRequiredModules)) {
-            return m_python3TestResult;
+            return result;
         }
 
         m_additionalModulesPython3 = new ArrayList<String>(additionalRequiredModules);
@@ -131,12 +136,13 @@ public class PythonKernelTester {
                 arguments += " " + module;
             }
         }
-        m_python3TestResult = testPythonInstallation(python3Command, "PythonKernelTester.py", arguments);
+        result = testPythonInstallation(python3Command, "PythonKernelTester.py", arguments);
         //If there is something wrong with the python installation log the testconfiguration
-        if (m_python3TestResult.hasError()) {
-            logDetailedInfo("Error occurred during testing Python3 installation", m_python3TestResult);
+        if (result.hasError()) {
+            logDetailedInfo("Error occurred during testing Python3 installation", result);
         }
-        return m_python3TestResult;
+        TEST_RESULTS.put(python3Command, result);
+        return result;
     }
 
     /**
