@@ -82,7 +82,7 @@ public class PythonKernelTester {
      * @return true if an error occured, false otherwise
      */
     public static synchronized PythonKernelTestResult
-        testPython2Installation(final List<String> additionalRequiredModules, final boolean force) {
+        testPython2Installation(final String python2Command, final List<String> additionalRequiredModules, final boolean force) {
         // If python test already succeeded we do not have to run it again
         if (!force && (m_python2TestResult != null) && !m_python2TestResult.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython2)
@@ -98,7 +98,7 @@ public class PythonKernelTester {
                 arguments += " " + module;
             }
         }
-        m_python2TestResult = testPythonInstallation(Activator.getPython2Command(), "PythonKernelTester.py", arguments);
+        m_python2TestResult = testPythonInstallation(python2Command, "PythonKernelTester.py", arguments);
         //If there is something wrong with the python installation log the testconfiguration
         if (m_python2TestResult.hasError()) {
             logDetailedInfo("Error occurred during testing Python2 installation", m_python2TestResult);
@@ -115,7 +115,7 @@ public class PythonKernelTester {
      * @return true if an error occured, false otherwise
      */
     public static synchronized PythonKernelTestResult
-        testPython3Installation(final List<String> additionalRequiredModules, final boolean force) {
+        testPython3Installation(final String python3Command, final List<String> additionalRequiredModules, final boolean force) {
         // If python test already succeeded we do not have to run it again
         if (!force && (m_python3TestResult != null) && !m_python3TestResult.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython3)
@@ -131,7 +131,7 @@ public class PythonKernelTester {
                 arguments += " " + module;
             }
         }
-        m_python3TestResult = testPythonInstallation(Activator.getPython3Command(), "PythonKernelTester.py", arguments);
+        m_python3TestResult = testPythonInstallation(python3Command, "PythonKernelTester.py", arguments);
         //If there is something wrong with the python installation log the testconfiguration
         if (m_python3TestResult.hasError()) {
             logDetailedInfo("Error occurred during testing Python3 installation", m_python3TestResult);

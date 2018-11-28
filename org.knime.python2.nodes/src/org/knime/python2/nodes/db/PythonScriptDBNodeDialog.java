@@ -83,7 +83,7 @@ class PythonScriptDBNodeDialog extends NodeDialogPane {
      */
     protected PythonScriptDBNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptDBNodeConfig.getVariableNames(),
-                FlowVariableOptions.parse(getAvailableFlowVariables()));
+                FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
         addTab("Script", m_sourceCodePanel, false);

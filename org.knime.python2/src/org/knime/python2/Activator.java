@@ -87,7 +87,7 @@ public class Activator implements BundleActivator {
             @Override
             public void run() {
                 PythonKernelTestResult python2Res =
-                    PythonKernelTester.testPython2Installation(Collections.emptyList(), false);
+                    PythonKernelTester.testPython2Installation(getPython2Command(), Collections.emptyList(), false);
                 if (python2Res.hasError()) {
                     LOGGER
                         .debug("Your configured python installation has issues preventing the KNIME Python integration"
@@ -95,7 +95,7 @@ public class Activator implements BundleActivator {
                 }
 
                 PythonKernelTestResult python3Res =
-                    PythonKernelTester.testPython3Installation(Collections.emptyList(), false);
+                    PythonKernelTester.testPython3Installation(getPython3Command(), Collections.emptyList(), false);
                 if (python3Res.hasError()) {
                     LOGGER
                         .debug("Your configured python installation has issues preventing the KNIME Python integration"

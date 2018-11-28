@@ -80,7 +80,7 @@ class PythonPredictorNodeDialog2 extends DataAwareNodeDialogPane {
 
     protected PythonPredictorNodeDialog2() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonPredictorNodeConfig2.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
         addTab("Script", m_sourceCodePanel, false);

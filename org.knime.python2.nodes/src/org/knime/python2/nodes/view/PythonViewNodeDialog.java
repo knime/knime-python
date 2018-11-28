@@ -79,7 +79,7 @@ class PythonViewNodeDialog extends DataAwareNodeDialogPane {
      */
     protected PythonViewNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonViewNodeConfig.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-view");
         addTab("Script", m_sourceCodePanel, false);

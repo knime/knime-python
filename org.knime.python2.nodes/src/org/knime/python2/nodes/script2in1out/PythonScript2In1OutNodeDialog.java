@@ -79,7 +79,7 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
      */
     protected PythonScript2In1OutNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonScript2In1OutNodeConfig.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script-2in1out");
         addTab("Script", m_sourceCodePanel, false);

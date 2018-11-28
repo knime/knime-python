@@ -103,7 +103,7 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
      */
     protected PythonKernelOptions getKernelOptions() {
         final PythonKernelOptions options = getConfig().getKernelOptions();
-        options.setFlowVariableOptions(FlowVariableOptions.parse(getAvailableFlowVariables()));
+        options.setFlowVariableOptions(FlowVariableOptions.create(getAvailableFlowVariables()));
         return options;
     }
 

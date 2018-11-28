@@ -78,7 +78,7 @@ class PythonVariablesNodeDialog extends NodeDialogPane {
      */
     protected PythonVariablesNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonVariablesNodeConfig.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-variables");
         addTab("Script", m_sourceCodePanel, false);

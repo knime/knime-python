@@ -449,7 +449,7 @@ public class PythonPreferencePage extends PreferencePage
             @Override
             public void run() {
                 final PythonKernelTestResult python2Error =
-                    PythonKernelTester.testPython2Installation(Collections.emptyList(), true);
+                    PythonKernelTester.testPython2Installation(Activator.getPython2Command(), Collections.emptyList(), true);
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {
@@ -476,7 +476,7 @@ public class PythonPreferencePage extends PreferencePage
             @Override
             public void run() {
                 final PythonKernelTestResult python3Error =
-                    PythonKernelTester.testPython3Installation(Collections.emptyList(), true);
+                    PythonKernelTester.testPython3Installation(Activator.getPython3Command(), Collections.emptyList(), true);
                 m_display.asyncExec(new Runnable() {
                     @Override
                     public void run() {

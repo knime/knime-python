@@ -105,7 +105,6 @@ import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -363,8 +362,10 @@ public class PythonKernel implements AutoCloseable {
 
     private void testInstallation() throws PythonIOException {
         final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
-            ? PythonKernelTester.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules(), false)
-            : PythonKernelTester.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules(), false);
+            ? PythonKernelTester.testPython3Installation(m_kernelOptions.getPython3Command(),
+                m_kernelOptions.getAdditionalRequiredModules(), false)
+            : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(),
+                m_kernelOptions.getAdditionalRequiredModules(), false);
         if (testResult.hasError()) {
             throw new PythonIOException("Could not start Python kernel. Error during Python installation test: "
                 + testResult.getErrorLog() + ". See log for details.");
@@ -373,7 +374,7 @@ public class PythonKernel implements AutoCloseable {
 
     private SerializationLibrary setupSerializationLibrary() throws PythonIOException {
         final SerializationLibraryExtensions serializationLibraryExtension = new SerializationLibraryExtensions();
-        final String serializerId = getSerializerId();
+        final String serializerId = m_kernelOptions.getSerializerId();
         final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
         if (serializerName == null) {
             final String message;
@@ -391,18 +392,6 @@ public class PythonKernel implements AutoCloseable {
         return serializationLibraryExtension.getSerializationLibrary(serializerId);
     }
 
-    /**
-     * Get the id of the configured serialization library.
-     *
-     * @return a serialization library id
-     */
-    private String getSerializerId() {
-        if (m_kernelOptions.getOverrulePreferencePage()) {
-            return m_kernelOptions.getSerializerId();
-        }
-        return PythonPreferencePage.getSerializerId();
-    }
-
     private Future<Socket> setupSocket() {
         return Executors.newSingleThreadExecutor().submit(m_serverSocket::accept);
     }
@@ -411,16 +400,16 @@ public class PythonKernel implements AutoCloseable {
         final String kernelScriptPath = m_kernelOptions.getKernelScriptPath();
         final String port = Integer.toString(m_serverSocket.getLocalPort());
         final String serializationLibraryPath =
-            SerializationLibraryExtensions.getSerializationLibraryPath(getSerializerId());
+            SerializationLibraryExtensions.getSerializationLibraryPath(m_kernelOptions.getSerializerId());
         // Start Python kernel that listens to the given port.
         // Use the -u options to force Python to not buffer stdout and stderror.
         final ProcessBuilder pb;
         if (!m_kernelOptions.getUsePython3()) {
             // Python2 start without site to set default encoding to utf-8.
-            pb = new ProcessBuilder(Activator.getPython2Command(), "-u", /*"-S",*/ kernelScriptPath, port,
+            pb = new ProcessBuilder(m_kernelOptions.getPython2Command(), "-u", /*"-S",*/ kernelScriptPath, port,
                 serializationLibraryPath);
         } else {
-            pb = new ProcessBuilder(Activator.getPython3Command(), "-u", kernelScriptPath, port,
+            pb = new ProcessBuilder(m_kernelOptions.getPython3Command(), "-u", kernelScriptPath, port,
                 serializationLibraryPath);
         }
         // Add all python modules to PYTHONPATH variable.

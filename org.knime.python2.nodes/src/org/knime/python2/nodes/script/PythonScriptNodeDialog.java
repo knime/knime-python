@@ -79,7 +79,7 @@ class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
      */
     protected PythonScriptNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonScriptNodeConfig.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
         addTab("Script", m_sourceCodePanel, false);

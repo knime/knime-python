@@ -83,7 +83,7 @@ class PythonObjectWriterNodeDialog2 extends DataAwareNodeDialogPane {
      */
     protected PythonObjectWriterNodeDialog2() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig2.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
         addTab("Script", m_sourceCodePanel, false);

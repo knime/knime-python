@@ -194,7 +194,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     }
 
-    private void startKernelManagerAsync(final PythonKernelOptions kernelOptions) {
+    private void startKernelManagerAsync(/* FIXME -unused- */final PythonKernelOptions kernelOptions) {
         // Start python in another thread, this might take a few seconds
         ThreadUtils.threadWithContext(new Runnable() {
             @Override
@@ -206,8 +206,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 // This will return immediately if the test result was
                 // positive before
                 final PythonKernelTestResult result = m_kernelOptions.getUsePython3()
-                    ? PythonKernelTester.testPython3Installation(m_kernelOptions.getAdditionalRequiredModules(), false)
-                    : PythonKernelTester.testPython2Installation(m_kernelOptions.getAdditionalRequiredModules(), false);
+                    ? PythonKernelTester.testPython3Installation(m_kernelOptions.getPython3Command(), m_kernelOptions.getAdditionalRequiredModules(), false)
+                    : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(), m_kernelOptions.getAdditionalRequiredModules(), false);
                 // Display result message (this might just be a warning
                 // about missing optional modules)
                 if (result.hasError()) {

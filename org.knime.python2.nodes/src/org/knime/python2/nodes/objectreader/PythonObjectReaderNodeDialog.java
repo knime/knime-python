@@ -79,7 +79,7 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
      */
     protected PythonObjectReaderNodeDialog() {
         m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames(),
-            FlowVariableOptions.parse(getAvailableFlowVariables()));
+            FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
         addTab("Script", m_sourceCodePanel, false);

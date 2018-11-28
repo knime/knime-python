@@ -46,6 +46,7 @@
 package org.knime.python2.kernel;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonPreferencePage;
@@ -57,90 +58,88 @@ import org.knime.python2.PythonPreferencePage;
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  *
  */
-public class FlowVariableOptions {
-
-    private boolean m_overrulePreferencePage = false;
-
-    private String m_serializerId = null;
+public final class FlowVariableOptions {
 
     /**
-     * Default constructor.
+     * flowvariable string to set serialization library id
      */
-    public FlowVariableOptions() {
+    public static final String PYTHON_SERIALIZATION_LIBRARY = "python_serialization_library";
 
+    /**
+     * flowvariable string to set python2 command
+     */
+    public static final String PYTHON2_COMMAND = "python2_command";
+
+    /**
+     * flowvariable string to set python3 command
+     */
+    public static final String PYTHON3_COMMAND = "python3_command";
+
+    private final String m_serializerId;
+
+    private final String m_python3Command;
+
+    private final String m_python2Command;
+
+    private FlowVariableOptions(final FlowVariableOptions copy) {
+        m_python2Command = copy.m_python2Command;
+        m_python3Command = copy.m_python3Command;
+        m_serializerId = copy.m_serializerId;
     }
 
     /**
-     * Copy constructor.
+     * Constructor to create FlowVariableOptions
      *
-     * @param other the object to copy the attributes from
-     */
-    public FlowVariableOptions(final FlowVariableOptions other) {
-        m_overrulePreferencePage = other.getOverrulePreferencePage();
-        m_serializerId = other.getSerializerId();
-    }
-
-    /**
-     * Indicates if the preference page options should be overruled.
+     * @param map map of flow-variables to be parsed.
      *
-     * @return yes/no
      */
-    public boolean getOverrulePreferencePage() {
-        return m_overrulePreferencePage;
-    }
-
-    /**
-     * Indicate if the preference page options should be overruled.
-     *
-     * @param overrulePreferencePage overrule yes/no
-     */
-    public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
-        this.m_overrulePreferencePage = overrulePreferencePage;
-    }
-
-    /**
-     * Gets the serialization library id.
-     *
-     * @return the serialization library id
-     */
-    public String getSerializerId() {
-        return m_serializerId;
-    }
-
-    /**
-     * Sets the serialization library id.
-     *
-     * @param serializerId the new serialization library id
-     */
-    public void setSerializerId(final String serializerId) {
-        this.m_serializerId = serializerId;
-    }
-
-    /**
-     * Parse the list of available flow variables and process those setting available flow variable options.
-     *
-     * @param map - the available flow variables as key/value pairs
-     * @return a initialized {@link FlowVariableOptions} object
-     */
-    public static FlowVariableOptions parse(final Map<String, FlowVariable> map) {
-        final FlowVariableOptions options = new FlowVariableOptions();
-        final FlowVariable fv = map.get("python_serialization_library");
+    private FlowVariableOptions(final Map<String, FlowVariable> map) {
+        final FlowVariable fv = map.get(PYTHON_SERIALIZATION_LIBRARY);
         final String serLib = (fv == null) ? null : fv.getStringValue();
         if ((serLib != null) && PythonPreferencePage.getAvailableSerializerIds().contains(serLib)) {
-            options.setOverrulePreferencePage(true);
-            options.setSerializerId(serLib);
+            m_serializerId = serLib;
         } else if (serLib != null) {
             throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
+        } else {
+            m_serializerId = null;
         }
-        return options;
+
+        // added with AP-10577. Allow user to set python2 / python3 commands via flow-variable
+        final FlowVariable fvExecPathV3 = map.get(PYTHON3_COMMAND);
+        m_python3Command = (fvExecPathV3 == null) ? null : (fvExecPathV3.getStringValue());
+
+        final FlowVariable fvExecPathV2 = map.get(PYTHON2_COMMAND);
+        m_python2Command = (fvExecPathV2 == null) ? null : (fvExecPathV2.getStringValue());
+    }
+
+    /**
+     * @return the serialization library id
+     */
+    public Optional<String> getSerializerId() {
+        return Optional.ofNullable(m_serializerId);
+    }
+
+    /**
+     * @return the executable path for python 2, if present
+     */
+    public Optional<String> getPython2Command() {
+        return Optional.ofNullable(m_python2Command);
+    }
+
+    /**
+     * @return the executable path for python 3, if present
+     */
+    public Optional<String> getPython3Command() {
+        return Optional.ofNullable(m_python3Command);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + (m_overrulePreferencePage ? 1231 : 1237);
         result = prime * result + ((m_serializerId == null) ? 0 : m_serializerId.hashCode());
+        result = prime * result + ((m_python2Command == null) ? 0 : m_python2Command.hashCode());
+        result = prime * result + ((m_python3Command == null) ? 0 : m_python3Command.hashCode());
         return result;
     }
 
@@ -156,7 +155,10 @@ public class FlowVariableOptions {
             return false;
         }
         FlowVariableOptions other = (FlowVariableOptions)obj;
-        if (m_overrulePreferencePage != other.m_overrulePreferencePage) {
+        if (m_python2Command != other.m_python2Command) {
+            return false;
+        }
+        if (m_python3Command != other.m_python3Command) {
             return false;
         }
         if (m_serializerId == null) {
@@ -167,6 +169,26 @@ public class FlowVariableOptions {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Factory method. Creates a deep copy of FlowVariableOptions
+     *
+     * @param flowVariableOptions FlowVariableOptions to copy
+     * @return copied {@link FlowVariableOptions}.
+     */
+    public static FlowVariableOptions create(final FlowVariableOptions flowVariableOptions) {
+        return new FlowVariableOptions(flowVariableOptions);
+    }
+
+    /**
+     * Factory method.
+     *
+     * @param map map of flow variables.
+     * @return new {@link FlowVariableOptions}.
+     */
+    public static FlowVariableOptions create(final Map<String, FlowVariable> map) {
+        return new FlowVariableOptions(map);
     }
 
 }

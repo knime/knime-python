@@ -48,6 +48,7 @@ package org.knime.python2.kernel;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.knime.python2.Activator;
@@ -68,7 +69,7 @@ public class PythonKernelOptions {
 
     private SerializationOptions m_serializationOptions = new SerializationOptions();
 
-    private FlowVariableOptions m_flowVariableOptions = new FlowVariableOptions();
+    private FlowVariableOptions m_flowVariableOptions = FlowVariableOptions.create(Collections.emptyMap());
 
     private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
@@ -120,7 +121,7 @@ public class PythonKernelOptions {
         this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(),
             other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize());
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
-        this.m_flowVariableOptions = new FlowVariableOptions(other.getFlowVariableOptions());
+        this.m_flowVariableOptions = FlowVariableOptions.create(other.m_flowVariableOptions);
         this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
         this.m_kernelScriptPath = other.getKernelScriptPath();
     }
@@ -137,7 +138,7 @@ public class PythonKernelOptions {
     /**
      * Add an additional required module. A check for that module is performed on kernel startup.
      *
-     * @param name  the module name
+     * @param name the module name
      */
     public void addRequiredModule(final String name) {
         m_additionalRequiredModules.add(name);
@@ -252,48 +253,24 @@ public class PythonKernelOptions {
     }
 
     /**
-     * Gets the overrule preference page.
-     *
-     * @return the overrule preference page
-     */
-    public boolean getOverrulePreferencePage() {
-        return m_flowVariableOptions.getOverrulePreferencePage();
-    }
-
-    /**
-     * Sets the overrule preference page.
-     *
-     * @param overrulePreferencePage the new overrule preference page
-     */
-    public void setOverrulePreferencePage(final boolean overrulePreferencePage) {
-        m_flowVariableOptions.setOverrulePreferencePage(overrulePreferencePage);
-    }
-
-    /**
-     * Gets the serializer id.
-     *
-     * @return the serializer id
+     * @return the configured serializer id
      */
     public String getSerializerId() {
-        return m_flowVariableOptions.getSerializerId();
+        return m_flowVariableOptions.getSerializerId().orElse(PythonPreferencePage.getSerializerId());
     }
 
     /**
-     * Sets the serializer id.
-     *
-     * @param serializerId the new serializer id
+     * @return the configured python2command
      */
-    public void setSerializerId(final String serializerId) {
-        m_flowVariableOptions.setSerializerId(serializerId);
+    public String getPython2Command() {
+        return m_flowVariableOptions.getPython2Command().orElse(Activator.getPython2Command());
     }
 
     /**
-     * Gets the flow variable options.
-     *
-     * @return the flow variable options
+     * @return the configured python3command
      */
-    public FlowVariableOptions getFlowVariableOptions() {
-        return m_flowVariableOptions;
+    public String getPython3Command() {
+        return m_flowVariableOptions.getPython3Command().orElse(Activator.getPython3Command());
     }
 
     /**
@@ -310,7 +287,7 @@ public class PythonKernelOptions {
      */
     @SuppressWarnings("javadoc")
     public static enum PythonVersionOption {
-        PYTHON2, PYTHON3;
+            PYTHON2, PYTHON3;
     }
 
     /**
