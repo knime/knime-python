@@ -1439,7 +1439,9 @@ public class PythonKernel implements AutoCloseable {
             // (e.g., databases) could be affected.
             PythonKernelCleanupException cleanupException = null;
             try {
-                m_commands.cleanUp().get(getCleanupTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                if (m_commands != null) {
+                    m_commands.cleanUp().get(getCleanupTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                }
             } catch (TimeoutException ex) {
                 cleanupException = new PythonKernelCleanupException("An attempt to clean up Python timed out. "
                     + "Please consider increasing the cleanup timeout using the VM option '-D" + CLEANUP_TIMEOUT_VM_OPT
