@@ -155,10 +155,10 @@ public final class FlowVariableOptions {
             return false;
         }
         FlowVariableOptions other = (FlowVariableOptions)obj;
-        if (m_python2Command != other.m_python2Command) {
+        if (m_python2Command.equals(other.m_python2Command)) {
             return false;
         }
-        if (m_python3Command != other.m_python3Command) {
+        if (m_python3Command.equals(other.m_python3Command)) {
             return false;
         }
         if (m_serializerId == null) {
