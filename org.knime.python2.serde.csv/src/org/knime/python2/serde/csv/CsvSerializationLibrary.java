@@ -491,11 +491,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(value.equals("True") ? true : false);
                                 break;
                             case BOOLEAN_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] booleanValues = value.split(",");
                                 final boolean[] booleanArray = new boolean[booleanValues.length];
                                 final BitArray booleanMissings = new BitArray(booleanValues.length);
@@ -509,11 +505,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(booleanArray, booleanMissings.getEncodedByteArray());
                                 break;
                             case BOOLEAN_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] booleanSetValues = value.split(",");
                                 final boolean[] booleanSetArray = new boolean[booleanSetValues.length];
                                 boolean booleanHasMissing = false;
@@ -543,11 +535,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 break;
                             case INTEGER_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] integerValues = value.split(",");
                                 final int[] integerArray = new int[integerValues.length];
                                 final BitArray integerMissings = new BitArray(integerValues.length);
@@ -561,11 +549,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(integerArray, integerMissings.getEncodedByteArray());
                                 break;
                             case INTEGER_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] integerSetValues = value.split(",");
                                 final int[] integerSetArray = new int[integerSetValues.length];
                                 boolean integerHasMissing = false;
@@ -595,11 +579,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 }
                                 break;
                             case LONG_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] longValues = value.split(",");
                                 final long[] longArray = new long[longValues.length];
                                 final BitArray longMissings = new BitArray(longValues.length);
@@ -613,11 +593,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(longArray, longMissings.getEncodedByteArray());
                                 break;
                             case LONG_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] longSetValues = value.split(",");
                                 final long[] longSetArray = new long[longSetValues.length];
                                 boolean longHasMissing = false;
@@ -651,11 +627,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(doubleValue);
                                 break;
                             case DOUBLE_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] doubleValues = value.split(",");
                                 final double[] doubleArray = new double[doubleValues.length];
                                 final BitArray doubleMissings = new BitArray(doubleValues.length);
@@ -678,11 +650,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(doubleArray, doubleMissings.getEncodedByteArray());
                                 break;
                             case DOUBLE_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] doubleSetValues = value.split(",");
                                 final double[] doubleSetArray = new double[doubleSetValues.length];
                                 boolean doubleHasMissing = false;
@@ -725,11 +693,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(floatValue);
                                 break;
                             case FLOAT_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] floatValues = value.split(",");
                                 final float[] floatArray = new float[floatValues.length];
                                 final BitArray floatMissings = new BitArray(floatValues.length);
@@ -752,11 +716,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(floatArray, floatMissings.getEncodedByteArray());
                                 break;
                             case FLOAT_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] floatSetValues = value.split(",");
                                 final float[] floatSetArray = new float[floatSetValues.length];
                                 boolean floatHasMissings = false;
@@ -789,11 +749,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(value);
                                 break;
                             case STRING_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 value = value.replaceAll("None", "'None'");
                                 final String[] stringValues = value.split("(', '|', \"|\", '|\", \")");
                                 final String[] stringArray = new String[stringValues.length];
@@ -819,11 +775,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(stringArray, stringMissings.getEncodedByteArray());
                                 break;
                             case STRING_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 value = value.replaceAll("None", "'None'");
                                 final String[] stringSetValues = value.split("(', '|', \"|\", '|\", \")");
                                 final String[] stringSetArray = new String[stringSetValues.length];
@@ -861,11 +813,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(bytesFromBase64(value));
                                 break;
                             case BYTES_LIST:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] bytesValues = value.split(",");
                                 final byte[][] bytesArray = new byte[bytesValues.length][];
                                 final BitArray bytesMissings = new BitArray(bytesValues.length);
@@ -879,11 +827,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                                 cell = new CellImpl(bytesArray, bytesMissings.getEncodedByteArray());
                                 break;
                             case BYTES_SET:
-                                if (value.startsWith("set([")) {
-                                    value = value.substring(5, value.length() - 2);
-                                } else {
-                                    value = value.substring(1, value.length() - 1);
-                                }
+                                value = stripCollectionNotation(value);
                                 final String[] bytesSetValues = value.split(",");
                                 final byte[][] bytesSetArray = new byte[bytesSetValues.length][];
                                 boolean bytesHasMissing = false;
@@ -913,6 +857,22 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                 tableCreator.addRow(row);
             }
         }
+    }
+
+    private static String stripCollectionNotation(String value) {
+        if (value.startsWith("set([")) {
+            value = value.substring(5, value.length() - 2);
+        } else if (value.startsWith("frozenset(")) {
+            final char c = value.charAt(10);
+            if (c == '{' || // Python 3
+                c == '[' // Python 2
+            ) {
+                value = value.substring(11, value.length() - 2);
+            }
+        } else {
+            value = value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 
     @Override
