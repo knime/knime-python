@@ -82,7 +82,7 @@ class PythonObjectWriterNodeDialog2 extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonObjectWriterNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig2.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectWriterNodeConfig2.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");

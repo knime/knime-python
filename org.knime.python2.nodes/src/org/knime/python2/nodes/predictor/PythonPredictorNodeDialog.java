@@ -82,7 +82,7 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonPredictorNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonPredictorNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonPredictorNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
@@ -106,7 +106,8 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonPredictorNodeConfig config = new PythonPredictorNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
@@ -120,7 +121,8 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
+        throws NotConfigurableException {
         final PortObjectSpec[] specs = new PortObjectSpec[input.length];
         for (int i = 0; i < specs.length; i++) {
             specs[i] = input[i] == null ? null : input[i].getSpec();

@@ -82,7 +82,7 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonObjectWriterNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectWriterNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectWriterNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
@@ -106,7 +106,8 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonObjectWriterNodeConfig config = new PythonObjectWriterNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
@@ -120,7 +121,8 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
+        throws NotConfigurableException {
         loadSettingsFrom(settings, new PortObjectSpec[0]);
         PickledObject pickledObject = null;
         if (input[0] != null) {

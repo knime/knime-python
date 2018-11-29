@@ -78,7 +78,7 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonScript2In1OutNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonScript2In1OutNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonScript2In1OutNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script-2in1out");
@@ -102,7 +102,8 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonScript2In1OutNodeConfig config = new PythonScript2In1OutNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
@@ -117,7 +118,7 @@ class PythonScript2In1OutNodeDialog extends DataAwareNodeDialogPane {
      */
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
-            throws NotConfigurableException {
+        throws NotConfigurableException {
         loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec(),
             input[1] == null ? null : input[1].getDataTableSpec()});
         m_sourceCodePanel.updateData(input);

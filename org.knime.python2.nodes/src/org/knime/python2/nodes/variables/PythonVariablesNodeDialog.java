@@ -77,7 +77,7 @@ class PythonVariablesNodeDialog extends NodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonVariablesNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonVariablesNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonVariablesNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-variables");
@@ -101,7 +101,8 @@ class PythonVariablesNodeDialog extends NodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonVariablesNodeConfig config = new PythonVariablesNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);

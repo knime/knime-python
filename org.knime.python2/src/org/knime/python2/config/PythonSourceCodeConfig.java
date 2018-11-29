@@ -75,9 +75,9 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_CHUNK_SIZE = "chunkSize";
 
-    private static final String CFG_PYTHON2COMMAND = "python2Command";
+    public static final String CFG_PYTHON2COMMAND = "python2Command";
 
-    private static final String CFG_PYTHON3COMMAND = "python3Command";
+    public static final String CFG_PYTHON3COMMAND = "python3Command";
 
     private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
 
@@ -118,6 +118,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
             final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
             m_kernelOptions.setPython2Command(python3Command.equals("") ? null : python3Command);
         }
+
     }
 
     @Override

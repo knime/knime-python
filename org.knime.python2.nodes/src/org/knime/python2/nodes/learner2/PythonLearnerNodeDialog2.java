@@ -72,7 +72,7 @@ class PythonLearnerNodeDialog2 extends DataAwareNodeDialogPane {
     SourceCodeTemplatesPanel m_templatesPanel;
 
     protected PythonLearnerNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonLearnerNodeConfig2.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonLearnerNodeConfig2.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");

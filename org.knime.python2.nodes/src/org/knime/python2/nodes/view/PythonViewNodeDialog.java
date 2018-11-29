@@ -78,7 +78,7 @@ class PythonViewNodeDialog extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonViewNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonViewNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonViewNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-view");
@@ -102,7 +102,8 @@ class PythonViewNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonViewNodeConfig config = new PythonViewNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
@@ -117,7 +118,7 @@ class PythonViewNodeDialog extends DataAwareNodeDialogPane {
      */
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
-            throws NotConfigurableException {
+        throws NotConfigurableException {
         loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec()});
         m_sourceCodePanel.updateData(input);
     }

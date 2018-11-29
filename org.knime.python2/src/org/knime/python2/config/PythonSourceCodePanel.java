@@ -52,10 +52,14 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
@@ -64,7 +68,11 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.FlowVariableModel;
+import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
@@ -149,10 +157,13 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     /**
      * Create a python source code panel.
      *
+     * @param parent parent NodeDialogPane
+     *
      * @param variableNames an object managing the known variable names in the python workspace (the "magic variables")
      * @param options options that may be set via flow variables
      */
-    public PythonSourceCodePanel(final VariableNames variableNames, final FlowVariableOptions options) {
+    public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames,
+        final FlowVariableOptions options) {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
         m_flowVariableOptions = options;
         m_kernelOptions = new PythonKernelOptions();
@@ -181,6 +192,45 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         m_stderrorToConsole = new ConfigurableErrorLogger();
         m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManagerWrapper>();
         m_resetInProgress = new AtomicBoolean(false);
+
+        initVariableModels(parent);
+    }
+
+    /**
+     * @param parent
+     */
+    private void initVariableModels(final NodeDialogPane parent) {
+        final FlowVariableModel python2CommandVariable =
+            parent.createFlowVariableModel(PythonSourceCodeConfig.CFG_PYTHON2COMMAND, Type.STRING);
+        python2CommandVariable.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(final ChangeEvent e) {
+                Optional<FlowVariable> fv = ((FlowVariableModel)(e.getSource())).getVariableValue();
+                final String command;
+                if (fv.isPresent()) {
+                    command = fv.get().getStringValue();
+                } else {
+                    command = "";
+                }
+                setPython2Command(command);
+            }
+        });
+
+        final FlowVariableModel python3CommandVariable =
+            parent.createFlowVariableModel(PythonSourceCodeConfig.CFG_PYTHON3COMMAND, Type.STRING);
+        python3CommandVariable.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(final ChangeEvent e) {
+                Optional<FlowVariable> fv = ((FlowVariableModel)(e.getSource())).getVariableValue();
+                final String command;
+                if (fv.isPresent()) {
+                    command = fv.get().getStringValue();
+                } else {
+                    command = "";
+                }
+                setPython3Command(command);
+            }
+        });
     }
 
     /**
@@ -191,7 +241,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         super.open();
         setStatusMessage("Starting python...");
         startKernelManagerAsync(m_kernelOptions);
-
     }
 
     private void startKernelManagerAsync(/* FIXME -unused- */final PythonKernelOptions kernelOptions) {
@@ -206,8 +255,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 // This will return immediately if the test result was
                 // positive before
                 final PythonKernelTestResult result = m_kernelOptions.getUsePython3()
-                    ? PythonKernelTester.testPython3Installation(m_kernelOptions.getPython3Command(), m_kernelOptions.getAdditionalRequiredModules(), false)
-                    : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(), m_kernelOptions.getAdditionalRequiredModules(), false);
+                    ? PythonKernelTester.testPython3Installation(m_kernelOptions.getPython3Command(),
+                        m_kernelOptions.getAdditionalRequiredModules(), false)
+                    : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(),
+                        m_kernelOptions.getAdditionalRequiredModules(), false);
                 // Display result message (this might just be a warning
                 // about missing optional modules)
                 if (result.hasError()) {
@@ -629,6 +680,32 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     public boolean unregisterWorkspacePreparer(final WorkspacePreparer workspacePreparer) {
         return m_workspacePreparers.remove(workspacePreparer);
+    }
+
+    /**
+     * Update the internal PythonKernelOptions with the new command path
+     *
+     * @param python2Command the python 2 command
+     */
+    public synchronized void setPython2Command(final String python2Command) {
+        if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
+            && !m_kernelOptions.getPython2CommandRaw().equals(python2Command)) {
+            m_kernelOptions.setPython2Command(python2Command);
+            runResetJob();
+        }
+    }
+
+    /**
+     * Update the internal PythonKernelOptions with the new command path
+     *
+     * @param python3Command python 3 command
+     */
+    public synchronized void setPython3Command(final String python3Command) {
+        if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
+            && !m_kernelOptions.getPython3CommandRaw().equals(python3Command)) {
+            m_kernelOptions.setPython3Command(python3Command);
+            runResetJob();
+        }
     }
 
     /**

@@ -289,14 +289,28 @@ public class PythonKernelOptions {
      * @return the configured python2command
      */
     public String getPython2Command() {
-        return  m_python2Command == null ? Activator.getPython2Command() : m_python2Command;
+        return  m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command() : m_python2Command;
     }
 
     /**
      * @return the configured python3command
      */
     public String getPython3Command() {
-        return m_python3Command == null ? Activator.getPython3Command() : m_python3Command;
+        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command() : m_python3Command;
+    }
+
+    /**
+     * @return the configured python2command
+     */
+    public String getPython2CommandRaw() {
+        return  m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command() : m_python2Command;
+    }
+
+    /**
+     * @return the configured python3command.
+     */
+    public String getPython3CommandRaw() {
+        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command() : m_python3Command;
     }
 
     /**

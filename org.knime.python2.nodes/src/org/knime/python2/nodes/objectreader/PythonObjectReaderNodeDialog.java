@@ -78,7 +78,7 @@ class PythonObjectReaderNodeDialog extends NodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonObjectReaderNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");

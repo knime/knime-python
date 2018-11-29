@@ -71,7 +71,7 @@ class PythonObjectReaderNodeDialog2 extends NodeDialogPane {
     SourceCodeTemplatesPanel m_templatesPanel;
 
     protected PythonObjectReaderNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(PythonObjectReaderNodeConfig2.getVariableNames(),
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig2.getVariableNames(),
             FlowVariableOptions.create(getAvailableFlowVariables()));
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
