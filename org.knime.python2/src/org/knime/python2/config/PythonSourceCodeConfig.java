@@ -75,6 +75,10 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_CHUNK_SIZE = "chunkSize";
 
+    private static final String CFG_PYTHON2COMMAND = "python2Command";
+
+    private static final String CFG_PYTHON3COMMAND = "python3Command";
+
     private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
 
     @Override
@@ -86,6 +90,8 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         settings.addString(CFG_SENTINEL_OPTION, m_kernelOptions.getSentinelOption().name());
         settings.addInt(CFG_SENTINEL_VALUE, m_kernelOptions.getSentinelValue());
         settings.addInt(CFG_CHUNK_SIZE, m_kernelOptions.getChunkSize());
+        settings.addString(CFG_PYTHON2COMMAND, "");
+        settings.addString(CFG_PYTHON3COMMAND, "");
     }
 
     @Override
@@ -102,6 +108,16 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         m_kernelOptions
         .setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
         m_kernelOptions.setChunkSize(settings.getInt(CFG_CHUNK_SIZE, PythonKernelOptions.DEFAULT_CHUNK_SIZE));
+
+        if(settings.containsKey(CFG_PYTHON2COMMAND)) {
+            final String python2Command = settings.getString(CFG_PYTHON2COMMAND);
+            m_kernelOptions.setPython2Command(python2Command.equals("") ? null : python2Command);
+        }
+
+        if(settings.containsKey(CFG_PYTHON3COMMAND)) {
+            final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
+            m_kernelOptions.setPython2Command(python3Command.equals("") ? null : python3Command);
+        }
     }
 
     @Override
@@ -118,6 +134,21 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         m_kernelOptions
         .setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
         m_kernelOptions.setChunkSize(settings.getInt(CFG_CHUNK_SIZE, PythonKernelOptions.DEFAULT_CHUNK_SIZE));
+
+        try {
+            if (settings.containsKey(CFG_PYTHON2COMMAND)) {
+                final String python2Command = settings.getString(CFG_PYTHON2COMMAND);
+                m_kernelOptions.setPython2Command(python2Command.equals("") ? null : python2Command);
+            }
+
+            if (settings.containsKey(CFG_PYTHON3COMMAND)) {
+                final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
+                m_kernelOptions.setPython3Command(python3Command.equals("") ? null : python3Command);
+            }
+        } catch (InvalidSettingsException e) {
+            // Nothing to do...
+        }
+
     }
 
     /**
@@ -129,11 +160,14 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      * @param sentinelOption the sentinel option
      * @param sentinelValue the sentinel value (only used if sentinelOption is CUSTOM)
      * @param chunkSize the number of rows to transfer per chunk
+     * @param python2Command command to start python 2
+     * @param python3Command command to start python 3
      */
     public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython,
-        final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue, final int chunkSize) {
-        m_kernelOptions =
-                new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption, sentinelValue, chunkSize);
+        final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue,
+        final int chunkSize, final String python2Command, final String python3Command) {
+        m_kernelOptions = new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption,
+            sentinelValue, chunkSize, python2Command, python3Command);
     }
 
     /**

@@ -65,25 +65,9 @@ public final class FlowVariableOptions {
      */
     public static final String PYTHON_SERIALIZATION_LIBRARY = "python_serialization_library";
 
-    /**
-     * flowvariable string to set python2 command
-     */
-    public static final String PYTHON2_COMMAND = "python2_command";
-
-    /**
-     * flowvariable string to set python3 command
-     */
-    public static final String PYTHON3_COMMAND = "python3_command";
-
     private final String m_serializerId;
 
-    private final String m_python3Command;
-
-    private final String m_python2Command;
-
     private FlowVariableOptions(final FlowVariableOptions copy) {
-        m_python2Command = copy.m_python2Command;
-        m_python3Command = copy.m_python3Command;
         m_serializerId = copy.m_serializerId;
     }
 
@@ -103,13 +87,6 @@ public final class FlowVariableOptions {
         } else {
             m_serializerId = null;
         }
-
-        // added with AP-10577. Allow user to set python2 / python3 commands via flow-variable
-        final FlowVariable fvExecPathV3 = map.get(PYTHON3_COMMAND);
-        m_python3Command = (fvExecPathV3 == null) ? null : (fvExecPathV3.getStringValue());
-
-        final FlowVariable fvExecPathV2 = map.get(PYTHON2_COMMAND);
-        m_python2Command = (fvExecPathV2 == null) ? null : (fvExecPathV2.getStringValue());
     }
 
     /**
@@ -119,27 +96,11 @@ public final class FlowVariableOptions {
         return Optional.ofNullable(m_serializerId);
     }
 
-    /**
-     * @return the executable path for python 2, if present
-     */
-    public Optional<String> getPython2Command() {
-        return Optional.ofNullable(m_python2Command);
-    }
-
-    /**
-     * @return the executable path for python 3, if present
-     */
-    public Optional<String> getPython3Command() {
-        return Optional.ofNullable(m_python3Command);
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((m_serializerId == null) ? 0 : m_serializerId.hashCode());
-        result = prime * result + ((m_python2Command == null) ? 0 : m_python2Command.hashCode());
-        result = prime * result + ((m_python3Command == null) ? 0 : m_python3Command.hashCode());
         return result;
     }
 
@@ -155,12 +116,6 @@ public final class FlowVariableOptions {
             return false;
         }
         FlowVariableOptions other = (FlowVariableOptions)obj;
-        if (m_python2Command.equals(other.m_python2Command)) {
-            return false;
-        }
-        if (m_python3Command.equals(other.m_python3Command)) {
-            return false;
-        }
         if (m_serializerId == null) {
             if (other.m_serializerId != null) {
                 return false;

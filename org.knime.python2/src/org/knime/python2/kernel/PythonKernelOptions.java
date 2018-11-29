@@ -73,6 +73,10 @@ public class PythonKernelOptions {
 
     private List<String> m_additionalRequiredModules = new ArrayList<String>();
 
+    private String m_python2Command;
+
+    private String m_python3Command;
+
     private String m_kernelScriptPath;
 
     /**
@@ -88,6 +92,9 @@ public class PythonKernelOptions {
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
         m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
+        m_python2Command = Activator.getPython2Command();
+        m_python3Command = Activator.getPython3Command();
+
     }
 
     /**
@@ -99,10 +106,12 @@ public class PythonKernelOptions {
      * @param sentinelOption the sentinel option
      * @param sentinelValue the sentinel value (only used if sentinelOption is CUSTOM)
      * @param chunkSize the number of rows to transfer per chunk
+     * @param python2Command command to start python 2. can be <code>null</code>
+     * @param python3Command command to start python 3. can be <code>null</code>
      */
     public PythonKernelOptions(final PythonVersionOption usePython3, final boolean convertMissingToPython,
         final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue,
-        final int chunkSize) {
+        final int chunkSize, final String python2Command, final String python3Command) {
         m_usePython3 = usePython3;
         m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
         m_serializationOptions.setConvertMissingToPython(convertMissingToPython);
@@ -110,6 +119,9 @@ public class PythonKernelOptions {
         m_serializationOptions.setSentinelValue(sentinelValue);
         m_chunkSize = chunkSize;
         m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
+
+        m_python2Command = python2Command;
+        m_python3Command = python3Command;
     }
 
     /**
@@ -119,11 +131,25 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions(final PythonKernelOptions other) {
         this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(),
-            other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize());
+            other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize(), other.m_python2Command, other.m_python3Command);
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
         this.m_flowVariableOptions = FlowVariableOptions.create(other.m_flowVariableOptions);
         this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
         this.m_kernelScriptPath = other.getKernelScriptPath();
+    }
+
+    /**
+     * @param python2command the python2command to set
+     */
+    public void setPython2Command(final String python2command) {
+        m_python2Command = python2command;
+    }
+
+    /**
+     * @param python3command the python3command to set
+     */
+    public void setPython3Command(final String python3command) {
+        m_python3Command = python3command;
     }
 
     /**
@@ -263,14 +289,14 @@ public class PythonKernelOptions {
      * @return the configured python2command
      */
     public String getPython2Command() {
-        return m_flowVariableOptions.getPython2Command().orElse(Activator.getPython2Command());
+        return  m_python2Command == null ? Activator.getPython2Command() : m_python2Command;
     }
 
     /**
      * @return the configured python3command
      */
     public String getPython3Command() {
-        return m_flowVariableOptions.getPython3Command().orElse(Activator.getPython3Command());
+        return m_python3Command == null ? Activator.getPython3Command() : m_python3Command;
     }
 
     /**

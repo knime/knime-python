@@ -113,6 +113,10 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
 
     private final EnforcePythonVersion m_enforcedVersion;
 
+    private String m_python2Command;
+
+    private String m_python3Command;
+
     /**
      * Enum containing options for enforcing a python version.
      */
@@ -265,6 +269,8 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         m_sentinelInput.setText(kopts.getSentinelValue() + "");
         m_sentinelValue = kopts.getSentinelValue();
         m_chunkSize.setValue(kopts.getChunkSize());
+        m_python2Command = kopts.getPython2Command();
+        m_python3Command = kopts.getPython2Command();
         getSourceCodePanel().setKernelOptions(getSelectedOpitons());
     }
 
@@ -276,7 +282,7 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         super.saveSettingsTo(config);
         config.setKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
             m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue,
-            ((Integer)m_chunkSize.getValue()).intValue());
+            ((Integer)m_chunkSize.getValue()).intValue(), m_python2Command, m_python3Command);
     }
 
     /**
@@ -346,9 +352,9 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
     }
 
     private PythonKernelOptions getSelectedOpitons() {
-        return new PythonKernelOptions(getSelectedPythonVersion(),
-            m_convertToPython.isSelected(), m_convertFromPython.isSelected(), getSelectedSentinelOption(),
-            m_sentinelValue, ((Integer)m_chunkSize.getValue()).intValue());
+        return new PythonKernelOptions(getSelectedPythonVersion(), m_convertToPython.isSelected(),
+            m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue,
+            ((Integer)m_chunkSize.getValue()).intValue(), m_python2Command, m_python3Command);
     }
 
 }
