@@ -1722,6 +1722,12 @@ public class PythonKernel implements AutoCloseable {
                     LOGGER.warn(msg);
                 } else {
                     if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
+                        // FIXME (LATER): Handling the case when arrow is installed in a wrong version. Hot-fix. needs more thought later.
+                        if (msg.equals("terminate called after throwing an instance of 'std::length_error'")) {
+                            LOGGER.error(
+                                "Error during execution. Make sure that your installed pyarrow version is at least 0.9."
+                                    + "\nError message was:");
+                        }
                         LOGGER.error(msg);
                         m_errorWasLogged.set(true);
                         m_lastStackTrace = false;

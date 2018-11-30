@@ -134,7 +134,7 @@ public abstract class AbstractTaskHandler<T> implements TaskHandler<T> {
 
         // FIXME (LATER): Handling the case when arrow is installed in a wrong version. Hot-fix. needs more thought later.
         if (errorMessage.equals("position out of bounds")) {
-            throw new PythonExecutionException("Error during execution. Make sure that your installed pyarrow version is equals 0.10.0.");
+            throw new PythonExecutionException("Error during execution. Make sure that your installed pyarrow version is at least 0.9.");
         }
         throw new PythonExecutionException(errorMessage);
     }
