@@ -116,7 +116,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
         if(settings.containsKey(CFG_PYTHON3COMMAND)) {
             final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
-            m_kernelOptions.setPython2Command(python3Command.equals("") ? null : python3Command);
+            m_kernelOptions.setPython3Command(python3Command.equals("") ? null : python3Command);
         }
 
     }
