@@ -55,7 +55,7 @@ public class ArrowSerialzationFactory implements SerializationLibraryFactory {
 
     @Override
     public String getName() {
-        return "Apache Arrow";
+        return "Apache Arrow (requires pyarrow 0.11.0)";
     }
 
     @Override
