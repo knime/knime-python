@@ -93,7 +93,8 @@ public class PythonKernelTester {
         }
 
         m_additionalModulesPython2 = new ArrayList<String>(additionalRequiredModules);
-        String arguments = "2.7.0";
+        String arguments = "2"; // Expected major version.
+        arguments += " 2.7.0"; // Inclusive minimum Python version.
         if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
             for (String module : additionalRequiredModules) {
@@ -129,7 +130,7 @@ public class PythonKernelTester {
         }
 
         m_additionalModulesPython3 = new ArrayList<String>(additionalRequiredModules);
-        String arguments = "3.0.0";
+        String arguments = "3"; // Expected major version.
         if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
             for (String module : additionalRequiredModules) {

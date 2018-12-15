@@ -43,155 +43,320 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
+"""
+@author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+@author Patrick Winter, KNIME GmbH, Konstanz, Germany
+@author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+@author Christian Dietz, KNIME GmbH, Konstanz, Germany
+"""
+
+import EnvironmentHelper
+
+EnvironmentHelper.dummy_call()
+
+from argparse import ArgumentParser
 import sys
 
-min_pandas_version = '0.20.0'
-min_python_version = '2.7.0'
-check_python_version_num = 2
-additional_required_modules = []
+from distutils.version import LooseVersion
 
-_message = ''
+_default_min_pandas_version = '0.20.0'
 
 
-# check libs, output info and exit with 1 if an error occurred
-def main():
-    parse_cmd_args()
-    python_version = sys.version_info
-    print('Python version: ' + str(python_version[0]) + '.' + str(python_version[1]) + '.' + str(python_version[2]))
-    if python_version[0] != check_python_version_num:
-        add_to_message('Python is required to have a major version of ' + str(check_python_version_num)
-                       + '. The major version can be chosen in the options tab of the Python Nodes.')
-    check_required_libs()
-    print(_message)
+class PythonKernelTester(object):
 
+    def __init__(self):
+        self._messages = []
 
-# parse cmd arguments
-def parse_cmd_args():
-    global min_python_version, check_python_version_num, additional_required_modules
-    min_python_version = sys.argv[1]
-    check_python_version_num = int(min_python_version[0])
-    mode = ''
-    for i in range(2, len(sys.argv)):
-        if sys.argv[i][0] == '-':
-            mode = sys.argv[i]
-        elif mode == '-m':
-            additional_required_modules.append(sys.argv[i])
+    def check_python(self, major_version, min_version=None, min_inclusive=True, max_version=None, max_inclusive=True):
+        """
+        Checks whether the version of this Python installation conforms to the specified major version and, optionally,
+        version range (or just the minimum version). To test for a specific version, set max_version = min_version.
+
+        :param major_version: The major version as a string consisting of a single character ('2' or '3').
+        :param min_version: The minimum version as a dot separated version string. Defaults to None in which case there
+        is no lower bound to which the version of the Python installation must conform.
+        :param min_inclusive: True if the version of the Python installation may equal min_version, False otherwise.
+        :param max_version: The maximum version as a dot separated version string. Defaults to None in which case there
+        is no upper bound to which the version of the Python installation must conform.
+        :param max_inclusive: True if the version of the Python installation may equal max_version, False otherwise.
+        :return: The list of installation error messages that were recorded during this check, possibly empty.
+        """
+        major_version = LooseVersion(major_version)
+        version = PythonKernelTester._get_python_version()
+        installed_major_version = LooseVersion(str(LooseVersion(version).version[0]))
+
+        messages = []
+        if installed_major_version != major_version:
+            message = 'Python is required to have a major version of ' + str(major_version)
+            message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
+            message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
+            message += '.\nThe installed Python version is ' + str(version) + '.'
+            messages.append(message)
         else:
-            raise ValueError('Could not process input arguments. Usage: \n python PythonKernelTester.py <version>\n'
-                             + 'Optional:\n-m\tlist of additional requierd modules (space separated)')
+            version_comparison = PythonKernelTester._compare_versions(version, min_version, min_inclusive,
+                                                                      max_version, max_inclusive)
+            if version_comparison != 0:
+                message = 'Installed Python version is ' + str(version)
+                message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
+                message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
+                message += '.'
+                messages.append(message)
+
+        self._add_to_messages(messages)
+        return messages
+
+    @staticmethod
+    def _get_python_version():
+        """
+        :return: The version String of the this Python installation.
+        """
+        version = sys.version_info
+        return str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
+
+    def check_module(self, module_name, min_version=None, min_inclusive=True, max_version=None, max_inclusive=True,
+                     class_names=None):
+        """
+        Checks whether the given module is installed and conforms to a specified version range, if applicable.
+        Optionally also checks whether the module contains a given list of classes.
+
+        :param module_name: The fully qualified name of the module.
+        :param min_version: The minimum version as a dot separated version string. Defaults to None in which case there
+        is no lower bound to which the version of the module must conform.
+        :param min_inclusive: True if the version of the module may equal min_version, False otherwise.
+        :param max_version: The maximum version as a dot separated version string. Defaults to None in which case there
+        is no lower bound to which the version of the module must conform.
+        :param max_inclusive: True if the version of the module may equal max_version, False otherwise.
+        :param class_names: A list of names of classes to check for availability in the given module.
+        :return: The list of installation error messages that were recorded during this check, possibly empty.
+        """
+        mod_availability = PythonKernelTester._get_module_availability(module_name, min_version,
+                                                                       min_inclusive, max_version,
+                                                                       max_inclusive)
+        mod_available = mod_availability[0]
+        mod_version_conforms = mod_availability[1]
+        mod_version = mod_availability[2]
+
+        messages = []
+        if not mod_available:
+            # Module is not installed at all.
+            message = 'Library ' + module_name + ' is missing'
+            message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
+            message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
+            message += '.'
+            messages.append(message)
+        elif not mod_version_conforms:
+            # Module is installed but in a wrong version.
+            if mod_version is not None:
+                message = 'Library ' + module_name + ' is installed in version ' + str(mod_version)
+            else:
+                message = 'Library ' + module_name + ' is installed in an unknown version'
+            message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
+            message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
+            message += '.'
+            messages.append(message)
+        elif class_names is not None:
+            # Module itself is installed properly. Check classes.
+            for class_name in class_names:
+                if not PythonKernelTester._is_class_available(module_name, class_name):
+                    messages.append(
+                        'Required class ' + class_name + ' in library ' + module_name + ' is missing.')
+
+        self._add_to_messages(messages)
+        return messages
+
+    @staticmethod
+    def _get_module_availability(module_name, min_version=None, min_inclusive=True, max_version=None,
+                                 max_inclusive=True):
+        """
+        Retrieves whether the given module is installed and conforms to the given version range. By default, only the
+        availability of the given module is tested without taking its version into account. If min_version is specified,
+        it is tested whether the version of the given module is equal to or greater than the given min. value. If
+        max_version is specified, it is tested whether the version of the given module is equal to or less than the
+        given max. value. (With respect to the inclusive option, respectively.)
+
+        :return: A 3-tuple. The first field of the tuple is a Boolean that is True if the given module is installed and
+        False otherwise. The second field is a Boolean that is True if the version of the given module either conforms
+        to the given version range or if there is no version range specified. It is False otherwise. In particular, it
+        is also False if the module is not installed, or if the version of the module cannot be determined while there
+        is a version range specified. The third field of the tuple is the version string of the given module. It is None
+        if the module is not installed or if the version of the module cannot be determined.
+        """
+        # Verbatim string, please leave formatted as it is.
+        test_script = """
+test_mod_available = False
+test_mod_version = None
+try:
+    import {0}
+    test_mod_available = True
+    if hasattr({0}, '__version__'):
+        test_mod_version = {0}.__version__
+except:
+    # We report unavailability by default.
+    pass
+        """.format(module_name)
+        test_env = {}
+        exec(test_script, {}, test_env)
+
+        test_mod_available = test_env['test_mod_available']
+        test_mod_version_conforms = False
+        test_mod_version = test_env['test_mod_version']
+
+        if test_mod_available:
+            if (test_mod_version is not None and PythonKernelTester._compare_versions(test_mod_version, min_version,
+                                                                                      min_inclusive, max_version,
+                                                                                      max_inclusive) == 0) or (
+                    min_version is None and max_version is None):
+                test_mod_version_conforms = True
+
+        return test_mod_available, test_mod_version_conforms, test_mod_version
+
+    @staticmethod
+    def _is_class_available(module_name, class_name):
+        """
+        Retrieves whether the class of the given name is available in the module of the given name.
+        :return: True if the class is available, False otherwise.
+        """
+        # Verbatim string, please leave formatted as it is.
+        test_script = """
+test_class_available = False
+try:
+    from {0} import {1}
+    test_class_available = True
+except:
+    # We report unavailability by default.
+    pass
+        """.format(module_name, class_name)
+        test_env = {}
+        exec(test_script, {}, test_env)
+
+        return test_env['test_class_available']
+
+    @staticmethod
+    def _compare_versions(version, min_version=None, min_inclusive=True, max_version=None, max_inclusive=True):
+        """
+        :return: Returns a value smaller than zero if min_version is not None and version is less than min_version with
+        respect to min_inclusive. Returns a value greater than zero if max_version is not None and version is greater
+        than max_version with respect to max_inclusive. Returns zero otherwise.
+        """
+        version = LooseVersion(version)
+        if min_version is not None:
+            min_version = LooseVersion(min_version)
+            if version < min_version:
+                return -1
+            if (not min_inclusive) and version == min_version:
+                return -1
+        if max_version is not None:
+            max_version = LooseVersion(max_version)
+            if version > max_version:
+                return 1
+            if (not max_inclusive) and version == max_version:
+                return 1
+        return 0
+
+    @staticmethod
+    def _get_version_constraint_message(version_bound, bound_inclusive, bound_name):
+        if version_bound is not None:
+            inclusion = 'inclusive' if bound_inclusive else 'exclusive'
+            return ', required ' + bound_name + ' version is ' + str(version_bound) + ' (' + inclusion + ')'
+        else:
+            return ""
+
+    def _add_to_messages(self, message):
+        """
+        Adds a single message or a list of messages to the list of messages that make up the result of the installation
+        test.
+        """
+        if isinstance(message, list):
+            self._messages.extend(message)
+        else:
+            self._messages.append(message)
+
+    def get_report_lines(self):
+        """
+        Returns the error messages that were recorded by this installation tester.
+
+        :return: The error report as a list of strings.
+        """
+        return list(self._messages)
 
 
-# check for all libs that are required by the python kernel
-def check_required_libs():
-    python3 = sys.version_info >= (3, 0)
-    check_version_python()
-    # these libs should be standard
-    if python3:
-        check_lib('io')
-    else:
-        check_lib('StringIO')
-    check_lib('datetime', ['datetime'])
-    check_lib('math')
-    check_lib('socket')
-    check_lib('struct')
-    check_lib('base64')
-    check_lib('traceback')
-    check_lib('os')
-    check_lib('pickle')
-    check_lib('imp')
-    check_lib('types')
-    # these libs are non standard requirements
-    check_lib('numpy')
-    if check_lib('pandas', ['DataFrame'], min_pandas_version):
-        check_version_pandas()
+# Default installation test:
 
-    for m in additional_required_modules:
-        check_lib(m)
+class _DefaultPythonKernelTester(PythonKernelTester):
 
+    def __init__(self):
+        super(_DefaultPythonKernelTester, self).__init__()
 
-# check as specific library
-# @param lib        the library's name
-# @param cls        a list of classes to check for availability 
-# @param version    the minimum library version (NOTE: version is not checked at the moment)
-def check_lib(lib, cls=None, version=None):
-    if cls is None:
-        cls = []
-    error = False
-    if not lib_available(lib):
-        error = True
-        message = 'Library ' + lib + ' is missing'
-        if version is not None:
-            message += ', required minimum version is ' + version
-        add_to_message(message)
-    else:
-        for cl in cls:
-            if not class_available(lib, cl):
-                error = True
-                add_to_message('Class ' + cl + ' in library ' + lib + ' is missing')
-    return not error
+    def check_python(self, major_version, min_version=None, min_inclusive=True, max_version=None,
+                     max_inclusive=True):
+        print('Python version: ' + PythonKernelTester._get_python_version())  # Expected by Java side.
+        return super(_DefaultPythonKernelTester, self).check_python(major_version, min_version, min_inclusive,
+                                                                    max_version,
+                                                                    max_inclusive)
+
+    def check_required_modules(self, additional_required_modules=None):
+        # Python standard modules.
+        # TODO: Does it really make sense to test those?!
+        if EnvironmentHelper.is_python3():
+            self.check_module('io')
+        else:
+            self.check_module('StringIO')
+        self.check_module('datetime', class_names=['datetime'])
+        self.check_module('math')
+        self.check_module('socket')
+        self.check_module('struct')
+        self.check_module('base64')
+        self.check_module('traceback')
+        self.check_module('os')
+        self.check_module('pickle')
+        self.check_module('imp')
+        self.check_module('types')
+        # Non-standard modules.
+        self.check_module('numpy')
+        global _default_min_pandas_version
+        min_pandas_version = _default_min_pandas_version
+        self.check_module('pandas', min_version=min_pandas_version, class_names=['DataFrame'])
+        # Additional modules.
+        if additional_required_modules is not None:
+            for module in additional_required_modules:
+                self.check_module(module)
 
 
-# check if a class is available from a specific library
-# @param lib     the library's name
-# @param cls     the class's name
-def class_available(lib, cls):
-    local_env = {}
-    exec('try:\n\tfrom ' + lib + ' import ' + cls + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
-    return local_env['success']
+def _perform_default_installation_test():
+    major_python_version, min_python_version, max_python_version, additional_required_modules = _parse_program_args()
+
+    tester = _DefaultPythonKernelTester()
+    tester.check_python(major_python_version, min_version=min_python_version, min_inclusive=True,
+                        max_version=max_python_version,
+                        max_inclusive=False)
+    tester.check_required_modules(additional_required_modules)
+
+    report = tester.get_report_lines()
+    report = "\n".join(report)
+    print(report)  # Expected by Java side.
+    sys.stdout.flush()
 
 
-# returns true if the given library can successfully be imported, false otherwise
-def lib_available(lib):
-    local_env = {}
-    exec('try:\n\timport ' + lib + '\n\tsuccess = True\nexcept:\n\tsuccess = False', {}, local_env)
-    return local_env['success']
+def _parse_program_args():
+    """
+    Parses the program's command line arguments. They are expected to be of the form major_python_version
+    [min_python_version][max_python_version][-m module1 ...]. min_python_version and max_python_version must be dot
+    separated version strings (major.minor.micro).
+
+    :return: A 4-tuple where the first item is the expected major Python version. The second item is the inclusive
+    minimum Python version to which he version of the local Python installation must conform. The third item is the
+    exclusive maximum Python version. The fourth item is the list of additional modules that must be present in the
+    local Python installation. All arguments but the first one are optional.
+    """
+    parser = ArgumentParser()
+    parser.add_argument('major_python_version')
+    parser.add_argument('min_python_version', default=None, nargs='?')
+    parser.add_argument('max_python_version', default=None, nargs='?')
+    parser.add_argument('-m', nargs='*')
+
+    parsed = parser.parse_args()
+    return parsed.major_python_version, parsed.min_python_version, parsed.max_python_version, parsed.m
 
 
-# check that the installed python version is >= min_python_version
-def check_version_python():
-    min_version = min_python_version.split('.')
-    version = sys.version_info
-    smaller = False
-    for i in range(len(min_version)):
-        if int(version[i]) > int(min_version[i]):
-            break
-        if int(version[i]) < int(min_version[i]):
-            smaller = True
-            break
-    if smaller:
-        add_to_message('Installed python version is ' + str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
-                       + ', required minimum is ' + '.'.join(min_version))
-    if int(version[0]) > int(min_version[0]):
-        add_to_message('Installed python version is ' + str(version[0]) + '.' + str(version[1]) + '.' + str(version[2])
-                       + ', required major version is ' + str(min_version[0]))
-
-
-# check that the installed pandas version is >= min_pandas_version
-def check_version_pandas():
-    min_version = min_pandas_version.split('.')
-    try:
-        import pandas
-        version = pandas.__version__.split('.')
-        if len(version) is not len(min_version):
-            raise Exception()
-        smaller = False
-        for i in range(len(min_version)):
-            if int(version[i]) > int(min_version[i]):
-                break
-            if int(version[i]) < int(min_version[i]):
-                smaller = True
-                break
-        if smaller:
-            add_to_message('Installed pandas version is ' + '.'.join(version) + ', required minimum is '
-                           + '.'.join(min_version))
-    except Exception:
-        add_to_message('Could not detect pandas version, required minimum is ' + '.'.join(min_version))
-
-
-# add a line to the output message
-def add_to_message(line):
-    global _message
-    _message += line + '\n'
-
-
-main()
+if __name__ == "__main__":
+    _perform_default_installation_test()
