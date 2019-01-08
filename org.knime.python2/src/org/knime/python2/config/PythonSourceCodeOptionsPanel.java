@@ -270,7 +270,7 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         m_sentinelValue = kopts.getSentinelValue();
         m_chunkSize.setValue(kopts.getChunkSize());
         m_python2Command = kopts.getPython2Command();
-        m_python3Command = kopts.getPython2Command();
+        m_python3Command = kopts.getPython3Command();
         getSourceCodePanel().setKernelOptions(getSelectedOpitons());
     }
 
