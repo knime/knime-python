@@ -131,7 +131,8 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions(final PythonKernelOptions other) {
         this(other.getPythonVersionOption(), other.getConvertMissingToPython(), other.getConvertMissingFromPython(),
-            other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize(), other.m_python2Command, other.m_python3Command);
+            other.getSentinelOption(), other.getSentinelValue(), other.getChunkSize(), other.m_python2Command,
+            other.m_python3Command);
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
         this.m_flowVariableOptions = FlowVariableOptions.create(other.m_flowVariableOptions);
         this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
@@ -289,28 +290,32 @@ public class PythonKernelOptions {
      * @return the configured python2command
      */
     public String getPython2Command() {
-        return  m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command() : m_python2Command;
+        return m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command()
+            : m_python2Command;
     }
 
     /**
      * @return the configured python3command
      */
     public String getPython3Command() {
-        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command() : m_python3Command;
+        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command()
+            : m_python3Command;
     }
 
     /**
      * @return the configured python2command
      */
     public String getPython2CommandRaw() {
-        return  m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command() : m_python2Command;
+        return m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command()
+            : m_python2Command;
     }
 
     /**
      * @return the configured python3command.
      */
     public String getPython3CommandRaw() {
-        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command() : m_python3Command;
+        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command()
+            : m_python3Command;
     }
 
     /**
@@ -448,5 +453,4 @@ public class PythonKernelOptions {
         }
         return true;
     }
-
 }

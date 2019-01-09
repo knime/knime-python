@@ -65,7 +65,7 @@ import org.knime.core.node.NodeLogger;
 
 public class PythonKernelTester {
 
-    private final static Map<String, PythonKernelTestResult> TEST_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<String, PythonKernelTestResult> TEST_RESULTS = new ConcurrentHashMap<>();
 
     private static List<String> m_additionalModulesPython2;
 
@@ -75,6 +75,7 @@ public class PythonKernelTester {
 
     /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
+     *
      * @param python2Command the python2 command to test
      *
      * @param additionalRequiredModules additionalModules that should exist in the python installation in order for the
@@ -84,25 +85,25 @@ public class PythonKernelTester {
      */
     public static synchronized PythonKernelTestResult testPython2Installation(final String python2Command,
         final List<String> additionalRequiredModules, final boolean force) {
-        // If python test already succeeded we do not have to run it again
+        // If python test already succeeded we do not have to run it again.
         PythonKernelTestResult result = TEST_RESULTS.get(python2Command);
-        if (!force && (result != null) && !result.hasError()
+        if (!force && result != null && !result.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython2)
             && m_additionalModulesPython2.containsAll(additionalRequiredModules)) {
             return result;
         }
 
-        m_additionalModulesPython2 = new ArrayList<String>(additionalRequiredModules);
+        m_additionalModulesPython2 = new ArrayList<>(additionalRequiredModules);
         String arguments = "2"; // Expected major version.
         arguments += " 2.7.0"; // Inclusive minimum Python version.
         if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
-            for (String module : additionalRequiredModules) {
+            for (final String module : additionalRequiredModules) {
                 arguments += " " + module;
             }
         }
         result = testPythonInstallation(python2Command, "PythonKernelTester.py", arguments);
-        //If there is something wrong with the python installation log the testconfiguration
+        // If there is something wrong with the python installation log the test configuration.
         if (result.hasError()) {
             logDetailedInfo("Error occurred during testing Python2 installation", result);
         }
@@ -121,24 +122,24 @@ public class PythonKernelTester {
      */
     public static synchronized PythonKernelTestResult testPython3Installation(final String python3Command,
         final List<String> additionalRequiredModules, final boolean force) {
-        // If python test already succeeded we do not have to run it again
+        // If python test already succeeded we do not have to run it again.
         PythonKernelTestResult result = TEST_RESULTS.get(python3Command);
-        if (!force && (result != null) && !result.hasError()
+        if (!force && result != null && !result.hasError()
             && additionalRequiredModules.containsAll(m_additionalModulesPython3)
             && m_additionalModulesPython3.containsAll(additionalRequiredModules)) {
             return result;
         }
 
-        m_additionalModulesPython3 = new ArrayList<String>(additionalRequiredModules);
+        m_additionalModulesPython3 = new ArrayList<>(additionalRequiredModules);
         String arguments = "3"; // Expected major version.
         if (!additionalRequiredModules.isEmpty()) {
             arguments += " -m";
-            for (String module : additionalRequiredModules) {
+            for (final String module : additionalRequiredModules) {
                 arguments += " " + module;
             }
         }
         result = testPythonInstallation(python3Command, "PythonKernelTester.py", arguments);
-        //If there is something wrong with the python installation log the testconfiguration
+        // If there is something wrong with the python installation log the test configuration.
         if (result.hasError()) {
             logDetailedInfo("Error occurred during testing Python3 installation", result);
         }
@@ -155,10 +156,10 @@ public class PythonKernelTester {
         final String testScript, final String arguments) {
         final StringBuffer testResultOutputBuffer = new StringBuffer();
         try {
-            // Start python kernel tester script
+            // Start python kernel tester script.
             final String scriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/" + testScript).getAbsolutePath();
-            String[] args = arguments.split(" ");
-            String[] pbargs = new String[args.length + 2];
+            final String[] args = arguments.split(" ");
+            final String[] pbargs = new String[args.length + 2];
             pbargs[0] = pythonCommand;
             pbargs[1] = scriptPath;
             for (int i = 0; i < args.length; i++) {
@@ -171,39 +172,39 @@ public class PythonKernelTester {
             final Process process = pb.start();
             testResultOutputBuffer.append("\nPYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":") + "\n");
             testResultOutputBuffer.append("PATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
-            //Get error output
+            // Get error output.
             final StringWriter errorWriter = new StringWriter();
             IOUtils.copy(process.getErrorStream(), errorWriter, "UTF-8");
 
             String errorMessage = errorWriter.toString();
-            boolean hasError = !errorMessage.isEmpty();
+            final boolean hasError = !errorMessage.isEmpty();
             if (hasError) {
                 testResultOutputBuffer.append("Error during execution: " + errorMessage + "\n");
             }
 
             errorMessage = decorateErrorMessageForKnownProblems(errorMessage);
 
-            // Get console output of script
+            // Get console output of script.
             final StringWriter writer = new StringWriter();
             IOUtils.copy(process.getInputStream(), writer, "UTF-8");
-            String testOutput = writer.toString();
+            final String testOutput = writer.toString();
             testResultOutputBuffer.append("Raw test output: \n" + testOutput + "\n");
 
             if (hasError) {
                 return new PythonKernelTestResult(testResultOutputBuffer.toString(), errorMessage, null);
             } else {
-                String scriptOutput = writer.toString();
-                //Interpret script output -> potentially containes issues found during testing
+                final String scriptOutput = writer.toString();
+                // Interpret script output -> potentially contains issues found during testing.
                 final String[] lines = scriptOutput.split("\\r?\\n");
                 String version = null;
                 errorMessage = "";
                 for (final String line : lines) {
                     if (version == null) {
-                        // Ignore everything before version, could be anaconda for example
+                        // Ignore everything before version, could be anaconda for example.
                         final String trimmed = line.trim();
                         version = trimmed.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? trimmed : null;
                     } else {
-                        //Everything that comes after the version line indicates an issue
+                        // Everything that comes after the version line indicates an issue.
                         errorMessage += line + "\n";
                     }
                 }
@@ -215,7 +216,7 @@ public class PythonKernelTester {
                     testResultOutputBuffer.append("Error during testing Python version: " + errorMessage + ".");
                 }
 
-                // version might be null in case of error.
+                // Version might be null in case of error.
                 return new PythonKernelTestResult(testResultOutputBuffer.toString(),
                     errorMessage.isEmpty() ? null : errorMessage, version);
             }
@@ -232,14 +233,14 @@ public class PythonKernelTester {
         String decoratedErrorMessage = errorMessage;
 
         // Check if conda's "activate" could not be found:
-        String condaActivateCommand = "activate";
+        final String condaActivateCommand = "activate";
         // Typical error messages:
         // Windows: 'activate' is not recognized as an internal or external command, operable program or batch file.
         // Max: activate: no such file or directory
         // Linux: activate: No such file or directory
         // We just check if we can find the command name, a false positive does not really hurt.
         if (decoratedErrorMessage.contains(condaActivateCommand)) {
-            String condaActivateDecoration =
+            final String condaActivateDecoration =
                 "\nPlease make sure to add the path of the directory that contains conda's '" + condaActivateCommand
                     + "' command to PATH\nas described in the Python 2 and Python 3 setup "
                     + "guide that can be found on the KNIME website.\n"
@@ -267,11 +268,11 @@ public class PythonKernelTester {
      */
     public static class PythonKernelTestResult {
 
-        private String m_testResult;
+        private final String m_testResult;
 
-        private String m_version;
+        private final String m_version;
 
-        private String m_errorLog;
+        private final String m_errorLog;
 
         /**
          * Creates a test result.
