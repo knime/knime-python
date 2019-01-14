@@ -295,6 +295,11 @@ class _DefaultPythonKernelTester(PythonKernelTester):
                                                                     max_inclusive)
 
     def check_required_modules(self, additional_required_modules=None):
+        """
+        :param additional_required_modules: A list of 5-tuples (module_name, min_version, min_inclusive, max_version,
+        max_inclusive) that specifies additional required modules to test. The list may be None. All tuple entries but
+        module_name may be None.
+        """
         # Python standard modules.
         # TODO: Does it really make sense to test those?!
         if EnvironmentHelper.is_python3():
@@ -319,7 +324,8 @@ class _DefaultPythonKernelTester(PythonKernelTester):
         # Additional modules.
         if additional_required_modules is not None:
             for module in additional_required_modules:
-                self.check_module(module)
+                module_name, min_version, min_inclusive, max_version, max_inclusive = module
+                self.check_module(module_name, min_version, min_inclusive, max_version, max_inclusive)
 
 
 def _perform_default_installation_test():
@@ -340,21 +346,70 @@ def _perform_default_installation_test():
 def _parse_program_args():
     """
     Parses the program's command line arguments. They are expected to be of the form major_python_version
-    [min_python_version][max_python_version][-m module1 ...]. min_python_version and max_python_version must be dot
-    separated version strings (major.minor.micro).
+    [min_python_version][max_python_version][-m module1[=min_module_version1:min_inclusive1[:max_module_version1:
+    max_inclusive1]] ...]. min_python_version and max_python_version must be dot separated version strings
+    (major.minor.micro). Same applies to module versions. Min and max inclusion is specified via strings "inclusive" and
+    "exclusive".
 
     :return: A 4-tuple where the first item is the expected major Python version. The second item is the inclusive
     minimum Python version to which he version of the local Python installation must conform. The third item is the
     exclusive maximum Python version. The fourth item is the list of additional modules that must be present in the
-    local Python installation. All arguments but the first one are optional.
+    local Python installation. Each module is represented by a 5-tuple (module_name, min_version, min_inclusive,
+    max_version, max_inclusive) where all entries but the first one may be None. All arguments but the first one are
+    optional.
     """
+
+    def _parse_additional_required_module(arg):
+        """
+        Argument is expected to be either a simple module name or a "module info" of the form
+        module_name=min_version:min_inclusive[:max_version:max_inclusive].
+        """
+        args = arg.split('=')
+        if not (len(args) == 1 or len(args) == 2):
+            raise ValueError('Specification of required additional module is of wrong format: "' + arg + '".')
+
+        module_name = args[0]
+        min_version = None
+        min_inclusive = None
+        max_version = None
+        max_inclusive = None
+
+        if len(args) == 2:
+            # Version info available.
+
+            def _parse_inclusion(inclusion_arg):
+                inclusive = 'inclusive'
+                exclusive = 'exclusive'
+                if inclusion_arg == inclusive:
+                    return True
+                elif inclusion_arg == exclusive:
+                    return False
+                else:
+                    raise ValueError('Inclusion argument must be either "' + inclusive + '" or "' + exclusive + '".')
+
+            version_info = args[1].split(':')
+            if not (len(version_info) == 2 or len(version_info) == 4):
+                raise ValueError(
+                    'Version specification of required additional module is of wrong format: "' + arg + '".')
+
+            min_version = version_info[0]
+            min_inclusive = _parse_inclusion(version_info[1])
+
+            if len(version_info) == 4:
+                # Maximum version is specified.
+                max_version = version_info[2]
+                max_inclusive = _parse_inclusion(version_info[3])
+
+        return module_name, min_version, min_inclusive, max_version, max_inclusive
+
     parser = ArgumentParser()
     parser.add_argument('major_python_version')
     parser.add_argument('min_python_version', default=None, nargs='?')
     parser.add_argument('max_python_version', default=None, nargs='?')
-    parser.add_argument('-m', nargs='*')
+    parser.add_argument('-m', nargs='*', default=[], type=_parse_additional_required_module)
 
     parsed = parser.parse_args()
+
     return parsed.major_python_version, parsed.min_python_version, parsed.max_python_version, parsed.m
 
 
