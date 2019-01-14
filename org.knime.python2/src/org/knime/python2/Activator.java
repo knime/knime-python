@@ -49,7 +49,6 @@ package org.knime.python2;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Collections;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
@@ -77,41 +76,31 @@ public class Activator implements BundleActivator {
      */
     public static final String PLUGIN_ID = "org.knime.python2";
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void start(final BundleContext bundleContext) throws Exception {
         // When this plugin is loaded test the python installation
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                PythonKernelTestResult python2Res =
-                    PythonKernelTester.testPython2Installation(getPython2Command(), Collections.emptyList(), false);
-                if (python2Res.hasError()) {
-                    LOGGER
-                        .debug("Your configured python installation has issues preventing the KNIME Python integration"
-                            + "\nIssue python version 2: " + python2Res.getErrorLog());
-                }
+        new Thread(() -> {
+            PythonKernelTestResult python2Res = PythonKernelTester.testPython2Installation(getPython2Command(),
+                PythonPreferencePage.getRequiredSerializerModules(), false);
+            if (python2Res.hasError()) {
+                LOGGER.debug("Your configured python installation has issues preventing the KNIME Python integration"
+                    + "\nIssue python version 2: " + python2Res.getErrorLog());
+            }
 
-                PythonKernelTestResult python3Res =
-                    PythonKernelTester.testPython3Installation(getPython3Command(), Collections.emptyList(), false);
-                if (python3Res.hasError()) {
-                    LOGGER
-                        .debug("Your configured python installation has issues preventing the KNIME Python integration"
-                            + "\nIssue python version 3: " + python3Res.getErrorLog());
-                }
+            PythonKernelTestResult python3Res = PythonKernelTester.testPython3Installation(getPython3Command(),
+                PythonPreferencePage.getRequiredSerializerModules(), false);
+            if (python3Res.hasError()) {
+                LOGGER.debug("Your configured python installation has issues preventing the KNIME Python integration"
+                    + "\nIssue python version 3: " + python3Res.getErrorLog());
             }
         }).start();
         SerializationLibraryExtensions.init();
         SourceCodeTemplatesExtensions.init();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void stop(final BundleContext bundleContext) throws Exception {
+        // no op
     }
 
     /**

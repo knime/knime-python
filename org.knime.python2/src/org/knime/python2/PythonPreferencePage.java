@@ -51,7 +51,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,6 +68,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -327,6 +327,21 @@ public class PythonPreferencePage extends PreferencePage
         initListOfSerializers(false);
         m_serializer.setItems(m_serializerNames);
         setSelectedSerializer(getSerializerId());
+        // Hook into the change of the serializer selection to be able to test the installation for required external
+        // modules.
+        m_serializer.addSelectionListener(new SelectionListener() {
+
+            @Override
+            public void widgetSelected(final SelectionEvent e) {
+                applyOptions();
+                testPythonInstallation();
+            }
+
+            @Override
+            public void widgetDefaultSelected(final SelectionEvent e) {
+                widgetSelected(e);
+            }
+        });
         testPythonInstallation();
         return m_sc;
     }
@@ -445,24 +460,18 @@ public class PythonPreferencePage extends PreferencePage
     private void testPython2Installation() {
         m_python2.setInfo("Testing Python 2 installation...");
         m_python2.setError(null);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final PythonKernelTestResult python2Error =
-                    PythonKernelTester.testPython2Installation(Activator.getPython2Command(), Collections.emptyList(), true);
-                m_display.asyncExec(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!getControl().isDisposed()) {
-                            setResult(python2Error.getVersion(), python2Error.getErrorLog(), m_python2);
-                            if (python2Error.hasError()) {
-                                notifyChange(m_python3);
-                            }
-                            refreshSizes();
-                        }
+        new Thread(() -> {
+            final PythonKernelTestResult python2Error = PythonKernelTester
+                .testPython2Installation(Activator.getPython2Command(), getRequiredSerializerModules(), true);
+            m_display.asyncExec(() -> {
+                if (!getControl().isDisposed()) {
+                    setResult(python2Error.getVersion(), python2Error.getErrorLog(), m_python2);
+                    if (python2Error.hasError()) {
+                        notifyChange(m_python3);
                     }
-                });
-            }
+                    refreshSizes();
+                }
+            });
         }).start();
     }
 
@@ -472,25 +481,24 @@ public class PythonPreferencePage extends PreferencePage
     private void testPython3Installation() {
         m_python3.setInfo("Testing Python 3 installation...");
         m_python3.setError(null);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final PythonKernelTestResult python3Error =
-                    PythonKernelTester.testPython3Installation(Activator.getPython3Command(), Collections.emptyList(), true);
-                m_display.asyncExec(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!getControl().isDisposed()) {
-                            setResult(python3Error.getVersion(), python3Error.getErrorLog(), m_python3);
-                            if (python3Error.hasError()) {
-                                notifyChange(m_python2);
-                            }
-                            refreshSizes();
-                        }
+        new Thread(() -> {
+            final PythonKernelTestResult python3Error = PythonKernelTester
+                .testPython3Installation(Activator.getPython3Command(), getRequiredSerializerModules(), true);
+            m_display.asyncExec(() -> {
+                if (!getControl().isDisposed()) {
+                    setResult(python3Error.getVersion(), python3Error.getErrorLog(), m_python3);
+                    if (python3Error.hasError()) {
+                        notifyChange(m_python2);
                     }
-                });
-            }
+                    refreshSizes();
+                }
+            });
         }).start();
+    }
+
+    static Collection<PythonModuleSpec> getRequiredSerializerModules() {
+        return SerializationLibraryExtensions.getSerializationLibraryFactory(getSerializerId())
+            .getRequiredExternalModules();
     }
 
     /**
@@ -566,5 +574,4 @@ public class PythonPreferencePage extends PreferencePage
                 throw new IllegalArgumentException("No case defined for PythonVersionId: " + pythonVersionId);
         }
     }
-
 }
