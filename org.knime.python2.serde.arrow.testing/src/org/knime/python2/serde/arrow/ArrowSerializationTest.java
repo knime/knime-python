@@ -57,6 +57,6 @@ public final class ArrowSerializationTest extends SerializationTest {
 
 	@Override
 	protected Class<? extends SerializationLibraryFactory> getSerializationLibraryFactoryClass() {
-		return ArrowSerialzationFactory.class;
+		return ArrowSerializationFactory.class;
 	}
 }

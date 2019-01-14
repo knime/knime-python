@@ -367,13 +367,12 @@ public class PythonKernel implements AutoCloseable {
             : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(),
                 m_kernelOptions.getAdditionalRequiredModules(), false);
         if (testResult.hasError()) {
-            throw new PythonIOException("Could not start Python kernel. Error during Python installation test: "
-                + testResult.getErrorLog() + ". See log for details.");
+            throw new PythonIOException(
+                "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog());
         }
     }
 
     private SerializationLibrary setupSerializationLibrary() throws PythonIOException {
-        final SerializationLibraryExtensions serializationLibraryExtension = new SerializationLibraryExtensions();
         final String serializerId = m_kernelOptions.getSerializerId();
         final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
         if (serializerName == null) {
@@ -389,7 +388,7 @@ public class PythonKernel implements AutoCloseable {
             throw new PythonIOException(message);
         }
         LOGGER.debug("Using serialization library: " + serializerName + ".");
-        return serializationLibraryExtension.getSerializationLibrary(serializerId);
+        return SerializationLibraryExtensions.getSerializationLibrary(serializerId);
     }
 
     private Future<Socket> setupSocket() {

@@ -5,7 +5,7 @@
          point="org.knime.python2.serializationlibrary">
       <serializationlibrary
             id="org.knime.python2.serde.arrow"
-            java-serializationlibrary-factory="org.knime.python2.serde.arrow.ArrowSerialzationFactory"
+            java-serializationlibrary-factory="org.knime.python2.serde.arrow.ArrowSerializationFactory"
             python-serializationlibrary="py/ArrowSerialization.py">
       </serializationlibrary>
    </extension>

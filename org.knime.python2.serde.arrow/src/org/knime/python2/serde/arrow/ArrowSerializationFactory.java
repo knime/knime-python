@@ -60,7 +60,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class ArrowSerialzationFactory implements SerializationLibraryFactory {
+public class ArrowSerializationFactory implements SerializationLibraryFactory {
 
     private static final PythonModuleSpec PYARROW = new PythonModuleSpec("pyarrow", new Version(0, 11, 0), true);
 
