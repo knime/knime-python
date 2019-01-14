@@ -76,6 +76,7 @@ import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -716,7 +717,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     public void setKernelOptions(final PythonKernelOptions pko) {
         pko.setFlowVariableOptions(m_flowVariableOptions);
         boolean pythonOptionsHaveChanged;
-        for (final String module : m_kernelOptions.getAdditionalRequiredModules()) {
+        for (final PythonModuleSpec module : m_kernelOptions.getAdditionalRequiredModules()) {
             pko.addRequiredModule(module);
         }
         if (pko.equals(m_kernelOptions)) {

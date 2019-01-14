@@ -49,9 +49,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.knime.python2.Activator;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
@@ -60,9 +63,9 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version that should be used.
  *
  * @author Clemens von Schwerin, KNIME, Konstanz, Germany
- *
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-
 public class PythonKernelOptions {
 
     private PythonVersionOption m_usePython3;
@@ -71,7 +74,7 @@ public class PythonKernelOptions {
 
     private FlowVariableOptions m_flowVariableOptions = FlowVariableOptions.create(Collections.emptyMap());
 
-    private List<String> m_additionalRequiredModules = new ArrayList<String>();
+    private Set<PythonModuleSpec> m_additionalRequiredModules = new HashSet<>();
 
     private String m_python2Command;
 
@@ -135,7 +138,7 @@ public class PythonKernelOptions {
             other.m_python3Command);
         this.m_serializationOptions = new SerializationOptions(other.getSerializationOptions());
         this.m_flowVariableOptions = FlowVariableOptions.create(other.m_flowVariableOptions);
-        this.m_additionalRequiredModules = new ArrayList<String>(other.getAdditionalRequiredModules());
+        this.m_additionalRequiredModules = new HashSet<>(other.getAdditionalRequiredModules());
         this.m_kernelScriptPath = other.getKernelScriptPath();
     }
 
@@ -165,10 +168,19 @@ public class PythonKernelOptions {
     /**
      * Add an additional required module. A check for that module is performed on kernel startup.
      *
-     * @param name the module name
+     * @param moduleName the module name
      */
-    public void addRequiredModule(final String name) {
-        m_additionalRequiredModules.add(name);
+    public void addRequiredModule(final String moduleName) {
+        m_additionalRequiredModules.add(new PythonModuleSpec(moduleName));
+    }
+
+    /**
+     * Add an additional required module. A check for that module is performed on kernel startup.
+     *
+     * @param module the module
+     */
+    public void addRequiredModule(final PythonModuleSpec module) {
+        m_additionalRequiredModules.add(module);
     }
 
     /**
@@ -176,8 +188,8 @@ public class PythonKernelOptions {
      *
      * @return a list of all additional required modules
      */
-    public List<String> getAdditionalRequiredModules() {
-        return m_additionalRequiredModules;
+    public List<PythonModuleSpec> getAdditionalRequiredModules() {
+        return new ArrayList<>(m_additionalRequiredModules);
     }
 
     /**
