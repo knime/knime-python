@@ -98,18 +98,29 @@ public class SerializationLibraryExtensions {
     }
 
     /**
+     * Returns the serialization library factory from the extension of the given id.
+     *
+     * @param id the library extension's id
+     * @return the corresponding serialization library factory
+     * @throw IllegalArgumentException if no serialization library extension is available for the given id
+     */
+    public static SerializationLibraryFactory getSerializationLibraryFactory(final String id) {
+        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        if (extension == null) {
+            throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
+        }
+        return extension.getJavaSerializationLibraryFactory();
+    }
+
+    /**
      * Creates a new serialization library instance from the extension of the given id.
      *
      * @param id the library extension's id
      * @return a serialization library
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
-    public SerializationLibrary getSerializationLibrary(final String id) {
-        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
-        if (extension == null) {
-            throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
-        }
-        return extension.getJavaSerializationLibraryFactory().createInstance();
+    public static SerializationLibrary getSerializationLibrary(final String id) {
+        return getSerializationLibraryFactory(id).createInstance();
     }
 
     /**

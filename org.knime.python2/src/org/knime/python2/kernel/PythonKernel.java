@@ -240,7 +240,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws IOException if failed to setup the Python kernel
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
-        m_kernelOptions = kernelOptions;
+        m_kernelOptions = new PythonKernelOptions(kernelOptions);
 
         testInstallation();
 

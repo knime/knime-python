@@ -57,7 +57,9 @@ import org.knime.python2.Activator;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
+import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
 /**
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version that should be used.
@@ -189,6 +191,11 @@ public class PythonKernelOptions {
      * @return a list of all additional required modules
      */
     public List<PythonModuleSpec> getAdditionalRequiredModules() {
+        final SerializationLibraryFactory serializerFactory =
+            SerializationLibraryExtensions.getSerializationLibraryFactory(getSerializerId());
+        for (final PythonModuleSpec additionalRequiredModule : serializerFactory.getRequiredExternalModules()) {
+            addRequiredModule(additionalRequiredModule);
+        }
         return new ArrayList<>(m_additionalRequiredModules);
     }
 
