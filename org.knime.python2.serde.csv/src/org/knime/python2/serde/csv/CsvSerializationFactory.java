@@ -45,15 +45,27 @@
 
 package org.knime.python2.serde.csv;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.knime.core.util.Version;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
 /**
- * Creates the {@link SerializationLibrary}.
- *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class CsvSerializationFactory implements SerializationLibraryFactory {
+
+    private static final PythonModuleSpec PANDAS = new PythonModuleSpec("pandas", new Version(0, 23, 0), true);
+
+    private static final List<PythonModuleSpec> REQUIRED_EXTERNAL_MODULES =
+        Collections.unmodifiableList(Arrays.asList(PANDAS));
 
     @Override
     public String getName() {
@@ -61,8 +73,12 @@ public class CsvSerializationFactory implements SerializationLibraryFactory {
     }
 
     @Override
+    public Collection<PythonModuleSpec> getRequiredExternalModules() {
+        return REQUIRED_EXTERNAL_MODULES;
+    }
+
+    @Override
     public SerializationLibrary createInstance() {
         return new CsvSerializationLibrary();
     }
-
 }

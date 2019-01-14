@@ -45,10 +45,17 @@
 
 package org.knime.python2.extensions.serializationlibrary.interfaces;
 
+import java.util.Collection;
+import java.util.Collections;
+
+import org.knime.python2.PythonModuleSpec;
+
 /**
  * Creates a {@link SerializationLibrary}.
  *
- * @author Patrick Winter
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public interface SerializationLibraryFactory {
 
@@ -58,8 +65,20 @@ public interface SerializationLibraryFactory {
     String getName();
 
     /**
+     * Returns additional external Python modules that are required by serialization libraries created by this factory.
+     * It is ensured at runtime that these libraries are properly installed in the local Python environment.
+     * <P>
+     * Note that the module of the serialization library itself needs <em>not</em> to be specified here but is handled
+     * via the {@code org.knime.python2.serializationlibrary} extension point.
+     *
+     * @return The required modules. May be empty, may not be {@link null}.
+     */
+    default Collection<PythonModuleSpec> getRequiredExternalModules() {
+        return Collections.emptyList();
+    }
+
+    /**
      * @return A new instance of the {@link SerializationLibrary}.
      */
     SerializationLibrary createInstance();
-
 }

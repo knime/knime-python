@@ -45,17 +45,36 @@
 
 package org.knime.python2.serde.arrow;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.knime.core.util.Version;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 
 /**
- * @author Clemens von Schwerin, KNIME
+ * @author Clemens von Schwerin, KNIME, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public class ArrowSerialzationFactory implements SerializationLibraryFactory {
 
+    private static final PythonModuleSpec PYARROW = new PythonModuleSpec("pyarrow", new Version(0, 11, 0), true);
+
+    private static final List<PythonModuleSpec> REQUIRED_EXTERNAL_MODULES =
+        Collections.unmodifiableList(Arrays.asList(PYARROW));
+
     @Override
     public String getName() {
-        return "Apache Arrow (requires pyarrow 0.11.0)";
+        return "Apache Arrow";
+    }
+
+    @Override
+    public Collection<PythonModuleSpec> getRequiredExternalModules() {
+        return REQUIRED_EXTERNAL_MODULES;
     }
 
     @Override
