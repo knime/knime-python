@@ -62,7 +62,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  */
 public class CsvSerializationFactory implements SerializationLibraryFactory {
 
-    private static final PythonModuleSpec PANDAS = new PythonModuleSpec("pandas", new Version(0, 23, 0), true);
+    private static final PythonModuleSpec PANDAS = new PythonModuleSpec("pandas", new Version(0, 20, 0), true);
 
     private static final List<PythonModuleSpec> REQUIRED_EXTERNAL_MODULES =
         Collections.unmodifiableList(Arrays.asList(PANDAS));
