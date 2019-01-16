@@ -78,7 +78,10 @@ public class Activator implements BundleActivator {
 
     @Override
     public void start(final BundleContext bundleContext) throws Exception {
-        // When this plugin is loaded test the python installation
+        // We need to collect all registered serializers before testing the installation since serializers may specify
+        // additional required modules.
+        SerializationLibraryExtensions.init();
+        // Test Python installation.
         new Thread(() -> {
             PythonKernelTestResult python2Res = PythonKernelTester.testPython2Installation(getPython2Command(),
                 PythonPreferencePage.getRequiredSerializerModules(), false);
@@ -94,7 +97,6 @@ public class Activator implements BundleActivator {
                     + "\nIssue python version 3: " + python3Res.getErrorLog());
             }
         }).start();
-        SerializationLibraryExtensions.init();
         SourceCodeTemplatesExtensions.init();
     }
 
