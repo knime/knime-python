@@ -54,7 +54,6 @@ import EnvironmentHelper
 
 EnvironmentHelper.dummy_call()
 
-from argparse import ArgumentParser
 import sys
 
 from distutils.version import LooseVersion
@@ -359,6 +358,24 @@ def _parse_program_args():
     optional.
     """
 
+    def _read_program_args():
+        """
+        Using ArgumentParser would be better but that's not available in Python 3.1 and below (+ Python 2.6 and below).
+        """
+        args = sys.argv
+        pos_args = []
+        kw_args = {}
+        current_kw = None
+        for i in range(1, len(args)):
+            arg = args[i]
+            if arg[0] == '-':
+                current_kw = arg
+            elif current_kw is not None:
+                kw_args.setdefault(current_kw, []).append(arg)
+            else:
+                pos_args.append(arg)
+        return pos_args, kw_args
+
     def _parse_additional_required_module(arg):
         """
         Argument is expected to be either a simple module name or a "module info" of the form
@@ -402,15 +419,16 @@ def _parse_program_args():
 
         return module_name, min_version, min_inclusive, max_version, max_inclusive
 
-    parser = ArgumentParser()
-    parser.add_argument('major_python_version')
-    parser.add_argument('min_python_version', default=None, nargs='?')
-    parser.add_argument('max_python_version', default=None, nargs='?')
-    parser.add_argument('-m', nargs='*', default=[], type=_parse_additional_required_module)
+    pos_args, kw_args = _read_program_args()
 
-    parsed = parser.parse_args()
+    # Required argument:
+    major_python_version = pos_args[0]
+    # Optional arguments:
+    min_python_version = pos_args[1] if len(pos_args) > 1 else None
+    max_python_version = pos_args[2] if len(pos_args) > 2 else None
+    additional_required_modules = [_parse_additional_required_module(m) for m in kw_args.get('-m', [])]
 
-    return parsed.major_python_version, parsed.min_python_version, parsed.max_python_version, parsed.m
+    return major_python_version, min_python_version, max_python_version, additional_required_modules
 
 
 if __name__ == "__main__":
