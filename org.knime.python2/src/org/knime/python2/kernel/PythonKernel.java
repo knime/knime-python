@@ -415,7 +415,11 @@ public class PythonKernel implements AutoCloseable {
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
         String externalPythonPath = PythonModuleExtensions.getPythonPath();
+
         externalPythonPath += File.pathSeparator + Activator.getFile(Activator.PLUGIN_ID, "py").getAbsolutePath();
+        if (m_kernelOptions.getExternalCustomPath() != null) {
+            externalPythonPath += File.pathSeparator + m_kernelOptions.getExternalCustomPath();
+        }
         if (!externalPythonPath.isEmpty()) {
             if (existingPath.isEmpty()) {
                 existingPath = externalPythonPath;
