@@ -49,11 +49,14 @@ package org.knime.python2.extensions.serializationlibrary;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionPoint;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
@@ -69,32 +72,94 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  */
 public class SerializationLibraryExtensions {
 
-    private static final Map<String, SerializationLibraryExtension> EXTENSIONS = new HashMap<>();
+    private static final String EXT_POINT_ID = "org.knime.python2.serializationlibrary";
+
+    private static final String EXT_POINT_ATTR_ID = "id";
+
+    private static final String EXT_POINT_ATTR_JAVA_CLASS = "java-serializationlibrary-factory";
+
+    private static final String EXT_POINT_ATTR_PYTHON_CLASS = "python-serializationlibrary";
+
+    private static SerializationLibraryExtensions instance;
 
     /**
-     * Initialize the internal map of all registered {@link SerializationLibraryExtension}s.
+     * Initializes all registered {@link SerializationLibraryExtension}s.
      */
-    public static void init() {
+    public static synchronized void init() {
+        getInitializedInstance();
+    }
+
+    private static synchronized SerializationLibraryExtensions getInitializedInstance() {
+        if (instance == null) {
+            instance = new SerializationLibraryExtensions();
+        }
+        return instance;
+    }
+
+    private final Map<String, SerializationLibraryExtension> m_extensions;
+
+    private SerializationLibraryExtensions() {
+        final Map<String, SerializationLibraryExtension> extensions = new HashMap<>();
+        final IExtensionRegistry registry = Platform.getExtensionRegistry();
+        final IExtensionPoint point = registry.getExtensionPoint(EXT_POINT_ID);
+        if (point == null) {
+            final String errorMessage = "Invalid extension point: '" + EXT_POINT_ID + "'.";
+            NodeLogger.getLogger(SerializationLibraryExtensions.class).error(errorMessage);
+            throw new IllegalStateException(errorMessage);
+        }
         final IConfigurationElement[] configs =
-            Platform.getExtensionRegistry().getConfigurationElementsFor("org.knime.python2.serializationlibrary");
+            Platform.getExtensionRegistry().getConfigurationElementsFor(EXT_POINT_ID);
         for (final IConfigurationElement config : configs) {
             try {
-                final Object o = config.createExecutableExtension("java-serializationlibrary-factory");
-                if (o instanceof SerializationLibraryFactory) {
-                    final String contributer = config.getContributor().getName();
-                    final String filePath = config.getAttribute("python-serializationlibrary");
-                    final File file = Activator.getFile(contributer, filePath);
-                    if (file != null) {
-                        final SerializationLibraryFactory serializationLibrary = (SerializationLibraryFactory)o;
-                        final String id = config.getAttribute("id");
-                        EXTENSIONS.put(id,
-                            new SerializationLibraryExtension(id, file.getAbsolutePath(), serializationLibrary));
+                final String id = config.getAttribute(EXT_POINT_ATTR_ID);
+                if (id != null && !id.isEmpty()) {
+                    if (!extensions.containsKey(id)) {
+                        final Object o = config.createExecutableExtension(EXT_POINT_ATTR_JAVA_CLASS);
+                        if (o instanceof SerializationLibraryFactory) {
+                            final String contributor = config.getContributor().getName();
+                            final String pythonFilePath = config.getAttribute(EXT_POINT_ATTR_PYTHON_CLASS);
+                            final File pythonFile = Activator.getFile(contributor, pythonFilePath);
+                            if (pythonFile != null) {
+                                final SerializationLibraryFactory serializationLibrary = (SerializationLibraryFactory)o;
+                                extensions.put(id, new SerializationLibraryExtension(id, pythonFile.getAbsolutePath(),
+                                    serializationLibrary));
+                            } else {
+                                NodeLogger.getLogger(SerializationLibraryExtensions.class)
+                                    .coding("Invalid extension '" + id + "' registered at extension point "
+                                        + EXT_POINT_ID + ": Attribute '" + EXT_POINT_ATTR_PYTHON_CLASS
+                                        + "' does not specify an existing Python module.");
+                            }
+                        } else {
+                            NodeLogger.getLogger(SerializationLibraryExtensions.class)
+                                .coding("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
+                                    + ": Attribute '" + EXT_POINT_ATTR_JAVA_CLASS
+                                    + "' does not implement SerializationLibraryFactory.");
+                        }
+                    } else {
+                        NodeLogger.getLogger(SerializationLibraryExtensions.class)
+                            .coding("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
+                                + ": An extension of the same id is already registered.");
                     }
+                } else {
+                    NodeLogger.getLogger(SerializationLibraryExtensions.class)
+                        .coding("Invalid extension registered at extension point " + EXT_POINT_ID + ": Attribute '"
+                            + EXT_POINT_ATTR_ID + "' is null or empty.");
                 }
             } catch (final CoreException e) {
                 NodeLogger.getLogger(SerializationLibraryExtensions.class).error(e.getMessage(), e);
+            } catch (Exception e) {
+                NodeLogger.getLogger(SerializationLibraryExtensions.class).error(e.getMessage(), e);
+                throw e;
             }
         }
+        m_extensions = Collections.unmodifiableMap(extensions);
+    }
+
+    /**
+     * @return a collection of all available serialization library extensions
+     */
+    public static Collection<SerializationLibraryExtension> getExtensions() {
+        return getInitializedInstance().m_extensions.values();
     }
 
     /**
@@ -105,7 +170,7 @@ public class SerializationLibraryExtensions {
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static SerializationLibraryFactory getSerializationLibraryFactory(final String id) {
-        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        final SerializationLibraryExtension extension = getInitializedInstance().m_extensions.get(id);
         if (extension == null) {
             throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
         }
@@ -124,40 +189,31 @@ public class SerializationLibraryExtensions {
     }
 
     /**
-     * Get the human readable name for a serialization library id.
-     *
-     * @param id a serialization library id
-     * @return a human readable name if id matches, null otherwise
-     */
-    public static String getNameForId(final String id) {
-        final SerializationLibraryExtension ext = EXTENSIONS.get(id);
-        if (ext != null) {
-            return ext.getJavaSerializationLibraryFactory().getName();
-        }
-        return null;
-    }
-
-    /**
-     * Get a collection of all available serialization library extensions.
-     *
-     * @return a collection of all available serialization library extensions
-     */
-    public static Collection<SerializationLibraryExtension> getExtensions() {
-        return EXTENSIONS.values();
-    }
-
-    /**
-     * Gets the serialization library path.
+     * Returns the path of the serialization library's Python module.
      *
      * @param id the library's id
      * @return the serialization library path
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static String getSerializationLibraryPath(final String id) {
-        final SerializationLibraryExtension extension = EXTENSIONS.get(id);
+        final SerializationLibraryExtension extension = getInitializedInstance().m_extensions.get(id);
         if (extension == null) {
             throw new IllegalArgumentException("No serialization library path available for id '" + id + "'.");
         }
         return extension.getPythonSerializationLibraryPath();
+    }
+
+    /**
+     * Returns the human readable name for a serialization library id.
+     *
+     * @param id a serialization library id
+     * @return a human readable name if id matches, null otherwise
+     */
+    public static String getNameForId(final String id) {
+        final SerializationLibraryExtension ext = getInitializedInstance().m_extensions.get(id);
+        if (ext != null) {
+            return ext.getJavaSerializationLibraryFactory().getName();
+        }
+        return null;
     }
 }
