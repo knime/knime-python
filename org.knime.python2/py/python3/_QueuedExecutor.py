@@ -119,7 +119,7 @@ class _QueuedExecutor(object):
             else:
                 queue = self._queue
                 while True:
-                    with queue.mutex, queue.all_tasks_done:
+                    with queue.all_tasks_done:
                         queue.queue.clear()
                         queue.unfinished_tasks = 0
                     try:

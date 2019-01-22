@@ -24,6 +24,7 @@ encoding//py/messaging/Task.py=utf-8
 encoding//py/python2/PythonKernel.py=utf-8
 encoding//py/python2/messaging/PythonMessaging.py=utf-8
 encoding//py/python3/PythonKernel.py=utf-8
+encoding//py/python3/_QueuedExecutor.py=utf-8
 encoding//py/python3/messaging/AbstractMessageLoop.py=utf-8
 encoding//py/python3/messaging/MessageDistributorLoop.py=utf-8
 encoding//py/python3/messaging/MessageReceiverLoop.py=utf-8
