@@ -48,6 +48,7 @@
 package org.knime.python2.extensions.serializationlibrary;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class SerializationLibraryExtensions {
+public final class SerializationLibraryExtensions {
 
     private static final String EXT_POINT_ID = "org.knime.python2.serializationlibrary";
 
@@ -125,24 +126,24 @@ public class SerializationLibraryExtensions {
                                     serializationLibrary));
                             } else {
                                 NodeLogger.getLogger(SerializationLibraryExtensions.class)
-                                    .coding("Invalid extension '" + id + "' registered at extension point "
+                                    .error("Invalid extension '" + id + "' registered at extension point "
                                         + EXT_POINT_ID + ": Attribute '" + EXT_POINT_ATTR_PYTHON_CLASS
                                         + "' does not specify an existing Python module.");
                             }
                         } else {
                             NodeLogger.getLogger(SerializationLibraryExtensions.class)
-                                .coding("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
+                                .error("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
                                     + ": Attribute '" + EXT_POINT_ATTR_JAVA_CLASS
                                     + "' does not implement SerializationLibraryFactory.");
                         }
                     } else {
                         NodeLogger.getLogger(SerializationLibraryExtensions.class)
-                            .coding("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
+                            .error("Invalid extension '" + id + "' registered at extension point " + EXT_POINT_ID
                                 + ": An extension of the same id is already registered.");
                     }
                 } else {
                     NodeLogger.getLogger(SerializationLibraryExtensions.class)
-                        .coding("Invalid extension registered at extension point " + EXT_POINT_ID + ": Attribute '"
+                        .error("Invalid extension registered at extension point " + EXT_POINT_ID + ": Attribute '"
                             + EXT_POINT_ATTR_ID + "' is null or empty.");
                 }
             } catch (final CoreException e) {
@@ -170,9 +171,13 @@ public class SerializationLibraryExtensions {
      * @throw IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static SerializationLibraryFactory getSerializationLibraryFactory(final String id) {
-        final SerializationLibraryExtension extension = getInitializedInstance().m_extensions.get(id);
+        final Map<String, SerializationLibraryExtension> extensions =
+            new HashMap<>(getInitializedInstance().m_extensions);
+        final SerializationLibraryExtension extension = extensions.get(id);
         if (extension == null) {
-            throw new IllegalArgumentException("No serialization library available for id '" + id + "'.");
+            final String availableExtensions = Arrays.toString(extensions.entrySet().toArray());
+            throw new IllegalArgumentException(
+                "No serialization library available for id '" + id + "'. Available libraries: " + availableExtensions);
         }
         return extension.getJavaSerializationLibraryFactory();
     }
