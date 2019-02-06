@@ -181,8 +181,6 @@ class Serializer(object):
         @param data_bytes a byte array containing a serialized KNIME table
         """
         column_names = self._serialization_library.column_names_from_bytes(data_bytes)
-        if len(column_names) == 0:
-            return DataFrame()
         column_types = self._serialization_library.column_types_from_bytes(data_bytes)
         column_serializers = self._serialization_library.column_serializers_from_bytes(data_bytes)
         table = ToPandasTable(column_names, column_types, column_serializers, self)

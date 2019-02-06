@@ -506,118 +506,103 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
      */
     private void bytesIntoTableInternal(final TableCreator<?> tableCreator,
         final SerializationOptions serializationOptions, final TableSpec spec, final File file) throws IOException {
-        final ReadContext rc = ReadContextManager.createForFile(file);
-        if (spec.getNumberColumns() > 0 && rc.getNumRows() > 0) {
-            try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
-                final VectorSchemaRoot root = reader.getVectorSchemaRoot(); // Will be closed by reader.
-                final Type[] types = spec.getColumnTypes();
-                final String[] names = spec.getColumnNames();
+        try (ArrowStreamReader reader = ReadContextManager.createForFile(file).getReader()) {
+            final VectorSchemaRoot root = reader.getVectorSchemaRoot(); // Will be closed by reader.
+            final Type[] types = spec.getColumnTypes();
+            final String[] names = spec.getColumnNames();
 
-                final List<VectorExtractor> extractors = new ArrayList<>();
-                // Index is always string.
-                extractors.add(getStringOrByteExtractor(root.getVector(m_indexColumnName)));
+            final List<VectorExtractor> extractors = new ArrayList<>();
+            // Index is always string.
+            extractors.add(getStringOrByteExtractor(root.getVector(m_indexColumnName)));
 
-                // Setup an extractor for every column.
+            // Setup an extractor for every column.
+            for (int j = 0; j < spec.getNumberColumns(); j++) {
+                if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
+                    extractors.add(new MissingExtractor());
+                } else {
+                    switch (types[j]) {
+                        case BOOLEAN:
+                            extractors.add(new BooleanExtractor((BitVector)root.getVector(names[j])));
+                            break;
+                        case INTEGER:
+                            extractors
+                                .add(new IntegerExtractor((IntVector)root.getVector(names[j]), serializationOptions));
+                            break;
+                        case LONG:
+                            extractors
+                                .add(new LongExtractor((BigIntVector)root.getVector(names[j]), serializationOptions));
+                            break;
+                        case DOUBLE:
+                            extractors.add(new DoubleExtractor((Float8Vector)root.getVector(names[j])));
+                            break;
+                        case FLOAT:
+                            extractors.add(new FloatExtractor((Float4Vector)root.getVector(names[j])));
+                            break;
+                        case STRING:
+                            extractors.add(getStringOrByteExtractor(root.getVector(names[j])));
+                            break;
+                        case BYTES:
+                            extractors.add(new BytesExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case INTEGER_LIST:
+                            extractors.add(new IntListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case INTEGER_SET:
+                            extractors.add(new IntSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case LONG_LIST:
+                            extractors.add(new LongListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case LONG_SET:
+                            extractors.add(new LongSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case DOUBLE_LIST:
+                            extractors.add(new DoubleListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case DOUBLE_SET:
+                            extractors.add(new DoubleSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case FLOAT_LIST:
+                            extractors.add(new FloatListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case FLOAT_SET:
+                            extractors.add(new FloatSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case BOOLEAN_LIST:
+                            extractors.add(new BooleanListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case BOOLEAN_SET:
+                            extractors.add(new BooleanSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case STRING_LIST:
+                            extractors.add(new StringListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case STRING_SET:
+                            extractors.add(new StringSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case BYTES_LIST:
+                            extractors.add(new BytesListExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        case BYTES_SET:
+                            extractors.add(new BytesSetExtractor((VarBinaryVector)root.getVector(names[j])));
+                            break;
+                        default:
+                            throw new IllegalStateException("Deserialization is not implemented for type: " + types[j]);
+                    }
+                }
+            }
+            // Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
+            // further processing
+            for (int i = 0; i < root.getRowCount(); i++) {
+                if (Thread.interrupted()) {
+                    // Stop deserialization if canceled by client.
+                    throw new CancellationException("Deserialization canceled by client.");
+                }
+                final Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
                 for (int j = 0; j < spec.getNumberColumns(); j++) {
-                    if (ArrayUtils.contains(m_missingColumnNames, names[j])) {
-                        extractors.add(new MissingExtractor());
-                    } else {
-                        switch (types[j]) {
-                            case BOOLEAN:
-                                extractors.add(new BooleanExtractor((BitVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER:
-                                extractors.add(new IntegerExtractor((IntVector)root.getVector(names[j]),
-                                    serializationOptions));
-                                break;
-                            case LONG:
-                                extractors.add(new LongExtractor((BigIntVector)root.getVector(names[j]),
-                                    serializationOptions));
-                                break;
-                            case DOUBLE:
-                                extractors.add(new DoubleExtractor((Float8Vector)root.getVector(names[j])));
-                                break;
-                            case FLOAT:
-                                extractors.add(new FloatExtractor((Float4Vector)root.getVector(names[j])));
-                                break;
-                            case STRING:
-                                extractors.add(getStringOrByteExtractor(root.getVector(names[j])));
-                                break;
-                            case BYTES:
-                                extractors.add(new BytesExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER_LIST:
-                                extractors.add(new IntListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case INTEGER_SET:
-                                extractors.add(new IntSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case LONG_LIST:
-                                extractors
-                                    .add(new LongListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case LONG_SET:
-                                extractors.add(new LongSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case DOUBLE_LIST:
-                                extractors
-                                    .add(new DoubleListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case DOUBLE_SET:
-                                extractors
-                                    .add(new DoubleSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case FLOAT_LIST:
-                                extractors
-                                    .add(new FloatListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case FLOAT_SET:
-                                extractors
-                                    .add(new FloatSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BOOLEAN_LIST:
-                                extractors
-                                    .add(new BooleanListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BOOLEAN_SET:
-                                extractors
-                                    .add(new BooleanSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case STRING_LIST:
-                                extractors
-                                    .add(new StringListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case STRING_SET:
-                                extractors
-                                    .add(new StringSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BYTES_LIST:
-                                extractors
-                                    .add(new BytesListExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            case BYTES_SET:
-                                extractors
-                                    .add(new BytesSetExtractor((VarBinaryVector)root.getVector(names[j])));
-                                break;
-                            default:
-                                throw new IllegalStateException(
-                                    "Deserialization is not implemented for type: " + types[j]);
-                        }
-                    }
+                    row.setCell(extractors.get(j + 1).extract(), j);
                 }
-                // Extract each value as a Cell, collate the cells to Rows and add the rows to the table creator for
-                // further processing
-                for (int i = 0; i < root.getRowCount(); i++) {
-                    if (Thread.interrupted()) {
-                        // Stop deserialization if canceled by client.
-                        throw new CancellationException("Deserialization canceled by client.");
-                    }
-                    final Row row = new RowImpl(extractors.get(0).extract().getStringValue(), spec.getNumberColumns());
-                    for (int j = 0; j < spec.getNumberColumns(); j++) {
-                        row.setCell(extractors.get(j + 1).extract(), j);
-                    }
-                    tableCreator.addRow(row);
-                }
+                tableCreator.addRow(row);
             }
         }
     }
@@ -630,6 +615,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
         final String path = new String(bytes, StandardCharsets.UTF_8);
         final File file = new File(path);
         try {
+            // Read context is shared across this method and bytesIntoTableInternal(..).
             final ReadContext rc = ReadContextManager.createForFile(file);
             if (rc.getTableSpec() == null) {
                 if (file.exists()) {

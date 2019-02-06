@@ -308,9 +308,6 @@ public class Flatbuffers implements SerializationLibrary {
     private static void bytesIntoTableInternal(final TableCreator<?> tableCreator, final byte[] bytes,
         final SerializationOptions serializationOptions) {
         final KnimeTable table = KnimeTable.getRootAsKnimeTable(ByteBuffer.wrap(bytes));
-        if (table.colNamesLength() == 0) {
-            return;
-        }
         final Map<String, Type> colTypes = new HashMap<>();
         final List<VectorExtractor> extractors = new ArrayList<>();
         for (int j = 0; j < table.columnsLength(); j++) {
