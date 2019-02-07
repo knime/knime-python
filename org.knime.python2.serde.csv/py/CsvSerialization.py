@@ -140,32 +140,22 @@ def bytes_into_table(table, data_bytes):
                 types = []
             serializers_line = in_file.readline().decode('utf-8').strip()[2:].split(',')
             try:
-                names = pandas.read_csv(in_file, index_col=0, nrows=0).columns.tolist()
+                # Includes the "column header" of the row key (= index) column. Reading the column headers here and
+                # explicitly passing them to the actual reading of the table fixes problems with empty tables (i.e.,
+                # both tables without columns and tables without rows).
+                names = pandas.read_csv(in_file, index_col=False, nrows=0).columns.tolist()
             except ValueError:
                 names = []
             in_file.seek(0)
-            # this is commented out because assigning types if a column contains missing values will fail
-            # dtypes = {}
-            # for i in range(len(names)):
-            #     name = names[i]
-            #     col_type_id = int(types[i])
-            #     if col_type_id == _types_.BOOLEAN:
-            #         col_type = numpy.bool
-            #     elif col_type_id == _types_.INTEGER:
-            #         col_type = numpy.int32
-            #     elif col_type_id == _types_.LONG:
-            #         col_type = numpy.int64
-            #     elif col_type_id == _types_.DOUBLE:
-            #         col_type = numpy.float64
-            #     else:
-            #         col_type = numpy.str
-            #     dtypes[name] = col_type
             try:
-                # data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'], dtype=dtypes)
-                data_frame = pandas.read_csv(in_file, index_col=0, skiprows=2, na_values=['MissingCell'],
+                data_frame = pandas.read_csv(in_file, header=None, names=names, index_col=0, skiprows=3,
+                                             na_values=['MissingCell'],
                                              keep_default_na=False)
             except ValueError:
                 data_frame = pandas.DataFrame()
+            # Remove header of index column. We only work on "real" columns from here on.
+            if len(names) > 0:
+                names = names[1:]
             for i in range(len(types)):
                 col_type_id = int(types[i])
                 if col_type_id in _eval_types_:
