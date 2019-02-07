@@ -64,6 +64,9 @@ import sys
 import pandas
 
 import PythonUtils
+
+import traceback
+
 from debug_util import debug_msg
 from DBUtil import DBUtil
 from messaging.AbstractTaskHandler import AbstractTaskHandler
@@ -96,10 +99,11 @@ class AbstractRequestHandler(AbstractTaskHandler):
         except Exception as ex:
             error_message = str(ex)
             debug_msg(error_message, exc_info=True)
+            error_traceback = traceback.format_exc()
+            error_payload = PayloadEncoder().put_string(error_message).put_string(error_traceback).payload
             # Inform Java that handling the request did not work.
             error_response = AbstractRequestHandler._create_response(message, response_message_id, success=False,
-                                                                     response_payload=_create_string_payload(
-                                                                         error_message))
+                                                                     response_payload=error_payload)
             response_consumer[0] = error_response
         result_consumer(None)  # We are done after the response (either success or failure) is sent.
         return True

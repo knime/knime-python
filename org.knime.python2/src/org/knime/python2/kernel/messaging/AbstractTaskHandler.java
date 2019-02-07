@@ -126,17 +126,22 @@ public abstract class AbstractTaskHandler<T> implements TaskHandler<T> {
      */
     protected void handleFailureMessage(final Message message) throws Exception {
         final String errorMessage;
+        final String errorTraceback;
         if (message.getPayload() != null) {
-            errorMessage = new PayloadDecoder(message.getPayload()).getNextString();
+            final PayloadDecoder payloadDecoder = new PayloadDecoder(message.getPayload());
+            errorMessage = payloadDecoder.getNextString();
+            errorTraceback = payloadDecoder.getNextString();
         } else {
             errorMessage = "Python task failed for unknown reasons.";
+            errorTraceback = errorMessage;
         }
 
         // FIXME (LATER): Handling the case when arrow is installed in a wrong version. Hot-fix. needs more thought later.
         if (errorMessage.equals("position out of bounds")) {
-            throw new PythonExecutionException("Error during execution. Make sure that your installed pyarrow version is at least 0.9.");
+            throw new PythonExecutionException(
+                "Error during execution. Make sure that your installed pyarrow version is at least 0.9.");
         }
-        throw new PythonExecutionException(errorMessage);
+        throw new PythonExecutionException(errorMessage, errorTraceback);
     }
 
     /**

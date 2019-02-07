@@ -48,6 +48,8 @@
  */
 package org.knime.python2.kernel.messaging;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -115,9 +117,13 @@ public abstract class AbstractRequestHandler extends AbstractTaskHandler<Void> {
             responseConsumer.accept(response);
         } catch (Exception ex) {
             LOGGER.debug(ex);
+            final String errorMessage = ex.getMessage();
+            final StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            final String errorTraceback = sw.toString();
+            final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).putString(errorTraceback).get();
             // Inform Python that handling the request did not work.
-            final Message errorResponse = createResponse(message, responseMessageId, false,
-                new PayloadEncoder().putString(ex.getMessage()).get(), null);
+            final Message errorResponse = createResponse(message, responseMessageId, false, errorPayload, null);
             responseConsumer.accept(errorResponse);
         }
         resultConsumer.accept(null); // We are done after the response (either success or failure) is sent.

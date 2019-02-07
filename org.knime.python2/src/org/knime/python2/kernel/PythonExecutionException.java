@@ -48,6 +48,9 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Strings;
@@ -69,10 +72,25 @@ public final class PythonExecutionException extends ExecutionException implement
     }
 
     /**
+     * May be {@code null}.
+     */
+    private String m_pythonTraceBack;
+
+    /**
      * @param message the message
      */
     public PythonExecutionException(final String message) {
         this(message, new PythonIOException(amendMessage(message)));
+    }
+
+    /**
+     * @param message the message
+     * @param pythonTraceback The trace back of the error on Python side. Basically corresponds to the {@code cause}
+     *            argument in {@link #PythonExecutionException(String, Throwable)} but for a cause on Python side.
+     */
+    public PythonExecutionException(final String message, final String pythonTraceback) {
+        this(message, new PythonIOException(amendMessage(message)));
+        m_pythonTraceBack = pythonTraceback;
     }
 
     /**
@@ -88,5 +106,31 @@ public final class PythonExecutionException extends ExecutionException implement
      */
     public PythonExecutionException(final String message, final Throwable cause) {
         super(amendMessage(message), cause);
+    }
+
+    /**
+     * @return The trace back of the underlying problem on Python side, if any.
+     * @see #getCause()
+     */
+    public Optional<String> getPythonTraceback() {
+        return Optional.ofNullable(m_pythonTraceBack);
+    }
+
+    @Override
+    public void printStackTrace(final PrintStream s) {
+        super.printStackTrace(s);
+        // Also print Python "stack trace".
+        if (m_pythonTraceBack != null) {
+            s.println(m_pythonTraceBack);
+        }
+    }
+
+    @Override
+    public void printStackTrace(final PrintWriter s) {
+        super.printStackTrace(s);
+        // Also print Python "stack trace".
+        if (m_pythonTraceBack != null) {
+            s.println(m_pythonTraceBack);
+        }
     }
 }
