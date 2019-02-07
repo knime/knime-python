@@ -651,8 +651,10 @@ def table_to_bytes(table):
 
         # Serialize the dataframe into a list of pyarrow.Array column by column
         for i in range(len(table._data_frame.columns)):
-            # missing column ? -> save name and don't send any buffer for column
-            if (table._data_frame.iloc[:, i].isnull().all()):
+            # Do not allocate a buffer for columns that only contain missing values. We track and transfer their names
+            # to give them special treatment on Java side.
+            # This also covers tables of row count zero.
+            if table._data_frame.iloc[:, i].isnull().all():
                 missing_names.append(table.get_name(i))
                 all_names.append(table.get_name(i))
                 continue
@@ -739,11 +741,6 @@ def table_to_bytes(table):
                     {"name": name, "metadata": {"serializer_id": "", "type_id": table.get_type(col_idx)}})
 
         metadata = {b'ArrowSerializationLibrary': json.dumps(custom_metadata).encode('utf-8')}
-
-        # Empty record batches are not supported, therefore add a dummy array if dataframe is empty
-        if not col_arrays:
-            col_arrays.append(pyarrow.array([0]))
-            col_names.append('dummy')
 
         batch = pyarrow.RecordBatch.from_arrays(col_arrays, col_names)
 
