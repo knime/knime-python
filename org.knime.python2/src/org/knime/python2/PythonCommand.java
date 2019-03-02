@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,32 +41,37 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Feb 15, 2019 (marcel): created
  */
-
 package org.knime.python2;
 
 /**
- * Observers multiple {@link DefaultPythonVersionOption}s. Only one of those may be selected at one time.
+ * Describes an external Python process. The process can be started via the {@link ProcessBuilder} returned by
+ * {@link #createProcessBuilder()}.
+ * <P>
+ * Implementation note: Implementors of this interface must override {@link #hashCode()}, {@link #equals(Object)}, and
+ * {@link #toString()} in a value-based way.
  *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
- *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-
-public interface DefaultPythonVersionObserver {
-
-    /**
-     * Sends an update to every observed {@link DefaultPythonVersionOption} containing the currently selected option.
-     *
-     * @param option - the currently selected option
-     */
-    public void notifyChange(DefaultPythonVersionOption option);
+public interface PythonCommand {
 
     /**
-     * Adds a {@link DefaultPythonVersionOption} to observe
-     *
-     * @param option - an {@link DefaultPythonVersionOption} to observe
+     * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
+     *         this command instance.
      */
-    public void addOption(DefaultPythonVersionOption option);
+    ProcessBuilder createProcessBuilder();
 
+    @Override
+    int hashCode();
+
+    @Override
+    boolean equals(Object obj);
+
+    @Override
+    String toString();
 }

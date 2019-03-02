@@ -44,23 +44,22 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jul 4, 2017 (clemens): created
+ *   Jan 25, 2019 (marcel): created
  */
-package org.knime.python2;
+package org.knime.python2.config;
 
-import org.knime.python2.PythonPathEditor.PythonVersionId;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * Observes {@link ExecutableObservable}s managing the path to python executables. Executes a specific action if
- * notified by an observable.
- *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("javadoc")
-interface ExecutableObserver {
-    /**
-     * Used by an {@link ExecutableObservable} to notify this observer about a state change additionally indicating which
-     * python version changed, i.e. an updated executable location.
-     */
-    public void executableUpdated(PythonVersionId pythonVersionId);
+public abstract class AbstractPythonVersionPanel<W> extends AbstractPythonConfigPanel<PythonVersionConfig, W> {
+
+    public AbstractPythonVersionPanel(final PythonVersionConfig config, final W parent) {
+        super(config, parent);
+        createPythonVersionWidget(config.getPythonVersion(), getPanel());
+    }
+
+    protected abstract void createPythonVersionWidget(SettingsModelString versionConfig, W panel);
 }

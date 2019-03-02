@@ -82,7 +82,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.eclipse.core.runtime.Platform;
+import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -400,17 +400,15 @@ public class PythonKernel implements AutoCloseable {
         final String port = Integer.toString(m_serverSocket.getLocalPort());
         final String serializationLibraryPath =
             SerializationLibraryExtensions.getSerializationLibraryPath(m_kernelOptions.getSerializerId());
-        // Start Python kernel that listens to the given port.
-        // Use the -u options to force Python to not buffer stdout and stderror.
+        // Build and start Python kernel that listens to the given port:
         final ProcessBuilder pb;
-        if (!m_kernelOptions.getUsePython3()) {
-            // Python2 start without site to set default encoding to utf-8.
-            pb = new ProcessBuilder(m_kernelOptions.getPython2Command(), "-u", /*"-S",*/ kernelScriptPath, port,
-                serializationLibraryPath);
+        if (m_kernelOptions.getUsePython3()) {
+            pb = m_kernelOptions.getPython3Command().createProcessBuilder();
         } else {
-            pb = new ProcessBuilder(m_kernelOptions.getPython3Command(), "-u", kernelScriptPath, port,
-                serializationLibraryPath);
+            pb = m_kernelOptions.getPython2Command().createProcessBuilder();
         }
+        // Use the -u options to force Python to not buffer stdout and stderror.
+        Collections.addAll(pb.command(), "-u", kernelScriptPath, port, serializationLibraryPath);
         // Add all python modules to PYTHONPATH variable.
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
@@ -531,7 +529,7 @@ public class PythonKernel implements AutoCloseable {
                     try {
                         CheckUtils.checkSourceFile(uriString);
                     } catch (InvalidSettingsException ex) {
-                        if (Platform.OS_WIN32.equals(Platform.getOS()) && uriString != null) {
+                        if (SystemUtils.IS_OS_WINDOWS && uriString != null) {
                             uriString = uriString.replace("\\", "/");
                             CheckUtils.checkSourceFile(uriString);
                         } else {
@@ -1597,7 +1595,7 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private void startPipeListeners() {
-        new Thread(() -> {
+        ThreadUtils.threadWithContext(() -> {
             String message;
             final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stdoutStream));
             try {
@@ -1610,7 +1608,7 @@ public class PythonKernel implements AutoCloseable {
 
         }).start();
 
-        new Thread(() -> {
+        ThreadUtils.threadWithContext(() -> {
             String message;
             final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stderrStream));
             try {

@@ -168,7 +168,7 @@ public final class SerializationLibraryExtensions {
      *
      * @param id the library extension's id
      * @return the corresponding serialization library factory
-     * @throw IllegalArgumentException if no serialization library extension is available for the given id
+     * @throws IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static SerializationLibraryFactory getSerializationLibraryFactory(final String id) {
         final Map<String, SerializationLibraryExtension> extensions =
@@ -187,7 +187,7 @@ public final class SerializationLibraryExtensions {
      *
      * @param id the library extension's id
      * @return a serialization library
-     * @throw IllegalArgumentException if no serialization library extension is available for the given id
+     * @throws IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static SerializationLibrary getSerializationLibrary(final String id) {
         return getSerializationLibraryFactory(id).createInstance();
@@ -198,7 +198,7 @@ public final class SerializationLibraryExtensions {
      *
      * @param id the library's id
      * @return the serialization library path
-     * @throw IllegalArgumentException if no serialization library extension is available for the given id
+     * @throws IllegalArgumentException if no serialization library extension is available for the given id
      */
     public static String getSerializationLibraryPath(final String id) {
         final SerializationLibraryExtension extension = getInitializedInstance().m_extensions.get(id);

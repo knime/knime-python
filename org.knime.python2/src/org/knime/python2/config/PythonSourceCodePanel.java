@@ -74,6 +74,8 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.core.util.ThreadUtils;
+import org.knime.python2.DefaultPythonCommand;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
@@ -689,9 +691,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param python2Command the python 2 command
      */
     public synchronized void setPython2Command(final String python2Command) {
+        final PythonCommand python2CommandObject = new DefaultPythonCommand(python2Command);
         if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython2CommandRaw().equals(python2Command)) {
-            m_kernelOptions.setPython2Command(python2Command);
+            && !m_kernelOptions.getPython2CommandRaw().equals(python2CommandObject)) {
+            m_kernelOptions.setPython2Command(python2CommandObject);
             runResetJob();
         }
     }
@@ -702,9 +705,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param python3Command python 3 command
      */
     public synchronized void setPython3Command(final String python3Command) {
+        final PythonCommand python3CommandObject = new DefaultPythonCommand(python3Command);
         if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython3CommandRaw().equals(python3Command)) {
-            m_kernelOptions.setPython3Command(python3Command);
+            && !m_kernelOptions.getPython3CommandRaw().equals(python3CommandObject)) {
+            m_kernelOptions.setPython3Command(python3CommandObject);
             runResetJob();
         }
     }

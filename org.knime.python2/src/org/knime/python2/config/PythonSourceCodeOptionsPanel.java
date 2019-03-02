@@ -66,6 +66,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import org.knime.python2.PythonCommand;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.generic.SourceCodeOptionsPanel;
 import org.knime.python2.kernel.PythonKernelOptions;
@@ -113,9 +114,9 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
 
     private final EnforcePythonVersion m_enforcedVersion;
 
-    private String m_python2Command;
+    private PythonCommand m_python2Command;
 
-    private String m_python3Command;
+    private PythonCommand m_python3Command;
 
     /**
      * Enum containing options for enforcing a python version.

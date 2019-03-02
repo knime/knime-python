@@ -48,6 +48,8 @@ package org.knime.python2.config;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.python2.DefaultPythonCommand;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.SourceCodeConfig;
@@ -109,16 +111,17 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         .setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, SerializationOptions.DEFAULT_SENTINEL_VALUE));
         m_kernelOptions.setChunkSize(settings.getInt(CFG_CHUNK_SIZE, PythonKernelOptions.DEFAULT_CHUNK_SIZE));
 
-        if(settings.containsKey(CFG_PYTHON2COMMAND)) {
+        if (settings.containsKey(CFG_PYTHON2COMMAND)) {
             final String python2Command = settings.getString(CFG_PYTHON2COMMAND);
-            m_kernelOptions.setPython2Command(python2Command.equals("") ? null : python2Command);
+            m_kernelOptions
+                .setPython2Command(python2Command.equals("") ? null : new DefaultPythonCommand(python2Command));
         }
 
-        if(settings.containsKey(CFG_PYTHON3COMMAND)) {
+        if (settings.containsKey(CFG_PYTHON3COMMAND)) {
             final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
-            m_kernelOptions.setPython3Command(python3Command.equals("") ? null : python3Command);
+            m_kernelOptions
+                .setPython3Command(python3Command.equals("") ? null : new DefaultPythonCommand(python3Command));
         }
-
     }
 
     @Override
@@ -139,17 +142,18 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         try {
             if (settings.containsKey(CFG_PYTHON2COMMAND)) {
                 final String python2Command = settings.getString(CFG_PYTHON2COMMAND);
-                m_kernelOptions.setPython2Command(python2Command.equals("") ? null : python2Command);
+                m_kernelOptions
+                    .setPython2Command(python2Command.equals("") ? null : new DefaultPythonCommand(python2Command));
             }
 
             if (settings.containsKey(CFG_PYTHON3COMMAND)) {
                 final String python3Command = settings.getString(CFG_PYTHON3COMMAND);
-                m_kernelOptions.setPython3Command(python3Command.equals("") ? null : python3Command);
+                m_kernelOptions
+                    .setPython3Command(python3Command.equals("") ? null : new DefaultPythonCommand(python3Command));
             }
         } catch (InvalidSettingsException e) {
             // Nothing to do...
         }
-
     }
 
     /**
@@ -166,7 +170,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      */
     public void setKernelOptions(final PythonVersionOption versionOption, final boolean convertToPython,
         final boolean convertFromPython, final SentinelOption sentinelOption, final int sentinelValue,
-        final int chunkSize, final String python2Command, final String python3Command) {
+        final int chunkSize, final PythonCommand python2Command, final PythonCommand python3Command) {
         m_kernelOptions = new PythonKernelOptions(versionOption, convertToPython, convertFromPython, sentinelOption,
             sentinelValue, chunkSize, python2Command, python3Command);
     }

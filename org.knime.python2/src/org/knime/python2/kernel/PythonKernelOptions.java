@@ -54,12 +54,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.knime.python2.Activator;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.PythonPreferencePage;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
  * Options for the PythonKernel. Includes {@link SerializationOptions} and the python version that should be used.
@@ -78,14 +80,13 @@ public class PythonKernelOptions {
 
     private Set<PythonModuleSpec> m_additionalRequiredModules = new HashSet<>();
 
-    private String m_python2Command;
+    private PythonCommand m_python2Command;
 
-    private String m_python3Command;
+    private PythonCommand m_python3Command;
 
     private String m_kernelScriptPath;
 
     private String m_externalCustomPath;
-
 
     /**
      * The default number of rows to transfer per chunk.
@@ -95,14 +96,13 @@ public class PythonKernelOptions {
     private int m_chunkSize = DEFAULT_CHUNK_SIZE;
 
     /**
-     * Default constructor. Consults the {@link PythonPreferencePage} for the default python version to use.
+     * Default constructor. Consults the {@link PythonPreferences preferences} for the default Python version to use.
      */
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
         m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
-        m_python2Command = Activator.getPython2Command();
-        m_python3Command = Activator.getPython3Command();
-
+        m_python2Command = PythonPreferences.getPython2CommandPreference();
+        m_python3Command = PythonPreferences.getPython3CommandPreference();
     }
 
     /**
@@ -119,7 +119,7 @@ public class PythonKernelOptions {
      */
     public PythonKernelOptions(final PythonVersionOption usePython3, final boolean convertMissingToPython,
         final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue,
-        final int chunkSize, final String python2Command, final String python3Command) {
+        final int chunkSize, final PythonCommand python2Command, final PythonCommand python3Command) {
         m_usePython3 = usePython3;
         m_serializationOptions.setConvertMissingFromPython(convertMissingFromPython);
         m_serializationOptions.setConvertMissingToPython(convertMissingToPython);
@@ -150,14 +150,14 @@ public class PythonKernelOptions {
     /**
      * @param python2command the python2command to set
      */
-    public void setPython2Command(final String python2command) {
+    public void setPython2Command(final PythonCommand python2command) {
         m_python2Command = python2command;
     }
 
     /**
      * @param python3command the python3command to set
      */
-    public void setPython3Command(final String python3command) {
+    public void setPython3Command(final PythonCommand python3command) {
         m_python3Command = python3command;
     }
 
@@ -305,39 +305,35 @@ public class PythonKernelOptions {
      * @return the configured serializer id
      */
     public String getSerializerId() {
-        return m_flowVariableOptions.getSerializerId().orElse(PythonPreferencePage.getSerializerId());
+        return m_flowVariableOptions.getSerializerId().orElse(PythonPreferences.getSerializerPreference());
     }
 
     /**
      * @return the configured python2command
      */
-    public String getPython2Command() {
-        return m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command()
-            : m_python2Command;
+    public PythonCommand getPython2Command() {
+        return m_python2Command == null ? PythonPreferences.getPython2CommandPreference() : m_python2Command;
     }
 
     /**
      * @return the configured python3command
      */
-    public String getPython3Command() {
-        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command()
-            : m_python3Command;
+    public PythonCommand getPython3Command() {
+        return m_python3Command == null ? PythonPreferences.getPython3CommandPreference() : m_python3Command;
     }
 
     /**
      * @return the configured python2command
      */
-    public String getPython2CommandRaw() {
-        return m_python2Command == null || m_python2Command.equals("") ? Activator.getPython2Command()
-            : m_python2Command;
+    public PythonCommand getPython2CommandRaw() {
+        return m_python2Command == null ? PythonPreferences.getPython2CommandPreference() : m_python2Command;
     }
 
     /**
      * @return the configured python3command.
      */
-    public String getPython3CommandRaw() {
-        return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command()
-            : m_python3Command;
+    public PythonCommand getPython3CommandRaw() {
+        return m_python3Command == null ? PythonPreferences.getPython3CommandPreference() : m_python3Command;
     }
 
     /**
@@ -349,11 +345,13 @@ public class PythonKernelOptions {
         m_flowVariableOptions = options;
     }
 
+
     /**
-     * Enum holding supported python versions.
+     * @deprecated Use {@link PythonVersion} instead.
      */
     @SuppressWarnings("javadoc")
-    public static enum PythonVersionOption {
+    @Deprecated
+    public enum PythonVersionOption {
             PYTHON2, PYTHON3;
     }
 
@@ -376,10 +374,11 @@ public class PythonKernelOptions {
      * @return the default python version
      */
     public PythonVersionOption getPreferencePythonVersion() {
-        final String defaultPythonVersion = PythonPreferencePage.getDefaultPythonOption();
-        if (defaultPythonVersion.contentEquals("python3")) {
+        // TODO: Get rid of PythonVersionOption.
+        final PythonVersion defaultPythonVersion = PythonPreferences.getPythonVersionPreference();
+        if (defaultPythonVersion.equals(PythonVersion.PYTHON3)) {
             return PythonVersionOption.PYTHON3;
-        } else if (defaultPythonVersion.contentEquals("python2")) {
+        } else if (defaultPythonVersion.equals(PythonVersion.PYTHON2)) {
             return PythonVersionOption.PYTHON2;
         } else {
             throw new IllegalStateException("No default python version available from preference page!");
@@ -432,7 +431,7 @@ public class PythonKernelOptions {
     /**
      * @param externalCustomPath the externalCustomPath to set
      */
-    public void setExternalCustomPath(String externalCustomPath) {
+    public void setExternalCustomPath(final String externalCustomPath) {
         m_externalCustomPath = externalCustomPath;
     }
 

@@ -59,7 +59,7 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python2.PythonPreferencePage;
+import org.knime.python2.prefs.PythonPreferences;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -103,15 +103,13 @@ public class Activator implements BundleActivator {
      * @return The command to start python
      */
     public static String getPythonCommand() {
-        return PythonPreferencePage.getPython2Path();
+        return PythonPreferences.getPython2CommandPreference().toString();
     }
 
     /**
-     * Tests if python can be started with the currently configured command and
-     * if all required modules are installed.
+     * Tests if python can be started with the currently configured command and if all required modules are installed.
      *
-     * @return {@link PythonKernelTestResult} that containes detailed test
-     *         information
+     * @return {@link PythonKernelTestResult} that containes detailed test information
      */
     public static synchronized PythonKernelTestResult testPythonInstallation() {
         // If python test already succeeded we do not have to run it again
@@ -139,8 +137,7 @@ public class Activator implements BundleActivator {
     }
 
     /**
-     * Delete the previous python test result and retest the python behind the
-     * new path.
+     * Delete the previous python test result and retest the python behind the new path.
      *
      * @return The new test result
      */
@@ -152,10 +149,8 @@ public class Activator implements BundleActivator {
     /**
      * Returns the file contained in the plugin with the given ID.
      *
-     * @param symbolicName
-     *            ID of the plugin containing the file
-     * @param relativePath
-     *            File path inside the plugin
+     * @param symbolicName ID of the plugin containing the file
+     * @param relativePath File path inside the plugin
      * @return The file
      */
     public static File getFile(final String symbolicName, final String relativePath) {

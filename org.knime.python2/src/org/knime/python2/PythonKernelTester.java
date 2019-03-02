@@ -90,8 +90,11 @@ public class PythonKernelTester {
      * Caches previous test results. Mapping from the Python command that was tested to a pair of the additional
      * required modules for which were tested and the test results.
      */
-    private static final Map<String, Pair<List<PythonModuleSpec>, PythonKernelTestResult>> TEST_RESULTS =
+    private static final Map<PythonCommand, Pair<List<PythonModuleSpec>, PythonKernelTestResult>> TEST_RESULTS =
         new ConcurrentHashMap<>();
+
+    private PythonKernelTester() {
+    }
 
     /**
      * Tests if Python can be started for the given Python 2 command and if all given required custom modules are
@@ -103,7 +106,7 @@ public class PythonKernelTester {
      * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
      * @return The results of the installation test.
      */
-    public static PythonKernelTestResult testPython2Installation(final String python2Command,
+    public static PythonKernelTestResult testPython2Installation(final PythonCommand python2Command,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python2Command, PYTHON_MAJOR_VERSION_2, PYTHON_MINIMUM_VERSION_2,
             additionalRequiredModules, force);
@@ -119,7 +122,7 @@ public class PythonKernelTester {
      * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
      * @return The results of the installation test.
      */
-    public static PythonKernelTestResult testPython3Installation(final String python3Command,
+    public static PythonKernelTestResult testPython3Installation(final PythonCommand python3Command,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
             additionalRequiredModules, force);
@@ -128,7 +131,7 @@ public class PythonKernelTester {
     /**
      * @param minimumVersion May be {@code null} in the case where no minimum version is required.
      */
-    private static synchronized PythonKernelTestResult testPythonInstallation(final String pythonCommand,
+    private static synchronized PythonKernelTestResult testPythonInstallation(final PythonCommand pythonCommand,
         final String majorVersion, final String minimumVersion,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         // Only rerun test if there isn't already a suitable test result.
@@ -174,7 +177,7 @@ public class PythonKernelTester {
         return testResults;
     }
 
-    private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final String pythonCommand,
+    private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final PythonCommand pythonCommand,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         // If a previous, appropriate Python test already succeeded, we will not have to run it again and return the
         // old results here (except if we're forced to).
@@ -194,28 +197,27 @@ public class PythonKernelTester {
         return null;
     }
 
-    private static Process runPythonKernelTester(final String pythonCommand, final String majorVersion,
+    private static Process runPythonKernelTester(final PythonCommand pythonCommand, final String majorVersion,
         final String minimumVersion, final Collection<PythonModuleSpec> additionalRequiredModules,
         final StringBuilder testLogger) throws IOException {
         // Run Python kernel tester script. See file at pythonKernelTesterFilePath for expected arguments.
         final String pythonKernelTesterFilePath =
             Activator.getFile(Activator.PLUGIN_ID, "py/" + PYTHON_KERNEL_TESTER_FILE_NAME).getAbsolutePath();
-        final List<String> command = new ArrayList<>(1 + 1 + 1 + (minimumVersion == null ? 0 : 1)
+        final List<String> commandArguments = new ArrayList<>(1 + 1 + (minimumVersion == null ? 0 : 1)
             + (additionalRequiredModules.isEmpty() ? 0 : 1) + additionalRequiredModules.size());
-        command.add(pythonCommand);
-        command.add(pythonKernelTesterFilePath);
-        command.add(majorVersion);
+        commandArguments.add(pythonKernelTesterFilePath);
+        commandArguments.add(majorVersion);
         if (minimumVersion != null) {
-            command.add(minimumVersion);
+            commandArguments.add(minimumVersion);
         }
         if (!additionalRequiredModules.isEmpty()) {
-            command.add("-m"); // Flag for additional modules.
-            command.addAll(Collections2.transform(additionalRequiredModules, PythonModuleSpec::toString));
+            commandArguments.add("-m"); // Flag for additional modules.
+            commandArguments.addAll(Collections2.transform(additionalRequiredModules, PythonModuleSpec::toString));
         }
-        final ProcessBuilder pb = new ProcessBuilder();
-        pb.command(command);
-        testLogger.append("Executed command: " + String.join(" ", pb.command()));
+        final ProcessBuilder pb = pythonCommand.createProcessBuilder();
+        pb.command().addAll(commandArguments);
         final Process process = pb.start();
+        testLogger.append("Executed command: " + String.join(" ", pb.command()));
         testLogger.append("\nPYTHONPATH=" + pb.environment().getOrDefault("PYTHONPATH", ":"));
         testLogger.append("\nPATH=" + pb.environment().getOrDefault("PATH", ":") + "\n");
         return process;

@@ -49,7 +49,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.PythonPreferencePage;
+import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtension;
+import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 
 /**
  * Encapsulates all options that may be set for the python nodes via FlowVariables. Offers a factory method for parsing
@@ -80,13 +81,19 @@ public final class FlowVariableOptions {
     private FlowVariableOptions(final Map<String, FlowVariable> map) {
         final FlowVariable fv = map.get(PYTHON_SERIALIZATION_LIBRARY);
         final String serLib = (fv == null) ? null : fv.getStringValue();
-        if ((serLib != null) && PythonPreferencePage.getAvailableSerializerIds().contains(serLib)) {
+        if (serLib != null && serializerExists(serLib)) {
             m_serializerId = serLib;
         } else if (serLib != null) {
             throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
         } else {
             m_serializerId = null;
         }
+    }
+
+    private static boolean serializerExists(final String serializerId) {
+        return SerializationLibraryExtensions.getExtensions().stream() //
+            .map(SerializationLibraryExtension::getId) //
+            .anyMatch(id -> id.equals(serializerId));
     }
 
     /**

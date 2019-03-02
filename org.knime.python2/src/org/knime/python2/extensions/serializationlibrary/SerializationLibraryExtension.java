@@ -47,9 +47,9 @@
  */
 package org.knime.python2.extensions.serializationlibrary;
 
-import org.knime.python2.PythonPreferencePage;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibrary;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
+import org.knime.python2.prefs.PythonPreferencePage;
 
 /**
  * Extension for plugins implementing a serialization library for transmitting data between KNIME and python.

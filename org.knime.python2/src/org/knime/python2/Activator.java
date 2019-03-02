@@ -58,21 +58,22 @@ import org.knime.core.util.FileUtil;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.generic.templates.SourceCodeTemplatesExtensions;
+import org.knime.python2.prefs.PythonPreferences;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
- * Activator for this plugin.
+ * Activator for the org.knime.python2 plugin.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public class Activator implements BundleActivator {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(Activator.class);
+public final class Activator implements BundleActivator {
 
     /**
-     * The id of the plugin activated by this class.
+     * The id of the org.knime.python2 plugin that is activated by this class.
      */
     public static final String PLUGIN_ID = "org.knime.python2";
 
@@ -83,18 +84,22 @@ public class Activator implements BundleActivator {
         SerializationLibraryExtensions.init();
         // Test Python installation.
         new Thread(() -> {
-            PythonKernelTestResult python2Res = PythonKernelTester.testPython2Installation(getPython2Command(),
-                PythonPreferencePage.getRequiredSerializerModules(), false);
+            PythonKernelTestResult python2Res =
+                PythonKernelTester.testPython2Installation(PythonPreferences.getPython2CommandPreference(),
+                    PythonPreferences.getCurrentlyRequiredSerializerModules(), false);
             if (python2Res.hasError()) {
-                LOGGER.debug("Your configured python installation has issues preventing the KNIME Python integration"
-                    + "\nIssue python version 2: " + python2Res.getErrorLog());
+                NodeLogger.getLogger(Activator.class)
+                    .debug("Your configured Python 2 installation has issues preventing the KNIME Python integration "
+                        + "from working properly.\nList of issues: " + python2Res.getErrorLog());
             }
 
-            PythonKernelTestResult python3Res = PythonKernelTester.testPython3Installation(getPython3Command(),
-                PythonPreferencePage.getRequiredSerializerModules(), false);
+            PythonKernelTestResult python3Res =
+                PythonKernelTester.testPython3Installation(PythonPreferences.getPython3CommandPreference(),
+                    PythonPreferences.getCurrentlyRequiredSerializerModules(), false);
             if (python3Res.hasError()) {
-                LOGGER.debug("Your configured python installation has issues preventing the KNIME Python integration"
-                    + "\nIssue python version 3: " + python3Res.getErrorLog());
+                NodeLogger.getLogger(Activator.class)
+                    .debug("Your configured Python 3 installation has issues preventing the KNIME Python integration "
+                        + "from working properly.\nList of issues: " + python3Res.getErrorLog());
             }
         }).start();
         SourceCodeTemplatesExtensions.init();
@@ -106,29 +111,11 @@ public class Activator implements BundleActivator {
     }
 
     /**
-     * Return the command to start python 2.
-     *
-     * @return The command to start python 2
-     */
-    public static String getPython2Command() {
-        return PythonPreferencePage.getPython2Path();
-    }
-
-    /**
-     * Return the command to start python 3.
-     *
-     * @return The command to start python 3
-     */
-    public static String getPython3Command() {
-        return PythonPreferencePage.getPython3Path();
-    }
-
-    /**
      * Returns the file contained in the plugin with the given ID.
      *
-     * @param symbolicName ID of the plugin containing the file
-     * @param relativePath File path inside the plugin
-     * @return The file
+     * @param symbolicName The ID of the plugin containing the file.
+     * @param relativePath The file path inside the plugin.
+     * @return The file.
      */
     public static File getFile(final String symbolicName, final String relativePath) {
         try {
@@ -136,7 +123,7 @@ public class Activator implements BundleActivator {
             final URL url = FileLocator.find(bundle, new Path(relativePath), null);
             return url != null ? FileUtil.getFileFromURL(FileLocator.toFileURL(url)) : null;
         } catch (final Exception e) {
-            LOGGER.debug(e.getMessage(), e);
+            NodeLogger.getLogger(Activator.class).debug(e.getMessage(), e);
             return null;
         }
     }

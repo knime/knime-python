@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,47 +41,52 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Jan 24, 2019 (marcel): created
  */
+package org.knime.python2.config;
 
-package org.knime.python2;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.python2.DefaultPythonCommand;
+import org.knime.python2.PythonCommand;
 
 /**
- * An observable option for the default python version. Only one DefaultPythonVersionOption observed by a
- * {@link DefaultPythonVersionObserver} may be selected at a time.
- *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
- *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
+public final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConfig {
 
-public interface DefaultPythonVersionOption {
-
-    /**
-     * @return true - the option is the currently selected one, false - otherwise
-     */
-
-    public boolean isSelected();
+    private final SettingsModelString m_pythonPath;
 
     /**
-     * Process an update from the observer.
-     *
-     * @param option - the currently selected option
+     * @param configKey The identifier of this config. Used for saving/loading.
+     * @param defaultPythonPath The initial path to the Python executable.
      */
-
-    public void updateDefaultPythonVersion(DefaultPythonVersionOption option);
+    public ManualEnvironmentConfig(final String configKey, final String defaultPythonPath) {
+        m_pythonPath = new SettingsModelString(configKey, defaultPythonPath);
+    }
 
     /**
-     * Set an observer for this option.
-     *
-     * @param observer - a {@link DefaultPythonVersionObserver}
+     * @return The path to the Python executable.
      */
+    public SettingsModelString getExecutablePath() {
+        return m_pythonPath;
+    }
 
-    public void setObserver(DefaultPythonVersionObserver observer);
+    @Override
+    public PythonCommand getPythonCommand() {
+        return new DefaultPythonCommand(m_pythonPath.getStringValue());
+    }
 
-    /**
-     * Notifies the observer about a state change meaning that this option was selected.
-     */
+    @Override
+    public void saveConfigTo(final PythonConfigStorage storage) {
+        storage.saveStringModel(m_pythonPath);
+    }
 
-    public void notifyChange();
-
+    @Override
+    public void loadConfigFrom(final PythonConfigStorage storage) {
+        storage.loadStringModel(m_pythonPath);
+    }
 }
