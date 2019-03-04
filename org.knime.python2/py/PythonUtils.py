@@ -133,10 +133,10 @@ def is_collection(data_type):
     """
     Checks if the given type is a collection type.
     """
-    return (data_type is list #
-            or data_type is tuple #
-            or data_type is set #
-            or data_type is frozenset #
+    return (data_type is list  #
+            or data_type is tuple  #
+            or data_type is set  #
+            or data_type is frozenset  #
             or data_type is dict)
 
 
