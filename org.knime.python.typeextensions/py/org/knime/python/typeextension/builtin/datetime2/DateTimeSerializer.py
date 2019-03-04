@@ -41,18 +41,11 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-try:
-    from pandas._libs.tslibs.timestamps import Timestamp
-    _tslib_available = True
-except ImportError:
-    try:
-        from pandas.tslib import Timestamp
-        _tslib_available = True
-    except ImportError:
-        _tslib_available = False
+import EnvironmentHelper
+
 
 def serialize(object_value):
-    if _tslib_available and type(object_value) is Timestamp:
+    if EnvironmentHelper.is_tslib_available and type(object_value) is EnvironmentHelper.Timestamp:
         object_value = object_value.to_pydatetime()
     #format: yyyy-mm-dd HH:MM:SS (+microseconds and offset to UTC if available) 
     datestr = object_value.isoformat(' ')
