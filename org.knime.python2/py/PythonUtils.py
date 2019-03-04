@@ -58,8 +58,8 @@ else:
     import imp
 
 if EnvironmentHelper.is_tslib_available():
-    from pandas.tslib import Timestamp
-    from pandas.tslib import NaT
+    from EnvironmentHelper import Timestamp
+    from EnvironmentHelper import NaT
 else:
     Timestamp = None
     NaT = None

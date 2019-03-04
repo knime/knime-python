@@ -69,13 +69,28 @@ try:
 except ImportError:
     _is_jedi_available = False
 
+_is_tslib_available = False
 try:
-    from pandas.tslib import Timestamp
-    from pandas.tslib import NaT
-
+    from pandas._libs.tslibs.timestamps import Timestamp
+    from pandas._libs.tslibs.timestamps import NaT
     _is_tslib_available = True
 except ImportError:
-    _is_tslib_available = False
+    pass
+if not _is_tslib_available:
+    try:
+        from pandas.tslib import Timestamp
+        from pandas.tslib import NaT
+        _is_tslib_available = True
+    except ImportError:
+        pass
+if not _is_tslib_available:
+    try:
+        # pandas 0.24+
+        from pandas._libs.tslib import Timestamp
+        from pandas._libs.tslibs import NaT
+        _is_tslib_available = True
+    except ImportError:
+        pass
 
 
 def is_python3():

@@ -511,7 +511,7 @@ class Cursor(object):
     # but I'm not sure when __del__ will be called
     __del__ = _close_last
     
-    from pandas.tslib import Timestamp
+    from EnvironmentHelper import Timestamp
     if PY2:
         supported_types = [int, float, basestring, bool, datetime.datetime, Timestamp]
     else:
@@ -521,7 +521,7 @@ class Cursor(object):
         return any(filter(lambda x: issubclass(type, x), self.supported_types))
 
     def _set_stmt_parms(self, prep_stmt, parameters):
-        from pandas.tslib import Timestamp
+        from EnvironmentHelper import Timestamp
         for i in range(len(parameters)):
             if isinstance(parameters[i], Timestamp) or isinstance(parameters[i], datetime.datetime):
                 import jpype
