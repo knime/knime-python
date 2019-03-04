@@ -53,7 +53,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RunnableFuture;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.core.util.ThreadUtils;
 import org.knime.python2.kernel.messaging.AbstractTaskHandler;
 import org.knime.python2.kernel.messaging.DefaultMessage;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
@@ -97,8 +96,7 @@ public final class PythonCommands implements AutoCloseable {
         final PythonExecutionMonitor monitor) {
         m_messaging = new PythonMessaging(outToPython, inFromPython, monitor);
         m_monitor = monitor;
-        m_executor = ThreadUtils.executorServiceWithContext(
-            Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-task-%d").build()));
+        m_executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-task-%d").build());
     }
 
     public MessageHandlerCollection getMessageHandlers() {
@@ -406,6 +404,13 @@ public final class PythonCommands implements AutoCloseable {
         }, createExecuteCommand(sourceCode));
     }
 
+    /**
+     * Creates a runnable future that asynchronously executes a source code snippet in Python.
+     *
+     * @param sourceCode the snippet to execute
+     * @return a runnable future that executes the snippet and returns output and error/warning messages that were
+     *         emitted during execution
+     */
     public synchronized RunnableFuture<String[]> executeAsync(final String sourceCode) {
         return createTask(new AbstractTaskHandler<String[]>() {
 
@@ -441,6 +446,9 @@ public final class PythonCommands implements AutoCloseable {
             new DefaultMessage(m_messaging.createNextMessageId(), "cleanup", null, null));
     }
 
+    /**
+     * Starts the underlying messaging system that handles the communication between Java and Python.
+     */
     public synchronized void start() {
         m_messaging.start();
     }

@@ -95,7 +95,7 @@ import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.util.ThreadUtils;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
@@ -192,6 +192,11 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonKernelOptions m_kernelOptions;
 
+    /**
+     * The node context that was active when this instance was constructed (if any).
+     */
+    private final NodeContext m_nodeContext;
+
     private final Process m_process;
 
     private final Integer m_pid; // Nullable.
@@ -227,8 +232,8 @@ public class PythonKernel implements AutoCloseable {
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
     /** Used to make kernel operations cancelable. */
-    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
-        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build()));
+    private final ExecutorService m_executorService =
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build());
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -241,6 +246,7 @@ public class PythonKernel implements AutoCloseable {
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = new PythonKernelOptions(kernelOptions);
+        m_nodeContext = NodeContext.getContext();
 
         testInstallation();
 
@@ -525,17 +531,12 @@ public class PythonKernel implements AutoCloseable {
             @Override
             protected Message respond(final Message request, final int responseMessageId) {
                 String uriString = new PayloadDecoder(request.getPayload()).getNextString();
+                // Node context may be required to resolve KNIME URL.
+                if (m_nodeContext != null) {
+                    NodeContext.pushContext(m_nodeContext);
+                }
                 try {
-                    try {
-                        CheckUtils.checkSourceFile(uriString);
-                    } catch (InvalidSettingsException ex) {
-                        if (SystemUtils.IS_OS_WINDOWS && uriString != null) {
-                            uriString = uriString.replace("\\", "/");
-                            CheckUtils.checkSourceFile(uriString);
-                        } else {
-                            throw ex;
-                        }
-                    }
+                    uriString = fixWindowsUri(uriString);
                     final URI uri = new URI(uriString);
                     final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
                     final String path = file.getAbsolutePath();
@@ -547,9 +548,27 @@ public class PythonKernel implements AutoCloseable {
                     LOGGER.debug(errorMessage, ex);
                     final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).get();
                     return createResponse(request, responseMessageId, false, errorPayload, null);
+                } finally {
+                    if (m_nodeContext != null) {
+                        NodeContext.removeLastContext();
+                    }
                 }
             }
         });
+    }
+
+    private static String fixWindowsUri(String uriString) throws InvalidSettingsException {
+        try {
+            CheckUtils.checkSourceFile(uriString);
+        } catch (InvalidSettingsException ex) {
+            if (SystemUtils.IS_OS_WINDOWS && uriString != null) {
+                uriString = uriString.replace("\\", "/");
+                CheckUtils.checkSourceFile(uriString);
+            } else {
+                throw ex;
+            }
+        }
+        return uriString;
     }
 
     private boolean checkHasAutoComplete() {
@@ -768,7 +787,7 @@ public class PythonKernel implements AutoCloseable {
      * @param name a potential flow variable name
      * @return valid
      */
-    private boolean isValidFlowVariableName(final String name) {
+    private static boolean isValidFlowVariableName(final String name) {
         return !(name.startsWith(FlowVariable.Scope.Global.getPrefix())
             || name.startsWith(FlowVariable.Scope.Local.getPrefix()));
     }
@@ -1552,6 +1571,10 @@ public class PythonKernel implements AutoCloseable {
         return m_commands;
     }
 
+    /**
+     * @param routeToWarningLog {@code true} if error messages issued by the Python side shall be routed to the warning
+     *            level of the log system. {@code false} if they shall be routed to the error level.
+     */
     public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
         synchronized (m_stderrListeners) {
             for (final PythonOutputListener listener : m_stderrListeners) {
@@ -1586,16 +1609,16 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
-    private boolean isWarningMessage(final String message) {
+    private static boolean isWarningMessage(final String message) {
         return message.startsWith(WARNING_MESSAGE_PREFIX);
     }
 
-    private String stripWarningMessagePrefix(final String message) {
+    private static String stripWarningMessagePrefix(final String message) {
         return message.substring(WARNING_MESSAGE_PREFIX.length(), message.length());
     }
 
     private void startPipeListeners() {
-        ThreadUtils.threadWithContext(() -> {
+        new Thread(() -> {
             String message;
             final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stdoutStream));
             try {
@@ -1608,7 +1631,7 @@ public class PythonKernel implements AutoCloseable {
 
         }).start();
 
-        ThreadUtils.threadWithContext(() -> {
+        new Thread(() -> {
             String message;
             final BufferedReader reader = new BufferedReader(new InputStreamReader(m_stderrStream));
             try {
