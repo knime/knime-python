@@ -45,7 +45,7 @@ import EnvironmentHelper
 
 
 def serialize(object_value):
-    if EnvironmentHelper.is_tslib_available and type(object_value) is EnvironmentHelper.Timestamp:
+    if EnvironmentHelper.is_tslib_available() and type(object_value) is EnvironmentHelper.Timestamp:
         object_value = object_value.to_pydatetime()
     # format: yyyy-mm-dd HH:MM:SS (+microseconds and offset to UTC if available)
     datestr = object_value.isoformat(' ')
