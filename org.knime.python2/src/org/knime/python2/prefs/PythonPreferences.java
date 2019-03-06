@@ -48,7 +48,9 @@
  */
 package org.knime.python2.prefs;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
@@ -88,6 +90,29 @@ public final class PythonPreferences {
     static final PythonConfigStorage DEFAULT = new PreferenceWrappingConfigStorage(DEFAULT_SCOPE_PREFERENCES);
 
     private PythonPreferences() {
+    }
+
+    /**
+     * Initializes sensible default Python preferences on the instance scope-level if necessary.
+     *
+     * @see PythonPreferencesInitializer
+     */
+    public static void init() {
+        // Backward compatibility: Old configured preferences should still have the "Manual" environment configuration
+        // selected by default while we want "Conda" environment configuration as the default for new installations.
+        try {
+            final List<String> currentPreferencesKeys =
+                Arrays.asList(InstanceScopePreferenceStorage.getInstanceScopePreferences().keys());
+            if (!currentPreferencesKeys.contains(PythonEnvironmentTypeConfig.CFG_KEY_ENVIRONMENT_TYPE)
+                && (currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON2_PATH)
+                    || currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON3_PATH))) {
+                final PythonEnvironmentTypeConfig environmentTypeConfig = new PythonEnvironmentTypeConfig();
+                environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.MANUAL.getId());
+                environmentTypeConfig.saveConfigTo(CURRENT);
+            }
+        } catch (final Exception ex) {
+            // Stick with default value.
+        }
     }
 
     /**

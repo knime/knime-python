@@ -52,7 +52,6 @@ import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidge
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jface.preference.PreferencePage;
@@ -88,7 +87,6 @@ import org.knime.python2.config.PythonEnvironmentType;
 import org.knime.python2.config.PythonEnvironmentTypeConfig;
 import org.knime.python2.config.PythonVersionConfig;
 import org.knime.python2.config.SerializerConfig;
-import org.knime.python2.prefs.PythonPreferences.InstanceScopePreferenceStorage;
 
 /**
  * Preference page for configurations related to the org.knime.python2 plug-in.
@@ -327,19 +325,6 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
         final PythonConfigStorage currentPreferences = PythonPreferences.CURRENT;
         for (final PythonConfig config : m_configs) {
             config.loadConfigFrom(currentPreferences);
-        }
-        // Backward compatibility: Old configured preferences should still have manual environment configuration
-        // selected by default while we want Conda environment configuration as the default for new installations.
-        try {
-            final List<String> currentPreferencesKeys =
-                Arrays.asList(InstanceScopePreferenceStorage.getInstanceScopePreferences().keys());
-            if ((currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON2_PATH)
-                || currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON3_PATH))
-                && !currentPreferencesKeys.contains(CondaEnvironmentsConfig.CFG_KEY_CONDA_DIRECTORY_PATH)) {
-                m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.MANUAL.getId());
-            }
-        } catch (final Exception ex) {
-            // Stick with default value.
         }
     }
 }

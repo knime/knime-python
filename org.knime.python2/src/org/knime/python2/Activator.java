@@ -82,6 +82,7 @@ public final class Activator implements BundleActivator {
         // We need to collect all registered serializers before testing the installation since serializers may specify
         // additional required modules.
         SerializationLibraryExtensions.init();
+        PythonPreferences.init();
         // Test Python installation.
         new Thread(() -> {
             PythonKernelTestResult python2Res =
