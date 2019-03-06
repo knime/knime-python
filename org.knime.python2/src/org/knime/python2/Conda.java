@@ -467,11 +467,11 @@ public final class Conda {
         } catch (final PythonExecutionException ex) {
             throw new IOException(ex.getMessage(), ex);
         } catch (final PythonCanceledExecutionException ex) {
-            conda.destroyForcibly();
+            conda.destroy();
             throw ex;
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
-            conda.destroyForcibly();
+            conda.destroy();
             throw new PythonCanceledExecutionException();
         }
     }
