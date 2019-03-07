@@ -38,7 +38,8 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
  net.sf.trove4j;bundle-version="[2.0.2,2.0.2]",
  org.knime.base;bundle-version="[3.5.0,4.0.0)",
  com.fasterxml.jackson.core.jackson-core;bundle-version="[2.8.9,3.0.0)",
- com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.8.9,3.0.0)"
+ com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.8.9,3.0.0)",
+ org.knime.rsyntaxtextarea;bundle-version="[3.8.0,4.0.0]"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Eclipse-ExtensibleAPI: true
