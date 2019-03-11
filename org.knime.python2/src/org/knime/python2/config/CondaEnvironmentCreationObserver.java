@@ -133,9 +133,9 @@ public final class CondaEnvironmentCreationObserver {
                 final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
                 final String createdEnvironmentName;
                 if (m_pythonVersion.equals(PythonVersion.PYTHON2)) {
-                    createdEnvironmentName = conda.createDefaultPython2Environment(m_currentCreationMonitor);
+                    createdEnvironmentName = conda.createDefaultPython2Environment(null, m_currentCreationMonitor);
                 } else if (m_pythonVersion.equals(PythonVersion.PYTHON3)) {
-                    createdEnvironmentName = conda.createDefaultPython3Environment(m_currentCreationMonitor);
+                    createdEnvironmentName = conda.createDefaultPython3Environment(null, m_currentCreationMonitor);
                 } else {
                     throw new IllegalStateException("Python version '" + m_pythonVersion
                         + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
