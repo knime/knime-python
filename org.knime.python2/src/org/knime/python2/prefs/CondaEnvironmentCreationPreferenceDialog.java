@@ -52,6 +52,7 @@ import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidge
 
 import javax.swing.event.ChangeEvent;
 
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.SelectionEvent;
@@ -85,11 +86,19 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
     private static final String CREATE_BUTTON_TEXT = "Create new environment";
 
+    private static final String RETRY_BUTTON_TEXT = "Retry creating new environment";
+
+    private static final String ENVIRONMENT_NAME_PLACEHOLDER = "Collecting existing environment names...";
+
+    private static final int DESCRIPTION_LABEL_WIDTH_HINTS = 300;
+
     private final CondaEnvironmentCreationObserver m_environmentCreator;
 
     // UI components: Initialized by #createContents().
 
     private final Shell m_shell;
+
+    private Text m_environmentNameTextBox;
 
     private Label m_statusLabel;
 
@@ -101,12 +110,14 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
     private Text m_errorTextBox;
 
-    private Button m_cancelOrCloseButton;
+    private Button m_createOrRetryButton;
+
+    private Button m_cancelButton;
 
     /**
-     * Initialized when the create button is clicked.
+     * Initialized when the {@link #switchToStartingOrRetryingState() create button is clicked}.
      */
-    private CondaEnvironmentCreationStatus m_status;
+    private volatile CondaEnvironmentCreationStatus m_status;
 
     /**
      * Initialized by {@link #registerExternalHooks()}.
@@ -129,19 +140,42 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         m_shell.setLayout(new GridLayout());
 
         final Label descriptionText = new Label(m_shell, SWT.WRAP);
-        descriptionText.setText("Creating the Conda environment may take several minutes"
-            + "\nand requires an active internet connection.");
-        descriptionText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        descriptionText.setText(
+            "Creating the Conda environment may take several minutes and requires an active internet connection.");
+        descriptionText.setFont(JFaceResources.getFontRegistry().getItalic(""));
+        GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        gridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
+        descriptionText.setLayoutData(gridData);
+
+        final Label separator = new Label(m_shell, SWT.SEPARATOR | SWT.HORIZONTAL);
+        separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        final Composite environmentNameContainer = new Composite(m_shell, SWT.NONE);
+        environmentNameContainer.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
+        environmentNameContainer.setLayout(new GridLayout(2, false));
+
+        // Environment name:
+
+        final Label environmentNameTextBoxLabel = new Label(environmentNameContainer, SWT.NONE);
+        environmentNameTextBoxLabel.setText("Environment name");
+        environmentNameTextBoxLabel.setLayoutData(new GridData());
+
+        m_environmentNameTextBox = new Text(environmentNameContainer, SWT.NONE);
+        m_environmentNameTextBox.setEnabled(false);
+        m_environmentNameTextBox.setText(ENVIRONMENT_NAME_PLACEHOLDER);
+        m_environmentNameTextBox.setLayoutData(new GridData());
 
         // Progress monitoring widgets:
 
         final Composite installationMonitorContainer = new Composite(m_shell, SWT.NONE);
-        installationMonitorContainer.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true, 2, 1));
+        installationMonitorContainer.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true));
         installationMonitorContainer.setLayout(new GridLayout());
 
         m_statusLabel = new Label(installationMonitorContainer, SWT.WRAP);
-        m_statusLabel.setText("Please click '" + CREATE_BUTTON_TEXT + "' to start.");
-        GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        m_statusLabel.setText("Please click '" + CREATE_BUTTON_TEXT
+            + "' to start. You can specify a custom environment name using the text field above before starting.");
+        gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        gridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
         gridData.verticalIndent = 10;
         m_statusLabel.setLayoutData(gridData);
 
@@ -160,7 +194,7 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         errorTextBoxLabel.setLayoutData(gridData);
 
         final Composite textBoxContainer = new Composite(installationMonitorContainer, SWT.NONE);
-        gridData = new GridData(GridData.FILL, GridData.CENTER, true, false);
+        gridData = new GridData(GridData.FILL, GridData.FILL, true, true);
         gridData.heightHint = 80;
         textBoxContainer.setLayoutData(gridData);
         textBoxContainer.setLayout(new FillLayout());
@@ -180,23 +214,25 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         gridData.verticalIndent = 15;
         buttonContainer.setLayoutData(gridData);
         buttonContainer.setLayout(new RowLayout());
-        final Button createButton = new Button(buttonContainer, SWT.NONE);
-        createButton.setText(CREATE_BUTTON_TEXT);
-        m_cancelOrCloseButton = new Button(buttonContainer, SWT.NONE);
-        m_cancelOrCloseButton.setText("Cancel");
+        m_createOrRetryButton = new Button(buttonContainer, SWT.NONE);
+        m_createOrRetryButton.setText(CREATE_BUTTON_TEXT);
+        m_createOrRetryButton.setEnabled(false);
+        m_cancelButton = new Button(buttonContainer, SWT.NONE);
+        m_cancelButton.setText("Cancel");
 
-        createButton.addSelectionListener(new SelectionListener() {
+        // Initialize environment name: we're calling Conda here, so we should do this asynchronously.
+        new Thread(() -> {
+            final String defaultEnvironmentName = m_environmentCreator.getDefaultEnvironmentName();
+            switchToDefaultEnvironmentNameAvailableState(defaultEnvironmentName);
+        }).start();
+
+        // Internal hooks:
+
+        m_createOrRetryButton.addSelectionListener(new SelectionListener() {
 
             @Override
             public void widgetSelected(final SelectionEvent e) {
-                createButton.setEnabled(false);
-                m_determinateProgressBar.setEnabled(true);
-                m_errorTextBox.setEnabled(true);
-                m_progressBarStackLayout.topControl = m_indeterminateProgressBar;
-                m_shell.layout(true, true);
-                m_status = new CondaEnvironmentCreationStatus();
-                registerExternalHooks();
-                m_environmentCreator.startEnvironmentCreation(m_status);
+                switchToStartingOrRetryingState();
             }
 
             @Override
@@ -204,8 +240,7 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
                 widgetSelected(e);
             }
         });
-
-        m_cancelOrCloseButton.addSelectionListener(new SelectionListener() {
+        m_cancelButton.addSelectionListener(new SelectionListener() {
 
             @Override
             public void widgetSelected(final SelectionEvent e) {
@@ -222,7 +257,6 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
                 widgetSelected(e);
             }
         });
-
         m_shell.addShellListener(new ShellListener() {
 
             @Override
@@ -271,6 +305,102 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         }
     }
 
+    /**
+     * May be followed by starting state.
+     */
+    private void switchToDefaultEnvironmentNameAvailableState(final String defaultEnvironmentName) {
+        performActionOnWidgetInUiThread(m_environmentNameTextBox, () -> {
+            m_environmentNameTextBox.setText(defaultEnvironmentName);
+            m_environmentNameTextBox.setEnabled(true);
+            m_environmentNameTextBox.setFocus();
+            m_environmentNameTextBox.getParent().layout();
+            m_createOrRetryButton.setEnabled(true);
+            return null;
+        }, false);
+    }
+
+    /**
+     * May be followed by finished, canceled, or failed state.
+     */
+    private void switchToStartingOrRetryingState() {
+        // If retrying.
+        m_environmentCreationTerminated = false;
+        m_statusLabel.setForeground(null);
+        m_errorTextBox.setText("");
+        unregisterExternalHooks();
+
+        m_environmentNameTextBox.setEnabled(false);
+        m_determinateProgressBar.setEnabled(true);
+        m_progressBarStackLayout.topControl = m_indeterminateProgressBar;
+        m_errorTextBox.setEnabled(true);
+        m_createOrRetryButton.setEnabled(false);
+        String environmentName = m_environmentNameTextBox.getText();
+        if (environmentName.isEmpty() || environmentName.equals(ENVIRONMENT_NAME_PLACEHOLDER)) {
+            // While the creator can handle empty environments names, we should also sync the dialog to let the
+            // user know which name we chose to overrule their empty text field input.
+            environmentName = m_environmentCreator.getDefaultEnvironmentName();
+            m_environmentNameTextBox.setText(environmentName);
+        }
+        m_shell.layout(true, true);
+        m_status = new CondaEnvironmentCreationStatus();
+        registerExternalHooks();
+        m_environmentCreator.startEnvironmentCreation(environmentName, m_status);
+    }
+
+    /**
+     * May be followed by starting state ("retry") or no state (terminal state).
+     */
+    private void switchToFailedState() {
+        m_environmentCreationTerminated = true;
+        performActionOnWidgetInUiThread(m_shell, () -> {
+            if (!m_statusLabel.isDisposed()) {
+                final Color red = new Color(m_statusLabel.getDisplay(), 255, 0, 0);
+                m_statusLabel.setForeground(red);
+                m_statusLabel.addDisposeListener(e -> red.dispose());
+            }
+            if (!m_determinateProgressBar.isDisposed()) {
+                m_determinateProgressBar.setSelection(0);
+                m_determinateProgressBar.setEnabled(false);
+                m_progressBarStackLayout.topControl = m_determinateProgressBar;
+            }
+            if (!m_indeterminateProgressBar.isDisposed()) {
+                m_indeterminateProgressBar.setEnabled(false);
+            }
+            // Prepare for retry.
+            if (!m_environmentNameTextBox.isDisposed()) {
+                m_environmentNameTextBox.setEnabled(true);
+            }
+            if (!m_createOrRetryButton.isDisposed()) {
+                m_createOrRetryButton.setText(RETRY_BUTTON_TEXT);
+                m_createOrRetryButton.setEnabled(true);
+            }
+            m_shell.layout(true, true);
+            return null;
+        }, false);
+    }
+
+    /**
+     * Terminal state.
+     */
+    private void switchToFinishedState() {
+        m_environmentCreationTerminated = true;
+        performActionOnWidgetInUiThread(m_shell, () -> {
+            m_shell.close();
+            return null;
+        }, false);
+    }
+
+    /**
+     * Terminal state.
+     */
+    private void switchToCanceledState() {
+        m_environmentCreationTerminated = true;
+        performActionOnWidgetInUiThread(m_shell, () -> {
+            m_shell.close();
+            return null;
+        }, false);
+    }
+
     private void registerExternalHooks() {
         m_status.getStatusMessage().addChangeListener(this::updateStatusMessage);
         m_status.getProgress().addChangeListener(this::updateProgress);
@@ -285,49 +415,23 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
             @Override
             public void condaEnvironmentCreationFinished(final CondaEnvironmentCreationStatus status,
                 final String createdEnvironmentName) {
-                m_environmentCreationTerminated = true;
                 if (status == m_status) {
-                    performActionOnWidgetInUiThread(m_shell, () -> {
-                        m_shell.close();
-                        return null;
-                    }, true);
+                    switchToFinishedState();
                 }
             }
 
             @Override
             public void condaEnvironmentCreationCanceled(final CondaEnvironmentCreationStatus status) {
-                m_environmentCreationTerminated = true;
                 if (status == m_status) {
-                    performActionOnWidgetInUiThread(m_shell, () -> {
-                        m_shell.close();
-                        return null;
-                    }, true);
+                    switchToCanceledState();
                 }
             }
 
             @Override
             public void condaEnvironmentCreationFailed(final CondaEnvironmentCreationStatus status,
                 final String errorMessage) {
-                m_environmentCreationTerminated = true;
                 if (status == m_status) {
-                    performActionOnWidgetInUiThread(m_shell, () -> {
-                        if (!m_statusLabel.isDisposed()) {
-                            final Color red = new Color(m_statusLabel.getDisplay(), 255, 0, 0);
-                            m_statusLabel.setForeground(red);
-                            m_statusLabel.addDisposeListener(e -> red.dispose());
-                        }
-                        if (!m_indeterminateProgressBar.isDisposed()) {
-                            m_indeterminateProgressBar.setEnabled(false);
-                        }
-                        if (!m_determinateProgressBar.isDisposed()) {
-                            m_determinateProgressBar.setEnabled(false);
-                        }
-                        if (!m_cancelOrCloseButton.isDisposed()) {
-                            m_cancelOrCloseButton.setText("Close");
-                        }
-                        m_shell.layout(true, true);
-                        return null;
-                    }, true);
+                    switchToFailedState();
                 }
             }
         };

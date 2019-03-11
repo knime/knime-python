@@ -48,6 +48,7 @@
  */
 package org.knime.python2.config;
 
+import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.knime.core.node.NodeLogger;
@@ -60,7 +61,7 @@ import org.knime.python2.PythonVersion;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 
 /**
- * {@link #startEnvironmentCreation(CondaEnvironmentCreationStatus) Initiates}, observes, and
+ * {@link #startEnvironmentCreation(String, CondaEnvironmentCreationStatus) Initiates}, observes, and
  * {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancels} Conda environment creation processes for a
  * specific Conda installation and Python version. Allows clients to subscribe to changes in the status of such creation
  * processes.
@@ -104,21 +105,48 @@ public final class CondaEnvironmentCreationObserver {
     /**
      * @return The enabled state of this instance. Only enabled instances (i.e., instances whose enabled model returns
      *         {@link SettingsModelBoolean#getBooleanValue() <code>true</code>}) are able to
-     *         {@link #startEnvironmentCreation(CondaEnvironmentCreationStatus) initiate environment creation}.
+     *         {@link #startEnvironmentCreation(String, CondaEnvironmentCreationStatus) initiate environment creation}.
      */
     public SettingsModelBoolean getIsEnvironmentCreationEnabled() {
         return m_environmentCreationEnabled;
     }
 
     /**
+     * @return The default environment name for the next environment created by this instance. Returns an empty string
+     *         in case calling Conda failed.<br>
+     *         Note that this method makes no guarantees about the uniqueness of the returned name if invoked in
+     *         parallel to an ongoing environment creation process.
+     */
+    public String getDefaultEnvironmentName() {
+        try {
+            final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
+            final String defaultEnvironmentName;
+            if (m_pythonVersion.equals(PythonVersion.PYTHON2)) {
+                defaultEnvironmentName = conda.getDefaultPython2EnvironmentName();
+            } else if (m_pythonVersion.equals(PythonVersion.PYTHON3)) {
+                defaultEnvironmentName = conda.getDefaultPython3EnvironmentName();
+            } else {
+                throw new IllegalStateException("Python version '" + m_pythonVersion
+                    + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
+            }
+            return defaultEnvironmentName;
+        } catch (final IOException ex) {
+            return "";
+        }
+    }
+
+    /**
      * Initiates the a new Conda environment creation process. Only allowed if this instance is
      * {@link #getIsEnvironmentCreationEnabled() enabled}.
      *
+     * @param environmentName The name of the environment. Must not already exist in the local Conda installation. May
+     *            be {@code null} or empty in which case a unique default name is used.
      * @param status The status object that is will be notified about changes in the state of the initiated creation
      *            process. Can also be used to {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancel}
      *            the creation process. A new status object must be used for each new creation process.
      */
-    public synchronized void startEnvironmentCreation(final CondaEnvironmentCreationStatus status) {
+    public synchronized void startEnvironmentCreation(final String environmentName,
+        final CondaEnvironmentCreationStatus status) {
         if (!m_environmentCreationEnabled.getBooleanValue()) {
             throw new IllegalStateException("Environment creation is not enabled.");
         }
@@ -133,9 +161,11 @@ public final class CondaEnvironmentCreationObserver {
                 final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
                 final String createdEnvironmentName;
                 if (m_pythonVersion.equals(PythonVersion.PYTHON2)) {
-                    createdEnvironmentName = conda.createDefaultPython2Environment(null, m_currentCreationMonitor);
+                    createdEnvironmentName =
+                        conda.createDefaultPython2Environment(environmentName, m_currentCreationMonitor);
                 } else if (m_pythonVersion.equals(PythonVersion.PYTHON3)) {
-                    createdEnvironmentName = conda.createDefaultPython3Environment(null, m_currentCreationMonitor);
+                    createdEnvironmentName =
+                        conda.createDefaultPython3Environment(environmentName, m_currentCreationMonitor);
                 } else {
                     throw new IllegalStateException("Python version '" + m_pythonVersion
                         + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
