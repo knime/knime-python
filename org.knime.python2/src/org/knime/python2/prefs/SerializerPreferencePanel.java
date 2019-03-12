@@ -48,6 +48,8 @@
  */
 package org.knime.python2.prefs;
 
+import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -56,6 +58,7 @@ import java.util.TreeMap;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -85,8 +88,10 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
     }
 
     @Override
-    protected void createSerializerWidget(final SettingsModelString config, final Composite panel) {
-        final SerializerSelectionBox serializerSelection = new SerializerSelectionBox(config, panel);
+    protected void createSerializerWidget(final SettingsModelString serializerConfig,
+        final SettingsModelString errorMessageModel, final Composite panel) {
+        final SerializerSelectionBox serializerSelection =
+            new SerializerSelectionBox(serializerConfig, errorMessageModel, panel);
         final GridData gridData = new GridData();
         gridData.grabExcessHorizontalSpace = true;
         gridData.horizontalAlignment = SWT.FILL;
@@ -101,9 +106,12 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
 
         /**
          * @param serializerConfig The settings model for the serializer selection.
+         * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
+         *            non-UI thread.
          * @param parent The parent widget.
          */
-        public SerializerSelectionBox(final SettingsModelString serializerConfig, final Composite parent) {
+        public SerializerSelectionBox(final SettingsModelString serializerConfig,
+            final SettingsModelString errorMessageModel, final Composite parent) {
             super(parent, SWT.NONE);
             final GridLayout gridLayout = new GridLayout();
             gridLayout.numColumns = 2;
@@ -133,6 +141,15 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
                 }
             });
             m_serializerSelection.setLayoutData(new GridData());
+
+            // Error label:
+            final Label error = new Label(this, SWT.NONE);
+            final Color red = new Color(parent.getDisplay(), 255, 0, 0);
+            error.setForeground(red);
+            error.addDisposeListener(e -> red.dispose());
+            setLabelText(error, errorMessageModel.getStringValue());
+            errorMessageModel.addChangeListener(e -> setLabelText(error, errorMessageModel.getStringValue()));
+            error.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 2, 1));
         }
 
         private String[] setupSerializers() {
@@ -165,6 +182,15 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
                     + "' is not available. Are you missing a KNIME extension?");
             }
             m_serializerSelection.select(selectionIndex);
+        }
+
+        private void setLabelText(final Label label, final String text) {
+            final String finalText = text != null ? text : "";
+            performActionOnWidgetInUiThread(label, () -> {
+                label.setText(finalText);
+                getParent().layout(true, true);
+                return null;
+            }, false);
         }
     }
 }

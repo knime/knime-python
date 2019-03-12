@@ -70,13 +70,13 @@ public interface PythonEnvironmentConfig extends PythonConfig {
     SettingsModelBoolean getIsDefaultPythonEnvironment();
 
     /**
-     * @return The most recent installation error message of the Python environment configured by this instance. Not
+     * @return The most recent installation status message of the Python environment configured by this instance. Not
      *         meant for saving/loading.
      */
     SettingsModelString getPythonInstallationInfo();
 
     /**
-     * @return The most recent installation status message of the Python environment configured by this instance. Not
+     * @return The most recent installation error message of the Python environment configured by this instance. Not
      *         meant for saving/loading.
      */
     SettingsModelString getPythonInstallationError();

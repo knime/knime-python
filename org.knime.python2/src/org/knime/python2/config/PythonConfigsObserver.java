@@ -53,8 +53,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.PythonCommand;
@@ -76,6 +78,8 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonConfigsObserver {
+
+    private static final String ARROW_SERIALIZER_ID = "org.knime.python2.serde.arrow";
 
     private CopyOnWriteArrayList<PythonConfigsInstallationTestStatusChangeListener> m_listeners =
         new CopyOnWriteArrayList<>();
@@ -132,7 +136,7 @@ public final class PythonConfigsObserver {
         // Test all environments of the respective type on environment type change:
         environmentTypeConfig.getEnvironmentType().addChangeListener(e -> {
             updateDefaultPythonEnvironment();
-            testSelectedPythonEnvironmentType();
+            testCurrentPreferences();
         });
 
         // Refresh and test entire Conda config on Conda directory change.
@@ -159,7 +163,7 @@ public final class PythonConfigsObserver {
             .addChangeListener(e -> testPythonEnvironment(false, true));
 
         // Test required external modules of serializer on change:
-        serializerConfig.getSerializer().addChangeListener(e -> testSelectedPythonEnvironmentType());
+        serializerConfig.getSerializer().addChangeListener(e -> testCurrentPreferences());
     }
 
     private void updateDefaultPythonEnvironment() {
@@ -198,11 +202,13 @@ public final class PythonConfigsObserver {
     }
 
     /**
-     * Initiates installation tests for all environments of the currently selected {@link PythonEnvironmentType}.
-     * Depending on the selected type, the status of each of these tests is published to all installation status models
-     * in either the observed {@link CondaEnvironmentConfig} or the observed {@link ManualEnvironmentConfig}.
+     * Initiates installation tests for all environments of the currently selected {@link PythonEnvironmentType} as well
+     * as for the currently selected serializer. Depending on the selected environment type, the status of each of these
+     * tests is published to all installation status models in either the observed {@link CondaEnvironmentConfig} or the
+     * observed {@link ManualEnvironmentConfig}. Also to the installation error model of the observed
+     * {@link SerializerConfig}.
      */
-    public void testSelectedPythonEnvironmentType() {
+    public void testCurrentPreferences() {
         final PythonEnvironmentType environmentType =
             PythonEnvironmentType.fromId(m_environmentTypeConfig.getEnvironmentType().getStringValue());
         if (PythonEnvironmentType.CONDA.equals(environmentType)) {
@@ -214,6 +220,7 @@ public final class PythonConfigsObserver {
             throw new IllegalStateException("Selected environment type '" + environmentType.getName() + "' is neither "
                 + "conda nor manual. This is an implementation error.");
         }
+        testSerializer();
     }
 
     private void refreshAndTestCondaConfig() {
@@ -395,6 +402,16 @@ public final class PythonConfigsObserver {
             dummyCondaEnvironmentName = CondaEnvironmentsConfig.PLACEHOLDER_PYTHON2_CONDA_ENV_NAME;
         }
         return dummyCondaEnvironmentName.equals(condaEnvironmentName.getStringValue());
+    }
+
+    private void testSerializer() {
+        String serializerErrorMessage = "";
+        if (Objects.equals(m_serializerConfig.getSerializer().getStringValue(), ARROW_SERIALIZER_ID)
+            && SystemUtils.IS_OS_WINDOWS) {
+            serializerErrorMessage =
+                "Apache Arrow cannot be used as the serialization library for Python 2 on Windows.";
+        }
+        m_serializerConfig.getSerializerError().setStringValue(serializerErrorMessage);
     }
 
     private void observeEnvironmentCreation(final CondaEnvironmentCreationObserver creationStatus,

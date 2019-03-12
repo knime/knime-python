@@ -69,11 +69,25 @@ public final class SerializerConfig implements PythonConfig {
 
     private final SettingsModelString m_serializer = new SettingsModelString(CFG_KEY_SERIALIZER, DEFAULT_SERIALIZER);
 
+    // Not meant for saving/loading. We just want an observable string here to communicate with the view:
+
+    private static final String DUMMY_CFG_KEY = "dummy";
+
+    private final SettingsModelString m_serializerError = new SettingsModelString(DUMMY_CFG_KEY, "");
+
     /**
      * @return The {@link SerializationLibraryExtension#getId() id} of the configured serializer.
      */
     public SettingsModelString getSerializer() {
         return m_serializer;
+    }
+
+    /**
+     * @return The error message of the serializer configured by this instance. Can be used to display the
+     *         unavailability of a serializer due to installation/platform constraints. Not meant for saving/loading.
+     */
+    public SettingsModelString getSerializerError() {
+        return m_serializerError;
     }
 
     @Override

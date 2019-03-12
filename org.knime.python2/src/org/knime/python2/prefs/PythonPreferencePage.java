@@ -226,7 +226,7 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
 
         // Initial installation test:
 
-        m_configObserver.testSelectedPythonEnvironmentType();
+        m_configObserver.testCurrentPreferences();
 
         return m_containerScrolledView;
     }
@@ -297,7 +297,7 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
     @Override
     protected void performApply() {
         saveConfigurations();
-        m_configObserver.testSelectedPythonEnvironmentType();
+        m_configObserver.testCurrentPreferences();
     }
 
     @Override

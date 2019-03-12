@@ -58,8 +58,9 @@ public abstract class AbstractSerializerPanel<W> extends AbstractPythonConfigPan
 
     public AbstractSerializerPanel(final SerializerConfig config, final W parent) {
         super(config, parent);
-        createSerializerWidget(config.getSerializer(), getPanel());
+        createSerializerWidget(config.getSerializer(), config.getSerializerError(), getPanel());
     }
 
-    protected abstract void createSerializerWidget(SettingsModelString serializerConfig, W panel);
+    protected abstract void createSerializerWidget(final SettingsModelString serializerConfig,
+        SettingsModelString errorMessageModel, W panel);
 }
