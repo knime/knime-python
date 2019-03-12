@@ -261,8 +261,14 @@ public final class PythonConfigsObserver {
             condaErrorMessage.setStringValue("");
             onCondaInstallationTestStarting();
             final Conda conda = new Conda(m_condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue());
-            final String condaVersion = conda.getVersionString();
-            condaInfoMessage.setStringValue(condaVersion);
+            String condaVersionString = conda.getVersionString();
+            try {
+                condaVersionString =
+                    "Conda version: " + Conda.condaVersionStringToVersion(condaVersionString).toString();
+            } catch (final IllegalArgumentException ex) {
+                // Ignore and use raw version string.
+            }
+            condaInfoMessage.setStringValue(condaVersionString);
             condaErrorMessage.setStringValue("");
             m_python2EnvironmentCreator.getIsEnvironmentCreationEnabled().setBooleanValue(true);
             m_python3EnvironmentCreator.getIsEnvironmentCreationEnabled().setBooleanValue(true);
@@ -368,10 +374,14 @@ public final class PythonConfigsObserver {
         }
         final SettingsModelString infoMessage = environmentConfig.getPythonInstallationInfo();
         final SettingsModelString errorMessage = environmentConfig.getPythonInstallationError();
+        final String environmentCreationInfo =
+            "\nNote: You can create a new " + pythonVersion.getName() + " Conda environment that "
+                + "contains all packages\nrequired by the KNIME Python integration by clicking the '"
+                + AbstractCondaEnvironmentsPanel.CREATE_NEW_ENVIRONMENT_BUTTON_TEXT + "' button\nabove.";
         if (isCondaPlaceholder) {
             infoMessage.setStringValue("");
-            errorMessage.setStringValue(
-                "No environment available. Please create a new one to be able to use " + pythonVersion.getName() + ".");
+            errorMessage.setStringValue("No environment available. Please create a new one to be able to use "
+                + pythonVersion.getName() + "." + environmentCreationInfo);
             return;
         }
         final Collection<PythonModuleSpec> requiredSerializerModules = SerializationLibraryExtensions
@@ -386,7 +396,11 @@ public final class PythonConfigsObserver {
                 ? PythonKernelTester.testPython3Installation(pythonCommand, requiredSerializerModules, true) //
                 : PythonKernelTester.testPython2Installation(pythonCommand, requiredSerializerModules, true);
             infoMessage.setStringValue(testResult.getVersion());
-            errorMessage.setStringValue(testResult.getErrorLog());
+            String errorLog = testResult.getErrorLog();
+            if (errorLog != null && !errorLog.isEmpty()) {
+                errorLog += environmentCreationInfo;
+            }
+            errorMessage.setStringValue(errorLog);
             onEnvironmentInstallationTestFinished(environmentType, pythonVersion, testResult);
         }).start();
     }
@@ -408,8 +422,8 @@ public final class PythonConfigsObserver {
         String serializerErrorMessage = "";
         if (Objects.equals(m_serializerConfig.getSerializer().getStringValue(), ARROW_SERIALIZER_ID)
             && SystemUtils.IS_OS_WINDOWS) {
-            serializerErrorMessage =
-                "Apache Arrow cannot be used as the serialization library for Python 2 on Windows.";
+            serializerErrorMessage = "Apache Arrow cannot be used as the serialization library for Python 2 on Windows."
+                + "\nIf you intend to use Python 2, please use a different serialization library.";
         }
         m_serializerConfig.getSerializerError().setStringValue(serializerErrorMessage);
     }

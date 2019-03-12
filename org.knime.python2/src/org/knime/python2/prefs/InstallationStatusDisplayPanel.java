@@ -49,6 +49,7 @@
 package org.knime.python2.prefs;
 
 import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
+import static org.knime.python2.prefs.PythonPreferenceUtils.setLabelTextAndResize;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -98,11 +99,9 @@ final class InstallationStatusDisplayPanel extends Composite {
         errorMessageModel.addChangeListener(e -> setLabelText(error, errorMessageModel.getStringValue()));
     }
 
-    private void setLabelText(final Label label, final String text) {
-        final String finalText = text != null ? text : "";
+    private static void setLabelText(final Label label, final String text) {
         performActionOnWidgetInUiThread(label, () -> {
-            label.setText(finalText);
-            getParent().layout(true, true);
+            setLabelTextAndResize(label, text);
             return null;
         }, false);
     }

@@ -52,7 +52,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Widget;
 
 /**
@@ -93,5 +96,20 @@ class PythonPreferenceUtils {
             throw exception.get();
         }
         return returnValue.get();
+    }
+
+    /**
+     * @throws SWTException The usual SWT exceptions (access to disposed widget, access from another thread).
+     */
+    static void setLabelTextAndResize(final Label label, final String text) {
+        final String finalText = text != null ? text : "";
+        final Point oldSize = label.getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+        label.setText(finalText);
+        label.getShell().layout(true, true);
+        final Point newSize = label.getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+        // Only grow window.
+        if (newSize.x > oldSize.x || newSize.y > oldSize.y) {
+            label.getShell().pack();
+        }
     }
 }

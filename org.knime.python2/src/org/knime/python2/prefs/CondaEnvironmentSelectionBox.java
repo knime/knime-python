@@ -62,6 +62,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.defaultnodesettings.SettingsModelStringArray;
+import org.knime.python2.PythonVersion;
+import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
 
 /**
@@ -77,6 +79,7 @@ final class CondaEnvironmentSelectionBox extends Composite {
     private final SettingsModelString m_environmentModel;
 
     /**
+     * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
      * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
      *            is, in a non-UI thread.
      * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
@@ -91,7 +94,7 @@ final class CondaEnvironmentSelectionBox extends Composite {
      *            "New..." button.
      * @param parent The parent widget.
      */
-    public CondaEnvironmentSelectionBox(final SettingsModelString environmentModel,
+    public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
         final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString errorMessageModel, final CondaEnvironmentCreationObserver environmentCreator,
@@ -124,7 +127,9 @@ final class CondaEnvironmentSelectionBox extends Composite {
 
         // Environment generation:
         final Button environmentCreationButton = new Button(this, SWT.NONE);
-        environmentCreationButton.setText("New...");
+        environmentCreationButton.setText(AbstractCondaEnvironmentsPanel.CREATE_NEW_ENVIRONMENT_BUTTON_TEXT);
+        environmentCreationButton.setToolTipText("Create a new preconfigured Conda environment for "
+            + pythonVersion.getName() + " that contains all packages required by the KNIME Python integration.");
         environmentCreationButton.setEnabled(environmentCreator.getIsEnvironmentCreationEnabled().getBooleanValue());
         gridData = new GridData();
         environmentCreationButton.setLayoutData(gridData);

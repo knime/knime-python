@@ -49,6 +49,7 @@
 package org.knime.python2.prefs;
 
 import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
+import static org.knime.python2.prefs.PythonPreferenceUtils.setLabelTextAndResize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -149,7 +150,9 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
             error.addDisposeListener(e -> red.dispose());
             setLabelText(error, errorMessageModel.getStringValue());
             errorMessageModel.addChangeListener(e -> setLabelText(error, errorMessageModel.getStringValue()));
-            error.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 2, 1));
+            final GridData gridData = new GridData(GridData.FILL, GridData.CENTER, true, false, 2, 1);
+            gridData.verticalIndent = 10;
+            error.setLayoutData(gridData);
         }
 
         private String[] setupSerializers() {
@@ -184,11 +187,9 @@ final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite>
             m_serializerSelection.select(selectionIndex);
         }
 
-        private void setLabelText(final Label label, final String text) {
-            final String finalText = text != null ? text : "";
+        private static void setLabelText(final Label label, final String text) {
             performActionOnWidgetInUiThread(label, () -> {
-                label.setText(finalText);
-                getParent().layout(true, true);
+                setLabelTextAndResize(label, text);
                 return null;
             }, false);
         }

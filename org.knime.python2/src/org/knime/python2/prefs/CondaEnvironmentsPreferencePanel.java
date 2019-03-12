@@ -55,7 +55,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.AbstractCondaEnvironmentPanel;
+import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
 import org.knime.python2.config.CondaEnvironmentConfig;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
 import org.knime.python2.config.CondaEnvironmentsConfig;
@@ -64,10 +64,10 @@ import org.knime.python2.config.CondaEnvironmentsConfig;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class CondaEnvironmentPreferencePanel
-    extends AbstractCondaEnvironmentPanel<CondaEnvironmentCreationPreferenceDialog, Composite> {
+final class CondaEnvironmentsPreferencePanel
+    extends AbstractCondaEnvironmentsPanel<CondaEnvironmentCreationPreferenceDialog, Composite> {
 
-    public CondaEnvironmentPreferencePanel(final CondaEnvironmentsConfig config,
+    public CondaEnvironmentsPreferencePanel(final CondaEnvironmentsConfig config,
         final CondaEnvironmentCreationObserver python2EnvironmentCreator,
         final CondaEnvironmentCreationObserver python3EnvironmentCreator, final Composite parent) {
         super(config, python2EnvironmentCreator, python3EnvironmentCreator, parent);
@@ -109,14 +109,14 @@ final class CondaEnvironmentPreferencePanel
         final CondaEnvironmentConfig pythonConfig, final CondaEnvironmentCreationObserver environmentCreator,
         final Composite panel) {
         final String pythonName = pythonVersion.getName();
-        final CondaEnvironmentSelectionBox environmentSelection = new CondaEnvironmentSelectionBox(
+        final CondaEnvironmentSelectionBox environmentSelection = new CondaEnvironmentSelectionBox(pythonVersion,
             pythonConfig.getEnvironmentName(), pythonConfig.getAvailableEnvironmentNames(), pythonName,
             "Name of the " + pythonName + " Conda environment", pythonConfig.getPythonInstallationInfo(),
             pythonConfig.getPythonInstallationError(), environmentCreator, panel);
         final GridData gridData = new GridData();
-        gridData.grabExcessHorizontalSpace = true;
         gridData.horizontalAlignment = SWT.FILL;
         gridData.horizontalIndent = 20;
+        gridData.grabExcessHorizontalSpace = true;
         environmentSelection.setLayoutData(gridData);
         final SettingsModelBoolean isDefaultEnvironment = pythonConfig.getIsDefaultPythonEnvironment();
         environmentSelection.setDisplayAsDefault(isDefaultEnvironment.getBooleanValue());

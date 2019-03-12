@@ -52,9 +52,9 @@ package org.knime.python2.config;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public abstract class AbstractManualEnvironmentPanel<W> extends AbstractPythonConfigPanel<ManualEnvironmentsConfig, W> {
+public abstract class AbstractManualEnvironmentsPanel<W> extends AbstractPythonConfigPanel<ManualEnvironmentsConfig, W> {
 
-    public AbstractManualEnvironmentPanel(final ManualEnvironmentsConfig config, final W parent) {
+    public AbstractManualEnvironmentsPanel(final ManualEnvironmentsConfig config, final W parent) {
         super(config, parent);
         final W panel = getPanel();
         createPython2PathWidget(config.getPython2Config(), panel);

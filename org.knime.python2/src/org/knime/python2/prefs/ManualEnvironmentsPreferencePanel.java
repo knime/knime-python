@@ -54,7 +54,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.AbstractManualEnvironmentPanel;
+import org.knime.python2.config.AbstractManualEnvironmentsPanel;
 import org.knime.python2.config.ManualEnvironmentConfig;
 import org.knime.python2.config.ManualEnvironmentsConfig;
 
@@ -62,9 +62,9 @@ import org.knime.python2.config.ManualEnvironmentsConfig;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class ManualEnvironmentPreferencePanel extends AbstractManualEnvironmentPanel<Composite> {
+final class ManualEnvironmentsPreferencePanel extends AbstractManualEnvironmentsPanel<Composite> {
 
-    public ManualEnvironmentPreferencePanel(final ManualEnvironmentsConfig config, final Composite parent) {
+    public ManualEnvironmentsPreferencePanel(final ManualEnvironmentsConfig config, final Composite parent) {
         super(config, parent);
     }
 
@@ -82,22 +82,25 @@ final class ManualEnvironmentPreferencePanel extends AbstractManualEnvironmentPa
 
     @Override
     protected void createPython3PathWidget(final ManualEnvironmentConfig python3Config, final Composite panel) {
-        createPythonPathWidget(PythonVersion.PYTHON3, python3Config, panel);
+        final StatusDisplayingFilePathEditor python3PathWidget =
+            createPythonPathWidget(PythonVersion.PYTHON3, python3Config, panel);
+        ((GridData)python3PathWidget.getLayoutData()).verticalIndent = 30;
     }
 
-    private static void createPythonPathWidget(final PythonVersion pythonVersion,
+    private static StatusDisplayingFilePathEditor createPythonPathWidget(final PythonVersion pythonVersion,
         final ManualEnvironmentConfig pythonConfig, final Composite panel) {
         final String pythonName = pythonVersion.getName();
         final StatusDisplayingFilePathEditor pythonPathEditor = new StatusDisplayingFilePathEditor(
             pythonConfig.getExecutablePath(), true, pythonName, "Path to the " + pythonName + " start script",
             pythonConfig.getPythonInstallationInfo(), pythonConfig.getPythonInstallationError(), panel);
         final GridData gridData = new GridData();
-        gridData.grabExcessHorizontalSpace = true;
         gridData.horizontalAlignment = SWT.FILL;
+        gridData.grabExcessHorizontalSpace = true;
         pythonPathEditor.setLayoutData(gridData);
         final SettingsModelBoolean isDefaultEnvironment = pythonConfig.getIsDefaultPythonEnvironment();
         pythonPathEditor.setDisplayAsDefault(isDefaultEnvironment.getBooleanValue());
         isDefaultEnvironment
             .addChangeListener(e -> pythonPathEditor.setDisplayAsDefault(isDefaultEnvironment.getBooleanValue()));
+        return pythonPathEditor;
     }
 }

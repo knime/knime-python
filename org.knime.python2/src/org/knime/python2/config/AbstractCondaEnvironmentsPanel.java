@@ -54,10 +54,12 @@ import org.knime.core.node.defaultnodesettings.SettingsModelString;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public abstract class AbstractCondaEnvironmentPanel<D extends CondaEnvironmentCreationDialog, W>
+public abstract class AbstractCondaEnvironmentsPanel<D extends CondaEnvironmentCreationDialog, W>
     extends AbstractPythonConfigPanel<CondaEnvironmentsConfig, W> {
 
-    public AbstractCondaEnvironmentPanel(final CondaEnvironmentsConfig config,
+    public static final String CREATE_NEW_ENVIRONMENT_BUTTON_TEXT = "New environment...";
+
+    public AbstractCondaEnvironmentsPanel(final CondaEnvironmentsConfig config,
         final CondaEnvironmentCreationObserver python2EnvironmentCreator,
         final CondaEnvironmentCreationObserver python3EnvironmentCreator, final W parent) {
         super(config, parent);

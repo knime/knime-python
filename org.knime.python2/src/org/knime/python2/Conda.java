@@ -128,6 +128,22 @@ public final class Conda {
     }
 
     /**
+     * Converts a version string of the form "conda &ltmajor&gt.&ltminor&gt.&ltmicro&gt" into a {@link Version} object.
+     *
+     * @param condaVersionString The version string.
+     * @return The parsed version.
+     * @throws IllegalArgumentException If the version string cannot be parsed or produces an invalid version.
+     */
+    public static Version condaVersionStringToVersion(String condaVersionString) {
+        try {
+            condaVersionString = condaVersionString.split(" ")[1];
+            return new Version(condaVersionString);
+        } catch (final Exception ex) {
+            throw new IllegalArgumentException(ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Path to the Conda executable.
      */
     private final String m_executable;
@@ -218,9 +234,7 @@ public final class Conda {
         String versionString = getVersionString();
         final Version version;
         try {
-            // We expect a return value of the form "conda <major>.<minor>.<micro>".
-            versionString = versionString.split(" ")[1];
-            version = new Version(versionString);
+            version = condaVersionStringToVersion(versionString);
         } catch (Exception ex) {
             // Skip test if we can't identify version.
             NodeLogger.getLogger(Conda.class).warn("Could not detect installed Conda version. Please note that a "
@@ -238,6 +252,7 @@ public final class Conda {
      *
      * @return The raw output of the corresponding Conda command.
      * @throws IOException If an error occurs during execution of the underlying command.
+     * @see #condaVersionStringToVersion(String)
      */
     public String getVersionString() throws IOException {
         return callCondaAndAwaitTermination("--version");

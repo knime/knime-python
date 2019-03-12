@@ -60,6 +60,7 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -108,6 +109,10 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
     private ProgressBar m_determinateProgressBar;
 
+    private Label m_errorTextBoxLabel;
+
+    private Composite m_errorTextBoxContainer;
+
     private Text m_errorTextBox;
 
     private Button m_createOrRetryButton;
@@ -130,7 +135,7 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         final Shell parent) {
         super(parent, SWT.NONE);
         m_environmentCreator = environmentCreator;
-        m_shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.SHEET);
+        m_shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.SHEET | SWT.RESIZE);
         m_shell.setText("New Conda environment");
         createContents();
         m_shell.pack();
@@ -138,10 +143,11 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
     private void createContents() {
         m_shell.setLayout(new GridLayout());
-
         final Label descriptionText = new Label(m_shell, SWT.WRAP);
-        descriptionText.setText(
-            "Creating the Conda environment may take several minutes and requires an active internet connection.");
+        descriptionText.setText("This will create a new preconfigured Conda environment for "
+            + m_environmentCreator.getPythonVersion().getName() + " that contains all packages required by the KNIME "
+            + "Python integration. Creating the Conda environment may take several minutes and requires an active "
+            + "internet connection.");
         descriptionText.setFont(JFaceResources.getFontRegistry().getItalic(""));
         GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         gridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
@@ -157,13 +163,13 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         // Environment name:
 
         final Label environmentNameTextBoxLabel = new Label(environmentNameContainer, SWT.NONE);
-        environmentNameTextBoxLabel.setText("Environment name");
+        environmentNameTextBoxLabel.setText("New environment's name");
         environmentNameTextBoxLabel.setLayoutData(new GridData());
 
-        m_environmentNameTextBox = new Text(environmentNameContainer, SWT.NONE);
+        m_environmentNameTextBox = new Text(environmentNameContainer, SWT.BORDER);
         m_environmentNameTextBox.setEnabled(false);
         m_environmentNameTextBox.setText(ENVIRONMENT_NAME_PLACEHOLDER);
-        m_environmentNameTextBox.setLayoutData(new GridData());
+        m_environmentNameTextBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         // Progress monitoring widgets:
 
@@ -187,24 +193,31 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         m_indeterminateProgressBar = new ProgressBar(progressBarContainer, SWT.SMOOTH | SWT.INDETERMINATE);
         m_progressBarStackLayout.topControl = m_determinateProgressBar;
 
-        final Label errorTextBoxLabel = new Label(installationMonitorContainer, SWT.NONE);
-        errorTextBoxLabel.setText("Conda error log");
+        m_errorTextBoxLabel = new Label(installationMonitorContainer, SWT.NONE);
+        m_errorTextBoxLabel.setText("Conda error log");
         gridData = new GridData();
         gridData.verticalIndent = 10;
-        errorTextBoxLabel.setLayoutData(gridData);
+        m_errorTextBoxLabel.setLayoutData(gridData);
 
-        final Composite textBoxContainer = new Composite(installationMonitorContainer, SWT.NONE);
+        m_errorTextBoxContainer = new Composite(installationMonitorContainer, SWT.NONE);
         gridData = new GridData(GridData.FILL, GridData.FILL, true, true);
         gridData.heightHint = 80;
-        textBoxContainer.setLayoutData(gridData);
-        textBoxContainer.setLayout(new FillLayout());
-        m_errorTextBox = new Text(textBoxContainer, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
-        final Color red = new Color(textBoxContainer.getDisplay(), 255, 0, 0);
+        m_errorTextBoxContainer.setLayoutData(gridData);
+        m_errorTextBoxContainer.setLayout(new FillLayout());
+        m_errorTextBox =
+            new Text(m_errorTextBoxContainer, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL | SWT.BORDER);
+        final Color red = new Color(m_errorTextBoxContainer.getDisplay(), 255, 0, 0);
         m_errorTextBox.setForeground(red);
         m_errorTextBox.addDisposeListener(e -> red.dispose());
 
         m_determinateProgressBar.setEnabled(false);
         m_errorTextBox.setEnabled(false);
+
+        // Hide error log initially.
+        m_errorTextBoxLabel.setVisible(false);
+        ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = true;
+        m_errorTextBoxContainer.setVisible(false);
+        ((GridData)m_errorTextBoxContainer.getLayoutData()).exclude = true;
 
         // --
 
@@ -479,9 +492,27 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
     }
 
     private void updateErrorLog(@SuppressWarnings("unused") final ChangeEvent e) {
-        performActionOnWidgetInUiThread(m_errorTextBox, () -> {
-            m_errorTextBox.setText(m_status.getErrorLog().getStringValue());
-            m_errorTextBox.requestLayout();
+        performActionOnWidgetInUiThread(m_shell, () -> {
+            if (!m_errorTextBox.isDisposed()) {
+                m_errorTextBox.setText(m_status.getErrorLog().getStringValue());
+                m_errorTextBox.requestLayout();
+                if (!m_errorTextBoxContainer.isDisposed() && !m_errorTextBoxContainer.getVisible()) {
+                    // Show error log if it is hidden (which is the initial state).
+                    if (!m_errorTextBoxLabel.isDisposed()) {
+                        m_errorTextBoxLabel.setVisible(true);
+                        ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = false;
+                    }
+                    m_errorTextBoxContainer.setVisible(true);
+                    final GridData errorTextBoxContainerGridData = (GridData)m_errorTextBoxContainer.getLayoutData();
+                    errorTextBoxContainerGridData.exclude = false;
+                    m_shell.layout(true, true);
+                    // Manually resize shell to show error log as if it wasn't hidden in the first place.
+                    final Point oldSize = m_shell.getSize();
+                    final Point newSize =
+                        m_shell.computeSize(oldSize.x, oldSize.y + errorTextBoxContainerGridData.heightHint, true);
+                    m_shell.setSize(newSize);
+                }
+            }
             return null;
         }, true);
     }

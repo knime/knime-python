@@ -103,6 +103,13 @@ public final class CondaEnvironmentCreationObserver {
     }
 
     /**
+     * @return The Python version of the environments created by this instance.
+     */
+    public PythonVersion getPythonVersion() {
+        return m_pythonVersion;
+    }
+
+    /**
      * @return The enabled state of this instance. Only enabled instances (i.e., instances whose enabled model returns
      *         {@link SettingsModelBoolean#getBooleanValue() <code>true</code>}) are able to
      *         {@link #startEnvironmentCreation(String, CondaEnvironmentCreationStatus) initiate environment creation}.
@@ -174,7 +181,7 @@ public final class CondaEnvironmentCreationObserver {
             } catch (final PythonCanceledExecutionException ex) {
                 onEnvironmentCreationCanceled(status);
             } catch (final Exception ex) {
-                NodeLogger.getLogger(CondaEnvironmentCreationObserver.class).error(ex.getMessage(), ex);
+                NodeLogger.getLogger(CondaEnvironmentCreationObserver.class).debug(ex.getMessage(), ex);
                 onEnvironmentCreationFailed(status, ex.getMessage());
             } finally {
                 synchronized (CondaEnvironmentCreationObserver.this) {

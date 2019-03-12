@@ -107,9 +107,9 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
 
     private StackLayout m_environmentConfigurationLayout;
 
-    private CondaEnvironmentPreferencePanel m_condaEnvironmentPanel;
+    private CondaEnvironmentsPreferencePanel m_condaEnvironmentPanel;
 
-    private ManualEnvironmentPreferencePanel m_manualEnvironmentPanel;
+    private ManualEnvironmentsPreferencePanel m_manualEnvironmentPanel;
 
     private PythonConfigsObserver m_configObserver;
 
@@ -164,7 +164,7 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
         final CondaEnvironmentCreationObserver python3EnvironmentCreator = new CondaEnvironmentCreationObserver(
             PythonVersion.PYTHON3, condaEnvironmentsConfig.getCondaDirectoryPath());
 
-        m_condaEnvironmentPanel = new CondaEnvironmentPreferencePanel(condaEnvironmentsConfig,
+        m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(condaEnvironmentsConfig,
             python2EnvironmentCreator, python3EnvironmentCreator, environmentConfigurationPanel);
 
         // Manual environment configuration:
@@ -172,7 +172,7 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
         final ManualEnvironmentsConfig manualEnvironmentsConfig = new ManualEnvironmentsConfig();
         m_configs.add(manualEnvironmentsConfig);
         m_manualEnvironmentPanel =
-            new ManualEnvironmentPreferencePanel(manualEnvironmentsConfig, environmentConfigurationPanel);
+            new ManualEnvironmentsPreferencePanel(manualEnvironmentsConfig, environmentConfigurationPanel);
 
         // Serializer selection:
 
