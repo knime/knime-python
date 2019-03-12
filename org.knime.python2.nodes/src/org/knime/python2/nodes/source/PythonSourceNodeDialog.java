@@ -57,7 +57,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * <code>NodeDialog</code> for the node.
@@ -77,8 +76,7 @@ class PythonSourceNodeDialog extends NodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonSourceNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonSourceNodeConfig.getVariableNames(),
-            FlowVariableOptions.create(getAvailableFlowVariables()));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonSourceNodeConfig.getVariableNames());
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-source");
         addTab("Script", m_sourceCodePanel, false);

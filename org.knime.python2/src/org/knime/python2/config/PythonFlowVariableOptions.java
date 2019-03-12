@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,10 +41,12 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Mar 14, 2019 (marcel): created
  */
-
-package org.knime.python2.kernel;
+package org.knime.python2.config;
 
 import java.util.Map;
 import java.util.Optional;
@@ -53,38 +56,32 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 
 /**
- * Encapsulates all options that may be set for the python nodes via FlowVariables. Offers a factory method for parsing
- * the list of available flow variables for a node into a {@link FlowVariableOptions} object.
- *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
- *
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class FlowVariableOptions {
+public final class PythonFlowVariableOptions {
 
     /**
-     * flowvariable string to set serialization library id
+     * The name of the flow variable that sets the serializer id.
      */
-    public static final String PYTHON_SERIALIZATION_LIBRARY = "python_serialization_library";
+    public static final String PYTHON_SERIALIZATION_LIBRARY_FLOWVARIABLE_NAME = "python_serialization_library";
 
-    private final String m_serializerId;
-
-    private FlowVariableOptions(final FlowVariableOptions copy) {
-        m_serializerId = copy.m_serializerId;
-    }
+    private String m_serializerId;
 
     /**
-     * Constructor to create FlowVariableOptions
-     *
-     * @param map map of flow-variables to be parsed.
-     *
+     * @param flowVariables The available flow variables. {@link #getSerializerId()} returns the value of its
+     *            {@link #PYTHON_SERIALIZATION_LIBRARY_FLOWVARIABLE_NAME corresponding flow variable} if it's present in
+     *            the argument.
      */
-    private FlowVariableOptions(final Map<String, FlowVariable> map) {
-        final FlowVariable fv = map.get(PYTHON_SERIALIZATION_LIBRARY);
-        final String serLib = (fv == null) ? null : fv.getStringValue();
-        if (serLib != null && serializerExists(serLib)) {
-            m_serializerId = serLib;
-        } else if (serLib != null) {
-            throw new IllegalArgumentException("Serialization library " + serLib + " does not exist.");
+    public PythonFlowVariableOptions(final Map<String, FlowVariable> flowVariables) {
+        final FlowVariable serializerIdFlowVariable = flowVariables.get(PYTHON_SERIALIZATION_LIBRARY_FLOWVARIABLE_NAME);
+        final String serializerId =
+            (serializerIdFlowVariable == null) ? null : serializerIdFlowVariable.getStringValue();
+        if (serializerId != null && serializerExists(serializerId)) {
+            m_serializerId = serializerId;
+        } else if (serializerId != null) {
+            throw new IllegalArgumentException("Serialization library '" + serializerId + "' does not exist.");
         } else {
             m_serializerId = null;
         }
@@ -97,60 +94,9 @@ public final class FlowVariableOptions {
     }
 
     /**
-     * @return the serialization library id
+     * @return The serializer id configured by its corresponding flow variable if present.
      */
     public Optional<String> getSerializerId() {
         return Optional.ofNullable(m_serializerId);
     }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((m_serializerId == null) ? 0 : m_serializerId.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        FlowVariableOptions other = (FlowVariableOptions)obj;
-        if (m_serializerId == null) {
-            if (other.m_serializerId != null) {
-                return false;
-            }
-        } else if (!m_serializerId.equals(other.m_serializerId)) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Factory method. Creates a deep copy of FlowVariableOptions
-     *
-     * @param flowVariableOptions FlowVariableOptions to copy
-     * @return copied {@link FlowVariableOptions}.
-     */
-    public static FlowVariableOptions create(final FlowVariableOptions flowVariableOptions) {
-        return new FlowVariableOptions(flowVariableOptions);
-    }
-
-    /**
-     * Factory method.
-     *
-     * @param map map of flow variables.
-     * @return new {@link FlowVariableOptions}.
-     */
-    public static FlowVariableOptions create(final Map<String, FlowVariable> map) {
-        return new FlowVariableOptions(map);
-    }
-
 }

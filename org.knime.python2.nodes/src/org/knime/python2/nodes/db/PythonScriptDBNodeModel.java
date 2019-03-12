@@ -93,8 +93,8 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        PythonKernelOptions options = getKernelOptions();
-        options.addRequiredModule("jpype");
+        final PythonKernelOptions options =
+            getKernelOptions().forAddedAdditionalRequiredModuleNames(Arrays.asList("jpype"));
 
         final DatabasePortObject dbObj = (DatabasePortObject)inData[0];
         checkDBConnection(dbObj.getSpec());

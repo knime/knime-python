@@ -61,7 +61,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
@@ -79,8 +78,7 @@ class PythonPredictorNodeDialog2 extends DataAwareNodeDialogPane {
     SourceCodeTemplatesPanel m_templatesPanel;
 
     protected PythonPredictorNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonPredictorNodeConfig2.getVariableNames(),
-            FlowVariableOptions.create(getAvailableFlowVariables()));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonPredictorNodeConfig2.getVariableNames());
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");
         addTab("Script", m_sourceCodePanel, false);

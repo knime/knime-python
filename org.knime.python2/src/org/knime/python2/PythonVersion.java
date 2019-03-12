@@ -58,6 +58,7 @@ public enum PythonVersion {
          * Python 2
          */
         PYTHON2("python2", "Python 2"),
+
         /**
          * Python 3
          */

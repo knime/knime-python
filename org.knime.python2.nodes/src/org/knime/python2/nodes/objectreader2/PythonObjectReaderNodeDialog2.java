@@ -57,7 +57,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
@@ -71,8 +70,7 @@ class PythonObjectReaderNodeDialog2 extends NodeDialogPane {
     SourceCodeTemplatesPanel m_templatesPanel;
 
     protected PythonObjectReaderNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig2.getVariableNames(),
-            FlowVariableOptions.create(getAvailableFlowVariables()));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig2.getVariableNames());
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
         addTab("Script", m_sourceCodePanel, false);

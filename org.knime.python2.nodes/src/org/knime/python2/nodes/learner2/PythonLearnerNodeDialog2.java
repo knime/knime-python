@@ -58,7 +58,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.FlowVariableOptions;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
@@ -72,8 +71,7 @@ class PythonLearnerNodeDialog2 extends DataAwareNodeDialogPane {
     SourceCodeTemplatesPanel m_templatesPanel;
 
     protected PythonLearnerNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonLearnerNodeConfig2.getVariableNames(),
-            FlowVariableOptions.create(getAvailableFlowVariables()));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonLearnerNodeConfig2.getVariableNames());
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-learner");
         addTab("Script", m_sourceCodePanel, false);

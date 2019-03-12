@@ -136,6 +136,7 @@ import org.knime.python2.port.PickledObject;
 import org.knime.python2.util.PythonUtils;
 import org.w3c.dom.svg.SVGDocument;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -245,7 +246,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws IOException if failed to setup the Python kernel
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
-        m_kernelOptions = new PythonKernelOptions(kernelOptions);
+        m_kernelOptions = kernelOptions;
         m_nodeContext = NodeContext.getContext();
 
         testInstallation();
@@ -379,7 +380,7 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private SerializationLibrary setupSerializationLibrary() throws PythonIOException {
-        final String serializerId = m_kernelOptions.getSerializerId();
+        final String serializerId = m_kernelOptions.getSerializationOptions().getSerializerId();
         final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
         if (serializerName == null) {
             final String message;
@@ -404,8 +405,8 @@ public class PythonKernel implements AutoCloseable {
     private Process setupPythonProcess() throws IOException {
         final String kernelScriptPath = m_kernelOptions.getKernelScriptPath();
         final String port = Integer.toString(m_serverSocket.getLocalPort());
-        final String serializationLibraryPath =
-            SerializationLibraryExtensions.getSerializationLibraryPath(m_kernelOptions.getSerializerId());
+        final String serializationLibraryPath = SerializationLibraryExtensions
+            .getSerializationLibraryPath(m_kernelOptions.getSerializationOptions().getSerializerId());
         // Build and start Python kernel that listens to the given port:
         final ProcessBuilder pb;
         if (m_kernelOptions.getUsePython3()) {
@@ -421,7 +422,7 @@ public class PythonKernel implements AutoCloseable {
         String externalPythonPath = PythonModuleExtensions.getPythonPath();
 
         externalPythonPath += File.pathSeparator + Activator.getFile(Activator.PLUGIN_ID, "py").getAbsolutePath();
-        if (m_kernelOptions.getExternalCustomPath() != null) {
+        if (!Strings.isNullOrEmpty(m_kernelOptions.getExternalCustomPath())) {
             externalPythonPath += File.pathSeparator + m_kernelOptions.getExternalCustomPath();
         }
         if (!externalPythonPath.isEmpty()) {
@@ -590,13 +591,14 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private void setupSentinelConstants() throws InterruptedException, ExecutionException {
-        if (m_kernelOptions.getSentinelOption() == SentinelOption.MAX_VAL) {
+        final SentinelOption sentinelOption = m_kernelOptions.getSerializationOptions().getSentinelOption();
+        if (sentinelOption == SentinelOption.MAX_VAL) {
             m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1").get();
-        } else if (m_kernelOptions.getSentinelOption() == SentinelOption.MIN_VAL) {
+        } else if (sentinelOption == SentinelOption.MIN_VAL) {
             m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63").get();
         } else {
-            m_commands.execute("INT_SENTINEL = " + m_kernelOptions.getSentinelValue() + "; LONG_SENTINEL = "
-                + m_kernelOptions.getSentinelValue()).get();
+            final int sentinelValue = m_kernelOptions.getSerializationOptions().getSentinelValue();
+            m_commands.execute("INT_SENTINEL = " + sentinelValue + "; LONG_SENTINEL = " + sentinelValue).get();
         }
     }
 
@@ -816,6 +818,7 @@ public class PythonKernel implements AutoCloseable {
             final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
             final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
             final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
+            final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
             try (final CloseableRowIterator iterator = table.iterator()) {
                 if (table.size() > Integer.MAX_VALUE) {
                     throw new IOException(
@@ -823,7 +826,7 @@ public class PythonKernel implements AutoCloseable {
                 }
                 final int rowCount = (int)table.size();
                 final int numberRows = Math.min(rowLimit, rowCount);
-                int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
+                int numberChunks = (int)Math.ceil(numberRows / (double)chunkSize);
                 if (numberChunks == 0) {
                     numberChunks = 1;
                 }
@@ -832,7 +835,7 @@ public class PythonKernel implements AutoCloseable {
                     new BufferedDataTableChunker(table.getDataTableSpec(), iterator, rowCount);
                 RunnableFuture<Void> putChunkTask = null;
                 for (int i = 0; i < numberChunks; i++) {
-                    final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
+                    final int rowsInThisIteration = Math.min(numberRows - rowsDone, chunkSize);
                     final ExecutionMonitor chunkProgress =
                         serializationMonitor.createSubProgress(rowsInThisIteration / (double)numberRows);
                     final TableIterator tableIterator =
@@ -900,14 +903,15 @@ public class PythonKernel implements AutoCloseable {
         final PythonCancelable cancelable) throws IOException, PythonCanceledExecutionException {
         try {
             final int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
-            int numberChunks = (int)Math.ceil(numberRows / (double)m_kernelOptions.getChunkSize());
+            final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
+            int numberChunks = (int)Math.ceil(numberRows / (double)chunkSize);
             if (numberChunks == 0) {
                 numberChunks = 1;
             }
             int rowsDone = 0;
             RunnableFuture<Void> putChunkTask = null;
             for (int i = 0; i < numberChunks; i++) {
-                final int rowsInThisIteration = Math.min(numberRows - rowsDone, m_kernelOptions.getChunkSize());
+                final int rowsInThisIteration = Math.min(numberRows - rowsDone, chunkSize);
                 final TableIterator tableIterator = tableChunker.nextChunk(rowsInThisIteration);
                 final byte[] bytes =
                     m_serializer.tableToBytes(tableIterator, m_kernelOptions.getSerializationOptions(), cancelable);
@@ -953,14 +957,15 @@ public class PythonKernel implements AutoCloseable {
             try {
                 addProcessEndAction(pea);
                 final int tableSize = m_commands.getTableSize(name).get();
-                int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
+                final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
+                int numberChunks = (int)Math.ceil(tableSize / (double)chunkSize);
                 if (numberChunks == 0) {
                     numberChunks = 1;
                 }
                 BufferedDataTableCreator tableCreator = null;
                 for (int i = 0; i < numberChunks; i++) {
-                    final int start = m_kernelOptions.getChunkSize() * i;
-                    final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
+                    final int start = chunkSize * i;
+                    final int end = Math.min(tableSize, (start + chunkSize) - 1);
                     final byte[] bytes =
                         waitForFutureCancelable(m_commands.getTableChunk(name, start, end), cancelable);
                     serializationMonitor.setProgress((end + 1) / (double)tableSize);
@@ -1004,14 +1009,15 @@ public class PythonKernel implements AutoCloseable {
         try {
             addProcessEndAction(pea);
             final int tableSize = m_commands.getTableSize(name).get();
-            int numberChunks = (int)Math.ceil(tableSize / (double)m_kernelOptions.getChunkSize());
+            final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
+            int numberChunks = (int)Math.ceil(tableSize / (double)chunkSize);
             if (numberChunks == 0) {
                 numberChunks = 1;
             }
             TableCreator<?> tableCreator = null;
             for (int i = 0; i < numberChunks; i++) {
-                final int start = m_kernelOptions.getChunkSize() * i;
-                final int end = Math.min(tableSize, (start + m_kernelOptions.getChunkSize()) - 1);
+                final int start = chunkSize * i;
+                final int end = Math.min(tableSize, (start + chunkSize) - 1);
                 final byte[] bytes = waitForFutureCancelable(m_commands.getTableChunk(name, start, end), cancelable);
                 if (tableCreator == null) {
                     final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, cancelable);

@@ -45,163 +45,243 @@
 
 package org.knime.python2.extensions.serializationlibrary;
 
+import java.util.Objects;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
- * Options for controlling the serialization process. Missing values for Int and Long columns may be replaced by a
- * sentinel value in order to avoid automatic conversion to Double in python. The sentinel may be replaced with missing
- * values for data coming from python.
+ * Options for configuring the data transfer between Java and Python. Missing values for integer and long columns may be
+ * replaced by a sentinel value in order to avoid automatic conversion to double on Python side. The sentinel may be
+ * replaced with missing values for data coming from Python.
+ * <P>
+ * Implementation note: This class is intended to be immutable.
  *
- * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
- *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-
 public class SerializationOptions {
 
     /**
-     * Do not convert missing values to sentinel value by default (to python)
+     * The default number of rows to transfer per chunk.
      */
-    public final static boolean DEFAULT_CONVERT_MISSING_TO_PYTHON = false;
+    public static final int DEFAULT_CHUNK_SIZE = 500000;
 
     /**
-     * Do not convert sentinel value to missing values by default (from python)
+     * Do not convert missing values to sentinel value by default (to Python)
      */
-    public final static boolean DEFAULT_CONVERT_MISSING_FROM_PYTHON = false;
+    public static final boolean DEFAULT_CONVERT_MISSING_TO_PYTHON = false;
 
     /**
-     * Use minimum value of column's datatype by default
+     * Do not convert sentinel value to missing values by default (from Python)
      */
-    public final static SentinelOption DEFAULT_SENTINEL_OPTION = SentinelOption.MIN_VAL;
+    public static final boolean DEFAULT_CONVERT_MISSING_FROM_PYTHON = false;
 
     /**
-     * Use 0 as default custom sentinel value
+     * Use minimum value of column's data type as sentinel value by default
      */
-    public final static int DEFAULT_SENTINEL_VALUE = 0;
-
-    private boolean m_convertMissingToPython = DEFAULT_CONVERT_MISSING_TO_PYTHON;
-
-    private boolean m_convertMissingFromPython = DEFAULT_CONVERT_MISSING_FROM_PYTHON;
-
-    private SentinelOption m_sentinelOption = DEFAULT_SENTINEL_OPTION;
-
-    private int m_sentinelValue = DEFAULT_SENTINEL_VALUE;
+    public static final SentinelOption DEFAULT_SENTINEL_OPTION = SentinelOption.MIN_VAL;
 
     /**
-     * Default Constructor.
+     * Use 0 as default custom sentinel value (only if {@link SentinelOption#CUSTOM} is active).
+     */
+    public static final int DEFAULT_SENTINEL_VALUE = 0;
+
+    private final String m_serializerId;
+
+    private final int m_chunkSize;
+
+    private final boolean m_convertMissingToPython;
+
+    private final boolean m_convertMissingFromPython;
+
+    private final SentinelOption m_sentinelOption;
+
+    private final int m_sentinelValue;
+
+    /**
+     * Default constructor. Consults the {@link PythonPreferences preferences} for the
+     * {@link PythonPreferences#getSerializerPreference() serializer} to use. Initializes the other values of these
+     * options to the respective static fields of this class.
      */
     public SerializationOptions() {
-
+        m_serializerId = PythonPreferences.getSerializerPreference();
+        m_chunkSize = DEFAULT_CHUNK_SIZE;
+        m_convertMissingToPython = DEFAULT_CONVERT_MISSING_TO_PYTHON;
+        m_convertMissingFromPython = DEFAULT_CONVERT_MISSING_FROM_PYTHON;
+        m_sentinelOption = DEFAULT_SENTINEL_OPTION;
+        m_sentinelValue = DEFAULT_SENTINEL_VALUE;
     }
 
     /**
-     * Constructor.
+     * Consults the {@link PythonPreferences preferences} for the {@link PythonPreferences#getSerializerPreference()
+     * serializer} to use.
      *
-     * @param convertMissingToPython convert missing values to sentinel on the way to python
-     * @param convertMissingFromPython convert sentinel to missing values on the way from python to KNIME
-     * @param sentinelOption the sentinel option
-     * @param sentinelValue the sentinel value (only used if sentinelOption is CUSTOM)
+     * @param chunkSize The number of rows to transfer to/from Python per chunk of an input/output table .
+     * @param convertMissingToPython {@true} if missing values shall be converted to sentinel values on the way to
+     *            Python. {@code false} if they shall remain missing.
+     * @param convertMissingFromPython {@true} if missing values shall be converted to sentinel values on the way back
+     *            from Python. {@code false} if they shall remain missing.
+     * @param sentinelOption The sentinel options to use (if applicable).
+     * @param sentinelValue The sentinel value to use (only used if {@code sentinelOption} is
+     *            {@link SentinelOption#CUSTOM}).
      */
-    public SerializationOptions(final boolean convertMissingToPython, final boolean convertMissingFromPython,
-        final SentinelOption sentinelOption, final int sentinelValue) {
-        m_convertMissingFromPython = convertMissingFromPython;
+    public SerializationOptions(final int chunkSize, final boolean convertMissingToPython,
+        final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
+        m_serializerId = PythonPreferences.getSerializerPreference();
+        m_chunkSize = chunkSize;
         m_convertMissingToPython = convertMissingToPython;
+        m_convertMissingFromPython = convertMissingFromPython;
         m_sentinelOption = sentinelOption;
         m_sentinelValue = sentinelValue;
     }
 
     /**
-     * Copy constructor.
-     *
-     * @param other the options to copy
+     * @param serializerId The {@link SerializationLibraryExtension#getId() id} of the serializer to use for data
+     *            transfer between Java and Python. May be {@code null} in which case we resort to
+     *            {@link PythonPreferences#getSerializerPreference()}.
      */
-    public SerializationOptions(final SerializationOptions other) {
-        m_convertMissingFromPython = other.getConvertMissingFromPython();
-        m_convertMissingToPython = other.getConvertMissingToPython();
-        m_sentinelOption = other.getSentinelOption();
-        m_sentinelValue = other.getSentinelValue();
+    private SerializationOptions(final String serializerId, final int chunkSize, final boolean convertMissingToPython,
+        final boolean convertMissingFromPython, final SentinelOption sentinelOption, final int sentinelValue) {
+        m_serializerId = serializerId != null ? serializerId : PythonPreferences.getSerializerPreference();
+        m_chunkSize = chunkSize;
+        m_convertMissingToPython = convertMissingToPython;
+        m_convertMissingFromPython = convertMissingFromPython;
+        m_sentinelOption = sentinelOption;
+        m_sentinelValue = sentinelValue;
     }
 
     /**
-     * Gets the convert missing values to python option.
+     * @return The {@link SerializationLibraryExtension#getId() id} of the serializer to use for the data transfer
+     *         between Java and Python.
+     */
+    public String getSerializerId() {
+        return m_serializerId;
+    }
+
+    /**
+     * Returns a copy of this instance for the given serializer id option. This instance remains unaffected.
      *
-     * @return the convert missing values to python option
+     * @param serializerId The {@link SerializationLibraryExtension#getId() id} of the serializer to use for the data
+     *            transfer between Java and Python. May be {@code null} in which case we resort to
+     *            {@link PythonPreferences#getSerializerPreference()}.
+     *
+     * @return A copy of this options instance with the given value set.
+     */
+    public SerializationOptions forSerializerId(final String serializerId) {
+        return new SerializationOptions(serializerId, m_chunkSize, m_convertMissingToPython, m_convertMissingFromPython,
+            m_sentinelOption, m_sentinelValue);
+    }
+
+    /**
+     *
+     * @return The configured number of rows to transfer to/from Python per chunk of an input/output table.
+     */
+    public int getChunkSize() {
+        return m_chunkSize;
+    }
+
+    /**
+     * Returns a copy of this instance for the given chunk size option. This instance remains unaffected.
+     *
+     * @param chunkSize The configured number of rows to transfer to/from Python per chunk of an input/output table.
+     * @return A copy of this options instance with the given value set.
+     */
+    public SerializationOptions forChunkSize(final int chunkSize) {
+        return new SerializationOptions(m_serializerId, chunkSize, m_convertMissingToPython, m_convertMissingFromPython,
+            m_sentinelOption, m_sentinelValue);
+    }
+
+    /**
+     * @return {@true} if missing values shall be converted to sentinel values on the way to Python. {@code false} if
+     *         they shall remain missing.
      */
     public boolean getConvertMissingToPython() {
         return m_convertMissingToPython;
     }
 
     /**
-     * Sets the convert missing values to python option.
+     * Returns a copy of this instance for the given missing value conversion option. This instance remains unaffected.
      *
-     * @param convertMissingToPython the convert missing values to python option
+     * @param convertMissingToPython {@true} to configure that missing values shall be converted to sentinel values on
+     *            the way to Python. {@code false} if they shall remain missing.
+     * @return A copy of this options instance with the given value set.
      */
-    public void setConvertMissingToPython(final boolean convertMissingToPython) {
-        this.m_convertMissingToPython = convertMissingToPython;
+    public SerializationOptions forConvertMissingToPython(final boolean convertMissingToPython) {
+        return new SerializationOptions(m_serializerId, m_chunkSize, convertMissingToPython, m_convertMissingFromPython,
+            m_sentinelOption, m_sentinelValue);
     }
 
     /**
-     * Gets the convert missing values to python option.
-     *
-     * @return the convert missing values to python option
+     * @return {@true} if missing values shall be converted to sentinel values on the way back from Python.
+     *         {@code false} if they shall remain missing.
      */
     public boolean getConvertMissingFromPython() {
         return m_convertMissingFromPython;
     }
 
     /**
-     * Sets the convert missing values to python option.
+     * Returns a copy of this instance for the given missing value conversion option. This instance remains unaffected.
      *
-     * @param convertMissingFromPython the convert missing values to python option
+     * @param convertMissingFromPython {@true} to configure that missing values shall be converted to sentinel values on
+     *            the way back from Python. {@code false} if they shall remain missing.
+     * @return A copy of this options instance with the given value set.
      */
-    public void setConvertMissingFromPython(final boolean convertMissingFromPython) {
-        this.m_convertMissingFromPython = convertMissingFromPython;
+    public SerializationOptions forConvertMissingFromPython(final boolean convertMissingFromPython) {
+        return new SerializationOptions(m_serializerId, m_chunkSize, m_convertMissingToPython, convertMissingFromPython,
+            m_sentinelOption, m_sentinelValue);
     }
 
     /**
-     * Gets the sentinel option.
-     *
-     * @return the sentinel option
+     * @return The configured sentinel options to use (if applicable; see {@link #getConvertMissingToPython()} and
+     *         {@link #getConvertMissingFromPython()}).
      */
     public SentinelOption getSentinelOption() {
         return m_sentinelOption;
     }
 
     /**
-     * Sets the sentinel option.
+     * Returns a copy of this instance for the given sentinel option. This instance remains unaffected.
      *
-     * @param sentinelOption the new sentinel option
+     * @param sentinelOption The configured sentinel options to use (if applicable; see
+     *            {@link #getConvertMissingToPython()} and {@link #getConvertMissingFromPython()}).
+     * @return A copy of this options instance with the given value set.
      */
-    public void setSentinelOption(final SentinelOption sentinelOption) {
-        this.m_sentinelOption = sentinelOption;
+    public SerializationOptions forSentinelOption(final SentinelOption sentinelOption) {
+        return new SerializationOptions(m_serializerId, m_chunkSize, m_convertMissingToPython,
+            m_convertMissingFromPython, sentinelOption, m_sentinelValue);
     }
 
     /**
-     * Gets the sentinel value.
-     *
-     * @return the sentinel value
+     * @return The configured sentinel value to use (only used if {@link #getSentinelOption()} is
+     *         {@link SentinelOption#CUSTOM}).
      */
     public int getSentinelValue() {
         return m_sentinelValue;
     }
 
     /**
-     * Sets the sentinel value.
+     * Returns a copy of this instance for the given sentinel value. This instance remains unaffected.
      *
-     * @param sentinelValue the new sentinel value
+     * @param sentinelValue The configured sentinel value to use (only used if {@link #getSentinelOption()} is
+     *            {@link SentinelOption#CUSTOM}).
+     * @return A copy of this options instance with the given value set.
      */
-    public void setSentinelValue(final int sentinelValue) {
-        this.m_sentinelValue = sentinelValue;
+    public SerializationOptions forSentinelValue(final int sentinelValue) {
+        return new SerializationOptions(m_serializerId, m_chunkSize, m_convertMissingToPython,
+            m_convertMissingFromPython, m_sentinelOption, sentinelValue);
     }
 
     /**
-     * Return the sentinel value for the given type.
+     * Returns the configured sentinel value for the given type.
      *
-     * @param type a {@Type} (either INTEGER or LONG)
-     * @return the sentinel value based on the stored options
-     * @throws IllegalArgumentException if type cannot be processed
+     * @param type Either {@link Type#INTEGER} or {@link Type#LONG}.
+     * @return The sentinel value based on the stored options.
+     * @throws IllegalArgumentException If the given type is invalid.
      */
-
-    public long getSentinelForType(final Type type) throws IllegalArgumentException {
+    public long getSentinelForType(final Type type) {
         if (m_sentinelOption == SentinelOption.CUSTOM) {
             return m_sentinelValue;
         } else if (m_sentinelOption == SentinelOption.MAX_VAL) {
@@ -217,15 +297,16 @@ public class SerializationOptions {
                 return Long.MIN_VALUE;
             }
         }
-        throw new IllegalArgumentException("Sentinel does not exist for type " + type.toString());
+        throw new IllegalArgumentException("Sentinel value does not exist for type '" + type.toString() + "'.");
     }
 
     /**
-     * Indicate if the given value equals the sentinel value for the given type.
+     * Indicates whether the given value equals the sentinel value for the given type.
      *
-     * @param type a {@Type} (INTEGER or LONG)
-     * @param value the value to check
-     * @return value == sentinel based on the stored options and the type
+     * @param type Either {@link Type#INTEGER} or {@link Type#LONG}.
+     * @param value The value to check.
+     * @return {@code true} if the given value equals the configured sentinel value of the given type, {@code false}
+     *         otherwise.
      */
     public boolean isSentinel(final Type type, final long value) {
         if (m_sentinelOption == SentinelOption.CUSTOM) {
@@ -248,13 +329,8 @@ public class SerializationOptions {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (m_convertMissingFromPython ? 1231 : 1237);
-        result = prime * result + (m_convertMissingToPython ? 1231 : 1237);
-        result = prime * result + ((m_sentinelOption == null) ? 0 : m_sentinelOption.hashCode());
-        result = prime * result + m_sentinelValue;
-        return result;
+        return Objects.hash(m_serializerId, m_chunkSize, m_convertMissingToPython, m_convertMissingFromPython,
+            m_sentinelOption, m_sentinelValue);
     }
 
     @Override
@@ -262,25 +338,17 @@ public class SerializationOptions {
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        SerializationOptions other = (SerializationOptions)obj;
-        if (m_convertMissingFromPython != other.m_convertMissingFromPython) {
-            return false;
-        }
-        if (m_convertMissingToPython != other.m_convertMissingToPython) {
-            return false;
-        }
-        if (m_sentinelOption != other.m_sentinelOption) {
-            return false;
-        }
-        if (m_sentinelValue != other.m_sentinelValue) {
-            return false;
-        }
-        return true;
+        final SerializationOptions other = (SerializationOptions)obj;
+        final EqualsBuilder b = new EqualsBuilder();
+        b.append(m_serializerId, other.m_serializerId);
+        b.append(m_chunkSize, other.m_chunkSize);
+        b.append(m_convertMissingToPython, other.m_convertMissingToPython);
+        b.append(m_convertMissingFromPython, other.m_convertMissingFromPython);
+        b.append(m_sentinelOption, other.m_sentinelOption);
+        b.append(m_sentinelValue, other.m_sentinelValue);
+        return b.isEquals();
     }
 }

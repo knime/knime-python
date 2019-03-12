@@ -74,7 +74,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
-import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonKernel;
@@ -141,13 +140,8 @@ public abstract class SerializationTest {
 	// Helpers:
 
 	protected PythonKernelOptions createConfiguredKernelOptions(final PythonKernelOptions options) {
-		Map<String, FlowVariable> variables = new HashMap<>();
-		variables.put(FlowVariableOptions.PYTHON_SERIALIZATION_LIBRARY,
-				new FlowVariable(FlowVariableOptions.PYTHON_SERIALIZATION_LIBRARY, m_serializationLibraryExtension.getId()));
-		FlowVariableOptions flowOptions = FlowVariableOptions.create(variables);
-		final PythonKernelOptions configuredOptions = new PythonKernelOptions(options);
-		configuredOptions.setFlowVariableOptions(flowOptions);
-		configuredOptions.setSerializationOptions(DEFAULT_SERIALIZATION_OPTIONS);
+		final PythonKernelOptions configuredOptions = options.forSerializationOptions(
+				options.getSerializationOptions().forSerializerId(m_serializationLibraryExtension.getId()));
 		return configuredOptions;
 	}
 

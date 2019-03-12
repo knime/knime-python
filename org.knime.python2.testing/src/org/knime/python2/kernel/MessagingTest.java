@@ -59,7 +59,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.knime.core.node.CanceledExecutionException;
-import org.knime.python2.kernel.PythonKernelOptions.PythonVersionOption;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.kernel.messaging.AbstractRequestHandler;
 import org.knime.python2.kernel.messaging.AbstractTaskHandler;
 import org.knime.python2.kernel.messaging.DefaultMessage;
@@ -77,8 +77,7 @@ public final class MessagingTest {
 
 	@Before
 	public void setup() throws IOException {
-		final PythonKernelOptions kernelOptions = new PythonKernelOptions();
-		kernelOptions.setPythonVersionOption(PythonVersionOption.PYTHON3);
+		final PythonKernelOptions kernelOptions = new PythonKernelOptions().forPythonVersion(PythonVersion.PYTHON3);
 		m_kernel = new PythonKernel(kernelOptions);
 	}
 

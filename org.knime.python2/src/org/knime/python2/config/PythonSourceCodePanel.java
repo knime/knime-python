@@ -50,9 +50,11 @@ package org.knime.python2.config;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -82,7 +84,6 @@ import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
-import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListener;
@@ -100,7 +101,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private static final long serialVersionUID = -3111905445745421972L;
 
-    //private PythonKernelManager m_kernelManager;
+    private final NodeDialogPane m_parent;
 
     private final ConcurrentLinkedDeque<PythonKernelManagerWrapper> m_kernelManagerQueue;
 
@@ -113,8 +114,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     private int m_kernelRestarts = 0;
 
     private JProgressBarProgressMonitor m_progressMonitor;
-
-    private final FlowVariableOptions m_flowVariableOptions;
 
     private PythonKernelOptions m_kernelOptions;
 
@@ -158,19 +157,16 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     };
 
     /**
-     * Create a python source code panel.
+     * Create a source code panel.
      *
      * @param parent parent NodeDialogPane
      *
      * @param variableNames an object managing the known variable names in the python workspace (the "magic variables")
-     * @param options options that may be set via flow variables
      */
-    public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames,
-        final FlowVariableOptions options) {
+    public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames) {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
-        m_flowVariableOptions = options;
+        m_parent = parent;
         m_kernelOptions = new PythonKernelOptions();
-        m_kernelOptions.setFlowVariableOptions(m_flowVariableOptions);
         m_stdoutToConsole = new PythonOutputListener() {
 
             private boolean m_silenced = false;
@@ -691,10 +687,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param python2Command the python 2 command
      */
     public synchronized void setPython2Command(final String python2Command) {
-        final PythonCommand python2CommandObject = new DefaultPythonCommand(python2Command);
+        final PythonCommand python2CommandObject = python2Command != null && !python2Command.equals("") //
+            ? new DefaultPythonCommand(python2Command) //
+            : null;
         if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython2CommandRaw().equals(python2CommandObject)) {
-            m_kernelOptions.setPython2Command(python2CommandObject);
+            && !m_kernelOptions.getPython2Command().equals(python2CommandObject)) {
+            m_kernelOptions = m_kernelOptions.forPython2Command(python2CommandObject);
             runResetJob();
         }
     }
@@ -705,10 +703,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param python3Command python 3 command
      */
     public synchronized void setPython3Command(final String python3Command) {
-        final PythonCommand python3CommandObject = new DefaultPythonCommand(python3Command);
+        final PythonCommand python3CommandObject = python3Command != null && !python3Command.equals("") //
+            ? new DefaultPythonCommand(python3Command) //
+            : null;
         if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython3CommandRaw().equals(python3CommandObject)) {
-            m_kernelOptions.setPython3Command(python3CommandObject);
+            && !m_kernelOptions.getPython3Command().equals(python3CommandObject)) {
+            m_kernelOptions = m_kernelOptions.forPython3Command(python3CommandObject);
             runResetJob();
         }
     }
@@ -716,21 +716,21 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     /**
      * Update the internal PythonKernelOptions object with the current configuration.
      *
-     * @param pko the currently configured {@link PythonKernelOptions}
+     * @param kernelOptions the currently configured {@link PythonKernelOptions}
      */
-    public void setKernelOptions(final PythonKernelOptions pko) {
-        pko.setFlowVariableOptions(m_flowVariableOptions);
-        boolean pythonOptionsHaveChanged;
-        for (final PythonModuleSpec module : m_kernelOptions.getAdditionalRequiredModules()) {
-            pko.addRequiredModule(module);
-        }
-        if (pko.equals(m_kernelOptions)) {
-            pythonOptionsHaveChanged = false;
-        } else {
-            m_kernelOptions = pko;
-            pythonOptionsHaveChanged = true;
-        }
-        if (pythonOptionsHaveChanged) {
+    public void setKernelOptions(PythonKernelOptions kernelOptions) {
+        final String serializerId =
+            new PythonFlowVariableOptions(m_parent.getAvailableFlowVariables()).getSerializerId().orElse(null);
+        // First, set serializer id of old options because it influences the returned additional required modules. We
+        // don't want to carry around dependencies of a serializer we won't use.
+        final Set<PythonModuleSpec> additionalRequiredModules = m_kernelOptions
+            .forSerializationOptions(kernelOptions.getSerializationOptions().forSerializerId(serializerId))
+            .getAdditionalRequiredModules();
+        kernelOptions =
+            kernelOptions.forSerializationOptions(kernelOptions.getSerializationOptions().forSerializerId(serializerId))
+                .forAddedAdditionalRequiredModules(additionalRequiredModules);
+        if (!kernelOptions.equals(m_kernelOptions)) {
+            m_kernelOptions = kernelOptions;
             runResetJob();
         }
     }
@@ -759,7 +759,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param name the module name
      */
     public void addAdditionalRequiredModule(final String name) {
-        m_kernelOptions.addRequiredModule(name);
+        m_kernelOptions = m_kernelOptions.forAddedAdditionalRequiredModuleNames(Arrays.asList(name));
     }
 
     private PythonKernelManager getKernelManager() {

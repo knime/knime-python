@@ -55,8 +55,8 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
+import org.knime.python2.config.PythonFlowVariableOptions;
 import org.knime.python2.config.PythonSourceCodeConfig;
-import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.kernel.PythonKernelOptions;
 
 /**
@@ -103,8 +103,9 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
      */
     protected PythonKernelOptions getKernelOptions() {
         final PythonKernelOptions options = getConfig().getKernelOptions();
-        options.setFlowVariableOptions(FlowVariableOptions.create(getAvailableFlowVariables()));
-        return options;
+        final String serializerId =
+            new PythonFlowVariableOptions(getAvailableFlowVariables()).getSerializerId().orElse(null);
+        return options.forSerializationOptions(options.getSerializationOptions().forSerializerId(serializerId));
     }
 
     /**

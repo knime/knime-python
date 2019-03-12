@@ -61,7 +61,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.FlowVariableOptions;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
@@ -82,8 +81,7 @@ class PythonObjectWriterNodeDialog2 extends DataAwareNodeDialogPane {
      * Create the dialog for this node.
      */
     protected PythonObjectWriterNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectWriterNodeConfig2.getVariableNames(),
-            FlowVariableOptions.create(getAvailableFlowVariables()));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectWriterNodeConfig2.getVariableNames());
         m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
         addTab("Script", m_sourceCodePanel, false);
