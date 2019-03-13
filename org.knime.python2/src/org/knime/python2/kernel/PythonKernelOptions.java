@@ -92,8 +92,8 @@ public class PythonKernelOptions {
     public PythonKernelOptions() {
         m_usePython3 = getPreferencePythonVersion();
         m_kernelScriptPath = Activator.getFile(Activator.PLUGIN_ID, "py/PythonKernelLauncher.py").getAbsolutePath();
-        m_python2Command = Activator.getPython2Command();
-        m_python3Command = Activator.getPython3Command();
+        m_python2Command = null;
+        m_python3Command = null;
 
     }
 
@@ -311,6 +311,22 @@ public class PythonKernelOptions {
      */
     public String getPython3CommandRaw() {
         return m_python3Command == null || m_python3Command.equals("") ? Activator.getPython3Command() : m_python3Command;
+    }
+
+    /**
+     * Do not use! This is a temporary workaround that will be removed with KNIME Analytics Platform 3.8.
+     */
+    @Deprecated
+    public String getPython2CommandIfConfigured() {
+        return m_python2Command;
+    }
+
+    /**
+     * Do not use! This is a temporary workaround that will be removed with KNIME Analytics Platform 3.8.
+     */
+    @Deprecated
+    public String getPython3CommandIfConfigured() {
+        return m_python3Command;
     }
 
     /**

@@ -269,8 +269,9 @@ extends SourceCodeOptionsPanel<PythonSourceCodePanel, PythonSourceCodeConfig> {
         m_sentinelInput.setText(kopts.getSentinelValue() + "");
         m_sentinelValue = kopts.getSentinelValue();
         m_chunkSize.setValue(kopts.getChunkSize());
-        m_python2Command = kopts.getPython2Command();
-        m_python3Command = kopts.getPython3Command();
+        // Calls to deprecated methods are intended. We do not want to fall back to preferences here.
+        m_python2Command = kopts.getPython2CommandIfConfigured();
+        m_python3Command = kopts.getPython3CommandIfConfigured();
         getSourceCodePanel().setKernelOptions(getSelectedOpitons());
     }
 
