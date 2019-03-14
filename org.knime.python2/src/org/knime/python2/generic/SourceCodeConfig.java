@@ -53,7 +53,7 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.util.rsyntaxtextarea.guarded.GuardedDocument;
+import org.knime.rsyntaxtextarea.guarded.GuardedDocument;
 
 /**
  * Configuration for the generic source code panel.
