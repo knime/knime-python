@@ -25,10 +25,10 @@ import java.awt.Color;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
-import org.knime.core.node.util.rsyntaxtextarea.KnimeSyntaxTextArea;
-import org.knime.core.node.util.rsyntaxtextarea.guarded.GuardedDocument;
-import org.knime.core.node.util.rsyntaxtextarea.guarded.GuardedSection;
-import org.knime.core.node.util.rsyntaxtextarea.guarded.GuardedSectionsFoldParser;
+import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
+import org.knime.rsyntaxtextarea.guarded.GuardedDocument;
+import org.knime.rsyntaxtextarea.guarded.GuardedSection;
+import org.knime.rsyntaxtextarea.guarded.GuardedSectionsFoldParser;
 
 /**
  * A TextArea for Python nodes that greys out and folds guarded sections.
