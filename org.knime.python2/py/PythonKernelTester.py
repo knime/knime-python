@@ -56,6 +56,11 @@ EnvironmentHelper.dummy_call()
 
 import sys
 
+try:
+    from collections import OrderedDict
+except Exception:
+    # Old Python 2 versions don't have OrderedDict, handle below.
+    pass
 from distutils.version import LooseVersion
 
 _default_min_pandas_version = '0.20.0'
@@ -276,7 +281,12 @@ except:
 
         :return: The error report as a list of strings.
         """
-        return list(self._messages)
+        try:
+            report_lines = OrderedDict.fromkeys(self._messages)
+        except Exception:
+            # Old Python 2 versions don't have OrderedDict.
+            report_lines = self._messages
+        return list(report_lines)
 
 
 # Default installation test:
