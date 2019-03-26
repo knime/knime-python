@@ -48,7 +48,6 @@
  */
 package org.knime.python2.config;
 
-import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.knime.core.node.NodeLogger;
@@ -137,7 +136,7 @@ public final class CondaEnvironmentCreationObserver {
                     + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
             }
             return defaultEnvironmentName;
-        } catch (final IOException ex) {
+        } catch (final Exception ex) {
             return "";
         }
     }

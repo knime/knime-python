@@ -124,7 +124,38 @@ public final class Conda {
             Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, "start_py" + "." + osStartScriptFilExtension).toString();
         final String pathToStartScript =
             Activator.getFile(Activator.PLUGIN_ID, relativePathToStartScript).getAbsolutePath();
-        return new DefaultPythonCommand(pathToStartScript, condaInstallationDirectoryPath, environmentName);
+        final List<String> command = new ArrayList<>(4);
+        if (!startScriptIsExecutable(pathToStartScript)) {
+            command.add("bash");
+        }
+        Collections.addAll(command, pathToStartScript, condaInstallationDirectoryPath, environmentName);
+        return new DefaultPythonCommand(command);
+    }
+
+    private static boolean startScriptIsExecutable(final String startScriptCommand) {
+        boolean executable = true;
+        final File startScriptFile = new File(startScriptCommand);
+        // Unix-like operating systems only: The start script is usually not executable by default after downloading/
+        // installing KNIME. We try to set its executable flag or - if this fails - will execute it via a shell, later
+        // (see above).
+        if (SystemUtils.IS_OS_UNIX) {
+            try {
+                executable = startScriptFile.canExecute();
+            } catch (final Exception ex) {
+                NodeLogger.getLogger(Conda.class).debug("Could not detect whether Conda start script is executable.",
+                    ex);
+                // Ignore, fall through, and hope for the best.
+            }
+            if (!executable) {
+                try {
+                    executable = startScriptFile.setExecutable(true);
+                } catch (final Exception ex) {
+                    NodeLogger.getLogger(Conda.class).debug("Could not mark Conda start script as executable.", ex);
+                    // Ignore and fall through.
+                }
+            }
+        }
+        return executable;
     }
 
     /**
