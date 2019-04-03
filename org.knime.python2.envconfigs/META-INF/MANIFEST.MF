@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Python Conda environment configuration files
+Bundle-SymbolicName: org.knime.python2.envconfigs
+Bundle-Version: 3.8.0.qualifier
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Export-Package: org.knime.python2.envconfigs
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.13.0,4.0.0)",
+ org.eclipse.osgi;bundle-version="[3.12.100,4.0.0)",
+ org.apache.commons.lang3;bundle-version="[3.3.1,4.0.0)",
+ org.knime.core;bundle-version="[3.8.0,4.0.0)"

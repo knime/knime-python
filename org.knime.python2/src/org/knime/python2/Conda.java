@@ -57,6 +57,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,6 +74,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.Version;
+import org.knime.python2.envconfigs.CondaEnvironments;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonExecutionException;
@@ -101,12 +103,6 @@ public final class Conda {
 
     private static final String DEFAULT_PYTHON3_ENV_PREFIX = "py3_knime";
 
-    private static final String CONDA_CONFIGS_DIRECTORY = "conda-configs";
-
-    private static final String PYTHON2_DESCRIPTION_FILE = "py2_knime.yml";
-
-    private static final String PYTHON3_DESCRIPTION_FILE = "py3_knime.yml";
-
     /**
      * Creates and returns a {@link PythonCommand} that describes a Python process that is run in the Conda environment
      * identified by the given Conda installation directory and the given Conda environment name.<br>
@@ -118,12 +114,7 @@ public final class Conda {
      */
     public static PythonCommand createPythonCommand(final String condaInstallationDirectoryPath,
         final String environmentName) {
-        final String osSubDirectory = getConfigSubDirectoryForOS();
-        final String osStartScriptFilExtension = getStartScriptFileExtensionForOS();
-        final String relativePathToStartScript =
-            Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, "start_py" + "." + osStartScriptFilExtension).toString();
-        final String pathToStartScript =
-            Activator.getFile(Activator.PLUGIN_ID, relativePathToStartScript).getAbsolutePath();
+        String pathToStartScript = CondaEnvironments.getPathToCondaStartScript();
         final List<String> command = new ArrayList<>(4);
         if (!startScriptIsExecutable(pathToStartScript)) {
             command.add("bash");
@@ -254,6 +245,19 @@ public final class Conda {
         return executablePath.toString();
     }
 
+    private static UnsupportedOperationException createUnknownOSException() {
+        final String osName = SystemUtils.OS_NAME;
+        if (osName == null) {
+            throw new UnsupportedOperationException(
+                "Could not detect your operating system. This is necessary for Conda environment generation and use. "
+                    + "Please make sure KNIME has the proper access rights to your system.");
+        } else {
+            throw new UnsupportedOperationException(
+                "Conda environment generation and use is only supported on Windows, Mac, and Linux. Your operating "
+                    + "system is: " + SystemUtils.OS_NAME);
+        }
+    }
+
     /**
      * Test Conda installation by trying to get its version. Method throws an exception if Conda could not be called
      * properly. We also check the version bound since we currently require Conda {@link #CONDA_MINIMUM_VERSION} or
@@ -374,8 +378,8 @@ public final class Conda {
      */
     public String createDefaultPython2Environment(final String environmentName,
         final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
-        return createDefaultPythonEnvironment(PythonVersion.PYTHON2, PYTHON2_DESCRIPTION_FILE, environmentName,
-            monitor);
+        return createEnvironmentFromFile(PythonVersion.PYTHON2, CondaEnvironments.getPathToPython2CondaConfigFile(),
+            environmentName, monitor);
     }
 
     /**
@@ -396,19 +400,8 @@ public final class Conda {
      */
     public String createDefaultPython3Environment(final String environmentName,
         final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
-        return createDefaultPythonEnvironment(PythonVersion.PYTHON3, PYTHON3_DESCRIPTION_FILE, environmentName,
-            monitor);
-    }
-
-    private String createDefaultPythonEnvironment(final PythonVersion pythonVersion, final String descriptionFileName,
-        final String environmentName, final CondaEnvironmentCreationMonitor monitor)
-        throws IOException, PythonCanceledExecutionException {
-        final String osSubDirectory = getConfigSubDirectoryForOS();
-        final String relativePathToDescriptionFile =
-            Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, descriptionFileName).toString();
-        final String pathToDescriptionFile =
-            Activator.getFile(Activator.PLUGIN_ID, relativePathToDescriptionFile).getAbsolutePath();
-        return createEnvironmentFromFile(pythonVersion, pathToDescriptionFile, environmentName, monitor);
+        return createEnvironmentFromFile(PythonVersion.PYTHON3, CondaEnvironments.getPathToPython3CondaConfigFile(),
+            environmentName, monitor);
     }
 
     /**
@@ -503,11 +496,11 @@ public final class Conda {
         try {
             // Get regular output.
             final StringWriter outputWriter = new StringWriter();
-            IOUtils.copy(conda.getInputStream(), outputWriter, "UTF-8");
+            IOUtils.copy(conda.getInputStream(), outputWriter, StandardCharsets.UTF_8);
             final String testOutput = outputWriter.toString();
             // Get error output.
             final StringWriter errorWriter = new StringWriter();
-            IOUtils.copy(conda.getErrorStream(), errorWriter, "UTF-8");
+            IOUtils.copy(conda.getErrorStream(), errorWriter, StandardCharsets.UTF_8);
             String errorOutput = errorWriter.toString();
 
             int condaExitCode = awaitTermination(conda, null);
@@ -539,11 +532,7 @@ public final class Conda {
         argumentList.add(m_executable);
         Collections.addAll(argumentList, arguments);
         final ProcessBuilder pb = new ProcessBuilder(argumentList);
-        try {
-            return pb.start();
-        } catch (IOException ex) {
-            throw ex;
-        }
+        return pb.start();
     }
 
     /**
@@ -581,45 +570,6 @@ public final class Conda {
             }
         }
         return false;
-    }
-
-    private static String getConfigSubDirectoryForOS() {
-        final String osSubDirectory;
-        if (SystemUtils.IS_OS_LINUX) {
-            osSubDirectory = "linux";
-        } else if (SystemUtils.IS_OS_MAC) {
-            osSubDirectory = "macos";
-        } else if (SystemUtils.IS_OS_WINDOWS) {
-            osSubDirectory = "windows";
-        } else {
-            throw createUnknownOSException();
-        }
-        return osSubDirectory;
-    }
-
-    private static String getStartScriptFileExtensionForOS() {
-        final String osStartScriptFileExtension;
-        if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
-            osStartScriptFileExtension = "sh";
-        } else if (SystemUtils.IS_OS_WINDOWS) {
-            osStartScriptFileExtension = "bat";
-        } else {
-            throw createUnknownOSException();
-        }
-        return osStartScriptFileExtension;
-    }
-
-    private static UnsupportedOperationException createUnknownOSException() {
-        final String osName = SystemUtils.OS_NAME;
-        if (osName == null) {
-            throw new UnsupportedOperationException(
-                "Could not detect your operating system. This is necessary for Conda environment generation and use. "
-                    + "Please make sure KNIME has the proper access rights to your system.");
-        } else {
-            throw new UnsupportedOperationException(
-                "Conda environment generation and use is only supported on Windows, Mac, and Linux. Your operating "
-                    + "system is: " + SystemUtils.OS_NAME);
-        }
     }
 
     /**
