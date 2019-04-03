@@ -16,5 +16,5 @@ dependencies:         # List of packages that should be installed
 - IPython=5.8         # Notebook support
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
-- jpype1=0.6.2        # Databases
+- jpype1=0.6.3        # Databases
 - protobuf=3.5        # Serialization for deprecated Python nodes
