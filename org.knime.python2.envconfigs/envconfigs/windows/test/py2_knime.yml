@@ -1,0 +1,19 @@
+name: py27_knime      # Name of the created environment
+channels:             # Repositories to search for packages
+- defaults
+- anaconda
+- conda-forge
+dependencies:         # List of packages that should be installed
+- python=2.7          # Python
+- pandas=0.23         # Table data structures
+- jedi=0.13           # Python script autocompletion
+- python-dateutil=2.7 # Date and Time utilities
+- numpy=1.15          # N-dimensional arrays
+- cairo=1.14          # SVG support
+- pillow=5.3          # Image inputs/outputs
+- matplotlib=2.2      # Plotting
+- IPython=5.8         # Notebook support
+- nbformat=4.4        # Notebook support
+- scipy=1.1           # Notebook support
+- jpype1=0.6.3        # Databases
+- protobuf=3.5        # Serialization for deprecated Python nodes
