@@ -741,6 +741,12 @@ propagated with or for interoperation with KNIME.
          unpack="false"/>
 
    <plugin
+         id="org.knime.python2.envconfigs"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
          id="org.knime.python2.nodes"
          download-size="0"
          install-size="0"
@@ -770,5 +776,4 @@ propagated with or for interoperation with KNIME.
          download-size="0"
          install-size="0"
          version="0.0.0"/>
-
 </feature>
