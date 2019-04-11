@@ -58,14 +58,14 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.config.AbstractEnvironmentTypePanel;
-import org.knime.python2.config.PythonEnvironmentTypeConfig;
 import org.knime.python2.config.PythonEnvironmentType;
+import org.knime.python2.config.PythonEnvironmentTypeConfig;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class PythonEnvironmentTypePreferencePanel extends AbstractEnvironmentTypePanel<Composite> {
+public final class PythonEnvironmentTypePreferencePanel extends AbstractEnvironmentTypePanel<Composite> {
 
     public PythonEnvironmentTypePreferencePanel(final PythonEnvironmentTypeConfig config, final Composite parent) {
         super(config, parent);

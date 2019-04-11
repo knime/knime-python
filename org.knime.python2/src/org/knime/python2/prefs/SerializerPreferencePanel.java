@@ -75,7 +75,7 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite> {
+public final class SerializerPreferencePanel extends AbstractSerializerPanel<Composite> {
 
     public SerializerPreferencePanel(final SerializerConfig config, final Composite parent) {
         super(config, parent);

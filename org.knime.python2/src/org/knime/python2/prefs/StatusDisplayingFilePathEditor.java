@@ -65,7 +65,7 @@ import org.knime.python2.Activator;
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME.com, Konstanz, Germany
  */
-final class StatusDisplayingFilePathEditor extends Composite {
+public final class StatusDisplayingFilePathEditor extends Composite {
 
     private final Label m_header;
 

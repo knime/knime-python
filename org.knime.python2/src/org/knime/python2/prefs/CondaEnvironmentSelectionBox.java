@@ -70,7 +70,7 @@ import org.knime.python2.config.CondaEnvironmentCreationObserver;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class CondaEnvironmentSelectionBox extends Composite {
+public final class CondaEnvironmentSelectionBox extends Composite {
 
     private final Label m_header;
 

@@ -62,7 +62,7 @@ import org.eclipse.swt.widgets.Widget;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-class PythonPreferenceUtils {
+public class PythonPreferenceUtils {
 
     private PythonPreferenceUtils() {
     }
@@ -71,7 +71,7 @@ class PythonPreferenceUtils {
      * @throws RuntimeException If any exception occurs while executing {@link action}. {@link SWTException SWT
      *             exceptions} caused by disposed SWT components may be suppressed.
      */
-    static <T> T performActionOnWidgetInUiThread(final Widget widget, final Callable<T> action,
+    public static <T> T performActionOnWidgetInUiThread(final Widget widget, final Callable<T> action,
         final boolean performAsync) {
         final AtomicReference<T> returnValue = new AtomicReference<>();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
