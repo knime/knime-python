@@ -54,7 +54,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
@@ -76,13 +75,11 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonConfigsObserver {
+public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
 
     private static final String ARROW_SERIALIZER_ID = "org.knime.python2.serde.arrow";
-
-    private CopyOnWriteArrayList<PythonConfigsInstallationTestStatusChangeListener> m_listeners =
-        new CopyOnWriteArrayList<>();
 
     private final PythonVersionConfig m_versionConfig;
 
@@ -483,87 +480,5 @@ public final class PythonConfigsObserver {
                 // no-op
             }
         }, false);
-    }
-
-    private synchronized void onCondaInstallationTestStarting() {
-        for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.condaInstallationTestStarting();
-        }
-    }
-
-    private synchronized void onCondaInstallationTestFinished(final String errorMessage) {
-        for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.condaInstallationTestFinished(errorMessage);
-        }
-    }
-
-    private synchronized void onEnvironmentInstallationTestStarting(final PythonEnvironmentType environmentType,
-        final PythonVersion pythonVersion) {
-        for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.environmentInstallationTestStarting(environmentType, pythonVersion);
-        }
-    }
-
-    private synchronized void onEnvironmentInstallationTestFinished(final PythonEnvironmentType environmentType,
-        final PythonVersion pythonVersion, final PythonKernelTestResult testResult) {
-        for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.environmentInstallationTestFinished(environmentType, pythonVersion, testResult);
-        }
-    }
-
-    /**
-     * @param listener A listener which will be notified about changes in the status of any installation test initiated
-     *            by this instance.
-     */
-    public void addConfigsTestStatusListener(final PythonConfigsInstallationTestStatusChangeListener listener) {
-        if (!m_listeners.contains(listener)) {
-            m_listeners.add(listener);
-        }
-    }
-
-    /**
-     * @param listener The listener to remove.
-     * @return {@code true} if the listener was present before removal.
-     */
-    public boolean removeConfigsTestStatusListener(final PythonConfigsInstallationTestStatusChangeListener listener) {
-        return m_listeners.remove(listener);
-    }
-
-    /**
-     * Listener which will be notified about changes in the status of installation tests initiated by the enclosing
-     * class.
-     */
-    public static interface PythonConfigsInstallationTestStatusChangeListener {
-
-        /**
-         * Called asynchronously, that is, possibly not in a UI thread.
-         */
-        void condaInstallationTestStarting();
-
-        /**
-         * Called asynchronously, that is, possibly not in a UI thread.
-         *
-         * @param errorMessage Error messages that occurred during the installation test. Empty if the installation test
-         *            was successful, i.e., conda is properly installed.
-         */
-        void condaInstallationTestFinished(String errorMessage);
-
-        /**
-         * Called asynchronously, that is, possibly not in a UI thread.
-         *
-         * @param environmentType The environment type of the environment whose installation test is about to start.
-         * @param pythonVersion The Python version of the environment.
-         */
-        void environmentInstallationTestStarting(PythonEnvironmentType environmentType, PythonVersion pythonVersion);
-
-        /**
-         * Called asynchronously, that is, possibly not in a UI thread.
-         *
-         * @param environmentType The environment type of the environment whose installation test has finished.
-         * @param pythonVersion The Python version of the environment.
-         * @param testResult The result of the installation test.
-         */
-        void environmentInstallationTestFinished(PythonEnvironmentType environmentType, PythonVersion pythonVersion,
-            PythonKernelTestResult testResult);
     }
 }
