@@ -257,7 +257,7 @@ public final class PythonConfigsObserver {
         final SettingsModelString condaInfoMessage = m_condaEnvironmentsConfig.getCondaInstallationInfo();
         final SettingsModelString condaErrorMessage = m_condaEnvironmentsConfig.getCondaInstallationError();
         try {
-            condaInfoMessage.setStringValue("Testing Conda installation...");
+            condaInfoMessage.setStringValue("Testing Conda installation...\n");
             condaErrorMessage.setStringValue("");
             onCondaInstallationTestStarting();
             final Conda conda = new Conda(m_condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue());
@@ -374,10 +374,18 @@ public final class PythonConfigsObserver {
         }
         final SettingsModelString infoMessage = environmentConfig.getPythonInstallationInfo();
         final SettingsModelString errorMessage = environmentConfig.getPythonInstallationError();
-        final String environmentCreationInfo =
-            "\nNote: You can create a new " + pythonVersion.getName() + " Conda environment that "
-                + "contains all packages\nrequired by the KNIME Python integration by clicking the '"
-                + AbstractCondaEnvironmentsPanel.CREATE_NEW_ENVIRONMENT_BUTTON_TEXT + "' button\nabove.";
+        final String environmentCreationInfo;
+        if (isConda) {
+            environmentCreationInfo =
+                "\nNote: You can create a new " + pythonVersion.getName() + " Conda environment that "
+                    + "contains all packages\nrequired by the KNIME Python integration by clicking the '"
+                    + AbstractCondaEnvironmentsPanel.CREATE_NEW_ENVIRONMENT_BUTTON_TEXT + "' button\nabove.";
+        } else {
+            environmentCreationInfo =
+                "\nNote: An easy way to create a new " + pythonVersion.getName() + " Conda environment that "
+                    + "contains all packages\nrequired by the KNIME Python integration can be found on the '"
+                    + PythonEnvironmentType.CONDA.getName() + "' tab of this preference page.";
+        }
         if (isCondaPlaceholder) {
             infoMessage.setStringValue("");
             errorMessage.setStringValue("No environment available. Please create a new one to be able to use "
