@@ -48,6 +48,7 @@
 """
 
 from debug_util import debug_msg
+from exceptions import GracefulShutdown
 from python3.messaging.AbstractMessageLoop import AbstractMessageLoop
 
 
@@ -62,7 +63,7 @@ class MessageReceiverLoop(AbstractMessageLoop):
         message = self._receive_queue.get()
         debug_msg("Python - Received message in loop: " + str(message))
         if message == self._monitor.poison_pill:
-            raise RuntimeError("Message receive loop terminated.")
+            raise GracefulShutdown("Message receive loop terminated.")
         return message
 
     def _loop(self):

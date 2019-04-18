@@ -52,7 +52,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
-import org.knime.python2.kernel.PythonExecutionException;
+import org.knime.python2.PythonFrameSummary;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
 import org.knime.python2.util.PythonNodeLogger;
 
@@ -126,22 +127,23 @@ public abstract class AbstractTaskHandler<T> implements TaskHandler<T> {
      */
     protected void handleFailureMessage(final Message message) throws Exception {
         final String errorMessage;
-        final String errorTraceback;
+        final String errorPrettyTraceback;
+        final PythonFrameSummary[] errorTraceback;
         if (message.getPayload() != null) {
             final PayloadDecoder payloadDecoder = new PayloadDecoder(message.getPayload());
             errorMessage = payloadDecoder.getNextString();
-            errorTraceback = payloadDecoder.getNextString();
+            errorPrettyTraceback = payloadDecoder.getNextString();
+            errorTraceback = new PythonFrameSummary[payloadDecoder.getNextInt()];
+            for (int i = 0; i < errorTraceback.length; i++) {
+                errorTraceback[i] = new PythonFrameSummary(payloadDecoder.getNextString(), payloadDecoder.getNextInt(),
+                    payloadDecoder.getNextString(), payloadDecoder.getNextString());
+            }
         } else {
             errorMessage = "Python task failed for unknown reasons.";
-            errorTraceback = errorMessage;
+            errorPrettyTraceback = null;
+            errorTraceback = null;
         }
-
-        // FIXME (LATER): Handling the case when arrow is installed in a wrong version. Hot-fix. needs more thought later.
-        if (errorMessage.equals("position out of bounds")) {
-            throw new PythonExecutionException(
-                "Error during execution. Make sure that your installed pyarrow version is at least 0.9.");
-        }
-        throw new PythonExecutionException(errorMessage, errorTraceback);
+        throw new PythonIOException(errorMessage, errorPrettyTraceback, errorTraceback);
     }
 
     /**

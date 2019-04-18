@@ -59,14 +59,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.python2.PythonFrameSummary;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionException;
+import org.knime.python2.kernel.PythonException;
+import org.knime.python2.kernel.PythonIOException;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -171,8 +173,6 @@ public final class PythonUtils {
 
     public static class Misc {
 
-        private static final AtomicLong UNIQUE_THREAD_ID = new AtomicLong();
-
         private Misc() {
         }
 
@@ -225,13 +225,13 @@ public final class PythonUtils {
          * @param cancelable the cancelable to check for cancellation
          * @return the result of the task, if any
          * @throws RejectedExecutionException if the task cannot be submitted to the executor service
-         * @throws PythonExecutionException if any exception occurred during execution (except cancellation, see below)
+         * @throws PythonIOException if any exception occurred during execution (except cancellation, see below)
          * @throws PythonCanceledExecutionException if canceled, is also thrown if the task itself terminates due to
          *             {@link PythonCanceledExecutionException}, {@link CanceledExecutionException}, or
          *             {@link CancellationException}
          */
         public static <T> T executeCancelable(final Callable<T> task, final ExecutorService executorService,
-            final PythonCancelable cancelable) throws PythonExecutionException, PythonCanceledExecutionException {
+            final PythonCancelable cancelable) throws PythonIOException, PythonCanceledExecutionException {
             final Future<T> future = executorService.submit(task);
             // Wait until execution is done or cancelled.
             final int waitTimeoutMilliseconds = 1000;
@@ -262,7 +262,7 @@ public final class PythonUtils {
                         // May happen if the executed task checks for cancellation itself.
                         throw new PythonCanceledExecutionException(ex.getMessage());
                     } else {
-                        throw new PythonExecutionException(ex.getMessage(), ex);
+                        throw new PythonIOException(ex.getMessage(), ex);
                     }
                 }
             }
@@ -344,13 +344,53 @@ public final class PythonUtils {
          * @return an optional that contains the throwable if one is found
          */
         public static Optional<Throwable> unwrapExecutionException(final Throwable throwable) {
+            return traverseStackUntilFound(throwable, t -> t instanceof ExecutionException ? null : t);
+        }
+
+        /**
+         * Finds the topmost {@link PythonException#getPythonTraceback() Python traceback} in a
+         * {@link Throwable#getCause() stack} of throwables.
+         *
+         * @param throwable the topmost throwable in the stack of throwables
+         * @return an optional that contains the traceback if one is found
+         */
+        public static Optional<PythonFrameSummary[]> extractPythonTraceback(final Throwable throwable) {
+            return traverseStackUntilFound(throwable, t -> {
+                if (t instanceof PythonException) {
+                    return ((PythonException)t).getPythonTraceback().orElse(null);
+                } else {
+                    return null;
+                }
+            });
+        }
+
+        /**
+         * Finds the topmost {@link PythonException#getFormattedPythonTraceback() formatted Python traceback} in a
+         * {@link Throwable#getCause() stack} of throwables.
+         *
+         * @param throwable the topmost throwable in the stack of throwables
+         * @return an optional that contains the formatted traceback if one is found
+         */
+        public static Optional<String> extractFormattedPythonTraceback(final Throwable throwable) {
+            return traverseStackUntilFound(throwable, t -> {
+                if (t instanceof PythonException) {
+                    return ((PythonException)t).getFormattedPythonTraceback().orElse(null);
+                } else {
+                    return null;
+                }
+            });
+        }
+
+        private static <T> Optional<T> traverseStackUntilFound(final Throwable throwable,
+            final Function<Throwable, T> visitor) {
             if (throwable == null) {
                 return Optional.empty();
             }
             Throwable t = throwable;
             do {
-                if (!(t instanceof ExecutionException)) {
-                    return Optional.of(t);
+                final T visitOutcome = visitor.apply(t);
+                if (visitOutcome != null) {
+                    return Optional.of(visitOutcome);
                 }
             } while (t != t.getCause() && (t = t.getCause()) != null);
             return Optional.empty();

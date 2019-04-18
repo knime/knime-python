@@ -44,93 +44,58 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 13, 2018 (marcel): created
+ *   Apr 17, 2019 (marcel): created
  */
-package org.knime.python2.kernel;
+package org.knime.python2;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
+import java.io.Serializable;
 
-import com.google.common.base.Strings;
+import com.google.common.base.MoreObjects;
 
 /**
+ * Roughly corresponds to {@code traceback.FrameSummary}.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonExecutionException extends ExecutionException implements PythonException {
+public final class PythonFrameSummary implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static String amendMessage(final String message) {
-        if (Strings.isNullOrEmpty(message)) {
-            return "An exception occured while running the Python kernel. See log for details.";
-        } else {
-            return message;
-        }
+    private final String m_fileName;
+
+    private final int m_lineNumber;
+
+    private final String m_name;
+
+    private final String m_line;
+
+    public PythonFrameSummary(final String fileName, final int lineNumber, final String name, final String line) {
+        m_fileName = fileName;
+        m_lineNumber = lineNumber;
+        m_name = name;
+        m_line = line;
     }
 
-    /**
-     * May be {@code null}.
-     */
-    private String m_pythonTraceBack;
-
-    /**
-     * @param message the message
-     */
-    public PythonExecutionException(final String message) {
-        this(message, new PythonIOException(amendMessage(message)));
+    public String getFileName() {
+        return m_fileName;
     }
 
-    /**
-     * @param message the message
-     * @param pythonTraceback The trace back of the error on Python side. Basically corresponds to the {@code cause}
-     *            argument in {@link #PythonExecutionException(String, Throwable)} but for a cause on Python side.
-     */
-    public PythonExecutionException(final String message, final String pythonTraceback) {
-        this(message, new PythonIOException(amendMessage(message)));
-        m_pythonTraceBack = pythonTraceback;
+    public int getLineNumber() {
+        return m_lineNumber;
     }
 
-    /**
-     * @param cause the cause of the problem
-     */
-    public PythonExecutionException(final Throwable cause) {
-        this(null, cause);
+    public String getName() {
+        return m_name;
     }
 
-    /**
-     * @param message the message
-     * @param cause the cause
-     */
-    public PythonExecutionException(final String message, final Throwable cause) {
-        super(amendMessage(message), cause);
-    }
-
-    /**
-     * @return The trace back of the underlying problem on Python side, if any.
-     * @see #getCause()
-     */
-    public Optional<String> getPythonTraceback() {
-        return Optional.ofNullable(m_pythonTraceBack);
+    public String getLine() {
+        return m_line;
     }
 
     @Override
-    public void printStackTrace(final PrintStream s) {
-        super.printStackTrace(s);
-        // Also print Python "stack trace".
-        if (m_pythonTraceBack != null) {
-            s.println(m_pythonTraceBack);
-        }
-    }
-
-    @Override
-    public void printStackTrace(final PrintWriter s) {
-        super.printStackTrace(s);
-        // Also print Python "stack trace".
-        if (m_pythonTraceBack != null) {
-            s.println(m_pythonTraceBack);
-        }
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("file name", m_fileName).add("line number", m_lineNumber)
+            .add("name", m_name).add("line", m_line).toString();
     }
 }

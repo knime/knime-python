@@ -47,6 +47,7 @@
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
 
+import sys
 from threading import Condition
 from threading import Lock
 
@@ -166,7 +167,7 @@ class Task(object):
             self._runnable = runnable
             self._is_done = False
             self._result = None
-            self._exception = None
+            self._exc_info = None
             self._condition = Condition()
 
         @property
@@ -177,7 +178,7 @@ class Task(object):
             try:
                 self._runnable()
             except BaseException as ex:
-                self.set_exception(ex)
+                self.set_exc_info(sys.exc_info())
                 debug_msg("An exception occurred while running a task. Cause: " + str(ex), exc_info=True)
                 raise
 
@@ -188,12 +189,21 @@ class Task(object):
                     __counter += 1
                     debug_msg("Python - Wait for result (" + str(__counter) + ").")
                     self._condition.wait()
-                exception = self._exception
+                exc_info = self._exc_info
                 result = self._result
-            if exception is not None:
-                raise exception
+            if exc_info is not None:
+                Task.FutureTask._reraise_exception(exc_info)
             else:
                 return result
+
+        @staticmethod
+        def _reraise_exception(exc_info):
+            try:
+                import six
+            except ImportError:
+                # six is not available, "reraise" exception ourselves.
+                raise Exception(exc_info[1])
+            six.reraise(exc_info[0], exc_info[1], exc_info[2])
 
         def set(self, result):
             with self._condition:
@@ -202,10 +212,10 @@ class Task(object):
                 self._is_done = True
                 self._condition.notify()
 
-        def set_exception(self, exception):
+        def set_exc_info(self, exc_info):
             with self._condition:
-                if self._exception is None and exception is not None:
-                    debug_msg("Python - Set exception: " + str(exception))
-                    self._exception = exception
+                if self._exc_info is None and exc_info is not None and exc_info[0] is not None:
+                    debug_msg("Python - Set exception: " + str(exc_info[1]))
+                    self._exc_info = exc_info
                     self._is_done = True
                     self._condition.notify()

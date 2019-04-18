@@ -391,17 +391,7 @@ public final class PythonCommands implements AutoCloseable {
      *         emitted during execution
      */
     public synchronized RunnableFuture<String[]> execute(final String sourceCode) {
-        return createTask(new AbstractTaskHandler<String[]>() {
-
-            @Override
-            protected String[] handleSuccessMessage(final Message response) throws ExecutionException {
-                final PayloadDecoder decoder = new PayloadDecoder(response.getPayload());
-                final String[] outputs = new String[2];
-                outputs[0] = decoder.getNextString();
-                outputs[1] = decoder.getNextString();
-                return outputs;
-            }
-        }, createExecuteCommand(sourceCode));
+        return execute(createExecuteCommand(sourceCode));
     }
 
     /**
@@ -412,6 +402,10 @@ public final class PythonCommands implements AutoCloseable {
      *         emitted during execution
      */
     public synchronized RunnableFuture<String[]> executeAsync(final String sourceCode) {
+        return execute(createExecuteAsyncCommand(sourceCode));
+    }
+
+    private RunnableFuture<String[]> execute(final Message executeCommand) {
         return createTask(new AbstractTaskHandler<String[]>() {
 
             @Override
@@ -422,7 +416,7 @@ public final class PythonCommands implements AutoCloseable {
                 outputs[1] = decoder.getNextString();
                 return outputs;
             }
-        }, createExecuteAsyncCommand(sourceCode));
+        }, executeCommand);
     }
 
     /**

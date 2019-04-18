@@ -48,7 +48,15 @@
  */
 package org.knime.python2.kernel;
 
+import java.util.Optional;
+
+import org.knime.python2.PythonFrameSummary;
+
 /**
+ * Deriving classes that have a {@link #getFormattedPythonTraceback() Python traceback} available, should also override
+ * {@link Throwable#printStackTrace(java.io.PrintStream)} and {@link Throwable#printStackTrace(java.io.PrintWriter)} to
+ * include it in their printed representation, therefore improving logging and simplifying debugging.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
@@ -62,4 +70,18 @@ public interface PythonException {
      * @see Throwable#getMessage()
      */
     String getMessage();
+
+    /**
+     * @return The formatted string representation of the trace back of the underlying problem on Python side, if any.
+     */
+    default Optional<String> getFormattedPythonTraceback() {
+        return Optional.empty();
+    }
+
+    /**
+     * @return The individual frames of the trace back of the underlying problem on Python side, if any.
+     */
+    default Optional<PythonFrameSummary[]> getPythonTraceback() {
+        return Optional.empty();
+    }
 }

@@ -54,7 +54,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -68,7 +67,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionException;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanExtractor;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanListExtractor;
 import org.knime.python2.serde.flatbuffers.extractors.BooleanSetExtractor;
@@ -136,8 +135,8 @@ import com.google.flatbuffers.FlatBufferBuilder;
 public class Flatbuffers implements SerializationLibrary {
 
     /** Used to make (de-)serialization cancelable. */
-    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(Executors
-        .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-flatbuffers-serde-%d").build()));
+    private final ExecutorService m_executorService = Executors
+        .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-flatbuffers-serde-%d").build());
 
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions,
@@ -145,7 +144,7 @@ public class Flatbuffers implements SerializationLibrary {
         try {
             return PythonUtils.Misc.executeCancelable(() -> tableToBytesInternal(tableIterator, serializationOptions),
                 m_executorService, cancelable);
-        } catch (final PythonExecutionException ex) {
+        } catch (final PythonIOException ex) {
             throw new SerializationException("An error occurred during serialization. See log for errors.", ex);
         } catch (final AssertionError ex) {
             // Assertion error is thrown if buffer cannot be grown.
@@ -300,7 +299,7 @@ public class Flatbuffers implements SerializationLibrary {
                 bytesIntoTableInternal(tableCreator, bytes, serializationOptions);
                 return null;
             }, m_executorService, cancelable);
-        } catch (final PythonExecutionException ex) {
+        } catch (final PythonIOException ex) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", ex);
         }
     }

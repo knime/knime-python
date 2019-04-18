@@ -68,7 +68,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,7 +84,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -125,7 +127,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TemporaryTableCreator;
 import org.knime.python2.generic.ImageContainer;
-import org.knime.python2.generic.ScriptingNodeUtils;
 import org.knime.python2.kernel.messaging.AbstractRequestHandler;
 import org.knime.python2.kernel.messaging.DefaultMessage;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
@@ -1329,20 +1330,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws IOException If an error occurred while communicating with the Python kernel
      */
     public String[] execute(final String sourceCode) throws IOException {
-        // In execution mode only the warnings are logged to stdout.
-        // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
-        try {
-            routeErrorMessagesToWarningLog(true);
-            final String[] output = m_commands.execute(sourceCode).get();
-            if (output[0].length() > 0) {
-                LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
-            }
-            return output;
-        } catch (final Exception ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        } finally {
-            routeErrorMessagesToWarningLog(false);
-        }
+        return executeCommand(m_commands.execute(sourceCode));
     }
 
     /**
@@ -1357,20 +1345,7 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
-        try {
-            return PythonUtils.Misc.executeCancelable(() -> {
-                final String[] out = execute(sourceCode);
-                // If the error log has content, throw it as exception.
-                if (!out[1].isEmpty()) {
-                    throw new PythonIOException(out[1]);
-                }
-                return out;
-            }, m_executorService, cancelable);
-        } catch (final PythonCanceledExecutionException ex) {
-            throw new CanceledExecutionException(ex.getMessage());
-        } catch (final Exception ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        }
+        return executeCommandCancelable(() -> execute(sourceCode), cancelable);
     }
 
     /**
@@ -1381,20 +1356,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws IOException If an error occurred while communicating with the Python kernel
      */
     public String[] executeAsync(final String sourceCode) throws IOException {
-        // In execution mode only the warnings are logged to stdout.
-        // If an error occurs it is transferred via the socket and available at position 1 of the returned string array.
-        try {
-            routeErrorMessagesToWarningLog(true);
-            final String[] output = m_commands.executeAsync(sourceCode).get();
-            if (output[0].length() > 0) {
-                LOGGER.debug(ScriptingNodeUtils.shortenString(output[0], 1000));
-            }
-            return output;
-        } catch (final Exception ex) {
-            throw getMostSpecificPythonKernelException(ex);
-        } finally {
-            routeErrorMessagesToWarningLog(false);
-        }
+        return executeCommand(m_commands.executeAsync(sourceCode));
     }
 
     /**
@@ -1411,19 +1373,55 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws IOException, CanceledExecutionException {
+        return executeCommandCancelable(() -> executeAsync(sourceCode), cancelable);
+    }
+
+    private String[] executeCommand(final RunnableFuture<String[]> executeCommand) throws IOException {
+        // In execution mode, only warnings (and possibly also handled exceptions) are logged to the Python kernel's
+        // error stream. Uncaught exceptions that lead to the exception termination of the execution initiated by
+        // this command are transmitted to Java an will raise an exception here, too.
+        routeErrorMessagesToWarningLog(true);
         try {
-            return PythonUtils.Misc.executeCancelable(() -> {
-                final String[] out = executeAsync(sourceCode);
-                // If the error log has content, throw it as exception.
-                if (!out[1].isEmpty()) {
-                    throw new PythonIOException(out[1]);
+            return executeCommand.get();
+        } catch (final Exception ex) {
+            final PythonIOException exception = getMostSpecificPythonKernelException(ex);
+            // Append Python trace back to error message to allow the user to instantly see the faulty parts of their
+            // code.
+            final Optional<String> formattedPythonTracebackOptional = exception.getFormattedPythonTraceback();
+            if (formattedPythonTracebackOptional.isPresent()) {
+                final String formattedPythonTraceback = formattedPythonTracebackOptional.get();
+                // Strip the lines of the trace back that do not refer to user code but kernel code.
+                String beautifiedPythonTraceback = null;
+                // Keep first line which is the trace back heading.
+                final int headingEndIndex = formattedPythonTraceback.indexOf('\n');
+                if (headingEndIndex != -1) {
+                    final String heading = formattedPythonTraceback.substring(0, headingEndIndex);
+                    final int userCodeBeginIndex = formattedPythonTraceback.indexOf("File \"<string>\"");
+                    if (userCodeBeginIndex != -1) {
+                        beautifiedPythonTraceback =
+                            heading + "\n" + formattedPythonTraceback.substring(userCodeBeginIndex);
+                    }
                 }
-                return out;
-            }, m_executorService, cancelable);
+                if (beautifiedPythonTraceback == null) {
+                    // Fall trough
+                    beautifiedPythonTraceback = formattedPythonTraceback;
+                }
+                throw new PythonIOException(exception.getMessage() + "\n" + beautifiedPythonTraceback,
+                    formattedPythonTraceback, exception.getPythonTraceback().orElse(null));
+            } else {
+                throw exception;
+            }
+        } finally {
+            routeErrorMessagesToWarningLog(false);
+        }
+    }
+
+    private String[] executeCommandCancelable(final Callable<String[]> executeCommand,
+        final PythonCancelable cancelable) throws IOException, CanceledExecutionException {
+        try {
+            return PythonUtils.Misc.executeCancelable(executeCommand, m_executorService, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
-        } catch (final Exception ex) {
-            throw getMostSpecificPythonKernelException(ex);
         }
     }
 
@@ -1684,7 +1682,7 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private <T> T waitForFutureCancelable(final Future<T> future, final PythonCancelable cancelable)
-        throws PythonExecutionException, PythonCanceledExecutionException {
+        throws PythonIOException, PythonCanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(future::get, m_executorService, cancelable);
         } catch (final PythonCanceledExecutionException ex) {

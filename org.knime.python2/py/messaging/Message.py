@@ -124,14 +124,14 @@ class PayloadDecoder(object):
         return self._read_bytes(size)
 
     def get_next_int(self):
-        return struct.unpack('>L', self._read_bytes(4))[0]
+        return struct.unpack('>l', self._read_bytes(4))[0]
 
     def get_next_long(self):
-        return struct.unpack('>Q', self._read_bytes(8))[0]
+        return struct.unpack('>q', self._read_bytes(8))[0]
 
     def get_next_string(self):
-        size = struct.unpack('>L', self._read_bytes(4))[0]
-        return self._read_bytes(size).decode('utf-8')
+        size = struct.unpack('>l', self._read_bytes(4))[0]
+        return self._read_bytes(size).decode('utf-8') if size != -1 else None
 
     def _read_bytes(self, size):
         start_pointer = self._pointer
@@ -159,15 +159,19 @@ class PayloadEncoder(object):
         return self
 
     def put_int(self, integer):
-        self._buffer += struct.pack('>L', integer)
+        self._buffer += struct.pack('>l', integer)
         return self
 
     def put_long(self, long):
-        self._buffer += struct.pack('>Q', long)
+        self._buffer += struct.pack('>q', long)
         return self
 
     def put_string(self, string):
-        string_bytes = string.encode('utf-8')
-        string_bytes_size = struct.pack('>L', len(string_bytes))
-        self._buffer += string_bytes_size + string_bytes
+        if string is not None:
+            string_bytes = string.encode('utf-8')
+            string_bytes_size = struct.pack('>l', len(string_bytes))
+            self._buffer += string_bytes_size + string_bytes
+        else:
+            string_bytes_size = struct.pack('>l', -1)
+            self._buffer += string_bytes_size
         return self

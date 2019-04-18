@@ -54,7 +54,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.knime.core.util.ThreadUtils;
 import org.knime.python2.kernel.PythonExecutionMonitor;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.util.PythonNodeLogger;
@@ -102,8 +101,8 @@ abstract class AbstractMessageLoop implements AutoCloseable {
 
     public AbstractMessageLoop(final PythonExecutionMonitor monitor, final String loopThreadName) {
         m_monitor = monitor;
-        m_executor = ThreadUtils.executorServiceWithContext(Executors
-            .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(loopThreadName + "-%d").build()));
+        m_executor =
+            Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(loopThreadName + "-%d").build());
     }
 
     /**

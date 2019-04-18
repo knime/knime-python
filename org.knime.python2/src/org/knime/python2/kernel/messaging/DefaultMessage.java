@@ -220,13 +220,17 @@ public final class DefaultMessage implements Message {
         }
 
         /**
-         * @return the next decoded string
+         * @return the next decoded string, may be {@code null}
          */
         public String getNextString() {
             final int len = m_buffer.getInt();
-            final byte[] bytes = new byte[len];
-            m_buffer.get(bytes);
-            return PythonMessagingUtils.utf8StringFromBytes(bytes);
+            if (len != -1) {
+                final byte[] bytes = new byte[len];
+                m_buffer.get(bytes);
+                return PythonMessagingUtils.utf8StringFromBytes(bytes);
+            } else {
+                return null;
+            }
         }
     }
 
@@ -310,11 +314,13 @@ public final class DefaultMessage implements Message {
         /**
          * Encode and write a string to the payload buffer.
          *
-         * @param value the string
+         * @param value the string, may be {@code null}
          * @return this instance
          */
         public PayloadEncoder putString(final String value) {
-            final byte[] bytes = PythonMessagingUtils.utf8StringToBytes(value);
+            final byte[] bytes = value != null //
+                ? PythonMessagingUtils.utf8StringToBytes(value) //
+                : ByteBuffer.allocate(4).putInt(-1).array();
             putBytes(bytes);
             return this;
         }

@@ -85,7 +85,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -100,7 +99,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionException;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.serde.arrow.ReadContextManager.ReadContext;
 import org.knime.python2.serde.arrow.extractors.BooleanExtractor;
 import org.knime.python2.serde.arrow.extractors.BooleanListExtractor;
@@ -220,8 +219,8 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
     }
 
     /** Used to make (de-)serialization cancelable. */
-    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
-        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-arrow-serde-%d").build()));
+    private final ExecutorService m_executorService =
+        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-arrow-serde-%d").build());
 
     /**
      * The root directory in which the temporary files used for data transfer are stored. Will be populated during the
@@ -253,7 +252,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                         finalFile.getAbsolutePath());
                 }
             }, m_executorService, cancelable);
-        } catch (IOException | PythonExecutionException e) {
+        } catch (IOException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
         } catch (final OversizedAllocationException ex) {
@@ -489,7 +488,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                 bytesIntoTableInternal(tableCreator, serializationOptions, spec, finalFile);
                 return null;
             }, m_executorService, cancelable);
-        } catch (final PythonExecutionException e) {
+        } catch (final PythonIOException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
             PythonUtils.Misc.invokeSafely(null, f -> {

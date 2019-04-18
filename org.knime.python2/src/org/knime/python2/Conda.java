@@ -77,7 +77,6 @@ import org.knime.core.util.Version;
 import org.knime.python2.envconfigs.CondaEnvironments;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionException;
 import org.knime.python2.util.PythonUtils;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -548,8 +547,6 @@ public final class Conda {
                 ? PythonUtils.Misc.executeCancelable(conda::waitFor, Executors.newSingleThreadExecutor(),
                     new PythonCancelableFromCondaExecutionMonitor(monitor))
                 : conda.waitFor();
-        } catch (final PythonExecutionException ex) {
-            throw new IOException(ex.getMessage(), ex);
         } catch (final PythonCanceledExecutionException ex) {
             conda.destroy();
             throw ex;

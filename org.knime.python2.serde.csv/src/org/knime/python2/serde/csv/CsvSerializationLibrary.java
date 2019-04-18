@@ -63,7 +63,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -78,7 +77,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionException;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.util.BitArray;
 import org.knime.python2.util.PythonUtils;
 
@@ -94,8 +93,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class CsvSerializationLibrary implements SerializationLibrary {
 
     /** Used to make (de-)serialization cancelable. */
-    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
-        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-csv-serde-%d").build()));
+    private final ExecutorService m_executorService =
+        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-csv-serde-%d").build());
 
     /**
      * The root directory in which the temporary files used for data transfer are stored. Will be populated during the
@@ -126,7 +125,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             return PythonUtils.Misc.executeCancelable(
                 () -> tableToBytesInternal(tableIterator, serializationOptions, finalFile), m_executorService,
                 cancelable);
-        } catch (final IOException | PythonExecutionException e) {
+        } catch (final IOException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
         } catch (final NegativeArraySizeException ex) {
@@ -449,7 +448,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
                 bytesIntoTableInternal(tableCreator, serializationOptions, finalFile);
                 return null;
             }, m_executorService, cancelable);
-        } catch (final PythonExecutionException e) {
+        } catch (final PythonIOException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);

@@ -99,8 +99,15 @@ class AbstractRequestHandler(AbstractTaskHandler):
         except Exception as ex:
             error_message = str(ex)
             debug_msg(error_message, exc_info=True)
-            error_traceback = traceback.format_exc()
-            error_payload = PayloadEncoder().put_string(error_message).put_string(error_traceback).payload
+            # Message format: Error message, pretty traceback, number of traceback elements (frames), list of frames
+            # where each frame is of the form: filename, line number, name, line.
+            error_pretty_traceback = traceback.format_exc()
+            error_traceback_frames = traceback.extract_tb(sys.exc_info()[2])
+            error_payload = PayloadEncoder().put_string(error_message).put_string(error_pretty_traceback).put_int(
+                len(error_traceback_frames))
+            for frame in reversed(error_traceback_frames):
+                error_payload.put_string(frame[0]).put_int(frame[1]).put_string(frame[2]).put_string(frame[3])
+            error_payload = error_payload.payload
             # Inform Java that handling the request did not work.
             error_response = AbstractRequestHandler._create_response(message, response_message_id, success=False,
                                                                      response_payload=error_payload)
@@ -356,12 +363,9 @@ class ExecuteRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
         source_code = PayloadDecoder(request.payload).get_next_string()
 
-        debug_msg('Executing:\n' + source_code + '\n')
+        debug_msg('Executing:\n' + source_code)
         output, error = workspace.execute(source_code, request.id)
-        if error:
-            debug_msg('Error during execution. Message: \'' + error + '\'', exc_info=True)
-        else:
-            debug_msg('Execution done.')
+        debug_msg('Execution done.')
 
         response_payload = PayloadEncoder().put_string(output).put_string(error).payload
         return AbstractRequestHandler._create_response(request, response_message_id, response_payload=response_payload)

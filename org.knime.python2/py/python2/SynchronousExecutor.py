@@ -47,6 +47,8 @@
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
 
+import sys
+
 
 class SynchronousExecutor(object):
     """
@@ -69,10 +71,8 @@ class SynchronousExecutor(object):
         if self._shutdown:
             raise RuntimeError('cannot schedule new futures after shutdown')
         future = SynchronousExecutor._ImmediatelyCompletingFuture(fn, *args, **kwargs)
-        if future.exception() is not None:
-            raise future.exception()
-        else:
-            return future
+        future.result()  # Immediately raise exception in case one was recorded.
+        return future
 
     def shutdown(self, wait=True):
         self._shutdown = True
@@ -85,19 +85,20 @@ class SynchronousExecutor(object):
 
         def __init__(self, fn, *args, **kwargs):
             self._result = None
-            self._exception = None
+            self._exc_info = None
             try:
                 result = fn(*args, **kwargs)
-            except BaseException as ex:
-                self._exception = ex
+            except BaseException:
+                self._exc_info = sys.exc_info()
             else:
                 self._result = result
 
         def result(self, timout=None):
-            if self._exception:
-                raise self._exception
+            if self._exc_info:
+                exc_info = self._exc_info
+                raise exc_info[0], exc_info[1], exc_info[2]  # Python 2 syntax, won't work with Python 3.
             else:
                 return self._result
 
-        def exception(self, timeout=None):
-            return self._exception
+        def exc_info(self, timeout=None):
+            return self._exc_info

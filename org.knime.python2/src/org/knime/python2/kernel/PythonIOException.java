@@ -49,12 +49,18 @@
 package org.knime.python2.kernel;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.Optional;
+
+import org.knime.python2.PythonFrameSummary;
+import org.knime.python2.util.PythonUtils;
 
 import com.google.common.base.Strings;
 
 /**
- * Exception thrown if there was an I/O-related error while communicating with Python.
- *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonIOException extends IOException implements PythonException {
@@ -70,17 +76,47 @@ public final class PythonIOException extends IOException implements PythonExcept
     }
 
     /**
+     * May be {@code null}.
+     */
+    private final String m_formattedPythonTraceback;
+
+    /**
+     * May be {@code null}.
+     */
+    private final PythonFrameSummary[] m_pythonTraceBack;
+
+    /**
      * @param message a message indicating the cause of the exception
      */
     public PythonIOException(final String message) {
         super(amendMessage(message));
+        m_formattedPythonTraceback = null;
+        m_pythonTraceBack = null;
+    }
+
+    /**
+     * @param message the message
+     * @param formattedPythonTraceback The formatted string representation of the trace back of the error on Python
+     *            side. Together with the frame summaries, this basically corresponds to the {@code cause} argument in
+     *            {@link #PythonIOException(String, Throwable)} but for a cause on Python side.
+     * @param pythonTraceback The individual frames of the trace back of the error on Python side. Together with the
+     *            formatted trace back, this basically corresponds to the {@code cause} argument in
+     *            {@link #PythonIOException(String, Throwable)} but for a cause on Python side.
+     */
+    public PythonIOException(final String message, final String formattedPythonTraceback,
+        final PythonFrameSummary[] pythonTraceback) {
+        super(amendMessage(message));
+        m_formattedPythonTraceback = formattedPythonTraceback;
+        m_pythonTraceBack = pythonTraceback;
     }
 
     /**
      * @param cause the cause of the problem
      */
     public PythonIOException(final Throwable cause) {
-        this(null, cause);
+        super(amendMessage(null), cause);
+        m_formattedPythonTraceback = PythonUtils.Misc.extractFormattedPythonTraceback(cause).orElse(null);
+        m_pythonTraceBack = PythonUtils.Misc.extractPythonTraceback(cause).orElse(null);
     }
 
     /**
@@ -89,5 +125,37 @@ public final class PythonIOException extends IOException implements PythonExcept
      */
     public PythonIOException(final String message, final Throwable cause) {
         super(amendMessage(message), cause);
+        m_formattedPythonTraceback = PythonUtils.Misc.extractFormattedPythonTraceback(cause).orElse(null);
+        m_pythonTraceBack = PythonUtils.Misc.extractPythonTraceback(cause).orElse(null);
+    }
+
+    @Override
+    public Optional<String> getFormattedPythonTraceback() {
+        return Optional.ofNullable(m_formattedPythonTraceback);
+    }
+
+    @Override
+    public Optional<PythonFrameSummary[]> getPythonTraceback() {
+        return Optional.ofNullable(m_pythonTraceBack);
+    }
+
+    @Override
+    public void printStackTrace(final PrintStream s) {
+        super.printStackTrace(s);
+        // Also print Python "stack trace".
+        if (m_formattedPythonTraceback != null) {
+            s.print("Caused by: ");
+            s.println(m_formattedPythonTraceback);
+        }
+    }
+
+    @Override
+    public void printStackTrace(final PrintWriter s) {
+        super.printStackTrace(s);
+        // Also print Python "stack trace".
+        if (m_formattedPythonTraceback != null) {
+            s.print("Caused by: ");
+            s.println(m_formattedPythonTraceback);
+        }
     }
 }

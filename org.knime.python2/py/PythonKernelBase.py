@@ -261,31 +261,27 @@ class PythonKernelBase(Borg):
 
     def execute(self, source_code, initiating_message_id=None):
         """
-        Execute the given source code
+        Executes the given source code.
         """
         output = StringIO()
         error = StringIO()
-
-        # log to stdout and output variable simultaneously
-        backup_std_out = sys.stdout
+        # Log outputs/errors(/warnings) to both stdout/stderr and variables. Note that we do _not_ catch any otherwise
+        # uncaught exceptions here for the purpose of logging. That is, uncaught exceptions will regularly lead to the
+        # exceptional termination of this method and need to be handled and possibly logged by the callers of this
+        # method.
+        regular_std_out = sys.stdout
+        regular_std_err = sys.stderr
         sys.stdout = PythonKernelBase._Logger(sys.stdout, output)
+        sys.stderr = PythonKernelBase._Logger(sys.stderr, error)
 
         # FIXME: This is dangerous!
         self._exec_env['python_messaging_initiating_message_id'] = initiating_message_id
-
-        # run execute with the provided source code
         try:
             exec(source_code, self._exec_env, self._exec_env)
-        except Exception:
-            # Print failing source code to simplify debugging.
-            debug_msg("Source code that caused failure:\n" + source_code)
-            backup_std_error = sys.stderr
-            sys.stderr = error
-            traceback.print_exc()
-            sys.stderr.flush()
-            sys.stderr = backup_std_error
+        finally:
+            sys.stdout = regular_std_out
+            sys.stderr = regular_std_err
 
-        sys.stdout = backup_std_out
         return [output.getvalue(), error.getvalue()]
 
     def reset(self):

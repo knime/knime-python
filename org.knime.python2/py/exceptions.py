@@ -47,61 +47,6 @@
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
 
-import threading
 
-from PythonUtils import invoke_safely
-from debug_util import debug_msg
-from python3.messaging.AbstractMessageLoop import AbstractMessageLoop
-
-
-class MessageDistributorLoop(AbstractMessageLoop):
-    def __init__(self, receiver, distributor, monitor):
-        super(MessageDistributorLoop, self).__init__(monitor)
-        self._receiver = receiver
-        self._distributor = distributor
-        self._message_handlers_lock = threading.RLock()
-        self._message_handlers_closed = False
-
-    def register_message_handler(self, message_category, handler):
-        with self._message_handlers_lock:
-            exception = None
-            registered = False
-            try:
-                registered = self._distributor.register_message_handler(message_category, handler)
-            except BaseException as ex:
-                exception = ex
-            if self._message_handlers_closed:
-                self._close_message_handlers([handler])
-            if exception is not None:
-                raise
-            else:
-                return registered
-
-    def unregister_message_handler(self, message_category):
-        with self._message_handlers_lock:
-            return self._distributor.unregister_message_handler(message_category)
-
-    def can_handle(self, message_category):
-        with self._message_handlers_lock:
-            return self._distributor.can_handle(message_category)
-
-    def _loop(self):
-        while self.is_running:
-            message = None
-            try:
-                message = self._receiver.receive()
-                self._distributor.handle(message)
-            except Exception as ex:
-                debug_msg("Failed to distribute message " + (
-                    "'" + str(message) + "' " if message is not None else "") + "from Java. Cause: " + str(ex))
-                raise
-
-    def _close(self):
-        with self._message_handlers_lock:
-            self._message_handlers_closed = True
-            # Handlers may want to unregister upon closing. Copy to avoid concurrent modification.
-            handlers = list(self._distributor._message_handlers.values())
-            self._close_message_handlers(handlers)
-
-    def _close_message_handlers(self, handlers):
-        invoke_safely(None, lambda h: h.handle(self._monitor.poison_pill), handlers)
+class GracefulShutdown(Exception):
+    pass

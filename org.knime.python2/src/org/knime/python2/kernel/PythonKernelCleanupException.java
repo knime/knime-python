@@ -73,7 +73,7 @@ public class PythonKernelCleanupException extends IOException implements PythonE
     }
 
     public PythonKernelCleanupException(final Throwable cause) {
-        super(cause);
+        super(amendMessage(null), cause);
     }
 
     public PythonKernelCleanupException(final String message, final Throwable cause) {
