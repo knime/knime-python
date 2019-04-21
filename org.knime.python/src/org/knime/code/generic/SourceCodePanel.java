@@ -301,7 +301,12 @@ public abstract class SourceCodePanel extends JPanel {
     private final Style m_normalStyle;
 
     private final Style m_errorStyle;
+
     private final RSyntaxTextArea m_editor;
+
+    private final CompletionProvider m_completionProvider;
+
+    private AutoCompletion m_autoCompletion;
 
     private final StatusBar m_statusBar = new StatusBar();
 
@@ -317,39 +322,48 @@ public abstract class SourceCodePanel extends JPanel {
         public boolean isCellEditable(final int row, final int column) {
             // No cell is editable
             return false;
-        };
+        }
     };
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(SourceCodePanel.class);
 
     private final JTable m_vars = new JTable(m_varsModel);
+
     private final JButton m_exec = new JButton("Execute script");
+
     private final JButton m_execSelection = new JButton("Execute selected lines");
+
     private final JButton m_reset = new JButton("Reset workspace");
+
     private final JButton m_clearConsole = new JButton();
+
     private final DefaultListModel<FlowVariable> m_flowVariablesModel = new DefaultListModel<FlowVariable>();
+
     private final JList<FlowVariable> m_flowVariables = new JList<FlowVariable>(m_flowVariablesModel);
+
     private final JPanel m_flowVariablesPanel;
+
     private final DefaultListModel<DataColumnSpec> m_columnsModel = new DefaultListModel<DataColumnSpec>();
+
     private final JList<DataColumnSpec> m_columns = new JList<DataColumnSpec>(m_columnsModel);
+
     private final JSplitPane m_listsSplit;
+
     private final JSplitPane m_listEditorSplit;
+
     private final JButton m_showImages = new JButton("Show Image");
+
     private int m_rowLimit = Integer.MAX_VALUE;
+
     private final VariableNames m_variableNames;
+
     private int[] m_tableEnds;
 
     /**
      * Create a source code panel for the given language style.
      *
-     * @param syntaxStyle
-     *            One of the language styles defined in {@link SyntaxConstants}
-     * @param flowVariablesName
-     *            Name of the flow variables variable
-     * @param inputTableNames
-     *            Name of the input table variables
-     * @param outputImageNames
-     *            Name of the output image variables
+     * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}
+     * @param variableNames Name of the flow variables variable
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
         m_editor = createEditor(syntaxStyle);
@@ -432,14 +446,8 @@ public abstract class SourceCodePanel extends JPanel {
         m_errorStyle = m_console.addStyle("errorstyle", null);
         StyleConstants.setForeground(m_errorStyle, Color.red);
         // Configure auto completion
-        final CompletionProvider provider = createCompletionProvider();
-        final AutoCompletion ac = new AutoCompletion(provider);
-        ac.setAutoActivationDelay(100);
-        ac.setAutoActivationEnabled(true);
-        ac.setShowDescWindow(true);
-        ac.setDescriptionWindowSize(580, 300);
-        ac.setParameterAssistanceEnabled(true);
-        ac.install(m_editor);
+        m_completionProvider = createCompletionProvider();
+        installAutoCompletion();
         // Configure spell checker
         final File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
         if (dictFile != null) {
@@ -536,12 +544,31 @@ public abstract class SourceCodePanel extends JPanel {
                     final int index = m_columns.locationToIndex(evt.getPoint());
                     final DataColumnSpec column = m_columnsModel.get(index);
                     final int tableNumber = findTableForColumnIndex(index);
-                    m_editor.replaceSelection(createVariableAccessString(m_variableNames.getInputTables()[tableNumber], column.getName()));
+                    m_editor.replaceSelection(
+                        createVariableAccessString(m_variableNames.getInputTables()[tableNumber], column.getName()));
                     m_editor.requestFocus();
                 }
             }
         });
-        setColumnListEnabled(variableNames.getInputTables().length>0);
+        setColumnListEnabled(variableNames.getInputTables().length > 0);
+    }
+
+    /**
+     * Subclasses should invoke this if they override {@link #loadSettingsFrom(SourceCodeConfig, PortObjectSpec[])} and
+     * do not call super.
+     */
+    protected final void installAutoCompletion() {
+        if (m_autoCompletion != null) {
+            m_autoCompletion.uninstall();
+        }
+
+        m_autoCompletion = new AutoCompletion(m_completionProvider);
+        m_autoCompletion.setAutoActivationDelay(100);
+        m_autoCompletion.setAutoActivationEnabled(true);
+        m_autoCompletion.setShowDescWindow(true);
+        m_autoCompletion.setDescriptionWindowSize(580, 300);
+        m_autoCompletion.setParameterAssistanceEnabled(true);
+        m_autoCompletion.install(m_editor);
     }
 
     private String getSelectedLines() {
@@ -602,19 +629,13 @@ public abstract class SourceCodePanel extends JPanel {
                     window.setTitle("Python images");
                     final JComboBox<String> imageSelection = new JComboBox<String>(m_variableNames.getOutputImages());
                     contentPane.add(imageSelection, BorderLayout.NORTH);
-                    imageSelection.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(final ActionEvent e) {
-                            setImage(imageLabel, (String) imageSelection.getSelectedItem());
-                            window.pack();
-                        }
+                    imageSelection.addActionListener((ae) -> {
+                        setImage(imageLabel, (String)imageSelection.getSelectedItem());
+                        window.pack();
                     });
                 }
-                closeButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(final ActionEvent e) {
-                        window.setVisible(false);
-                    }
+                closeButton.addActionListener((ae) -> {
+                    window.setVisible(false);
                 });
                 window.pack();
                 window.setLocationRelativeTo(SourceCodePanel.this);
@@ -664,31 +685,31 @@ public abstract class SourceCodePanel extends JPanel {
     /**
      * Save settings to the given {@link SourceCodeConfig}.
      *
-     * @param config
-     *            The config to save to
-     * @throws InvalidSettingsException
-     *             If the current settings are invalid
+     * @param config The config to save to
+     * @throws InvalidSettingsException If the current settings are invalid
      */
     public void saveSettingsTo(final SourceCodeConfig config) throws InvalidSettingsException {
         config.setSourceCode(m_editor.getText());
     }
 
     /**
-     * Loads settings from the given {@link SourceCodeConfig}.
+     * Loads settings from the given {@link SourceCodeConfig}. If subclasses override this method and do not invoke
+     * super, then they <b>must</b> invoke {@link #installAutoCompletion()} lest problems of the ilk of
+     * https://knime-com.atlassian.net/browse/AP-10515 occur.
      *
-     * @param config
-     *            The config to load from
-     * @param specs
-     *            Input port specs
-     * @throws NotConfigurableException
-     *             If the panel is not configurable
+     * @param config The config to load from
+     * @param specs Input port specs
+     * @throws NotConfigurableException If the panel is not configurable
      */
-    public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs) throws NotConfigurableException {
+    public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        installAutoCompletion();
+
         m_editor.setText(config.getSourceCode());
         final List<DataTableSpec> tableSpecs = new ArrayList<DataTableSpec>();
         for (final PortObjectSpec spec : specs) {
             if (spec instanceof DataTableSpec) {
-                tableSpecs.add((DataTableSpec) spec);
+                tableSpecs.add((DataTableSpec)spec);
             }
         }
         updateSpec(tableSpecs.toArray(new DataTableSpec[tableSpecs.size()]));
@@ -961,7 +982,7 @@ public abstract class SourceCodePanel extends JPanel {
         final DefaultCompletionProvider provider = new DefaultCompletionProvider() {
             @Override
             public List<Completion> getCompletions(final JTextComponent comp) {
-                final List<Completion> completions = super.getCompletions(comp);
+                final List<Completion> completionList = super.getCompletions(comp);
                 // Get source code from editor
                 final String sourceCode = comp.getText();
                 // Caret position only gives as the number of characters before
@@ -974,8 +995,8 @@ public abstract class SourceCodePanel extends JPanel {
                 // Column = how long is the last line of the code?
                 final int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf("\n") + 1).length();
                 // Add completions from getCompletionsFor()
-                completions.addAll(getCompletionsFor(this, sourceCode, line, column));
-                return completions;
+                completionList.addAll(getCompletionsFor(this, sourceCode, line, column));
+                return completionList;
             }
         };
         // Automatically suggest after '.'
@@ -1049,10 +1070,17 @@ public abstract class SourceCodePanel extends JPanel {
         return m_variableNames;
     }
 
+    /**
+     * @return the syntax text editor instance
+     */
     public RSyntaxTextArea getEditor() {
         return m_editor;
     }
 
+    /**
+     * @param syntaxStyle the value which will be passed to <code>RSyntaxTextArea.setSyntaxEditingStyle(String)</code>
+     * @return a new instance of {@link RSyntaxTextArea}
+     */
     public static RSyntaxTextArea createEditor(final String syntaxStyle) {
         final RSyntaxTextArea editor = new RSyntaxTextArea();
         editor.setSyntaxEditingStyle(syntaxStyle);
@@ -1067,5 +1095,4 @@ public abstract class SourceCodePanel extends JPanel {
         editor.setTabSize(4);
         return editor;
     }
-
 }

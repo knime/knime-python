@@ -295,6 +295,10 @@ public abstract class SourceCodePanel extends JPanel {
 
     private final RSyntaxTextArea m_editor;
 
+    private final CompletionProvider m_completionProvider;
+
+    private AutoCompletion m_autoCompletion;
+
     private final StatusBar m_statusBar = new StatusBar();
 
     private final JTextPane m_console = new JTextPane();
@@ -442,14 +446,8 @@ public abstract class SourceCodePanel extends JPanel {
         m_warningStyle = m_console.addStyle("warningstyle", null);
         StyleConstants.setForeground(m_warningStyle, Color.blue);
         // Configure auto completion
-        final CompletionProvider provider = createCompletionProvider();
-        final AutoCompletion ac = new AutoCompletion(provider);
-        ac.setAutoActivationDelay(100);
-        ac.setAutoActivationEnabled(true);
-        ac.setShowDescWindow(true);
-        ac.setDescriptionWindowSize(580, 300);
-        ac.setParameterAssistanceEnabled(true);
-        ac.install(m_editor);
+        m_completionProvider = createCompletionProvider();
+        installAutoCompletion();
         //Commented, because dict file does not exist
         // Configure spell checker
         /*final File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
@@ -555,6 +553,24 @@ public abstract class SourceCodePanel extends JPanel {
             }
         });
         setColumnListEnabled(variableNames.getInputTables().length > 0);
+    }
+
+    /**
+     * Subclasses should invoke this if they override {@link #loadSettingsFrom(SourceCodeConfig, PortObjectSpec[])} and
+     * do not call super.
+     */
+    protected final void installAutoCompletion() {
+        if (m_autoCompletion != null) {
+            m_autoCompletion.uninstall();
+        }
+
+        m_autoCompletion = new AutoCompletion(m_completionProvider);
+        m_autoCompletion.setAutoActivationDelay(100);
+        m_autoCompletion.setAutoActivationEnabled(true);
+        m_autoCompletion.setShowDescWindow(true);
+        m_autoCompletion.setDescriptionWindowSize(580, 300);
+        m_autoCompletion.setParameterAssistanceEnabled(true);
+        m_autoCompletion.install(m_editor);
     }
 
     private String getSelectedLines() {
@@ -683,7 +699,9 @@ public abstract class SourceCodePanel extends JPanel {
     }
 
     /**
-     * Loads settings from the given {@link SourceCodeConfig}.
+     * Loads settings from the given {@link SourceCodeConfig}. If subclasses override this method and do not invoke
+     * super, then they <b>must</b> invoke {@link #installAutoCompletion()} lest problems of the ilk of
+     * https://knime-com.atlassian.net/browse/AP-10515 occur.
      *
      * @param config The config to load from
      * @param specs Input port specs
@@ -691,6 +709,8 @@ public abstract class SourceCodePanel extends JPanel {
      */
     public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs)
             throws NotConfigurableException {
+        installAutoCompletion();
+
         m_editor.setText(config.getSourceCode());
         final List<DataTableSpec> tableSpecs = new ArrayList<DataTableSpec>();
         for (final PortObjectSpec spec : specs) {
