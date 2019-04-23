@@ -48,7 +48,7 @@
 """
 
 from debug_util import debug_msg
-from exceptions import GracefulShutdown
+from PythonKernelExceptions import GracefulShutdown
 from python3.messaging.AbstractMessageLoop import AbstractMessageLoop
 
 

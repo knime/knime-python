@@ -57,7 +57,7 @@ import EnvironmentHelper
 
 EnvironmentHelper.dummy_call()
 
-import exceptions
+from PythonKernelExceptions import GracefulShutdown
 import sys
 import traceback
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         try:
             kernel.start()
         except BaseException as ex:
-            if not isinstance(ex, exceptions.GracefulShutdown):
+            if not isinstance(ex, GracefulShutdown):
                 traceback.print_exc(file=sys.stdout)
                 sys.stdout.flush()
                 raise
