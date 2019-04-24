@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +75,10 @@ public class PythonKernelTester {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelTester.class);
 
     private static final String PYTHON_KERNEL_TESTER_FILE_NAME = "PythonKernelTester.py";
+
+    private static final String SEPARATOR = "__!__separator__!__";
+
+    private static final String SUCCESS_MESSAGE = "__!__installation_tests_finished__!__";
 
     private static final String PYTHON_MAJOR_VERSION_2 = "2";
 
@@ -109,7 +114,7 @@ public class PythonKernelTester {
     public static PythonKernelTestResult testPython2Installation(final PythonCommand python2Command,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python2Command, PYTHON_MAJOR_VERSION_2, PYTHON_MINIMUM_VERSION_2,
-            additionalRequiredModules, force);
+            additionalRequiredModules, Collections.emptyList(), force);
     }
 
     /**
@@ -125,7 +130,45 @@ public class PythonKernelTester {
     public static PythonKernelTestResult testPython3Installation(final PythonCommand python3Command,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
-            additionalRequiredModules, force);
+            additionalRequiredModules, Collections.emptyList(), force);
+    }
+
+    /**
+     * Tests if Python can be started for the given Python 2 command and if all given required custom modules are
+     * installed.
+     *
+     * @param python2Command The Python 2 command to test.
+     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
+     *            for the caller to work properly, must not be {@code null} but may be empty.
+     * @param additionalOptionalModules Additional custom modules that should exist in the Python installation in order
+     *            for the caller to work properly, must not be {@code null} but may be empty.
+     * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
+     * @return The results of the installation test.
+     */
+    public static PythonKernelTestResult testPython2Installation(final PythonCommand python2Command,
+        final Collection<PythonModuleSpec> additionalRequiredModules,
+        final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
+        return testPythonInstallation(python2Command, PYTHON_MAJOR_VERSION_2, PYTHON_MINIMUM_VERSION_2,
+            additionalRequiredModules, additionalOptionalModules, force);
+    }
+
+    /**
+     * Tests if Python can be started for the given Python 3 command and if all given required custom modules are
+     * installed.
+     *
+     * @param python3Command The Python 3 command to test.
+     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
+     *            for the caller to work properly, must not be {@code null} but may be empty.
+     * @param additionalOptionalModules Additional custom modules that should exist in the Python installation in order
+     *            for the caller to work properly, must not be {@code null} but may be empty.
+     * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
+     * @return The results of the installation test.
+     */
+    public static PythonKernelTestResult testPython3Installation(final PythonCommand python3Command,
+        final Collection<PythonModuleSpec> additionalRequiredModules,
+        final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
+        return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
+            additionalRequiredModules, additionalOptionalModules, force);
     }
 
     /**
@@ -133,18 +176,23 @@ public class PythonKernelTester {
      */
     private static synchronized PythonKernelTestResult testPythonInstallation(final PythonCommand pythonCommand,
         final String majorVersion, final String minimumVersion,
-        final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
-        // Only rerun test if there isn't already a suitable test result.
-        PythonKernelTestResult testResults =
-            getPreviousTestResultsIfApplicable(pythonCommand, additionalRequiredModules, force);
-        if (testResults != null) {
-            return testResults;
+        final Collection<PythonModuleSpec> additionalRequiredModules,
+        final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
+        PythonKernelTestResult testResults;
+
+        if (!force) {
+            // Only rerun test if there isn't already a suitable test result.
+            // NOTE: optional modules are not considered for previous test results because they only issue warnings
+            testResults = getPreviousTestResultsIfApplicable(pythonCommand, additionalRequiredModules);
+            if (testResults != null) {
+                return testResults;
+            }
         }
 
         final StringBuilder testLogger = new StringBuilder();
         try {
             final Process process = runPythonKernelTester(pythonCommand, majorVersion, minimumVersion,
-                additionalRequiredModules, testLogger);
+                additionalRequiredModules, additionalOptionalModules, testLogger);
 
             // Get error output.
             final StringWriter errorWriter = new StringWriter();
@@ -165,7 +213,7 @@ public class PythonKernelTester {
         } catch (final IOException e) {
             final String message = "Could not find Python executable at the given location: " + pythonCommand + ".";
             testLogger.append(message);
-            testResults = new PythonKernelTestResult(testLogger.toString(), message, null);
+            testResults = new PythonKernelTestResult(testLogger.toString(), message, null, null);
         }
 
         // If there is something wrong with the Python installation, log the test configuration.
@@ -178,20 +226,18 @@ public class PythonKernelTester {
     }
 
     private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final PythonCommand pythonCommand,
-        final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
+        final Collection<PythonModuleSpec> additionalRequiredModules) {
         // If a previous, appropriate Python test already succeeded, we will not have to run it again and return the
         // old results here (except if we're forced to).
-        if (!force) {
-            final Pair<List<PythonModuleSpec>, PythonKernelTestResult> requiredModulesAndResult =
-                TEST_RESULTS.get(pythonCommand);
-            if (requiredModulesAndResult != null) {
-                final List<PythonModuleSpec> previouslyRequiredModules = requiredModulesAndResult.getFirst();
-                final PythonKernelTestResult previousTestResults = requiredModulesAndResult.getSecond();
-                if (!previousTestResults.hasError() //
-                    && additionalRequiredModules.containsAll(previouslyRequiredModules)
-                    && previouslyRequiredModules.containsAll(additionalRequiredModules)) {
-                    return previousTestResults;
-                }
+        final Pair<List<PythonModuleSpec>, PythonKernelTestResult> requiredModulesAndResult =
+            TEST_RESULTS.get(pythonCommand);
+        if (requiredModulesAndResult != null) {
+            final List<PythonModuleSpec> previouslyRequiredModules = requiredModulesAndResult.getFirst();
+            final PythonKernelTestResult previousTestResults = requiredModulesAndResult.getSecond();
+            if (!previousTestResults.hasError() //
+                && additionalRequiredModules.containsAll(previouslyRequiredModules)
+                && previouslyRequiredModules.containsAll(additionalRequiredModules)) {
+                return previousTestResults;
             }
         }
         return null;
@@ -199,7 +245,8 @@ public class PythonKernelTester {
 
     private static Process runPythonKernelTester(final PythonCommand pythonCommand, final String majorVersion,
         final String minimumVersion, final Collection<PythonModuleSpec> additionalRequiredModules,
-        final StringBuilder testLogger) throws IOException {
+        final Collection<PythonModuleSpec> additionalOptionalModules, final StringBuilder testLogger)
+        throws IOException {
         // Run Python kernel tester script. See file at pythonKernelTesterFilePath for expected arguments.
         final String pythonKernelTesterFilePath =
             Activator.getFile(Activator.PLUGIN_ID, "py/" + PYTHON_KERNEL_TESTER_FILE_NAME).getAbsolutePath();
@@ -213,6 +260,10 @@ public class PythonKernelTester {
         if (!additionalRequiredModules.isEmpty()) {
             commandArguments.add("-m"); // Flag for additional modules.
             commandArguments.addAll(Collections2.transform(additionalRequiredModules, PythonModuleSpec::toString));
+        }
+        if (!additionalOptionalModules.isEmpty()) {
+            commandArguments.add("-o");
+            commandArguments.addAll(Collections2.transform(additionalOptionalModules, PythonModuleSpec::toString));
         }
         final ProcessBuilder pb = pythonCommand.createProcessBuilder();
         pb.command().addAll(commandArguments);
@@ -245,37 +296,63 @@ public class PythonKernelTester {
         return decoratedErrorMessage;
     }
 
-    private static PythonKernelTestResult createTestReport(String errorOutput, final String testOutput,
+    private static PythonKernelTestResult createTestReport(final String errorOutput, final String testOutput,
         final StringBuilder testLogger) {
-        PythonKernelTestResult testResults;
-        if (!errorOutput.isEmpty()) {
-            testResults = new PythonKernelTestResult(testLogger.toString(), errorOutput, null);
-        } else {
-            // Interpret test output, potentially contains issues found during testing.
-            final String[] lines = testOutput.split("\\r?\\n");
-            String version = null;
-            errorOutput = "";
-            for (final String line : lines) {
-                if (version == null) {
-                    // Ignore everything before version, could be conda stuff for example.
-                    final String trimmed = line.trim();
-                    version = trimmed.matches("Python version: [0-9]+[.][0-9]+[.][0-9]+") ? trimmed : null;
-                } else {
-                    // Everything that comes after the version line indicates an issue.
-                    errorOutput += line + "\n";
-                }
+
+        final String[] lines = testOutput.split("\\r?\\n");
+
+        int part = 0;
+        String version = null;
+        boolean success = false;
+        final StringBuilder requiredModulesLog = new StringBuilder();
+        final StringBuilder optionalModulesLog = new StringBuilder();
+
+        for (final String line : lines) {
+            // If the line is a separator we start reading the next part
+            if (line.equals(SEPARATOR)) {
+                part++;
+                continue;
             }
-            if (version == null) {
-                errorOutput += "Python installation could not be determined.";
+            // If the line is the success message, we know that the script run through
+            if (line.equals(SUCCESS_MESSAGE)) {
+                success = true;
+                break;
             }
-            if (!errorOutput.isEmpty()) {
-                testLogger.append("Error during testing Python version: " + errorOutput + ".");
+            switch (part) {
+                case 0:
+                    // Ignore everything before the first separator
+                    break;
+                case 1:
+                    // Version number
+                    version = line;
+                    break;
+                case 2:
+                    // Required modules
+                    requiredModulesLog.append(line).append("\n");
+                    break;
+                case 3:
+                    // Optional modules
+                    optionalModulesLog.append(line).append("\n");
+                    break;
+                default:
+                    break;
             }
-            // Version might be null in case of error.
-            testResults =
-                new PythonKernelTestResult(testLogger.toString(), errorOutput.isEmpty() ? null : errorOutput, version);
         }
-        return testResults;
+
+        final String fullTestLog = testLogger.toString();
+        final String warningLog = optionalModulesLog.length() == 0 ? null : optionalModulesLog.toString();
+        if (success && requiredModulesLog.length() == 0) {
+            // Script run through and no required module is missing
+            return new PythonKernelTestResult(fullTestLog, null, warningLog, version);
+        } else {
+            // Script didn't run through or a required module is missing
+            final StringBuilder errorLog = requiredModulesLog;
+            if (version == null) {
+                errorLog.append("Python installation could not be determined.");
+            }
+            errorLog.append(errorOutput);
+            return new PythonKernelTestResult(fullTestLog, errorLog.toString(), warningLog, version);
+        }
     }
 
     /**
@@ -297,16 +374,21 @@ public class PythonKernelTester {
 
         private final String m_errorLog;
 
+        private final String m_warningLog;
+
         /**
          * Creates a test result.
          *
          * @param fullTestLog Full log of test with all info.
          * @param errorLog Only the error. null, if no error occurred.
+         * @param warningLog Only the warnings. null, if no warning occurred.
          * @param version The version. null, if version could not be detected.
          */
-        PythonKernelTestResult(final String fullTestLog, final String errorLog, final String version) {
+        PythonKernelTestResult(final String fullTestLog, final String errorLog, final String warningLog,
+            final String version) {
             m_version = version;
             m_errorLog = errorLog;
+            m_warningLog = warningLog;
             m_testResult = fullTestLog;
         }
 
@@ -336,6 +418,15 @@ public class PythonKernelTester {
          */
         public String getErrorLog() {
             return m_errorLog;
+        }
+
+        /**
+         * Returns detailed information about the result of the test.
+         *
+         * @return The result message containing detailed information.
+         */
+        public String getWarningLog() {
+            return m_warningLog;
         }
 
         /**
