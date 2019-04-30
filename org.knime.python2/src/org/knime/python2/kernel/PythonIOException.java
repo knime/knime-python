@@ -78,6 +78,11 @@ public final class PythonIOException extends IOException implements PythonExcept
     /**
      * May be {@code null}.
      */
+    private final String m_shortMessage;
+
+    /**
+     * May be {@code null}.
+     */
     private final String m_formattedPythonTraceback;
 
     /**
@@ -92,6 +97,7 @@ public final class PythonIOException extends IOException implements PythonExcept
         super(amendMessage(message));
         m_formattedPythonTraceback = null;
         m_pythonTraceBack = null;
+        m_shortMessage = null;
     }
 
     /**
@@ -108,6 +114,25 @@ public final class PythonIOException extends IOException implements PythonExcept
         super(amendMessage(message));
         m_formattedPythonTraceback = formattedPythonTraceback;
         m_pythonTraceBack = pythonTraceback;
+        m_shortMessage = null;
+    }
+
+    /**
+     * @param message the message
+     * @param shortMessage a short high level error message
+     * @param formattedPythonTraceback The formatted string representation of the trace back of the error on Python
+     *            side. Together with the frame summaries, this basically corresponds to the {@code cause} argument in
+     *            {@link #PythonIOException(String, Throwable)} but for a cause on Python side.
+     * @param pythonTraceback The individual frames of the trace back of the error on Python side. Together with the
+     *            formatted trace back, this basically corresponds to the {@code cause} argument in
+     *            {@link #PythonIOException(String, Throwable)} but for a cause on Python side.
+     */
+    public PythonIOException(final String message, final String shortMessage, final String formattedPythonTraceback,
+        final PythonFrameSummary[] pythonTraceback) {
+        super(amendMessage(message));
+        m_formattedPythonTraceback = formattedPythonTraceback;
+        m_pythonTraceBack = pythonTraceback;
+        m_shortMessage = shortMessage;
     }
 
     /**
@@ -117,6 +142,7 @@ public final class PythonIOException extends IOException implements PythonExcept
         super(amendMessage(null), cause);
         m_formattedPythonTraceback = PythonUtils.Misc.extractFormattedPythonTraceback(cause).orElse(null);
         m_pythonTraceBack = PythonUtils.Misc.extractPythonTraceback(cause).orElse(null);
+        m_shortMessage = PythonUtils.Misc.extractPythonShortMessage(cause).orElse(null);
     }
 
     /**
@@ -127,6 +153,7 @@ public final class PythonIOException extends IOException implements PythonExcept
         super(amendMessage(message), cause);
         m_formattedPythonTraceback = PythonUtils.Misc.extractFormattedPythonTraceback(cause).orElse(null);
         m_pythonTraceBack = PythonUtils.Misc.extractPythonTraceback(cause).orElse(null);
+        m_shortMessage = PythonUtils.Misc.extractPythonShortMessage(cause).orElse(null);
     }
 
     @Override
@@ -137,6 +164,11 @@ public final class PythonIOException extends IOException implements PythonExcept
     @Override
     public Optional<PythonFrameSummary[]> getPythonTraceback() {
         return Optional.ofNullable(m_pythonTraceBack);
+    }
+
+    @Override
+    public Optional<String> getShortMessage() {
+        return Optional.ofNullable(m_shortMessage);
     }
 
     @Override

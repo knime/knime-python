@@ -84,4 +84,11 @@ public interface PythonException {
     default Optional<PythonFrameSummary[]> getPythonTraceback() {
         return Optional.empty();
     }
+
+    /**
+     * @return a short exception message (without a Traceback), if any.
+     */
+    default Optional<String> getShortMessage() {
+        return Optional.empty();
+    }
 }

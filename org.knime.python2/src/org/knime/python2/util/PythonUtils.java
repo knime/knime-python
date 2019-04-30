@@ -365,6 +365,23 @@ public final class PythonUtils {
         }
 
         /**
+         * Finds the topmost {@link PythonException#getShortMessage() Python short message} in a
+         * {@link Throwable#getCause() stack} of throwables.
+         *
+         * @param throwable the topmost throwable in the stack of throwables
+         * @return an optional that contains the short message if one is found
+         */
+        public static Optional<String> extractPythonShortMessage(final Throwable throwable) {
+            return traverseStackUntilFound(throwable, t -> {
+                if (t instanceof PythonException) {
+                    return ((PythonException)t).getShortMessage().orElse(null);
+                } else {
+                    return null;
+                }
+            });
+        }
+
+        /**
          * Finds the topmost {@link PythonException#getFormattedPythonTraceback() formatted Python traceback} in a
          * {@link Throwable#getCause() stack} of throwables.
          *

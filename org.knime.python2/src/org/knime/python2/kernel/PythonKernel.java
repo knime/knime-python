@@ -1407,7 +1407,7 @@ public class PythonKernel implements AutoCloseable {
                     beautifiedPythonTraceback = formattedPythonTraceback;
                 }
                 throw new PythonIOException(exception.getMessage() + "\n" + beautifiedPythonTraceback,
-                    formattedPythonTraceback, exception.getPythonTraceback().orElse(null));
+                    exception.getMessage(), formattedPythonTraceback, exception.getPythonTraceback().orElse(null));
             } else {
                 throw exception;
             }
