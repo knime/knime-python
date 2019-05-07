@@ -99,6 +99,33 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString errorMessageModel, final CondaEnvironmentCreationObserver environmentCreator,
         final Composite parent) {
+        this(pythonVersion, environmentModel, availableEnvironmentsModel, headerLabel, selectionBoxLabel,
+            infoMessageModel, null, errorMessageModel, environmentCreator, parent);
+    }
+
+    /**
+     * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
+     * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
+     *            is, in a non-UI thread.
+     * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
+     *            is, in a non-UI thread.
+     * @param selectionBoxLabel The description text for the environment selection box.
+     * @param headerLabel The text of the header for the path editor's enclosing group box.
+     * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param warningMessageModel The settings model for the warning label. May be updated asynchronously, that is, in a
+     *            non-UI thread. May be <code>null</code> if no warning should be displayed.
+     * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param environmentCreator Handles the creation of new conda environments when the user clicks the widget's
+     *            "New..." button.
+     * @param parent The parent widget.
+     */
+    public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
+        final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
+        final String selectionBoxLabel, final SettingsModelString infoMessageModel,
+        final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
+        final CondaEnvironmentCreationObserver environmentCreator, final Composite parent) {
         super(parent, SWT.NONE);
         m_environmentModel = environmentModel;
 
@@ -134,13 +161,20 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         gridData = new GridData();
         environmentCreationButton.setLayoutData(gridData);
 
-        // Info and error labels:
-        final InstallationStatusDisplayPanel statusDisplay =
-            new InstallationStatusDisplayPanel(infoMessageModel, errorMessageModel, this);
+        // Info, warning and error labels:
         gridData = new GridData();
         gridData.verticalIndent = 10;
         gridData.horizontalSpan = 3;
-        statusDisplay.setLayoutData(gridData);
+        if (warningMessageModel == null) {
+            final InstallationStatusDisplayPanel statusDisplay =
+                new InstallationStatusDisplayPanel(infoMessageModel, errorMessageModel, this);
+            statusDisplay.setLayoutData(gridData);
+        } else {
+            final InstallationStatusDisplayPanelWithWarning statusDisplay =
+                new InstallationStatusDisplayPanelWithWarning(infoMessageModel, warningMessageModel, errorMessageModel,
+                    this);
+            statusDisplay.setLayoutData(gridData);
+        }
 
         // Populate environment selection, hooks:
         setAvailableEnvironments(availableEnvironmentsModel.getStringArrayValue());

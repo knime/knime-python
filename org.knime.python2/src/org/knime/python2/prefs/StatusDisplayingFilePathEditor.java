@@ -84,6 +84,27 @@ public final class StatusDisplayingFilePathEditor extends Composite {
     public StatusDisplayingFilePathEditor(final SettingsModelString pathModel, final boolean isFilePathEditor,
         final String headerLabel, final String editorLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString errorMessageModel, final Composite parent) {
+        this(pathModel, isFilePathEditor, headerLabel, editorLabel, infoMessageModel, null, errorMessageModel, parent);
+    }
+
+    /**
+     * @param pathModel The settings model for the file or directory path.
+     * @param isFilePathEditor {@code true} if the editor is for file selection, {@code false} if it is for directory
+     *            selection.
+     * @param headerLabel The text of the header for the path editor's enclosing group box.
+     * @param editorLabel The description text for the path editor.
+     * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param warningMessageModel The settings model for the warning label. May be updated asynchronously, that is, in a
+     *            non-UI thread. May be <code>null</code> if no warning should be displayed.
+     * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param parent The parent widget.
+     */
+    public StatusDisplayingFilePathEditor(final SettingsModelString pathModel, final boolean isFilePathEditor,
+        final String headerLabel, final String editorLabel, final SettingsModelString infoMessageModel,
+        final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
+        final Composite parent) {
         super(parent, SWT.NONE);
 
         final GridLayout gridLayout = new GridLayout();
@@ -115,13 +136,20 @@ public final class StatusDisplayingFilePathEditor extends Composite {
         });
         pathEditor.setPropertyChangeListener(event -> pathModel.setStringValue(pathEditor.getStringValue()));
 
-        // Info and error labels:
-        final InstallationStatusDisplayPanel statusDisplay =
-            new InstallationStatusDisplayPanel(infoMessageModel, errorMessageModel, this);
+        // Info, warning and error labels:
         gridData = new GridData();
         gridData.verticalIndent = 10;
         gridData.horizontalSpan = 3;
-        statusDisplay.setLayoutData(gridData);
+        if (warningMessageModel == null) {
+            final InstallationStatusDisplayPanel statusDisplay =
+                new InstallationStatusDisplayPanel(infoMessageModel, errorMessageModel, this);
+            statusDisplay.setLayoutData(gridData);
+        } else {
+            final InstallationStatusDisplayPanelWithWarning statusDisplay =
+                new InstallationStatusDisplayPanelWithWarning(infoMessageModel, warningMessageModel, errorMessageModel,
+                    this);
+            statusDisplay.setLayoutData(gridData);
+        }
     }
 
     public void setDisplayAsDefault(final boolean setAsDefault) {
