@@ -333,7 +333,7 @@ public final class Conda {
      * @throws IOException If an error occurs during execution of the underlying Conda commands.
      */
     public String getDefaultPython2EnvironmentName() throws IOException {
-        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON2);
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON2, "");
     }
 
     /**
@@ -342,13 +342,34 @@ public final class Conda {
      * @throws IOException If an error occurs during execution of the underlying Conda commands.
      */
     public String getDefaultPython3EnvironmentName() throws IOException {
-        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON3);
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON3, "");
     }
 
-    private String getDefaultPythonEnvironmentName(final PythonVersion pythonVersion) throws IOException {
-        final String environmentPrefix = pythonVersion.equals(PythonVersion.PYTHON2) //
-            ? DEFAULT_PYTHON2_ENV_PREFIX //
-            : DEFAULT_PYTHON3_ENV_PREFIX;
+    /**
+     * @param suffix a suffix for the environment name
+     * @return A name for a Python 2 environment. It is ensured that the name does not already exist in this Conda
+     *         installation.
+     * @throws IOException If an error occurs during execution of the underlying Conda commands.
+     */
+    public String getPython2EnvironmentName(final String suffix) throws IOException {
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON2, suffix);
+    }
+
+    /**
+     * @param suffix a sufix for the environment name
+     * @return A name for a Python 3 environment. It is ensured that the name does not already exist in this Conda
+     *         installation.
+     * @throws IOException If an error occurs during execution of the underlying Conda commands.
+     */
+    public String getPython3EnvironmentName(final String suffix) throws IOException {
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON3, suffix);
+    }
+
+    private String getDefaultPythonEnvironmentName(final PythonVersion pythonVersion, final String suffix)
+        throws IOException {
+        final String environmentPrefix =
+            (pythonVersion.equals(PythonVersion.PYTHON2) ? DEFAULT_PYTHON2_ENV_PREFIX : DEFAULT_PYTHON3_ENV_PREFIX)
+                + (suffix.isEmpty() ? "" : "_" + suffix);
         String environmentName = environmentPrefix;
         long possibleEnvironmentSuffix = 1;
         final List<String> environments = getEnvironments();
@@ -423,11 +444,11 @@ public final class Conda {
      *             an environment of name {@code environmentName} is already present in this Conda installation.
      * @throws PythonCanceledExecutionException If environment creation was canceled via the given monitor.
      */
-    private String createEnvironmentFromFile(final PythonVersion pythonVersion, final String pathToFile,
+    public String createEnvironmentFromFile(final PythonVersion pythonVersion, final String pathToFile,
         String environmentName, final CondaEnvironmentCreationMonitor monitor)
         throws IOException, PythonCanceledExecutionException {
         if (environmentName == null || environmentName.isEmpty()) {
-            environmentName = getDefaultPythonEnvironmentName(pythonVersion);
+            environmentName = getDefaultPythonEnvironmentName(pythonVersion, "");
         } else {
             final List<String> existingEnvironments = getEnvironments();
             if (existingEnvironments.contains(environmentName)) {
