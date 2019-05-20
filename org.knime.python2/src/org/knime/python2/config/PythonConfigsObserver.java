@@ -63,8 +63,8 @@ import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.CondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
-import org.knime.python2.config.CondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
+import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
+import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 
 /**

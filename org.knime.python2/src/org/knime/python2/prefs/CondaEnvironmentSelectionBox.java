@@ -66,6 +66,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.defaultnodesettings.SettingsModelStringArray;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver;
 import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
 
@@ -163,7 +164,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
-        final CondaEnvironmentCreationObserver environmentCreator, final Composite parent,
+        final AbstractCondaEnvironmentCreationObserver environmentCreator, final Composite parent,
         final Consumer<Shell> openCreationDialog) {
         super(parent, SWT.NONE);
         m_environmentModel = environmentModel;

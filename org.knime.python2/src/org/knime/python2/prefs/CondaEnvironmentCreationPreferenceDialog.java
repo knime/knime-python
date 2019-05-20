@@ -74,10 +74,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
+import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
 import org.knime.python2.config.CondaEnvironmentCreationDialog;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
-import org.knime.python2.config.CondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
-import org.knime.python2.config.CondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
