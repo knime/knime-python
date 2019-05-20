@@ -4,9 +4,9 @@ set -x
 cd ~/python
 if [[ ! -d ~/python/anaconda ]]; then
         if [[ "$(uname -s)" == "Darwin" ]]; then
-                INST_FILE=Anaconda3-4.4.0-MacOSX-x86_64.sh
+                INST_FILE=Anaconda3-5.1.0-MacOSX-x86_64.sh
         else
-                INST_FILE=Anaconda3-4.4.0-Linux-x86_64.sh
+                INST_FILE=Anaconda3-5.1.0-Linux-x86_64.sh
         fi
 
         wget -qN https://repo.continuum.io/archive/$INST_FILE
