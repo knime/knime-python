@@ -50,6 +50,8 @@ package org.knime.python2.prefs;
 
 import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jface.resource.FontDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -60,6 +62,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.defaultnodesettings.SettingsModelStringArray;
 import org.knime.python2.PythonVersion;
@@ -79,6 +82,8 @@ public final class CondaEnvironmentSelectionBox extends Composite {
     private final SettingsModelString m_environmentModel;
 
     /**
+     * Creates a new environment selection box without a warning label and with the default creation dialog.
+     *
      * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
      * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
      *            is, in a non-UI thread.
@@ -104,6 +109,8 @@ public final class CondaEnvironmentSelectionBox extends Composite {
     }
 
     /**
+     * Creates a new environment selection box with a warning label and with the default creation dialog.
+     *
      * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
      * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
      *            is, in a non-UI thread.
@@ -126,6 +133,38 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
         final CondaEnvironmentCreationObserver environmentCreator, final Composite parent) {
+        this(pythonVersion, environmentModel, availableEnvironmentsModel, headerLabel, selectionBoxLabel,
+            infoMessageModel, warningMessageModel, errorMessageModel, environmentCreator, parent,
+            shell -> new CondaEnvironmentCreationPreferenceDialog(environmentCreator, shell).open());
+    }
+
+    /**
+     * Creates a new environment selection box with warning label and with a custom creation dialog.
+     *
+     * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
+     * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
+     *            is, in a non-UI thread.
+     * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
+     *            is, in a non-UI thread.
+     * @param selectionBoxLabel The description text for the environment selection box.
+     * @param headerLabel The text of the header for the path editor's enclosing group box.
+     * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param warningMessageModel The settings model for the warning label. May be updated asynchronously, that is, in a
+     *            non-UI thread. May be <code>null</code> if no warning should be displayed.
+     * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
+     *            non-UI thread.
+     * @param environmentCreator Handles the creation of new conda environments when the user clicks the widget's
+     *            "New..." button.
+     * @param parent The parent widget.
+     * @param openCreationDialog A consumer which opens a creation dialog with the given parent.
+     */
+    public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
+        final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
+        final String selectionBoxLabel, final SettingsModelString infoMessageModel,
+        final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
+        final CondaEnvironmentCreationObserver environmentCreator, final Composite parent,
+        final Consumer<Shell> openCreationDialog) {
         super(parent, SWT.NONE);
         m_environmentModel = environmentModel;
 
@@ -206,7 +245,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
 
             @Override
             public void widgetSelected(final SelectionEvent e) {
-                new CondaEnvironmentCreationPreferenceDialog(environmentCreator, getShell()).open();
+                openCreationDialog.accept(getShell());
             }
 
             @Override
