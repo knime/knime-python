@@ -100,10 +100,39 @@ public final class CondaEnvironments {
         return getPathToCondaConfigFile(PYTHON3_CONFIG_FILE);
     }
 
+    /**
+     * Returns a specific Python 2 Conda configuration file. Use {@link #getPathToPython2CondaConfigFile()} for the
+     * default configuration.
+     *
+     * @param subDirectory the sub directory of this configuration.
+     * @return The path to the configuration file that can be used to create Python 2 Conda environments
+     */
+    public static String getPathToPython2CondaConfigFile(final String subDirectory) {
+        return getPathToCondaConfigFile(PYTHON2_CONFIG_FILE, subDirectory);
+    }
+
+    /**
+     * Returns a specific Python 3 Conda configuration file. Use {@link #getPathToPython3CondaConfigFile()} for the
+     * default configuration.
+     *
+     * @param subDirectory the sub directory of this configuration.
+     * @return The path to the configuration file that can be used to create Python 3 Conda environments
+     */
+    public static String getPathToPython3CondaConfigFile(final String subDirectory) {
+        return getPathToCondaConfigFile(PYTHON3_CONFIG_FILE, subDirectory);
+    }
+
     private static String getPathToCondaConfigFile(final String configFile) {
         final String osSubDirectory = getConfigSubDirectoryForOS();
         final String relativePathToDescriptionFile =
             Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, configFile).toString();
+        return getFile(relativePathToDescriptionFile).getAbsolutePath();
+    }
+
+    private static String getPathToCondaConfigFile(final String configFile, final String subDirectory) {
+        final String osSubDirectory = getConfigSubDirectoryForOS();
+        final String relativePathToDescriptionFile =
+            Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, subDirectory, configFile).toString();
         return getFile(relativePathToDescriptionFile).getAbsolutePath();
     }
 
