@@ -188,6 +188,15 @@ public final class PythonPreferences {
             .getRequiredExternalModules();
     }
 
+    /**
+     * @return the configured path to the conda installation
+     */
+    public static String getCondaInstallationPath() {
+        final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
+        condaEnvironmentsConfig.loadConfigFrom(CURRENT);
+        return condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue();
+    }
+
     static final class InstanceScopePreferenceStorage implements PreferenceStorage {
 
         static final IEclipsePreferences getInstanceScopePreferences() {
