@@ -53,6 +53,7 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -113,6 +114,12 @@ public class PythonSourceCodeOptionsPanel
 
     private PythonCommand m_python3Command;
 
+    // Note that this is a supplier such that the default Python command can
+    // change without calling the constructor again
+    private final Supplier<PythonCommand> m_defaultPython2Command;
+
+    private final Supplier<PythonCommand> m_defaultPython3Command;
+
     /**
      * Contains options for enforcing a specific Python version (or not).
      */
@@ -138,14 +145,31 @@ public class PythonSourceCodeOptionsPanel
      * @param sourceCodePanel The corresponding source code panel.
      * @param version Enforce the given Python version or give the user the option to choose (if
      *            {@link EnforcePythonVersion#NONE} is passed).
+     * @param defaultPython2Command a supplier that returns the Python 2 command which is used if no command has been configured
+     * @param defaultPython3Command a supplier that returns the Python 3 command which is used if no command has been configured
      */
-    public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel,
-        final EnforcePythonVersion version) {
+    public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel, final EnforcePythonVersion version,
+        final Supplier<PythonCommand> defaultPython2Command, final Supplier<PythonCommand> defaultPython3Command) {
         super(sourceCodePanel);
         m_enforcedVersion = version;
+        m_defaultPython2Command = defaultPython2Command;
+        m_defaultPython3Command = defaultPython3Command;
         if (m_enforcedVersion != EnforcePythonVersion.NONE) {
             m_versionPanel.setVisible(false);
         }
+    }
+
+    /**
+     * Create a source code options panel and enforce a certain Python version, that is, hide the Python version
+     * selection.
+     *
+     * @param sourceCodePanel The corresponding source code panel.
+     * @param version Enforce the given Python version or give the user the option to choose (if
+     *            {@link EnforcePythonVersion#NONE} is passed).
+     */
+    public PythonSourceCodeOptionsPanel(final PythonSourceCodePanel sourceCodePanel,
+        final EnforcePythonVersion version) {
+        this(sourceCodePanel, version, () -> null, () -> null);
     }
 
     /**
@@ -307,7 +331,11 @@ public class PythonSourceCodeOptionsPanel
         final SerializationOptions serializationOptions =
             new SerializationOptions(((Integer)m_chunkSize.getValue()).intValue(), m_convertToPython.isSelected(),
                 m_convertFromPython.isSelected(), getSelectedSentinelOption(), m_sentinelValue);
-        return new PythonKernelOptions(getSelectedPythonVersion(), m_python2Command, m_python3Command,
+        final PythonCommand python2Command =
+            m_python2Command == null ? m_defaultPython2Command.get() : m_python2Command;
+        final PythonCommand python3Command =
+            m_python3Command == null ? m_defaultPython3Command.get() : m_python3Command;
+        return new PythonKernelOptions(getSelectedPythonVersion(), python2Command, python3Command,
             serializationOptions);
     }
 
