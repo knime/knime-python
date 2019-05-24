@@ -134,19 +134,23 @@ class PythonKernelTester(object):
                                                                        min_inclusive, max_version,
                                                                        max_inclusive)
         mod_available = mod_availability[0]
-        mod_version_conforms = mod_availability[1]
-        mod_version = mod_availability[2]
+        mod_installation_problem = mod_availability[1]
+        mod_version_conforms = mod_availability[2]
+        mod_version = mod_availability[3]
 
         messages = []
         if not mod_available:
-            # Module is not installed at all.
-            message = 'Library ' + module_name + ' is missing'
-            message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
-            message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
-            message += '.'
+            # Module installation is faulty or module is not installed at all.
+            if mod_installation_problem is not None:
+                message = mod_installation_problem
+            else:
+                message = 'Library ' + module_name + ' is missing'
+                message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
+                message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
+                message += '.'
             messages.append(message)
         elif not mod_version_conforms:
-            # Module is installed but in a wrong version.
+            # Module is properly installed but in a wrong version.
             if mod_version is not None:
                 message = 'Library ' + module_name + ' is installed in version ' + str(mod_version)
             else:
@@ -156,11 +160,12 @@ class PythonKernelTester(object):
             message += '.'
             messages.append(message)
         elif class_names is not None:
-            # Module itself is installed properly. Check classes.
+            # Module itself is installed properly, including version. Check classes.
             for class_name in class_names:
                 if not PythonKernelTester._is_class_available(module_name, class_name):
                     messages.append(
-                        'Required class ' + class_name + ' in library ' + module_name + ' is missing.')
+                        'Required class ' + class_name + ' in library ' + module_name + ' is missing or has ' +
+                        'installation problems.')
 
         self._add_to_messages(messages)
         return messages
@@ -175,22 +180,42 @@ class PythonKernelTester(object):
         max_version is specified, it is tested whether the version of the given module is equal to or less than the
         given max. value. (With respect to the inclusive option, respectively.)
 
-        :return: A 3-tuple. The first field of the tuple is a Boolean that is True if the given module is installed and
-        False otherwise. The second field is a Boolean that is True if the version of the given module either conforms
-        to the given version range or if there is no version range specified. It is False otherwise. In particular, it
-        is also False if the module is not installed, or if the version of the module cannot be determined while there
-        is a version range specified. The third field of the tuple is the version string of the given module. It is None
-        if the module is not installed or if the version of the module cannot be determined.
+        :return: A 4-tuple.
+
+        The first field of the tuple is a Boolean that is True if the given module is properly installed and False
+        otherwise.
+
+        The second field of the tuple is a string that specifies the underlying problem if the module is installed but
+        the installation is faulty. It is suitable to be displayed to the user. It is None in case the module is either
+        properly installed or not installed at all.
+
+        The third field is a Boolean that is True if the version of the given module either conforms to the given
+        version range or if there is no version range specified. It is False otherwise. In particular, it is also False
+        if the module is not installed, or if the version of the module cannot be determined while there is a version
+        range specified.
+
+        The fourth field of the tuple is the version string of the given module. It is None if the module is not
+        properly installed or if the version of the module cannot be determined.
         """
         # Verbatim string, please leave formatted as it is.
         test_script = """
+import sys
 test_mod_available = False
+test_mod_installation_problem = None
 test_mod_version = None
 try:
     import {0}
+
     test_mod_available = True
     if hasattr({0}, '__version__'):
         test_mod_version = {0}.__version__
+except BaseException:
+    error = sys.exc_info()[1]
+    message = str(error)
+    if error is not None and not ("No module named {0}" in message  # Python 2
+                                  or "No module named '{0}'" in message):  # Python 3
+        test_mod_installation_problem = message or "An unknown error occurred during module import."
+    # We report unavailability by default.
 except:
     # We report unavailability by default.
     pass
@@ -199,6 +224,11 @@ except:
         exec(test_script, {}, test_env)
 
         test_mod_available = test_env['test_mod_available']
+        test_mod_installation_problem = test_env['test_mod_installation_problem']
+        if test_mod_installation_problem is not None:
+            test_mod_installation_problem = 'Library ' + module_name + ' is not properly installed. Details: ' \
+                                            + PythonKernelTester._format_installation_problem(
+                test_mod_installation_problem)
         test_mod_version_conforms = False
         test_mod_version = test_env['test_mod_version']
 
@@ -209,7 +239,15 @@ except:
                     min_version is None and max_version is None):
                 test_mod_version_conforms = True
 
-        return test_mod_available, test_mod_version_conforms, test_mod_version
+        return test_mod_available, test_mod_installation_problem, test_mod_version_conforms, test_mod_version
+
+    @staticmethod
+    def _format_installation_problem(message):
+        length = 1000
+        if len(message) <= length + 7:
+            return message
+        half = int(float(length) / 2)
+        return '{0}\n[...]\n{1}'.format(message[:half], message[-half:])
 
     @staticmethod
     def _is_class_available(module_name, class_name):
@@ -287,6 +325,7 @@ except:
         Adds a separator message to the report which can be detected by applications parsing the report.
         """
         self._add_to_messages(SEPARATOR)
+
 
 # Default installation test:
 

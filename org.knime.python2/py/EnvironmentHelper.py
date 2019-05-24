@@ -46,6 +46,10 @@
 Importing this module should be the first statement in each module (except for __future__ statements) that makes
 specific demands on the Python environment.
 
+NOTE: Importing this module downstream may under no condition lead to errors since it's used by critical parts of the
+integration (e.g., installation testing). That's why all the top-level import statements for 3rd party modules in this
+module catch BaseException.
+
 @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
@@ -66,7 +70,7 @@ try:
     import jedi
 
     _is_jedi_available = True
-except ImportError:
+except BaseException:
     _is_jedi_available = False
 
 _is_tslib_available = False
@@ -74,14 +78,14 @@ try:
     from pandas._libs.tslibs.timestamps import Timestamp
     from pandas._libs.tslibs.timestamps import NaT
     _is_tslib_available = True
-except ImportError:
+except BaseException:
     pass
 if not _is_tslib_available:
     try:
         from pandas.tslib import Timestamp
         from pandas.tslib import NaT
         _is_tslib_available = True
-    except ImportError:
+    except BaseException:
         pass
 if not _is_tslib_available:
     try:
@@ -89,7 +93,7 @@ if not _is_tslib_available:
         from pandas._libs.tslib import Timestamp
         from pandas._libs.tslibs import NaT
         _is_tslib_available = True
-    except ImportError:
+    except BaseException:
         pass
 
 
