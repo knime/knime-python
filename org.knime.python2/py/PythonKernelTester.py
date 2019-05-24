@@ -56,11 +56,6 @@ EnvironmentHelper.dummy_call()
 
 import sys
 
-try:
-    from collections import OrderedDict
-except Exception:
-    # Old Python 2 versions don't have OrderedDict, handle below.
-    pass
 from distutils.version import LooseVersion
 
 _default_min_pandas_version = '0.20.0'
@@ -270,12 +265,14 @@ except:
     def _add_to_messages(self, message):
         """
         Adds a single message or a list of messages to the list of messages that make up the result of the installation
-        test.
+        test. Only adds a message if it isn't already contained in the list (except for the SEPERATOR message).
         """
         if isinstance(message, list):
-            self._messages.extend(message)
+            for m in message:
+                self._add_to_messages(m)
         else:
-            self._messages.append(message)
+            if message not in self._messages or message == SEPARATOR:
+                self._messages.append(message)
 
     def get_report_lines(self):
         """
@@ -283,12 +280,7 @@ except:
 
         :return: The error report as a list of strings.
         """
-#         try:
-#             report_lines = OrderedDict.fromkeys(self._messages)
-#         except Exception:
-            # Old Python 2 versions don't have OrderedDict.
-        report_lines = self._messages
-        return list(report_lines)
+        return list(self._messages)
 
     def add_separator_to_report(self):
         """
