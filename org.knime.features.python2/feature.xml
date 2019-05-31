@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.python2"
       label="KNIME Python Integration"
-      version="3.8.0.qualifier"
+      version="4.0.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
@@ -776,4 +776,5 @@ propagated with or for interoperation with KNIME.
          download-size="0"
          install-size="0"
          version="0.0.0"/>
+
 </feature>
