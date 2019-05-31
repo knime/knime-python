@@ -11,11 +11,11 @@ Export-Package: org.knime.python.typeextension,
 Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
  org.apache.commons.lang;bundle-version="[2.6.0,3.0.0)",
  org.apache.commons.io;bundle-version="[2.4.0,3.0.0)",
- org.knime.core;bundle-version="[3.6.0,4.0.0)",
+ org.knime.core;bundle-version="[4.0.0,5.0.0)",
  org.eclipse.ui;bundle-version="[3.7.0,4.0.0)",
  org.eclipse.core.resources;bundle-version="[3.7.101,4.0.0)",
- org.knime.ext.svg;bundle-version="[3.6.0,4.0.0)",
- org.knime.base.filehandling;bundle-version="[3.0.0,4.0.0)",
- org.knime.time;bundle-version="[3.8.0,4.0.0)"
+ org.knime.ext.svg;bundle-version="[4.0.0,5.0.0)",
+ org.knime.base.filehandling;bundle-version="[4.0.0,5.0.0)",
+ org.knime.time;bundle-version="[4.0.0,5.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
