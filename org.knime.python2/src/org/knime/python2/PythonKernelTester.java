@@ -304,7 +304,7 @@ public class PythonKernelTester {
         int part = 0;
         String version = null;
         boolean success = false;
-        final StringBuilder requiredModulesLog = new StringBuilder();
+        final StringBuilder errorLog = new StringBuilder();
         final StringBuilder optionalModulesLog = new StringBuilder();
 
         for (final String line : lines) {
@@ -324,11 +324,15 @@ public class PythonKernelTester {
                     break;
                 case 1:
                     // Version number
-                    version = line;
+                    if (version == null) {
+                        version = line;
+                    } else {
+                        errorLog.append(line);
+                    }
                     break;
                 case 2:
                     // Required modules
-                    requiredModulesLog.append(line).append("\n");
+                    errorLog.append(line).append("\n");
                     break;
                 case 3:
                     // Optional modules
@@ -341,12 +345,11 @@ public class PythonKernelTester {
 
         final String fullTestLog = testLogger.toString();
         final String warningLog = optionalModulesLog.length() == 0 ? null : optionalModulesLog.toString();
-        if (success && requiredModulesLog.length() == 0) {
+        if (success && errorLog.length() == 0) {
             // Script run through and no required module is missing
             return new PythonKernelTestResult(fullTestLog, null, warningLog, version);
         } else {
             // Script didn't run through or a required module is missing
-            final StringBuilder errorLog = requiredModulesLog;
             if (version == null) {
                 errorLog.append("Python installation could not be determined.");
             }
