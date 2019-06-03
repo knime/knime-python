@@ -132,6 +132,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         @Override
         public void run() {
             m_lock.lock();
+            setStatusMessage("Stopping python...");
             try {
                 m_kernelRestarts++;
                 if (m_progressMonitor != null) {
@@ -142,6 +143,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         getKernelManager().close();
                     } catch (IllegalStateException ex) {
                         errorToConsole(ex.getMessage());
+                        setStatusMessage("Error while stopping python...");
                     }
                 }
                 // Disable interactivity while we restart
@@ -287,7 +289,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         }
                         if (manager != null) {
                             //Push python stdout content to console live
+                            m_stdoutToConsole.setSilenced(false);
                             manager.addStdoutListener(m_stdoutToConsole);
+                            m_stderrorToConsole.setSilenced(false);
                             manager.addStderrorListener(m_stderrorToConsole);
                             setStatusMessage("Python successfully started");
                         }
@@ -323,6 +327,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         }
                     }
                     setInteractive(false);
+                    m_stdoutToConsole.setSilenced(true);
+                    m_stderrorToConsole.setSilenced(true);
                     if (m_progressMonitor != null) {
                         m_progressMonitor.setCanceled(true);
                     }
