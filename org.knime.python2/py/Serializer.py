@@ -50,6 +50,7 @@
 """
 
 import numpy
+import pandas as pd
 from pandas import DataFrame
 
 import debug_util
@@ -282,7 +283,7 @@ class Serializer(object):
                 elif types_are_equivalent(column_type, bool) or is_boolean_type(column_type):
                     simple_type = Simpletype.BOOLEAN
                 elif types_are_equivalent(column_type, int) or is_integer_type(column_type):
-                    simple_type, is_too_big_number = Serializer._get_integer_type(column)
+                    simple_type, is_too_big_number = Serializer._get_integer_type(pd.to_numeric(column))
                 elif is_float_type(column_type):
                     simple_type = Simpletype.FLOAT
                 elif types_are_equivalent(column_type, float) or is_double_type(column_type):
