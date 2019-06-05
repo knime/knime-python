@@ -467,7 +467,7 @@ def table_to_bytes(table):
 
 
             elif table.get_type(colIdx) == _types_.LONG:
-                valVec = builder.CreateByteArray(col.values.tobytes())
+                valVec = builder.CreateByteArray(np.array(col.values, dtype='i8').tobytes())
 
                 LongColumn.LongColumnStart(builder)
                 LongColumn.LongColumnAddValues(builder, valVec)
@@ -574,9 +574,7 @@ def table_to_bytes(table):
                 colOffsetList.append(Column.ColumnEnd(builder))
 
             elif table.get_type(colIdx) == _types_.DOUBLE or table.get_type(colIdx) == _types_.FLOAT:
-                bytes = (col.values.tobytes() if table.get_type(colIdx) == _types_.DOUBLE
-                         # Set to double to fix encoding problems.
-                         else np.array(col.values, dtype='f8', copy=False).tobytes())
+                bytes = np.array(col.values, dtype='f8', copy=False).tobytes()
 
                 valVec = builder.CreateByteArray(bytes)
 
