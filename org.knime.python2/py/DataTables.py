@@ -49,11 +49,14 @@
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
 
+import warnings
+
 import numpy
 from pandas import DataFrame
 from pandas import Index
 
 from PythonUtils import Simpletype
+from UniqueNameGenerator import UniqueNameGenerator
 
 
 # Wrapper class for data that should be serialized using the serialization library.
@@ -72,7 +75,7 @@ class FromPandasTable:
     def __init__(self, data_frame, serializer, start_row_number=0):
         # Shallow copy because we modify columns (see below) and index (see standardize_default_indices(..)).
         self._data_frame = data_frame.copy(deep=False)
-        self._data_frame.columns = self._data_frame.columns.astype(str)
+        self._standardize_column_names()
         self._column_types = []
         self._column_serializers = {}
         for i, column in enumerate(self._data_frame.columns):
@@ -83,6 +86,18 @@ class FromPandasTable:
         serializer.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
+
+    def _standardize_column_names(self):
+        self._data_frame.columns = self._data_frame.columns.astype(str)
+        ung = UniqueNameGenerator()
+
+        def _new_name(suggested):
+            new_name = ung.new_name(suggested)
+            if new_name != suggested:
+                warnings.warn("Renamed duplicate output column name '" + suggested + "' to '" + new_name + "'.")
+            return new_name
+
+        self._data_frame = self._data_frame.rename(columns=_new_name)
 
     # Replace default numeric indices with the KNIME standard row indices.
     # This means that if an index value is equal to the numeric index of
