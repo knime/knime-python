@@ -94,7 +94,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class Conda {
 
-    private static final Version CONDA_MINIMUM_VERSION = new Version(4, 4, 0);
+    private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 14);
 
     private static final String ROOT_ENVIRONMENT_NAME = "base";
 
@@ -527,7 +527,13 @@ public final class Conda {
             if (condaExitCode != 0) {
                 String errorMessage;
                 if (!errorOutput.isEmpty() && !isWarning(errorOutput)) {
-                    errorMessage = "Failed to execute Conda:\n" + errorOutput;
+                    errorMessage = "Failed to execute Conda";
+                    if (errorOutput.contains("CONNECTION FAILED") && errorOutput.contains("SSLError")) {
+                        errorMessage += ".\nPlease uninstall and reinstall Conda.\n";
+                    } else {
+                        errorMessage += ":\n";
+                    }
+                    errorMessage += errorOutput;
                 } else {
                     errorMessage = "Conda process terminated with error code " + condaExitCode + ".";
                     if (!errorOutput.isEmpty()) {
