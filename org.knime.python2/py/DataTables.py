@@ -73,6 +73,7 @@ class FromPandasTable:
         # Shallow copy because we modify columns (see below) and index (see standardize_default_indices(..)).
         self._data_frame = data_frame.copy(deep=False)
         self._data_frame.columns = self._data_frame.columns.astype(str)
+        self._check_duplicate_column_names()
         self._column_types = []
         self._column_serializers = {}
         for i, column in enumerate(self._data_frame.columns):
@@ -83,6 +84,20 @@ class FromPandasTable:
         serializer.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
         self.standardize_default_indices(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
+
+    def _check_duplicate_column_names(self):
+        columns = self._data_frame.columns
+        if len(set(columns)) != len(columns):
+            duplicate_column_names = FromPandasTable._get_duplicates(columns)
+            # This version of KNIME does not yet support duplicate column names.
+            raise RuntimeError("Output DataFrame contains multiple columns of name(s): " + ", ".join(
+                duplicate_column_names)
+                               + ". This is not supported. Please make sure that each column has a unique name.")
+
+    @staticmethod
+    def _get_duplicates(items):
+        seen = set()
+        return set(x for x in items if x in seen or seen.add(x))
 
     # Replace default numeric indices with the KNIME standard row indices.
     # This means that if an index value is equal to the numeric index of
