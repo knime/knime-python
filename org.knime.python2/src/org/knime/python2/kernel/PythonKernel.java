@@ -195,9 +195,9 @@ public class PythonKernel implements AutoCloseable {
     private final PythonKernelOptions m_kernelOptions;
 
     /**
-     * The node context that was active when this instance was constructed (if any).
+     * Holds the node context that was active when this instance was constructed (if any).
      */
-    private final NodeContext m_nodeContext;
+    private final NodeContextManager m_nodeContextManager;
 
     private final Process m_process;
 
@@ -248,7 +248,7 @@ public class PythonKernel implements AutoCloseable {
      */
     public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
         m_kernelOptions = kernelOptions;
-        m_nodeContext = NodeContext.getContext();
+        m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
 
         testInstallation();
 
@@ -534,10 +534,7 @@ public class PythonKernel implements AutoCloseable {
             protected Message respond(final Message request, final int responseMessageId) {
                 String uriString = new PayloadDecoder(request.getPayload()).getNextString();
                 // Node context may be required to resolve KNIME URL.
-                if (m_nodeContext != null) {
-                    NodeContext.pushContext(m_nodeContext);
-                }
-                try {
+                try (NodeContextManager m = m_nodeContextManager.pushNodeContext()){
                     uriString = fixWindowsUri(uriString);
                     final URI uri = new URI(uriString);
                     final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
@@ -550,10 +547,6 @@ public class PythonKernel implements AutoCloseable {
                     LOGGER.debug(errorMessage, ex);
                     final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).get();
                     return createResponse(request, responseMessageId, false, errorPayload, null);
-                } finally {
-                    if (m_nodeContext != null) {
-                        NodeContext.removeLastContext();
-                    }
                 }
             }
         });
@@ -1590,25 +1583,24 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private void distributeStdoutMsg(final String msg) {
-        final boolean isWarningMessage = isWarningMessage(msg);
-        final String message = isWarningMessage //
-            ? stripWarningMessagePrefix(msg) //
-            : msg;
-        synchronized (m_stdoutListeners) {
-            for (final PythonOutputListener listener : m_stdoutListeners) {
-                listener.messageReceived(message, isWarningMessage);
-            }
-        }
+        distributeToListeners(msg, m_stdoutListeners);
     }
 
     private void distributeStderrorMsg(final String msg) {
+        distributeToListeners(msg, m_stderrListeners);
+    }
+
+    private void distributeToListeners(final String msg, final List<PythonOutputListener> listeners) {
         final boolean isWarningMessage = isWarningMessage(msg);
         final String message = isWarningMessage //
             ? stripWarningMessagePrefix(msg) //
             : msg;
-        synchronized (m_stderrListeners) {
-            for (final PythonOutputListener listener : m_stderrListeners) {
-                listener.messageReceived(message, isWarningMessage);
+        synchronized (listeners) {
+            // Associate log messages with current node.
+            try (NodeContextManager m = m_nodeContextManager.pushNodeContext()) {
+                for (final PythonOutputListener listener : listeners) {
+                    listener.messageReceived(message, isWarningMessage);
+                }
             }
         }
     }
@@ -1800,6 +1792,29 @@ public class PythonKernel implements AutoCloseable {
                     }
                     throw ex;
                 }
+            }
+        }
+    }
+
+    private static final class NodeContextManager implements AutoCloseable {
+
+        private final NodeContext m_nodeContext;
+
+        public NodeContextManager(final NodeContext nodeContext) {
+            m_nodeContext = nodeContext;
+        }
+
+        public NodeContextManager pushNodeContext() {
+            if (m_nodeContext != null) {
+                NodeContext.pushContext(m_nodeContext);
+            }
+            return this;
+        }
+
+        @Override
+        public void close() {
+            if (m_nodeContext != null) {
+                NodeContext.removeLastContext();
             }
         }
     }
