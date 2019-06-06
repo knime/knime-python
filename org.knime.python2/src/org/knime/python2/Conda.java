@@ -222,7 +222,7 @@ public final class Conda {
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
             relativePathToExecutableSegments = new String[]{"bin", "conda"};
         } else if (SystemUtils.IS_OS_WINDOWS) {
-            relativePathToExecutableSegments = new String[]{"Scripts", "conda.exe"};
+            relativePathToExecutableSegments = new String[]{"condabin", "conda.bat"};
         } else {
             throw createUnknownOSException();
         }
