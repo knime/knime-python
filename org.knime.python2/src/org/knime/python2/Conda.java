@@ -159,7 +159,7 @@ public final class Conda {
      */
     public static Version condaVersionStringToVersion(String condaVersionString) {
         try {
-            condaVersionString = condaVersionString.split(" ")[1];
+            condaVersionString = condaVersionString.split(" ")[1].trim();
             return new Version(condaVersionString);
         } catch (final Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
