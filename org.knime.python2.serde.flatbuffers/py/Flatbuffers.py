@@ -358,7 +358,7 @@ def table_to_bytes(table):
 
             elif table.get_type(colIdx) == _types_.BOOLEAN:
                 missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
-                valVec = builder.CreateByteArray(col.fillna(False).values.tobytes())
+                valVec = builder.CreateByteArray(col.fillna(False).astype('bool').values.tobytes())
 
                 BooleanColumn.BooleanColumnStart(builder)
                 BooleanColumn.BooleanColumnAddValues(builder, valVec)
