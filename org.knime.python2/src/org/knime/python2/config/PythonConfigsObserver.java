@@ -254,7 +254,7 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         final SettingsModelString condaInfoMessage = m_condaEnvironmentsConfig.getCondaInstallationInfo();
         final SettingsModelString condaErrorMessage = m_condaEnvironmentsConfig.getCondaInstallationError();
         try {
-            condaInfoMessage.setStringValue("Testing Conda installation...\n");
+            condaInfoMessage.setStringValue("Testing Conda installation...");
             condaErrorMessage.setStringValue("");
             onCondaInstallationTestStarting();
             final Conda conda = new Conda(m_condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue());

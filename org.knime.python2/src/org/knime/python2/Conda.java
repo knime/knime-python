@@ -98,6 +98,8 @@ public final class Conda {
 
     private static final String ROOT_ENVIRONMENT_NAME = "base";
 
+    private static final String ROOT_ENVIRONMENT_LEGACY_NAME = "root";
+
     private static final String DEFAULT_PYTHON2_ENV_PREFIX = "py2_knime";
 
     private static final String DEFAULT_PYTHON3_ENV_PREFIX = "py3_knime";
@@ -276,8 +278,12 @@ public final class Conda {
             return;
         }
         if (version.compareTo(CONDA_MINIMUM_VERSION) < 0) {
+            // Root environment name differs between older and newer versions of Conda.
+            final String rootEnvironmentName =
+                version.compareTo(new Version(4, 4, 0)) < 0 ? ROOT_ENVIRONMENT_LEGACY_NAME : ROOT_ENVIRONMENT_NAME;
             throw new IOException("Conda version is " + version.toString() + ". Required minimum version is "
-                + CONDA_MINIMUM_VERSION + ". Please update Conda and retry.");
+                + CONDA_MINIMUM_VERSION + ".\nPlease update Conda (e.g., by executing \"conda update -n "
+                + rootEnvironmentName + " conda\" in a terminal) and retry.");
         }
     }
 
@@ -427,16 +433,14 @@ public final class Conda {
     /**
      * {@code conda env create --file <file>}.<br>
      * The environment name specified in the file is ignored and replaced by either {@code environmentName} if it's
-     * non-{@code null} and non-empty or a {@link #getDefaultPythonEnvironmentName(PythonVersion) unique name} that
-     * considers the already existing environments of this Conda installation. The generated name is based on the given
-     * Python version.
+     * non-{@code null} and non-empty or a unique name that considers the already existing environments of this Conda
+     * installation. The generated name is based on the given Python version.
      *
      * @param pythonVersion The major version of the Python environment to create. Determines the generated name of the
      *            environment if {@code environmentName} is {@code null}.
      * @param pathToFile The path to the environment description file.
      * @param environmentName The name of the environment. Must not already exist in this Conda installation. May be
-     *            {@code null} or empty in which case a {@link #getDefaultPythonEnvironmentName(PythonVersion) default
-     *            name} is used.
+     *            {@code null} or empty in which case a default name is used.
      * @param monitor Receives progress of the creation process. Allows to cancel the environment creation from within
      *            another thread.
      * @return The name of the created environment.
