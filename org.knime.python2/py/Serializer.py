@@ -97,13 +97,12 @@ class Serializer(object):
                 data_frame[column] = data_frame[column].astype('object')
             for i in range(len(data_frame)):
                 if debug_util.is_debug_enabled():
-                    lastp = -1
-                    if (i * 100 / len(data_frame)) % 5 == 0 and int(i * 100 / len(data_frame)) != lastp:
-                        debug_util.debug_msg(str(i * 100 / len(data_frame)) + ' percent done (serialize)')
-                        # lastp = int(i * 100/len(data_frame))
-                # Using bracket acessor is necessary here for ensuring that there are
-                # no unwanted type conversions
-                value = data_frame[column][data_frame.index[i]]
+                    progress = int(i * 100 / len(data_frame))
+                    if progress % 5 == 0:
+                        debug_util.debug_msg(str(progress) + ' percent done (serialize)')
+                row_key = data_frame.index[i]
+                # Using bracket accessor is necessary here to ensure that there are no unwanted type conversions.
+                value = data_frame[column][row_key]
                 if value is not None:
                     if isinstance(value, list):
                         new_list = []
