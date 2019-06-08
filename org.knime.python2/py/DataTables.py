@@ -59,6 +59,8 @@ from PythonUtils import Simpletype
 # Wrapper class for data that should be serialized using the serialization library.
 # Manages the serialization of extension types to bytes before using the
 # registered serialization library for serializing primitive types.
+# TODO: This constructor is called once per chunk at the moment, which is not necessary. Calling it once for the entire
+#  table and then just performing the actual serialization in a chunked fashion should be more performant.
 class FromPandasTable:
     # Constructor.
     # Serializes objects having a type that is registered via the knimetopython
@@ -81,9 +83,9 @@ class FromPandasTable:
             self._column_types.append(column_type)
             if serializer_id is not None:
                 self._column_serializers[column] = serializer_id
-        serializer.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
-        self.standardize_default_indices(start_row_number)
+        self._standardize_index(start_row_number)
         self._row_indices = self._data_frame.index.astype(str)
+        serializer.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
 
     def _check_duplicate_column_names(self):
         columns = self._data_frame.columns
@@ -99,19 +101,29 @@ class FromPandasTable:
         seen = set()
         return set(x for x in items if x in seen or seen.add(x))
 
-    # Replace default numeric indices with the KNIME standard row indices.
+    # Checks and fails if the index contains duplicate entries.
+    # Replaces default numeric indices with the KNIME standard row indices.
     # This means that if an index value is equal to the numeric index of
     # a row (N) it is replaced by 'RowN'.
     # @param start_row_number  the corresponding row number to the first row of the
     #                          dataframe. Differs from 0 as soon as a table chunk is
     #                          sent.
-    def standardize_default_indices(self, start_row_number):
+    def _standardize_index(self, start_row_number):
+        index = self._data_frame.index
+        if not index.is_unique:
+            # Get unique duplicate row keys, limit to three to keep the error message short.
+            duplicate_row_keys = list(set(index[index.duplicated()]))[:3]
+            duplicate_row_keys = ", ".join("'" + str(k) + "'" for k in duplicate_row_keys)
+            raise RuntimeError(
+                "Output DataFrame contains duplicate values in its index: " + duplicate_row_keys +
+                ". This is not supported. Please make sure that each"
+                " entry in the index (i.e., each row key) is unique.")
         row_indices = []
-        for i in range(len(self._data_frame.index)):
-            if type(self._data_frame.index[i]) == int and self._data_frame.index[i] == i + start_row_number:
+        for i in range(len(index)):
+            if type(index[i]) == int and index[i] == i + start_row_number:
                 row_indices.append(u'Row' + str(i + start_row_number))
             else:
-                row_indices.append(str(self._data_frame.index[i]))
+                row_indices.append(str(index[i]))
         self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
 
     # Get the type of the column at the provided index in the internal data_frame.
