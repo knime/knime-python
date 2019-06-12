@@ -327,7 +327,7 @@ public class PythonKernelTester {
                     if (version == null) {
                         version = line;
                     } else {
-                        errorLog.append(line);
+                        errorLog.append(line).append("\n");
                     }
                     break;
                 case 2:
