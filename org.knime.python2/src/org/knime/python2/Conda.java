@@ -230,13 +230,15 @@ public final class Conda {
         }
         final Path executablePath;
         try {
-            executablePath = Paths.get(installationDirectoryPath, relativePathToExecutableSegments);
+            executablePath = Paths.get(installationDirectoryPath, relativePathToExecutableSegments).normalize();
         } catch (final InvalidPathException ex) {
             final String errorMessage = ex.getMessage() + "\nThis is an implementation error.";
             throw new IOException(errorMessage, ex);
         }
         try {
             if (!executablePath.toFile().exists()) {
+                NodeLogger.getLogger(Conda.class)
+                    .debug("Specified Conda executable at '" + executablePath.toFile().getPath() + "' does not exist.");
                 throw new IOException("The given path does not point to a valid Conda installation.\nPlease point to "
                     + "the root directory of your local Conda installation.");
             }
