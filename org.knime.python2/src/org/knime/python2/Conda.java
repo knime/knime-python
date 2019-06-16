@@ -187,11 +187,11 @@ public final class Conda {
      *             executed) by this application.
      */
     public Conda(String condaInstallationDirectoryPath) throws IOException {
-        final File directoryFile = resolvePathToFile(condaInstallationDirectoryPath);
+        final File directoryFile = resolveToInstallationDirectoryFile(condaInstallationDirectoryPath);
         try {
-            condaInstallationDirectoryPath = directoryFile.getAbsolutePath();
+            condaInstallationDirectoryPath = directoryFile.getCanonicalPath();
         } catch (SecurityException ex) {
-            // Stick with the non-absolute path.
+            // Stick with the unresolved path.
             condaInstallationDirectoryPath = directoryFile.getPath();
         }
         m_executable = getExecutableFromInstallationDirectoryForOS(condaInstallationDirectoryPath);
@@ -199,7 +199,7 @@ public final class Conda {
         testInstallation();
     }
 
-    private static File resolvePathToFile(final String installationDirectoryPath) throws IOException {
+    private static File resolveToInstallationDirectoryFile(final String installationDirectoryPath) throws IOException {
         final File installationDirectory = new File(installationDirectoryPath);
         try {
             if (!installationDirectory.exists()) {
@@ -220,7 +220,7 @@ public final class Conda {
 
     private static String getExecutableFromInstallationDirectoryForOS(final String installationDirectoryPath)
         throws IOException {
-        final String[] relativePathToExecutableSegments;
+        String[] relativePathToExecutableSegments;
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
             relativePathToExecutableSegments = new String[]{"bin", "conda"};
         } else if (SystemUtils.IS_OS_WINDOWS) {
@@ -228,9 +228,29 @@ public final class Conda {
         } else {
             throw createUnknownOSException();
         }
+        Path executablePath;
+        try {
+            executablePath = resolveToExecutablePath(installationDirectoryPath, relativePathToExecutableSegments);
+        } catch (final IOException ex) {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                // Legacy support on Windows. Older installations of Conda don't have "condabin/conda.bat". We won't
+                // support such versions (cf. #testInstallation()) but still want to be able to resolve them. This
+                // allows us to print a more precise error message ("wrong version installed" vs. "not installed at
+                // all").
+                relativePathToExecutableSegments = new String[]{"Scripts", "conda.exe"};
+                executablePath = resolveToExecutablePath(installationDirectoryPath, relativePathToExecutableSegments);
+            } else {
+                throw ex;
+            }
+        }
+        return executablePath.toString();
+    }
+
+    private static Path resolveToExecutablePath(final String installationDirectoryPath,
+        final String[] relativePathToExecutableSegments) throws IOException {
         final Path executablePath;
         try {
-            executablePath = Paths.get(installationDirectoryPath, relativePathToExecutableSegments).normalize();
+            executablePath = Paths.get(installationDirectoryPath, relativePathToExecutableSegments);
         } catch (final InvalidPathException ex) {
             final String errorMessage = ex.getMessage() + "\nThis is an implementation error.";
             throw new IOException(errorMessage, ex);
@@ -245,7 +265,7 @@ public final class Conda {
         } catch (final UnsupportedOperationException ex) {
             // Skip test.
         }
-        return executablePath.toString();
+        return executablePath;
     }
 
     private static UnsupportedOperationException createUnknownOSException() {
