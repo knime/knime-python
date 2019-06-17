@@ -72,20 +72,40 @@ class FromPandasTable:
     #                          dataframe. Differs from 0 as soon as a table chunk is
     #                          sent.
     def __init__(self, data_frame, serializer, start_row_number=0):
-        # Shallow copy because we modify columns (see below) and index (see standardize_default_indices(..)).
+        # (Shallow) Copy because we modify columns and index (see below).
         self._data_frame = data_frame.copy(deep=False)
+        self._standardize_index(start_row_number)
         self._data_frame.columns = self._data_frame.columns.astype(str)
         self._check_duplicate_column_names()
-        self._column_types = []
-        self._column_serializers = {}
-        for i, column in enumerate(self._data_frame.columns):
-            column_type, serializer_id = serializer.simpletype_for_column(self._data_frame, column)
-            self._column_types.append(column_type)
-            if serializer_id is not None:
-                self._column_serializers[column] = serializer_id
-        self._standardize_index(start_row_number)
-        self._row_indices = self._data_frame.index.astype(str)
+        self._setup_serializers(serializer)
         serializer.serialize_objects_to_bytes(self._data_frame, self._column_serializers)
+
+    # Checks and fails if the index contains duplicate entries.
+    # Replaces default numeric indices with the KNIME standard row indices.
+    # This means that if an index value is equal to the numeric index of
+    # a row (N) it is replaced by 'RowN'.
+    # @param start_row_number  the corresponding row number to the first row of the
+    #                          dataframe. Differs from 0 as soon as a table chunk is
+    #                          sent.
+    def _standardize_index(self, start_row_number):
+        data_frame = self._data_frame
+        index = data_frame.index
+        if not index.is_unique:
+            # Get unique duplicate row keys, limit to three to keep the error message short.
+            duplicate_row_keys = list(set(index[index.duplicated()]))[:3]
+            duplicate_row_keys = ", ".join("'" + str(k) + "'" for k in duplicate_row_keys)
+            raise RuntimeError(
+                "Output DataFrame contains duplicate values in its index: " + duplicate_row_keys +
+                ". This is not supported. Please make sure that each"
+                " entry in the index (i.e., each row key) is unique.")
+        row_indices = []
+        for i in range(len(index)):
+            if type(index[i]) == int and index[i] == i + start_row_number:
+                row_indices.append(u'Row' + str(i + start_row_number))
+            else:
+                row_indices.append(str(index[i]))
+        data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
+        self._row_indices = data_frame.index.astype(str)
 
     def _check_duplicate_column_names(self):
         columns = self._data_frame.columns
@@ -101,30 +121,14 @@ class FromPandasTable:
         seen = set()
         return set(x for x in items if x in seen or seen.add(x))
 
-    # Checks and fails if the index contains duplicate entries.
-    # Replaces default numeric indices with the KNIME standard row indices.
-    # This means that if an index value is equal to the numeric index of
-    # a row (N) it is replaced by 'RowN'.
-    # @param start_row_number  the corresponding row number to the first row of the
-    #                          dataframe. Differs from 0 as soon as a table chunk is
-    #                          sent.
-    def _standardize_index(self, start_row_number):
-        index = self._data_frame.index
-        if not index.is_unique:
-            # Get unique duplicate row keys, limit to three to keep the error message short.
-            duplicate_row_keys = list(set(index[index.duplicated()]))[:3]
-            duplicate_row_keys = ", ".join("'" + str(k) + "'" for k in duplicate_row_keys)
-            raise RuntimeError(
-                "Output DataFrame contains duplicate values in its index: " + duplicate_row_keys +
-                ". This is not supported. Please make sure that each"
-                " entry in the index (i.e., each row key) is unique.")
-        row_indices = []
-        for i in range(len(index)):
-            if type(index[i]) == int and index[i] == i + start_row_number:
-                row_indices.append(u'Row' + str(i + start_row_number))
-            else:
-                row_indices.append(str(index[i]))
-        self._data_frame.set_index(keys=Index(row_indices), drop=True, inplace=True)
+    def _setup_serializers(self, serializer):
+        self._column_types = []
+        self._column_serializers = {}
+        for i, column in enumerate(self._data_frame.columns):
+            column_type, serializer_id = serializer.simpletype_for_column(self._data_frame, column)
+            self._column_types.append(column_type)
+            if serializer_id is not None:
+                self._column_serializers[column] = serializer_id
 
     # Get the type of the column at the provided index in the internal data_frame.
     # example: table.get_type(0)
