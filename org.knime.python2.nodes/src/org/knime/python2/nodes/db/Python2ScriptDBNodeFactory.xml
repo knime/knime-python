@@ -13,8 +13,8 @@
 		   <p>
             <b>This node is part of the legacy database framework.</b>
             For more information on how to migrate to the new database framework see the
-            <a href="!@!TOBIS_DB_MIGRATION_DOCUMENTATION_LINK!@!">migration section</a> of the 
-            <a href="!@!TOBIS_DB_DOCUMENTATION_LINK!@!">database documentation</a>.
+            <a href="https://docs.knime.com/latest/db_extension_guide/index.html#migration">migration section</a> of the 
+            <a href="https://docs.knime.com/latest/db_extension_guide/index.html">database documentation</a>.
            </p>
            <p>
 			Allows execution of a Python script in a local Python installation. 
