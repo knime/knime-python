@@ -92,8 +92,11 @@ class FromPandasTable:
         index = data_frame.index
         if not index.is_unique:
             # Get unique duplicate row keys, limit to three to keep the error message short.
-            duplicate_row_keys = list(set(index[index.duplicated()]))[:3]
-            duplicate_row_keys = ", ".join("'" + str(k) + "'" for k in duplicate_row_keys)
+            duplicate_row_keys = set(index[index.duplicated()])
+            truncate_items = len(duplicate_row_keys) > 3
+            duplicate_row_keys = ", ".join("'" + str(k) + "'" for k in list(duplicate_row_keys)[:3])
+            if truncate_items:
+                duplicate_row_keys += ", and others"
             raise RuntimeError(
                 "Output DataFrame contains duplicate values in its index: " + duplicate_row_keys +
                 ". This is not supported. Please make sure that each"
