@@ -94,7 +94,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class Conda {
 
-    private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 14);
+    private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 2);
 
     private static final String ROOT_ENVIRONMENT_NAME = "base";
 
