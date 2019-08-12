@@ -44,3 +44,4 @@ Require-Bundle: org.knime.python2;bundle-version="[4.0.0,5.0.0)",
   org.apache.commons.codec;bundle-version="1.10.0",
   joda-time;bundle-version="2.9.9"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Eclipse-BundleShape: dir
