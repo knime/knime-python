@@ -87,6 +87,7 @@ import org.knime.python2.generic.VariableNames;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListener;
+import org.knime.python2.kernel.PythonOutputLogger;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
 
@@ -121,7 +122,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final PythonOutputListener m_stdoutToConsole;
 
-    private final ConfigurableErrorLogger m_stderrorToConsole;
+    private final PythonOutputListener m_stderrorToConsole;
 
     private final AtomicBoolean m_resetInProgress;
 
@@ -169,28 +170,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
         m_parent = parent;
         m_kernelOptions = new PythonKernelOptions();
-        m_stdoutToConsole = new PythonOutputListener() {
 
-            private boolean m_silenced = false;
+        m_stdoutToConsole = new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
+        m_stderrorToConsole = new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
 
-            @Override
-            public void setSilenced(final boolean silenced) {
-                m_silenced = silenced;
-            }
-
-            @Override
-            public void messageReceived(final String msg, final boolean isWarningMessage) {
-                if (!m_silenced) {
-                    if (isWarningMessage) {
-                        warningToConsole(msg);
-                    } else {
-                        messageToConsole(msg);
-                    }
-                }
-            }
-        };
-
-        m_stderrorToConsole = new ConfigurableErrorLogger();
         m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManagerWrapper>();
         m_resetInProgress = new AtomicBoolean(false);
 
@@ -289,9 +272,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         }
                         if (manager != null) {
                             //Push python stdout content to console live
-                            m_stdoutToConsole.setSilenced(false);
+                            m_stdoutToConsole.setDisabled(false);
                             manager.addStdoutListener(m_stdoutToConsole);
-                            m_stderrorToConsole.setSilenced(false);
+                            m_stderrorToConsole.setDisabled(false);
                             manager.addStderrorListener(m_stderrorToConsole);
                             setStatusMessage("Python successfully started");
                         }
@@ -327,8 +310,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                         }
                     }
                     setInteractive(false);
-                    m_stdoutToConsole.setSilenced(true);
-                    m_stderrorToConsole.setSilenced(true);
+                    m_stdoutToConsole.setDisabled(true);
+                    m_stderrorToConsole.setDisabled(true);
                     if (m_progressMonitor != null) {
                         m_progressMonitor.setCanceled(true);
                     }
@@ -398,7 +381,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     setStopCallback(m_stopCallback);
 
                     // Execute will be run in a separate thread by the kernel manager
-                    m_stderrorToConsole.setAllWarnings(true);
                     getKernelManager().execute(sourceCode, new PythonKernelResponseHandler<String[]>() {
                         @Override
                         public void handleResponse(final String[] response, final Exception exception) {
@@ -411,18 +393,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                                     if (exception != null) {
                                         logError(exception, "Error during execution");
                                     } else {
-                                        if (!response[1].isEmpty()) {
-                                            errorToConsole(response[1]);
-                                            setStatusMessage("Error during execution");
-                                        } else {
-                                            setStatusMessage("Execution successful");
-                                        }
+                                        setStatusMessage("Execution successful");
                                     }
                                     // Setting running to false will also update the
                                     // variables
                                     setRunning(false);
                                 }
-                                m_stderrorToConsole.setAllWarnings(false);
                             } finally {
                                 m_lock.unlock();
                             }
@@ -791,40 +767,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     protected void setRowLimit(final int rowLimit) {
         super.setRowLimit(rowLimit);
         runResetJob();
-    }
-
-    private class ConfigurableErrorLogger implements PythonOutputListener {
-
-        private boolean m_allWarnings = false;
-
-        private boolean m_silenced = false;
-
-        /**
-         * Enables special handling of the stderror stream when custom source code is executed.
-         *
-         * @param on turn handling on / off
-         */
-        private void setAllWarnings(final boolean on) {
-            m_allWarnings = on;
-        }
-
-        @Override
-        public void setSilenced(final boolean silenced) {
-            m_silenced = silenced;
-        }
-
-        @Override
-        public void messageReceived(final String msg, final boolean isWarningMessage) {
-            if (!m_silenced) {
-                if (m_allWarnings || isWarningMessage) {
-                    warningToConsole(msg);
-                } else {
-                    errorToConsole(msg);
-                }
-            } else {
-                LOGGER.debug(msg);
-            }
-        }
     }
 
     private class PythonKernelManagerWrapper {

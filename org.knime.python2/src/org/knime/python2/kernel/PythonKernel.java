@@ -219,15 +219,7 @@ public class PythonKernel implements AutoCloseable {
 
     private final List<PythonOutputListener> m_stderrListeners = Collections.synchronizedList(new ArrayList<>());
 
-    private final PythonOutputListener m_defaultStdoutListener;
-
-    private final ConfigurableErrorLogger m_defaultStderrListener;
-
-    private final List<ProcessEndAction> m_processEndActions = Collections.synchronizedList(new ArrayList<>());
-
-    private final ProcessEndAction m_segfaultDuringSerializationAction;
-
-    private final Future<PythonIOException> m_pythonKernelMonitorResult;
+    private final PythonOutputLogger m_defaultStdoutListener;
 
     private final boolean m_hasAutocomplete;
 
@@ -271,37 +263,10 @@ public class PythonKernel implements AutoCloseable {
             m_stderrStream = m_process.getErrorStream();
             startPipeListeners();
 
-            // Monitor process termination and report possible errors.
-            m_segfaultDuringSerializationAction = setupSegfaultAction(); // Used in "getData" methods.
-            m_pythonKernelMonitorResult = setupProcessEndActions();
-
             // Log output and errors to console.
-            m_defaultStdoutListener = new PythonOutputListener() {
-
-                private boolean m_silenced = false;
-
-                @Override
-                public void setSilenced(final boolean silenced) {
-                    m_silenced = silenced;
-                }
-
-                @Override
-                public void messageReceived(final String message, final boolean isWarningMessage) {
-                    if (!m_silenced) {
-                        if (isWarningMessage) {
-                            LOGGER.warn(message);
-                        } else {
-                            LOGGER.info(message);
-                        }
-                    } else {
-                        LOGGER.debug(message);
-                    }
-                }
-            };
+            m_defaultStdoutListener = new PythonOutputLogger(LOGGER);
             addStdoutListener(m_defaultStdoutListener);
-
-            m_defaultStderrListener = new ConfigurableErrorLogger();
-            addStderrorListener(m_defaultStderrListener);
+            addStderrorListener(new PythonOutputLogger(LOGGER));
 
             try {
                 // Wait for Python to connect.
@@ -443,42 +408,6 @@ public class PythonKernel implements AutoCloseable {
         return pb.start();
     }
 
-    private ProcessEndAction setupSegfaultAction() {
-        return exitCode -> {
-            // If an error was raised in Python we already have a specific clue about the error. If not we should
-            // have a look at the exit code of the process.
-            if (m_defaultStderrListener.wasErrorLogged()) {
-                return;
-            }
-            // Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
-            // flatbuffers with exit code 0.
-            if (exitCode == 139) {
-                throw new PythonIOException("Python process ended unexpectedly with a SEGFAULT. This might be caused by"
-                    + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
-                    + " the 'Options' tab of the configuration dialog.");
-            } else if (exitCode != 0) {
-                throw new PythonIOException(
-                    "Python process ended unexpectedly with exit code " + exitCode + ". This might be"
-                        + " caused by an oversized buffer allocation. Please consider lowering the 'Rows per chunk'"
-                        + " parameter in the 'Options' tab of the configuration dialog.");
-            }
-        };
-    }
-
-    private Future<PythonIOException> setupProcessEndActions() {
-        // Capture process end and run registered actions.
-        final ExecutorService service = Executors.newSingleThreadExecutor();
-        return service.submit(() -> {
-            final int exitCode = m_process.waitFor();
-            synchronized (m_processEndActions) {
-                for (final ProcessEndAction action : m_processEndActions) {
-                    action.runForExitCode(exitCode);
-                }
-            }
-            return null;
-        });
-    }
-
     private void setupRequestHandlers() {
         registerTaskHandler("serializer_request", new AbstractRequestHandler() {
 
@@ -534,7 +463,7 @@ public class PythonKernel implements AutoCloseable {
             protected Message respond(final Message request, final int responseMessageId) {
                 String uriString = new PayloadDecoder(request.getPayload()).getNextString();
                 // Node context may be required to resolve KNIME URL.
-                try (NodeContextManager m = m_nodeContextManager.pushNodeContext()){
+                try (NodeContextManager m = m_nodeContextManager.pushNodeContext()) {
                     uriString = fixWindowsUri(uriString);
                     final URI uri = new URI(uriString);
                     final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
@@ -621,24 +550,6 @@ public class PythonKernel implements AutoCloseable {
      */
     public boolean unregisterTaskHandler(final String taskCategory) {
         return m_commands.getMessageHandlers().unregisterMessageHandler(taskCategory);
-    }
-
-    /**
-     * Add an action to run when the python process ends.
-     *
-     * @param ac the action to run
-     */
-    public void addProcessEndAction(final ProcessEndAction ac) {
-        m_processEndActions.add(ac);
-    }
-
-    /**
-     * Remove an action from the list of actions to run when the python process ends.
-     *
-     * @param ac the action to remove
-     */
-    public void removeProcessEndAction(final ProcessEndAction ac) {
-        m_processEndActions.remove(ac);
     }
 
     /**
@@ -946,38 +857,29 @@ public class PythonKernel implements AutoCloseable {
             final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
             final ExecutionMonitor serializationMonitor = executionMonitor.createSubProgress(0.5);
             final ExecutionMonitor deserializationMonitor = executionMonitor.createSubProgress(0.5);
-            final ProcessEndAction pea = m_segfaultDuringSerializationAction;
-            m_defaultStderrListener.resetErrorLoggedFlag();
-            try {
-                addProcessEndAction(pea);
-                final int tableSize = m_commands.getTableSize(name).get();
-                final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
-                int numberChunks = (int)Math.ceil(tableSize / (double)chunkSize);
-                if (numberChunks == 0) {
-                    numberChunks = 1;
-                }
-                BufferedDataTableCreator tableCreator = null;
-                for (int i = 0; i < numberChunks; i++) {
-                    final int start = chunkSize * i;
-                    final int end = Math.min(tableSize, (start + chunkSize) - 1);
-                    final byte[] bytes =
-                        waitForFutureCancelable(m_commands.getTableChunk(name, start, end), cancelable);
-                    serializationMonitor.setProgress((end + 1) / (double)tableSize);
-                    if (tableCreator == null) {
-                        final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, cancelable);
-                        tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
-                    }
-                    m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions(),
-                        cancelable);
-                    deserializationMonitor.setProgress((end + 1) / (double)tableSize);
-                }
-                if (tableCreator != null) {
-                    return tableCreator.getTable();
-                }
-                throw new PythonIOException("Invalid serialized table received.");
-            } finally {
-                removeProcessEndAction(pea);
+            final int tableSize = m_commands.getTableSize(name).get();
+            final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
+            int numberChunks = (int)Math.ceil(tableSize / (double)chunkSize);
+            if (numberChunks == 0) {
+                numberChunks = 1;
             }
+            BufferedDataTableCreator tableCreator = null;
+            for (int i = 0; i < numberChunks; i++) {
+                final int start = chunkSize * i;
+                final int end = Math.min(tableSize, (start + chunkSize) - 1);
+                final byte[] bytes = waitForFutureCancelable(m_commands.getTableChunk(name, start, end), cancelable);
+                serializationMonitor.setProgress((end + 1) / (double)tableSize);
+                if (tableCreator == null) {
+                    final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, cancelable);
+                    tableCreator = new BufferedDataTableCreator(spec, exec, deserializationMonitor, tableSize);
+                }
+                m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions(), cancelable);
+                deserializationMonitor.setProgress((end + 1) / (double)tableSize);
+            }
+            if (tableCreator != null) {
+                return tableCreator.getTable();
+            }
+            throw new PythonIOException("Invalid serialized table received.");
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
@@ -999,9 +901,7 @@ public class PythonKernel implements AutoCloseable {
      */
     public TableCreator<?> getData(final String name, final TableCreatorFactory tableCreatorFactory,
         final PythonCancelable cancelable) throws IOException, PythonCanceledExecutionException {
-        final ProcessEndAction pea = m_segfaultDuringSerializationAction;
         try {
-            addProcessEndAction(pea);
             final int tableSize = m_commands.getTableSize(name).get();
             final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
             int numberChunks = (int)Math.ceil(tableSize / (double)chunkSize);
@@ -1024,8 +924,6 @@ public class PythonKernel implements AutoCloseable {
             throw ex;
         } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
-        } finally {
-            removeProcessEndAction(pea);
         }
     }
 
@@ -1370,10 +1268,6 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private String[] executeCommand(final RunnableFuture<String[]> executeCommand) throws IOException {
-        // In execution mode, only warnings (and possibly also handled exceptions) are logged to the Python kernel's
-        // error stream. Uncaught exceptions that lead to the exception termination of the execution initiated by
-        // this command are transmitted to Java an will raise an exception here, too.
-        routeErrorMessagesToWarningLog(true);
         try {
             return executeCommand.get();
         } catch (final Exception ex) {
@@ -1404,8 +1298,6 @@ public class PythonKernel implements AutoCloseable {
             } else {
                 throw exception;
             }
-        } finally {
-            routeErrorMessagesToWarningLog(false);
         }
     }
 
@@ -1473,11 +1365,11 @@ public class PythonKernel implements AutoCloseable {
             new Thread(() -> {
                 // Order is intended.
                 synchronized (m_stderrListeners) {
-                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
+                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setDisabled(true),
                         m_stderrListeners.toArray(new PythonOutputListener[0]));
                 }
                 synchronized (m_stdoutListeners) {
-                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setSilenced(true),
+                    PythonUtils.Misc.invokeSafely(LOGGER::debug, l -> l.setDisabled(true),
                         m_stdoutListeners.toArray(new PythonOutputListener[0]));
                 }
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
@@ -1568,20 +1460,6 @@ public class PythonKernel implements AutoCloseable {
         return m_commands;
     }
 
-    /**
-     * @param routeToWarningLog {@code true} if error messages issued by the Python side shall be routed to the warning
-     *            level of the log system. {@code false} if they shall be routed to the error level.
-     */
-    public void routeErrorMessagesToWarningLog(final boolean routeToWarningLog) {
-        synchronized (m_stderrListeners) {
-            for (final PythonOutputListener listener : m_stderrListeners) {
-                if (listener instanceof ConfigurableErrorLogger) {
-                    ((ConfigurableErrorLogger)listener).setAllWarnings(routeToWarningLog);
-                }
-            }
-        }
-    }
-
     private void distributeStdoutMsg(final String msg) {
         distributeToListeners(msg, m_stdoutListeners);
     }
@@ -1644,31 +1522,23 @@ public class PythonKernel implements AutoCloseable {
     private PythonIOException getMostSpecificPythonKernelException(final Exception exception) {
         // Unwrap exceptions that occurred during any async execution.
         final Throwable exc = PythonUtils.Misc.unwrapExecutionException(exception).orElse(exception);
-        if (!m_pythonKernelMonitorResult.isDone()) {
-            try {
-                // Sleep a bit to give the monitor thread time to finish.
-                // TODO: Investigate if we can wait for the thread as well here?!
-                Thread.sleep(100);
-            } catch (final InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        try {
-            if (m_pythonKernelMonitorResult.isDone()) {
-                final PythonIOException result = m_pythonKernelMonitorResult.get();
-                if (result != null) {
-                    return result;
-                }
-            }
-        } catch (InterruptedException | ExecutionException ex) {
-            exc.addSuppressed(ex);
-            return new PythonIOException(exc);
-        }
         if (exc instanceof PythonIOException) {
             return (PythonIOException)exc;
         }
         if (exc instanceof PythonException) {
             return new PythonIOException(exc.getMessage(), exc);
+        }
+        // No known exception. Could be caused by ungraceful process termination due to segfault.
+        if (!m_process.isAlive()) {
+            final int exitCode = m_process.exitValue();
+            // Arrow and CSV exit with segfault (exit code 139) on oversized buffer allocation,
+            // flatbuffers with exit code 0.
+            if (exitCode == 139) {
+                return new PythonIOException(
+                    "Python process ended unexpectedly with a SEGFAULT. This might be caused by"
+                        + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
+                        + " the 'Options' tab of the configuration dialog.");
+            }
         }
         return new PythonIOException(exc);
     }
@@ -1680,88 +1550,6 @@ public class PythonKernel implements AutoCloseable {
         } catch (final PythonCanceledExecutionException ex) {
             future.cancel(true);
             throw ex;
-        }
-    }
-
-    /**
-     * An action to run as soon as the python process exits. Allows to examine custom exit codes.
-     */
-    public interface ProcessEndAction {
-
-        /**
-         * @param exitCode the exit code of the Python process
-         * @throws PythonIOException if the process end action detected a erroneous process end
-         */
-        void runForExitCode(int exitCode) throws PythonIOException;
-    }
-
-    private static class ConfigurableErrorLogger implements PythonOutputListener {
-
-        private boolean m_silenced = false;
-
-        private boolean m_allWarning = false;
-
-        private boolean m_lastStackTrace = false;
-
-        private final AtomicBoolean m_errorWasLogged = new AtomicBoolean(false);
-
-        /**
-         * Reset the flag that is set if an error was logged.
-         */
-        public void resetErrorLoggedFlag() {
-            m_errorWasLogged.set(false);
-        }
-
-        /**
-         * Get a flag indicating if an error was logged.
-         *
-         * @return error was logged yes / no
-         */
-        public boolean wasErrorLogged() {
-            return m_errorWasLogged.get();
-        }
-
-        @Override
-        public void setSilenced(final boolean silenced) {
-            m_silenced = silenced;
-        }
-
-        /**
-         * Enables special handling of the stderror stream when custom source code is executed.
-         *
-         * @param on turn handling on / off
-         */
-        private void setAllWarnings(final boolean on) {
-            m_allWarning = on;
-        }
-
-        @Override
-        public void messageReceived(final String msg, final boolean isWarningMessage) {
-            if (!m_silenced) {
-                if (m_allWarning || isWarningMessage) {
-                    LOGGER.warn(msg);
-                } else {
-                    if (!msg.startsWith("Traceback") && !msg.startsWith(" ")) {
-                        // FIXME (LATER): Handling the case when arrow is installed in a wrong version. Hot-fix. needs more thought later.
-                        if (msg.equals("terminate called after throwing an instance of 'std::length_error'")) {
-                            LOGGER.error(
-                                "Error during execution. Make sure that your installed pyarrow version is at least 0.9."
-                                    + "\nError message was:");
-                        }
-                        LOGGER.error(msg);
-                        m_errorWasLogged.set(true);
-                        m_lastStackTrace = false;
-                    } else {
-                        if (!m_lastStackTrace) {
-                            LOGGER.debug("Python error with stacktrace:\n");
-                            m_lastStackTrace = true;
-                        }
-                        LOGGER.debug(msg);
-                    }
-                }
-            } else {
-                LOGGER.debug(msg);
-            }
         }
     }
 

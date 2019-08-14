@@ -44,30 +44,62 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 22, 2017 (clemens): created
+ *   Aug 14, 2019 (marcel): created
  */
 package org.knime.python2.kernel;
 
+import java.util.function.Consumer;
+
+import org.knime.core.node.NodeLogger;
+
 /**
- * A listener for receiving messages from a python output stream (stdout or stderror).
- *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonOutputListener {
+public class PythonOutputLogger implements PythonOutputListener {
+
+    private final Consumer<String> m_infoLogger;
+
+    private final Consumer<String> m_warningLogger;
+
+    private final Consumer<String> m_debugLogger;
+
+    private volatile boolean m_disabled = false;
 
     /**
-     * @param disabled {@code false} if this listener should execute normally upon invocation of
-     *            {@link #messageReceived(String, boolean)}, {@code true} if it should ignore such invocations.
+     * @param logger The {@link NodeLogger} to which to write the messages received from Python.
      */
-    void setDisabled(boolean disabled);
+    public PythonOutputLogger(final NodeLogger logger) {
+        this(logger::info, logger::warn, logger::debug);
+    }
 
     /**
-     * Is called after a full line of text was received from the python output stream
-     *
-     * @param message the received line without terminator
-     * @param isWarningMessage true if the message is a warning, false otherwise (regular output or exception)
+     * @param infoLogger The logger to which to write info messages received from Python.
+     * @param warningLogger The logger to which to write warning messages received from Python.
+     * @param debugLogger May be {@code null}. If not {@code null}, the logger to which to write all messages received
+     *            from Python while this instance is {@link #setDisabled(boolean) disabled}.
      */
-    void messageReceived(String message, boolean isWarningMessage);
+    public PythonOutputLogger(final Consumer<String> infoLogger, final Consumer<String> warningLogger,
+        final Consumer<String> debugLogger) {
+        m_infoLogger = infoLogger;
+        m_warningLogger = warningLogger;
+        m_debugLogger = debugLogger;
+    }
+
+    @Override
+    public void setDisabled(final boolean silenced) {
+        m_disabled = silenced;
+    }
+
+    @Override
+    public void messageReceived(final String message, final boolean isWarningMessage) {
+        if (!m_disabled) {
+            if (isWarningMessage) {
+                m_warningLogger.accept(message);
+            } else {
+                m_infoLogger.accept(message);
+            }
+        } else if (m_debugLogger != null) {
+            m_debugLogger.accept(message);
+        }
+    }
 }
