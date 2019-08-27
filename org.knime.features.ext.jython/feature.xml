@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.jython"
       label="KNIME Jython Scripting (Legacy)"
-      version="4.0.0.qualifier"
+      version="4.1.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland"
       plugin="org.knime.ext.jython">
 

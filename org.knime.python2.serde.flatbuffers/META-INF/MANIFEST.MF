@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python Serialization - Flatbuffers
 Bundle-SymbolicName: org.knime.python2.serde.flatbuffers;singleton:=true
-Bundle-Version: 4.0.0.qualifier
+Bundle-Version: 4.1.0.qualifier
 Bundle-ClassPath: python-serde-flatbuffers.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.python2.serde.flatbuffers
