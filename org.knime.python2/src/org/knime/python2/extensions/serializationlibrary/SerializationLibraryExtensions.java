@@ -93,13 +93,20 @@ public final class SerializationLibraryExtensions {
     private static synchronized SerializationLibraryExtensions getInitializedInstance() {
         if (instance == null) {
             instance = new SerializationLibraryExtensions();
+            // First set instance, then register. Registering usually activates other bundles. Those may try to access
+            // this registry (while the instance is still null) which would trigger another instance construction.
+            instance.register();
         }
         return instance;
     }
 
-    private final Map<String, SerializationLibraryExtension> m_extensions;
+    private Map<String, SerializationLibraryExtension> m_extensions;
 
     private SerializationLibraryExtensions() {
+        // Do not trigger registration here. See #getInitializedInstance() above.
+    }
+
+    private void register() {
         final Map<String, SerializationLibraryExtension> extensions = new HashMap<>();
         final IExtensionRegistry registry = Platform.getExtensionRegistry();
         final IExtensionPoint point = registry.getExtensionPoint(EXT_POINT_ID);
