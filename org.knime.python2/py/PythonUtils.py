@@ -189,7 +189,32 @@ def is_float_type(data_type):
 
 
 def is_integer_type(data_type):
+    """
+    Note, "integer" is to be understood in its mathematical sense, i.e., as a number without a fractional component.
+    This does include, but is _not_ equivalent to, the unsigned 32-bit numeric data type.
+    """
     return data_type in _INTEGER_TYPES
+
+
+def fits_into_java_integer(data_type):
+    """
+    :param data_type: It is assumed that is_integer_type returns True for this argument.
+    """
+    return data_type.itemsize < 4 or (data_type.itemsize == 4 and data_type.kind == 'i')
+
+
+def fits_into_java_long(data_type):
+    """
+    :param data_type: It is assumed that is_integer_type returns True for this argument.
+    """
+    return data_type.itemsize < 8 or (data_type.itemsize == 8 and data_type.kind == 'i')
+
+
+def is_unsigned_byte_type(data_type):
+    """
+    "unsigned byte" refers to all flavors of the unsigned numeric data type of 8 bits of size.
+    """
+    return numpy.dtype('uint8') == data_type
 
 
 def types_are_equivalent(type_1, type_2):
