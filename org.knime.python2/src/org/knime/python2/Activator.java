@@ -49,13 +49,13 @@ package org.knime.python2;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Collection;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.python2.prefs.PythonPreferences;
@@ -85,22 +85,17 @@ public final class Activator implements BundleActivator {
         PythonPreferences.init();
         // Test Python installation.
         new Thread(() -> {
-            PythonKernelTestResult python2Res =
-                PythonKernelTester.testPython2Installation(PythonPreferences.getPython2CommandPreference(),
-                    PythonPreferences.getCurrentlyRequiredSerializerModules(), false);
-            if (python2Res.hasError()) {
-                NodeLogger.getLogger(Activator.class)
-                    .debug("Your configured Python 2 installation has issues preventing the KNIME Python integration "
-                        + "from working properly.\nList of issues: " + python2Res.getErrorLog());
+            Collection<PythonModuleSpec> requiredSerializerModules = null;
+            try {
+                requiredSerializerModules = PythonPreferences.getCurrentlyRequiredSerializerModules();
+            } catch (final IllegalArgumentException ex) {
+                // Preferences not yet properly configured by the user. Fall through.
             }
-
-            PythonKernelTestResult python3Res =
+            if (requiredSerializerModules != null) {
+                PythonKernelTester.testPython2Installation(PythonPreferences.getPython2CommandPreference(),
+                    requiredSerializerModules, false);
                 PythonKernelTester.testPython3Installation(PythonPreferences.getPython3CommandPreference(),
-                    PythonPreferences.getCurrentlyRequiredSerializerModules(), false);
-            if (python3Res.hasError()) {
-                NodeLogger.getLogger(Activator.class)
-                    .debug("Your configured Python 3 installation has issues preventing the KNIME Python integration "
-                        + "from working properly.\nList of issues: " + python3Res.getErrorLog());
+                    requiredSerializerModules, false);
             }
         }).start();
         SourceCodeTemplatesExtensions.init();
