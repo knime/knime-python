@@ -531,6 +531,13 @@ public class PythonKernel implements AutoCloseable {
     // End of setup methods.
 
     /**
+     * @return The {@link PythonKernelOptions} that were used to construct this kernel.
+     */
+    public PythonKernelOptions getOptions() {
+        return m_kernelOptions;
+    }
+
+    /**
      * Registers the given handler for the given task category if it is not yet covered by another handler.
      *
      * @param taskCategory the {@link Message#getCategory() category} for which to register the handler
