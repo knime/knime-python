@@ -4,16 +4,18 @@ channels:             # Repositories to search for packages
 - anaconda
 - conda-forge
 dependencies:         # List of packages that should be installed
-- python=3.6          # Python
-- pandas=0.23         # Table data structures
-- jedi=0.13           # Python script autocompletion
-- python-dateutil=2.7 # Date and Time utilities
-- numpy=1.15          # N-dimensional arrays
-- cairo=1.14          # SVG support
-- pillow=5.3          # Image inputs/outputs
-- matplotlib=3.0      # Plotting
-- pyarrow=0.11        # Arrow serialization
-- IPython=7.1         # Notebook support
 - nbformat=4.4        # Notebook support
-- scipy=1.1           # Notebook support
 - jpype1=0.6.3        # Databases
+- ipython=7.1         # Notebook support
+- pillow=5.3          # Image inputs/outputs
+- numpy=1.16.1        # N-dimensional arrays
+- pyarrow=0.11        # Arrow serialization
+- pandas=0.23         # Table data structures
+- cairo=1.14          # SVG support
+- matplotlib=3.0      # Plotting
+- python-dateutil=2.7 # Date and Time utilities
+- jedi=0.13           # Python script autocompletion
+- python=3.6          # Python
+- scipy=1.1           # Notebook support
+- libiconv=1.15       # MDF Reader node
+- asammdf=5.13.13     # MDF Reader node
