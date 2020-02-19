@@ -4,4 +4,5 @@
 *.pyc
 *.pydevproject
 **/.flattened-pom.xml
+*/log
 */*.jar
