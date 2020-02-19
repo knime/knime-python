@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>org.knime.python2.serde.csv.testing</name>
+	<name>org.knime.python2.tests</name>
 	<comment></comment>
 	<projects>
 	</projects>
