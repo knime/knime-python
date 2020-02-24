@@ -32,10 +32,14 @@
 		<module>org.knime.python2</module>
 		<module>org.knime.python2.envconfigs</module>
 		<module>org.knime.python2.nodes</module>
+		<module>org.knime.python2.tests</module>
 		<module>org.knime.python2.serde.arrow</module>
 		<module>org.knime.python2.serde.arrow.libs</module>
+		<module>org.knime.python2.serde.arrow.tests</module>
 		<module>org.knime.python2.serde.csv</module>
+		<module>org.knime.python2.serde.csv.tests</module>
 		<module>org.knime.python2.serde.flatbuffers</module>
+		<module>org.knime.python2.serde.flatbuffers.tests</module>
 		<module>org.knime.python.nodes</module>
 		<module>org.knime.python.typeextensions</module>
 		<module>org.knime.update.python</module>
