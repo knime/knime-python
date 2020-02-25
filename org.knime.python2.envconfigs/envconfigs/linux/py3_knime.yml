@@ -18,4 +18,4 @@ dependencies:         # List of packages that should be installed
 - python-dateutil=2.7 # Date and Time utilities
 - pandas=0.23         # Table data structures
 - libiconv=1.15       # MDF Reader node
-- asammdf=5.14.5      # MDF Reader node
+- asammdf=5.18.0      # MDF Reader node
