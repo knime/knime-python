@@ -1463,7 +1463,10 @@ public class PythonKernel implements AutoCloseable {
         return m_defaultStdoutListener;
     }
 
-    PythonCommands getCommands() {
+    /** Access to commands, only used in tests.
+     * @return The commands
+     * @noreference not to be used by 3rd party code*/
+    public PythonCommands getCommands() {
         return m_commands;
     }
 
