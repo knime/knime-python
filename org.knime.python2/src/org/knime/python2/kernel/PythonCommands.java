@@ -462,7 +462,10 @@ public final class PythonCommands implements AutoCloseable {
         PythonUtils.Misc.closeSafely(LOGGER::debug, m_messaging);
     }
 
-    PythonMessaging getMessaging() {
+    /** Access to commands, only used in tests.
+     * @return The commands
+     * @noreference not to be used by 3rd party code */
+    public PythonMessaging getMessaging() {
         return m_messaging;
     }
 
