@@ -83,7 +83,9 @@ public final class MessagingTest {
 
 	@After
 	public void cleanup() throws IOException {
-		m_kernel.close();
+		if (m_kernel != null) {
+			m_kernel.close();
+		}
 	}
 
 	@Test
