@@ -113,6 +113,15 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- org.knime.python2.tests currently only has abstract test classes -->
+                    <failIfNoTests>false</failIfNoTests>
+                </configuration>
+            </plugin>			
 		</plugins>
 	</build>
 </project>
