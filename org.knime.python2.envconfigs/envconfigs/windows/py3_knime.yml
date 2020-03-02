@@ -18,4 +18,4 @@ dependencies:         # List of packages that should be installed
 - numpy=1.16.1        # N-dimensional arrays
 - cairo=1.14          # SVG support
 - libiconv=1.15       # MDF Reader node
-- asammdf=5.18.0      # MDF Reader node
+- asammdf=5.14.5      # MDF Reader node

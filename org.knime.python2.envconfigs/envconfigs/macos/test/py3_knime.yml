@@ -21,7 +21,7 @@ dependencies:         # List of packages that should be installed
 - keras=2.2.4
 - h5py=2.8
 - libiconv=1.15       # MDF Reader node
-- asammdf=5.18.0      # MDF Reader node
+- asammdf=5.14.5      # MDF Reader node
 - pip:
   - onnx==1.4.1
   - onnx-tf==1.2.1
