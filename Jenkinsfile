@@ -14,7 +14,7 @@ properties([
 
 try {
 	// provide the name of the update site project
-	knimetools.defaultTychoBuild('org.knime.update.python')
+	knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python2 && python3')
 
 	workflowTests.runTests(
         dependencies: [
