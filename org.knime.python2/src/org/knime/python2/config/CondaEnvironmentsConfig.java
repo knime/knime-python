@@ -51,6 +51,7 @@ package org.knime.python2.config;
 import java.nio.file.Paths;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.python2.PythonVersion;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -86,10 +87,10 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
     private final SettingsModelString m_condaDirectory =
         new SettingsModelString(CFG_KEY_CONDA_DIRECTORY_PATH, getDefaultCondaInstallationDirectory());
 
-    private final CondaEnvironmentConfig m_python2EnvironmentConfig = new CondaEnvironmentConfig(
+    private final CondaEnvironmentConfig m_python2EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON2,
         CFG_KEY_PYTHON2_CONDA_ENV_NAME, PLACEHOLDER_PYTHON2_CONDA_ENV_NAME, m_condaDirectory);
 
-    private final CondaEnvironmentConfig m_python3EnvironmentConfig = new CondaEnvironmentConfig(
+    private final CondaEnvironmentConfig m_python3EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON3,
         CFG_KEY_PYTHON3_CONDA_ENV_NAME, PLACEHOLDER_PYTHON3_CONDA_ENV_NAME, m_condaDirectory);
 
     // Not meant for saving/loading. We just want observable values here to communicate with the view:

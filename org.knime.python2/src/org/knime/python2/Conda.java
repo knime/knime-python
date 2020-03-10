@@ -105,16 +105,18 @@ public final class Conda {
     private static final String DEFAULT_PYTHON3_ENV_PREFIX = "py3_knime";
 
     /**
-     * Creates and returns a {@link PythonCommand} that describes a Python process that is run in the Conda environment
-     * identified by the given Conda installation directory and the given Conda environment name.<br>
+     * Creates and returns a {@link PythonCommand} that describes a Python process of the given Python version that is
+     * run in the Conda environment identified by the given Conda installation directory and the given Conda environment
+     * name.<br>
      * The validity of the given arguments is not tested.
      *
+     * @param pythonVersion The Python version of the Python environment.
      * @param condaInstallationDirectoryPath The path to the directory of the Conda installation.
      * @param environmentName The name of the Conda environment.
      * @return A command to start a Python process in the given environment using the given Conda installation.
      */
-    public static PythonCommand createPythonCommand(final String condaInstallationDirectoryPath,
-        final String environmentName) {
+    public static PythonCommand createPythonCommand(final PythonVersion pythonVersion,
+        final String condaInstallationDirectoryPath, final String environmentName) {
         final Path executablePath;
         final String environmentsDirectoryName = "envs";
         // Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/.
@@ -127,7 +129,7 @@ public final class Conda {
         } else {
             throw createUnknownOSException();
         }
-        return new DefaultPythonCommand(executablePath.toString());
+        return new DefaultPythonCommand(pythonVersion, executablePath.toString());
     }
 
     /**

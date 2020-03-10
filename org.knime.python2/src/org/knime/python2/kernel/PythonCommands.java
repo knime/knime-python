@@ -371,6 +371,20 @@ public final class PythonCommands implements AutoCloseable {
     }
 
     /**
+     * Creates a runnable future that sets the serialization library used on Python side to the given Python module.
+     *
+     * @param pathToSerializationLibraryPythonModule the path to the Python module that should handle (de-)serialization
+     *            on Python side
+     * @return a runnable future that sets the serialization library on Python side
+     */
+    public synchronized RunnableFuture<Void>
+        setSerializationLibrary(final String pathToSerializationLibraryPythonModule) {
+        final byte[] payload = new PayloadEncoder().putString(pathToSerializationLibraryPythonModule).get();
+        return createTask(new VoidReturningTaskHandler(),
+            new DefaultMessage(m_messaging.createNextMessageId(), "setSerializationLibrary", payload, null));
+    }
+
+    /**
      * Creates a runnable future that transmits the paths to all custom module directories and make them available via
      * the <code>PYTHONPATH</code>.
      *
@@ -462,9 +476,12 @@ public final class PythonCommands implements AutoCloseable {
         PythonUtils.Misc.closeSafely(LOGGER::debug, m_messaging);
     }
 
-    /** Access to commands, only used in tests.
+    /**
+     * Access to commands, only used in tests.
+     *
      * @return The commands
-     * @noreference not to be used by 3rd party code */
+     * @noreference not to be used by 3rd party code
+     */
     public PythonMessaging getMessaging() {
         return m_messaging;
     }

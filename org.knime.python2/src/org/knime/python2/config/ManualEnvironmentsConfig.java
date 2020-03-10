@@ -48,6 +48,8 @@
  */
 package org.knime.python2.config;
 
+import org.knime.python2.PythonVersion;
+
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
@@ -75,10 +77,10 @@ public final class ManualEnvironmentsConfig implements PythonEnvironmentsConfig 
     public static final String DEFAULT_PYTHON3_PATH = "python3";
 
     private final ManualEnvironmentConfig m_python2EnvironmentConfig =
-        new ManualEnvironmentConfig(CFG_KEY_PYTHON2_PATH, DEFAULT_PYTHON2_PATH);
+        new ManualEnvironmentConfig(PythonVersion.PYTHON2, CFG_KEY_PYTHON2_PATH, DEFAULT_PYTHON2_PATH);
 
     private final ManualEnvironmentConfig m_python3EnvironmentConfig =
-        new ManualEnvironmentConfig(CFG_KEY_PYTHON3_PATH, DEFAULT_PYTHON3_PATH);
+        new ManualEnvironmentConfig(PythonVersion.PYTHON3, CFG_KEY_PYTHON3_PATH, DEFAULT_PYTHON3_PATH);
 
     @Override
     public ManualEnvironmentConfig getPython2Config() {

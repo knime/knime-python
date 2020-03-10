@@ -61,6 +61,15 @@ package org.knime.python2;
 public interface PythonCommand {
 
     /**
+     * @return The (desired) version of Python environments launched by this command. Note that in general, the version
+     *         returned by this method and the actual Python version of environments launched by this command can
+     *         diverge since the command is usually selected by the user (via the Python preference page or flow
+     *         variables). Erroneous user input may therefore lead to conflicting versions. Integrity checks on started
+     *         environments should be performed to make sure that they match the version specified here.
+     */
+    PythonVersion getPythonVersion();
+
+    /**
      * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
      *         this command instance.
      */

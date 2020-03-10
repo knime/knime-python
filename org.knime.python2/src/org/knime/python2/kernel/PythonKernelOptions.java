@@ -76,13 +76,19 @@ public class PythonKernelOptions {
 
     private static final String KERNEL_SCRIPT_RELATIVE_PATH = "py/PythonKernelLauncher.py";
 
-    private final String m_kernelScriptPath =
+    /**
+     * The path to the Python file that contains the entry point to the Python kernel.
+     */
+    public static final String KERNEL_SCRIPT_PATH =
         Activator.getFile(Activator.PLUGIN_ID, KERNEL_SCRIPT_RELATIVE_PATH).getAbsolutePath();
 
+    @Deprecated
     private final PythonVersion m_pythonVersion;
 
+    @Deprecated
     private final PythonCommand m_python2Command;
 
+    @Deprecated
     private final PythonCommand m_python3Command;
 
     private final SerializationOptions m_serializationOptions;
@@ -92,10 +98,8 @@ public class PythonKernelOptions {
     private final String m_externalCustomPath;
 
     /**
-     * Default constructor. Consults the {@link PythonPreferences preferences} for the default
-     * {@link PythonPreferences#getPythonVersionPreference() Python version},
-     * {@link PythonPreferences#getPython2CommandPreference() Python 2 command}, and
-     * {@link PythonPreferences#getPython3CommandPreference() Python 3 command} to use.
+     * Default constructor. Populates the newly constructed instance with default {@link SerializationOptions}, no
+     * additional required modules, and an empty external custom path.
      */
     public PythonKernelOptions() {
         m_pythonVersion = PythonPreferences.getPythonVersionPreference();
@@ -114,7 +118,11 @@ public class PythonKernelOptions {
      *            {@link PythonPreferences#getPython3CommandPreference()}.
      * @param serializationOptions Configures the data transfer between Java and a Python kernel configured by these
      *            options.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. There is
+     *             no need to specify the Python version and commands here anymore.
      */
+    @Deprecated
     public PythonKernelOptions(final PythonVersion pythonVersion, final PythonCommand python2Command,
         final PythonCommand python3Command, final SerializationOptions serializationOptions) {
         m_pythonVersion = pythonVersion;
@@ -144,22 +152,34 @@ public class PythonKernelOptions {
 
     /**
      * @return The path to the Python kernel launch script.
+     * @deprecated Use {@link #KERNEL_SCRIPT_PATH} directly.
      */
+    @Deprecated
     public String getKernelScriptPath() {
-        return m_kernelScriptPath;
+        return KERNEL_SCRIPT_PATH;
     }
 
     /**
      * @return {@code true} if a kernel configured by these options shall use Python 3, {@code false} if it shall use
      *         Python 2.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. Use
+     *             {@link PythonCommand#getPythonVersion()} of the that Python command instead. The Python version
+     *             specified here is ignored by the kernel.
      */
+    @Deprecated
     public boolean getUsePython3() {
         return m_pythonVersion.equals(PythonVersion.PYTHON3);
     }
 
     /**
      * @return The Python version to be used by the Python kernel.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. Use
+     *             {@link PythonCommand#getPythonVersion()} of the that Python command instead. The Python version
+     *             specified here is ignored by the kernel.
      */
+    @Deprecated
     public PythonVersion getPythonVersion() {
         return m_pythonVersion;
     }
@@ -169,7 +189,12 @@ public class PythonKernelOptions {
      *
      * @param pythonVersion The Python version to be used by the Python kernel.
      * @return A copy of this options instance with the given value set.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. Create
+     *             such Python command with the respective {@link PythonCommand#getPythonVersion()} instead. The Python
+     *             version specified here is ignored by the kernel.
      */
+    @Deprecated
     public PythonKernelOptions forPythonVersion(final PythonVersion pythonVersion) {
         return new PythonKernelOptions(pythonVersion, m_python2Command, m_python3Command, m_serializationOptions,
             m_additionalRequiredModules, m_externalCustomPath);
@@ -177,7 +202,11 @@ public class PythonKernelOptions {
 
     /**
      * @return The command that starts Python 2 to run the Python kernel.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. The Python
+     *             commands specified here are ignored by the kernel.
      */
+    @Deprecated
     public PythonCommand getPython2Command() {
         return m_python2Command;
     }
@@ -188,7 +217,11 @@ public class PythonKernelOptions {
      * @param python2Command The Python 2 command to use. May be {@code null} in which case we resort to
      *            {@link PythonPreferences#getPython2CommandPreference()}.
      * @return A copy of this options instance with the given value set.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. The Python
+     *             commands specified here are ignored by the kernel.
      */
+    @Deprecated
     public PythonKernelOptions forPython2Command(final PythonCommand python2Command) {
         return new PythonKernelOptions(m_pythonVersion, python2Command, m_python3Command, m_serializationOptions,
             m_additionalRequiredModules, m_externalCustomPath);
@@ -196,7 +229,11 @@ public class PythonKernelOptions {
 
     /**
      * @return The command that starts Python 3 to run the Python kernel.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. The Python
+     *             commands specified here are ignored by the kernel.
      */
+    @Deprecated
     public PythonCommand getPython3Command() {
         return m_python3Command;
     }
@@ -207,7 +244,11 @@ public class PythonKernelOptions {
      * @param python3Command The Python 3 command to use. May be {@code null} in which case we resort to
      *            {@link PythonPreferences#getPython3CommandPreference()}.
      * @return A copy of this options instance with the given value set.
+     * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
+     *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. The Python
+     *             commands specified here are ignored by the kernel.
      */
+    @Deprecated
     public PythonKernelOptions forPython3Command(final PythonCommand python3Command) {
         return new PythonKernelOptions(m_pythonVersion, m_python2Command, python3Command, m_serializationOptions,
             m_additionalRequiredModules, m_externalCustomPath);
@@ -300,7 +341,7 @@ public class PythonKernelOptions {
 
     @Override
     public int hashCode() {
-        return Objects.hash(m_kernelScriptPath, m_pythonVersion, m_python2Command, m_python3Command,
+        return Objects.hash(KERNEL_SCRIPT_PATH, m_pythonVersion, m_python2Command, m_python3Command,
             m_serializationOptions, m_additionalRequiredModules, m_externalCustomPath);
     }
 
@@ -314,7 +355,7 @@ public class PythonKernelOptions {
         }
         final PythonKernelOptions other = (PythonKernelOptions)obj;
         final EqualsBuilder b = new EqualsBuilder();
-        b.append(m_kernelScriptPath, other.m_kernelScriptPath);
+        b.append(KERNEL_SCRIPT_PATH, PythonKernelOptions.KERNEL_SCRIPT_PATH);
         b.append(m_pythonVersion, other.m_pythonVersion);
         b.append(m_python2Command, other.m_python2Command);
         b.append(m_python3Command, other.m_python3Command);

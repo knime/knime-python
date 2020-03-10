@@ -284,10 +284,10 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
         setPythonVersion(PythonVersion.fromId(pythonVersionString.toLowerCase(Locale.ROOT)));
         final String python2CommandString =
             settings.getString(CFG_PYTHON2COMMAND, commandToString(getPython2Command()));
-        setPython2Command(commandFromString(python2CommandString));
+        setPython2Command(commandFromString(PythonVersion.PYTHON2, python2CommandString));
         final String python3CommandString =
             settings.getString(CFG_PYTHON3COMMAND, commandToString(getPython3Command()));
-        setPython3Command(commandFromString(python3CommandString));
+        setPython3Command(commandFromString(PythonVersion.PYTHON3, python3CommandString));
         setChunkSize(settings.getInt(CFG_CHUNK_SIZE, getChunkSize()));
         setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, getConvertMissingToPython()));
         setConvertMissingFromPython(
@@ -302,12 +302,12 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
             : INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE;
     }
 
-    private static PythonCommand commandFromString(final String commandString) {
+    private static PythonCommand commandFromString(final PythonVersion pythonVersion, final String commandString) {
         return Objects.equals(commandString, INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE) //
             ? null //
             // TODO: This only works for ordinary paths ("manual configuration"), not for Conda directory + environment
             // name ("Conda configuration").
-            : new DefaultPythonCommand(commandString);
+            : new DefaultPythonCommand(pythonVersion, commandString);
     }
 
     /**

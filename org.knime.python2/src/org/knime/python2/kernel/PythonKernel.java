@@ -105,8 +105,11 @@ import org.knime.python.typeextension.PythonModuleExtensions;
 import org.knime.python.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
+import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -192,7 +195,7 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
-    private final PythonKernelOptions m_kernelOptions;
+    private final PythonCommand m_command;
 
     /**
      * Holds the node context that was active when this instance was constructed (if any).
@@ -209,8 +212,6 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonCommands m_commands;
 
-    private final SerializationLibrary m_serializer;
-
     private final InputStream m_stdoutStream;
 
     private final InputStream m_stderrStream;
@@ -223,11 +224,21 @@ public class PythonKernel implements AutoCloseable {
 
     private final boolean m_hasAutocomplete;
 
-    private final AtomicBoolean m_closed = new AtomicBoolean(false);
-
     /** Used to make kernel operations cancelable. */
     private final ExecutorService m_executorService =
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build());
+
+    /**
+     * Initialized by {@link #setOptions(PythonKernelOptions)}.
+     */
+    private PythonKernelOptions m_kernelOptions;
+
+    /**
+     * Initialized by {@link #setOptions(PythonKernelOptions)}.
+     */
+    private SerializationLibrary m_serializer;
+
+    private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
@@ -235,20 +246,17 @@ public class PythonKernel implements AutoCloseable {
      * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
      * in the background.
      *
-     * @param kernelOptions all configurable options
-     * @throws IOException if failed to setup the Python kernel
+     * @param command The {@link PythonCommand} that is used to launch the Python process.
+     * @throws IOException If failed to setup the Python kernel
      */
-    public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
-        m_kernelOptions = kernelOptions;
+    public PythonKernel(final PythonCommand command) throws IOException {
+        m_command = command;
         m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
 
-        testInstallation();
+        testInstallation(command, Collections.emptyList());
 
         try {
             // Setup Python kernel:
-
-            // Create serialization library instance.
-            m_serializer = setupSerializationLibrary();
 
             // Start socket creation. The created socket is used to communicate with the Python process that is created below.
             m_serverSocket = new ServerSocket(0);
@@ -256,7 +264,7 @@ public class PythonKernel implements AutoCloseable {
             final Future<Socket> socketBeingSetup = setupSocket();
 
             // Create Python process.
-            m_process = setupPythonProcess();
+            m_process = setupPythonProcess(command);
 
             // Start listening to stdout and stderror pipes.
             m_stdoutStream = m_process.getInputStream();
@@ -308,11 +316,6 @@ public class PythonKernel implements AutoCloseable {
             LOGGER.debug("Python PID: " + m_pid);
 
             m_hasAutocomplete = checkHasAutoComplete();
-
-            // Add custom module directories to the PYTHONPATH in the Python workspace.
-            setupCustomModules();
-
-            setupSentinelConstants();
         } catch (Throwable t) {
             // Close is not called by try-with-resources if an exception occurs during construction.
             close();
@@ -331,66 +334,55 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
-    // Setup methods:
+    /**
+     * Creates a new Python kernel by starting a Python process and connecting to it.
+     * <P>
+     * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
+     * in the background.
+     *
+     * @param kernelOptions all configurable options
+     * @throws IOException if failed to setup the Python kernel
+     * @deprecated Use {@link #PythonKernel(PythonCommand)} followed by {@link #setOptions(PythonKernelOptions)}
+     *             instead. The latter ignores the deprecated Python version and commands entries of
+     *             {@link PythonKernelOptions}
+     */
+    @Deprecated
+    public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
+        this(kernelOptions.getUsePython3() //
+            ? kernelOptions.getPython3Command() //
+            : kernelOptions.getPython2Command());
+        setOptions(kernelOptions);
+    }
 
-    private void testInstallation() throws PythonIOException {
-        final PythonKernelTestResult testResult = m_kernelOptions.getUsePython3()
-            ? PythonKernelTester.testPython3Installation(m_kernelOptions.getPython3Command(),
-                m_kernelOptions.getAdditionalRequiredModules(), false)
-            : PythonKernelTester.testPython2Installation(m_kernelOptions.getPython2Command(),
-                m_kernelOptions.getAdditionalRequiredModules(), false);
+    private static void testInstallation(final PythonCommand command,
+        final Collection<PythonModuleSpec> additionalRequiredModules) throws PythonIOException {
+        final PythonKernelTestResult testResult = command.getPythonVersion() == PythonVersion.PYTHON3
+            ? PythonKernelTester.testPython3Installation(command, additionalRequiredModules, false)
+            : PythonKernelTester.testPython2Installation(command, additionalRequiredModules, false);
         if (testResult.hasError()) {
             throw new PythonIOException(
                 "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog());
         }
     }
 
-    private SerializationLibrary setupSerializationLibrary() throws PythonIOException {
-        final String serializerId = m_kernelOptions.getSerializationOptions().getSerializerId();
-        final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
-        if (serializerName == null) {
-            final String message;
-            if (serializerId == null) {
-                message =
-                    "No serialization library was found. Please make sure to install at least one plugin containing one.";
-            } else {
-                message = "The selected serialization library with id " + serializerId + " was not found. "
-                    + "Please make sure to install the correspondent plugin or select a different serialization "
-                    + "library in the Python preference page.";
-            }
-            throw new PythonIOException(message);
-        }
-        LOGGER.debug("Using serialization library: " + serializerName + ".");
-        return SerializationLibraryExtensions.getSerializationLibrary(serializerId);
-    }
+    // Initial setup methods:
 
     private Future<Socket> setupSocket() {
         return Executors.newSingleThreadExecutor().submit(m_serverSocket::accept);
     }
 
-    private Process setupPythonProcess() throws IOException {
-        final String kernelScriptPath = m_kernelOptions.getKernelScriptPath();
+    private Process setupPythonProcess(final PythonCommand command) throws IOException {
+        final String kernelScriptPath = PythonKernelOptions.KERNEL_SCRIPT_PATH;
         final String port = Integer.toString(m_serverSocket.getLocalPort());
-        final String serializationLibraryPath = SerializationLibraryExtensions
-            .getSerializationLibraryPath(m_kernelOptions.getSerializationOptions().getSerializerId());
         // Build and start Python kernel that listens to the given port:
-        final ProcessBuilder pb;
-        if (m_kernelOptions.getUsePython3()) {
-            pb = m_kernelOptions.getPython3Command().createProcessBuilder();
-        } else {
-            pb = m_kernelOptions.getPython2Command().createProcessBuilder();
-        }
+        final ProcessBuilder pb = command.createProcessBuilder();
         // Use the -u options to force Python to not buffer stdout and stderror.
-        Collections.addAll(pb.command(), "-u", kernelScriptPath, port, serializationLibraryPath);
+        Collections.addAll(pb.command(), "-u", kernelScriptPath, port);
         // Add all python modules to PYTHONPATH variable.
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;
         String externalPythonPath = PythonModuleExtensions.getPythonPath();
-
         externalPythonPath += File.pathSeparator + Activator.getFile(Activator.PLUGIN_ID, "py").getAbsolutePath();
-        if (!Strings.isNullOrEmpty(m_kernelOptions.getExternalCustomPath())) {
-            externalPythonPath += File.pathSeparator + m_kernelOptions.getExternalCustomPath();
-        }
         if (!externalPythonPath.isEmpty()) {
             if (existingPath.isEmpty()) {
                 existingPath = externalPythonPath;
@@ -506,36 +498,110 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
-    private void setupCustomModules() throws InterruptedException, ExecutionException {
-        final String pythonpath = PythonModuleExtensions.getPythonPath();
-        if (!pythonpath.isEmpty()) {
-            m_commands.addToPythonPath(pythonpath).get();
+    private boolean isPythonProcessAlive() {
+        return m_process != null && m_process.isAlive();
+    }
+    // End of initial setup methods.
+
+    /**
+     * @return The {@link PythonCommand} that was used to construct this instance.
+     */
+    public PythonCommand getPythonCommand() {
+        return m_command;
+    }
+
+    /**
+     * @return The {@link PythonKernelOptions} that have been set via {@link #setOptions(PythonKernelOptions)} or
+     *         {@code null} if none have been set.
+     */
+    public PythonKernelOptions getOptions() {
+        return m_kernelOptions;
+    }
+
+    // Option setup methods:
+
+    /**
+     * (Re-)Configures this Python kernel instance according to the given options. Note that this method must be called
+     * at least once before this instance can be used. (When using the deprecated constructor
+     * {@link #PythonKernel(PythonKernelOptions)}, this does not need to be done.)
+     *
+     * @param options The {@link PythonKernelOptions} according to which this kernel instance is (re-)configured.
+     * @throws IOException If the kernel could not be configured. This can have two reasons: 1. The Python environment
+     *             represented by the {@link PythonCommand} that was used to construct this instance does not support
+     *             the new configuration (e.g., because it lacks
+     *             {@link PythonKernelOptions#getAdditionalRequiredModules() required modules}). 2. Configuring the
+     *             kernel caused an exception on Python side. 3. An error occurred while communicating with the Python
+     *             side.
+     */
+    public void setOptions(final PythonKernelOptions options) throws IOException {
+        m_kernelOptions = options;
+        testInstallation(m_command, options.getAdditionalRequiredModules());
+        try {
+            m_serializer = findConfiguredSerializationLibrary(options);
+            setSerializationLibrary(options);
+            setExternalCustomPath(options);
+            setupSentinelConstants(options);
+        } catch (Exception ex) {
+            final Throwable t = PythonUtils.Misc.unwrapExecutionException(ex).orElse(ex);
+            if (t instanceof PythonIOException) {
+                throw (PythonIOException)t;
+            } else if (t instanceof Error) {
+                throw (Error)t;
+            } else {
+                throw new IOException("An exception occurred while setting up the Python kernel. " //
+                    + "See log for details.", t);
+            }
         }
     }
 
-    private void setupSentinelConstants() throws InterruptedException, ExecutionException {
-        final SentinelOption sentinelOption = m_kernelOptions.getSerializationOptions().getSentinelOption();
+    private static SerializationLibrary findConfiguredSerializationLibrary(final PythonKernelOptions options)
+        throws PythonIOException {
+        final String serializerId = options.getSerializationOptions().getSerializerId();
+        final String serializerName = SerializationLibraryExtensions.getNameForId(serializerId);
+        if (serializerName == null) {
+            final String message;
+            if (serializerId == null) {
+                message =
+                    "No serialization library was found. Please make sure to install at least one plugin containing one.";
+            } else {
+                message = "The selected serialization library with id " + serializerId + " was not found. "
+                    + "Please make sure to install the correspondent plugin or select a different serialization "
+                    + "library in the Python preference page.";
+            }
+            throw new PythonIOException(message);
+        }
+        LOGGER.debug("Using serialization library: " + serializerName + ".");
+        return SerializationLibraryExtensions.getSerializationLibrary(serializerId);
+    }
+
+    private void setSerializationLibrary(final PythonKernelOptions options)
+        throws InterruptedException, ExecutionException {
+        final String pathToSerializationLibraryPythonModule = SerializationLibraryExtensions
+            .getSerializationLibraryPath(options.getSerializationOptions().getSerializerId());
+        m_commands.setSerializationLibrary(pathToSerializationLibraryPythonModule).get();
+    }
+
+    private void setExternalCustomPath(final PythonKernelOptions options)
+        throws InterruptedException, ExecutionException {
+        final String externalCustomPath = options.getExternalCustomPath();
+        if (!Strings.isNullOrEmpty(externalCustomPath)) {
+            m_commands.addToPythonPath(externalCustomPath).get();
+        }
+    }
+
+    private void setupSentinelConstants(final PythonKernelOptions options)
+        throws InterruptedException, ExecutionException {
+        final SentinelOption sentinelOption = options.getSerializationOptions().getSentinelOption();
         if (sentinelOption == SentinelOption.MAX_VAL) {
             m_commands.execute("INT_SENTINEL = 2**31 - 1; LONG_SENTINEL = 2**63 - 1").get();
         } else if (sentinelOption == SentinelOption.MIN_VAL) {
             m_commands.execute("INT_SENTINEL = -2**31; LONG_SENTINEL = -2**63").get();
         } else {
-            final int sentinelValue = m_kernelOptions.getSerializationOptions().getSentinelValue();
+            final int sentinelValue = options.getSerializationOptions().getSentinelValue();
             m_commands.execute("INT_SENTINEL = " + sentinelValue + "; LONG_SENTINEL = " + sentinelValue).get();
         }
     }
-
-    private boolean isPythonProcessAlive() {
-        return m_process != null && m_process.isAlive();
-    }
-    // End of setup methods.
-
-    /**
-     * @return The {@link PythonKernelOptions} that were used to construct this kernel.
-     */
-    public PythonKernelOptions getOptions() {
-        return m_kernelOptions;
-    }
+    // End of option setup methods.
 
     /**
      * Registers the given handler for the given task category if it is not yet covered by another handler.
@@ -1463,9 +1529,12 @@ public class PythonKernel implements AutoCloseable {
         return m_defaultStdoutListener;
     }
 
-    /** Access to commands, only used in tests.
+    /**
+     * Access to commands, only used in tests.
+     *
      * @return The commands
-     * @noreference not to be used by 3rd party code*/
+     * @noreference not to be used by 3rd party code
+     */
     public PythonCommands getCommands() {
         return m_commands;
     }

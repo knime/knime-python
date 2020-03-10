@@ -81,6 +81,7 @@ import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -670,7 +671,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     public synchronized void setPython2Command(final String python2Command) {
         final PythonCommand python2CommandObject = python2Command != null && !python2Command.equals("") //
-            ? new DefaultPythonCommand(python2Command) //
+            ? new DefaultPythonCommand(PythonVersion.PYTHON2, python2Command) //
             : null;
         if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
             && !m_kernelOptions.getPython2Command().equals(python2CommandObject)) {
@@ -686,7 +687,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     public synchronized void setPython3Command(final String python3Command) {
         final PythonCommand python3CommandObject = python3Command != null && !python3Command.equals("") //
-            ? new DefaultPythonCommand(python3Command) //
+            ? new DefaultPythonCommand(PythonVersion.PYTHON3, python3Command) //
             : null;
         if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
             && !m_kernelOptions.getPython3Command().equals(python3CommandObject)) {

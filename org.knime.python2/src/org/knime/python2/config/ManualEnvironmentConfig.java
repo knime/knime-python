@@ -51,6 +51,7 @@ package org.knime.python2.config;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.DefaultPythonCommand;
 import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonVersion;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -58,13 +59,18 @@ import org.knime.python2.PythonCommand;
  */
 public final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConfig {
 
+    private final PythonVersion m_pythonVersion;
+
     private final SettingsModelString m_pythonPath;
 
     /**
+     * @param pythonVersion The Python version of manual environments described by this instance.
      * @param configKey The identifier of this config. Used for saving/loading.
      * @param defaultPythonPath The initial path to the Python executable.
      */
-    public ManualEnvironmentConfig(final String configKey, final String defaultPythonPath) {
+    public ManualEnvironmentConfig(final PythonVersion pythonVersion, final String configKey,
+        final String defaultPythonPath) {
+        m_pythonVersion = pythonVersion;
         m_pythonPath = new SettingsModelString(configKey, defaultPythonPath);
     }
 
@@ -77,7 +83,7 @@ public final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConf
 
     @Override
     public PythonCommand getPythonCommand() {
-        return new DefaultPythonCommand(m_pythonPath.getStringValue());
+        return new DefaultPythonCommand(m_pythonVersion, m_pythonPath.getStringValue());
     }
 
     @Override

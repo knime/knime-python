@@ -350,6 +350,15 @@ class AddDeserializerRequestHandler(AbstractRequestHandler):
         return AbstractRequestHandler._create_response(request, response_message_id)
 
 
+class SetSerializationLibraryRequestHandler(AbstractRequestHandler):
+    def _respond(self, request, response_message_id, workspace):
+        path_to_serialization_library_module = PayloadDecoder(request.payload).get_next_string()
+
+        workspace.set_serialization_library(path_to_serialization_library_module)
+
+        return AbstractRequestHandler._create_response(request, response_message_id)
+
+
 class SetCustomModulePathsRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
         path = PayloadDecoder(request.payload).get_next_string()
@@ -408,6 +417,7 @@ _builtin_request_handlers = {'getpid': GetPidRequestHandler(),
                              'autoComplete': AutoCompleteRequestHandler(),
                              'addSerializer': AddSerializerRequestHandler(),
                              'addDeserializer': AddDeserializerRequestHandler(),
+                             'setSerializationLibrary': SetSerializationLibraryRequestHandler(),
                              'setCustomModulePaths': SetCustomModulePathsRequestHandler(),
                              'execute': ExecuteRequestHandler(),
                              'execute_async': ExecuteRequestHandler(),

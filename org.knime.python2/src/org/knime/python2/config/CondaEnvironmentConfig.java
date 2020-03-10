@@ -52,12 +52,15 @@ import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.defaultnodesettings.SettingsModelStringArray;
 import org.knime.python2.Conda;
 import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonVersion;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfig {
+
+    private PythonVersion m_pythonVersion;
 
     private final SettingsModelString m_environmentName;
 
@@ -72,13 +75,15 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     private final SettingsModelStringArray m_availableEnvironments;
 
     /**
+     * @param pythonVersion The Python version of Conda environments described by this instance.
      * @param configKey The identifier of this config. Used for saving/loading.
      * @param defaultEnvironmentName The initial Conda environment name.
      * @param condaDirectory The settings model that specifies the Conda installation directory. Not saved/loaded or
      *            otherwise managed by this config.
      */
-    public CondaEnvironmentConfig(final String configKey, final String defaultEnvironmentName,
-        final SettingsModelString condaDirectory) {
+    public CondaEnvironmentConfig(final PythonVersion pythonVersion, final String configKey,
+        final String defaultEnvironmentName, final SettingsModelString condaDirectory) {
+        m_pythonVersion = pythonVersion;
         m_environmentName = new SettingsModelString(configKey, defaultEnvironmentName);
         m_availableEnvironments = new SettingsModelStringArray(DUMMY_CFG_KEY, new String[]{defaultEnvironmentName});
         m_condaDirectory = condaDirectory;
@@ -100,7 +105,8 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
 
     @Override
     public PythonCommand getPythonCommand() {
-        return Conda.createPythonCommand(m_condaDirectory.getStringValue(), m_environmentName.getStringValue());
+        return Conda.createPythonCommand(m_pythonVersion, m_condaDirectory.getStringValue(),
+            m_environmentName.getStringValue());
     }
 
     @Override

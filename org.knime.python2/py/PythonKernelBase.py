@@ -102,9 +102,12 @@ class PythonKernelBase(Borg):
         self._executor = None
         # Commands/messaging system.
         self._commands = None
+        # Type extensions.
+        self._type_extension_manager = None
+
+        # Will be populated in set_serialization_library():
         # Serialization library module.
         self._serialization_library = None
-        self._type_extension_manager = None
         self._serializer = None
 
         self._cleanup_object_names = set()
@@ -159,6 +162,12 @@ class PythonKernelBase(Borg):
 
     def remove_cleanup_object_name(self, variable_name):
         self._cleanup_object_names.remove(variable_name)
+
+    def set_serialization_library(self, path_to_serialization_library_module):
+        debug_msg("Load serialization library.")
+        self._serialization_library = self._load_serialization_library(path_to_serialization_library_module)
+        debug_msg("Create serialization helper.")
+        self._serializer = Serializer(self._serialization_library, self._type_extension_manager)
 
     # Kernel commands:
 
@@ -312,12 +321,8 @@ class PythonKernelBase(Borg):
             debug_msg("Create Python commands.")
             self._commands = PythonCommands(self._create_messaging(self._connection), self)
             self._setup_builtin_request_handlers()
-            debug_msg("Load serialization library.")
-            self._serialization_library = self._load_serialization_library(sys.argv[2])
             debug_msg("Create type extension manager.")
             self._type_extension_manager = TypeExtensionManager(self._commands)
-            debug_msg("Create serialization helper.")
-            self._serializer = Serializer(self._serialization_library, self._type_extension_manager)
             # Start commands/messaging system once everything is set up.
             debug_msg("Start Python commands.")
             self._commands.start()

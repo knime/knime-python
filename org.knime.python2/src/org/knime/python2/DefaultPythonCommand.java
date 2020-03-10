@@ -51,6 +51,7 @@ package org.knime.python2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -58,20 +59,30 @@ import java.util.List;
  */
 public final class DefaultPythonCommand implements PythonCommand {
 
-    private List<String> m_command;
+    private final PythonVersion m_pythonVersion;
+
+    private final List<String> m_command;
 
     /**
+     * @param pythonVersion The version of Python environments launched by this command.
      * @param command The Python command and possible arguments.
      */
-    public DefaultPythonCommand(final String... command) {
-        this(Arrays.asList(command));
+    public DefaultPythonCommand(final PythonVersion pythonVersion, final String... command) {
+        this(pythonVersion, Arrays.asList(command));
     }
 
     /**
+     * @param pythonVersion The version of Python environments launched by this command.
      * @param command The Python command and possible arguments.
      */
-    public DefaultPythonCommand(final List<String> command) {
+    public DefaultPythonCommand(final PythonVersion pythonVersion, final List<String> command) {
+        m_pythonVersion = pythonVersion;
         m_command = new ArrayList<>(command);
+    }
+
+    @Override
+    public PythonVersion getPythonVersion() {
+        return m_pythonVersion;
     }
 
     @Override
@@ -81,7 +92,7 @@ public final class DefaultPythonCommand implements PythonCommand {
 
     @Override
     public int hashCode() {
-        return m_command.hashCode();
+        return Objects.hash(m_pythonVersion, m_command);
     }
 
     @Override
@@ -93,7 +104,8 @@ public final class DefaultPythonCommand implements PythonCommand {
             return false;
         }
         final DefaultPythonCommand other = (DefaultPythonCommand)obj;
-        return other.m_command.equals(m_command);
+        return other.m_pythonVersion == m_pythonVersion //
+            && other.m_command.equals(m_command);
     }
 
     @Override
