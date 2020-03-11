@@ -211,7 +211,8 @@ public class PythonKernelTester {
 
             testResults = createTestReport(errorOutput, testOutput, testLogger);
         } catch (final IOException e) {
-            final String message = "Could not find Python executable at the given location: " + pythonCommand + ".";
+            final String message = "Could not start Python executable at the given location (" + pythonCommand + "): "
+                    + e.getMessage();
             testLogger.append(message);
             testResults = new PythonKernelTestResult(testLogger.toString(), message, null, null);
         }
