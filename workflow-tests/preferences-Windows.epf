@@ -1,0 +1,6 @@
+@org.knime.workbench.core=2.10.0.0043156
+\!/=
+file_export_version=3.0
+/instance/org.knime.python2/defaultPythonOption=python3
+/instance/org.knime.python2/python2Path=C:\\Users\\jenkins\\bin\\python-2.bat
+/instance/org.knime.python2/python3Path=C:\\Users\\jenkins\\bin\\python-3.bat
