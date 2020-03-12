@@ -52,8 +52,10 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
@@ -92,14 +94,13 @@ public class PythonKernelTester {
     private static final String PYTHON_MINIMUM_VERSION_3 = null;
 
     /**
-     * Caches previous test results. Mapping from the Python command that was tested to a pair of the additional
-     * required modules for which were tested and the test results.
+     * Caches previous test results. Mapping from the Python command that was tested to a list of additional required
+     * modules that were tested along the command and the test results of these combinations of command and modules.
      */
-    private static final Map<PythonCommand, Pair<List<PythonModuleSpec>, PythonKernelTestResult>> TEST_RESULTS =
+    private static final Map<PythonCommand, List<Pair<Set<PythonModuleSpec>, PythonKernelTestResult>>> TEST_RESULTS =
         new ConcurrentHashMap<>();
 
-    private PythonKernelTester() {
-    }
+    private PythonKernelTester() {}
 
     /**
      * Tests if Python can be started for the given Python 2 command and if all given required custom modules are
@@ -178,12 +179,13 @@ public class PythonKernelTester {
         final String majorVersion, final String minimumVersion,
         final Collection<PythonModuleSpec> additionalRequiredModules,
         final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
+        final Set<PythonModuleSpec> additionalRequiredModulesSet = new HashSet<>(additionalRequiredModules);
         PythonKernelTestResult testResults;
 
         if (!force) {
             // Only rerun test if there isn't already a suitable test result.
             // NOTE: optional modules are not considered for previous test results because they only issue warnings
-            testResults = getPreviousTestResultsIfApplicable(pythonCommand, additionalRequiredModules);
+            testResults = getPreviousTestResultsIfApplicable(pythonCommand, additionalRequiredModulesSet);
             if (testResults != null) {
                 return testResults;
             }
@@ -222,23 +224,27 @@ public class PythonKernelTester {
             logDetailedInfo("An error occurred while testing the Python " + majorVersion + " installation.",
                 testResults);
         }
-        TEST_RESULTS.put(pythonCommand, new Pair<>(new ArrayList<>(additionalRequiredModules), testResults));
+
+        final List<Pair<Set<PythonModuleSpec>, PythonKernelTestResult>> requiredModulesAndResults =
+            TEST_RESULTS.computeIfAbsent(pythonCommand, k -> new ArrayList<>(1));
+        requiredModulesAndResults.add(new Pair<>(additionalRequiredModulesSet, testResults));
         return testResults;
     }
 
     private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final PythonCommand pythonCommand,
-        final Collection<PythonModuleSpec> additionalRequiredModules) {
+        final Set<PythonModuleSpec> additionalRequiredModules) {
         // If a previous, appropriate Python test already succeeded, we will not have to run it again and return the
         // old results here (except if we're forced to).
-        final Pair<List<PythonModuleSpec>, PythonKernelTestResult> requiredModulesAndResult =
+        final List<Pair<Set<PythonModuleSpec>, PythonKernelTestResult>> requiredModulesAndResults =
             TEST_RESULTS.get(pythonCommand);
-        if (requiredModulesAndResult != null) {
-            final List<PythonModuleSpec> previouslyRequiredModules = requiredModulesAndResult.getFirst();
-            final PythonKernelTestResult previousTestResults = requiredModulesAndResult.getSecond();
-            if (!previousTestResults.hasError() //
-                && additionalRequiredModules.containsAll(previouslyRequiredModules)
-                && previouslyRequiredModules.containsAll(additionalRequiredModules)) {
-                return previousTestResults;
+        if (requiredModulesAndResults != null) {
+            for (final Pair<Set<PythonModuleSpec>, PythonKernelTestResult> requiredModulesAndResult : requiredModulesAndResults) {
+                final Set<PythonModuleSpec> previousRequiredModules = requiredModulesAndResult.getFirst();
+                final PythonKernelTestResult previousTestResults = requiredModulesAndResult.getSecond();
+                if (!previousTestResults.hasError() //
+                    && previousRequiredModules.containsAll(additionalRequiredModules)) {
+                    return previousTestResults;
+                }
             }
         }
         return null;
