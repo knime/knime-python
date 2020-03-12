@@ -1455,14 +1455,6 @@ public class PythonKernel implements AutoCloseable {
     @Override
     public void close() throws PythonKernelCleanupException {
         if (m_closed.compareAndSet(false, true)) {
-            // Sleep independent of any cleanup. This is needed to give the Python kernel some time to finish
-            // write into streams, etc. before all systems are shut down.
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-
             // Closing the database connections must be done synchronously. Otherwise Python database testflows fail
             // because the test framework's database janitors try to clean up the databases before the connections are
             // closed. Exceptions that occur during cleanup should be propagated to the user since external resources
