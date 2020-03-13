@@ -49,6 +49,7 @@
 """
 
 import struct
+import sys
 
 from debug_util import debug_msg
 from messaging.Message import Message
@@ -74,7 +75,7 @@ class MessageReceiver(object):
     def _read_size(self):
         data = bytearray()
         while len(data) < 4:
-            data.extend(self._connection.recv(4 - len(data)))
+            data.extend(self._recv(4 - len(data)))
         return struct.unpack('>L', data)[0]
 
     # reads the next data from the input stream
@@ -83,5 +84,11 @@ class MessageReceiver(object):
             size = self._read_size()
         data = bytearray()
         while len(data) < size:
-            data.extend(self._connection.recv(size - len(data)))
+            data.extend(self._recv(size - len(data)))
+        return data
+
+    def _recv(self, bufsize):
+        data = self._connection.recv(bufsize)
+        if len(data) < 1:
+            raise RuntimeError("Connection closed unexpectedly.")
         return data
