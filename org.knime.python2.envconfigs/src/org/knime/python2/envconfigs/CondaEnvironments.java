@@ -76,8 +76,6 @@ public final class CondaEnvironments {
 
     private static final String PYTHON3_CONFIG_FILE = "py3_knime.yml";
 
-    private static final String START_SCRIPT_PREFIX = "start_py";
-
     private CondaEnvironments() {
         // Utility class.
     }
@@ -136,22 +134,6 @@ public final class CondaEnvironments {
         return getFile(relativePathToDescriptionFile).getAbsolutePath();
     }
 
-    /**
-     * @return The path to the Conda start script. The script can be used to launch an arbitrary Conda environment. It
-     *         takes two mandatory arguments: the path to the Conda executable and the name of the environment to start.
-     *         The script can be executed with the arguments provided by using {@link ProcessBuilder#command(String...)}
-     *         and {@link ProcessBuilder#start()}.<br>
-     *         The returned path may differ between different operating systems.
-     */
-    public static String getPathToCondaStartScript() {
-        final String osSubDirectory = getConfigSubDirectoryForOS();
-        final String osStartScriptFilExtension = getStartScriptFileExtensionForOS();
-        final String relativePathToStartScript =
-            Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, START_SCRIPT_PREFIX + "." + osStartScriptFilExtension)
-                .toString();
-        return getFile(relativePathToStartScript).getAbsolutePath();
-    }
-
     private static String getConfigSubDirectoryForOS() {
         final String osSubDirectory;
         if (SystemUtils.IS_OS_LINUX) {
@@ -164,18 +146,6 @@ public final class CondaEnvironments {
             throw createUnknownOSException();
         }
         return osSubDirectory;
-    }
-
-    private static String getStartScriptFileExtensionForOS() {
-        final String osStartScriptFileExtension;
-        if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
-            osStartScriptFileExtension = "sh";
-        } else if (SystemUtils.IS_OS_WINDOWS) {
-            osStartScriptFileExtension = "bat";
-        } else {
-            throw createUnknownOSException();
-        }
-        return osStartScriptFileExtension;
     }
 
     private static UnsupportedOperationException createUnknownOSException() {

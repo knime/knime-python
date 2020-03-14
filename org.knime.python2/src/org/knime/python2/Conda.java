@@ -115,39 +115,19 @@ public final class Conda {
      */
     public static PythonCommand createPythonCommand(final String condaInstallationDirectoryPath,
         final String environmentName) {
-        String pathToStartScript = CondaEnvironments.getPathToCondaStartScript();
-        final List<String> command = new ArrayList<>(4);
-        if (!startScriptIsExecutable(pathToStartScript)) {
-            command.add("bash");
+        final Path executablePath;
+        final String environmentsDirectoryName = "envs";
+        // Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/.
+        if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
+            executablePath =
+                Paths.get(condaInstallationDirectoryPath, environmentsDirectoryName, environmentName, "bin", "python");
+        } else if (SystemUtils.IS_OS_WINDOWS) {
+            executablePath =
+                Paths.get(condaInstallationDirectoryPath, environmentsDirectoryName, environmentName, "python.exe");
+        } else {
+            throw createUnknownOSException();
         }
-        Collections.addAll(command, pathToStartScript, condaInstallationDirectoryPath, environmentName);
-        return new DefaultPythonCommand(command);
-    }
-
-    private static boolean startScriptIsExecutable(final String startScriptCommand) {
-        boolean executable = true;
-        final File startScriptFile = new File(startScriptCommand);
-        // Unix-like operating systems only: The start script is usually not executable by default after downloading/
-        // installing KNIME. We try to set its executable flag or - if this fails - will execute it via a shell, later
-        // (see above).
-        if (SystemUtils.IS_OS_UNIX) {
-            try {
-                executable = startScriptFile.canExecute();
-            } catch (final Exception ex) {
-                NodeLogger.getLogger(Conda.class).debug("Could not detect whether Conda start script is executable.",
-                    ex);
-                // Ignore, fall through, and hope for the best.
-            }
-            if (!executable) {
-                try {
-                    executable = startScriptFile.setExecutable(true);
-                } catch (final Exception ex) {
-                    NodeLogger.getLogger(Conda.class).debug("Could not mark Conda start script as executable.", ex);
-                    // Ignore and fall through.
-                }
-            }
-        }
-        return executable;
+        return new DefaultPythonCommand(executablePath.toString());
     }
 
     /**
