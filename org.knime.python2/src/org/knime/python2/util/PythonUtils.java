@@ -87,8 +87,7 @@ public final class PythonUtils {
      */
     public static class Preconditions {
 
-        private Preconditions() {
-        }
+        private Preconditions() {}
 
         /**
          * Ensures that a string passed as a parameter to the calling method is not null or empty.
@@ -173,7 +172,40 @@ public final class PythonUtils {
 
     public static class Misc {
 
-        private Misc() {
+        private Misc() {}
+
+        /**
+         * @param exceptionConsumer may be <code>null</code>. If non-<code>null</code>, is used to report exceptions
+         *            that occur while closing the individual given closeables.
+         * @param closeables the resources to {@link AutoCloseable#close() close}. May be <code>null</code>, individual
+         *            closeables may be <code>null</code>.
+         * @throws Error if any occurred. If multiple {@link Error errors} occurred, the first one is thrown and the
+         *             others are added as {@link Error#addSuppressed(Throwable) suppressed} if possible.<br>
+         *             Note that this method never throws {@link Exception exceptions}.
+         */
+        public static void closeSafelyThrowErrors(final BiConsumer<String, Exception> exceptionConsumer,
+            final AutoCloseable... closeables) {
+            final Error error = closeSafely(exceptionConsumer, closeables);
+            if (error != null) {
+                throw error;
+            }
+        }
+
+        /**
+         * @param exceptionConsumer may be <code>null</code>. If non-<code>null</code>, is used to report exceptions
+         *            that occur while closing the individual given closeables.
+         * @param closeables the resources to {@link AutoCloseable#close() close}. May be <code>null</code>, individual
+         *            closeables may be <code>null</code>.
+         * @throws Error if any occurred. If multiple {@link Error errors} occurred, the first one is thrown and the
+         *             others are added as {@link Error#addSuppressed(Throwable) suppressed} if possible.<br>
+         *             Note that this method never throws {@link Exception exceptions}.
+         */
+        public static void closeSafelyThrowErrors(final BiConsumer<String, Exception> exceptionConsumer,
+            final Iterable<? extends AutoCloseable> closeables) {
+            final Error error = closeSafely(exceptionConsumer, closeables);
+            if (error != null) {
+                throw error;
+            }
         }
 
         /**

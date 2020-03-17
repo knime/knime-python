@@ -369,7 +369,7 @@ public class PythonKernel implements AutoCloseable {
         setOptions(kernelOptions);
     }
 
-    private static void testInstallation(final PythonCommand command,
+    static void testInstallation(final PythonCommand command,
         final Collection<PythonModuleSpec> additionalRequiredModules) throws PythonInstallationTestException {
         final PythonKernelTestResult testResult = command.getPythonVersion() == PythonVersion.PYTHON3
             ? PythonKernelTester.testPython3Installation(command, additionalRequiredModules, false)

@@ -64,8 +64,11 @@ public class PythonCanceledExecutionException extends Exception implements Pytho
         }
     }
 
+    /**
+     * Creates a new instance of this exception with a default message.
+     */
     public PythonCanceledExecutionException() {
-        this(null);
+        this((String)null);
     }
 
     /**
@@ -73,5 +76,15 @@ public class PythonCanceledExecutionException extends Exception implements Pytho
      */
     public PythonCanceledExecutionException(final String message) {
         super(amendMessage(message));
+    }
+
+    /**
+     * Clients are advised to still {@link Thread#interrupt() interrupt} the current thread after catching the argument
+     * {@link InterruptedException}.
+     *
+     * @param cause the causing {@link InterruptedException}
+     */
+    public PythonCanceledExecutionException(final InterruptedException cause) {
+        super(amendMessage(cause.getMessage()), cause);
     }
 }
