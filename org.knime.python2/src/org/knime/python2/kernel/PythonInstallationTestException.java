@@ -44,36 +44,34 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2017 (clemens): created
+ *   Mar 13, 2020 (marcel): created
  */
-package org.knime.python2.extensions.serializationlibrary;
+package org.knime.python2.kernel;
 
-import org.knime.python2.kernel.PythonIOException;
+import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 
 /**
- * An exception that occurred during the (de)serialization process.
- *
- * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public class SerializationException extends PythonIOException {
+public class PythonInstallationTestException extends PythonIOException {
 
     private static final long serialVersionUID = 1L;
 
+    private PythonKernelTestResult m_testResult;
+
     /**
-     * Constructor.
-     * @param msg the error message
+     * @param message A message indicating the cause of the exception.
+     * @param testResult The test result of the failing installation test.
      */
-    public SerializationException(final String msg) {
-        super(msg);
+    public PythonInstallationTestException(final String message, final PythonKernelTestResult testResult) {
+        super(message);
+        m_testResult = testResult;
     }
 
     /**
-     * Constructor.
-     * @param msg the error message
-     * @param t the exception causing this exception to be thrown
+     * @return The test result of the failing installation test.
      */
-    public SerializationException(final String msg, final Throwable t) {
-        super(msg, t);
+    public PythonKernelTestResult getTestResult() {
+        return m_testResult;
     }
-
 }

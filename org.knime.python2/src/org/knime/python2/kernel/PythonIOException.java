@@ -63,7 +63,7 @@ import com.google.common.base.Strings;
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonIOException extends IOException implements PythonException {
+public class PythonIOException extends IOException implements PythonException {
 
     private static final long serialVersionUID = 1L;
 

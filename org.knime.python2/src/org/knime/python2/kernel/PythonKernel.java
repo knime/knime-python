@@ -49,7 +49,6 @@ package org.knime.python2.kernel;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -247,9 +246,15 @@ public class PythonKernel implements AutoCloseable {
      * in the background.
      *
      * @param command The {@link PythonCommand} that is used to launch the Python process.
-     * @throws IOException If failed to setup the Python kernel
+     * @throws PythonInstallationTestException If the Python environment represented by the given {@link PythonCommand}
+     *             is not capable of running the Python kernel (e.g., because it misses essential Python modules or
+     *             there are version mismatches).
+     * @throws PythonIOException If the kernel could not be set up for any reason. This includes the
+     *             {@link PythonInstallationTestException} described above which subclasses {@link PythonIOException}.
+     *             Other possible cases include: process creation problems, socket connection problems, exceptions on
+     *             Python side during setup, communication errors between the Java and the Python side.
      */
-    public PythonKernel(final PythonCommand command) throws IOException {
+    public PythonKernel(final PythonCommand command) throws PythonIOException {
         m_command = command;
         m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
 
@@ -318,17 +323,25 @@ public class PythonKernel implements AutoCloseable {
             m_hasAutocomplete = checkHasAutoComplete();
         } catch (Throwable t) {
             // Close is not called by try-with-resources if an exception occurs during construction.
-            close();
+            PythonKernelCleanupException suppressed = null;
+            try {
+                close();
+            } catch (final PythonKernelCleanupException ex) {
+                suppressed = ex;
+            }
 
             // Unwrap exception that occurred during any async setup.
             t = PythonUtils.Misc.unwrapExecutionException(t).orElse(t);
+            if (suppressed != null) {
+                t.addSuppressed(suppressed);
+            }
 
             if (t instanceof PythonIOException) {
                 throw (PythonIOException)t;
             } else if (t instanceof Error) {
                 throw (Error)t;
             } else {
-                throw new IOException("An exception occurred while setting up the Python kernel. " //
+                throw new PythonIOException("An exception occurred while setting up the Python kernel. " //
                     + "See log for details.", t);
             }
         }
@@ -340,14 +353,16 @@ public class PythonKernel implements AutoCloseable {
      * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
      * in the background.
      *
-     * @param kernelOptions all configurable options
-     * @throws IOException if failed to setup the Python kernel
+     * @param kernelOptions The {@link PythonKernelOptions} according to which this kernel instance is configured.
+     * @throws PythonInstallationTestException See {@link #PythonKernel(PythonCommand)} and
+     *             {@link #setOptions(PythonKernelOptions)}.
+     * @throws PythonIOException See {@link #PythonKernel(PythonCommand)} and {@link #setOptions(PythonKernelOptions)}.
      * @deprecated Use {@link #PythonKernel(PythonCommand)} followed by {@link #setOptions(PythonKernelOptions)}
-     *             instead. The latter ignores the deprecated Python version and commands entries of
+     *             instead. The latter ignores the deprecated Python version and command entries of
      *             {@link PythonKernelOptions}
      */
     @Deprecated
-    public PythonKernel(final PythonKernelOptions kernelOptions) throws IOException {
+    public PythonKernel(final PythonKernelOptions kernelOptions) throws PythonIOException {
         this(kernelOptions.getUsePython3() //
             ? kernelOptions.getPython3Command() //
             : kernelOptions.getPython2Command());
@@ -355,13 +370,14 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private static void testInstallation(final PythonCommand command,
-        final Collection<PythonModuleSpec> additionalRequiredModules) throws PythonIOException {
+        final Collection<PythonModuleSpec> additionalRequiredModules) throws PythonInstallationTestException {
         final PythonKernelTestResult testResult = command.getPythonVersion() == PythonVersion.PYTHON3
             ? PythonKernelTester.testPython3Installation(command, additionalRequiredModules, false)
             : PythonKernelTester.testPython2Installation(command, additionalRequiredModules, false);
         if (testResult.hasError()) {
-            throw new PythonIOException(
-                "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog());
+            throw new PythonInstallationTestException(
+                "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog(),
+                testResult);
         }
     }
 
@@ -524,31 +540,34 @@ public class PythonKernel implements AutoCloseable {
      * (Re-)Configures this Python kernel instance according to the given options. Note that this method must be called
      * at least once before this instance can be used. (When using the deprecated constructor
      * {@link #PythonKernel(PythonKernelOptions)}, this does not need to be done.)
+     * <P>
+     * This method ignores the deprecated Python version and command entries of the given options.
      *
      * @param options The {@link PythonKernelOptions} according to which this kernel instance is (re-)configured.
-     * @throws IOException If the kernel could not be configured. This can have two reasons: 1. The Python environment
-     *             represented by the {@link PythonCommand} that was used to construct this instance does not support
-     *             the new configuration (e.g., because it lacks
-     *             {@link PythonKernelOptions#getAdditionalRequiredModules() required modules}). 2. Configuring the
-     *             kernel caused an exception on Python side. 3. An error occurred while communicating with the Python
-     *             side.
+     * @throws PythonInstallationTestException If the Python environment represented by the {@link PythonCommand} that
+     *             was used to construct this instance does not support the new configuration (e.g., because it lacks
+     *             {@link PythonKernelOptions#getAdditionalRequiredModules() required modules}).
+     * @throws PythonIOException If the kernel could not be configured for any reason. This includes the
+     *             {@link PythonInstallationTestException} described above which subclasses {@link PythonIOException}.
+     *             Other possible cases include: if configuring the kernel caused an exception on Python side, or if an
+     *             error occurred while communicating with the Python side.
      */
-    public void setOptions(final PythonKernelOptions options) throws IOException {
+    public void setOptions(final PythonKernelOptions options) throws PythonIOException {
         m_kernelOptions = options;
         testInstallation(m_command, options.getAdditionalRequiredModules());
         try {
             m_serializer = findConfiguredSerializationLibrary(options);
             setSerializationLibrary(options);
             setExternalCustomPath(options);
-            setupSentinelConstants(options);
-        } catch (Exception ex) {
+            setSentinelConstants(options);
+        } catch (final Exception ex) {
             final Throwable t = PythonUtils.Misc.unwrapExecutionException(ex).orElse(ex);
             if (t instanceof PythonIOException) {
                 throw (PythonIOException)t;
             } else if (t instanceof Error) {
                 throw (Error)t;
             } else {
-                throw new IOException("An exception occurred while setting up the Python kernel. " //
+                throw new PythonIOException("An exception occurred while setting up the Python kernel. " //
                     + "See log for details.", t);
             }
         }
@@ -589,7 +608,7 @@ public class PythonKernel implements AutoCloseable {
         }
     }
 
-    private void setupSentinelConstants(final PythonKernelOptions options)
+    private void setSentinelConstants(final PythonKernelOptions options)
         throws InterruptedException, ExecutionException {
         final SentinelOption sentinelOption = options.getSerializationOptions().getSentinelOption();
         if (sentinelOption == SentinelOption.MAX_VAL) {
@@ -632,14 +651,20 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name The name of the dict
      * @param flowVariables The flow variables to put
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
-     * @throws ExecutionException
-     * @throws InterruptedException
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
     public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables)
-        throws IOException, InterruptedException, ExecutionException {
-        final byte[] bytes = flowVariablesToBytes(flowVariables);
-        m_commands.putFlowVariables(name, bytes).get();
+        throws PythonIOException {
+        try {
+            final byte[] bytes = flowVariablesToBytes(flowVariables);
+            m_commands.putFlowVariables(name, bytes).get();
+        } catch (final ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw getMostSpecificPythonKernelException(ex);
+        }
     }
 
     /**
@@ -647,9 +672,10 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param flowVariables
      * @return the serialized flow variables
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) throws IOException {
+    private byte[] flowVariablesToBytes(final Collection<FlowVariable> flowVariables) throws PythonIOException {
         final Type[] types = new Type[flowVariables.size()];
         final String[] columnNames = new String[flowVariables.size()];
         final RowImpl row = new RowImpl("0", flowVariables.size());
@@ -697,13 +723,17 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name Variable name of the flow variable dict in Python
      * @return Collection of flow variables
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    public Collection<FlowVariable> getFlowVariables(final String name) throws IOException {
+    public Collection<FlowVariable> getFlowVariables(final String name) throws PythonIOException {
         try {
             final byte[] bytes = m_commands.getFlowVariables(name).get();
             return bytesToFlowVariables(bytes);
-        } catch (EOFException | InterruptedException | ExecutionException ex) {
+        } catch (final ExecutionException ex) {
+            throw getMostSpecificPythonKernelException(ex);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
             throw getMostSpecificPythonKernelException(ex);
         }
     }
@@ -713,9 +743,10 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param bytes the serialized representation of the flow variables
      * @return a collection of {@link FlowVariable}s
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) throws IOException {
+    private Collection<FlowVariable> bytesToFlowVariables(final byte[] bytes) throws PythonIOException {
         try {
             final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, PythonCancelable.NOT_CANCELABLE);
             final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
@@ -782,15 +813,16 @@ public class PythonKernel implements AutoCloseable {
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
      * @param rowLimit The amount of rows that will be transfered
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
-        final int rowLimit) throws IOException, CanceledExecutionException {
+        final int rowLimit) throws PythonIOException, CanceledExecutionException {
         // TODO: Use #putData(..) internally.
         if (table == null) {
-            throw new IOException("Table " + name + " is not available.");
+            throw new PythonIOException("Table " + name + " is not available.");
         }
         try {
             final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
@@ -799,7 +831,7 @@ public class PythonKernel implements AutoCloseable {
             final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
             try (final CloseableRowIterator iterator = table.iterator()) {
                 if (table.size() > Integer.MAX_VALUE) {
-                    throw new IOException(
+                    throw new PythonIOException(
                         "Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
                 }
                 final int rowCount = (int)table.size();
@@ -851,14 +883,16 @@ public class PythonKernel implements AutoCloseable {
      * @param name The name of the table
      * @param table The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         if (table.size() > Integer.MAX_VALUE) {
-            throw new IOException("Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
+            throw new PythonIOException(
+                "Number of rows exceeds maximum of " + Integer.MAX_VALUE + " rows for input table!");
         }
         putDataTable(name, table, executionMonitor, (int)table.size());
     }
@@ -873,12 +907,13 @@ public class PythonKernel implements AutoCloseable {
      * @param tableChunker A {@link TableChunker}
      * @param rowsPerChunk The number of rows to send per chunk
      * @param cancelable The cancelable to check if execution has been canceled
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws PythonCanceledExecutionException if canceled. This instance must not be used after a cancellation
      *             occurred and must be {@link #close() closed}.
      */
     public void putData(final String name, final TableChunker tableChunker, final int rowsPerChunk,
-        final PythonCancelable cancelable) throws IOException, PythonCanceledExecutionException {
+        final PythonCancelable cancelable) throws PythonIOException, PythonCanceledExecutionException {
         try {
             final int numberRows = Math.min(rowsPerChunk, tableChunker.getNumberRemainingRows());
             final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
@@ -918,13 +953,14 @@ public class PythonKernel implements AutoCloseable {
      * @param exec The calling node's execution context
      * @return The table
      * @param executionMonitor The monitor that will be updated about progress
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      *
      */
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
-        final ExecutionMonitor executionMonitor) throws IOException, CanceledExecutionException {
+        final ExecutionMonitor executionMonitor) throws PythonIOException, CanceledExecutionException {
         // TODO: Use #getData(..) internally.
         try {
             final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
@@ -968,12 +1004,13 @@ public class PythonKernel implements AutoCloseable {
      * @param tableCreatorFactory A {@link TableCreatorFactory} that can be used to create the requested
      *            {@link TableCreator}
      * @param cancelable The cancelable to check if execution has been canceled
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws PythonCanceledExecutionException if canceled. This instance must not be used after a cancellation
      *             occurred and must be {@link #close() closed}.
      */
     public TableCreator<?> getData(final String name, final TableCreatorFactory tableCreatorFactory,
-        final PythonCancelable cancelable) throws IOException, PythonCanceledExecutionException {
+        final PythonCancelable cancelable) throws PythonIOException, PythonCanceledExecutionException {
         try {
             final int tableSize = m_commands.getTableSize(name).get();
             final int chunkSize = m_kernelOptions.getSerializationOptions().getChunkSize();
@@ -1005,9 +1042,10 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name the name of the variable in the python workspace
      * @param object the {@link PickledObject}
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    public void putObject(final String name, final PickledObject object) throws IOException {
+    public void putObject(final String name, final PickledObject object) throws PythonIOException {
         try {
             m_commands.putObject(name, object.getPickledObject()).get();
         } catch (InterruptedException | ExecutionException ex) {
@@ -1022,12 +1060,13 @@ public class PythonKernel implements AutoCloseable {
      * @param name the name of the variable in the python workspace
      * @param object the {@link PickledObject}
      * @param executionMonitor the {@link ExecutionMonitor} of the calling node
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public void putObject(final String name, final PickledObject object, final ExecutionMonitor executionMonitor)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         try {
             PythonUtils.Misc.executeCancelable(() -> {
                 putObject(name, object);
@@ -1048,12 +1087,13 @@ public class PythonKernel implements AutoCloseable {
      * @param executionMonitor the {@link ExecutionMonitor} of the calling KNIME node
      * @return a {@link PickledObject} containing the pickled object representation, the objects type and a string
      *         representation of the object
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public PickledObject getObject(final String name, final ExecutionMonitor executionMonitor)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
         try {
             final byte[] bytes = PythonUtils.Misc.executeCancelable(() -> m_commands.getObject(name).get(),
@@ -1082,10 +1122,11 @@ public class PythonKernel implements AutoCloseable {
      * @param conn the database connection to use
      * @param cp a credential provider for username and password
      * @param jars a list of jar files needed for invoking the jdbc driver on python side
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
     public void putSql(final String name, final DatabaseQueryConnectionSettings conn, final CredentialsProvider cp,
-        final Collection<String> jars) throws IOException {
+        final Collection<String> jars) throws PythonIOException {
         final Type[] types = new Type[]{Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING, Type.STRING,
             Type.INTEGER, Type.BOOLEAN, Type.STRING, Type.STRING_LIST};
         final String[] columnNames = new String[]{"driver", "jdbcurl", "username", "password", "query", "dbidentifier",
@@ -1120,9 +1161,10 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name the name of the DBUtil variable in the python workspace
      * @return a SQL query string
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    public String getSql(final String name) throws IOException {
+    public String getSql(final String name) throws PythonIOException {
         try {
             return m_commands.getSql(name).get();
         } catch (final Exception ex) {
@@ -1137,9 +1179,10 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param name The name of the image
      * @return the image
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    public ImageContainer getImage(final String name) throws IOException {
+    public ImageContainer getImage(final String name) throws PythonIOException {
         try {
             final byte[] bytes = m_commands.getImage(name).get();
             if (bytes != null) {
@@ -1165,12 +1208,13 @@ public class PythonKernel implements AutoCloseable {
      * @param name the name of the image
      * @param executionMonitor the monitor that is used to check for cancellation
      * @return the image
-     * @throws IOException if an error occurred while communicating with the Python kernel or while executing the task
+     * @throws PythonIOException if an error occurred while communicating with the Python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public ImageContainer getImage(final String name, final ExecutionMonitor executionMonitor)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(() -> getImage(name), m_executorService,
                 new PythonExecutionMonitorCancelable(executionMonitor));
@@ -1186,7 +1230,7 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param svgString a string containing the XML content of a svg image
      * @return a {@link SVGDocument}
-     * @throws IOException if the svg file cannot be created or written
+     * @throws PythonIOException if the svg file cannot be created or written
      */
     private static SVGDocument stringToSVG(final String svgString) throws IOException {
         try (final StringReader reader = new StringReader(svgString);) {
@@ -1202,9 +1246,10 @@ public class PythonKernel implements AutoCloseable {
      * Each variable map contains the fields 'name', 'type' and 'value'.
      *
      * @return List of variables currently defined in the workspace
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
-    public List<Map<String, String>> listVariables() throws IOException {
+    public List<Map<String, String>> listVariables() throws PythonIOException {
         try {
             final byte[] bytes = m_commands.listVariables().get();
             final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, PythonCancelable.NOT_CANCELABLE);
@@ -1240,10 +1285,11 @@ public class PythonKernel implements AutoCloseable {
      * @param line Cursor position (line)
      * @param column Cursor position (column)
      * @return Possible auto completions.
-     * @throws IOException If an error occurred while communicating with the python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
+     *             task
      */
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
-        throws IOException {
+        throws PythonIOException {
         try {
             final List<Map<String, String>> suggestions = new ArrayList<>();
             if (m_hasAutocomplete) {
@@ -1291,9 +1337,9 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param sourceCode The source code to execute
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the Python kernel
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel
      */
-    public String[] execute(final String sourceCode) throws IOException {
+    public String[] execute(final String sourceCode) throws PythonIOException {
         return executeCommand(m_commands.execute(sourceCode));
     }
 
@@ -1303,12 +1349,13 @@ public class PythonKernel implements AutoCloseable {
      * @param sourceCode The source code to execute
      * @param cancelable The cancelable to check if execution has been canceled
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the Python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         return executeCommandCancelable(() -> execute(sourceCode), cancelable);
     }
 
@@ -1317,9 +1364,9 @@ public class PythonKernel implements AutoCloseable {
      *
      * @param sourceCode The source code to execute
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the Python kernel
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel
      */
-    public String[] executeAsync(final String sourceCode) throws IOException {
+    public String[] executeAsync(final String sourceCode) throws PythonIOException {
         return executeCommand(m_commands.executeAsync(sourceCode));
     }
 
@@ -1331,16 +1378,17 @@ public class PythonKernel implements AutoCloseable {
      * @param sourceCode The source code to execute
      * @param cancelable The cancelable to check if execution has been canceled
      * @return Standard console output
-     * @throws IOException If an error occurred while communicating with the Python kernel or while executing the task
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel or while executing the
+     *             task
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
-        throws IOException, CanceledExecutionException {
+        throws PythonIOException, CanceledExecutionException {
         return executeCommandCancelable(() -> executeAsync(sourceCode), cancelable);
     }
 
-    private String[] executeCommand(final RunnableFuture<String[]> executeCommand) throws IOException {
+    private String[] executeCommand(final RunnableFuture<String[]> executeCommand) throws PythonIOException {
         try {
             return executeCommand.get();
         } catch (final Exception ex) {
@@ -1375,7 +1423,7 @@ public class PythonKernel implements AutoCloseable {
     }
 
     private String[] executeCommandCancelable(final Callable<String[]> executeCommand,
-        final PythonCancelable cancelable) throws IOException, CanceledExecutionException {
+        final PythonCancelable cancelable) throws PythonIOException, CanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(executeCommand, m_executorService, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
@@ -1386,9 +1434,9 @@ public class PythonKernel implements AutoCloseable {
     /**
      * Resets the workspace of the python kernel.
      *
-     * @throws IOException If an error occured
+     * @throws PythonIOException If an error occured
      */
-    public void resetWorkspace() throws IOException {
+    public void resetWorkspace() throws PythonIOException {
         try {
             m_commands.reset().get();
         } catch (final Exception ex) {
