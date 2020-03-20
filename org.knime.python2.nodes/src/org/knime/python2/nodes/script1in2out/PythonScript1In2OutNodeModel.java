@@ -83,12 +83,13 @@ class PythonScript1In2OutNodeModel extends PythonNodeModel<PythonScript1In2OutNo
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
         BufferedDataTable table1 = null;
         BufferedDataTable table2 = null;
-        try(final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
         kernel.putFlowVariables(PythonScript1In2OutNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonScript1In2OutNodeConfig.getVariableNames().getInputTables()[0], inData[0],
                 exec.createSubProgress(0.3));
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.4).setProgress(1);

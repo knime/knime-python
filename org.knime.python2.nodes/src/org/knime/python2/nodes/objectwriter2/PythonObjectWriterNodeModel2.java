@@ -73,14 +73,15 @@ class PythonObjectWriterNodeModel2 extends PythonNodeModel<PythonObjectWriterNod
 
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonObjectWriterNodeConfig2.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putObject(PythonObjectWriterNodeConfig2.getVariableNames().getInputObjects()[0],
                 ((PickledObjectFileStorePortObject)inData[0]).getPickledObject(), exec);
             exec.createSubProgress(0.1).setProgress(1);
             final String[] output =
-                kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+                kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
             final Collection<FlowVariable> variables =

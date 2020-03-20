@@ -83,10 +83,11 @@ class PythonSourceNodeModel extends PythonNodeModel<PythonSourceNodeConfig> {
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
         BufferedDataTable table = null;
-        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonSourceNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.7).setProgress(1);

@@ -50,6 +50,7 @@ package org.knime.python2.kernel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -60,6 +61,7 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
@@ -92,7 +94,16 @@ public class PythonKernelManager implements AutoCloseable {
         m_stdoutListeners = new ArrayList<PythonOutputListener>();
         m_stderrListeners = new ArrayList<PythonOutputListener>();
         m_threadPool = new ThreadPool(8);
-        m_kernel = new PythonKernel(kernelOptions);
+        final PythonCommand command = kernelOptions.getUsePython3() //
+            ? kernelOptions.getPython3Command() //
+            : kernelOptions.getPython2Command();
+        try {
+            m_kernel = PythonKernelQueue.getNextKernel(command, Collections.emptySet(), Collections.emptySet(),
+                kernelOptions, PythonCancelable.NOT_CANCELABLE);
+        } catch (final PythonCanceledExecutionException ex) {
+            // Cannot happen. We pass a non-cancelable above.
+            throw new IllegalStateException("Implementation error.", ex);
+        }
     }
 
     /**

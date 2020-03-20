@@ -78,13 +78,14 @@ class PythonLearnerNodeModel2 extends PythonNodeModel<PythonLearnerNodeConfig2> 
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         PickledObject object = null;
-        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonLearnerNodeConfig2.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonLearnerNodeConfig2.getVariableNames().getInputTables()[0],
                 (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
             final String[] output =
-                kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+                kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.6).setProgress(1);

@@ -46,7 +46,9 @@
 package org.knime.python2.nodes;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.InvalidSettingsException;
@@ -55,9 +57,16 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
+import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.config.PythonFlowVariableOptions;
 import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
+import org.knime.python2.kernel.PythonIOException;
+import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelOptions;
+import org.knime.python2.kernel.PythonKernelQueue;
 
 /**
  * Base model for all python related nodes. Provides methods for loading and saving settings and for pushing a
@@ -106,6 +115,27 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
         final String serializerId =
             new PythonFlowVariableOptions(getAvailableFlowVariables()).getSerializerId().orElse(null);
         return options.forSerializationOptions(options.getSerializationOptions().forSerializerId(serializerId));
+    }
+
+    protected PythonKernel getNextKernelFromQueue(final PythonCancelable cancelable)
+        throws PythonCanceledExecutionException, PythonIOException {
+        return getNextKernelFromQueue(Collections.emptySet(), Collections.emptySet(), cancelable);
+    }
+
+    protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
+        final PythonCancelable cancelable) throws PythonCanceledExecutionException, PythonIOException {
+        return getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable);
+    }
+
+    protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
+        final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable)
+        throws PythonCanceledExecutionException, PythonIOException {
+        final PythonKernelOptions options = getKernelOptions();
+        final PythonCommand command = options.getUsePython3() //
+            ? options.getPython3Command() //
+            : options.getPython2Command();
+        return PythonKernelQueue.getNextKernel(command, requiredAdditionalModules, optionalAdditionalModules, options,
+            cancelable);
     }
 
     /**

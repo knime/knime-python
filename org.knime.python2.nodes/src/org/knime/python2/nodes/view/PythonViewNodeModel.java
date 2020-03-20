@@ -101,12 +101,13 @@ class PythonViewNodeModel extends PythonNodeModel<PythonViewNodeConfig> {
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         ImageContainer image = null;
-        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonViewNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putDataTable(PythonViewNodeConfig.getVariableNames().getInputTables()[0],
                 (BufferedDataTable)inData[0], exec.createSubProgress(0.3));
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.6).setProgress(1);

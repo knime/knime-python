@@ -84,11 +84,12 @@ class PythonVariablesNodeModel extends PythonNodeModel<PythonVariablesNodeConfig
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
 
-        try (final PythonKernel kernel = new PythonKernel(getKernelOptions())) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonVariablesNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             exec.createSubProgress(0.1).setProgress(1);
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<String>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<String>(Arrays.asList(output[1].split("\n"))));
             exec.createSubProgress(0.8).setProgress(1);

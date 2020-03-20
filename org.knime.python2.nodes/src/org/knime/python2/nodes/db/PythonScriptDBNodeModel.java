@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import org.knime.core.data.DataTableSpec;
@@ -67,10 +68,10 @@ import org.knime.core.node.port.database.aggregation.DBAggregationFunctionFactor
 import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelCleanupException;
-import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.nodes.PythonNodeModel;
 
 /**
@@ -93,19 +94,18 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        final PythonKernelOptions options =
-            getKernelOptions().forAddedAdditionalRequiredModuleNames(Arrays.asList("jpype"));
-
         final DatabasePortObject dbObj = (DatabasePortObject)inData[0];
         checkDBConnection(dbObj.getSpec());
-        try(final PythonKernel kernel = new PythonKernel(options)) {
+        final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
+        try (final PythonKernel kernel =
+            getNextKernelFromQueue(new HashSet<>(Arrays.asList(new PythonModuleSpec("jpype"))), cancelable)) {
             kernel.putFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             final CredentialsProvider cp = getCredentialsProvider();
             final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
             final Collection<String> jars = getJars(connIn);
             kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
-            final String[] output = kernel.execute(getConfig().getSourceCode(), new PythonExecutionMonitorCancelable(exec));
+            final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
             final Collection<FlowVariable> variables =
