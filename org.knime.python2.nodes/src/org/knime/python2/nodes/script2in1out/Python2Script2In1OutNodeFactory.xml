@@ -4,17 +4,21 @@
    <name>Python Script (2&#8658;1)</name>
 
    <shortDescription>
-      Allows execution of a Python script in a local Python
-      installation.
+      Allows executing a Python script in a local Python environment.
    </shortDescription>
 
    <fullDescription>
 		<intro>
-			Allows execution of a Python script in a local Python
-			installation. The path to the Python executable has to be configured
-			in Preferences → KNIME → Python. This node supports Python 2 and 3.
+			Allows executing a Python script in a local Python
+			environment. The environment has to be configured
+			under <i>File → Preferences → KNIME → Python</i> or via flow variable, as described in the
+			<a href="https://docs.knime.com/latest/python_installation_guide/">
+			KNIME Python Integration Installation Guide</a>.
+			<br/>
+			This node supports Python 2 and 3.
 			It also allows to import Jupyter notebooks as Python modules via the
-			knime_jupyter module that is part of the Python workspace.
+			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
+			knime_jupyter</a> module that is available in the node's Python workspace.
 		</intro>
       <tab name="Script">
          <option name="Editor">
@@ -29,7 +33,6 @@
             only execute the currently
             selected part of the
             script.
-            <br />
             <br />
             The editor optionally provides autocompletion (CTRL + Space)
             if the
@@ -66,27 +69,26 @@
       </tab>
       <tab name="Options">
          <option name="Row limit (dialog)">
-            Limits how many rows are loaded in the dialog.
-            Changes only take effect after reseting the workspace.
+            Limits how many rows of input data are loaded into the dialog.
+            This is useful to maintain the interactivity of script executions in the dialog when there are lots of input data.
+            Changing this value only takes effect after resetting the node's workspace or closing and reopening the dialog.
          </option>
-         <option name="Use python version">
-            Allows to choose the python version that
-            should be used for
-            executing the kernel. Available
-            installations can be checked
-            under Preferences → KNIME →
-            Python.
+         <option name="Use Python version">
+            Allows to choose the Python version that
+            is used to execute the node. The available
+            environments of the different versions can be checked and configured
+            under File → Preferences → KNIME →
+            Python. They can also be set via flow variable (see Flow Variables tab below).
          </option>
-         <option name="Missing values (Int, Long)">
-            By default, Int and Long columns containing
+         <option name="Missing values (Integer, Long)">
+            By default, <i>Number (Integer)</i> and <i>Number (Long)</i> columns containing
             missing values are
-            converted to doubles in Python, because
-            doubles
-            are the
+            converted into <i>double</i> in Python because
+            double
+            is the
             only numeric type
-            containing a built-in missing
-            value
-            representation (NaN). Converting longs to doubles,
+            that has a built-in representation for missing values (<i>NaN</i>).
+            Converting longs to doubles,
             however,
             introduces imprecision. The
             conversion may be
@@ -94,21 +96,22 @@
             by replacing
             missing values with so-called sentinel values.
             To convert missing
-            values to
+            values into
             sentinel values before script
             execution, check the first
-            option, to convert sentinel values
-            back to missing values after
+            option. To convert sentinel values
+            back into missing values after
             script execution, check the
-            second option. To select a sentinel
-            value, click on
-            MIN_VAL
+            second option. Three different types of sentinel values are available:
+            <i>MIN_VAL</i>
             (the smallest possible value for the
             column's
             data type),
-            MAX_VAL (the largest possible
+            <i>MAX_VAL</i> (the largest possible
             value for the column's data
-            type), or a manually enter an integer in the text field.
+            type), or a custom integer value to be entered into the text field.
+            The chosen sentinel value will be available as <i>INT_SENTINEL</i> and <i>LONG_SENTINEL</i> respectively,
+            in the node's workspace.
          </option>
          <option name="Rows per chunk">
             Large tables are broken into chunks when
@@ -134,13 +137,11 @@
             script in the editor panel of
             the script tab.
             <br />
-            <br />
             Note: User defined templates can be found in the folder:
-            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script-2in1out</i>
+            <i>knime-workspace/.metadata/knime/sourcecode-templates/python-script-2in1out</i>.
          </option>
          <option name="Remove selected">
             Clicking on this button removes the selected template.
-            <br />
             <br />
             Note: Templates provided by plugins cannot be removed.
          </option>
@@ -149,38 +150,60 @@
             the script tab with the selected template.
          </option>
       </tab>
+      <tab name="Flow Variables">
+         <option name="pythonVersionOption">
+            Controls the <i>Use Python version</i> option above.
+            The variable accepts either <i>python2</i> or <i>python3</i> as value.
+         </option>
+         <option name="python2Command">
+            Controls which Python 2 environment is employed by this node if it is configured to use Python 2.
+            This allows using an environment that is different from the one that is configured in the Preferences.
+            The flow variable accepts the path to a Python start script as described in the
+            <a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
+            KNIME Python Integration Installation Guide</a>.
+         </option>
+         <option name="python3Command">
+            Controls which Python 3 environment is employed by this node if it is configured to use Python 3.
+            This allows using an environment that is different from the one that is configured in the Preferences.
+            The flow variable accepts the path to a Python start script as described in the
+            <a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
+            KNIME Python Integration Installation Guide</a>.
+         </option>
+         <option name="sentinelOption">
+            Controls the type of sentinel value.
+            The flow variable accepts <i>MIN_VALUE</i>, <i>MAX_VALUE</i>, or <i>CUSTOM</i> as value.
+            Setting this variable to <i>CUSTOM</i> makes the node respect the custom integer value
+            either set in the dialog or via the <i>sentinelValue</i> flow variable.
+         </option>
+      </tab>
    </fullDescription>
+
    <ports>
       <inPort name="Table 1" index="0">
-         The input table. In the Python script
+         The first input table. In the Python script
          it is available as
-         pandas.DataFrame under the name
-         <b>input_table_1</b>
-         .
+         <i>pandas.DataFrame</i> under the name
+         <b>input_table_1</b>.
       </inPort>
       <inPort name="Table 2" index="1">
-         The input table. In the Python script
+         The second input table. In the Python script
          it is available as
-         pandas.DataFrame under the name
-         <b>input_table_2</b>
-         .
+         <i>pandas.DataFrame</i> under the name
+         <b>input_table_2</b>.
       </inPort>
       <outPort name="Table" index="0">
-         The output table. This is the content of the
-         variable
-         <b>output_table</b>
-         which has to be defined and has to be of the
-         type pandas.DataFrame for
-         this node to successfully execute.
+         The output table contained in the variable <b>output_table</b> which needs to be defined by the user script
+         and has to be of type <i>pandas.DataFrame</i>.
       </outPort>
    </ports>
+
    <views>
       <view name="Standard output" index="0">
-         The text sent by Python to the standard output, during the execution of
+         The text sent by Python to the standard output during the execution of
          this node.
       </view>
       <view name="Error output" index="1">
-         The text sent by Python to the error output, during the execution of
+         The text sent by Python to the error output during the execution of
          this node.
       </view>
    </views>
