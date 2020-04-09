@@ -196,11 +196,6 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonCommand m_command;
 
-    /**
-     * Holds the node context that was active when this instance was constructed (if any).
-     */
-    private final NodeContextManager m_nodeContextManager;
-
     private final Process m_process;
 
     private final Integer m_pid; // Nullable.
@@ -237,6 +232,12 @@ public class PythonKernel implements AutoCloseable {
      */
     private SerializationLibrary m_serializer;
 
+    /**
+     * Properly initialized by {@link #setOptions(PythonKernelOptions)}. Holds the node context that was active at the
+     * time when that method was called (if any).
+     */
+    private NodeContextManager m_nodeContextManager = new NodeContextManager(null);
+
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
     /**
@@ -256,7 +257,6 @@ public class PythonKernel implements AutoCloseable {
      */
     public PythonKernel(final PythonCommand command) throws PythonIOException {
         m_command = command;
-        m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
 
         testInstallation(command, Collections.emptyList());
 
@@ -557,6 +557,7 @@ public class PythonKernel implements AutoCloseable {
         testInstallation(m_command, options.getAdditionalRequiredModules());
         try {
             m_serializer = findConfiguredSerializationLibrary(options);
+            m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
             setSerializationLibrary(options);
             setExternalCustomPath(options);
             setSentinelConstants(options);
