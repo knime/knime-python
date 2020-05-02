@@ -69,7 +69,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
 
-import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
+import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.knime.code.generic.ImageContainer;
@@ -379,7 +379,7 @@ public class PythonKernel {
             }
             if (value instanceof Integer) {
                 final IntegerVariable variable =
-                        IntegerVariable.newBuilder().setKey(key).setValue((Integer)value).build();
+                    IntegerVariable.newBuilder().setKey(key).setValue((Integer)value).build();
                 variablesBuilder.addIntegerVariable(variable);
             } else if (value instanceof Double) {
                 final DoubleVariable variable = DoubleVariable.newBuilder().setKey(key).setValue((Double)value).build();
@@ -438,7 +438,7 @@ public class PythonKernel {
 
     private boolean isValidFlowVariableName(final String name) {
         if (name.startsWith(FlowVariable.Scope.Global.getPrefix())
-                || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
+            || name.startsWith(FlowVariable.Scope.Local.getPrefix())) {
             // name is reserved
             return false;
         }
@@ -577,7 +577,7 @@ public class PythonKernel {
      */
     @SuppressWarnings("deprecation")
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
-            throws IOException {
+        throws IOException {
         putDataTable(name, table, executionMonitor, table.getRowCount());
     }
 
@@ -825,14 +825,14 @@ public class PythonKernel {
      * @throws IOException If an error occured
      */
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
-            throws IOException {
+        throws IOException {
         // If auto completion is not supported just return an empty list
         if (!m_hasAutocomplete) {
             return new ArrayList<Map<String, String>>(0);
         }
         final Command.Builder commandBuilder = Command.newBuilder();
         commandBuilder
-        .setAutoComplete(AutoComplete.newBuilder().setSourceCode(sourceCode).setLine(line).setColumn(column));
+            .setAutoComplete(AutoComplete.newBuilder().setSourceCode(sourceCode).setLine(line).setColumn(column));
         AutocompleteSuggestions response;
         synchronized (this) {
             final OutputStream outToServer = m_socket.getOutputStream();
