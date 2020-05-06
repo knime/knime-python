@@ -117,19 +117,7 @@ public final class Conda {
      */
     public static PythonCommand createPythonCommand(final PythonVersion pythonVersion,
         final String condaInstallationDirectoryPath, final String environmentName) {
-        final Path executablePath;
-        final String environmentsDirectoryName = "envs";
-        // Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/.
-        if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
-            executablePath =
-                Paths.get(condaInstallationDirectoryPath, environmentsDirectoryName, environmentName, "bin", "python");
-        } else if (SystemUtils.IS_OS_WINDOWS) {
-            executablePath =
-                Paths.get(condaInstallationDirectoryPath, environmentsDirectoryName, environmentName, "python.exe");
-        } else {
-            throw createUnknownOSException();
-        }
-        return new DefaultPythonCommand(pythonVersion, executablePath.toString());
+        return new CondaPythonCommand(pythonVersion, condaInstallationDirectoryPath, environmentName);
     }
 
     /**
@@ -250,7 +238,7 @@ public final class Conda {
         return executablePath;
     }
 
-    private static UnsupportedOperationException createUnknownOSException() {
+    static UnsupportedOperationException createUnknownOSException() {
         final String osName = SystemUtils.OS_NAME;
         if (osName == null) {
             throw new UnsupportedOperationException(

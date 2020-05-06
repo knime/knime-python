@@ -44,55 +44,64 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 24, 2019 (marcel): created
+ *   May 6, 2020 (marcel): created
  */
-package org.knime.python2.config;
+package org.knime.python2;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.ManualPythonCommand;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.PythonVersion;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConfig {
+public abstract class AbstractPythonCommand implements PythonCommand {
 
     private final PythonVersion m_pythonVersion;
 
-    private final SettingsModelString m_pythonPath;
+    protected final List<String> m_command;
 
     /**
-     * @param pythonVersion The Python version of manual environments described by this instance.
-     * @param configKey The identifier of this config. Used for saving/loading.
-     * @param defaultPythonPath The initial path to the Python executable.
+     * @param pythonVersion The version of Python environments launched by this command.
+     * @param command The Python command and possible arguments.
      */
-    public ManualEnvironmentConfig(final PythonVersion pythonVersion, final String configKey,
-        final String defaultPythonPath) {
+    public AbstractPythonCommand(final PythonVersion pythonVersion, final List<String> command) {
         m_pythonVersion = pythonVersion;
-        m_pythonPath = new SettingsModelString(configKey, defaultPythonPath);
-    }
-
-    /**
-     * @return The path to the Python executable.
-     */
-    public SettingsModelString getExecutablePath() {
-        return m_pythonPath;
+        m_command = Collections.unmodifiableList(new ArrayList<>(command));
     }
 
     @Override
-    public PythonCommand getPythonCommand() {
-        return new ManualPythonCommand(m_pythonVersion, m_pythonPath.getStringValue());
+    public PythonVersion getPythonVersion() {
+        return m_pythonVersion;
     }
 
     @Override
-    public void saveConfigTo(final PythonConfigStorage storage) {
-        storage.saveStringModel(m_pythonPath);
+    public ProcessBuilder createProcessBuilder() {
+        return new ProcessBuilder(new ArrayList<>(m_command));
     }
 
     @Override
-    public void loadConfigFrom(final PythonConfigStorage storage) {
-        storage.loadStringModel(m_pythonPath);
+    public int hashCode() {
+        return Objects.hash(m_pythonVersion, m_command);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || !obj.getClass().equals(getClass())) {
+            return false;
+        }
+        final AbstractPythonCommand other = (AbstractPythonCommand)obj;
+        return other.m_pythonVersion == m_pythonVersion //
+            && other.m_command.equals(m_command);
+    }
+
+    @Override
+    public String toString() {
+        return String.join(" ", m_command);
     }
 }

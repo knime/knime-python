@@ -44,72 +44,55 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2019 (marcel): created
+ *   May 6, 2020 (marcel): created
  */
 package org.knime.python2;
 
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+
+import org.apache.commons.lang3.SystemUtils;
 
 /**
+ * Conda-specific implementation of {@link PythonCommand}. Allows to build Python processes for a given Conda
+ * installation and environment name.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class DefaultPythonCommand implements PythonCommand {
+public final class CondaPythonCommand extends AbstractPythonCommand {
 
-    private final PythonVersion m_pythonVersion;
-
-    private final List<String> m_command;
+    private static final String CONDA_ENVIRONMENTS_DIRECTORY_NAME = "envs";
 
     /**
+     * Constructs a {@link PythonCommand} that describes a Python process of the given Python version that is run in the
+     * Conda environment identified by the given Conda installation directory and the given Conda environment name.<br>
+     * The validity of the given arguments is not tested.
+     *
      * @param pythonVersion The version of Python environments launched by this command.
-     * @param command The Python command and possible arguments.
+     * @param condaInstallationDirectoryPath The path to the directory of the Conda installation.
+     * @param environmentName The name of the Conda environment.
      */
-    public DefaultPythonCommand(final PythonVersion pythonVersion, final String... command) {
-        this(pythonVersion, Arrays.asList(command));
+    public CondaPythonCommand(final PythonVersion pythonVersion, final String condaInstallationDirectoryPath,
+        final String environmentName) {
+        super(pythonVersion, Arrays.asList(createExecutableString(condaInstallationDirectoryPath, environmentName)));
     }
 
     /**
-     * @param pythonVersion The version of Python environments launched by this command.
-     * @param command The Python command and possible arguments.
+     * Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/
      */
-    public DefaultPythonCommand(final PythonVersion pythonVersion, final List<String> command) {
-        m_pythonVersion = pythonVersion;
-        m_command = new ArrayList<>(command);
-    }
-
-    @Override
-    public PythonVersion getPythonVersion() {
-        return m_pythonVersion;
-    }
-
-    @Override
-    public ProcessBuilder createProcessBuilder() {
-        return new ProcessBuilder(new ArrayList<>(m_command));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(m_pythonVersion, m_command);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
+    private static String createExecutableString(final String condaInstallationDirectoryPath,
+        final String environmentName) {
+        final Path executablePath;
+        if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
+            executablePath = Paths.get(condaInstallationDirectoryPath, CONDA_ENVIRONMENTS_DIRECTORY_NAME,
+                environmentName, "bin", "python");
+        } else if (SystemUtils.IS_OS_WINDOWS) {
+            executablePath = Paths.get(condaInstallationDirectoryPath, CONDA_ENVIRONMENTS_DIRECTORY_NAME,
+                environmentName, "python.exe");
+        } else {
+            throw Conda.createUnknownOSException();
         }
-        if (obj == null || !obj.getClass().equals(getClass())) {
-            return false;
-        }
-        final DefaultPythonCommand other = (DefaultPythonCommand)obj;
-        return other.m_pythonVersion == m_pythonVersion //
-            && other.m_command.equals(m_command);
-    }
-
-    @Override
-    public String toString() {
-        return String.join(" ", m_command);
+        return executablePath.toString();
     }
 }

@@ -51,7 +51,7 @@ import java.util.Objects;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.python2.DefaultPythonCommand;
+import org.knime.python2.ManualPythonCommand;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
@@ -307,7 +307,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
             ? null //
             // TODO: This only works for ordinary paths ("manual configuration"), not for Conda directory + environment
             // name ("Conda configuration").
-            : new DefaultPythonCommand(pythonVersion, commandString);
+            : new ManualPythonCommand(pythonVersion, commandString);
     }
 
     /**

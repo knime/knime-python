@@ -44,55 +44,25 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 24, 2019 (marcel): created
+ *   Feb 15, 2019 (marcel): created
  */
-package org.knime.python2.config;
+package org.knime.python2;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.ManualPythonCommand;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.PythonVersion;
+import java.util.Arrays;
 
 /**
+ * "Manual" implementation of {@link PythonCommand}. Allows to build Python processes given a path to a Python
+ * executable or start script.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConfig {
-
-    private final PythonVersion m_pythonVersion;
-
-    private final SettingsModelString m_pythonPath;
+public final class ManualPythonCommand extends AbstractPythonCommand {
 
     /**
-     * @param pythonVersion The Python version of manual environments described by this instance.
-     * @param configKey The identifier of this config. Used for saving/loading.
-     * @param defaultPythonPath The initial path to the Python executable.
+     * @param pythonVersion The version of Python environments launched by this command.
+     * @param command The path to the Python executable or start script.
      */
-    public ManualEnvironmentConfig(final PythonVersion pythonVersion, final String configKey,
-        final String defaultPythonPath) {
-        m_pythonVersion = pythonVersion;
-        m_pythonPath = new SettingsModelString(configKey, defaultPythonPath);
-    }
-
-    /**
-     * @return The path to the Python executable.
-     */
-    public SettingsModelString getExecutablePath() {
-        return m_pythonPath;
-    }
-
-    @Override
-    public PythonCommand getPythonCommand() {
-        return new ManualPythonCommand(m_pythonVersion, m_pythonPath.getStringValue());
-    }
-
-    @Override
-    public void saveConfigTo(final PythonConfigStorage storage) {
-        storage.saveStringModel(m_pythonPath);
-    }
-
-    @Override
-    public void loadConfigFrom(final PythonConfigStorage storage) {
-        storage.loadStringModel(m_pythonPath);
+    public ManualPythonCommand(final PythonVersion pythonVersion, final String command) {
+        super(pythonVersion, Arrays.asList(command));
     }
 }
