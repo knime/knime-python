@@ -82,16 +82,18 @@ public final class PythonKernelQueue {
     // Class:
 
     /**
-     * The capacity of the queue.
+     * The default maximum number of idling kernels that are held by the queue at any time, that is, the default
+     * capacity of the queue.
      */
-    private static final int MAX_NUMBER_OF_POOLED_KERNELS = 3;
+    public static final int DEFAULT_MAX_NUMBER_OF_IDLING_KERNELS = 3;
 
     /**
-     * Note: the duration until expired entries are actually evicted is generally longer than this value because the
-     * underlying pool performs clean-ups in a timer-based manner. The clean-up interval of the timer is governed by
-     * {@link #EVICTION_CHECK_INTERVAL_IN_MILLISECONDS}.
+     * The default duration after which unused idling kernels are marked as expired. The default duration until expired
+     * entries are actually evicted is generally longer than this value because the underlying pool performs clean-ups
+     * in a timer-based manner. The clean-up interval of the timer is governed by
+     * {@code EVICTION_CHECK_INTERVAL_IN_MILLISECONDS}.
      */
-    private static final int EXPIRATION_DURATION_IN_MILLISECONDS = 5 * 60 * 1000;
+    public static final int DEFAULT_EXPIRATION_DURATION_IN_MINUTES = 5;
 
     private static final int EVICTION_CHECK_INTERVAL_IN_MILLISECONDS = 60 * 1000;
 
@@ -166,10 +168,10 @@ public final class PythonKernelQueue {
         config.setJmxEnabled(false);
         config.setLifo(false);
         config.setMaxIdlePerKey(-1);
-        config.setMaxTotal(MAX_NUMBER_OF_POOLED_KERNELS);
+        config.setMaxTotal(DEFAULT_MAX_NUMBER_OF_IDLING_KERNELS);
         config.setMaxTotalPerKey(-1);
         config.setMaxWaitMillis(CANCELLATION_CHECK_INTERVAL_IN_MILLISECONDS);
-        config.setMinEvictableIdleTimeMillis(EXPIRATION_DURATION_IN_MILLISECONDS);
+        config.setMinEvictableIdleTimeMillis(DEFAULT_EXPIRATION_DURATION_IN_MINUTES * 60l * 1000l);
         config.setNumTestsPerEvictionRun(-1);
         config.setTimeBetweenEvictionRunsMillis(EVICTION_CHECK_INTERVAL_IN_MILLISECONDS);
         m_pool = new GenericKeyedObjectPool<>(new KeyedPooledPythonKernelFactory(), config);
