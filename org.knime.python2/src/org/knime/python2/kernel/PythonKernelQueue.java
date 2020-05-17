@@ -210,10 +210,15 @@ public final class PythonKernelQueue {
         throws PythonCanceledExecutionException, PythonIOException {
         final PythonCommandAndModules key =
             new PythonCommandAndModules(command, requiredAdditionalModules, optionalAdditionalModules);
-        final PythonKernelOrExceptionHolder holder = dequeueHolder(key, cancelable);
-        PythonKernel kernel = extractKernelAndEnqueueNewOne(key, holder);
-        kernel = configureOrRecreateKernel(key, kernel, options);
-        return kernel;
+        if (m_pool.getMaxTotal() != 0) {
+            final PythonKernelOrExceptionHolder holder = dequeueHolder(key, cancelable);
+            PythonKernel kernel = extractKernelAndEnqueueNewOne(key, holder);
+            kernel = configureOrRecreateKernel(key, kernel, options);
+            return kernel;
+        } else {
+            // Otherwise we need to bypass the queue since there are no slots that we could use.
+            return createKernelAndConfigure(key, options);
+        }
     }
 
     @SuppressWarnings("resource") // Holder was not taken from pool when this method throws.
@@ -262,14 +267,24 @@ public final class PythonKernelQueue {
             throw ex;
         } catch (final PythonIOException ex) {
             PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
-            kernel = KeyedPooledPythonKernelFactory.createKernel(key);
             try {
-                kernel.setOptions(options);
+                kernel = createKernelAndConfigure(key, options);
             } catch (final Throwable t) {
-                PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
                 t.addSuppressed(ex);
                 throw t;
             }
+        } catch (final Throwable t) {
+            PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
+            throw t;
+        }
+        return kernel;
+    }
+
+    private static PythonKernel createKernelAndConfigure(final PythonCommandAndModules key,
+        final PythonKernelOptions options) throws PythonIOException {
+        final PythonKernel kernel = KeyedPooledPythonKernelFactory.createKernel(key);
+        try {
+            kernel.setOptions(options);
         } catch (final Throwable t) {
             PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
             throw t;
