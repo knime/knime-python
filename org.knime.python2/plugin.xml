@@ -11,6 +11,12 @@
             id="org.knime.python2.PythonPreferencePage"
             name="Python">
       </page>
+      <page
+            category="org.knime.python2.PythonPreferencePage"
+            class="org.knime.python2.prefs.advanced.PythonAdvancedPreferencePage"
+            id="org.knime.python2.PythonAdvancedPreferencePage"
+            name="Advanced">
+      </page>
    </extension>
    <extension
          point="org.knime.core.PortType">
