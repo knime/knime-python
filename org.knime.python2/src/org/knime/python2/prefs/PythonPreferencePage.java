@@ -47,17 +47,12 @@
  */
 package org.knime.python2.prefs;
 
-import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
-
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -65,12 +60,9 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
@@ -81,7 +73,6 @@ import org.knime.python2.config.CondaEnvironmentCreationObserver;
 import org.knime.python2.config.CondaEnvironmentsConfig;
 import org.knime.python2.config.ManualEnvironmentsConfig;
 import org.knime.python2.config.PythonConfig;
-import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.PythonConfigsObserver;
 import org.knime.python2.config.PythonEnvironmentType;
 import org.knime.python2.config.PythonEnvironmentTypeConfig;
@@ -95,57 +86,57 @@ import org.knime.python2.config.SerializerConfig;
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public final class PythonPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
+public final class PythonPreferencePage extends AbstractPythonPreferencePage {
 
-    private ScrolledComposite m_containerScrolledView;
-
-    private Composite m_container;
-
-    private List<PythonConfig> m_configs;
+    private PythonVersionConfig m_pythonVersionConfig;
 
     private PythonEnvironmentTypeConfig m_environmentTypeConfig;
 
     private StackLayout m_environmentConfigurationLayout;
 
+    private CondaEnvironmentsConfig m_condaEnvironmentsConfig;
+
+    private CondaEnvironmentCreationObserver m_python2EnvironmentCreator;
+
+    private CondaEnvironmentCreationObserver m_python3EnvironmentCreator;
+
     private CondaEnvironmentsPreferencePanel m_condaEnvironmentPanel;
+
+    private ManualEnvironmentsConfig m_manualEnvironmentsConfig;
 
     private ManualEnvironmentsPreferencePanel m_manualEnvironmentPanel;
 
+    private SerializerConfig m_serializerConfig;
+
     private PythonConfigsObserver m_configObserver;
 
-    @Override
-    public void init(final IWorkbench workbench) {
-        // no op
+    /**
+     * Constructs the main preference page of the KNIME Python integration.
+     */
+    public PythonPreferencePage() {
+        super(PythonPreferences.CURRENT, PythonPreferences.DEFAULT);
     }
 
     @Override
-    protected Control createContents(final Composite parent) {
-        createPageBody(parent);
-        createInfoHeader(parent);
-
-        m_configs = new ArrayList<>(5);
+    @SuppressWarnings("unused") // References to some panels are not needed; everything is done in their constructor.
+    protected void populatePageBody(final Composite container, final List<PythonConfig> configs) {
+        createInfoHeader(container);
 
         // Python version selection:
-
-        final PythonVersionConfig pythonVersionConfig = new PythonVersionConfig();
-        m_configs.add(pythonVersionConfig);
-        @SuppressWarnings("unused") // Reference to object is not needed here; everything is done in its constructor.
-        final Object unused0 = new PythonVersionPreferencePanel(pythonVersionConfig, m_container);
+        m_pythonVersionConfig = new PythonVersionConfig();
+        configs.add(m_pythonVersionConfig);
+        new PythonVersionPreferencePanel(m_pythonVersionConfig, container);
 
         // Environment configuration:
-
-        final Group environmentConfigurationGroup = new Group(m_container, SWT.NONE);
+        final Group environmentConfigurationGroup = new Group(container, SWT.NONE);
         environmentConfigurationGroup.setText("Python environment configuration");
         environmentConfigurationGroup.setLayout(new GridLayout());
         environmentConfigurationGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Environment type selection:
-
         m_environmentTypeConfig = new PythonEnvironmentTypeConfig();
-        m_configs.add(m_environmentTypeConfig);
-        @SuppressWarnings("unused") // Reference to object is not needed here; everything is done in its constructor.
-        final Object unused1 =
-            new PythonEnvironmentTypePreferencePanel(m_environmentTypeConfig, environmentConfigurationGroup);
+        configs.add(m_environmentTypeConfig);
+        new PythonEnvironmentTypePreferencePanel(m_environmentTypeConfig, environmentConfigurationGroup);
         final Label separator = new Label(environmentConfigurationGroup, SWT.SEPARATOR | SWT.HORIZONTAL);
         separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
@@ -154,49 +145,79 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
         environmentConfigurationPanel.setLayout(m_environmentConfigurationLayout);
         environmentConfigurationPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        // Conda environment configuration, including environment creation dialogs:
+        // Conda environment:
+        m_condaEnvironmentsConfig = new CondaEnvironmentsConfig();
+        configs.add(m_condaEnvironmentsConfig);
 
-        final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
-        m_configs.add(condaEnvironmentsConfig);
+        m_python2EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON2,
+            m_condaEnvironmentsConfig.getCondaDirectoryPath());
+        m_python3EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON3,
+            m_condaEnvironmentsConfig.getCondaDirectoryPath());
 
-        final CondaEnvironmentCreationObserver python2EnvironmentCreator = new CondaEnvironmentCreationObserver(
-            PythonVersion.PYTHON2, condaEnvironmentsConfig.getCondaDirectoryPath());
-        final CondaEnvironmentCreationObserver python3EnvironmentCreator = new CondaEnvironmentCreationObserver(
-            PythonVersion.PYTHON3, condaEnvironmentsConfig.getCondaDirectoryPath());
+        m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(m_condaEnvironmentsConfig,
+            m_python2EnvironmentCreator, m_python3EnvironmentCreator, environmentConfigurationPanel);
 
-        m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(condaEnvironmentsConfig,
-            python2EnvironmentCreator, python3EnvironmentCreator, environmentConfigurationPanel);
-
-        // Manual environment configuration:
-
-        final ManualEnvironmentsConfig manualEnvironmentsConfig = new ManualEnvironmentsConfig();
-        m_configs.add(manualEnvironmentsConfig);
+        // Manual environment:
+        m_manualEnvironmentsConfig = new ManualEnvironmentsConfig();
+        configs.add(m_manualEnvironmentsConfig);
         m_manualEnvironmentPanel =
-            new ManualEnvironmentsPreferencePanel(manualEnvironmentsConfig, environmentConfigurationPanel);
+            new ManualEnvironmentsPreferencePanel(m_manualEnvironmentsConfig, environmentConfigurationPanel);
 
         // Serializer selection:
+        m_serializerConfig = new SerializerConfig();
+        configs.add(m_serializerConfig);
+        new SerializerPreferencePanel(m_serializerConfig, container);
+    }
 
-        final SerializerConfig serializerConfig = new SerializerConfig();
-        m_configs.add(serializerConfig);
-        @SuppressWarnings("unused") // Reference to object is not needed here; everything is done in its constructor.
-        Object unused2 = new SerializerPreferencePanel(serializerConfig, m_container);
+    private static void createInfoHeader(final Composite parent) {
+        final Link installationGuideInfo = new Link(parent, SWT.NONE);
+        installationGuideInfo.setLayoutData(new GridData());
+        final String message = "See <a href=\"https://docs.knime.com/latest/python_installation_guide/index.html\">"
+            + "this guide</a> for details on how to install Python for use with KNIME.";
+        installationGuideInfo.setText(message);
+        final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
+        installationGuideInfo.setForeground(gray);
+        installationGuideInfo.addDisposeListener(e -> gray.dispose());
+        installationGuideInfo.setFont(JFaceResources.getFontRegistry().getItalic(""));
+        installationGuideInfo.addSelectionListener(new SelectionAdapter() {
 
-        // Load saved configs from preferences and initialize initial view:
+            @Override
+            public void widgetSelected(final SelectionEvent e) {
+                try {
+                    PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(e.text));
+                } catch (PartInitException | MalformedURLException ex) {
+                    NodeLogger.getLogger(PythonPreferencePage.class).error(ex);
+                }
+            }
+        });
+    }
 
-        loadConfigurations();
-
+    @Override
+    protected void reflectLoadedConfigurations() {
         displayPanelForEnvironmentType(m_environmentTypeConfig.getEnvironmentType().getStringValue());
+    }
 
+    private void displayPanelForEnvironmentType(final String environmentTypeId) {
+        final PythonEnvironmentType environmentType = PythonEnvironmentType.fromId(environmentTypeId);
+        if (PythonEnvironmentType.CONDA.equals(environmentType)) {
+            m_environmentConfigurationLayout.topControl = m_condaEnvironmentPanel.getPanel();
+        } else if (PythonEnvironmentType.MANUAL.equals(environmentType)) {
+            m_environmentConfigurationLayout.topControl = m_manualEnvironmentPanel.getPanel();
+        } else {
+            throw new IllegalStateException(
+                "Selected Python environment type is neither Conda nor manual. This is an implementation error.");
+        }
         updateDisplayMinSize();
+    }
 
-        // Hooks:
-
+    @Override
+    protected void setupHooks() {
         m_environmentTypeConfig.getEnvironmentType().addChangeListener(
             e -> displayPanelForEnvironmentType(m_environmentTypeConfig.getEnvironmentType().getStringValue()));
 
-        m_configObserver =
-            new PythonConfigsObserver(pythonVersionConfig, m_environmentTypeConfig, condaEnvironmentsConfig,
-                python2EnvironmentCreator, python3EnvironmentCreator, manualEnvironmentsConfig, serializerConfig);
+        m_configObserver = new PythonConfigsObserver(m_pythonVersionConfig, m_environmentTypeConfig,
+            m_condaEnvironmentsConfig, m_python2EnvironmentCreator, m_python3EnvironmentCreator,
+            m_manualEnvironmentsConfig, m_serializerConfig);
 
         // Displaying installation test results may require resizing the scroll view.
         m_configObserver.addConfigsTestStatusListener(new PythonConfigsInstallationTestStatusChangeListener() {
@@ -224,107 +245,13 @@ public final class PythonPreferencePage extends PreferencePage implements IWorkb
             }
         });
 
-        // Initial installation test:
-
+        // Trigger initial installation test.
         m_configObserver.testCurrentPreferences();
-
-        return m_containerScrolledView;
-    }
-
-    private void createPageBody(final Composite parent) {
-        m_containerScrolledView = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
-        m_container = new Composite(m_containerScrolledView, SWT.NONE);
-        final GridLayout gridLayout = new GridLayout();
-        gridLayout.marginWidth = 0;
-        gridLayout.marginHeight = 0;
-        m_container.setLayout(gridLayout);
-
-        m_containerScrolledView.setContent(m_container);
-        m_containerScrolledView.setExpandHorizontal(true);
-        m_containerScrolledView.setExpandVertical(true);
-    }
-
-    private void createInfoHeader(final Composite parent) {
-        final Link startScriptInfo = new Link(m_container, SWT.NONE);
-        startScriptInfo.setLayoutData(new GridData());
-        final String message = "See <a href=\"https://docs.knime.com/latest/python_installation_guide/index.html\">"
-            + "this guide</a> for details on how to install Python for use with KNIME.";
-        startScriptInfo.setText(message);
-        final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
-        startScriptInfo.setForeground(gray);
-        startScriptInfo.addDisposeListener(e -> gray.dispose());
-        startScriptInfo.setFont(JFaceResources.getFontRegistry().getItalic(""));
-        startScriptInfo.addSelectionListener(new SelectionAdapter() {
-
-            @Override
-            public void widgetSelected(final SelectionEvent e) {
-                try {
-                    PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(e.text));
-                } catch (PartInitException | MalformedURLException ex) {
-                    NodeLogger.getLogger(PythonPreferencePage.class).error(ex);
-                }
-            }
-        });
-    }
-
-    private void displayPanelForEnvironmentType(final String environmentTypeId) {
-        final PythonEnvironmentType environmentType = PythonEnvironmentType.fromId(environmentTypeId);
-        if (PythonEnvironmentType.CONDA.equals(environmentType)) {
-            m_environmentConfigurationLayout.topControl = m_condaEnvironmentPanel.getPanel();
-        } else if (PythonEnvironmentType.MANUAL.equals(environmentType)) {
-            m_environmentConfigurationLayout.topControl = m_manualEnvironmentPanel.getPanel();
-        } else {
-            throw new IllegalStateException(
-                "Selected Python environment type is neither Conda nor manual. This is an implementation error.");
-        }
-        updateDisplayMinSize();
-    }
-
-    private void updateDisplayMinSize() {
-        performActionOnWidgetInUiThread(getControl(), () -> {
-            m_container.layout(true, true);
-            m_containerScrolledView.setMinSize(m_container.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-            return null;
-        }, false);
-    }
-
-    @Override
-    public boolean performOk() {
-        saveConfigurations();
-        return true;
     }
 
     @Override
     protected void performApply() {
-        saveConfigurations();
+        super.performApply();
         m_configObserver.testCurrentPreferences();
-    }
-
-    @Override
-    protected void performDefaults() {
-        final PythonConfigStorage defaultPreferences = PythonPreferences.DEFAULT;
-        for (final PythonConfig config : m_configs) {
-            config.loadConfigFrom(defaultPreferences);
-        }
-    }
-
-    /**
-     * Saves the preference page's configurations to the preferences.
-     */
-    private void saveConfigurations() {
-        final PythonConfigStorage currentPreferences = PythonPreferences.CURRENT;
-        for (final PythonConfig config : m_configs) {
-            config.saveConfigTo(currentPreferences);
-        }
-    }
-
-    /**
-     * Loads the preference page's configuration from the stored preferences.
-     */
-    private void loadConfigurations() {
-        final PythonConfigStorage currentPreferences = PythonPreferences.CURRENT;
-        for (final PythonConfig config : m_configs) {
-            config.loadConfigFrom(currentPreferences);
-        }
     }
 }
