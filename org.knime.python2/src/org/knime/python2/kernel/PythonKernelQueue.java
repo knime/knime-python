@@ -60,6 +60,7 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.prefs.advanced.PythonAdvancedPreferences;
 import org.knime.python2.util.PythonUtils;
 
 import com.google.common.collect.Iterables;
@@ -102,7 +103,7 @@ public final class PythonKernelQueue {
     /**
      * The singleton instance.
      */
-    private static final PythonKernelQueue INSTANCE = new PythonKernelQueue();
+    private static PythonKernelQueue instance;
 
     /**
      * Takes the next {@link PythonKernel} from the queue that was launched using the given {@link PythonCommand} and
@@ -132,21 +133,46 @@ public final class PythonKernelQueue {
      *             the queue, if any. Such exceptions are preserved and rethrown by this method in order to make calling
      *             this method equivalent to constructing the kernel directly, from an exception-delivery point of view.
      */
-    public static PythonKernel getNextKernel(final PythonCommand command,
+    public static synchronized PythonKernel getNextKernel(final PythonCommand command,
         final Set<PythonModuleSpec> requiredAdditionalModules, final Set<PythonModuleSpec> optionalAdditionalModules,
         final PythonKernelOptions options, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
-        return INSTANCE.getNextKernelInternal(command, requiredAdditionalModules, optionalAdditionalModules, options,
+        if (instance == null) {
+            reconfigureKernelQueue(PythonAdvancedPreferences.getMaximumNumberOfIdlingProcesses(),
+                PythonAdvancedPreferences.getExpirationDurationInMinutes());
+        }
+        return instance.getNextKernelInternal(command, requiredAdditionalModules, optionalAdditionalModules, options,
             cancelable);
     }
 
     /**
-     * Closes all contained {@link PythonKernel Python kernels} and clears the queue. Calling
-     * {@link #getNextKernel(PythonCommand, Set, Set, PythonKernelOptions, PythonCancelable) getNextKernel} is not
-     * allowed once the queue is closed.
+     * Reconfigures the queue according to the given arguments.
+     * <P>
+     * Implementation note: we do not expect the queue to be reconfigured regularly. Therefore we do not reconfigure it
+     * while it is being in use but simply {@link #close() close} it and reinstantiate it using the provided arguments.
+     *
+     * @param maxNumberOfIdlingKernels The maximum number of idling kernels that are held by the queue at any time, that
+     *            is, the capacity of the queue.
+     * @param expirationDurationInMinutes The duration in minutes after which unused idling kernels are marked as
+     *            expired. The duration until expired entries are actually evicted is generally longer than this value
+     *            because the underlying pool performs clean-ups in a timer-based manner. The clean-up interval of the
+     *            timer is governed by {@code EVICTION_CHECK_INTERVAL_IN_MILLISECONDS}.
      */
-    public static void close() {
-        INSTANCE.m_pool.close();
+    public static synchronized void reconfigureKernelQueue(final int maxNumberOfIdlingKernels,
+        final int expirationDurationInMinutes) {
+        close();
+        instance = new PythonKernelQueue(maxNumberOfIdlingKernels, expirationDurationInMinutes);
+    }
+
+    /**
+     * Closes all contained {@link PythonKernel Python kernels} and clears the queue. Calling
+     * {@link #getNextKernel(PythonCommand, Set, Set, PythonKernelOptions, PythonCancelable) getNextKernel} without
+     * calling {@link #reconfigureKernelQueue(int, int) reconfigureKernelQueue} first is not allowed.
+     */
+    public static synchronized void close() {
+        if (instance != null) {
+            instance.m_pool.close();
+        }
     }
 
     // Instance:
@@ -161,17 +187,17 @@ public final class PythonKernelQueue {
      */
     private final GenericKeyedObjectPool<PythonCommandAndModules, PythonKernelOrExceptionHolder> m_pool;
 
-    private PythonKernelQueue() {
+    private PythonKernelQueue(final int maxNumberOfIdlingKernels, final int expirationDurationInMinutes) {
         final GenericKeyedObjectPoolConfig<PythonKernelOrExceptionHolder> config = new GenericKeyedObjectPoolConfig<>();
         config.setEvictorShutdownTimeoutMillis(0);
         config.setFairness(true);
         config.setJmxEnabled(false);
         config.setLifo(false);
         config.setMaxIdlePerKey(-1);
-        config.setMaxTotal(DEFAULT_MAX_NUMBER_OF_IDLING_KERNELS);
+        config.setMaxTotal(maxNumberOfIdlingKernels);
         config.setMaxTotalPerKey(-1);
         config.setMaxWaitMillis(CANCELLATION_CHECK_INTERVAL_IN_MILLISECONDS);
-        config.setMinEvictableIdleTimeMillis(DEFAULT_EXPIRATION_DURATION_IN_MINUTES * 60l * 1000l);
+        config.setMinEvictableIdleTimeMillis(expirationDurationInMinutes * 60l * 1000l);
         config.setNumTestsPerEvictionRun(-1);
         config.setTimeBetweenEvictionRunsMillis(EVICTION_CHECK_INTERVAL_IN_MILLISECONDS);
         m_pool = new GenericKeyedObjectPool<>(new KeyedPooledPythonKernelFactory(), config);
