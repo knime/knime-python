@@ -160,8 +160,13 @@ public final class PythonKernelQueue {
      */
     public static synchronized void reconfigureKernelQueue(final int maxNumberOfIdlingKernels,
         final int expirationDurationInMinutes) {
-        close();
-        instance = new PythonKernelQueue(maxNumberOfIdlingKernels, expirationDurationInMinutes);
+        final boolean sameConfiguration = instance != null //
+            && instance.m_pool.getMaxTotal() == maxNumberOfIdlingKernels
+            && instance.m_pool.getMinEvictableIdleTimeMillis() == expirationDurationInMinutes * 60l * 1000l;
+        if (!sameConfiguration) {
+            close();
+            instance = new PythonKernelQueue(maxNumberOfIdlingKernels, expirationDurationInMinutes);
+        }
     }
 
     /**
