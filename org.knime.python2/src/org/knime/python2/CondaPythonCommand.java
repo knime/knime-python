@@ -128,7 +128,12 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
      */
     private static String createEnvironmentDirectoryString(final String condaInstallationDirectoryPath,
         final String environmentName) {
-        return Paths.get(condaInstallationDirectoryPath, CONDA_ENVIRONMENTS_DIRECTORY_NAME, environmentName).toString();
+        if (environmentName.equals(Conda.ROOT_ENVIRONMENT_NAME)) {
+            return condaInstallationDirectoryPath;
+        } else {
+            return Paths.get(condaInstallationDirectoryPath, CONDA_ENVIRONMENTS_DIRECTORY_NAME, environmentName)
+                .toString();
+        }
     }
 
     private static void addToPrefixes(final List<String> prefixes, final String first, final String... more) {

@@ -96,7 +96,7 @@ public final class Conda {
 
     private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 2);
 
-    private static final String ROOT_ENVIRONMENT_NAME = "base";
+    static final String ROOT_ENVIRONMENT_NAME = "base";
 
     private static final String ROOT_ENVIRONMENT_LEGACY_NAME = "root";
 
