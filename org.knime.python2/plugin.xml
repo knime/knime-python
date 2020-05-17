@@ -38,6 +38,9 @@
       <initializer
             class="org.knime.python2.prefs.PythonPreferencesInitializer">
       </initializer>
+      <initializer
+            class="org.knime.python2.prefs.advanced.PythonAdvancedPreferencesInitializer">
+      </initializer>
    </extension>
 
 </plugin>
