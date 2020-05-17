@@ -44,63 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 24, 2019 (marcel): created
+ *   Apr 17, 2020 (marcel): created
  */
 package org.knime.python2.prefs;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
-import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.config.PythonConfigStorage;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 
 /**
- * Implementation note: We do not save the enabled state at the moment to not clutter the preferences file
- * unnecessarily.
- *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class PreferenceWrappingConfigStorage implements PythonConfigStorage {
+public final class InstanceScopePreferenceStorage extends AbstractPreferenceStorage {
 
-    private final PreferenceStorage m_preferences;
+    private final PreferenceStorage m_defaultPreferences;
 
     /**
-     * @param preferences The preference storage instance which is wrapped by the instance to construct.
+     * @param qualifier The qualified name (identifier) for this preference storage.
+     * @param defaultPreferences The preferences which are used as fallback for preferences that have no entry in the
+     *            instance scope storage to construct.
      */
-    public PreferenceWrappingConfigStorage(final PreferenceStorage preferences) {
-        m_preferences = preferences;
+    public InstanceScopePreferenceStorage(final String qualifier, final PreferenceStorage defaultPreferences) {
+        super(qualifier);
+        m_defaultPreferences = defaultPreferences;
     }
 
     @Override
-    public void saveBooleanModel(final SettingsModelBoolean model) {
-        m_preferences.writeBoolean(model.getConfigName(), model.getBooleanValue());
+    public boolean readBoolean(final String key, final boolean defaultValue) {
+        return Platform.getPreferencesService().getBoolean(m_qualifier, key,
+            m_defaultPreferences.readBoolean(key, defaultValue), null);
     }
 
     @Override
-    public void saveIntegerModel(final SettingsModelInteger model) {
-        m_preferences.writeInt(model.getKey(), model.getIntValue());
+    public int readInt(final String key, final int defaultValue) {
+        return Platform.getPreferencesService().getInt(m_qualifier, key,
+            m_defaultPreferences.readInt(key, defaultValue), null);
     }
 
     @Override
-    public void saveStringModel(final SettingsModelString model) {
-        m_preferences.writeString(model.getKey(), model.getStringValue());
+    public String readString(final String key, final String defaultValue) {
+        return Platform.getPreferencesService().getString(m_qualifier, key,
+            m_defaultPreferences.readString(key, defaultValue), null);
     }
 
     @Override
-    public void loadBooleanModel(final SettingsModelBoolean model) {
-        final boolean value = m_preferences.readBoolean(model.getConfigName(), model.getBooleanValue());
-        model.setBooleanValue(value);
-    }
-
-    @Override
-    public void loadIntegerModel(final SettingsModelInteger model) {
-        final int value = m_preferences.readInt(model.getKey(), model.getIntValue());
-        model.setIntValue(value);
-    }
-
-    @Override
-    public void loadStringModel(final SettingsModelString model) {
-        final String value = m_preferences.readString(model.getKey(), model.getStringValue());
-        model.setStringValue(value);
+    protected IEclipsePreferences getPreferences() {
+        return InstanceScope.INSTANCE.getNode(m_qualifier);
     }
 }

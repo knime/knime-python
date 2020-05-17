@@ -52,11 +52,15 @@ package org.knime.python2.prefs;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-interface PreferenceStorage {
+public interface PreferenceStorage {
 
     void writeBoolean(String key, boolean value);
 
     boolean readBoolean(String key, boolean defaultValue);
+
+    void writeInt(String key, int value);
+
+    int readInt(String key, int defaultValue);
 
     void writeString(String key, String value);
 

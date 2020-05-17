@@ -44,63 +44,42 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 24, 2019 (marcel): created
+ *   Apr 17, 2020 (marcel): created
  */
 package org.knime.python2.prefs;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
-import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.config.PythonConfigStorage;
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 
 /**
- * Implementation note: We do not save the enabled state at the moment to not clutter the preferences file
- * unnecessarily.
- *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class PreferenceWrappingConfigStorage implements PythonConfigStorage {
-
-    private final PreferenceStorage m_preferences;
+public final class DefaultScopePreferenceStorage extends AbstractPreferenceStorage {
 
     /**
-     * @param preferences The preference storage instance which is wrapped by the instance to construct.
+     * @param qualifier The qualified name (identifier) for this preference storage.
      */
-    public PreferenceWrappingConfigStorage(final PreferenceStorage preferences) {
-        m_preferences = preferences;
+    public DefaultScopePreferenceStorage(final String qualifier) {
+        super(qualifier);
     }
 
     @Override
-    public void saveBooleanModel(final SettingsModelBoolean model) {
-        m_preferences.writeBoolean(model.getConfigName(), model.getBooleanValue());
+    public boolean readBoolean(final String key, final boolean defaultValue) {
+        return getPreferences().getBoolean(key, defaultValue);
     }
 
     @Override
-    public void saveIntegerModel(final SettingsModelInteger model) {
-        m_preferences.writeInt(model.getKey(), model.getIntValue());
+    public int readInt(final String key, final int defaultValue) {
+        return getPreferences().getInt(key, defaultValue);
     }
 
     @Override
-    public void saveStringModel(final SettingsModelString model) {
-        m_preferences.writeString(model.getKey(), model.getStringValue());
+    public String readString(final String key, final String defaultValue) {
+        return getPreferences().get(key, defaultValue);
     }
 
     @Override
-    public void loadBooleanModel(final SettingsModelBoolean model) {
-        final boolean value = m_preferences.readBoolean(model.getConfigName(), model.getBooleanValue());
-        model.setBooleanValue(value);
-    }
-
-    @Override
-    public void loadIntegerModel(final SettingsModelInteger model) {
-        final int value = m_preferences.readInt(model.getKey(), model.getIntValue());
-        model.setIntValue(value);
-    }
-
-    @Override
-    public void loadStringModel(final SettingsModelString model) {
-        final String value = m_preferences.readString(model.getKey(), model.getStringValue());
-        model.setStringValue(value);
+    protected IEclipsePreferences getPreferences() {
+        return DefaultScope.INSTANCE.getNode(m_qualifier);
     }
 }

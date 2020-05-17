@@ -52,11 +52,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.preferences.DefaultScope;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
@@ -71,7 +66,6 @@ import org.knime.python2.config.PythonEnvironmentsConfig;
 import org.knime.python2.config.PythonVersionConfig;
 import org.knime.python2.config.SerializerConfig;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
-import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Convenience front-end of the preference-based configuration of the Python integration.
@@ -81,16 +75,23 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public final class PythonPreferences {
 
-    private static final PreferenceStorage CURRENT_SCOPE_PREFERENCES = new InstanceScopePreferenceStorage();
+    private static final PreferenceStorage DEFAULT_SCOPE_PREFERENCES =
+        new DefaultScopePreferenceStorage(Activator.PLUGIN_ID);
 
-    private static final PreferenceStorage DEFAULT_SCOPE_PREFERENCES = new DefaultScopePreferenceStorage();
+    private static final InstanceScopePreferenceStorage CURRENT_SCOPE_PREFERENCES =
+        new InstanceScopePreferenceStorage(Activator.PLUGIN_ID, DEFAULT_SCOPE_PREFERENCES);
 
+    /**
+     * Accessed by preference page.
+     */
     static final PythonConfigStorage CURRENT = new PreferenceWrappingConfigStorage(CURRENT_SCOPE_PREFERENCES);
 
+    /**
+     * Accessed by preference page and preferences initializer.
+     */
     static final PythonConfigStorage DEFAULT = new PreferenceWrappingConfigStorage(DEFAULT_SCOPE_PREFERENCES);
 
-    private PythonPreferences() {
-    }
+    private PythonPreferences() {}
 
     /**
      * Initializes sensible default Python preferences on the instance scope-level if necessary.
@@ -102,7 +103,7 @@ public final class PythonPreferences {
         // selected by default while we want "Conda" environment configuration as the default for new installations.
         try {
             final List<String> currentPreferencesKeys =
-                Arrays.asList(InstanceScopePreferenceStorage.getInstanceScopePreferences().keys());
+                Arrays.asList(CURRENT_SCOPE_PREFERENCES.getPreferences().keys());
             if (!currentPreferencesKeys.contains(PythonEnvironmentTypeConfig.CFG_KEY_ENVIRONMENT_TYPE)
                 && (currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON2_PATH)
                     || currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON3_PATH))) {
@@ -195,83 +196,5 @@ public final class PythonPreferences {
         final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
         condaEnvironmentsConfig.loadConfigFrom(CURRENT);
         return condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue();
-    }
-
-    static final class InstanceScopePreferenceStorage implements PreferenceStorage {
-
-        static final IEclipsePreferences getInstanceScopePreferences() {
-            return InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
-        }
-
-        @Override
-        public void writeBoolean(final String key, final boolean value) {
-            getInstanceScopePreferences().putBoolean(key, value);
-            flush();
-        }
-
-        @Override
-        public boolean readBoolean(final String key, final boolean defaultValue) {
-            return Platform.getPreferencesService().getBoolean(Activator.PLUGIN_ID, key,
-                DEFAULT_SCOPE_PREFERENCES.readBoolean(key, defaultValue), null);
-        }
-
-        @Override
-        public void writeString(final String key, final String value) {
-            getInstanceScopePreferences().put(key, value);
-            flush();
-        }
-
-        @Override
-        public String readString(final String key, final String defaultValue) {
-            return Platform.getPreferencesService().getString(Activator.PLUGIN_ID, key,
-                DEFAULT_SCOPE_PREFERENCES.readString(key, defaultValue), null);
-        }
-
-        private static void flush() {
-            try {
-                getInstanceScopePreferences().flush();
-            } catch (BackingStoreException ex) {
-                NodeLogger.getLogger(PythonPreferencesInitializer.class)
-                    .error("Could not save Python preferences entry: " + ex.getMessage(), ex);
-            }
-        }
-    }
-
-    private static final class DefaultScopePreferenceStorage implements PreferenceStorage {
-
-        private static IEclipsePreferences getDefaultScopePreferences() {
-            return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
-        }
-
-        @Override
-        public void writeBoolean(final String key, final boolean value) {
-            getDefaultScopePreferences().putBoolean(key, value);
-            flush();
-        }
-
-        @Override
-        public boolean readBoolean(final String key, final boolean defaultValue) {
-            return getDefaultScopePreferences().getBoolean(key, defaultValue);
-        }
-
-        @Override
-        public void writeString(final String key, final String value) {
-            getDefaultScopePreferences().put(key, value);
-            flush();
-        }
-
-        @Override
-        public String readString(final String key, final String defaultValue) {
-            return getDefaultScopePreferences().get(key, defaultValue);
-        }
-
-        private static void flush() {
-            try {
-                getDefaultScopePreferences().flush();
-            } catch (BackingStoreException ex) {
-                NodeLogger.getLogger(PythonPreferencesInitializer.class)
-                    .error("Could not save default Python preferences entry: " + ex.getMessage(), ex);
-            }
-        }
     }
 }

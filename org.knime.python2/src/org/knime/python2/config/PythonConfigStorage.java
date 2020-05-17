@@ -49,6 +49,7 @@
 package org.knime.python2.config;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
+import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
@@ -59,9 +60,13 @@ public interface PythonConfigStorage {
 
     void saveBooleanModel(SettingsModelBoolean model);
 
+    void saveIntegerModel(SettingsModelInteger model);
+
     void saveStringModel(SettingsModelString model);
 
     void loadBooleanModel(SettingsModelBoolean model);
+
+    void loadIntegerModel(SettingsModelInteger model);
 
     void loadStringModel(SettingsModelString model);
 }

@@ -44,63 +44,64 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 24, 2019 (marcel): created
+ *   Apr 18, 2020 (marcel): created
  */
 package org.knime.python2.prefs;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
-import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.config.PythonConfigStorage;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.knime.core.node.NodeLogger;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * Implementation note: We do not save the enabled state at the moment to not clutter the preferences file
- * unnecessarily.
+ * Abstract base class for the different preference storages (instance scope, default scope) of the KNIME Python
+ * integration.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class PreferenceWrappingConfigStorage implements PythonConfigStorage {
-
-    private final PreferenceStorage m_preferences;
+public abstract class AbstractPreferenceStorage implements PreferenceStorage {
 
     /**
-     * @param preferences The preference storage instance which is wrapped by the instance to construct.
+     * The qualified name for this preference storage, serves as identifier in the {@link #getPreferences() underlying
+     * preferences}.
      */
-    public PreferenceWrappingConfigStorage(final PreferenceStorage preferences) {
-        m_preferences = preferences;
+    protected final String m_qualifier;
+
+    /**
+     * @param qualifier The qualified name (identifier) for this preference storage.
+     */
+    public AbstractPreferenceStorage(final String qualifier) {
+        m_qualifier = qualifier;
+    }
+
+    /**
+     * @return The underlying {@link IEclipsePreferences} which this instance wraps.
+     */
+    protected abstract IEclipsePreferences getPreferences();
+
+    @Override
+    public void writeBoolean(final String key, final boolean value) {
+        getPreferences().putBoolean(key, value);
+        flush();
     }
 
     @Override
-    public void saveBooleanModel(final SettingsModelBoolean model) {
-        m_preferences.writeBoolean(model.getConfigName(), model.getBooleanValue());
+    public void writeInt(final String key, final int value) {
+        getPreferences().putInt(key, value);
+        flush();
     }
 
     @Override
-    public void saveIntegerModel(final SettingsModelInteger model) {
-        m_preferences.writeInt(model.getKey(), model.getIntValue());
+    public void writeString(final String key, final String value) {
+        getPreferences().put(key, value);
+        flush();
     }
 
-    @Override
-    public void saveStringModel(final SettingsModelString model) {
-        m_preferences.writeString(model.getKey(), model.getStringValue());
-    }
-
-    @Override
-    public void loadBooleanModel(final SettingsModelBoolean model) {
-        final boolean value = m_preferences.readBoolean(model.getConfigName(), model.getBooleanValue());
-        model.setBooleanValue(value);
-    }
-
-    @Override
-    public void loadIntegerModel(final SettingsModelInteger model) {
-        final int value = m_preferences.readInt(model.getKey(), model.getIntValue());
-        model.setIntValue(value);
-    }
-
-    @Override
-    public void loadStringModel(final SettingsModelString model) {
-        final String value = m_preferences.readString(model.getKey(), model.getStringValue());
-        model.setStringValue(value);
+    private void flush() {
+        try {
+            getPreferences().flush();
+        } catch (final BackingStoreException ex) {
+            NodeLogger.getLogger(PythonPreferencesInitializer.class)
+                .error("Could not save Python preferences entry: " + ex.getMessage(), ex);
+        }
     }
 }
