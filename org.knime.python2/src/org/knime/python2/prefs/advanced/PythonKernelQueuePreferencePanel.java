@@ -103,9 +103,10 @@ public final class PythonKernelQueuePreferencePanel
         gridData.widthHint = 500;
         gridData.grabExcessHorizontalSpace = true;
         infoText.setLayoutData(gridData);
-        infoText.setText("KNIME prelaunches and holds a number of Python processes in the background to speed up the "
-            + "execution of Python-based nodes. Below, the maximum number of processes held at any time can be "
-            + "configured, as well as the duration after which unsued processes are closed again.");
+        infoText.setText("In the background, KNIME initializes and maintains a pool of Python processes for use by "
+            + "individual Python nodes. This reduces the startup cost when executing any Python nodes. The pool size "
+            + "and the duration (in minutes) before recycling idle processes in the pool can be modified from their "
+            + "recommended defaults below.");
     }
 
     private static void createLabeledSpinnerWidget(final String labelText,
