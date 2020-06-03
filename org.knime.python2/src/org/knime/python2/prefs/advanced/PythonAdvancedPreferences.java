@@ -46,12 +46,12 @@
  */
 package org.knime.python2.prefs.advanced;
 
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.python2.Activator;
 import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.advanced.PythonKernelQueueConfig;
 import org.knime.python2.kernel.PythonKernelQueue;
-import org.knime.python2.prefs.DefaultScopePreferenceStorage;
-import org.knime.python2.prefs.InstanceScopePreferenceStorage;
 import org.knime.python2.prefs.PreferenceStorage;
 import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
 
@@ -63,10 +63,10 @@ import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
 public final class PythonAdvancedPreferences {
 
     private static final PreferenceStorage DEFAULT_SCOPE_PREFERENCES =
-        new DefaultScopePreferenceStorage(Activator.PLUGIN_ID);
+        new PreferenceStorage(Activator.PLUGIN_ID, DefaultScope.INSTANCE);
 
     private static final PreferenceStorage CURRENT_SCOPE_PREFERENCES =
-        new InstanceScopePreferenceStorage(Activator.PLUGIN_ID, DEFAULT_SCOPE_PREFERENCES);
+        new PreferenceStorage(Activator.PLUGIN_ID, InstanceScope.INSTANCE, DefaultScope.INSTANCE);
 
     /**
      * Accessed by preference page.

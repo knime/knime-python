@@ -48,21 +48,140 @@
  */
 package org.knime.python2.prefs;
 
+import java.util.function.Function;
+
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.preferences.IScopeContext;
+import org.knime.core.node.NodeLogger;
+import org.osgi.service.prefs.BackingStoreException;
+import org.osgi.service.prefs.Preferences;
+
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public interface PreferenceStorage {
+public final class PreferenceStorage {
 
-    void writeBoolean(String key, boolean value);
+    private final String m_qualifier;
 
-    boolean readBoolean(String key, boolean defaultValue);
+    private final IScopeContext m_writeContext;
 
-    void writeInt(String key, int value);
+    private final IScopeContext[] m_readContexts;
 
-    int readInt(String key, int defaultValue);
+    /**
+     * Creates a new instance that writes to and reads from the preferences identified by the given qualifier and
+     * context.
+     *
+     * @param qualifier The qualified name (identifier) for this preference storage.
+     * @param context The context to and from which this instance writes and reads preference entries.
+     */
+    public PreferenceStorage(final String qualifier, final IScopeContext context) {
+        this(qualifier, context, new IScopeContext[]{context});
+    }
 
-    void writeString(String key, String value);
+    /**
+     * Creates a new instance that writes to and reads from the preferences identified by the given qualifier and
+     * context. Allows to specify an additional context that is consulted upon reading if the primary context does not
+     * contain the requested preference entry.
+     *
+     * @param qualifier The qualified name (identifier) for this preference storage.
+     * @param context The context to which this instance writes preference entries and from which it first tries to read
+     *            preference entries.
+     * @param readFallbackContext The context from which this instance reads preference entries if they are not present
+     *            in {@code context}.
+     */
+    public PreferenceStorage(final String qualifier, final IScopeContext context,
+        final IScopeContext readFallbackContext) {
+        this(qualifier, context, new IScopeContext[]{context, readFallbackContext});
+    }
 
-    String readString(String key, String defaultValue);
+    private PreferenceStorage(final String qualifier, final IScopeContext writeContext,
+        final IScopeContext[] readContexts) {
+        m_qualifier = qualifier;
+        m_writeContext = writeContext;
+        m_readContexts = readContexts;
+    }
+
+    Preferences getWritePreferences() {
+        return m_writeContext.getNode(m_qualifier);
+    }
+
+    private Preferences[] getReadPreferences() {
+        final Preferences[] readPreferences = new Preferences[m_readContexts.length];
+        for (int i = 0; i < m_readContexts.length; i++) {
+            readPreferences[i] = m_readContexts[i].getNode(m_qualifier);
+        }
+        return readPreferences;
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param value The value of the preference entry.
+     */
+    public void writeBoolean(final String key, final boolean value) {
+        writeValue(key, value);
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param defaultValue The default value to use if the entry identified by the given key is not present in this
+     *            storage.
+     * @return The read value or the provided default value.
+     */
+    public boolean readBoolean(final String key, final boolean defaultValue) {
+        return readValue(key, defaultValue, Boolean::parseBoolean);
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param value The value of the preference entry.
+     */
+    public void writeInt(final String key, final int value) {
+        writeValue(key, value);
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param defaultValue The default value to use if the entry identified by the given key is not present in this
+     *            storage.
+     * @return The read value or the provided default value.
+     */
+    public int readInt(final String key, final int defaultValue) {
+        return readValue(key, defaultValue, Integer::parseInt);
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param value The value of the preference entry.
+     */
+    public void writeString(final String key, final String value) {
+        writeValue(key, value);
+    }
+
+    /**
+     * @param key The key of the preference entry.
+     * @param defaultValue The default value to use if the entry identified by the given key is not present in this
+     *            storage.
+     * @return The read value or the provided default value.
+     */
+    public String readString(final String key, final String defaultValue) {
+        return readValue(key, defaultValue, Function.identity());
+    }
+
+    private <T> void writeValue(final String key, final T value) {
+        final Preferences writePreferences = getWritePreferences();
+        writePreferences.put(key, value.toString());
+        try {
+            writePreferences.flush();
+        } catch (final BackingStoreException ex) {
+            NodeLogger.getLogger(PythonPreferencesInitializer.class)
+                .error("Could not save Python preferences entry: " + ex.getMessage(), ex);
+        }
+    }
+
+    private <T> T readValue(final String key, final T defaultValue, final Function<String, T> fromString) {
+        final Preferences[] readPreferences = getReadPreferences();
+        final String stringValue = Platform.getPreferencesService().get(key, defaultValue.toString(), readPreferences);
+        return fromString.apply(stringValue);
+    }
 }

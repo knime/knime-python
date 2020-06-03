@@ -52,6 +52,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
@@ -76,10 +78,10 @@ import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExt
 public final class PythonPreferences {
 
     private static final PreferenceStorage DEFAULT_SCOPE_PREFERENCES =
-        new DefaultScopePreferenceStorage(Activator.PLUGIN_ID);
+        new PreferenceStorage(Activator.PLUGIN_ID, DefaultScope.INSTANCE);
 
-    private static final InstanceScopePreferenceStorage CURRENT_SCOPE_PREFERENCES =
-        new InstanceScopePreferenceStorage(Activator.PLUGIN_ID, DEFAULT_SCOPE_PREFERENCES);
+    private static final PreferenceStorage CURRENT_SCOPE_PREFERENCES =
+        new PreferenceStorage(Activator.PLUGIN_ID, InstanceScope.INSTANCE, DefaultScope.INSTANCE);
 
     /**
      * Accessed by preference page.
@@ -103,7 +105,7 @@ public final class PythonPreferences {
         // selected by default while we want "Conda" environment configuration as the default for new installations.
         try {
             final List<String> currentPreferencesKeys =
-                Arrays.asList(CURRENT_SCOPE_PREFERENCES.getPreferences().keys());
+                Arrays.asList(CURRENT_SCOPE_PREFERENCES.getWritePreferences().keys());
             if (!currentPreferencesKeys.contains(PythonEnvironmentTypeConfig.CFG_KEY_ENVIRONMENT_TYPE)
                 && (currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON2_PATH)
                     || currentPreferencesKeys.contains(ManualEnvironmentsConfig.CFG_KEY_PYTHON3_PATH))) {
