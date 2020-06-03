@@ -46,14 +46,24 @@
  */
 package org.knime.python2.serde.arrow;
 
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
 import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
 import org.knime.python2.serde.SerializationTest;
+import org.knime.python2.testing.PreferencesSetup;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public final class ArrowSerializationTest extends SerializationTest {
+
+	/**
+	 * The tests in this class require the preferences of the Python integration to be properly set up, which is ensured
+	 * by this rule.
+	 */
+	@ClassRule
+	public static final TestRule preferencesSetup = new PreferencesSetup("org.knime.python2.serde.arrow.tests");
 
 	@Override
 	protected Class<? extends SerializationLibraryFactory> getSerializationLibraryFactoryClass() {

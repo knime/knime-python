@@ -57,7 +57,9 @@ import java.util.function.IntSupplier;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.kernel.messaging.AbstractRequestHandler;
@@ -66,12 +68,20 @@ import org.knime.python2.kernel.messaging.DefaultMessage;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadEncoder;
 import org.knime.python2.kernel.messaging.Message;
+import org.knime.python2.testing.PreferencesSetup;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
 public final class MessagingTest {
+
+	/**
+	 * The tests in this class require the preferences of the Python integration to be properly set up, which is ensured
+	 * by this rule.
+	 */
+	@ClassRule
+	public static final TestRule preferencesSetup = new PreferencesSetup("org.knime.python2.serde.flatbuffers.tests");
 
 	private PythonKernel m_kernel;
 

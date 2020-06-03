@@ -10,6 +10,7 @@ Export-Package: org.knime.python2.serde,
 Require-Bundle: org.knime.core;bundle-version="[4.2.0,5.0.0)",
  org.knime.testing;bundle-version="[4.2.0,5.0.0)",
  org.knime.python2;bundle-version="[4.2.0,5.0.0)",
- org.junit;bundle-version="[4.12.0,5.0.0)"
+ org.junit;bundle-version="[4.12.0,5.0.0)",
+ org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
