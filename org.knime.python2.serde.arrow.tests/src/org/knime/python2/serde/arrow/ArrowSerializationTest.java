@@ -46,17 +46,22 @@
  */
 package org.knime.python2.serde.arrow;
 
+import java.io.IOException;
+
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
-import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
-import org.knime.python2.serde.SerializationTest;
+import org.knime.python2.serde.SerializationLibraryTester;
 import org.knime.python2.testing.PreferencesSetup;
 
 /**
+ * Note: we cannot test offline serialization here since the (de)serialization logic of the Arrow serialization library
+ * is no equivalent on the Java vs Python sides.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class ArrowSerializationTest extends SerializationTest {
+public final class ArrowSerializationTest {
 
 	/**
 	 * The tests in this class require the preferences of the Python integration to be properly set up, which is ensured
@@ -65,8 +70,21 @@ public final class ArrowSerializationTest extends SerializationTest {
 	@ClassRule
 	public static final TestRule preferencesSetup = new PreferencesSetup("org.knime.python2.serde.arrow.tests");
 
-	@Override
-	protected Class<? extends SerializationLibraryFactory> getSerializationLibraryFactoryClass() {
-		return ArrowSerializationFactory.class;
+	private final SerializationLibraryTester m_tester;
+
+	/**
+	 * Creates a new instance of this test.
+	 */
+	public ArrowSerializationTest() {
+		m_tester = new SerializationLibraryTester(ArrowSerializationFactory.class);
+	}
+
+	/**
+	 * @see SerializationLibraryTester#testIntOnlineSerializationDeserializationIdentity()
+	 */
+	@Test
+	@SuppressWarnings("javadoc")
+	public void testIntOnlineSerializationDeserializationIdentity() throws IOException {
+		m_tester.testIntOnlineSerializationDeserializationIdentity();
 	}
 }

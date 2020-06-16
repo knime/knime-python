@@ -65,8 +65,9 @@ public class CellImpl implements Cell {
      * For testing purposes.
      *
      * @return true if both cell implementations are equal, false otherwise
+     * @noreference This method is exposed for testing purposes only. It is not intended to be used by third-party code.
      */
-    static boolean cellImplEquals(final CellImpl a, final CellImpl b) {
+    public static boolean cellImplEquals(final CellImpl a, final CellImpl b) {
         if (a == b) {
             return true;
         }

@@ -46,17 +46,20 @@
  */
 package org.knime.python2.serde.csv;
 
+import java.io.IOException;
+
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
-import org.knime.python2.extensions.serializationlibrary.interfaces.SerializationLibraryFactory;
-import org.knime.python2.serde.SerializationTest;
+import org.knime.python2.extensions.serializationlibrary.SerializationException;
+import org.knime.python2.serde.SerializationLibraryTester;
 import org.knime.python2.testing.PreferencesSetup;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class CSVSerializationTest extends SerializationTest {
+public final class CSVSerializationTest {
 
 	/**
 	 * The tests in this class require the preferences of the Python integration to be properly set up, which is ensured
@@ -65,8 +68,30 @@ public final class CSVSerializationTest extends SerializationTest {
 	@ClassRule
 	public static final TestRule preferencesSetup = new PreferencesSetup("org.knime.python2.serde.csv.tests");
 
-	@Override
-	protected Class<? extends SerializationLibraryFactory> getSerializationLibraryFactoryClass() {
-		return CsvSerializationFactory.class;
+	private final SerializationLibraryTester m_tester;
+
+	/**
+	 * Creates a new instance of this test.
+	 */
+	public CSVSerializationTest() {
+		m_tester = new SerializationLibraryTester(CsvSerializationFactory.class);
+	}
+
+	/**
+	 * @see SerializationLibraryTester#testIntOfflineSerializationDeserializationIdentity()
+	 */
+	@Test
+	@SuppressWarnings("javadoc")
+	public void testIntOfflineSerializationDeserializationIdentity() throws SerializationException {
+		m_tester.testIntOfflineSerializationDeserializationIdentity();
+	}
+
+	/**
+	 * @see SerializationLibraryTester#testIntOnlineSerializationDeserializationIdentity()
+	 */
+	@Test
+	@SuppressWarnings("javadoc")
+	public void testIntOnlineSerializationDeserializationIdentity() throws IOException {
+		m_tester.testIntOnlineSerializationDeserializationIdentity();
 	}
 }

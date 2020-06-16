@@ -56,11 +56,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtension;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
@@ -87,68 +83,63 @@ import org.knime.python2.serde.SerializationTestUtil.SingleChunkTableChunker;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public abstract class SerializationTest {
+public final class SerializationLibraryTester {
 
-	protected static final String DEFAULT_TABLE_NAME = "test_table";
+	private static final String DEFAULT_TABLE_NAME = "test_table";
 
-	protected SerializationLibraryExtension m_serializationLibraryExtension;
+	private final SerializationLibraryExtension m_serializationLibraryExtension;
 
-	protected SerializationLibrary m_serializer;
+	private final SerializationLibrary m_serializer;
 
-	protected SerializationTestUtil m_util;
+	private final SerializationTestUtil m_util;
 
 	/**
-	 * @return the factory class of the serialization library under test.
+	 * @param factoryClass The factory class of the serialization library under test.
 	 */
-	protected abstract Class<? extends SerializationLibraryFactory> getSerializationLibraryFactoryClass();
-
-	@Before
-	public void setUp() {
-		final Class<? extends SerializationLibraryFactory> factoryClass = getSerializationLibraryFactoryClass();
+	public SerializationLibraryTester(final Class<? extends SerializationLibraryFactory> factoryClass) {
 		m_serializationLibraryExtension = SerializationLibraryExtensions.getExtensions().stream()
-				.filter(e -> e.getJavaSerializationLibraryFactory().getClass() == factoryClass).findFirst().get();
+				.filter(e -> e.getJavaSerializationLibraryFactory().getClass() == factoryClass).findFirst()
+				.orElseThrow(() -> new IllegalStateException(
+						"Serialization library extension could not be found: " + factoryClass.getName()));
 		m_serializer = m_serializationLibraryExtension.getJavaSerializationLibraryFactory().createInstance();
 		m_util = new SerializationTestUtil();
 	}
 
 	// Tests:
 
-	// TODO: Add tests for other types.
-	// Generalize #createDefaultFloat32Table() to create arbitrary test tables based on a table spec.
-	// Move generalized method to SerializationTestUtil.
+	// TODO:
+	// - Add tests for other data types.
+	// - Generalize #createDefaultIntTable() to create arbitrary test tables based on a table spec.
+	// - Move generalized method to SerializationTestUtil.
 
 	/**
-	 * Tests Java side only.
+	 * Tests Java side only. Note that this test only works properly if the data format used by the serialization
+	 * library under test is "symmetric" with respect to the direction of (de)serialization.
+	 *
+	 * @throws SerializationException If something went wrong during (de)serialization.
 	 */
-	@Test
-	public void testFloat32OfflineSerializationDeserializationIdentity()
-			throws SerializationException, PythonCanceledExecutionException {
-		final TestTable floatTable = createDefaultFloat32Table();
-		testOfflineSerializationDeserializationIdentity(floatTable);
+	public void testIntOfflineSerializationDeserializationIdentity() throws SerializationException {
+		final TestTable table = createDefaultIntTable();
+		testOfflineSerializationDeserializationIdentity(table);
 	}
 
 	/**
 	 * Tests Java side and Python side.
+	 *
+	 * @throws IOException If any error occurred while communicating with Python. This includes errors during
+	 *             (de)serialization.
 	 */
-	@Test
-	public void testFloat32OnlineSerializationDeserializationIdentity()
-			throws PythonCanceledExecutionException, IOException {
-		final TestTable floatTable = createDefaultFloat32Table();
-		testOnlineSerializationDeserializationIdentity(floatTable);
+	public void testIntOnlineSerializationDeserializationIdentity() throws IOException {
+		final TestTable table = createDefaultIntTable();
+		testOnlineSerializationDeserializationIdentity(table);
 	}
 
 	// Helpers:
 
-	protected PythonKernelOptions createConfiguredKernelOptions(final PythonKernelOptions options) {
-		final PythonKernelOptions configuredOptions = options.forSerializationOptions(
-				options.getSerializationOptions().forSerializerId(m_serializationLibraryExtension.getId()));
-		return configuredOptions;
-	}
-
-	protected TestTable createDefaultFloat32Table() {
-		final Type[] types = new Type[] { Type.FLOAT, Type.FLOAT_LIST, Type.FLOAT_SET };
+	private TestTable createDefaultIntTable() {
+		final Type[] types = new Type[] { Type.INTEGER, Type.INTEGER_LIST, Type.INTEGER_SET };
 		final String[] names = new String[] { "scalar", "list", "set" };
-		final TableSpecImpl spec = new TableSpecImpl(types, names, null);
+		final TableSpecImpl spec = new TableSpecImpl(types, names, new HashMap<>());
 		final int numberOfColumns = spec.getNumberColumns();
 		final Row[] rows = new Row[DEFAULT_TABLE_SIZE];
 		final int numberOfRows = rows.length;
@@ -159,19 +150,15 @@ public abstract class SerializationTest {
 				if (m_util.getMissingDecision(DEFAULT_TABLE_MISSING_CELL_RATIO)) {
 					cell = new CellImpl();
 				} else {
-					// Missing collection elements only in the lower half of the table.
-					final float missingProbability = Math.max(0, i / (float) numberOfRows - 0.5f);
 					switch (types[j]) {
-					case FLOAT:
-						cell = m_util.createRandomFloatCell();
+					case INTEGER:
+						cell = m_util.createRandomIntCell();
 						break;
-					case FLOAT_LIST:
-						cell = m_util.createRandomFloatListCell(m_util.getRandomNumberOfCollectionElements(),
-								missingProbability);
+					case INTEGER_LIST:
+						cell = m_util.createRandomIntListCell(m_util.getRandomNumberOfCollectionElements(), -1f);
 						break;
-					case FLOAT_SET:
-						cell = m_util.createRandomFloatSetCell(m_util.getRandomNumberOfCollectionElements(),
-								missingProbability);
+					case INTEGER_SET:
+						cell = m_util.createRandomIntSetCell(m_util.getRandomNumberOfCollectionElements(), -1f);
 						break;
 					default:
 						throw new IllegalStateException("Implementation error.");
@@ -184,31 +171,33 @@ public abstract class SerializationTest {
 		return new TestTable(rows, spec);
 	}
 
-	protected void testOfflineSerializationDeserializationIdentity(final TestTable testTable)
-			throws SerializationException, PythonCanceledExecutionException {
+	private void testOfflineSerializationDeserializationIdentity(final TestTable testTable)
+			throws SerializationException {
 		final TableSpec originalSpec = testTable.m_spec;
 		final Row[] originalRows = testTable.m_rows;
+		try {
+			final byte[] bytes = m_serializer.tableToBytes(new RowListIterator(originalSpec,
+					originalRows),
+					DEFAULT_SERIALIZATION_OPTIONS, PythonCancelable.NOT_CANCELABLE);
 
-		final byte[] bytes = m_serializer.tableToBytes(new RowListIterator(originalSpec, originalRows),
-				DEFAULT_SERIALIZATION_OPTIONS, PythonCancelable.NOT_CANCELABLE);
+			final TableSpec deserializedSpec = m_serializer.tableSpecFromBytes(bytes, PythonCancelable.NOT_CANCELABLE);
+			assertTableSpecEquals(originalSpec, deserializedSpec);
 
-		final TableSpec deserializedSpec = m_serializer.tableSpecFromBytes(bytes, PythonCancelable.NOT_CANCELABLE);
-
-		assertTableSpecEquals(originalSpec, deserializedSpec);
-
-		final RowListCreator creator = new RowListCreator(deserializedSpec);
-		m_serializer.bytesIntoTable(creator, bytes, DEFAULT_SERIALIZATION_OPTIONS, PythonCancelable.NOT_CANCELABLE);
-		final List<Row> deserializedTable = creator.getTable();
-
-		assertRowsEqual(Arrays.asList(originalRows), deserializedTable);
+			final RowListCreator creator = new RowListCreator(deserializedSpec);
+			m_serializer.bytesIntoTable(creator, bytes, DEFAULT_SERIALIZATION_OPTIONS, PythonCancelable.NOT_CANCELABLE);
+			final List<Row> deserializedTable = creator.getTable();
+			assertRowsEqual(Arrays.asList(originalRows), deserializedTable);
+		} catch (final PythonCanceledExecutionException ex) {
+			// Cannot happen, we pass non-cancelables above.
+			throw new IllegalStateException(ex);
+		}
 	}
 
-	protected void testOnlineSerializationDeserializationIdentity(final TestTable testTable)
-			throws IOException, PythonCanceledExecutionException {
+	private void testOnlineSerializationDeserializationIdentity(final TestTable testTable) throws IOException {
 		final TableSpec originalSpec = testTable.m_spec;
 		final Row[] originalRows = testTable.m_rows;
-
-		try (PythonKernel kernel = new PythonKernel(createConfiguredKernelOptions(new PythonKernelOptions()))) {
+		try (@SuppressWarnings("deprecation")
+		PythonKernel kernel = new PythonKernel(createConfiguredKernelOptions(new PythonKernelOptions()))) {
 			kernel.putData(DEFAULT_TABLE_NAME,
 					new SingleChunkTableChunker(new RowListIterator(originalSpec, originalRows)), originalRows.length,
 					PythonCancelable.NOT_CANCELABLE);
@@ -218,22 +207,28 @@ public abstract class SerializationTest {
 					new RowListCreatorFactory(), PythonCancelable.NOT_CANCELABLE);
 
 			final TableSpec deserializedSpec = creator.getTableSpec();
-
 			assertTableSpecEquals(originalSpec, deserializedSpec);
 
 			final List<Row> deserializedTable = creator.getTable();
-
 			assertRowsEqual(Arrays.asList(originalRows), deserializedTable);
+		} catch (final PythonCanceledExecutionException ex) {
+			// Cannot happen, we pass non-cancelables above.
+			throw new IllegalStateException(ex);
 		}
 	}
 
-	protected class TestTable {
+	private PythonKernelOptions createConfiguredKernelOptions(final PythonKernelOptions options) {
+		return options.forSerializationOptions(
+				options.getSerializationOptions().forSerializerId(m_serializationLibraryExtension.getId()));
+	}
 
-		protected final Row[] m_rows;
+	private class TestTable {
 
-		protected final TableSpec m_spec;
+		private final Row[] m_rows;
 
-		protected TestTable(final Row[] rows, final TableSpec spec) {
+		private final TableSpec m_spec;
+
+		private TestTable(final Row[] rows, final TableSpec spec) {
 			m_rows = rows;
 			m_spec = spec;
 		}

@@ -65,7 +65,6 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreator
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableCreatorFactory;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableIterator;
 import org.knime.python2.extensions.serializationlibrary.interfaces.TableSpec;
-import org.knime.python2.extensions.serializationlibrary.interfaces.impl.AssertCellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 
 /**
@@ -78,7 +77,7 @@ public final class SerializationTestUtil {
 
 	public static final int DEFAULT_TABLE_SIZE = 30;
 
-	public static final float DEFAULT_TABLE_MISSING_CELL_RATIO = 0.1f;
+	public static final float DEFAULT_TABLE_MISSING_CELL_RATIO = -1f;
 
 	public static final int DEFAULT_MIN_NUM_COLLECTION_ELEMENTS = 1;
 
@@ -252,7 +251,7 @@ public final class SerializationTestUtil {
 		if (!(expectedCell instanceof CellImpl && actualCell instanceof CellImpl)) {
 			throw new IllegalStateException("Not implemented.");
 		}
-		AssertCellImpl.assertCellEquals((CellImpl) expectedCell, (CellImpl) actualCell);
+		CellImpl.cellImplEquals((CellImpl) expectedCell, (CellImpl) actualCell);
 	}
 
 	// Stateful utilities for test setup:
@@ -277,12 +276,12 @@ public final class SerializationTestUtil {
 		return m_random.nextFloat() < missingProbability;
 	}
 
-	public float createRandomFloat() {
-		return m_random.nextFloat() * m_random.nextInt(Short.MAX_VALUE);
+	public int createRandomInt() {
+		return m_random.nextInt();
 	}
 
-	public Cell createRandomFloatCell() {
-		return new CellImpl(createRandomFloat());
+	public Cell createRandomIntCell() {
+		return new CellImpl(createRandomInt());
 	}
 
 	public int getRandomNumberOfCollectionElements() {
@@ -290,24 +289,24 @@ public final class SerializationTestUtil {
 				+ DEFAULT_MIN_NUM_COLLECTION_ELEMENTS;
 	}
 
-	public Cell createRandomFloatListCell(final int numberOfElements, final float missingElementProbability) {
-		final float[] elements = new float[numberOfElements];
+	public Cell createRandomIntListCell(final int numberOfElements, final float missingElementProbability) {
+		final int[] elements = new int[numberOfElements];
 		final byte[] missings = createMissingsVector(numberOfElements);
 		for (int i = 0; i < numberOfElements; i++) {
 			if (!getMissingDecision(missingElementProbability)) {
-				elements[i] = createRandomFloat();
+				elements[i] = createRandomInt();
 				populateMissingsVectorIndex(missings, i);
 			}
 		}
 		return new CellImpl(elements, missings);
 	}
 
-	public Cell createRandomFloatSetCell(final int numberOfElements, final float missingElementProbability) {
+	public Cell createRandomIntSetCell(final int numberOfElements, final float missingElementProbability) {
 		final boolean hasMissingElement = getMissingDecision(missingElementProbability);
 		final int numberOfNonMissingElements = hasMissingElement ? numberOfElements - 1 : numberOfElements;
-		final float[] elements = new float[numberOfNonMissingElements];
+		final int[] elements = new int[numberOfNonMissingElements];
 		for (int i = 0; i < numberOfNonMissingElements; i++) {
-			elements[i] = createRandomFloat();
+			elements[i] = createRandomInt();
 		}
 		return new CellImpl(elements, hasMissingElement);
 	}
