@@ -19,8 +19,18 @@ try {
 	workflowTests.runTests(
         dependencies: [
             repositories: [
-                'knime-python', 'knime-filehandling', 'knime-xml', 'knime-datageneration', 'knime-jep',
-                'knime-ensembles', 'knime-jfreechart', 'knime-database'/*, 'knime-orc', 'knime-chemistry' */
+                'knime-chemistry',
+                'knime-database',
+                'knime-datageneration',
+                'knime-distance',
+                'knime-ensembles',
+                'knime-filehandling',
+                'knime-jep',
+                'knime-jfreechart',
+                'knime-js-base',
+                'knime-kerberos',
+                'knime-python',
+                'knime-xml'
             ]
         ]
 	)
