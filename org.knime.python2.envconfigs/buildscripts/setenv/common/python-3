@@ -1,6 +1,0 @@
-#!/bin/bash
-
-export PATH="~jenkins/python/anaconda/bin:$PATH"
-
-source activate py36_knime
-exec python "$@"
