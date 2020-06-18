@@ -20,7 +20,7 @@ try {
         dependencies: [
             repositories: [
                 'knime-python', 'knime-filehandling', 'knime-xml', 'knime-datageneration', 'knime-jep',
-                'knime-ensembles', 'knime-jfreechart', 'knime-database', 'knime-orc', /* 'knime-chemistry' */
+                'knime-ensembles', 'knime-jfreechart', 'knime-database'/*, 'knime-orc', 'knime-chemistry' */
             ]
         ]
 	)
