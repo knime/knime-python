@@ -30,6 +30,7 @@ try {
                 'knime-js-base',
                 'knime-kerberos',
                 'knime-python',
+                'knime-testing-internal',
                 'knime-xml'
             ]
         ]
