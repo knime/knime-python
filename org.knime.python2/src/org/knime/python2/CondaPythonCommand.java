@@ -65,8 +65,6 @@ import org.apache.commons.lang3.SystemUtils;
  */
 public final class CondaPythonCommand extends AbstractPythonCommand {
 
-    private static final String CONDA_ENVIRONMENTS_DIRECTORY_NAME = "envs";
-
     private static final String PATH_ENVIRONMENT_VARIABLE_NAME = "PATH";
 
     /**
@@ -81,23 +79,27 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
      *
      * @param pythonVersion The version of Python environments launched by this command.
      * @param condaInstallationDirectoryPath The path to the directory of the Conda installation.
-     * @param environmentName The name of the Conda environment.
+     * @param environmentDirectoryPath The path to the directory of the Conda environment. The directory does not
+     *            necessarily need to be located inside the Conda installation directory, which is why a path is
+     *            required.
      */
     public CondaPythonCommand(final PythonVersion pythonVersion, final String condaInstallationDirectoryPath,
-        final String environmentName) {
-        super(pythonVersion, Arrays.asList(createExecutableString(condaInstallationDirectoryPath, environmentName)));
+        final String environmentDirectoryPath) {
+        super(pythonVersion, Arrays.asList(createExecutableString(environmentDirectoryPath)));
         // On Windows, we need to prepend a number of library paths to the PATH environment variable to resolve issues
         // that may occur when Python modules are searching for DLLs.
         if (SystemUtils.IS_OS_WINDOWS) {
             final List<String> pathPrefixes = new ArrayList<>();
-            final String environmentDirectory =
-                createEnvironmentDirectoryString(condaInstallationDirectoryPath, environmentName);
-            addToPrefixes(pathPrefixes, environmentDirectory);
-            addToPrefixes(pathPrefixes, environmentDirectory, "Library", "mingw-w64", "bin");
-            addToPrefixes(pathPrefixes, environmentDirectory, "Library", "usr", "bin");
-            addToPrefixes(pathPrefixes, environmentDirectory, "Library", "bin");
-            addToPrefixes(pathPrefixes, environmentDirectory, "Scripts");
-            addToPrefixes(pathPrefixes, environmentDirectory, "bin");
+            addToPrefixes(pathPrefixes, environmentDirectoryPath);
+            addToPrefixes(pathPrefixes, environmentDirectoryPath, "Library", "mingw-w64", "bin");
+            addToPrefixes(pathPrefixes, environmentDirectoryPath, "Library", "usr", "bin");
+            addToPrefixes(pathPrefixes, environmentDirectoryPath, "Library", "bin");
+            addToPrefixes(pathPrefixes, environmentDirectoryPath, "Scripts");
+            addToPrefixes(pathPrefixes, environmentDirectoryPath, "bin");
+            // Note that we use the condabin directory of the given Conda installation directory regardless of whether
+            // the given environment actually belongs to that Conda installation or a different instance. This is a
+            // possible source of complications, but there is no known way to determine the environment's "correct"
+            // Conda instance.
             addToPrefixes(pathPrefixes, condaInstallationDirectoryPath, "condabin");
             m_pathPrefix = String.join(File.pathSeparator, pathPrefixes);
         } else {
@@ -108,32 +110,16 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
     /**
      * Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/
      */
-    private static String createExecutableString(final String condaInstallationDirectoryPath,
-        final String environmentName) {
-        final String environmentDirectory =
-            createEnvironmentDirectoryString(condaInstallationDirectoryPath, environmentName);
+    private static String createExecutableString(final String environmentDirectoryPath) {
         final Path executablePath;
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
-            executablePath = Paths.get(environmentDirectory, "bin", "python");
+            executablePath = Paths.get(environmentDirectoryPath, "bin", "python");
         } else if (SystemUtils.IS_OS_WINDOWS) {
-            executablePath = Paths.get(environmentDirectory, "python.exe");
+            executablePath = Paths.get(environmentDirectoryPath, "python.exe");
         } else {
             throw Conda.createUnknownOSException();
         }
         return executablePath.toString();
-    }
-
-    /**
-     * Paths are determined as per https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/
-     */
-    private static String createEnvironmentDirectoryString(final String condaInstallationDirectoryPath,
-        final String environmentName) {
-        if (environmentName.equals(Conda.ROOT_ENVIRONMENT_NAME)) {
-            return condaInstallationDirectoryPath;
-        } else {
-            return Paths.get(condaInstallationDirectoryPath, CONDA_ENVIRONMENTS_DIRECTORY_NAME, environmentName)
-                .toString();
-        }
     }
 
     private static void addToPrefixes(final List<String> prefixes, final String first, final String... more) {

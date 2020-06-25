@@ -110,7 +110,7 @@ final class CondaEnvironmentsPreferencePanel
         final Composite panel) {
         final String pythonName = pythonVersion.getName();
         final CondaEnvironmentSelectionBox environmentSelection = new CondaEnvironmentSelectionBox(pythonVersion,
-            pythonConfig.getEnvironmentName(), pythonConfig.getAvailableEnvironmentNames(), pythonName,
+            pythonConfig.getEnvironmentDirectory(), pythonConfig.getAvailableEnvironments(), pythonName,
             "Name of the " + pythonName + " Conda environment", pythonConfig.getPythonInstallationInfo(),
             pythonConfig.getPythonInstallationError(), environmentCreator, panel);
         final GridData gridData = new GridData();

@@ -102,7 +102,7 @@ public final class PreferenceStorage {
         m_readContexts = readContexts;
     }
 
-    Preferences getWritePreferences() {
+    public Preferences getWritePreferences() {
         return m_writeContext.getNode(m_qualifier);
     }
 

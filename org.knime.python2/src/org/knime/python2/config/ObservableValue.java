@@ -44,70 +44,71 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 24, 2019 (marcel): created
+ *   Jun 25, 2020 (marcel): created
  */
-package org.knime.python2.prefs;
+package org.knime.python2.config;
 
-import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
-import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.config.PythonConfigStorage;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Implementation note: We do not save the enabled state at the moment to not clutter the preferences file
- * unnecessarily.
+ * Wraps a value and notifies observers if the value has been changed.
  *
+ * @param <T> The type of the observable value.
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class PreferenceWrappingConfigStorage implements PythonConfigStorage {
+public final class ObservableValue<T> {
 
-    private final PreferenceStorage m_preferences;
+    private final CopyOnWriteArrayList<ValueObserver<T>> m_listeners = new CopyOnWriteArrayList<>();
 
-    /**
-     * @param preferences The preference storage instance which is wrapped by the instance to construct.
-     */
-    public PreferenceWrappingConfigStorage(final PreferenceStorage preferences) {
-        m_preferences = preferences;
+    private T m_value;
+
+    public ObservableValue() {}
+
+    public ObservableValue(final T value) {
+        m_value = value;
     }
 
     /**
-     * @return The wrapped preferences.
+     * @return The wrapped value.
      */
-    public PreferenceStorage getWrappedPreferences() {
-        return m_preferences;
+    public T getValue() {
+        return m_value;
     }
 
-    @Override
-    public void saveBooleanModel(final SettingsModelBoolean model) {
-        m_preferences.writeBoolean(model.getConfigName(), model.getBooleanValue());
+    /**
+     * Sets the given value as the wrapped value. If both values differ, then the registered observers are notified
+     * about the changed value.
+     *
+     * @param value The value to set.
+     */
+    public void setValue(final T value) {
+        if (!Objects.equals(m_value, value)) {
+            final T oldValue = m_value;
+            m_value = value;
+            notifyObservers(value, oldValue);
+        }
     }
 
-    @Override
-    public void saveIntegerModel(final SettingsModelInteger model) {
-        m_preferences.writeInt(model.getKey(), model.getIntValue());
+    private void notifyObservers(final T newValue, final T oldValue) {
+        for (ValueObserver<T> l : m_listeners) {
+            l.valueChanged(newValue, oldValue);
+        }
     }
 
-    @Override
-    public void saveStringModel(final SettingsModelString model) {
-        m_preferences.writeString(model.getKey(), model.getStringValue());
+    public void addObserver(final ValueObserver<T> observer) {
+        if (!m_listeners.contains(observer)) {
+            m_listeners.add(observer);
+        }
     }
 
-    @Override
-    public void loadBooleanModel(final SettingsModelBoolean model) {
-        final boolean value = m_preferences.readBoolean(model.getConfigName(), model.getBooleanValue());
-        model.setBooleanValue(value);
+    public boolean removeObserver(final ValueObserver<T> observer) {
+        return m_listeners.remove(observer);
     }
 
-    @Override
-    public void loadIntegerModel(final SettingsModelInteger model) {
-        final int value = m_preferences.readInt(model.getKey(), model.getIntValue());
-        model.setIntValue(value);
-    }
+    @FunctionalInterface
+    public static interface ValueObserver<T> {
 
-    @Override
-    public void loadStringModel(final SettingsModelString model) {
-        final String value = m_preferences.readString(model.getKey(), model.getStringValue());
-        model.setStringValue(value);
+        void valueChanged(T newValue, T oldValue);
     }
 }

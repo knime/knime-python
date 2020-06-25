@@ -57,6 +57,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentCreationMonitor;
+import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 
@@ -168,21 +169,21 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
             try {
                 onEnvironmentCreationStarting(status);
                 final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
-                final String createdEnvironmentName;
+                final CondaEnvironmentSpec createdEnvironment;
                 if (pathToEnvFile.isPresent()) {
-                    createdEnvironmentName = conda.createEnvironmentFromFile(m_pythonVersion, pathToEnvFile.get(),
+                    createdEnvironment = conda.createEnvironmentFromFile(m_pythonVersion, pathToEnvFile.get(),
                         environmentName, m_currentCreationMonitor);
                 } else if (m_pythonVersion.equals(PythonVersion.PYTHON2)) {
-                    createdEnvironmentName =
+                    createdEnvironment =
                         conda.createDefaultPython2Environment(environmentName, m_currentCreationMonitor);
                 } else if (m_pythonVersion.equals(PythonVersion.PYTHON3)) {
-                    createdEnvironmentName =
+                    createdEnvironment =
                         conda.createDefaultPython3Environment(environmentName, m_currentCreationMonitor);
                 } else {
                     throw new IllegalStateException("Python version '" + m_pythonVersion
                         + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
                 }
-                onEnvironmentCreationFinished(status, createdEnvironmentName);
+                onEnvironmentCreationFinished(status, createdEnvironment);
             } catch (final PythonCanceledExecutionException ex) {
                 onEnvironmentCreationCanceled(status);
             } catch (final Exception ex) {
@@ -218,11 +219,11 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
     }
 
     private void onEnvironmentCreationFinished(final CondaEnvironmentCreationStatus status,
-        final String createdEnvironmentName) {
+        final CondaEnvironmentSpec createdEnvironment) {
         status.m_statusMessage.setStringValue(
-            "Environment creation finished.\nNew environment's name: '" + createdEnvironmentName + "'.");
+            "Environment creation finished.\nNew environment's name: '" + createdEnvironment.getName() + "'.");
         for (final CondaEnvironmentCreationStatusListener listener : m_listeners) {
-            listener.condaEnvironmentCreationFinished(status, createdEnvironmentName);
+            listener.condaEnvironmentCreationFinished(status, createdEnvironment);
         }
     }
 
@@ -282,9 +283,10 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
          * Called asynchronously, that is, possibly not in a UI thread.
          *
          * @param status The status of the corresponding creation process.
-         * @param createdEnvironmentName The name of the created environment.
+         * @param createdEnvironment A description of the created environment.
          */
-        void condaEnvironmentCreationFinished(CondaEnvironmentCreationStatus status, String createdEnvironmentName);
+        void condaEnvironmentCreationFinished(CondaEnvironmentCreationStatus status,
+            CondaEnvironmentSpec createdEnvironment);
 
         /**
          * Called asynchronously, that is, possibly not in a UI thread.

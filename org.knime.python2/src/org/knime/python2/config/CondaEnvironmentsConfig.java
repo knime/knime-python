@@ -51,6 +51,7 @@ package org.knime.python2.config;
 import java.nio.file.Paths;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.PythonVersion;
 
 /**
@@ -64,34 +65,18 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
      */
     public static final String CFG_KEY_CONDA_DIRECTORY_PATH = "condaDirectoryPath";
 
-    /**
-     * Configuration key for the Python 2 Conda environment.
-     */
-    public static final String CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
+    private static final String CFG_KEY_PYTHON2_CONDA_ENV_DIR = "python2CondaEnvironmentDirectoryPath";
 
-    /**
-     * Configuration key for the Python 3 Conda environment.
-     */
-    public static final String CFG_KEY_PYTHON3_CONDA_ENV_NAME = "python3CondaEnvironmentName";
-
-    /**
-     * Use no environment by default.
-     */
-    public static final String PLACEHOLDER_PYTHON2_CONDA_ENV_NAME = "<no environment>";
-
-    /**
-     * Use no environment by default.
-     */
-    public static final String PLACEHOLDER_PYTHON3_CONDA_ENV_NAME = "<no environment>";
+    private static final String CFG_KEY_PYTHON3_CONDA_ENV_DIR = "python3CondaEnvironmentDirectoryPath";
 
     private final SettingsModelString m_condaDirectory =
         new SettingsModelString(CFG_KEY_CONDA_DIRECTORY_PATH, getDefaultCondaInstallationDirectory());
 
     private final CondaEnvironmentConfig m_python2EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON2,
-        CFG_KEY_PYTHON2_CONDA_ENV_NAME, PLACEHOLDER_PYTHON2_CONDA_ENV_NAME, m_condaDirectory);
+        CFG_KEY_PYTHON2_CONDA_ENV_DIR, getDefaultCondaEnvironment(m_condaDirectory.getStringValue()), m_condaDirectory);
 
     private final CondaEnvironmentConfig m_python3EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON3,
-        CFG_KEY_PYTHON3_CONDA_ENV_NAME, PLACEHOLDER_PYTHON3_CONDA_ENV_NAME, m_condaDirectory);
+        CFG_KEY_PYTHON3_CONDA_ENV_DIR, getDefaultCondaEnvironment(m_condaDirectory.getStringValue()), m_condaDirectory);
 
     // Not meant for saving/loading. We just want observable values here to communicate with the view:
 
@@ -131,6 +116,15 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
             // Ignore and continue with fallback.
         }
         return "";
+    }
+
+    private static CondaEnvironmentSpec getDefaultCondaEnvironment(final String condaDirectoryPath) {
+        // Note: the environment must not be "base" since the base environment is not located inside the "envs"
+        // directory used below.
+        // TODO: change to sensible default
+        final String environmentName = "no environment available";
+        final String environmentDirectoryPath = Paths.get(condaDirectoryPath, "envs", environmentName).toString();
+        return new CondaEnvironmentSpec(environmentName, environmentDirectoryPath);
     }
 
     /**

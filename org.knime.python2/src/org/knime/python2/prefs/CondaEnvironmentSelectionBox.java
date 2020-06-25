@@ -50,9 +50,16 @@ package org.knime.python2.prefs;
 
 import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.eclipse.jface.resource.FontDescriptor;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -64,11 +71,12 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.core.node.defaultnodesettings.SettingsModelStringArray;
+import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver;
 import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
+import org.knime.python2.config.ObservableValue;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -78,7 +86,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
 
     private final Label m_header;
 
-    private final Combo m_environmentSelection;
+    private final ComboViewer m_environmentSelection;
 
     private final SettingsModelString m_environmentModel;
 
@@ -86,22 +94,22 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * Creates a new environment selection box without a warning label and with the default creation dialog.
      *
      * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
-     * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
-     *            is, in a non-UI thread.
-     * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
-     *            is, in a non-UI thread.
+     * @param environmentModel The settings model for the Conda environment directory. May be updated asynchronously,
+     *            that is, in a non-UI thread.
+     * @param availableEnvironmentsModel The list of the available Conda environments. May be updated asynchronously,
+     *            that is, in a non-UI thread.
      * @param selectionBoxLabel The description text for the environment selection box.
      * @param headerLabel The text of the header for the path editor's enclosing group box.
      * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
      *            non-UI thread.
      * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
      *            non-UI thread.
-     * @param environmentCreator Handles the creation of new conda environments when the user clicks the widget's
-     *            "New..." button.
+     * @param environmentCreator Handles the creation of new Conda environments when the user clicks the widget's "New
+     *            environment..." button.
      * @param parent The parent widget.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString errorMessageModel, final CondaEnvironmentCreationObserver environmentCreator,
         final Composite parent) {
@@ -113,10 +121,10 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * Creates a new environment selection box with a warning label and with the default creation dialog.
      *
      * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
-     * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
-     *            is, in a non-UI thread.
-     * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
-     *            is, in a non-UI thread.
+     * @param environmentModel The settings model for the Conda environment directory. May be updated asynchronously,
+     *            that is, in a non-UI thread.
+     * @param availableEnvironmentsModel The list of the available Conda environments. May be updated asynchronously,
+     *            that is, in a non-UI thread.
      * @param selectionBoxLabel The description text for the environment selection box.
      * @param headerLabel The text of the header for the path editor's enclosing group box.
      * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
@@ -125,12 +133,12 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      *            non-UI thread. May be <code>null</code> if no warning should be displayed.
      * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
      *            non-UI thread.
-     * @param environmentCreator Handles the creation of new conda environments when the user clicks the widget's
-     *            "New..." button.
+     * @param environmentCreator Handles the creation of new Conda environments when the user clicks the widget's "New
+     *            environment..." button.
      * @param parent The parent widget.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
         final CondaEnvironmentCreationObserver environmentCreator, final Composite parent) {
@@ -143,10 +151,10 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * Creates a new environment selection box with warning label and with a custom creation dialog.
      *
      * @param pythonVersion The Python version of the Conda environment intended for selection/creation.
-     * @param environmentModel The settings model for the conda environment name. May be updated asynchronously, that
-     *            is, in a non-UI thread.
-     * @param availableEnvironmentsModel The list of available conda environments. May be updated asynchronously, that
-     *            is, in a non-UI thread.
+     * @param environmentModel The settings model for the Conda environment directory. May be updated asynchronously,
+     *            that is, in a non-UI thread.
+     * @param availableEnvironmentsModel The list of the available Conda environments. May be updated asynchronously,
+     *            that is, in a non-UI thread.
      * @param selectionBoxLabel The description text for the environment selection box.
      * @param headerLabel The text of the header for the path editor's enclosing group box.
      * @param infoMessageModel The settings model for the info label. May be updated asynchronously, that is, in a
@@ -155,13 +163,13 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      *            non-UI thread. May be <code>null</code> if no warning should be displayed.
      * @param errorMessageModel The settings model for the error label. May be updated asynchronously, that is, in a
      *            non-UI thread.
-     * @param environmentCreator Handles the creation of new conda environments when the user clicks the widget's
-     *            "New..." button.
+     * @param environmentCreator Handles the creation of new Conda environments when the user clicks the widget's "New
+     *            environment..." button.
      * @param parent The parent widget.
      * @param openCreationDialog A consumer which opens a creation dialog with the given parent.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final SettingsModelStringArray availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
         final AbstractCondaEnvironmentCreationObserver environmentCreator, final Composite parent,
@@ -188,9 +196,22 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         gridData = new GridData();
         environmentSelectionLabel.setLayoutData(gridData);
         environmentSelectionLabel.setText(selectionBoxLabel);
-        m_environmentSelection = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+        final Combo combo = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
         gridData = new GridData();
-        m_environmentSelection.setLayoutData(gridData);
+        combo.setLayoutData(gridData);
+        m_environmentSelection = new ComboViewer(combo);
+        m_environmentSelection.setContentProvider(ArrayContentProvider.getInstance());
+        m_environmentSelection.setLabelProvider(new LabelProvider() {
+
+            @Override
+            public String getText(final Object element) {
+                if (element instanceof CondaEnvironmentSpec) {
+                    return ((CondaEnvironmentSpec)element).getName();
+                }
+                return super.getText(element);
+            }
+        });
+        m_environmentSelection.setComparator(new ViewerComparator());
 
         // Environment generation:
         final Button environmentCreationButton = new Button(this, SWT.NONE);
@@ -217,23 +238,12 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         }
 
         // Populate environment selection, hooks:
-        setAvailableEnvironments(availableEnvironmentsModel.getStringArrayValue());
+        setAvailableEnvironments(availableEnvironmentsModel.getValue());
         setSelectedEnvironment(environmentModel.getStringValue());
-        availableEnvironmentsModel
-            .addChangeListener(e -> setAvailableEnvironments(availableEnvironmentsModel.getStringArrayValue()));
+        availableEnvironmentsModel.addObserver((newValue, oldValue) -> setAvailableEnvironments(newValue));
         environmentModel.addChangeListener(e -> setSelectedEnvironment(environmentModel.getStringValue()));
-        m_environmentSelection.addSelectionListener(new SelectionListener() {
-
-            @Override
-            public void widgetSelected(final SelectionEvent e) {
-                environmentModel.setStringValue(getSelectedEnvironment());
-            }
-
-            @Override
-            public void widgetDefaultSelected(final SelectionEvent e) {
-                widgetSelected(e);
-            }
-        });
+        m_environmentSelection
+            .addSelectionChangedListener(event -> environmentModel.setStringValue(getSelectedEnvironment()));
 
         environmentCreator.getIsEnvironmentCreationEnabled()
             .addChangeListener(e -> performActionOnWidgetInUiThread(environmentCreationButton, () -> {
@@ -256,10 +266,10 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         });
     }
 
-    private void setAvailableEnvironments(final String[] availableEnvironments) {
+    private void setAvailableEnvironments(final CondaEnvironmentSpec[] availableEnvironments) {
         String selectedEnvironment = m_environmentModel.getStringValue();
-        performActionOnWidgetInUiThread(m_environmentSelection, () -> {
-            m_environmentSelection.setItems(availableEnvironments);
+        performActionOnWidgetInUiThread(m_environmentSelection.getCombo(), () -> {
+            m_environmentSelection.setInput(availableEnvironments);
             layout();
             return null;
         }, false);
@@ -269,23 +279,32 @@ public final class CondaEnvironmentSelectionBox extends Composite {
     }
 
     private String getSelectedEnvironment() {
-        return performActionOnWidgetInUiThread(m_environmentSelection,
-            () -> m_environmentSelection.getItem(m_environmentSelection.getSelectionIndex()), false);
+        return performActionOnWidgetInUiThread(m_environmentSelection.getCombo(),
+            () -> ((CondaEnvironmentSpec)((IStructuredSelection)m_environmentSelection.getSelection())
+                .getFirstElement()).getDirectoryPath(),
+            false);
     }
 
-    private void setSelectedEnvironment(final String environmentName) {
-        performActionOnWidgetInUiThread(m_environmentSelection, () -> {
-            final int numEnvironments = m_environmentSelection.getItemCount();
+    private void setSelectedEnvironment(final String environmentToSelect) {
+        performActionOnWidgetInUiThread(m_environmentSelection.getCombo(), () -> {
+            final int numEnvironments = m_environmentSelection.getCombo().getItemCount();
             for (int i = 0; i < numEnvironments; i++) {
-                if (m_environmentSelection.getItem(i).equals(environmentName)) {
-                    m_environmentSelection.select(i);
+                final Object element = m_environmentSelection.getElementAt(i);
+                if (element instanceof CondaEnvironmentSpec
+                    && Objects.equals(environmentToSelect, ((CondaEnvironmentSpec)element).getDirectoryPath())) {
+                    m_environmentSelection.setSelection(new StructuredSelection(element), true);
                     break;
                 }
             }
             return null;
         }, false);
+
     }
 
+    /**
+     * @param setAsDefault If {@code true}, indicates that the Conda environment selected via this widget is the one
+     *            that is used by default. If {@code false}, this indicator is cleared.
+     */
     public void setDisplayAsDefault(final boolean setAsDefault) {
         final String defaultSuffix = " (Default)";
         final String oldHeaderText = m_header.getText();
