@@ -136,7 +136,9 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
         if (storage instanceof PreferenceWrappingConfigStorage) {
             final Preferences preferences =
                 ((PreferenceWrappingConfigStorage)storage).getWrappedPreferences().getWritePreferences();
-            final boolean isLegacy = Platform.getPreferencesService().get(m_environmentDirectory.getKey(), null,
+            final boolean isLegacy = Platform.getPreferencesService().get( //
+                m_environmentDirectory.getKey(), //
+                null, //
                 new Preferences[]{preferences}) == null;
             if (isLegacy) {
                 final SettingsModelString environmentName = new SettingsModelString(
