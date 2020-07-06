@@ -82,8 +82,6 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
 
     private static final String ARROW_SERIALIZER_ID = "org.knime.python2.serde.arrow";
 
-    private static final String PLACEHOLDER_CONDA_ENV = "no environment available";
-
     private final PythonVersionConfig m_versionConfig;
 
     private final PythonEnvironmentTypeConfig m_environmentTypeConfig;
@@ -330,7 +328,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
             : m_condaEnvironmentsConfig.getPython2Config();
         if (availableEnvironments.isEmpty()) {
             availableEnvironments =
-                Arrays.asList(new CondaEnvironmentSpec(PLACEHOLDER_CONDA_ENV, PLACEHOLDER_CONDA_ENV));
+                Arrays.asList(new CondaEnvironmentSpec(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME,
+                    CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR));
         }
         condaConfig.getAvailableEnvironments().setValue(availableEnvironments.toArray(new CondaEnvironmentSpec[0]));
         final String currentlySelectedEnvironment = condaConfig.getEnvironmentDirectory().getStringValue();
@@ -409,7 +408,7 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         final SettingsModelString condaEnvironmentDirectory = isPython3 //
             ? m_condaEnvironmentsConfig.getPython3Config().getEnvironmentDirectory() //
             : m_condaEnvironmentsConfig.getPython2Config().getEnvironmentDirectory();
-        return PLACEHOLDER_CONDA_ENV.equals(condaEnvironmentDirectory.getStringValue());
+        return CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR.equals(condaEnvironmentDirectory.getStringValue());
     }
 
     private void testSerializer() {

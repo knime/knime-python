@@ -69,6 +69,10 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
 
     private static final String CFG_KEY_PYTHON3_CONDA_ENV_DIR = "python3CondaEnvironmentDirectoryPath";
 
+    static final String PLACEHOLDER_CONDA_ENV_NAME = "no environment available";
+
+    static final String PLACEHOLDER_CONDA_ENV_DIR = "no_conda_environment_selected";
+
     private final SettingsModelString m_condaDirectory =
         new SettingsModelString(CFG_KEY_CONDA_DIRECTORY_PATH, getDefaultCondaInstallationDirectory());
 
@@ -119,12 +123,8 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
     }
 
     private static CondaEnvironmentSpec getDefaultCondaEnvironment(final String condaDirectoryPath) {
-        // Note: the environment must not be "base" since the base environment is not located inside the "envs"
-        // directory used below.
         // TODO: change to sensible default
-        final String environmentName = "no environment available";
-        final String environmentDirectoryPath = Paths.get(condaDirectoryPath, "envs", environmentName).toString();
-        return new CondaEnvironmentSpec(environmentName, environmentDirectoryPath);
+        return new CondaEnvironmentSpec(PLACEHOLDER_CONDA_ENV_NAME, PLACEHOLDER_CONDA_ENV_DIR);
     }
 
     /**
