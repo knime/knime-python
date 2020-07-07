@@ -58,6 +58,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -207,7 +208,8 @@ public class PythonKernel {
         // Get path to python kernel script
         final String scriptPath = Activator.getFile("org.knime.python", "py/PythonKernel.py").getAbsolutePath();
         // Start python kernel that listens to the given port
-        final ProcessBuilder pb = new ProcessBuilder(Activator.getPythonCommand(), scriptPath, "" + port);
+        final ProcessBuilder pb = Activator.createPythonCommandProcessBuilder();
+        Collections.addAll(pb.command(), scriptPath, "" + port);
         // Add all python modules to PYTHONPATH variable
         String existingPath = pb.environment().get("PYTHONPATH");
         existingPath = existingPath == null ? "" : existingPath;

@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.Collections;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
@@ -107,6 +108,13 @@ public class Activator implements BundleActivator {
     }
 
     /**
+     * @return The {@link ProcessBuilder} to start Python.
+     */
+    public static ProcessBuilder createPythonCommandProcessBuilder() {
+        return PythonPreferences.getPython2CommandPreference().createProcessBuilder();
+    }
+
+    /**
      * Tests if python can be started with the currently configured command and if all required modules are installed.
      *
      * @return {@link PythonKernelTestResult} that containes detailed test information
@@ -116,11 +124,11 @@ public class Activator implements BundleActivator {
         if ((pythonTestResult != null) && !pythonTestResult.hasError()) {
             return pythonTestResult;
         }
-        final String pythonCommand = getPythonCommand();
+        final ProcessBuilder pb = createPythonCommandProcessBuilder();
         try {
             // Start python kernel tester script
             final String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
-            final ProcessBuilder pb = new ProcessBuilder(pythonCommand, scriptPath);
+            pb.command().add(scriptPath);
             final Process process = pb.start();
             // Get console output of script
             final StringWriter writer = new StringWriter();
@@ -132,7 +140,7 @@ public class Activator implements BundleActivator {
         } catch (final IOException e) {
             LOGGER.error(e.getMessage(), e);
             // Python could not be started
-            return new PythonKernelTestResult("Could not start python with command '" + pythonCommand + "'");
+            return new PythonKernelTestResult("Could not start python with command '" + getPythonCommand() + "'");
         }
     }
 
