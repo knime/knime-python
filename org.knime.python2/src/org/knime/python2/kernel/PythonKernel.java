@@ -408,6 +408,19 @@ public class PythonKernel implements AutoCloseable {
         }
         existingPath = existingPath + File.pathSeparator;
         pb.environment().put("PYTHONPATH", existingPath);
+        // Set JAVA_HOME. This is needed by the Python database/hive nodes that make use of JDBC.
+        // TODO: It would probably be better to let clients (such as the DB nodes) specify which environment variables
+        // they need to have set instead of doing this here. But this would require extending PythonCommand or
+        // PythonKernelOptions.
+        pb.environment().computeIfAbsent("JAVA_HOME", k -> {
+            try {
+                return System.getProperty("java.home");
+            } catch (final Exception ex) {
+                // Ignore - setting JAVA_HOME is not mandatory in general but only needed in some specific cases.
+                LOGGER.debug(ex);
+                return null;
+            }
+        });
 
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
