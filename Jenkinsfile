@@ -19,8 +19,7 @@ try {
     
     withEnv([ "KNIME_POSTGRES_USER=knime01", "KNIME_POSTGRES_PASSWORD=password",
               "KNIME_MYSQL_USER=root", "KNIME_MYSQL_PASSWORD=password",
-              "KNIME_MSSQLSERVER_USER=sa", "KNIME_MSSQLSERVER_PASSWORD=@SaPassword123",
-              "XDG_RUNTIME_DIR=/tmp/" /* this suppresses a QT error message which leads to workflowtest failure */
+              "KNIME_MSSQLSERVER_USER=sa", "KNIME_MSSQLSERVER_PASSWORD=@SaPassword123"
     ]) {
     	workflowTests.runTests(
             dependencies: [
