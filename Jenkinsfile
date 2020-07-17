@@ -4,16 +4,15 @@ def BN = BRANCH_NAME == "master" || BRANCH_NAME.startsWith("releases/") ? BRANCH
 library "knime-pipeline@$BN"
 
 properties([
-    // provide a list of upstream jobs which should trigger a rebuild of this job
     pipelineTriggers([
         upstream('knime-filehandling/' + env.BRANCH_NAME.replaceAll('/', '%2F'))
 	]),
+    parameters(workflowTests.getConfigurationsAsParameters()),
     buildDiscarder(logRotator(numToKeepStr: '5')),
     disableConcurrentBuilds()
 ])
 
 try {
-	// provide the name of the update site project
 	knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python2 && python3')
 
     
