@@ -3,5 +3,5 @@
 file_export_version=3.0
 /instance/org.knime.python2/pythonEnvironmentType=conda
 /instance/org.knime.python2/condaDirectoryPath=/Users/jenkins/miniconda3
-/instance/org.knime.python2/python2CondaEnvironmentName=py27_knime
-/instance/org.knime.python2/python3CondaEnvironmentName=py36_knime
+/instance/org.knime.python2/python2CondaEnvironmentName=py2_knime
+/instance/org.knime.python2/python3CondaEnvironmentName=py3_knime
