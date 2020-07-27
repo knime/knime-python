@@ -1,4 +1,4 @@
-name: py36_knime      # Name of the created environment
+name: py3_knime       # Name of the created environment
 channels:             # Repositories to search for packages
 - defaults
 - anaconda
