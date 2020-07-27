@@ -1,4 +1,4 @@
-name: py27_knime      # Name of the created environment
+name: py2_knime       # Name of the created environment
 channels:             # Repositories to search for packages
 - defaults
 - anaconda
