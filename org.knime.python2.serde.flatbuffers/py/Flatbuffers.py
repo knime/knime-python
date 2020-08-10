@@ -222,8 +222,8 @@ def table_to_bytes(table):
         # Row IDs
         idx_col = [elem.encode('utf-8') for elem in table._row_indices]
         rowIdLength = list(map(len, idx_col))
-        offListOff = builder.CreateByteArray(np.array(rowIdLength, dtype='i4').tobytes())
-        strOff = builder.CreateByteArray(b''.join(idx_col))
+        offListOff = builder.CreateByteVector(np.array(rowIdLength, dtype='i4').tobytes())
+        strOff = builder.CreateByteVector(b''.join(idx_col))
 
         KnimeTable.KnimeTableStartRowIDsVector(builder, 2)
         builder.PrependInt32(offListOff)
@@ -249,7 +249,7 @@ def table_to_bytes(table):
         for colIdx in range(0, table.get_number_columns()):
             col = table._data_frame.iloc[:, colIdx]
             if table.get_type(colIdx) == _types_.INTEGER:
-                valVec = builder.CreateByteArray(np.array(col.values, dtype='i4').tobytes())
+                valVec = builder.CreateByteVector(np.array(col.values, dtype='i4').tobytes())
 
                 IntColumn.IntColumnStart(builder)
                 IntColumn.IntColumnAddValues(builder, valVec)
@@ -357,8 +357,8 @@ def table_to_bytes(table):
 
 
             elif table.get_type(colIdx) == _types_.BOOLEAN:
-                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
-                valVec = builder.CreateByteArray(col.fillna(False).astype('bool').values.tobytes())
+                missingVec = builder.CreateByteVector(col.isnull().values.tobytes())
+                valVec = builder.CreateByteVector(col.fillna(False).astype('bool').values.tobytes())
 
                 BooleanColumn.BooleanColumnStart(builder)
                 BooleanColumn.BooleanColumnAddValues(builder, valVec)
@@ -467,7 +467,7 @@ def table_to_bytes(table):
 
 
             elif table.get_type(colIdx) == _types_.LONG:
-                valVec = builder.CreateByteArray(np.array(col.values, dtype='i8').tobytes())
+                valVec = builder.CreateByteVector(np.array(col.values, dtype='i8').tobytes())
 
                 LongColumn.LongColumnStart(builder)
                 LongColumn.LongColumnAddValues(builder, valVec)
@@ -576,7 +576,7 @@ def table_to_bytes(table):
             elif table.get_type(colIdx) == _types_.DOUBLE or table.get_type(colIdx) == _types_.FLOAT:
                 bytes = np.array(col.values, dtype='f8', copy=False).tobytes()
 
-                valVec = builder.CreateByteArray(bytes)
+                valVec = builder.CreateByteVector(bytes)
 
                 DoubleColumn.DoubleColumnStart(builder)
                 DoubleColumn.DoubleColumnAddValues(builder, valVec)
@@ -681,13 +681,13 @@ def table_to_bytes(table):
                 colOffsetList.append(Column.ColumnEnd(builder))
 
             elif table.get_type(colIdx) == _types_.STRING:
-                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+                missingVec = builder.CreateByteVector(col.isnull().values.tobytes())
                 col.fillna(value='', inplace=True)
 
                 col = [elem.encode('utf-8') for elem in col]
                 strLengths = list(map(len, col))
-                offStrLengths = builder.CreateByteArray(np.array(strLengths, dtype='i4').tobytes())
-                offStrBlob = builder.CreateByteArray(b''.join(col))
+                offStrLengths = builder.CreateByteVector(np.array(strLengths, dtype='i4').tobytes())
+                offStrBlob = builder.CreateByteVector(b''.join(col))
 
                 StringColumn.StringColumnStartValuesVector(builder, 2)
                 builder.PrependInt32(offStrLengths)
@@ -802,7 +802,7 @@ def table_to_bytes(table):
             elif table.get_type(colIdx) == _types_.BYTES:
 
                 bytesOffsets = []
-                missingVec = builder.CreateByteArray(col.isnull().values.tobytes())
+                missingVec = builder.CreateByteVector(col.isnull().values.tobytes())
                 for idx in range(0, len(col)):
                     if col[idx] == None:
                         bytesOffsets.append(get_empty_ByteCell(builder))
@@ -973,7 +973,7 @@ def table_to_bytes(table):
 # @param builder    the flatbuffers builder
 # @param cell       a bytearray
 def get_ByteCell(builder, cell):
-    bytesVec = builder.CreateByteArray(cell)
+    bytesVec = builder.CreateByteVector(cell)
     ByteCell.ByteCellStart(builder)
     ByteCell.ByteCellAddValue(builder, bytesVec)
     return ByteCell.ByteCellEnd(builder)
