@@ -32,7 +32,6 @@
 		<module>org.knime.python2.nodes</module>
 		<module>org.knime.python2.tests</module>
 		<module>org.knime.python2.serde.arrow</module>
-		<module>org.knime.python2.serde.arrow.libs</module>
 		<module>org.knime.python2.serde.arrow.tests</module>
 		<module>org.knime.python2.serde.csv</module>
 		<module>org.knime.python2.serde.csv.tests</module>
@@ -107,7 +106,6 @@
 					<excludes>
 						<!-- List all plug-in that do NOT contain sources here. -->
 						<plugin id="org.python.plugin"/>
-						<plugin id="org.knime.python2.serde.arrow.libs"/>
 					</excludes>
 				</configuration>
 			</plugin>
