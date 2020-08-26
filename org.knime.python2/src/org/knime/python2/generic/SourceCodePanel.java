@@ -386,7 +386,9 @@ public abstract class SourceCodePanel extends JPanel {
         m_listsSplit.setDividerSize(8);
         m_listsSplit.setTopComponent(columnsPanel);
         m_listsSplit.setBottomComponent(m_flowVariablesPanel);
-        m_listsSplit.setDividerLocation(200);
+        columnsPanel.setPreferredSize(new Dimension(0,0));
+        m_flowVariablesPanel.setPreferredSize(new Dimension(0,0));
+        m_listsSplit.setPreferredSize(new Dimension(0,0));
         final JSplitPane editorWorkspaceSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         editorWorkspaceSplit.setResizeWeight(0.7);
         editorWorkspaceSplit.setOneTouchExpandable(true);
@@ -414,10 +416,11 @@ public abstract class SourceCodePanel extends JPanel {
         m_listEditorSplit.setDividerSize(8);
         m_listEditorSplit.setLeftComponent(m_listsSplit);
         m_listEditorSplit.setRightComponent(editorPanel);
-        m_listEditorSplit.setDividerLocation(200);
+        editorPanel.setPreferredSize(new Dimension(0,0));
         editorWorkspaceSplit.setLeftComponent(m_listEditorSplit);
         editorWorkspaceSplit.setRightComponent(m_workspacePanel);
-        editorWorkspaceSplit.setDividerLocation(700);
+        m_workspacePanel.setPreferredSize(new Dimension(0,0));
+        m_listEditorSplit.setPreferredSize(new Dimension(0,0));
         final JPanel consoleButtons = new JPanel(new FlowLayout(FlowLayout.LEADING));
         consoleButtons.add(m_clearConsole);
         final JPanel consolePanel = new JPanel(new BorderLayout());
@@ -429,7 +432,7 @@ public abstract class SourceCodePanel extends JPanel {
         editorConsoleSplit.setDividerSize(8);
         editorConsoleSplit.setTopComponent(editorWorkspaceSplit);
         editorConsoleSplit.setBottomComponent(consolePanel);
-        editorConsoleSplit.setDividerLocation(400);
+        consolePanel.setPreferredSize(new Dimension(0,0));
         add(editorConsoleSplit, BorderLayout.CENTER);
         final Icon clearIcon = new ImageIcon(Activator.getFile(Activator.PLUGIN_ID, "res/clear.gif").getAbsolutePath());
         m_clearConsole.setIcon(clearIcon);
