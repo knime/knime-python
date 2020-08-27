@@ -143,7 +143,7 @@ def bytes_into_table(table, data_bytes):
 # @return collection type values
 def collection_generator(arrowcolumn, isset, entry_len, format_char):
     for i in range(len(arrowcolumn.data.chunk(0))):
-        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+        if pyarrow.types.is_null(arrowcolumn.data.chunk(0)[i].type):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
@@ -179,7 +179,7 @@ def collection_generator(arrowcolumn, isset, entry_len, format_char):
 # @return collection type values
 def string_collection_generator(arrowcolumn, isset):
     for i in range(len(arrowcolumn.data.chunk(0))):
-        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+        if pyarrow.types.is_null(arrowcolumn.data.chunk(0)[i].type):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
@@ -219,7 +219,7 @@ def string_collection_generator(arrowcolumn, isset):
 # @return collection type values
 def bytes_collection_generator(arrowcolumn, isset):
     for i in range(len(arrowcolumn.data.chunk(0))):
-        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+        if pyarrow.types.is_null(arrowcolumn.data.chunk(0)[i].type):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
@@ -257,7 +257,7 @@ def bytes_collection_generator(arrowcolumn, isset):
 # @return collection type values
 def boolean_collection_generator(arrowcolumn, isset):
     for i in range(len(arrowcolumn.data.chunk(0))):
-        if type(arrowcolumn.data.chunk(0)[i]) == pyarrow.lib.NAType:
+        if pyarrow.types.is_null(arrowcolumn.data.chunk(0)[i].type):
             yield None
         else:
             py_obj = arrowcolumn.data.chunk(0)[i].as_py()
@@ -315,8 +315,8 @@ def deserialize_data_frame(path):
 
         # data
         read_data_frame = pandas.DataFrame()
-        for arrowcolumn in arrowtable.itercolumns():
-            typeidx = names.index(arrowcolumn.name)
+        for column_name, arrowcolumn in zip(arrowtable.column_names, arrowtable.itercolumns()):
+            typeidx = names.index(column_name)
             coltype = read_types[typeidx]
             if coltype in _pandas_native_types_:
                 dfcol = arrowcolumn.to_pandas()
@@ -338,10 +338,10 @@ def deserialize_data_frame(path):
                 else:
                     raise KeyError('Type with id ' + str(coltype) + ' cannot be deserialized!')
             # Note: we only have one index column (the KNIME RowKeys)
-            if arrowcolumn.name in pandas_metadata['index_columns']:
+            if column_name in pandas_metadata['index_columns']:
                 indexcol = dfcol
             else:
-                read_data_frame[arrowcolumn.name] = dfcol
+                read_data_frame[column_name] = dfcol
 
         if not 'indexcol' in locals():
             raise NameError('Variable indexcol has not been set properly, exiting!')

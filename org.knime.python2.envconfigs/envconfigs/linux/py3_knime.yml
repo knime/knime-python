@@ -13,7 +13,7 @@ dependencies:         # List of packages that should be installed
 - python=3.6          # Python
 - matplotlib=3.0      # Plotting
 - jpype1=0.6.3        # Databases
-- pyarrow=0.11        # Arrow serialization
+- pyarrow=1.0         # Arrow serialization
 - jedi=0.13           # Python script autocompletion
 - python-dateutil=2.7 # Date and Time utilities
 - pandas=0.23         # Table data structures

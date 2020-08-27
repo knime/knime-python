@@ -9,7 +9,7 @@ dependencies:         # List of packages that should be installed
 - ipython=7.1         # Notebook support
 - pillow=5.3          # Image inputs/outputs
 - numpy=1.16.1        # N-dimensional arrays
-- pyarrow=0.11        # Arrow serialization
+- pyarrow=1.0         # Arrow serialization
 - pandas=0.23         # Table data structures
 - cairo=1.14          # SVG support
 - matplotlib=3.0      # Plotting

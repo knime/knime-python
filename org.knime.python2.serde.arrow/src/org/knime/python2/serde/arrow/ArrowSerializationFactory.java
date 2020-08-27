@@ -62,7 +62,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Serializatio
  */
 public class ArrowSerializationFactory implements SerializationLibraryFactory {
 
-    private static final PythonModuleSpec PYARROW = new PythonModuleSpec("pyarrow", new Version(0, 10, 0), true);
+    private static final PythonModuleSpec PYARROW = new PythonModuleSpec("pyarrow", new Version(1, 0, 0), true);
 
     private static final List<PythonModuleSpec> REQUIRED_EXTERNAL_MODULES =
         Collections.unmodifiableList(Arrays.asList(PYARROW));
