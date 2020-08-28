@@ -55,7 +55,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentSpec;
@@ -413,9 +412,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
 
     private void testSerializer() {
         String serializerErrorMessage = "";
-        if (Objects.equals(m_serializerConfig.getSerializer().getStringValue(), ARROW_SERIALIZER_ID)
-            && SystemUtils.IS_OS_WINDOWS) {
-            serializerErrorMessage = "Apache Arrow cannot be used as the serialization library for Python 2 on Windows."
+        if (Objects.equals(m_serializerConfig.getSerializer().getStringValue(), ARROW_SERIALIZER_ID)) {
+            serializerErrorMessage = "Apache Arrow cannot be used as the serialization library for Python 2."
                 + "\nIf you intend to use Python 2, please use a different serialization library.";
         }
         m_serializerConfig.getSerializerError().setStringValue(serializerErrorMessage);
