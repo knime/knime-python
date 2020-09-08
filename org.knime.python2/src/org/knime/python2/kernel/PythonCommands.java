@@ -509,4 +509,20 @@ public final class PythonCommands implements AutoCloseable {
             return null;
         }
     }
+
+    /**
+     * @return the executor service used by this commands.
+     * @noreference not to be used by 3rd party code
+     */
+    public ExecutorService getExecutor() {
+        return m_executor;
+    }
+
+    /**
+     * @return the monitor used by this commands
+     * @noreference not to be used by 3rd party code
+     */
+    public PythonExecutionMonitor getMonitor() {
+        return m_monitor;
+    }
 }
