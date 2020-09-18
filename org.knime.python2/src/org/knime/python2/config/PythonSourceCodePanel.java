@@ -725,7 +725,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         if (getKernelManagerWrapper() != null && !m_resetInProgress.get()) {
             m_resetInProgress.set(true);
             setRunning(true);
-            new Thread(new Runnable() {
+            ThreadUtils.threadWithContext(new Runnable() {
 
                 @Override
                 public void run() {
