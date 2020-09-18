@@ -85,6 +85,7 @@ import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.apache.commons.lang.SystemUtils;
 import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.internal.ReferencedFile;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -97,6 +98,7 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
@@ -571,9 +573,12 @@ public class PythonKernel implements AutoCloseable {
         try {
             m_serializer = findConfiguredSerializationLibrary(options);
             m_nodeContextManager = new NodeContextManager(NodeContext.getContext());
+            // TODO: we should eventually combine all these commands into one to reduce communication/interpretation
+            // overhead (cf. AP-14028).
             setSerializationLibrary(options);
             setExternalCustomPath(options);
             setSentinelConstants(options);
+            setCurrentWorkingDirToWorkflowDir();
         } catch (final Exception ex) {
             final Throwable t = PythonUtils.Misc.unwrapExecutionException(ex).orElse(ex);
             if (t instanceof PythonIOException) {
@@ -634,6 +639,29 @@ public class PythonKernel implements AutoCloseable {
             m_commands.execute("INT_SENTINEL = " + sentinelValue + "; LONG_SENTINEL = " + sentinelValue).get();
         }
     }
+
+    private void setCurrentWorkingDirToWorkflowDir() {
+        try {
+            final NodeContext nodeContext = m_nodeContextManager.m_nodeContext;
+            if (nodeContext != null) {
+                final WorkflowManager workflowManager = nodeContext.getWorkflowManager();
+                if (workflowManager != null) {
+                    final ReferencedFile workflowDirRef = workflowManager.getNodeContainerDirectory();
+                    if (workflowDirRef != null) {
+                        final String workflowDir = "r'" + workflowDirRef.getFile().toString() + "'";
+                        m_commands.execute("import os\n" + //
+                            "import sys\n" + //
+                            "os.chdir(" + workflowDir + ")\n" + //
+                            "sys.path.insert(0, " + workflowDir + ")").get();
+                    }
+                }
+            }
+        } catch (final Exception ex) {
+            // Do not propagate exception since setting the CWD is merely for convenience and not mission critical.
+            LOGGER.warn("Python's current working directory could not be set to the workflow directory.", ex);
+        }
+    }
+
     // End of option setup methods.
 
     /**
