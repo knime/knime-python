@@ -1,4 +1,4 @@
-name: py2_knime       # Name of the created environment
+name: py2_knime43     # Name of the created environment
 channels:             # Repositories to search for packages
 - defaults
 - anaconda
@@ -13,7 +13,6 @@ dependencies:         # List of packages that should be installed
 - cairo=1.14          # SVG support
 - pillow=5.3          # Image inputs/outputs
 - matplotlib=2.2      # Plotting
-- pyarrow=0.11        # Arrow serialization
 - IPython=5.8         # Notebook support
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support

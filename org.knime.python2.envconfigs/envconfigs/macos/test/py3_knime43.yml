@@ -1,21 +1,27 @@
-name: py2_knime       # Name of the created environment
+name: py3_knime43     # Name of the created environment
 channels:             # Repositories to search for packages
 - defaults
 - anaconda
 - conda-forge
 dependencies:         # List of packages that should be installed
-- python=2.7          # Python
+- python=3.6          # Python
 - pandas=0.23         # Table data structures
 - jedi=0.13           # Python script autocompletion
-- parso=0.7.1         # Jedi dependency this is the last version compatible with 2.7
 - python-dateutil=2.7 # Date and Time utilities
-- numpy=1.15          # N-dimensional arrays
+- numpy=1.16.1        # N-dimensional arrays
 - cairo=1.14          # SVG support
 - pillow=5.3          # Image inputs/outputs
-- matplotlib=2.2      # Plotting
-- pyarrow=0.11        # Arrow serialization
-- IPython=5.8         # Notebook support
+- matplotlib=3.0      # Plotting
+- pyarrow=1.0         # Arrow serialization
+- IPython=7.1         # Notebook support
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
 - jpype1=0.6.3        # Databases
-- protobuf=3.5        # Serialization for deprecated Python nodes
+- tensorflow-mkl=1.12.0
+- keras=2.2.4
+- h5py=2.8
+- libiconv=1.15       # MDF Reader node
+- asammdf=5.19.14     # MDF Reader node
+- pip:
+  - onnx==1.4.1
+  - onnx-tf==1.2.1
