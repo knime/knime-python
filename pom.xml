@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -17,7 +14,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<revision>4.2.0</revision>
+		<revision>4.2.2</revision>
 		<changelist>-SNAPSHOT</changelist>
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
 		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
@@ -108,8 +105,8 @@
 				<configuration>
 					<excludes>
 						<!-- List all plug-in that do NOT contain sources here. -->
-						<plugin id="org.python.plugin" />
-						<plugin id="org.knime.python2.serde.arrow.libs" />
+						<plugin id="org.python.plugin"/>
+						<plugin id="org.knime.python2.serde.arrow.libs"/>
 					</excludes>
 				</configuration>
 			</plugin>
