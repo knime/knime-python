@@ -214,12 +214,15 @@ class Serializer(object):
         """
         for column in data_frame.columns:
             simpletype = self.simpletype_for_column(data_frame, column)[0]
-            if simpletype == Simpletype.INTEGER:
-                flow_variables[column] = int(data_frame[column][0])
+            value = data_frame[column][0]
+            if value is None:
+                flow_variables[column] = None
+            elif simpletype == Simpletype.INTEGER:
+                flow_variables[column] = int(value)
             elif simpletype == Simpletype.DOUBLE or simpletype == Simpletype.FLOAT:
-                flow_variables[column] = float(data_frame[column][0])
+                flow_variables[column] = float(value)
             else:
-                flow_variables[column] = str(data_frame[column][0])
+                flow_variables[column] = str(value)
 
     @staticmethod
     def flow_variables_dict_to_data_frame(dictionary):
