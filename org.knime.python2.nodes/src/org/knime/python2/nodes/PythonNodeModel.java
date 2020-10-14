@@ -45,10 +45,7 @@
 
 package org.knime.python2.nodes;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.InvalidSettingsException;
@@ -166,8 +163,7 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
                             push = false;
                         }
                     } else if (variable.getType().equals(Type.STRING)) {
-                        if (oldVariable.getStringValue().equals(variable.getStringValue())) {
-                            // Old variable has the same value
+                        if (Objects.equals(oldVariable.getStringValue(), variable.getStringValue())) {
                             push = false;
                         }
                     }

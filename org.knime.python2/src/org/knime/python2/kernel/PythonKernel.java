@@ -739,12 +739,20 @@ public class PythonKernel implements AutoCloseable {
                 case STRING:
                     types[i] = Type.STRING;
                     final String sValue = flowVariable.getStringValue();
-                    row.setCell(new CellImpl(sValue), i);
+                    if (sValue != null) {
+                        row.setCell(new CellImpl(sValue), i);
+                    } else {
+                        row.setCell(new CellImpl(), i);
+                    }
                     break;
                 default:
                     types[i] = Type.STRING;
                     final String defValue = flowVariable.getValueAsString();
-                    row.setCell(new CellImpl(defValue), i);
+                    if (defValue != null) {
+                        row.setCell(new CellImpl(defValue), i);
+                    } else {
+                        row.setCell(new CellImpl(), i);
+                    }
                     break;
             }
             i++;
