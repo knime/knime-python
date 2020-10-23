@@ -3,6 +3,12 @@
 
 <plugin>
    	<extension point="org.knime.workbench.repository.nodes">
+	<node
+	    category-path="/scripting/python"
+	    deprecated="false"
+	    factory-class="org.knime.python2.nodes.script2.Python2ScriptNodeFactory2"
+	    hidden="false">
+	</node>
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.variables.Python2VariablesNodeFactory" />
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.source.Python2SourceNodeFactory" after="org.knime.python2.nodes.variables.Python2VariablesNodeFactory"/>
    		<node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script.Python2ScriptNodeFactory" after="org.knime.python2.nodes.source.Python2SourceNodeFactory"/>

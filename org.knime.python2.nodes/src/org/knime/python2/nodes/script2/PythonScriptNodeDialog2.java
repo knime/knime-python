@@ -1,0 +1,200 @@
+/*
+ * ------------------------------------------------------------------------
+ *  Copyright by KNIME AG, Zurich, Switzerland
+ *  Website: http://www.knime.com; Email: contact@knime.com
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License, Version 3, as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ *  Additional permission under GNU GPL version 3 section 7:
+ *
+ *  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
+ *  Hence, KNIME and ECLIPSE are both independent programs and are not
+ *  derived from each other. Should, however, the interpretation of the
+ *  GNU GPL Version 3 ("License") under any applicable laws result in
+ *  KNIME and ECLIPSE being a combined program, KNIME AG herewith grants
+ *  you the additional permission to use and propagate KNIME together with
+ *  ECLIPSE with only the license terms in place for ECLIPSE applying to
+ *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
+ *  license terms of ECLIPSE themselves allow for the respective use and
+ *  propagation of ECLIPSE together with KNIME.
+ *
+ *  Additional permission relating to nodes for KNIME that extend the Node
+ *  Extension (and in particular that are based on subclasses of NodeModel,
+ *  NodeDialog, and NodeView) and that only interoperate with KNIME through
+ *  standard APIs ("Nodes"):
+ *  Nodes are deemed to be separate and independent programs and to not be
+ *  covered works.  Notwithstanding anything to the contrary in the
+ *  License, the License does not apply to Nodes, you are not required to
+ *  license Nodes under the License, and you are granted a license to
+ *  prepare and propagate Nodes, in each case even if such Nodes are
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
+ *  may freely choose the license terms applicable to such Node, including
+ *  when such Node is propagated with or for interoperation with KNIME.
+ * ------------------------------------------------------------------------
+ *
+ * History
+ *   Sep 25, 2014 (Patrick Winter): created
+ */
+package org.knime.python2.nodes.script2;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.DataAwareNodeDialogPane;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.database.DatabasePortObjectSpec;
+import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.config.PythonSourceCodeOptionsPanel;
+import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.port.PickledObject;
+
+/**
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonScriptNodeDialog2 extends DataAwareNodeDialogPane {
+
+    private final InputPort[] m_inPorts;
+
+    private final PythonSourceCodePanel m_editorPanel;
+
+    private final PythonSourceCodeOptionsPanel m_optionsPanel;
+
+    // TODO: ideally, we should filter the offered templates based upon the current port configuration.
+    private final SourceCodeTemplatesPanel m_templatesPanel;
+
+    public PythonScriptNodeDialog2(final InputPort[] inPorts, final OutputPort[] outPorts) {
+        m_inPorts = inPorts;
+        m_editorPanel = new PythonSourceCodePanel(this, PythonScriptNodeConfig2.getVariableNames(inPorts, outPorts));
+        m_optionsPanel = new PythonSourceCodeOptionsPanel(m_editorPanel);
+        m_templatesPanel = new SourceCodeTemplatesPanel(m_editorPanel, "python-script-dynamic-ports");
+        addTab("Script", m_editorPanel, false);
+        addTab("Options", m_optionsPanel, true);
+        addTab("Templates", m_templatesPanel, true);
+    }
+
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        final PythonScriptNodeConfig2 config = new PythonScriptNodeConfig2();
+        config.loadFromInDialog(settings);
+        m_editorPanel.loadSettingsFrom(config, specs);
+        m_optionsPanel.loadSettingsFrom(config);
+
+        @SuppressWarnings("deprecation")
+        final Map<String, FlowVariable> inFlowVariables = getAvailableFlowVariables();
+        m_editorPanel.updateFlowVariables(inFlowVariables.values().toArray(new FlowVariable[inFlowVariables.size()]));
+
+        int numTables = 0;
+        int numPickledObjects = 0;
+        for (int i = 0; i < m_inPorts.length; i++) {
+            final InputPort inPort = m_inPorts[i];
+            for (final PythonModuleSpec module : inPort.getRequiredModules()) {
+                m_editorPanel.addAdditionalRequiredModule(module.getName());
+            }
+            if (inPort instanceof DataTableInputPort) {
+                numTables++;
+            } else if (inPort instanceof PickledObjectInputPort) {
+                numPickledObjects++;
+            } else if (inPort instanceof DatabasePort) {
+                final DatabasePortObjectSpec inDatabaseSpec = (DatabasePortObjectSpec)specs[i];
+                if (inDatabaseSpec != null) {
+                    prepareDatabaseConnection((DatabasePort)inPort, inDatabaseSpec);
+                } else {
+                    throw new NotConfigurableException("No database connection available.");
+                }
+            }
+        }
+        m_editorPanel.updateData(new BufferedDataTable[numTables], new PickledObject[numPickledObjects]);
+    }
+
+    private void prepareDatabaseConnection(final DatabasePort inPort, final DatabasePortObjectSpec inDatabaseSpec)
+        throws NotConfigurableException {
+        try {
+            final DatabaseQueryConnectionSettings inDatabaseConnection =
+                inDatabaseSpec.getConnectionSettings(getCredentialsProvider());
+            final Collection<String> jars = DatabasePort.getDatabaseDriverJarPaths(inDatabaseConnection);
+            m_editorPanel.registerWorkspacePreparer(kernel -> {
+                try {
+                    kernel.putSql(inPort.getVariableName(), inDatabaseConnection, getCredentialsProvider(), jars);
+                } catch (final Exception ex) {
+                    NodeLogger.getLogger(PythonScriptNodeDialog2.class).debug(ex);
+                }
+            });
+        } catch (final InvalidSettingsException | IOException e) {
+            throw new NotConfigurableException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
+        throws NotConfigurableException {
+        final PortObjectSpec[] inSpecs = new PortObjectSpec[input.length];
+        final List<BufferedDataTable> inTables = new ArrayList<>();
+        final List<PickledObject> inPickledObjects = new ArrayList<>();
+        for (int i = 0; i < m_inPorts.length; i++) {
+            final InputPort inPort = m_inPorts[i];
+            final PortObject inObject = input[i];
+            if (inObject != null) {
+                inSpecs[i] = inObject.getSpec();
+            }
+            if (inPort instanceof DataTableInputPort) {
+                inTables.add(DataTableInputPort.extractWorkspaceObject(inObject));
+            } else if (inPort instanceof PickledObjectInputPort) {
+                try {
+                    inPickledObjects.add(PickledObjectInputPort.extractWorkspaceObject(inObject));
+                } catch (IOException ex) {
+                    throw new NotConfigurableException(ex.getMessage(), ex);
+                }
+            }
+        }
+        loadSettingsFrom(settings, inSpecs);
+        m_editorPanel.updateData(inTables.toArray(new BufferedDataTable[0]),
+            inPickledObjects.toArray(new PickledObject[0]));
+    }
+
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        final PythonScriptNodeConfig2 config = new PythonScriptNodeConfig2();
+        m_editorPanel.saveSettingsTo(config);
+        m_optionsPanel.saveSettingsTo(config);
+        config.saveTo(settings);
+    }
+
+    @Override
+    public boolean closeOnESC() {
+        return false;
+    }
+
+    @Override
+    public void onOpen() {
+        m_editorPanel.open();
+    }
+
+    @Override
+    public void onClose() {
+        m_editorPanel.close();
+    }
+}
