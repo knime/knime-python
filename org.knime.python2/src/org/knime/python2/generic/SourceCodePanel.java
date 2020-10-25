@@ -53,63 +53,34 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.swing.DefaultListModel;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextPane;
-import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.JTextComponent;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 
-import org.apache.commons.lang.StringUtils;
-import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
-import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
-import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.util.DataColumnSpecListCellRenderer;
-import org.knime.core.node.util.FlowVariableListCellRenderer;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.Activator;
+import org.knime.python2.generic.ConsolePanel.Level;
 
 /**
  * Abstract source code panel as basis for source code panels for a specific programming language.
@@ -118,168 +89,39 @@ import org.knime.python2.Activator;
  */
 public abstract class SourceCodePanel extends JPanel {
 
-    /**
-     * Represents a variable as it is displayed in the variables table.
-     *
-     * @author Patrick Winter, KNIME AG, Zurich, Switzerland
-     */
-    public static class Variable {
-
-        private final String m_name;
-
-        private final String m_type;
-
-        private final String m_value;
-
-        /**
-         * Creates a variable.
-         *
-         * @param name The name of the variable
-         * @param type The type of the variable
-         * @param value The value of the variable
-         */
-        public Variable(final String name, final String type, final String value) {
-            m_name = name;
-            m_type = type;
-            m_value = value;
-        }
-
-        /**
-         * Return the name of the variable.
-         *
-         * @return the name
-         */
-        public String getName() {
-            return m_name;
-        }
-
-        /**
-         * Return the type of the variable.
-         *
-         * @return the type
-         */
-        public String getType() {
-            return m_type;
-        }
-
-        /**
-         * Return the value of the variable.
-         *
-         * @return the value
-         */
-        public String getValue() {
-            return m_value;
-        }
-
-    }
-
-    /**
-     * A status bar containing a status message, a progress bar for running processes and a stop button.
-     *
-     * @author Patrick Winter, KNIME AG, Zurich, Switzerland
-     */
-    private static class StatusBar extends JPanel {
-
-        private static final long serialVersionUID = 3398321765916443444L;
-
-        private final JLabel m_message = new JLabel();
-
-        private final JProgressBar m_runningBar = new JProgressBar();
-
-        private final JButton m_stopButton = new JButton();
-
-        /**
-         * Creates a status bar.
-         */
-        StatusBar() {
-            setBorder(new BevelBorder(BevelBorder.LOWERED));
-            setLayout(new GridBagLayout());
-            final GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(5, 5, 5, 5);
-            gbc.anchor = GridBagConstraints.NORTHWEST;
-            gbc.fill = GridBagConstraints.BOTH;
-            gbc.weightx = 1;
-            gbc.weighty = 1;
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            add(m_message, gbc);
-            gbc.gridx++;
-            gbc.weightx = 0;
-            gbc.insets = new Insets(3, 5, 3, 0);
-            add(m_runningBar, gbc);
-            gbc.gridx++;
-            gbc.insets = new Insets(0, 5, 0, 5);
-            add(m_stopButton, gbc);
-            final Icon stopIcon =
-                    new ImageIcon(Activator.getFile(Activator.PLUGIN_ID, "res/stop.gif").getAbsolutePath());
-            m_stopButton.setIcon(stopIcon);
-            m_stopButton.setToolTipText("Stop execution");
-            m_stopButton.setPreferredSize(
-                new Dimension(m_stopButton.getPreferredSize().height, m_stopButton.getPreferredSize().height));
-            m_runningBar.setPreferredSize(new Dimension(150, m_stopButton.getPreferredSize().height - 6));
-            m_runningBar.setIndeterminate(true);
-            setRunning(false);
-        }
-
-        /**
-         * Sets the status message.
-         *
-         * @param statusMessage The current status message
-         */
-        void setStatusMessage(final String statusMessage) {
-            m_message.setText(statusMessage);
-        }
-
-        /**
-         * Sets the progress bar and stop button visible / invisible.
-         *
-         * @param running true if the process is currently running, false otherwise
-         */
-        void setRunning(final boolean running) {
-            m_runningBar.setVisible(running);
-            m_stopButton.setVisible(running);
-        }
-
-        /**
-         * Sets a callback to be called if the stop button is pressed
-         *
-         * Note: the callback will be executed in an extra thread and not block the UI thread.
-         *
-         * @param callback The callback to execute when the stop button is pressed
-         */
-        void setStopCallback(final Runnable callback) {
-            // Remove old listener first
-            final ActionListener[] actionListeners = m_stopButton.getActionListeners();
-            for (final ActionListener listener : actionListeners) {
-                m_stopButton.removeActionListener(listener);
-            }
-            // Add new listener
-            m_stopButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(final ActionEvent e) {
-                    if (callback != null) {
-                        // Run callback in extra thread and don't block UI
-                        // thread
-                        new Thread(callback).start();
-                    }
-                }
-            });
-        }
-
-        /**
-         * Return the progress bar
-         *
-         * @return The progress bar
-         */
-        JProgressBar getProgressBar() {
-            return m_runningBar;
-        }
-
-    }
-
     private static final long serialVersionUID = -3216788918504383870L;
 
-    private static final String[] VARIABLES_COLUMN_NAMES = new String[]{"Name", "Type", "Value"};
+    private final VariableNames m_variableNames;
+
+    private final JSplitPane m_inputVarsFlowVarsSplit;
+
+    private final InputVariablesTree m_inputVars;
+
+    private final FlowVariablesList m_flowVars;
+
+    private final JSplitPane m_inputVarsFlowVarsEditorSplit;
+
+    private final EditorPanel m_editor;
+
+    private final JButton m_exec = new JButton("Execute script");
+
+    private final JButton m_execSelection = new JButton("Execute selected lines");
+
+    private final WorkspaceVariablesTable m_workspaceVars;
+
+    private final OutputVariablesList m_outputVars;
+
+    private final JPanel m_workspaceButtons;
+
+    private final JButton m_reset = new JButton("Reset workspace");
+
+    private final JButton m_showImages = new JButton("Show Image");
+
+    private final ConsolePanel m_console = new ConsolePanel();
+
+    private final StatusBar m_statusBar = new StatusBar();
+
+    private AtomicInteger m_rowLimit = new AtomicInteger(Integer.MAX_VALUE);
 
     private boolean m_interactive = false;
 
@@ -287,275 +129,141 @@ public abstract class SourceCodePanel extends JPanel {
 
     private boolean m_stopped = true;
 
-    private final Style m_normalStyle;
-
-    private final Style m_errorStyle;
-
-    private final Style m_warningStyle;
-
-    private final RSyntaxTextArea m_editor;
-
-    private final CompletionProvider m_completionProvider;
-
-    private AutoCompletion m_autoCompletion;
-
-    private final StatusBar m_statusBar = new StatusBar();
-
-    private final JTextPane m_console = new JTextPane();
-
-    /**
-     * Read only table model.
-     */
-    private final DefaultTableModel m_varsModel = new DefaultTableModel(VARIABLES_COLUMN_NAMES, 0) {
-        private static final long serialVersionUID = -8702103117733835073L;
-
-        @Override
-        public boolean isCellEditable(final int row, final int column) {
-            // No cell is editable
-            return false;
-        }
-    };
-
-    private final JTable m_vars = new JTable(m_varsModel);
-
-    private final JButton m_exec = new JButton("Execute script");
-
-    private final JButton m_execSelection = new JButton("Execute selected lines");
-
-    private final JButton m_reset = new JButton("Reset workspace");
-
-    private final JButton m_clearConsole = new JButton();
-
-    private final DefaultListModel<FlowVariable> m_flowVariablesModel = new DefaultListModel<FlowVariable>();
-
-    private final JList<FlowVariable> m_flowVariables = new JList<FlowVariable>(m_flowVariablesModel);
-
-    private final JPanel m_flowVariablesPanel;
-
-    private final DefaultListModel<DataColumnSpec> m_columnsModel = new DefaultListModel<DataColumnSpec>();
-
-    private final JList<DataColumnSpec> m_columns = new JList<DataColumnSpec>(m_columnsModel);
-
-    private final JSplitPane m_listsSplit;
-
-    private final JSplitPane m_listEditorSplit;
-
-    private final JButton m_showImages = new JButton("Show Image");
-
-    private AtomicInteger m_rowLimit = new AtomicInteger(Integer.MAX_VALUE);
-
-    private final VariableNames m_variableNames;
-
-    private int[] m_tableEnds;
-
     /**
      * Protected editor Buttons, that can be overwritten
      */
     protected JPanel m_editorButtons;
 
-    private JPanel m_workspacePanel;
-
     /**
      * Create a source code panel for the given language style.
      *
-     * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}
-     * @param variableNames an object managing all the known variable names in the python workspace (the "magic
-     *            variables")
+     * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
+     * @param variableNames An object managing all the known variable names in the workspace.
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
-        m_editor = createEditor(syntaxStyle);
         m_variableNames = variableNames;
+        setLayout(new BorderLayout());
+
+        final Font font = m_console.getFont();
+        final Font newFont = new Font("monospaced", font.getStyle(), font.getSize());
+        m_console.setFont(newFont);
+
+        // Editor:
+
+        m_editor = new EditorPanel(syntaxStyle) {
+
+            @Override
+            protected List<Completion> getCompletionsFor(final CompletionProvider provider, final String sourceCode,
+                final int line, final int column) {
+                return SourceCodePanel.this.getCompletionsFor(provider, sourceCode, line, column);
+            }
+        };
+        final JPanel editorPanel = m_editor.getPanel();
+        m_editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+        m_exec.addActionListener(e -> runExec(m_editor.getEditor().getText()));
+        m_editorButtons.add(m_exec);
+        m_execSelection.addActionListener(e -> {
+            final String selectedText = m_editor.getSelectedLines();
+            if ((selectedText != null) && !selectedText.isEmpty()) {
+                runExec(selectedText);
+            } else {
+                setStatusMessage("Nothing selected");
+            }
+        });
+        m_editorButtons.add(m_execSelection);
+        editorPanel.add(m_editorButtons, BorderLayout.SOUTH);
+
+        // Left-hand side of the panel:
+
+        m_inputVarsFlowVarsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        m_inputVarsFlowVarsSplit.setResizeWeight(0.6);
+        m_inputVarsFlowVarsSplit.setOneTouchExpandable(true);
+        m_inputVarsFlowVarsSplit.setDividerSize(8);
+        m_inputVarsFlowVarsSplit.setPreferredSize(new Dimension(0, 0));
+
+        m_inputVars = new InputVariablesTree(variableNames, m_editor.getEditor(), this::createVariableAccessString);
+        final JPanel inputVariablesPanel = m_inputVars.getPanel();
+        inputVariablesPanel.setPreferredSize(new Dimension(0, 0));
+        m_inputVarsFlowVarsSplit.setTopComponent(inputVariablesPanel);
+
+        m_flowVars = new FlowVariablesList(variableNames.getFlowVariables(), m_editor.getEditor(),
+            this::createVariableAccessString);
+        final JPanel flowVariablesPanel = m_flowVars.getPanel();
+        flowVariablesPanel.setPreferredSize(new Dimension(0, 0));
+        m_inputVarsFlowVarsSplit.setBottomComponent(flowVariablesPanel);
+
+        m_inputVarsFlowVarsEditorSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        m_inputVarsFlowVarsEditorSplit.setResizeWeight(0.3);
+        m_inputVarsFlowVarsEditorSplit.setOneTouchExpandable(true);
+        m_inputVarsFlowVarsEditorSplit.setDividerSize(8);
+        m_inputVarsFlowVarsEditorSplit.setPreferredSize(new Dimension(0, 0));
+
+        m_inputVarsFlowVarsEditorSplit.setLeftComponent(m_inputVarsFlowVarsSplit);
+
+        editorPanel.setPreferredSize(new Dimension(0, 0));
+        m_inputVarsFlowVarsEditorSplit.setRightComponent(editorPanel);
+
+        setColumnListEnabled(variableNames.getInputTables().length > 0);
+
+        // Right-hand side of the panel:
+
+        final JSplitPane workspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        workspaceVarsOutputVarsSplit.setResizeWeight(0.6);
+        workspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
+        workspaceVarsOutputVarsSplit.setDividerSize(8);
+
+        m_workspaceVars = new WorkspaceVariablesTable(newFont, m_console);
+        final JPanel workspacePanel = m_workspaceVars.getPanel();
+        workspacePanel.setPreferredSize(new Dimension(0, 0));
+        workspaceVarsOutputVarsSplit.setTopComponent(workspacePanel);
+
+        m_reset.addActionListener(e -> runReset());
+        m_workspaceButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
         if (variableNames.getOutputImages().length > 1) {
             m_showImages.setText("Show Images");
         }
-        setLayout(new BorderLayout());
-        add(m_statusBar, BorderLayout.SOUTH);
-        final JPanel columnsPanel = new JPanel(new BorderLayout());
-        final JLabel columnsLabel = new JLabel("Columns");
-        columnsLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        columnsPanel.add(columnsLabel, BorderLayout.NORTH);
-        columnsPanel.add(new JScrollPane(m_columns), BorderLayout.CENTER);
-        m_flowVariablesPanel = new JPanel(new BorderLayout());
-        final JLabel flowVariablesLabel = new JLabel("Flow variables");
-        flowVariablesLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        m_flowVariablesPanel.add(flowVariablesLabel, BorderLayout.NORTH);
-        m_flowVariablesPanel.add(new JScrollPane(m_flowVariables), BorderLayout.CENTER);
-        m_listsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        m_listsSplit.setResizeWeight(0.5);
-        m_listsSplit.setOneTouchExpandable(true);
-        m_listsSplit.setDividerSize(8);
-        m_listsSplit.setTopComponent(columnsPanel);
-        m_listsSplit.setBottomComponent(m_flowVariablesPanel);
-        columnsPanel.setPreferredSize(new Dimension(0,0));
-        m_flowVariablesPanel.setPreferredSize(new Dimension(0,0));
-        m_listsSplit.setPreferredSize(new Dimension(0,0));
-        final JSplitPane editorWorkspaceSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        editorWorkspaceSplit.setResizeWeight(0.7);
-        editorWorkspaceSplit.setOneTouchExpandable(true);
-        editorWorkspaceSplit.setDividerSize(8);
-        final RTextScrollPane editorScrollPane = new RTextScrollPane(m_editor);
-        m_editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-        m_editorButtons.add(m_exec);
-        m_editorButtons.add(m_execSelection);
-        final JPanel editorPanel = new JPanel(new BorderLayout());
-        editorPanel.add(editorScrollPane, BorderLayout.CENTER);
-        editorPanel.add(m_editorButtons, BorderLayout.SOUTH);
-        final JPanel workspaceButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-        workspaceButtons.add(m_reset);
+        m_workspaceButtons.add(m_reset);
         if (m_variableNames.getOutputImages().length > 0) {
-            workspaceButtons.add(m_showImages);
+            m_workspaceButtons.add(m_showImages);
             initShowImages();
         }
-        m_workspacePanel = new JPanel(new BorderLayout());
-        m_workspacePanel.add(new JScrollPane(m_vars), BorderLayout.CENTER);
-        m_workspacePanel.add(workspaceButtons, BorderLayout.SOUTH);
-        editorScrollPane.setFoldIndicatorEnabled(true);
-        m_listEditorSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        m_listEditorSplit.setResizeWeight(0.3);
-        m_listEditorSplit.setOneTouchExpandable(true);
-        m_listEditorSplit.setDividerSize(8);
-        m_listEditorSplit.setLeftComponent(m_listsSplit);
-        m_listEditorSplit.setRightComponent(editorPanel);
-        editorPanel.setPreferredSize(new Dimension(0,0));
-        editorWorkspaceSplit.setLeftComponent(m_listEditorSplit);
-        editorWorkspaceSplit.setRightComponent(m_workspacePanel);
-        m_workspacePanel.setPreferredSize(new Dimension(0,0));
-        m_listEditorSplit.setPreferredSize(new Dimension(0,0));
-        final JPanel consoleButtons = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        consoleButtons.add(m_clearConsole);
-        final JPanel consolePanel = new JPanel(new BorderLayout());
-        consolePanel.add(new JScrollPane(m_console), BorderLayout.CENTER);
-        consolePanel.add(consoleButtons, BorderLayout.EAST);
+
+        m_outputVars = new OutputVariablesList(variableNames, m_editor.getEditor(), m_workspaceButtons);
+        final JPanel outputVarsPanel = m_outputVars.getPanel();
+        outputVarsPanel.setPreferredSize(new Dimension(0, 0));
+        workspaceVarsOutputVarsSplit.setBottomComponent(outputVarsPanel);
+
+        final JSplitPane editorWorkspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        editorWorkspaceVarsOutputVarsSplit.setResizeWeight(0.7);
+        editorWorkspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
+        editorWorkspaceVarsOutputVarsSplit.setDividerSize(8);
+
+        editorWorkspaceVarsOutputVarsSplit.setLeftComponent(m_inputVarsFlowVarsEditorSplit);
+
+        workspaceVarsOutputVarsSplit.setPreferredSize(new Dimension(0, 0));
+        editorWorkspaceVarsOutputVarsSplit.setRightComponent(workspaceVarsOutputVarsSplit);
+
+        // Console:
+
         final JSplitPane editorConsoleSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         editorConsoleSplit.setResizeWeight(0.7);
         editorConsoleSplit.setOneTouchExpandable(true);
         editorConsoleSplit.setDividerSize(8);
-        editorConsoleSplit.setTopComponent(editorWorkspaceSplit);
+
+        editorConsoleSplit.setTopComponent(editorWorkspaceVarsOutputVarsSplit);
+
+        final JPanel consolePanel = m_console.getPanel();
+        consolePanel.setPreferredSize(new Dimension(0, 0));
         editorConsoleSplit.setBottomComponent(consolePanel);
-        consolePanel.setPreferredSize(new Dimension(0,0));
+
         add(editorConsoleSplit, BorderLayout.CENTER);
-        final Icon clearIcon = new ImageIcon(Activator.getFile(Activator.PLUGIN_ID, "res/clear.gif").getAbsolutePath());
-        m_clearConsole.setIcon(clearIcon);
-        m_clearConsole.setToolTipText("Clear console");
-        m_clearConsole.setPreferredSize(
-            new Dimension(m_clearConsole.getPreferredSize().height, m_clearConsole.getPreferredSize().height));
-        // Console style for normal text with black text
-        m_normalStyle = m_console.addStyle("normalstyle", null);
-        StyleConstants.setForeground(m_normalStyle, Color.black);
-        // Console style for errors with red text
-        m_errorStyle = m_console.addStyle("errorstyle", null);
-        StyleConstants.setForeground(m_errorStyle, Color.red);
-        // Console style for warnings with blue text
-        m_warningStyle = m_console.addStyle("warningstyle", null);
-        StyleConstants.setForeground(m_warningStyle, Color.blue);
-        // Configure auto completion
-        m_completionProvider = createCompletionProvider();
-        installAutoCompletion();
-        //Commented, because dict file does not exist
-        // Configure spell checker
-        /*final File dictFile = Activator.getFile("org.fife.rsyntaxtextarea", "res" + File.separator + "english_dic.zip");
-        if (dictFile != null) {
-            final File zip = new File(dictFile.getAbsolutePath());
-            try {
-                final SpellingParser parser = SpellingParser.createEnglishSpellingParser(zip, true);
-                if (!USER_DICTIONARY.exists()) {
-                    USER_DICTIONARY.getParentFile().mkdirs();
-                    USER_DICTIONARY.createNewFile();
-                }
-                parser.setUserDictionary(USER_DICTIONARY);
-                m_editor.addParser(parser);
-            } catch (final IOException e1) {
-                LOGGER.warn(e1.getMessage(), e1);
-            }
-        } else {
-            //LOGGER.warn("Could not locate org.fife.rsyntaxtextarea/res/english_dic.zip");
-        }*/
-        // Configure console
-        m_console.setEditable(false);
-        m_console.setDragEnabled(true);
-        m_console.setText("");
-        // Add listeners to buttons
-        m_exec.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                runExec(m_editor.getText());
-            }
-        });
-        m_execSelection.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                final String selectedText = getSelectedLines();
-                if ((selectedText != null) && !selectedText.isEmpty()) {
-                    runExec(selectedText);
-                } else {
-                    setStatusMessage("Nothing selected");
-                }
-            }
-        });
-        m_reset.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                runReset();
-            }
-        });
-        m_clearConsole.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                m_console.setText("");
-            }
-        });
-        m_vars.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(final MouseEvent me) {
-                final JTable table = (JTable)me.getSource();
-                final Point p = me.getPoint();
-                final int row = table.rowAtPoint(p);
-                if (me.getClickCount() == 2) {
-                    final String value = m_varsModel.getValueAt(row, 2).toString();
-                    if (!value.isEmpty()) {
-                        messageToConsole(m_varsModel.getValueAt(row, 0).toString() + ":\n" + value);
-                    }
-                }
-            }
-        });
-        // Configure font for console and variables table
-        final Font font = m_console.getFont();
-        final Font newFont = new Font("monospaced", font.getStyle(), font.getSize());
-        m_console.setFont(newFont);
-        m_vars.setFont(newFont);
+
+        // Status bar:
+
         m_statusBar.setStatusMessage(" ");
-        m_columns.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        m_flowVariables.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        m_columns.setCellRenderer(new DataColumnSpecListCellRenderer());
-        m_flowVariables.setCellRenderer(new FlowVariableListCellRenderer());
-        setInteractive(m_interactive);
+        add(m_statusBar, BorderLayout.SOUTH);
+
         setPreferredSize(new Dimension(1000, 600));
-        m_flowVariables.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
-                    final int index = m_flowVariables.locationToIndex(evt.getPoint());
-                    final FlowVariable flowVariable = m_flowVariablesModel.get(index);
-                    m_editor.replaceSelection(
-                        createVariableAccessString(m_variableNames.getFlowVariables(), flowVariable.getName()));
-                    m_editor.requestFocus();
-                }
-            }
-        });
-        m_columns.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
-                    final int index = m_columns.locationToIndex(evt.getPoint());
-                    final DataColumnSpec column = m_columnsModel.get(index);
-                    final int tableNumber = findTableForColumnIndex(index);
-                    m_editor.replaceSelection(
-                        createVariableAccessString(m_variableNames.getInputTables()[tableNumber], column.getName()));
-                    m_editor.requestFocus();
-                }
-            }
-        });
-        setColumnListEnabled(variableNames.getInputTables().length > 0);
     }
 
     /**
@@ -563,95 +271,39 @@ public abstract class SourceCodePanel extends JPanel {
      * do not call super.
      */
     protected final void installAutoCompletion() {
-        if (m_autoCompletion != null) {
-            m_autoCompletion.uninstall();
-        }
-
-        m_autoCompletion = new AutoCompletion(m_completionProvider);
-        m_autoCompletion.setAutoActivationDelay(100);
-        m_autoCompletion.setAutoActivationEnabled(true);
-        m_autoCompletion.setShowDescWindow(true);
-        m_autoCompletion.setDescriptionWindowSize(580, 300);
-        m_autoCompletion.setParameterAssistanceEnabled(true);
-        m_autoCompletion.install(m_editor);
-    }
-
-    private String getSelectedLines() {
-        final String text = m_editor.getText();
-        final int start = m_editor.getSelectionStart();
-        final int end = m_editor.getSelectionEnd();
-        // Check if selection is valid (if no cursor is set start will be bigger than the last index)
-        if (start > (text.length() - 1)) {
-            return null;
-        }
-        // Cut lines before selection
-        int cutStart = 0;
-        for (int i = 0; i < start; i++) {
-            if (text.charAt(i) == '\n') {
-                // +1 because we want to cut the \n also
-                cutStart = i + 1;
-            }
-        }
-        // Cut lines after selection
-        int cutEnd = text.length();
-        for (int i = text.length() - 1; i >= end; i--) {
-            if (text.charAt(i) == '\n') {
-                cutEnd = i;
-            }
-        }
-        return text.substring(cutStart, cutEnd);
-    }
-
-    private int findTableForColumnIndex(final int columnIndex) {
-        for (int i = 0; i < m_tableEnds.length; i++) {
-            if (columnIndex < m_tableEnds[i]) {
-                return i;
-            }
-        }
-        return 0;
+        m_editor.installAutoCompletion();
     }
 
     /**
      * Initializes the show images button.
      */
     private void initShowImages() {
-        m_showImages.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                final JFrame window = new JFrame();
-                window.setTitle("Python image");
-                final Container contentPane = window.getContentPane();
-                contentPane.setLayout(new BorderLayout());
-                final JLabel imageLabel = new JLabel();
-                imageLabel.setForeground(Color.RED);
-                setImage(imageLabel, m_variableNames.getOutputImages()[0]);
-                contentPane.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
-                final JPanel buttons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-                final JButton closeButton = new JButton("Close");
-                buttons.add(closeButton);
-                contentPane.add(buttons, BorderLayout.SOUTH);
-                if (m_variableNames.getOutputImages().length > 1) {
-                    window.setTitle("Python images");
-                    final JComboBox<String> imageSelection = new JComboBox<String>(m_variableNames.getOutputImages());
-                    contentPane.add(imageSelection, BorderLayout.NORTH);
-                    imageSelection.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(final ActionEvent ev) {
-                            setImage(imageLabel, (String)imageSelection.getSelectedItem());
-                            window.pack();
-                        }
-                    });
-                }
-                closeButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(final ActionEvent ev) {
-                        window.setVisible(false);
-                    }
+        m_showImages.addActionListener(e -> {
+            final JFrame window = new JFrame();
+            window.setTitle("Python image");
+            final Container contentPane = window.getContentPane();
+            contentPane.setLayout(new BorderLayout());
+            final JLabel imageLabel = new JLabel();
+            imageLabel.setForeground(Color.RED);
+            setImage(imageLabel, m_variableNames.getOutputImages()[0]);
+            contentPane.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
+            final JPanel buttons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+            final JButton closeButton = new JButton("Close");
+            buttons.add(closeButton);
+            contentPane.add(buttons, BorderLayout.SOUTH);
+            if (m_variableNames.getOutputImages().length > 1) {
+                window.setTitle("Python images");
+                final JComboBox<String> imageSelection = new JComboBox<>(m_variableNames.getOutputImages());
+                contentPane.add(imageSelection, BorderLayout.NORTH);
+                imageSelection.addActionListener(ev -> {
+                    setImage(imageLabel, (String)imageSelection.getSelectedItem());
+                    window.pack();
                 });
-                window.pack();
-                window.setLocationRelativeTo(SourceCodePanel.this);
-                window.setVisible(true);
             }
+            closeButton.addActionListener(ev -> window.setVisible(false));
+            window.pack();
+            window.setLocationRelativeTo(SourceCodePanel.this);
+            window.setVisible(true);
         });
     }
 
@@ -678,9 +330,8 @@ public abstract class SourceCodePanel extends JPanel {
      * Opens and initializes the panel.
      */
     public void open() {
-        // Clean console and variables table
-        m_console.setText("");
-        m_varsModel.setRowCount(0);
+        m_console.clear();
+        m_workspaceVars.clear();
         m_statusBar.getProgressBar().setValue(0);
     }
 
@@ -698,7 +349,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @throws InvalidSettingsException If the current settings are invalid
      */
     public void saveSettingsTo(final SourceCodeConfig config) throws InvalidSettingsException {
-        config.setSourceCode(m_editor.getText());
+        config.setSourceCode(m_editor.getEditor().getText());
     }
 
     /**
@@ -711,10 +362,10 @@ public abstract class SourceCodePanel extends JPanel {
      * @throws NotConfigurableException If the panel is not configurable
      */
     public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs)
-            throws NotConfigurableException {
+        throws NotConfigurableException {
         installAutoCompletion();
 
-        m_editor.setText(config.getSourceCode());
+        m_editor.getEditor().setText(config.getSourceCode());
         final List<DataTableSpec> tableSpecs = new ArrayList<DataTableSpec>();
         for (final PortObjectSpec spec : specs) {
             if (spec instanceof DataTableSpec) {
@@ -743,18 +394,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param specs The input table specs
      */
     public void updateSpec(final DataTableSpec[] specs) {
-        m_tableEnds = new int[specs.length];
-        int endPosition = 0;
-        m_columnsModel.clear();
-        for (int i = 0; i < specs.length; i++) {
-            if (specs[i] != null) {
-                endPosition += specs[i].getNumColumns();
-                m_tableEnds[i] = endPosition;
-                for (final DataColumnSpec colSpec : specs[i]) {
-                    m_columnsModel.addElement(colSpec);
-                }
-            }
-        }
+        m_inputVars.updateInputs(specs);
     }
 
     /**
@@ -763,10 +403,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param flowVariables The flow variables
      */
     public void updateFlowVariables(final FlowVariable[] flowVariables) {
-        m_flowVariablesModel.clear();
-        for (final FlowVariable flowVariable : flowVariables) {
-            m_flowVariablesModel.addElement(flowVariable);
-        }
+        m_flowVars.updateFlowVariables(flowVariables);
     }
 
     /**
@@ -775,7 +412,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @return The flow variables
      */
     protected List<FlowVariable> getFlowVariables() {
-        return Collections.list(m_flowVariablesModel.elements());
+        return m_flowVars.getFlowVariables();
     }
 
     /**
@@ -784,7 +421,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param enabled If true the column list will be shown in the upper left, if false it will be hidden
      */
     protected void setColumnListEnabled(final boolean enabled) {
-        m_listEditorSplit.setLeftComponent(enabled ? m_listsSplit : m_flowVariablesPanel);
+        m_inputVarsFlowVarsEditorSplit.setLeftComponent(enabled ? m_inputVarsFlowVarsSplit : m_flowVars.getPanel());
     }
 
     /**
@@ -793,17 +430,13 @@ public abstract class SourceCodePanel extends JPanel {
      * @param interactive true if the panel is interactive
      */
     protected void setInteractive(final boolean interactive) {
-        runInUiThread(new Runnable() {
-            @Override
-            public void run() {
-                m_interactive = interactive;
-                // These buttons can only be clicked if the panel is interactive
-                // and no execution is currently running
-                m_execSelection.setEnabled(interactive && !m_running);
-                m_exec.setEnabled(interactive && !m_running);
-                m_reset.setEnabled((m_stopped || interactive) && !m_running);
-                m_showImages.setEnabled(interactive && !m_running);
-            }
+        runInUiThread(() -> {
+            m_interactive = interactive;
+            // These buttons can only be clicked if the panel is interactive and no execution is currently running.
+            m_execSelection.setEnabled(interactive && !m_running);
+            m_exec.setEnabled(interactive && !m_running);
+            m_reset.setEnabled((m_stopped || interactive) && !m_running);
+            m_showImages.setEnabled(interactive && !m_running);
         });
     }
 
@@ -813,20 +446,17 @@ public abstract class SourceCodePanel extends JPanel {
      * @param running true if code is currently executing, false otherwise
      */
     protected void setRunning(final boolean running) {
-        runInUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final boolean wasRunning = m_running;
-                m_running = running;
-                if(running) {
-                    m_stopped = false;
-                }
-                setInteractive(m_interactive);
-                m_statusBar.setRunning(running);
-                // Update variables if we just finished running
-                if (wasRunning && !running) {
-                    updateVariables();
-                }
+        runInUiThread(() -> {
+            final boolean wasRunning = m_running;
+            m_running = running;
+            if (running) {
+                m_stopped = false;
+            }
+            setInteractive(m_interactive);
+            m_statusBar.setRunning(running);
+            // Update variables if we just finished running
+            if (wasRunning && !running) {
+                updateVariables();
             }
         });
     }
@@ -835,83 +465,44 @@ public abstract class SourceCodePanel extends JPanel {
      * Set this panel to enable only the "Reset workspace" button.
      */
     protected void setStopped() {
-        runInUiThread(new Runnable() {
-            @Override
-            public void run() {
-                m_stopped = true;
-                m_statusBar.setRunning(false);
-                setInteractive(false);
-                setVariables(new Variable[0]);
-            }
+        runInUiThread(() -> {
+            m_stopped = true;
+            m_statusBar.setRunning(false);
+            setInteractive(false);
+            setVariables(new Variable[0]);
         });
-    }
-
-    /**
-     * Appends the given warning to the console.
-     *
-     * @param text The text to append
-     */
-    protected void warningToConsole(final String text) {
-        if ((text != null) && !text.trim().isEmpty()) {
-            runInUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    final StyledDocument doc = m_console.getStyledDocument();
-                    final String string = ScriptingNodeUtils.shortenString(text);
-                    try {
-                        // Warnings use warning style
-                        doc.insertString(doc.getLength(), string + "\n", m_warningStyle);
-                    } catch (final BadLocationException e) {
-                        //
-                    }
-                }
-            });
-        }
     }
 
     /**
      * Appends the given message to the console.
      *
-     * @param text The text to append
+     * @param text The message to append.
      */
     protected void messageToConsole(final String text) {
-        if ((text != null) && !text.trim().isEmpty()) {
-            runInUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    final StyledDocument doc = m_console.getStyledDocument();
-                    final String string = ScriptingNodeUtils.shortenString(text);
-                    try {
-                        // Messages use normal style
-                        doc.insertString(doc.getLength(), string + "\n", m_normalStyle);
-                    } catch (final BadLocationException e) {
-                        //
-                    }
-                }
-            });
-        }
+        printToConsole(text, Level.INFO);
+    }
+
+    /**
+     * Appends the given warning to the console.
+     *
+     * @param text The warning to append.
+     */
+    protected void warningToConsole(final String text) {
+        printToConsole(text, Level.WARNING);
     }
 
     /**
      * Appends the given error to the console
      *
-     * @param text The error to append
+     * @param text The error to append.
      */
     protected void errorToConsole(final String text) {
-        if ((text != null) && !text.trim().isEmpty()) {
-            runInUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    final StyledDocument doc = m_console.getStyledDocument();
-                    final String string = ScriptingNodeUtils.shortenString(text);
-                    try {
-                        // Errors use error style
-                        doc.insertString(doc.getLength(), string + "\n", m_errorStyle);
-                    } catch (final BadLocationException e) {
-                        //
-                    }
-                }
-            });
+        printToConsole(text, Level.ERROR);
+    }
+
+    private void printToConsole(final String text, final Level level) {
+        if (text != null && !text.trim().isEmpty()) {
+            runInUiThread(() -> m_console.print(text, level));
         }
     }
 
@@ -921,12 +512,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param statusMessage The new status
      */
     protected void setStatusMessage(final String statusMessage) {
-        runInUiThread(new Runnable() {
-            @Override
-            public void run() {
-                m_statusBar.setStatusMessage(statusMessage);
-            }
-        });
+        runInUiThread(() -> m_statusBar.setStatusMessage(statusMessage));
     }
 
     /**
@@ -969,15 +555,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param variables The variables to display
      */
     protected void setVariables(final Variable[] variables) {
-        // Create vector and put it into the model
-        final Object[][] variablesVector = new Object[variables.length][];
-        for (int i = 0; i < variables.length; i++) {
-            variablesVector[i] = new Object[3];
-            variablesVector[i][0] = variables[i].getName();
-            variablesVector[i][1] = variables[i].getType();
-            variablesVector[i][2] = variables[i].getValue();
-        }
-        m_varsModel.setDataVector(variablesVector, VARIABLES_COLUMN_NAMES);
+        m_workspaceVars.setVariables(variables);
     }
 
     /**
@@ -996,40 +574,6 @@ public abstract class SourceCodePanel extends JPanel {
      */
     protected abstract List<Completion> getCompletionsFor(final CompletionProvider provider, final String sourceCode,
         final int line, final int column);
-
-    /**
-     * Creates a completion provider that will be used to suggest completions.
-     *
-     * The created provider will utilize {@link #getCompletionsFor(CompletionProvider, String, int, int)} to retrieve
-     * possible completions.
-     *
-     * @return The {@link CompletionProvider}
-     */
-    private CompletionProvider createCompletionProvider() {
-        final DefaultCompletionProvider provider = new DefaultCompletionProvider() {
-            @Override
-            public List<Completion> getCompletions(final JTextComponent comp) {
-                final List<Completion> providedCompletions = super.getCompletions(comp);
-                // Get source code from editor
-                final String sourceCode = comp.getText();
-                // Caret position only gives as the number of characters before
-                // the cursor
-                // We need to inspect the code before the cursor to figure out
-                // the line and column numbers
-                final String codeBeforeCaret = sourceCode.substring(0, comp.getCaretPosition());
-                // Line = how many newlines are in the code?
-                final int line = StringUtils.countMatches(codeBeforeCaret, "\n");
-                // Column = how long is the last line of the code?
-                final int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf("\n") + 1).length();
-                // Add completions from getCompletionsFor()
-                providedCompletions.addAll(getCompletionsFor(this, sourceCode, line, column));
-                return providedCompletions;
-            }
-        };
-        // Automatically suggest after '.'
-        provider.setAutoActivationRules(false, ".");
-        return provider;
-    }
 
     /**
      * Runs the given runnable in the UI thread.
@@ -1096,7 +640,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @return the editor widget component
      */
     public RSyntaxTextArea getEditor() {
-        return m_editor;
+        return m_editor.getEditor();
     }
 
     /**
@@ -1126,6 +670,55 @@ public abstract class SourceCodePanel extends JPanel {
      * @param show whether to show the interactive components
      */
     public void showWorkspacePanel(final boolean show) {
-        m_workspacePanel.setVisible(show);
+        m_workspaceVars.getPanel().setVisible(show);
+        m_workspaceButtons.setVisible(show);
+    }
+
+    /**
+     * Represents a variable as it is displayed in the variables table.
+     *
+     * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+     */
+    public static class Variable {
+
+        private final String m_name;
+
+        private final String m_type;
+
+        private final String m_value;
+
+        /**
+         * Creates a variable.
+         *
+         * @param name The name of the variable.
+         * @param type The type of the variable.
+         * @param value The value of the variable.
+         */
+        public Variable(final String name, final String type, final String value) {
+            m_name = name;
+            m_type = type;
+            m_value = value;
+        }
+
+        /**
+         * @return The name of the variable.
+         */
+        public String getName() {
+            return m_name;
+        }
+
+        /**
+         * @return The type of the variable.
+         */
+        public String getType() {
+            return m_type;
+        }
+
+        /**
+         * @return The value of the variable.
+         */
+        public String getValue() {
+            return m_value;
+        }
     }
 }
