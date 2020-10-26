@@ -27,14 +27,14 @@ The "KNIME Jython Integration" includes three Snippet nodes providing capabiliti
 
 ### Explanation
 
-![Configure dialog](https://bitbucket.org/KNIME/knime-python/raw/master/res/python_node_configure.png)
+![Configure dialog](https://bitbucket.org/KNIME/knime-python/raw/master/python_node_configure.png)
 
 The KNIME Python Integration (major versions 2&3) provides a variety of nodes for executing python code.  With them, inputs and outputs can be accessed through "magic variables" inside a python script. The available variables can be checked in the table on the left side of the configure dialog (see image above). KNIME tables are translated into pandas.DataFrame objects
 on the python side and vice versa. Flow variables can be accessed via a dictionary. Custom serialization methods for a variety of complex data-types allow transferring them between KNIME and the Python Kernel. The so-called typeextensions are defined in the org.knime.python.typeextensions project. At the moment built-in extensions exist for .png images, .svg images, date&time types, XML cells and bytevector cells. Further typeextensions may be defined using the Eclipse extension point mechanism.
 Furthermore, python general options, such as the path to the python executables in major version 2 and the serialization library to use in major version 3, can be configured via the python preference page found in the menu under "Preferences -> KNIME -> Python ". Serialization libraries define methods for (de)serializing a KNIME table to a byte representation and vice versa on the Java side, and methods for (de)serializing a byte representation into a pandas.DataFrame and vice versa on the Python side. Serialization libraries are implemented as interchangeable modules using the Eclipse Extension point mechanism. Currently three different serialization libraries are implemented in their respective projects org.knime.python2.serde.arrow (based on the Apache Arrow technology; see: [https://arrow.apache.org/](https://arrow.apache.org/)), org.knime.python2.serde.csv (exchanges data using .csv files), and org.knime.python2.serde.flatbuffers (based on the google-flatbuffers technology; see: [https://google.github.io/flatbuffers/](https://google.github.io/flatbuffers/)).
 In the node configure dialog window, the python major version to use can be selected in the options tab. Furthermore, missing value handling can be customized for Int- and Long-Columns, as those are converted to double columns by default as soon as they contain missing values. With the options tab, missing values in these columns can be converted to a sentinel-value (an arbitrary replacement value).
 
-![The Python Integration Nodes in action](https://bitbucket.org/KNIME/knime-python/raw/master/res/python_example_workflow.png)
+![The Python Integration Nodes in action](https://bitbucket.org/KNIME/knime-python/raw/master/python_example_workflow.png)
 
 The following nodes are available in the "KNIME Python Integration (major versions 2&3)" plugin:
 
