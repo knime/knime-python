@@ -66,19 +66,14 @@ public final class PythonPreferencesInitializer extends AbstractPreferenceInitia
     public void initializeDefaultPreferences() {
         final PythonConfigStorage defaultPreferences = PythonPreferences.DEFAULT;
 
-        final PythonVersionConfig defaultDefaultVersionConfig = new PythonVersionConfig();
-        defaultDefaultVersionConfig.saveConfigTo(defaultPreferences);
+        new PythonVersionConfig().saveDefaultsTo(defaultPreferences);
 
-        final PythonEnvironmentTypeConfig environmentTypeConfig = new PythonEnvironmentTypeConfig();
-        environmentTypeConfig.saveConfigTo(defaultPreferences);
+        new PythonEnvironmentTypeConfig().saveDefaultsTo(defaultPreferences);
 
-        final CondaEnvironmentsConfig defaultCondaEnvConfig = new CondaEnvironmentsConfig();
-        defaultCondaEnvConfig.saveConfigTo(defaultPreferences);
+        new CondaEnvironmentsConfig().saveDefaultsTo(defaultPreferences);
 
-        final ManualEnvironmentsConfig defaultManualEnvConfig = new ManualEnvironmentsConfig();
-        defaultManualEnvConfig.saveConfigTo(defaultPreferences);
+        new ManualEnvironmentsConfig().saveDefaultsTo(defaultPreferences);
 
-        final SerializerConfig defaultSerializerConfig = new SerializerConfig();
-        defaultSerializerConfig.saveConfigTo(defaultPreferences);
+        new SerializerConfig().saveDefaultsTo(defaultPreferences);
     }
 }

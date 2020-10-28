@@ -159,6 +159,13 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
     }
 
     @Override
+    public void saveDefaultsTo(final PythonConfigStorage storage) {
+        storage.saveStringModel(m_condaDirectory);
+        m_python2EnvironmentConfig.saveDefaultsTo(storage);
+        m_python3EnvironmentConfig.saveDefaultsTo(storage);
+    }
+
+    @Override
     public void saveConfigTo(final PythonConfigStorage storage) {
         storage.saveStringModel(m_condaDirectory);
         m_python2EnvironmentConfig.saveConfigTo(storage);
