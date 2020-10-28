@@ -51,14 +51,11 @@ package org.knime.python2.config;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
-import org.osgi.service.prefs.Preferences;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -69,6 +66,8 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     private PythonVersion m_pythonVersion;
 
     private final SettingsModelString m_environmentDirectory;
+
+    private final String m_defaultEnvironmentDirectory;
 
     /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
     private static final String LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
@@ -100,6 +99,7 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
         m_pythonVersion = pythonVersion;
         m_environmentDirectory =
             new SettingsModelString(environmentDirectoryConfigKey, defaultEnvironment.getDirectoryPath());
+        m_defaultEnvironmentDirectory = m_environmentDirectory.getStringValue();
         m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentSpec[]{defaultEnvironment});
         m_condaDirectory = condaDirectory;
     }
@@ -125,45 +125,65 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     }
 
     @Override
+    public void saveDefaultsTo(final PythonConfigStorage storage) {
+        // Do nothing.
+    }
+
+    @Override
     public void saveConfigTo(final PythonConfigStorage storage) {
         storage.saveStringModel(m_environmentDirectory);
     }
 
     @Override
     public void loadConfigFrom(final PythonConfigStorage storage) {
-        // Legacy support: we used to only save the environment's name, not the path to its directory. If only the name
-        // is available, we need to convert it into the correct path.
-        if (storage instanceof PreferenceWrappingConfigStorage) {
-            final Preferences preferences =
-                ((PreferenceWrappingConfigStorage)storage).getWrappedPreferences().getWritePreferences();
-            final boolean isLegacy = Platform.getPreferencesService().get( //
-                m_environmentDirectory.getKey(), //
-                null, //
-                new Preferences[]{preferences}) == null;
-            if (isLegacy) {
-                final SettingsModelString environmentName = new SettingsModelString(
-                    m_pythonVersion == PythonVersion.PYTHON2 //
-                        ? LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME //
-                        : LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME, //
-                    LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
-                storage.loadStringModel(environmentName);
-                try {
-                    final String environmentNameValue = environmentName.getStringValue();
-                    final List<CondaEnvironmentSpec> environments =
-                        new Conda(m_condaDirectory.getStringValue()).getEnvironments();
-                    for (final CondaEnvironmentSpec environment : environments) {
-                        if (environmentNameValue.equals(environment.getName())) {
-                            m_environmentDirectory.setStringValue(environment.getDirectoryPath());
-                            storage.saveStringModel(m_environmentDirectory);
-                            break;
-                        }
-                    }
-                } catch (final IOException ex) {
-                    // Keep directory path's default value.
-                }
-                return;
-            }
+        if (environmentDirectoryEntryExists(storage)) {
+            storage.loadStringModel(m_environmentDirectory);
+        } else if (!tryUseEnvironmentNameEntry(storage)) {
+            /**
+             * If none of the entries are present, fall back to defaults. This follows the behavior required from this
+             * method as documented in {@link PythonConfig#saveDefaultsTo(PythonConfigStorage)}.
+             */
+            m_environmentDirectory.setStringValue(m_defaultEnvironmentDirectory);
         }
-        storage.loadStringModel(m_environmentDirectory);
+    }
+
+    private boolean environmentDirectoryEntryExists(final PythonConfigStorage storage) {
+        final SettingsModelString environmentDirectory =
+            new SettingsModelString(m_environmentDirectory.getKey(), LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
+        storage.loadStringModel(environmentDirectory);
+        return !LEGACY_PLACEHOLDER_CONDA_ENV_NAME.equals(environmentDirectory.getStringValue());
+    }
+
+    /**
+     * Legacy support: we used to only save the environment's name, not the path to its directory. If the name is
+     * available, we need to convert it into the correct path.
+     */
+    private boolean tryUseEnvironmentNameEntry(final PythonConfigStorage storage) {
+        final SettingsModelString environmentName = new SettingsModelString(m_pythonVersion == PythonVersion.PYTHON2 //
+            ? LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME //
+            : LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME, //
+            LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
+        storage.loadStringModel(environmentName);
+        final String environmentNameValue = environmentName.getStringValue();
+        final boolean environmentNameEntryExists = !LEGACY_PLACEHOLDER_CONDA_ENV_NAME.equals(environmentNameValue);
+        return environmentNameEntryExists && tryConvertEnvironmentNameIntoDirectory(environmentNameValue, storage);
+    }
+
+    private boolean tryConvertEnvironmentNameIntoDirectory(final String environmentName,
+        final PythonConfigStorage storage) {
+        try {
+            final List<CondaEnvironmentSpec> environments =
+                new Conda(m_condaDirectory.getStringValue()).getEnvironments();
+            for (final CondaEnvironmentSpec environment : environments) {
+                if (environmentName.equals(environment.getName())) {
+                    m_environmentDirectory.setStringValue(environment.getDirectoryPath());
+                    storage.saveStringModel(m_environmentDirectory);
+                    return true;
+                }
+            }
+        } catch (final IOException ex) {
+            // Name conversion failed. Fall through and use directory path's default value instead.
+        }
+        return false;
     }
 }

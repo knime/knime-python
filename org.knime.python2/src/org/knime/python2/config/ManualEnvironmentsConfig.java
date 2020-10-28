@@ -93,6 +93,12 @@ public final class ManualEnvironmentsConfig implements PythonEnvironmentsConfig 
     }
 
     @Override
+    public void saveDefaultsTo(final PythonConfigStorage storage) {
+        m_python2EnvironmentConfig.saveDefaultsTo(storage);
+        m_python3EnvironmentConfig.saveDefaultsTo(storage);
+    }
+
+    @Override
     public void saveConfigTo(final PythonConfigStorage storage) {
         m_python2EnvironmentConfig.saveConfigTo(storage);
         m_python3EnvironmentConfig.saveConfigTo(storage);

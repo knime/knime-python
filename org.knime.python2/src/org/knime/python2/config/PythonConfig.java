@@ -55,6 +55,21 @@ package org.knime.python2.config;
 public interface PythonConfig {
 
     /**
+     * Saves the default values of this config to the given storage (optional operation).
+     * <P>
+     * Note that a config is not to required save its default values at all, in the context of this method, as long as
+     * it is capable of falling back to its default in case the argument storage in
+     * {@link #loadConfigFrom(PythonConfigStorage)} does not contain its corresponding entries.
+     * <P>
+     * This method may only be called once and before the first call to {@link #loadConfigFrom(PythonConfigStorage)}.
+     *
+     * @param storage The storage to which to safe the default values of this config.
+     */
+    default void saveDefaultsTo(final PythonConfigStorage storage) {
+        saveConfigTo(storage);
+    }
+
+    /**
      * Saves this config to the given storage.
      *
      * @param storage The storage to which to safe this config.

@@ -60,7 +60,6 @@ public final class PythonAdvancedPreferencesInitializer extends AbstractPreferen
     public void initializeDefaultPreferences() {
         final PythonConfigStorage defaultPreferences = PythonAdvancedPreferences.DEFAULT;
 
-        final PythonKernelQueueConfig defaultKernelQueueConfig = new PythonKernelQueueConfig();
-        defaultKernelQueueConfig.saveConfigTo(defaultPreferences);
+        new PythonKernelQueueConfig().saveDefaultsTo(defaultPreferences);
     }
 }
