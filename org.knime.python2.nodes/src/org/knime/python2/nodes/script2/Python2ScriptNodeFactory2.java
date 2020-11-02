@@ -73,13 +73,13 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
 
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        // TODO: we want to have one pair of table input/output ports by default that can still be removed. This
-        // requires changes to the dynamic-ports framework.
         final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
         b.addOptionalPortGroup("Database connection (legacy)", DatabasePortObject.TYPE);
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
-        b.addExtendableInputPortGroup("Input table", BufferedDataTable.TYPE);
-        b.addExtendableOutputPortGroup("Output table", BufferedDataTable.TYPE);
+        b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
+            BufferedDataTable.TYPE);
+        b.addExtendableOutputPortGroupWithDefault("Output table", new PortType[0],
+            new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
         b.addExtendableOutputPortGroup("Output image", ImagePortObject.TYPE);
         b.addExtendableOutputPortGroup("Output object (pickled)", PickledObjectFileStorePortObject.TYPE);
         return Optional.of(b);
