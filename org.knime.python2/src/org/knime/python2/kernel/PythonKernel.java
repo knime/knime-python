@@ -910,12 +910,13 @@ public class PythonKernel implements AutoCloseable {
                         putChunkTask.run();
                     } else {
                         waitForFutureCancelable(putChunkTask, cancelable);
+                        deserializationMonitor.setProgress(rowsDone / (double)numberRows);
                         putChunkTask = m_commands.appendToTable(name, bytes);
                         putChunkTask.run();
                     }
-                    deserializationMonitor.setProgress(rowsDone / (double)numberRows);
                 }
                 waitForFutureCancelable(putChunkTask, cancelable);
+                deserializationMonitor.setProgress(rowsDone / (double)numberRows);
             }
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
