@@ -50,7 +50,9 @@ package org.knime.python2.config;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentSpec;
@@ -63,17 +65,16 @@ import org.knime.python2.PythonVersion;
  */
 public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfig {
 
-    private PythonVersion m_pythonVersion;
+    public static final CondaEnvironmentSpec PLACEHOLDER_ENV =
+        new CondaEnvironmentSpec("no environment available", "no_conda_environment_selected");
+
+    private final PythonVersion m_pythonVersion;
 
     private final SettingsModelString m_environmentDirectory;
 
-    private final String m_defaultEnvironmentDirectory;
+    private final String m_legacyConfigKey;
 
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
-    private static final String LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
-
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
-    private static final String LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME = "python3CondaEnvironmentName";
+    private String m_notConfiguredMessage;
 
     /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
     private static final String LEGACY_PLACEHOLDER_CONDA_ENV_NAME = "<no environment>";
@@ -86,22 +87,14 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
 
     /**
      * @param pythonVersion The Python version of Conda environments described by this instance.
-     * @param environmentDirectoryConfigKey The identifier of the Conda environment directory config. Used for
-     *            saving/loading the path to the environment's directory.
-     * @param defaultEnvironment The initial Conda environment.
-     * @param condaDirectory The settings model that specifies the Conda installation directory. Not saved/loaded or
-     *            otherwise managed by this config.
      */
-    public CondaEnvironmentConfig(final PythonVersion pythonVersion, //
-        final String environmentDirectoryConfigKey, //
-        final CondaEnvironmentSpec defaultEnvironment, //
-        final SettingsModelString condaDirectory) {
+    public CondaEnvironmentConfig(final PythonVersion pythonVersion, final String configKey,
+        final String legacyConfigKey, final CondaDirectoryConfig condaDirectoryConfig) {
         m_pythonVersion = pythonVersion;
-        m_environmentDirectory =
-            new SettingsModelString(environmentDirectoryConfigKey, defaultEnvironment.getDirectoryPath());
-        m_defaultEnvironmentDirectory = m_environmentDirectory.getStringValue();
-        m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentSpec[]{defaultEnvironment});
-        m_condaDirectory = condaDirectory;
+        m_environmentDirectory = new SettingsModelString(configKey, PLACEHOLDER_ENV.getDirectoryPath());
+        m_legacyConfigKey = legacyConfigKey;
+        m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentSpec[]{PLACEHOLDER_ENV});
+        m_condaDirectory = condaDirectoryConfig.getCondaDirectoryPath();
     }
 
     /**
@@ -120,8 +113,18 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
 
     @Override
     public PythonCommand getPythonCommand() {
-        return Conda.createPythonCommand(m_pythonVersion, m_condaDirectory.getStringValue(),
-            m_environmentDirectory.getStringValue());
+        if (PLACEHOLDER_ENV.getDirectoryPath().equals(m_environmentDirectory.getStringValue())) {
+            if (m_notConfiguredMessage == null) {
+                m_notConfiguredMessage = "No Python environment configured.\n"
+                    + "Please configure an environment in the Preferences of the KNIME Python Integration.\n"
+                    + "Instructions on how to do this can be found in the installation guide on "
+                    + "https://docs.knime.com/?category=integrations.";
+            }
+            return new UnconfiguredCondaCommand(m_pythonVersion, m_notConfiguredMessage);
+        } else {
+            return Conda.createPythonCommand(m_pythonVersion, m_condaDirectory.getStringValue(),
+                m_environmentDirectory.getStringValue());
+        }
     }
 
     @Override
@@ -136,14 +139,11 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
 
     @Override
     public void loadConfigFrom(final PythonConfigStorage storage) {
+        m_notConfiguredMessage = null;
         if (environmentDirectoryEntryExists(storage)) {
             storage.loadStringModel(m_environmentDirectory);
         } else if (!tryUseEnvironmentNameEntry(storage)) {
-            /**
-             * If none of the entries are present, fall back to defaults. This follows the behavior required from this
-             * method as documented in {@link PythonConfig#saveDefaultsTo(PythonConfigStorage)}.
-             */
-            m_environmentDirectory.setStringValue(m_defaultEnvironmentDirectory);
+            m_environmentDirectory.setStringValue(PLACEHOLDER_ENV.getDirectoryPath());
         }
     }
 
@@ -159,10 +159,8 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
      * available, we need to convert it into the correct path.
      */
     private boolean tryUseEnvironmentNameEntry(final PythonConfigStorage storage) {
-        final SettingsModelString environmentName = new SettingsModelString(m_pythonVersion == PythonVersion.PYTHON2 //
-            ? LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME //
-            : LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME, //
-            LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
+        final SettingsModelString environmentName =
+            new SettingsModelString(m_legacyConfigKey, LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
         storage.loadStringModel(environmentName);
         final String environmentNameValue = environmentName.getStringValue();
         final boolean environmentNameEntryExists = !LEGACY_PLACEHOLDER_CONDA_ENV_NAME.equals(environmentNameValue);
@@ -183,7 +181,61 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
             }
         } catch (final IOException ex) {
             // Name conversion failed. Fall through and use directory path's default value instead.
+            NodeLogger.getLogger(CondaEnvironmentConfig.class).debug(ex);
         }
+        m_notConfiguredMessage = "Could not locate Conda environment '" + environmentName
+            + "'.\nPlease review the Preferences of the KNIME Python Integration and make sure the environment exists.\n"
+            + "Note that Preferences entry '" + m_legacyConfigKey + "' has been deprecated in favor of '"
+            + m_environmentDirectory.getKey() + "'.";
         return false;
+    }
+
+    private static final class UnconfiguredCondaCommand implements PythonCommand {
+
+        private final PythonVersion m_pythonVersion;
+
+        private final String m_errorMessage;
+
+        public UnconfiguredCondaCommand(final PythonVersion pythonVersion, final String errorMessage) {
+            m_pythonVersion = pythonVersion;
+            m_errorMessage = errorMessage;
+        }
+
+        @Override
+        public PythonVersion getPythonVersion() {
+            return m_pythonVersion;
+        }
+
+        @Override
+        public ProcessBuilder createProcessBuilder() throws UnconfiguredEnvironmentException {
+            throw new UnconfiguredEnvironmentException(m_errorMessage);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(m_pythonVersion, m_errorMessage);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (!(obj instanceof UnconfiguredCondaCommand)) {
+                return false;
+            }
+            final UnconfiguredCondaCommand other = (UnconfiguredCondaCommand)obj;
+            return other.m_pythonVersion == m_pythonVersion //
+                && other.m_errorMessage.equals(m_errorMessage);
+        }
+
+        /**
+         * The PySpark node expects a legal path here. Since the error message may contain spaces or other illegal
+         * characters, we return the placeholder path instead.
+         */
+        @Override
+        public String toString() {
+            return PLACEHOLDER_ENV.getDirectoryPath();
+        }
     }
 }

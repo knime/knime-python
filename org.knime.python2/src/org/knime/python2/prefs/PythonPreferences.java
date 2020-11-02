@@ -197,6 +197,6 @@ public final class PythonPreferences {
     public static String getCondaInstallationPath() {
         final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
         condaEnvironmentsConfig.loadConfigFrom(CURRENT);
-        return condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue();
+        return condaEnvironmentsConfig.getCondaDirectoryConfig().getCondaDirectoryPath().getStringValue();
     }
 }

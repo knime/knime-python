@@ -107,6 +107,7 @@ import org.knime.python.typeextension.PythonToKnimeExtension;
 import org.knime.python.typeextension.PythonToKnimeExtensions;
 import org.knime.python2.Activator;
 import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonCommand.UnconfiguredEnvironmentException;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
@@ -377,9 +378,7 @@ public class PythonKernel implements AutoCloseable {
             ? PythonKernelTester.testPython3Installation(command, additionalRequiredModules, false)
             : PythonKernelTester.testPython2Installation(command, additionalRequiredModules, false);
         if (testResult.hasError()) {
-            throw new PythonInstallationTestException(
-                "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog(),
-                testResult);
+            throw new PythonInstallationTestException(testResult.getErrorLog(), testResult);
         }
     }
 
@@ -393,7 +392,12 @@ public class PythonKernel implements AutoCloseable {
         final String kernelScriptPath = PythonKernelOptions.KERNEL_SCRIPT_PATH;
         final String port = Integer.toString(m_serverSocket.getLocalPort());
         // Build and start Python kernel that listens to the given port:
-        final ProcessBuilder pb = command.createProcessBuilder();
+        ProcessBuilder pb;
+        try {
+            pb = command.createProcessBuilder();
+        } catch (final UnconfiguredEnvironmentException ex) {
+            throw new PythonIOException(ex.getMessage(), ex);
+        }
         // Use the -u options to force Python to not buffer stdout and stderror.
         Collections.addAll(pb.command(), "-u", kernelScriptPath, port);
         // Add all python modules to PYTHONPATH variable.

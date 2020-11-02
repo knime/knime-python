@@ -137,7 +137,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         });
 
         // Refresh and test entire Conda config on Conda directory change.
-        condaEnvironmentsConfig.getCondaDirectoryPath().addChangeListener(e -> refreshAndTestCondaConfig());
+        condaEnvironmentsConfig.getCondaDirectoryConfig().getCondaDirectoryPath()
+            .addChangeListener(e -> refreshAndTestCondaConfig());
 
         // Test Conda environments on change:
         condaEnvironmentsConfig.getPython2Config().getEnvironmentDirectory()
@@ -251,13 +252,14 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
     }
 
     private Conda testCondaInstallation() throws Exception {
-        final SettingsModelString condaInfoMessage = m_condaEnvironmentsConfig.getCondaInstallationInfo();
-        final SettingsModelString condaErrorMessage = m_condaEnvironmentsConfig.getCondaInstallationError();
+        final CondaDirectoryConfig condaDirectoryConfig = m_condaEnvironmentsConfig.getCondaDirectoryConfig();
+        final SettingsModelString condaInfoMessage = condaDirectoryConfig.getCondaInstallationInfo();
+        final SettingsModelString condaErrorMessage = condaDirectoryConfig.getCondaInstallationError();
         try {
             condaInfoMessage.setStringValue("Testing Conda installation...");
             condaErrorMessage.setStringValue("");
             onCondaInstallationTestStarting();
-            final Conda conda = new Conda(m_condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue());
+            final Conda conda = new Conda(condaDirectoryConfig.getCondaDirectoryPath().getStringValue());
             String condaVersionString = conda.getVersionString();
             try {
                 condaVersionString =
@@ -297,7 +299,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
             }
             return conda.getEnvironments();
         } catch (final Exception ex) {
-            m_condaEnvironmentsConfig.getCondaInstallationError().setStringValue(ex.getMessage());
+            m_condaEnvironmentsConfig.getCondaDirectoryConfig().getCondaInstallationError()
+                .setStringValue(ex.getMessage());
             final String environmentsNotDetectedMessage = "Available environments could not be detected.";
             clearAvailableCondaEnvironments(false);
             setCondaEnvironmentStatusMessages(false, "", environmentsNotDetectedMessage);
@@ -326,9 +329,9 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
             ? m_condaEnvironmentsConfig.getPython3Config() //
             : m_condaEnvironmentsConfig.getPython2Config();
         if (availableEnvironments.isEmpty()) {
+            final CondaEnvironmentSpec placeholder = CondaEnvironmentConfig.PLACEHOLDER_ENV;
             availableEnvironments =
-                Arrays.asList(new CondaEnvironmentSpec(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME,
-                    CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR));
+                Arrays.asList(new CondaEnvironmentSpec(placeholder.getName(), placeholder.getDirectoryPath()));
         }
         condaConfig.getAvailableEnvironments().setValue(availableEnvironments.toArray(new CondaEnvironmentSpec[0]));
         final String currentlySelectedEnvironment = condaConfig.getEnvironmentDirectory().getStringValue();
@@ -407,7 +410,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         final SettingsModelString condaEnvironmentDirectory = isPython3 //
             ? m_condaEnvironmentsConfig.getPython3Config().getEnvironmentDirectory() //
             : m_condaEnvironmentsConfig.getPython2Config().getEnvironmentDirectory();
-        return CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR.equals(condaEnvironmentDirectory.getStringValue());
+        return CondaEnvironmentConfig.PLACEHOLDER_ENV.getDirectoryPath()
+            .equals(condaEnvironmentDirectory.getStringValue());
     }
 
     private void testSerializer() {

@@ -66,6 +66,7 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.AbstractPythonConfigsObserver.PythonConfigsInstallationTestStatusChangeListener;
@@ -149,10 +150,12 @@ public final class PythonPreferencePage extends AbstractPythonPreferencePage {
         m_condaEnvironmentsConfig = new CondaEnvironmentsConfig();
         configs.add(m_condaEnvironmentsConfig);
 
+        final SettingsModelString condaDirectoryPath =
+            m_condaEnvironmentsConfig.getCondaDirectoryConfig().getCondaDirectoryPath();
         m_python2EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON2,
-            m_condaEnvironmentsConfig.getCondaDirectoryPath());
+            condaDirectoryPath);
         m_python3EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON3,
-            m_condaEnvironmentsConfig.getCondaDirectoryPath());
+            condaDirectoryPath);
 
         m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(m_condaEnvironmentsConfig,
             m_python2EnvironmentCreator, m_python3EnvironmentCreator, environmentConfigurationPanel);

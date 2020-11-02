@@ -48,6 +48,8 @@
  */
 package org.knime.python2;
 
+import org.knime.python2.kernel.PythonException;
+
 /**
  * Describes an external Python process. The process can be started via the {@link ProcessBuilder} returned by
  * {@link #createProcessBuilder()}.
@@ -72,8 +74,10 @@ public interface PythonCommand {
     /**
      * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
      *         this command instance.
+     * @throws UnconfiguredEnvironmentException If no process can be created from this command because the underlying
+     *             Python environment is not configured.
      */
-    ProcessBuilder createProcessBuilder();
+    ProcessBuilder createProcessBuilder() throws UnconfiguredEnvironmentException;
 
     @Override
     int hashCode();
@@ -83,4 +87,20 @@ public interface PythonCommand {
 
     @Override
     String toString();
+
+    /**
+     * Indicates that a Python environment is not yet configured and can therefore not be used to create a Python
+     * process.
+     */
+    public final class UnconfiguredEnvironmentException extends Exception implements PythonException {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * @param message A descriptive error message that instructs the user how to to configure the environment.
+         */
+        public UnconfiguredEnvironmentException(final String message) {
+            super(message);
+        }
+    }
 }

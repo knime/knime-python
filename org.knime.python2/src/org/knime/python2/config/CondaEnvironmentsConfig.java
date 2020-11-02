@@ -48,10 +48,6 @@
  */
 package org.knime.python2.config;
 
-import java.nio.file.Paths;
-
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.PythonVersion;
 
 /**
@@ -60,92 +56,29 @@ import org.knime.python2.PythonVersion;
  */
 public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
 
-    /**
-     * Configuration key for the path to the Conda installation directory.
-     */
-    public static final String CFG_KEY_CONDA_DIRECTORY_PATH = "condaDirectoryPath";
-
     private static final String CFG_KEY_PYTHON2_CONDA_ENV_DIR = "python2CondaEnvironmentDirectoryPath";
 
     private static final String CFG_KEY_PYTHON3_CONDA_ENV_DIR = "python3CondaEnvironmentDirectoryPath";
 
-    static final String PLACEHOLDER_CONDA_ENV_NAME = "no environment available";
+    /** Only used for legacy support. See {@link CondaEnvironmentConfig#loadConfigFrom(PythonConfigStorage)}. */
+    private static final String LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
 
-    static final String PLACEHOLDER_CONDA_ENV_DIR = "no_conda_environment_selected";
+    /** Only used for legacy support. See {@link CondaEnvironmentConfig#loadConfigFrom(PythonConfigStorage)}. */
+    private static final String LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME = "python3CondaEnvironmentName";
 
-    private final SettingsModelString m_condaDirectory =
-        new SettingsModelString(CFG_KEY_CONDA_DIRECTORY_PATH, getDefaultCondaInstallationDirectory());
+    private final CondaDirectoryConfig m_condaDirectoryConfig = new CondaDirectoryConfig();
 
     private final CondaEnvironmentConfig m_python2EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON2,
-        CFG_KEY_PYTHON2_CONDA_ENV_DIR, getDefaultCondaEnvironment(m_condaDirectory.getStringValue()), m_condaDirectory);
+        CFG_KEY_PYTHON2_CONDA_ENV_DIR, LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME, m_condaDirectoryConfig);
 
     private final CondaEnvironmentConfig m_python3EnvironmentConfig = new CondaEnvironmentConfig(PythonVersion.PYTHON3,
-        CFG_KEY_PYTHON3_CONDA_ENV_DIR, getDefaultCondaEnvironment(m_condaDirectory.getStringValue()), m_condaDirectory);
-
-    // Not meant for saving/loading. We just want observable values here to communicate with the view:
-
-    private static final String DUMMY_CFG_KEY = "dummy";
-
-    private final SettingsModelString m_condaInstallationInfo = new SettingsModelString(DUMMY_CFG_KEY, "");
-
-    private final SettingsModelString m_condaInstallationError = new SettingsModelString(DUMMY_CFG_KEY, "");
+        CFG_KEY_PYTHON3_CONDA_ENV_DIR, LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME, m_condaDirectoryConfig);
 
     /**
-     * @return The default value for the Conda installation directory path config entry.
+     * @return The configuration for the installation directory of the Conda installation.
      */
-    public static String getDefaultCondaInstallationDirectory() {
-        try {
-            final String condaRoot = System.getenv("CONDA_ROOT");
-            if (condaRoot != null) {
-                return Paths.get(condaRoot).toString();
-            }
-        } catch (final Exception ex) {
-            // Ignore and continue with fallback.
-        }
-        try {
-            // CONDA_EXE, if available, points to <CONDA_ROOT>/{bin|Scripts}/conda(.exe). We want <CONDA_ROOT>.
-            final String condaExe = System.getenv("CONDA_EXE");
-            if (condaExe != null) {
-                return Paths.get(condaExe).getParent().getParent().toString();
-            }
-        } catch (final Exception ex) {
-            // Ignore and continue with fallback.
-        }
-        try {
-            final String userHome = System.getProperty("user.home");
-            if (userHome != null) {
-                return Paths.get(userHome, "anaconda3").toString();
-            }
-        } catch (final Exception ex) {
-            // Ignore and continue with fallback.
-        }
-        return "";
-    }
-
-    private static CondaEnvironmentSpec getDefaultCondaEnvironment(final String condaDirectoryPath) {
-        // TODO: change to sensible default
-        return new CondaEnvironmentSpec(PLACEHOLDER_CONDA_ENV_NAME, PLACEHOLDER_CONDA_ENV_DIR);
-    }
-
-    /**
-     * @return The path to the Conda installation directory.
-     */
-    public SettingsModelString getCondaDirectoryPath() {
-        return m_condaDirectory;
-    }
-
-    /**
-     * @return The installation status message of the local Conda installation. Not meant for saving/loading.
-     */
-    public SettingsModelString getCondaInstallationInfo() {
-        return m_condaInstallationInfo;
-    }
-
-    /**
-     * @return The installation error message of the local Conda installation. Not meant for saving/loading.
-     */
-    public SettingsModelString getCondaInstallationError() {
-        return m_condaInstallationError;
+    public CondaDirectoryConfig getCondaDirectoryConfig() {
+        return m_condaDirectoryConfig;
     }
 
     @Override
@@ -160,21 +93,21 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
 
     @Override
     public void saveDefaultsTo(final PythonConfigStorage storage) {
-        storage.saveStringModel(m_condaDirectory);
+        m_condaDirectoryConfig.saveDefaultsTo(storage);
         m_python2EnvironmentConfig.saveDefaultsTo(storage);
         m_python3EnvironmentConfig.saveDefaultsTo(storage);
     }
 
     @Override
     public void saveConfigTo(final PythonConfigStorage storage) {
-        storage.saveStringModel(m_condaDirectory);
+        m_condaDirectoryConfig.saveConfigTo(storage);
         m_python2EnvironmentConfig.saveConfigTo(storage);
         m_python3EnvironmentConfig.saveConfigTo(storage);
     }
 
     @Override
     public void loadConfigFrom(final PythonConfigStorage storage) {
-        storage.loadStringModel(m_condaDirectory);
+        m_condaDirectoryConfig.loadConfigFrom(storage);
         m_python2EnvironmentConfig.loadConfigFrom(storage);
         m_python3EnvironmentConfig.loadConfigFrom(storage);
     }

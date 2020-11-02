@@ -64,8 +64,9 @@ public abstract class AbstractCondaEnvironmentsPanel<D extends CondaEnvironmentC
         final CondaEnvironmentCreationObserver python3EnvironmentCreator, final W parent) {
         super(config, parent);
         final W panel = getPanel();
-        createCondaDirectoryPathWidget(config.getCondaDirectoryPath(), config.getCondaInstallationInfo(),
-            config.getCondaInstallationError(), panel);
+        final CondaDirectoryConfig condaDirectoryConfig = config.getCondaDirectoryConfig();
+        createCondaDirectoryPathWidget(condaDirectoryConfig.getCondaDirectoryPath(),
+            condaDirectoryConfig.getCondaInstallationInfo(), condaDirectoryConfig.getCondaInstallationError(), panel);
         createPython2EnvironmentWidget(config.getPython2Config(), python2EnvironmentCreator, panel);
         createPython3EnvironmentWidget(config.getPython3Config(), python3EnvironmentCreator, panel);
     }

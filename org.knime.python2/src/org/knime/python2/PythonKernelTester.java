@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.io.IOUtils;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.Pair;
+import org.knime.python2.PythonCommand.UnconfiguredEnvironmentException;
 
 import com.google.common.collect.Collections2;
 
@@ -213,8 +214,12 @@ public class PythonKernelTester {
 
             testResults = createTestReport(errorOutput, testOutput, testLogger);
         } catch (final IOException e) {
-            final String message = "Could not start Python executable at the given location (" + pythonCommand + "): "
-                    + e.getMessage();
+            final String message =
+                "Could not start Python executable at the given location (" + pythonCommand + "): " + e.getMessage();
+            testLogger.append(message);
+            testResults = new PythonKernelTestResult(testLogger.toString(), message, null, null);
+        } catch (final UnconfiguredEnvironmentException ex) {
+            final String message = ex.getMessage();
             testLogger.append(message);
             testResults = new PythonKernelTestResult(testLogger.toString(), message, null, null);
         }
@@ -253,7 +258,7 @@ public class PythonKernelTester {
     private static Process runPythonKernelTester(final PythonCommand pythonCommand, final String majorVersion,
         final String minimumVersion, final Collection<PythonModuleSpec> additionalRequiredModules,
         final Collection<PythonModuleSpec> additionalOptionalModules, final StringBuilder testLogger)
-        throws IOException {
+        throws UnconfiguredEnvironmentException, IOException {
         // Run Python kernel tester script. See file at pythonKernelTesterFilePath for expected arguments.
         final String pythonKernelTesterFilePath =
             Activator.getFile(Activator.PLUGIN_ID, "py/" + PYTHON_KERNEL_TESTER_FILE_NAME).getAbsolutePath();

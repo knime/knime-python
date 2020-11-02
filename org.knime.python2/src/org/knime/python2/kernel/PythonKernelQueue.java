@@ -238,6 +238,8 @@ public final class PythonKernelQueue {
             } catch (final InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 throw new PythonCanceledExecutionException(ex);
+            } catch (final RuntimeException ex) {
+                throw ex;
             } catch (final Exception ex) {
                 // Should not happen. The only significant source of further checked exceptions is the object-pool
                 // factory. And our implementation of the factory (see below) does not throw any checked exceptions.
