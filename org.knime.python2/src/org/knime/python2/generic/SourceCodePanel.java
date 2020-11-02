@@ -144,6 +144,10 @@ public abstract class SourceCodePanel extends JPanel {
         m_variableNames = variableNames;
         setLayout(new BorderLayout());
 
+        // Status bar:
+        m_statusBar.setStatusMessage(" ");
+        add(m_statusBar, BorderLayout.SOUTH);
+
         final Font font = m_console.getFont();
         final Font newFont = new Font("monospaced", font.getStyle(), font.getSize());
         m_console.setFont(newFont);
@@ -257,11 +261,6 @@ public abstract class SourceCodePanel extends JPanel {
         editorConsoleSplit.setBottomComponent(consolePanel);
 
         add(editorConsoleSplit, BorderLayout.CENTER);
-
-        // Status bar:
-
-        m_statusBar.setStatusMessage(" ");
-        add(m_statusBar, BorderLayout.SOUTH);
 
         setPreferredSize(new Dimension(1000, 600));
     }
