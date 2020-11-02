@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python Serialization - CSV
 Bundle-SymbolicName: org.knime.python2.serde.csv;singleton:=true
-Bundle-Version: 4.2.0.qualifier
+Bundle-Version: 4.2.3.qualifier
 Bundle-ClassPath: python-serde-csv.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.python2.serde.csv
