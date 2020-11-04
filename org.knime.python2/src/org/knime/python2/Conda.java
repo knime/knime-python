@@ -51,35 +51,46 @@ package org.knime.python2;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.Version;
 import org.knime.python2.envconfigs.CondaEnvironments;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.util.PythonUtils;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -105,6 +116,10 @@ public final class Conda {
     private static final String DEFAULT_PYTHON2_ENV_PREFIX = "py2_knime";
 
     private static final String DEFAULT_PYTHON3_ENV_PREFIX = "py3_knime";
+
+    private static final Pattern CHANNEL_SEPARATOR = Pattern.compile("::");
+
+    private static final Pattern VERSION_BUILD_SEPARATOR = Pattern.compile("=");
 
     /**
      * Creates and returns a {@link PythonCommand} that describes a Python process of the given Python version that is
@@ -337,6 +352,57 @@ public final class Conda {
     }
 
     /**
+     * {@code conda list --name <environmentName>}
+     *
+     * @param environmentName The name of the environment whose packages to return.
+     * @return The packages contained in the environment.
+     * @throws IOException If an error occurs during execution of the underlying Conda command.
+     */
+    public List<CondaPackageSpec> getPackages(final String environmentName) throws IOException {
+        final String jsonOutput = callCondaAndAwaitTermination("list", "--name", environmentName, JSON);
+        try (final JsonReader reader = Json.createReader(new StringReader(jsonOutput))) {
+            final JsonArray packagesJson = reader.readArray();
+            final List<CondaPackageSpec> packages = new ArrayList<>(packagesJson.size());
+            for (int i = 0; i < packagesJson.size(); i++) {
+                final JsonObject packageJson = packagesJson.getJsonObject(i);
+                final String name = packageJson.getString("name");
+                final String version = packageJson.getString("version");
+                final String build = packageJson.getString("build_string");
+                final String channel = packageJson.getString("channel");
+                packages.add(new CondaPackageSpec(name, version, build, channel));
+            }
+            return packages;
+        }
+    }
+
+    /**
+     * {@code conda env export --name <environmentName> --from-history}
+     * <P>
+     * Channel and build/version affixes are stripped from the raw output of the command.
+     *
+     * @param environmentName The name of the environment whose packages to return.
+     * @return The names of the explicitly installed packages contained in the environment.
+     * @throws IOException If an error occurs during execution of the underlying Conda command.
+     */
+    public List<String> getPackageNamesFromHistory(final String environmentName) throws IOException {
+        final String jsonOutput =
+            callCondaAndAwaitTermination("env", "export", "--name", environmentName, "--from-history", JSON);
+        try (final JsonReader reader = Json.createReader(new StringReader(jsonOutput))) {
+            final JsonArray packagesJson = reader.readObject().getJsonArray("dependencies");
+            final List<String> packageNames = new ArrayList<>(packagesJson.size());
+            for (int i = 0; i < packagesJson.size(); i++) {
+                String name = packagesJson.getString(i);
+                final String[] splitChannel = CHANNEL_SEPARATOR.split(name, 2);
+                name = splitChannel[splitChannel.length - 1];
+                final String[] splitVersionAndBuild = VERSION_BUILD_SEPARATOR.split(name, 2);
+                name = splitVersionAndBuild[0];
+                packageNames.add(name);
+            }
+            return packageNames;
+        }
+    }
+
+    /**
      * @return A default name for a Python 2 environment. It is ensured that the name does not already exist in this
      *         Conda installation.
      * @throws IOException If an error occurs during execution of the underlying Conda commands.
@@ -434,7 +500,7 @@ public final class Conda {
     }
 
     /**
-     * {@code conda env create --file <file>}.<br>
+     * {@code conda env create --file <pathToFile> --name <environmentName or generated name>}.<br>
      * The environment name specified in the file is ignored and replaced by either {@code environmentName} if it's
      * non-{@code null} and non-empty or a unique name that considers the already existing environments of this Conda
      * installation. The generated name is based on the given Python version.
@@ -465,7 +531,7 @@ public final class Conda {
         }
         IOException failure = null;
         try {
-            createEnvironmentFromFile(pathToFile, environmentName, monitor);
+            createEnvironmentFromFile(pathToFile, environmentName, false, monitor);
         } catch (IOException ex) {
             failure = ex;
         }
@@ -484,16 +550,117 @@ public final class Conda {
     }
 
     /**
-     * {@code conda env create --file <file> [-n <name>]}
+     * {@code conda env create --file <pathToFile> [--name <optionalEnvironmentName>] [--force]}
      */
     private void createEnvironmentFromFile(final String pathToFile, final String optionalEnvironmentName,
-        final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
+        final boolean overwriteExistingEnvironment, final CondaEnvironmentCreationMonitor monitor)
+        throws IOException, PythonCanceledExecutionException {
         final List<String> arguments = new ArrayList<>(6);
-        Collections.addAll(arguments, "env", "create", "--file", pathToFile, "--json");
+        Collections.addAll(arguments, "env", "create", "--file", pathToFile);
         if (optionalEnvironmentName != null) {
             Collections.addAll(arguments, "--name", optionalEnvironmentName);
         }
+        if (overwriteExistingEnvironment) {
+            arguments.add("--force");
+        }
+        arguments.add(JSON);
         callCondaAndMonitorExecution(monitor, arguments.toArray(new String[0]));
+    }
+
+    /**
+     * {@code conda env create --file <file generated from arguments> --name <environmentName> --force}
+     * <P>
+     * Overwrites environment {@code <environmentName>} if it already exists.
+     *
+     * @param environmentName The name of the environment to create. If an environment with the given name already
+     *            exists in this Conda installation, it will be overwritten.
+     * @param packages The packages to install.
+     * @param includeBuildSpecs If {@code true}, the packages' {@link CondaPackageSpec#getBuild() build specs} are
+     *            respected/enforced during environment creation, otherwise they are ignored.
+     * @param monitor Receives progress of the creation process. Allows to cancel the environment creation from within
+     *            another thread.
+     * @return The environment.yml file of the created environment. Note that this is a temporary file that is deleted
+     *         when the JVM is shut down. Manually copy it if you want to preserve it.
+     * @throws IOException If an error occurs during execution of the underlying command.
+     * @throws PythonCanceledExecutionException If environment creation was canceled via the given monitor.
+     */
+    public File createEnvironment(final String environmentName, final List<CondaPackageSpec> packages,
+        final boolean includeBuildSpecs, final CondaEnvironmentCreationMonitor monitor)
+        throws IOException, PythonCanceledExecutionException {
+        final List<CondaPackageSpec> installedByPip = new ArrayList<>();
+        final List<CondaPackageSpec> installedByConda = new ArrayList<>();
+        final boolean pipExists = filterPipInstalledPackages(packages, installedByPip, installedByConda);
+
+        final List<Object> dependencies = installedByConda.stream() //
+            .map(pkg -> {
+                String dependency = pkg.getChannel() + "::" + pkg.getName() + "=" + pkg.getVersion();
+                if (includeBuildSpecs) {
+                    dependency += "=" + pkg.getBuild();
+                }
+                return dependency;
+            }) //
+            .collect(Collectors.toList());
+
+        if (!installedByPip.isEmpty()) {
+            if (!pipExists) {
+                throw new IllegalArgumentException("There are packages in the environment that are to be installed "
+                    + "using pip. Therefore you also need to include package 'pip'.");
+            }
+            final List<String> pipDependencies = installedByPip.stream() //
+                .map(p -> p.getName() + "==" + p.getVersion()) //
+                .collect(Collectors.toList());
+            final Map<String, Object> pip = new LinkedHashMap<>();
+            pip.put("pip", pipDependencies);
+            dependencies.add(pip);
+        }
+
+        final Map<String, Object> entries = new LinkedHashMap<>();
+        entries.put("name", environmentName);
+        entries.put("dependencies", dependencies);
+
+        final File environmentFile = FileUtil.createTempFile("environment_", ".yml");
+        final DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        options.setIndent(3);
+        options.setIndicatorIndent(2);
+        final Yaml yaml = new Yaml(options);
+        try (final Writer writer =
+            new OutputStreamWriter(new FileOutputStream(environmentFile), StandardCharsets.UTF_8)) {
+            yaml.dump(entries, writer);
+        }
+
+        createEnvironmentFromFile(environmentFile.getPath(), null, true, monitor);
+        return environmentFile;
+    }
+
+    /**
+     * Traverses {@code packages} and adds each package either to {@code outInstalledByPip} or to
+     * {@code outInstalledByConda} depending on its source channel. Also returns whether package {@code pip} is
+     * contained in {@code packages}.
+     *
+     * @param packages The packages to filter.
+     * @param outInstalledByPip Will be populated with the packages installed via pip (i.e., from a PyPI channel).
+     * @param outInstalledByConda Will be populated with the packages installed via conda (i.e., from a Conda channel).
+     * @return {@code true} if {@code pip} is contained in the given packages, {@code false} otherwise.
+     */
+    public static boolean filterPipInstalledPackages(final List<CondaPackageSpec> packages,
+        final List<CondaPackageSpec> outInstalledByPip, final List<CondaPackageSpec> outInstalledByConda) {
+        boolean pipExists = false;
+        for (final CondaPackageSpec pkg : packages) {
+            if (!pipExists && "pip".equals(pkg.getName())) {
+                pipExists = true;
+            }
+            if ("pypi".equals(pkg.getChannel())) {
+                if (outInstalledByPip != null) {
+                    outInstalledByPip.add(pkg);
+                }
+            } else {
+                if (outInstalledByConda != null) {
+                    outInstalledByConda.add(pkg);
+                }
+            }
+        }
+        return pipExists;
     }
 
     private void callCondaAndMonitorExecution(final CondaExecutionMonitor monitor, final String... arguments)
