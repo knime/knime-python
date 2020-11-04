@@ -51,7 +51,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.Collections;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.FileLocator;
@@ -60,6 +59,7 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.code.generic.templates.SourceCodeTemplatesExtensions;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
+import org.knime.python2.PythonCommand.UnconfiguredEnvironmentException;
 import org.knime.python2.prefs.PythonPreferences;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -110,8 +110,12 @@ public class Activator implements BundleActivator {
     /**
      * @return The {@link ProcessBuilder} to start Python.
      */
-    public static ProcessBuilder createPythonCommandProcessBuilder() {
-        return PythonPreferences.getPython2CommandPreference().createProcessBuilder();
+    public static ProcessBuilder createPythonCommandProcessBuilder() throws IOException {
+        try {
+            return PythonPreferences.getPython2CommandPreference().createProcessBuilder();
+        } catch (UnconfiguredEnvironmentException ex) {
+            throw new IOException(ex.getMessage(), ex);
+        }
     }
 
     /**
@@ -124,8 +128,8 @@ public class Activator implements BundleActivator {
         if ((pythonTestResult != null) && !pythonTestResult.hasError()) {
             return pythonTestResult;
         }
-        final ProcessBuilder pb = createPythonCommandProcessBuilder();
         try {
+            final ProcessBuilder pb = createPythonCommandProcessBuilder();
             // Start python kernel tester script
             final String scriptPath = getFile("org.knime.python", "py/PythonKernelTester.py").getAbsolutePath();
             pb.command().add(scriptPath);
