@@ -692,12 +692,13 @@ public final class Conda {
     }
 
     private String callCondaAndAwaitTermination(final String... arguments) throws IOException {
+        final boolean isJsonOutput = Arrays.asList(arguments).contains(JSON);
         final Process conda = startCondaProcess(arguments);
         try {
             // Get regular output.
             final StringWriter outputWriter = new StringWriter();
             IOUtils.copy(conda.getInputStream(), outputWriter, StandardCharsets.UTF_8);
-            final String testOutput = outputWriter.toString();
+            final String regularOutput = outputWriter.toString();
             // Get error output.
             final StringWriter errorWriter = new StringWriter();
             IOUtils.copy(conda.getErrorStream(), errorWriter, StandardCharsets.UTF_8);
@@ -705,24 +706,38 @@ public final class Conda {
 
             int condaExitCode = awaitTermination(conda, null);
             if (condaExitCode != 0) {
-                String errorMessage;
-                if (!errorOutput.isEmpty() && !isWarning(errorOutput)) {
-                    errorMessage = "Failed to execute Conda";
-                    if (errorOutput.contains("CONNECTION FAILED") && errorOutput.contains("SSLError")) {
-                        errorMessage += ".\nPlease uninstall and reinstall Conda.\n";
-                    } else {
-                        errorMessage += ":\n";
+                String errorMessage = "";
+                if (isJsonOutput) {
+                    try (final JsonReader reader = Json.createReader(new StringReader(regularOutput))) {
+                        final JsonObject json = reader.readObject();
+                        if (json.containsKey("error")) {
+                            if (json.containsKey("message")) {
+                                errorMessage = json.getString("message");
+                            } else {
+                                errorMessage = json.getString("error");
+                            }
+                        }
                     }
-                    errorMessage += errorOutput;
-                } else {
-                    errorMessage = "Conda process terminated with error code " + condaExitCode + ".";
-                    if (!errorOutput.isEmpty()) {
-                        errorMessage += "\nFurther output: " + errorMessage;
+                }
+                if (!isJsonOutput || errorMessage.isEmpty()) {
+                    if (!errorOutput.isEmpty() && !isWarning(errorOutput)) {
+                        errorMessage = "Failed to execute Conda";
+                        if (errorOutput.contains("CONNECTION FAILED") && errorOutput.contains("SSLError")) {
+                            errorMessage += ".\nPlease uninstall and reinstall Conda.\n";
+                        } else {
+                            errorMessage += ":\n";
+                        }
+                        errorMessage += errorOutput;
+                    } else {
+                        errorMessage = "Conda process terminated with error code " + condaExitCode + ".";
+                        if (!errorOutput.isEmpty()) {
+                            errorMessage += "\nFurther output: " + errorMessage;
+                        }
                     }
                 }
                 throw new IOException(errorMessage);
             }
-            return testOutput;
+            return regularOutput;
         } catch (IOException ex) {
             throw ex;
         } catch (PythonCanceledExecutionException ex) {
