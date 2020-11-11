@@ -117,6 +117,8 @@ public final class Conda {
 
     private static final String DEFAULT_PYTHON3_ENV_PREFIX = "py3_knime";
 
+    private static final String JSON = "--json";
+
     private static final Pattern CHANNEL_SEPARATOR = Pattern.compile("::");
 
     private static final Pattern VERSION_BUILD_SEPARATOR = Pattern.compile("=");
@@ -179,7 +181,7 @@ public final class Conda {
         final File directoryFile = resolveToInstallationDirectoryFile(condaInstallationDirectoryPath);
         try {
             condaInstallationDirectoryPath = directoryFile.getCanonicalPath();
-        } catch (SecurityException ex) {
+        } catch (final SecurityException ex) {
             // Stick with the unresolved path.
             condaInstallationDirectoryPath = directoryFile.getPath();
         }
@@ -282,10 +284,10 @@ public final class Conda {
         final Version version;
         try {
             version = condaVersionStringToVersion(versionString);
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             // Skip test if we can't identify version.
             NodeLogger.getLogger(Conda.class).warn("Could not detect installed Conda version. Please note that a "
-                + "minimum version of " + CONDA_MINIMUM_VERSION + " is required.");
+                + "minimum version of " + CONDA_MINIMUM_VERSION + " is required.", ex);
             return;
         }
         if (version.compareTo(CONDA_MINIMUM_VERSION) < 0) {
@@ -319,7 +321,7 @@ public final class Conda {
         if (m_rootPrefix == null) {
             m_rootPrefix = getRootPrefix();
         }
-        final String jsonOutput = callCondaAndAwaitTermination("env", "list", "--json");
+        final String jsonOutput = callCondaAndAwaitTermination("env", "list", JSON);
         try (final JsonReader reader = Json.createReader(new StringReader(jsonOutput))) {
             final JsonArray environmentsJson = reader.readObject().getJsonArray("envs");
             final List<CondaEnvironmentSpec> environments = new ArrayList<>(environmentsJson.size());
@@ -345,7 +347,7 @@ public final class Conda {
     }
 
     private String getRootPrefix() throws IOException {
-        final String jsonOutput = callCondaAndAwaitTermination("info", "--json");
+        final String jsonOutput = callCondaAndAwaitTermination("info", JSON);
         try (final JsonReader reader = Json.createReader(new StringReader(jsonOutput))) {
             return reader.readObject().getString("root_prefix");
         }
@@ -443,8 +445,8 @@ public final class Conda {
     private String getDefaultPythonEnvironmentName(final PythonVersion pythonVersion, final String suffix)
         throws IOException {
         final String environmentPrefix =
-            (pythonVersion.equals(PythonVersion.PYTHON2) ? DEFAULT_PYTHON2_ENV_PREFIX : DEFAULT_PYTHON3_ENV_PREFIX)
-                + (suffix.isEmpty() ? "" : "_" + suffix);
+            (pythonVersion == PythonVersion.PYTHON2 ? DEFAULT_PYTHON2_ENV_PREFIX : DEFAULT_PYTHON3_ENV_PREFIX)
+                + (suffix.isEmpty() ? "" : ("_" + suffix));
         String environmentName = environmentPrefix;
         long possibleEnvironmentSuffix = 1;
         final List<String> environmentNames = getEnvironmentNames();
@@ -823,7 +825,7 @@ public final class Conda {
             }
             final CondaEnvironmentSpec other = (CondaEnvironmentSpec)obj;
             return Objects.equals(other.m_name, m_name) //
-                & Objects.equals(other.m_directoryPath, m_directoryPath);
+                && Objects.equals(other.m_directoryPath, m_directoryPath);
         }
     }
 
@@ -979,7 +981,7 @@ public final class Conda {
         }
     }
 
-    private static class PythonCancelableFromCondaExecutionMonitor implements PythonCancelable {
+    private static final class PythonCancelableFromCondaExecutionMonitor implements PythonCancelable {
 
         private final CondaExecutionMonitor m_monitor;
 
