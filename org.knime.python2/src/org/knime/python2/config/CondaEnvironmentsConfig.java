@@ -69,9 +69,9 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
 
     private static final String CFG_KEY_PYTHON3_CONDA_ENV_DIR = "python3CondaEnvironmentDirectoryPath";
 
-    static final String PLACEHOLDER_CONDA_ENV_NAME = "no environment available";
+    public static final String PLACEHOLDER_CONDA_ENV_NAME = "no environment available";
 
-    static final String PLACEHOLDER_CONDA_ENV_DIR = "no_conda_environment_selected";
+    public static final String PLACEHOLDER_CONDA_ENV_DIR = "no_conda_environment_selected";
 
     private final SettingsModelString m_condaDirectory =
         new SettingsModelString(CFG_KEY_CONDA_DIRECTORY_PATH, getDefaultCondaInstallationDirectory());

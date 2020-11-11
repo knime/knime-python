@@ -195,8 +195,23 @@ public final class PythonPreferences {
      * @return the configured path to the conda installation
      */
     public static String getCondaInstallationPath() {
+        final CondaEnvironmentsConfig condaEnvironmentsConfig = loadCurrentCondaEnvironmentsConfig();
+        return condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue();
+    }
+
+    public static String getPython2CondaEnvironmentDirectoryPath() {
+        final CondaEnvironmentsConfig condaEnvironmentsConfig = loadCurrentCondaEnvironmentsConfig();
+        return condaEnvironmentsConfig.getPython2Config().getEnvironmentDirectory().getStringValue();
+    }
+
+    public static String getPython3CondaEnvironmentDirectoryPath() {
+        final CondaEnvironmentsConfig condaEnvironmentsConfig = loadCurrentCondaEnvironmentsConfig();
+        return condaEnvironmentsConfig.getPython3Config().getEnvironmentDirectory().getStringValue();
+    }
+
+    private static CondaEnvironmentsConfig loadCurrentCondaEnvironmentsConfig() {
         final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
         condaEnvironmentsConfig.loadConfigFrom(CURRENT);
-        return condaEnvironmentsConfig.getCondaDirectoryPath().getStringValue();
+        return condaEnvironmentsConfig;
     }
 }

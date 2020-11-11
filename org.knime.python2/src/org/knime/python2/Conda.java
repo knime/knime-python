@@ -168,16 +168,32 @@ public final class Conda {
     private String m_rootPrefix = null;
 
     /**
-     * Creates an interface to the given Conda installation. Tests the validity of the installation and throws an
-     * {@link IOException} if it is invalid.
+     * Creates an interface to the given Conda installation. Tests the validity of the given path and the functioning of
+     * the installation, and throws an {@link IOException} if either of the tests fails.
      *
      * @param condaInstallationDirectoryPath The path to the root directory of the Conda installation.
      *
-     * @throws IOException If the given directory does not point to a valid Conda installation. This includes cases
-     *             where the given directory or any relevant files within that directory cannot be read (and/or possibly
-     *             executed) by this application.
+     * @throws IOException If the given directory does not point to a valid and functioning Conda installation. This
+     *             includes cases where the given directory or any relevant files within that directory cannot be read
+     *             (and/or possibly executed) by this application.
      */
-    public Conda(String condaInstallationDirectoryPath) throws IOException {
+    public Conda(final String condaInstallationDirectoryPath) throws IOException {
+        this(condaInstallationDirectoryPath, true);
+    }
+
+    /**
+     * Creates an interface to the given Conda installation. Tests the validity of the given path. Optionally, tests the
+     * functioning of the installation. Throws an {@link IOException} if either of the tests fails. Performing the
+     * functionality test is recommended but can be omitted for performance reasons in cases where the functioning of
+     * the installation is known a priori or not strictly required at construction time of this instance.
+     *
+     * @param condaInstallationDirectoryPath The path to the root directory of the Conda installation.
+     * @param testInstallation Whether to the test the functioning of the installation.
+     * @throws IOException If the given directory does not point to a valid and functioning Conda installation. This
+     *             includes cases where the given directory or any relevant files within that directory cannot be read
+     *             (and/or possibly executed) by this application.
+     */
+    public Conda(String condaInstallationDirectoryPath, final boolean testInstallation) throws IOException {
         final File directoryFile = resolveToInstallationDirectoryFile(condaInstallationDirectoryPath);
         try {
             condaInstallationDirectoryPath = directoryFile.getCanonicalPath();
@@ -187,7 +203,9 @@ public final class Conda {
         }
         m_executable = getExecutableFromInstallationDirectoryForOS(condaInstallationDirectoryPath);
 
-        testInstallation();
+        if (testInstallation) {
+            testInstallation();
+        }
     }
 
     private static File resolveToInstallationDirectoryFile(final String installationDirectoryPath) throws IOException {
@@ -259,7 +277,11 @@ public final class Conda {
         return executablePath;
     }
 
-    static UnsupportedOperationException createUnknownOSException() {
+    /**
+     * @return An {@link UnsupportedOperationException} stating that the local operating system could not be detected or
+     *         is not supported.
+     */
+    public static UnsupportedOperationException createUnknownOSException() {
         final String osName = SystemUtils.OS_NAME;
         if (osName == null) {
             throw new UnsupportedOperationException(

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<knimeNode icon="" type="Other" xmlns="http://knime.org/node/v4.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Conda Environment Propagation</name>
+	<shortDescription>
+		Ensures the existence of a specific Conda environment and propagates it to downstream nodes.
+	</shortDescription>
+	<fullDescription>
+		<intro>
+			This node ensures the existence of a specific configurable Conda environment and propagates the environment
+			to downstream Python nodes. This is useful to make workflows that contain Python nodes more portable by
+			allowing to recreate the Conda environment used on the source machine (for example your personal computer)
+			on the target machine (for example a KNIME Server instance). The node is intended to be used as follows:
+			<ol>
+				<li>On your local machine, you need to have Conda set up and configured in the Preferences of the KNIME
+					Python Integration as described in the corresponding
+					<a href="https://docs.knime.com/?category=integrations">installation guide</a>.</li>
+				<li>Configure this node by selecting the Conda environment to propagate and selecting the packages to
+					include in the environment in case it needs to be recreated.</li>
+				<li>Connect the output port of the node to the variable input port of any Python node. The Python node
+					as well as all subsequent Python nodes in the flow will automatically reconfigure themselves to pick
+					up the propagated Conda environment (unless their environment is already controlled by a flow
+					variable).</li>
+				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
+					it. Make sure that this node is reset before or during the deployment process.</li>
+				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME
+					Python Integration. If the target machine runs a KNIME Server, you may need to contact your server
+					administrator and/or refer to the
+					<a href="https://docs.knime.com/?category=server">server administration guides</a> in order to do
+					this.</li>
+				<li>During execution (on either machine), the node will check whether a local Conda environment exists
+					that matches the configured environment. The node will recreate the environment if necessary,
+					ensuring its availability to the connected downstream Python nodes.</li>
+			</ol>
+		</intro>
+		<tab name="Options">
+			<option name="Conda environment">
+				The Conda environment whose existence to ensure during the execution of the node and which to propagate
+				to downstream Python nodes.
+			</option>
+			<option name="Packages">
+				The list of packages contained in the selected Conda environment. For each individual package, you can
+				configure whether to include it in the environment in case the environment needs to be recreated. Not
+				all packages are available or required on each platform (operating system). Deselecting individual
+				packages may therefore be necessary to configure an environment that can be recreated across different
+				platforms.
+				<br/>
+				<b>Include only explicitly installed:</b> selects only those packages from the environment that Conda
+				has explicitly been asked for to install (that is, automatically resolved dependencies are excluded).
+				This can facilitate configuring an environment that is compatible with different platforms. Note,
+				however, that this also excludes any packages installed via pip, regardless of whether they have been
+				installed explicitly.
+			</option>
+			<option name="Environment validation">
+				Defines how the node checks whether it has to recreate the configured environment.
+				<ul>
+					<li><b>Check name only:</b> if this option is selected, the configured environment will only be
+						recreated if there is no local Conda environment of the same name.</li>
+					<li><b>Check name and packages:</b> if this option is selected, the configured environment will be
+						recreated if either there is no local environment of the same name or if there is an environment
+						of the same name that does not contain all of the included packages, in which case the existing
+						environment will be overwritten. This option enforces the exact configured package versions and
+						channels. The configured build specs are only enforced if the platforms of the source and target
+						machines are the same. Note that additional packages present in the local environment are
+						ignored, that is, the local environment is allowed to contain a superset of the packages
+						configured in this node.</li>
+					<li><b>Always overwrite existing environment:</b> if this option is selected, the configured
+						environment will be recreated in any case, overwriting any possibly existing environment of the
+						same name.</li>
+				</ul>
+			</option>
+		</tab>
+	</fullDescription>
+	<ports>
+		<outPort name="Conda environment" index="0">
+			Flow variable <i>conda_environment</i> that points to the configured Conda environment.
+		</outPort>
+	</ports>
+</knimeNode>
