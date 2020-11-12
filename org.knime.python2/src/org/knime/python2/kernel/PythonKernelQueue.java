@@ -170,6 +170,15 @@ public final class PythonKernelQueue {
     }
 
     /**
+     * Removes all {@link PythonKernel Python kernels} from the queue and closes them.
+     */
+    public static synchronized void clear() {
+        if (instance != null) {
+            instance.m_pool.clear();
+        }
+    }
+
+    /**
      * Closes all contained {@link PythonKernel Python kernels} and clears the queue. Calling
      * {@link #getNextKernel(PythonCommand, Set, Set, PythonKernelOptions, PythonCancelable) getNextKernel} without
      * calling {@link #reconfigureKernelQueue(int, int) reconfigureKernelQueue} first is not allowed.

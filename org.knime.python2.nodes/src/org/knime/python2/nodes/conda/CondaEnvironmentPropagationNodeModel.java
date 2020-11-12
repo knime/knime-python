@@ -81,6 +81,7 @@ import org.knime.python2.Conda.CondaEnvironmentSpec;
 import org.knime.python2.CondaPackageSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.CondaEnvironmentsConfig;
+import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.prefs.PythonPreferences;
 
 /**
@@ -284,6 +285,17 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                     + "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
             }
         }
+
+        if (createEnvironment) {
+            // If a new environment has been created (either overwriting an existing environment or "overwriting" a
+            // previously non-existent environment), the entries in the kernel queue that reference the old environment
+            // are rendered obsolete and therefore need to be invalidated.
+            // Unfortunately, clearing only the entries of the queue that reference the old environment is not
+            // straightforwardly done in the queue's current implementation, therefore we need to clear the entire queue
+            // for now.
+            PythonKernelQueue.clear();
+        }
+
         pushFlowVariableString(OUTPUT_FLOW_VAR_NAME, environment.get().getDirectoryPath());
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
