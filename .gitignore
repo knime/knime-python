@@ -6,3 +6,4 @@
 **/.flattened-pom.xml
 */log
 */*.jar
+**/CHANGELOG.md
