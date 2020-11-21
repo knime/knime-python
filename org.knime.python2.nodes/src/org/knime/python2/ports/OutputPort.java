@@ -46,67 +46,20 @@
  * History
  *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.ports;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
-
-import org.knime.base.data.xml.SvgCell;
-import org.knime.base.data.xml.SvgImageContent;
-import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.image.ImagePortObject;
-import org.knime.core.node.port.image.ImagePortObjectSpec;
-import org.knime.core.node.port.inactive.InactiveBranchPortObject;
-import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class ImageOutputPort implements OutputPort {
+public interface OutputPort {
 
-    private final String m_variableName;
+    String getVariableName();
 
-    public ImageOutputPort(final String variableName) {
-        m_variableName = variableName;
-    }
+    double getExecuteProgressWeight();
 
-    @Override
-    public String getVariableName() {
-        return m_variableName;
-    }
-
-    @Override
-    public double getExecuteProgressWeight() {
-        return 0.1;
-    }
-
-    @Override
-    public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
-        final ImageContainer image = kernel.getImage(m_variableName, exec);
-        final PortObject imagePortObject;
-        if (image.hasSvgDocument()) {
-            imagePortObject =
-                new ImagePortObject(new SvgImageContent(image.getSvgDocument()), new ImagePortObjectSpec(SvgCell.TYPE));
-        } else if (image.getBufferedImage() != null) {
-            imagePortObject = new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
-                new ImagePortObjectSpec(PNGImageContent.TYPE));
-        } else {
-            // TODO: this follows the behavior of the old Python View node - what was the rationale behind this?
-            imagePortObject = InactiveBranchPortObject.INSTANCE;
-        }
-        return imagePortObject;
-    }
-
-    private static byte[] imageToBytes(final BufferedImage image) throws IOException {
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            ImageIO.write(image, "png", os);
-            return os.toByteArray();
-        }
-    }
+    PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception;
 }

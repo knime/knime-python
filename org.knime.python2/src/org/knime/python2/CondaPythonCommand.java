@@ -67,6 +67,8 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
 
     private static final String PATH_ENVIRONMENT_VARIABLE_NAME = "PATH";
 
+    private final String m_environmentDirectoryPath;
+
     /**
      * Note: path as in the PATH environment variable, not the path to the Python executable.
      */
@@ -86,6 +88,7 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
     public CondaPythonCommand(final PythonVersion pythonVersion, final String condaInstallationDirectoryPath,
         final String environmentDirectoryPath) {
         super(pythonVersion, Arrays.asList(createExecutableString(environmentDirectoryPath)));
+        m_environmentDirectoryPath = environmentDirectoryPath;
         // On Windows, we need to prepend a number of library paths to the PATH environment variable to resolve issues
         // that may occur when Python modules are searching for DLLs.
         if (SystemUtils.IS_OS_WINDOWS) {
@@ -124,6 +127,13 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
 
     private static void addToPrefixes(final List<String> prefixes, final String first, final String... more) {
         prefixes.add(Paths.get(first, more).toString());
+    }
+
+    /**
+     * @return The path to the directory of the Conda environment that is used by this instance.
+     */
+    public String getEnvironmentDirectoryPath() {
+        return m_environmentDirectoryPath;
     }
 
     @Override

@@ -52,31 +52,27 @@ import org.knime.python2.generic.VariableNames;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonObjectReaderNodeConfig2 extends PythonSourceCodeConfig {
+final class PythonObjectReaderNodeConfig2 extends PythonSourceCodeConfig {
 
     private static final VariableNames VARIABLE_NAMES =
         new VariableNames("flow_variables", null, null, null, null, new String[]{"output_object"});
 
-    @Override
-    protected String getDefaultSourceCode() {
-        return getDefaultSourceCode("python_object.pkl");
-    }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
+    public static VariableNames getVariableNames() {
         return VARIABLE_NAMES;
     }
 
-    static String getDefaultSourceCode(final String path) {
+    public static String getDefaultSourceCode(final String path) {
         final String path2 = path.replace("/", "' + os.sep + '");
         return "import pickle\n" + "import os\n" + "# Path is workspace/" + path + "\n" + "path = "
             + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + '" + path2 + "'\n"
             + "# Load object from pickle file\n" + VARIABLE_NAMES.getOutputObjects()[0]
             + " = pickle.load(open(path, 'rb'))\n";
+    }
+
+    @Override
+    protected String getDefaultSourceCode() {
+        return getDefaultSourceCode("python_object.pkl");
     }
 }

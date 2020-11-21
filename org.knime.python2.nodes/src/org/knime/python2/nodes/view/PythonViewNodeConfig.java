@@ -49,32 +49,35 @@ package org.knime.python2.nodes.view;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
 
-class PythonViewNodeConfig extends PythonSourceCodeConfig {
+/**
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonViewNodeConfig extends PythonSourceCodeConfig {
 
-    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
-        null, new String[]{"output_image"}, null, null);
+    private static final String INPUT_TABLE_NAME = "input_table";
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected String getDefaultSourceCode() {
-        return "from io import BytesIO\n" + "# Only use numeric columns\n" + "data = "
-                + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Replace row ID by number\n"
-                + "data.index = range(0, len(data))\n" + "# Create buffer to write into\n" + "buffer = BytesIO()\n"
-                + "# Create plot and write it into the buffer\n"
-                + "data.plot().get_figure().savefig(buffer, format='svg')\n" + "# The output is the content of the buffer\n"
-                + VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()\n";
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        new String[]{INPUT_TABLE_NAME}, null, new String[]{"output_image"}, null, null);
+
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new DataTableInputPort(INPUT_TABLE_NAME)};
     }
 
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
+    public static VariableNames getVariableNames() {
         return VARIABLE_NAMES;
     }
 
+    @Override
+    protected String getDefaultSourceCode() {
+        return "from io import BytesIO\n" + "# Only use numeric columns\n" + "data = "
+            + VARIABLE_NAMES.getInputTables()[0] + "._get_numeric_data()\n" + "# Replace row ID by number\n"
+            + "data.index = range(0, len(data))\n" + "# Create buffer to write into\n" + "buffer = BytesIO()\n"
+            + "# Create plot and write it into the buffer\n"
+            + "data.plot().get_figure().savefig(buffer, format='svg')\n" + "# The output is the content of the buffer\n"
+            + VARIABLE_NAMES.getOutputImages()[0] + " = buffer.getvalue()\n";
+    }
 }

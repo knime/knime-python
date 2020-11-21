@@ -44,44 +44,78 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Nov 20, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.base;
 
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
-import org.knime.core.data.filestore.FileStore;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.port.PortObject;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.port.PickledObject;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.python2.PythonCommand;
+import org.knime.python2.config.PythonCommandFlowVariableConfig;
+import org.knime.python2.config.PythonCommandFlowVariableModel;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PickledObjectOutputPort implements OutputPort {
+public abstract class PythonBasedDataUnawareNodeDialog extends NodeDialogPane {
 
-    private final String m_variableName;
+    private final Map<PythonCommandFlowVariableConfig, Supplier<PythonCommand>> m_configs = new LinkedHashMap<>(1);
 
-    public PickledObjectOutputPort(final String variableName) {
-        m_variableName = variableName;
+    private final List<PythonCommandFlowVariableModel> m_models = new ArrayList<>(1);
+
+    /**
+     * May only be constructed during construction of the node dialog.
+     */
+    protected final void addPythonCommandConfig(final PythonCommandFlowVariableConfig config,
+        final Supplier<PythonCommand> fallback) {
+        m_configs.put(config, fallback);
+        final PythonCommandFlowVariableModel model = new PythonCommandFlowVariableModel(this, config);
+        m_models.add(model);
+    }
+
+    protected final PythonCommand getConfiguredPythonCommand(final PythonCommandFlowVariableConfig config) {
+        return config.getCommand().orElseGet(m_configs.get(config));
     }
 
     @Override
-    public String getVariableName() {
-        return m_variableName;
+    protected final void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        for (final PythonCommandFlowVariableModel model : m_models) {
+            model.loadSettingsFrom(settings);
+        }
+        loadSettingsFromDerived(settings, specs);
     }
 
-    @Override
-    public double getExecuteProgressWeight() {
-        return 0.1;
-    }
+    protected abstract void loadSettingsFromDerived(NodeSettingsRO settings, PortObjectSpec[] specs)
+        throws NotConfigurableException;
 
     @Override
-    public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
-        final PickledObject pickledObject = kernel.getObject(m_variableName, exec);
-        final FileStore fileStore = exec.createFileStore(UUID.randomUUID().toString());
-        return new PickledObjectFileStorePortObject(pickledObject, fileStore);
+    protected final void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        saveSettingsToDerived(settings);
+        for (final PythonCommandFlowVariableModel model : m_models) {
+            model.saveSettingsTo(settings);
+        }
+    }
+
+    protected abstract void saveSettingsToDerived(NodeSettingsWO settings) throws InvalidSettingsException;
+
+    @Override
+    public final void onOpen() {
+        m_models.forEach(PythonCommandFlowVariableModel::onDialogOpen);
+        onOpenDerived();
+    }
+
+    public void onOpenDerived() {
+        // Do nothing by default.
     }
 }

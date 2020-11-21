@@ -45,7 +45,11 @@
 
 package org.knime.python2.nodes;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.InvalidSettingsException;
@@ -70,11 +74,11 @@ import org.knime.python2.kernel.PythonKernelQueue;
  * collection of {@link FlowVariable}s to the stack.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
- * @param <Config> a configuration type
+ * @param <C> a configuration type
  */
-public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
+public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
 
-    Config m_config = createConfig();
+    private C m_config = createConfig();
 
     /**
      * Constructor.
@@ -91,14 +95,14 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
      *
      * @return the config
      */
-    protected abstract Config createConfig();
+    protected abstract C createConfig();
 
     /**
      * Gets the config.
      *
      * @return the config
      */
-    protected final Config getConfig() {
+    protected final C getConfig() {
         return m_config;
     }
 
@@ -181,31 +185,21 @@ public abstract class PythonNodeModel<Config extends PythonSourceCodeConfig> ext
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         m_config.saveTo(settings);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        final Config config = createConfig();
+        final C config = createConfig();
         config.loadFrom(settings);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        final Config config = createConfig();
+        final C config = createConfig();
         config.loadFrom(settings);
         m_config = config;
     }
-
 }

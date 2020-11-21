@@ -49,32 +49,34 @@ package org.knime.python2.nodes.db;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DatabasePort;
+import org.knime.python2.ports.InputPort;
 
-class PythonScriptDBNodeConfig extends PythonSourceCodeConfig {
+/**
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonScriptDBNodeConfig extends PythonSourceCodeConfig {
+
+    private static final String DB_UTIL_NAME = "db_util";
 
     private static final VariableNames VARIABLE_NAMES =
-            new VariableNames("flow_variables", null, null, null, null, null, new String[]{"db_util"}, null);
+        new VariableNames("flow_variables", null, null, null, null, null, new String[]{DB_UTIL_NAME}, null);
 
-    /**
-     * {@inheritDoc}
-     */
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new DatabasePort(DB_UTIL_NAME)};
+    }
+
+    public static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
+
     @Override
     protected String getDefaultSourceCode() {
         final String var = VARIABLE_NAMES.getGeneralInputObjects()[0];
         return "# To prevent changes to the database in the node dialog\n" + "# do NOT call commit() in your script!\n"
-        + "# All changes to the database are automatically\n" + "# committed once the node is executed.\n"
-        + "# To list all functions of the db_util object call\n" + "# " + var + ".print_description()\n\n" + "df = "
-        + var + ".get_dataframe()\n" + var + ".write_dataframe('resultTableName', df)";
-
+            + "# All changes to the database are automatically\n" + "# committed once the node is executed.\n"
+            + "# To list all functions of the db_util object call\n" + "# " + var + ".print_description()\n\n" + "df = "
+            + var + ".get_dataframe()\n" + var + ".write_dataframe('resultTableName', df)";
     }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
-        return VARIABLE_NAMES;
-    }
-
 }

@@ -54,59 +54,40 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2ViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
+public final class Python2ViewNodeFactory extends NodeFactory<PythonViewNodeModel> {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public PythonViewNodeModel createNodeModel() {
         return new PythonViewNodeModel();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getNrNodeViews() {
         return 3;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
         if (viewIndex == 0) {
             return new PythonViewNodeView(nodeModel);
         } else if (viewIndex == 1) {
-            return new ExtToolStdoutNodeView<PythonViewNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<>(nodeModel);
         } else if (viewIndex == 2) {
-            return new ExtToolStderrNodeView<PythonViewNodeModel>(nodeModel);
+            return new ExtToolStderrNodeView<>(nodeModel);
 
         }
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasDialog() {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonViewNodeDialog();
+        return PythonViewNodeDialog.create();
     }
-
 }

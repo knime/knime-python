@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,31 +41,47 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.objectreader2;
+package org.knime.python2.ports;
 
-import org.knime.python2.nodes.PythonDataUnawareNodeDialog;
-import org.knime.python2.nodes.PythonNodeDialogContent;
-import org.knime.python2.ports.InputPort;
+import java.util.UUID;
+
+import org.knime.core.data.filestore.FileStore;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.PortObject;
+import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PythonObjectReaderNodeDialog2 extends PythonDataUnawareNodeDialog {
+public final class PickledObjectOutputPort implements OutputPort {
 
-    public static PythonObjectReaderNodeDialog2 create() {
-        final PythonObjectReaderNodeDialog2 dialog = new PythonObjectReaderNodeDialog2();
-        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
-            new InputPort[0], new PythonObjectReaderNodeConfig2(), PythonObjectReaderNodeConfig2.getVariableNames(),
-            "python-objectreader");
-        dialog.initializeContent(content);
-        return dialog;
+    private final String m_variableName;
+
+    public PickledObjectOutputPort(final String variableName) {
+        m_variableName = variableName;
     }
 
-    private PythonObjectReaderNodeDialog2() {}
+    @Override
+    public String getVariableName() {
+        return m_variableName;
+    }
+
+    @Override
+    public double getExecuteProgressWeight() {
+        return 0.1;
+    }
+
+    @Override
+    public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
+        final PickledObject pickledObject = kernel.getObject(m_variableName, exec);
+        final FileStore fileStore = exec.createFileStore(UUID.randomUUID().toString());
+        return new PickledObjectFileStorePortObject(pickledObject, fileStore);
+    }
 }

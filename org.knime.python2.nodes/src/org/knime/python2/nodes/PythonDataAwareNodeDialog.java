@@ -44,31 +44,75 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Nov 16, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.nodes;
 
-import java.util.Collection;
-
-import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.kernel.PythonKernel;
 
 /**
+ * Base class for {@link DataAwareNodeDialogPane data-aware} dialogs of Python scripting nodes.
+ *
+ * @see PythonDataUnawareNodeDialog
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-interface InputPort {
+public abstract class PythonDataAwareNodeDialog extends DataAwareNodeDialogPane {
 
-    String getVariableName();
+    private PythonNodeDialogContent m_content;
 
-    double getExecuteProgressWeight();
+    /**
+     * Must be called before this instance can be used. Initializing the content via this method instead of via a
+     * constructor is required because {@code content} indirectly requires a reference to this instance which cannot be
+     * provided during the construction of the instance.
+     *
+     * @param content This dialog pane's content.
+     */
+    protected void initializeContent(final PythonNodeDialogContent content) {
+        if (m_content == null) {
+            m_content = content;
+            addTab("Script", m_content.getScriptPanel(), false);
+            addTab("Options", m_content.getOptionsPanel(), true);
+            addTab("Templates", m_content.getTemplatesPanel(), true);
+        } else {
+            throw new IllegalStateException("Content has already been initialized.");
+        }
+    }
 
-    Collection<PythonModuleSpec> getRequiredModules();
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        m_content.loadSettingsFrom(settings, specs, getCredentialsProvider());
+    }
 
-    void configure(final PortObjectSpec inSpec) throws InvalidSettingsException;
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
+        throws NotConfigurableException {
+        m_content.loadSettingsFrom(settings, input, getCredentialsProvider());
+    }
 
-    void execute(PortObject inObject, PythonKernel kernel, ExecutionMonitor monitor) throws Exception;
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        m_content.saveSettingsTo(settings);
+    }
+
+    @Override
+    public boolean closeOnESC() {
+        return PythonNodeDialogContent.closeDialogOnESC();
+    }
+
+    @Override
+    public void onOpen() {
+        m_content.onDialogOpen();
+    }
+
+    @Override
+    public void onClose() {
+        m_content.onDialogClose();
+    }
 }

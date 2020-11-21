@@ -47,102 +47,23 @@
  */
 package org.knime.python2.nodes.script;
 
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.DataAwareNodeDialogPane;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.config.PythonSourceCodeOptionsPanel;
-import org.knime.python2.config.PythonSourceCodePanel;
-import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.nodes.PythonDataAwareNodeDialog;
+import org.knime.python2.nodes.PythonNodeDialogContent;
 
 /**
- * <code>NodeDialog</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonScriptNodeDialog extends DataAwareNodeDialogPane {
+final class PythonScriptNodeDialog extends PythonDataAwareNodeDialog {
 
-    PythonSourceCodePanel m_sourceCodePanel;
-
-    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-
-    SourceCodeTemplatesPanel m_templatesPanel;
-
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonScriptNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonScriptNodeConfig.getVariableNames());
-        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
-        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
-        addTab("Script", m_sourceCodePanel, false);
-        addTab("Options", m_sourceCodeOptionsPanel, true);
-        addTab("Templates", m_templatesPanel, true);
+    public static PythonScriptNodeDialog create() {
+        final PythonScriptNodeDialog dialog = new PythonScriptNodeDialog();
+        final PythonNodeDialogContent content =
+            PythonNodeDialogContent.createWithDefaultPanels(dialog, PythonScriptNodeConfig.getInputPorts(),
+                new PythonScriptNodeConfig(), PythonScriptNodeConfig.getVariableNames(), "python-script");
+        dialog.initializeContent(content);
+        return dialog;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final PythonScriptNodeConfig config = new PythonScriptNodeConfig();
-        m_sourceCodePanel.saveSettingsTo(config);
-        m_sourceCodeOptionsPanel.saveSettingsTo(config);
-        config.saveTo(settings);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        final PythonScriptNodeConfig config = new PythonScriptNodeConfig();
-        config.loadFromInDialog(settings);
-        m_sourceCodePanel.loadSettingsFrom(config, specs);
-        m_sourceCodePanel.updateFlowVariables(
-            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
-        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
-        throws NotConfigurableException {
-        loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec()});
-        m_sourceCodePanel.updateData(input);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean closeOnESC() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onOpen() {
-        m_sourceCodePanel.open();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onClose() {
-        m_sourceCodePanel.close();
-    }
-
+    private PythonScriptNodeDialog() {}
 }

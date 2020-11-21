@@ -49,14 +49,27 @@ package org.knime.python2.nodes.learner2;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonLearnerNodeConfig2 extends PythonSourceCodeConfig {
+final class PythonLearnerNodeConfig2 extends PythonSourceCodeConfig {
 
-    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
-        null, null, null, new String[]{"output_model"});
+    private static final String INPUT_TABLE_NAME = "input_table";
+
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        new String[]{INPUT_TABLE_NAME}, null, null, null, new String[]{"output_model"});
+
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new DataTableInputPort(INPUT_TABLE_NAME)};
+    }
+
+    public static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
     @Override
     protected String getDefaultSourceCode() {
@@ -66,14 +79,5 @@ class PythonLearnerNodeConfig2 extends PythonSourceCodeConfig {
             + "target_column = data[data.columns[1]]\n" + "A = array([array(value_column), ones(len(value_column))])\n"
             + "# Calculate linear regression\n" + VARIABLE_NAMES.getOutputObjects()[0]
             + " = linalg.lstsq(A.T, target_column)[0]\n";
-    }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
-        return VARIABLE_NAMES;
     }
 }

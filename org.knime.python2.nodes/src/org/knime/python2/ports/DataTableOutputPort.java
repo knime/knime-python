@@ -46,7 +46,7 @@
  * History
  *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.ports;
 
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
@@ -55,7 +55,7 @@ import org.knime.python2.kernel.PythonKernel;
 /**
  * Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class DataTableOutputPort implements OutputPort {
+public final class DataTableOutputPort implements OutputPort {
 
     private final String m_variableName;
 

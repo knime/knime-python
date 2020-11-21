@@ -47,90 +47,23 @@
  */
 package org.knime.python2.nodes.source;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.config.PythonSourceCodeOptionsPanel;
-import org.knime.python2.config.PythonSourceCodePanel;
-import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.nodes.PythonDataUnawareNodeDialog;
+import org.knime.python2.nodes.PythonNodeDialogContent;
+import org.knime.python2.ports.InputPort;
 
 /**
- * <code>NodeDialog</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonSourceNodeDialog extends NodeDialogPane {
+final class PythonSourceNodeDialog extends PythonDataUnawareNodeDialog {
 
-    PythonSourceCodePanel m_sourceCodePanel;
-
-    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-
-    SourceCodeTemplatesPanel m_templatesPanel;
-
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonSourceNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonSourceNodeConfig.getVariableNames());
-        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
-        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-source");
-        addTab("Script", m_sourceCodePanel, false);
-        addTab("Options", m_sourceCodeOptionsPanel, true);
-        addTab("Templates", m_templatesPanel, true);
+    public static PythonSourceNodeDialog create() {
+        final PythonSourceNodeDialog dialog = new PythonSourceNodeDialog();
+        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
+            new InputPort[0], new PythonSourceNodeConfig(), PythonSourceNodeConfig.getVariableNames(), "python-source");
+        dialog.initializeContent(content);
+        return dialog;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final PythonSourceNodeConfig config = new PythonSourceNodeConfig();
-        m_sourceCodePanel.saveSettingsTo(config);
-        m_sourceCodeOptionsPanel.saveSettingsTo(config);
-        config.saveTo(settings);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        final PythonSourceNodeConfig config = new PythonSourceNodeConfig();
-        config.loadFromInDialog(settings);
-        m_sourceCodePanel.loadSettingsFrom(config, specs);
-        m_sourceCodePanel.updateFlowVariables(
-            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
-        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean closeOnESC() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onOpen() {
-        m_sourceCodePanel.open();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onClose() {
-        m_sourceCodePanel.close();
-    }
-
+    private PythonSourceNodeDialog() {}
 }

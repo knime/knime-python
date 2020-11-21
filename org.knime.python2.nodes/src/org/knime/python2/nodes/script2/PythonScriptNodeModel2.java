@@ -65,6 +65,9 @@ import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.nodes.PythonNodeModel;
+import org.knime.python2.ports.DatabasePort;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.OutputPort;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

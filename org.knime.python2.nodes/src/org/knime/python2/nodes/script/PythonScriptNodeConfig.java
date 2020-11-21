@@ -49,28 +49,31 @@ package org.knime.python2.nodes.script;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
 
-class PythonScriptNodeConfig extends PythonSourceCodeConfig {
+/**
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonScriptNodeConfig extends PythonSourceCodeConfig {
 
-    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
-        new String[]{"output_table"}, null, null, null);
+    private static final String INPUT_TABLE_NAME = "input_table";
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected String getDefaultSourceCode() {
-        return "# Copy input to output\n" + VARIABLE_NAMES.getOutputTables()[0] + " = "
-                + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n";
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        new String[]{INPUT_TABLE_NAME}, new String[]{"output_table"}, null, null, null);
+
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new DataTableInputPort(INPUT_TABLE_NAME)};
     }
 
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
+    public static VariableNames getVariableNames() {
         return VARIABLE_NAMES;
     }
 
+    @Override
+    protected String getDefaultSourceCode() {
+        return "# Copy input to output\n" + VARIABLE_NAMES.getOutputTables()[0] + " = "
+            + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n";
+    }
 }

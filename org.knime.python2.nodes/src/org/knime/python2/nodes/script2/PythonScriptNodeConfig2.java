@@ -53,6 +53,14 @@ import java.util.List;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.DataTableOutputPort;
+import org.knime.python2.ports.DatabasePort;
+import org.knime.python2.ports.ImageOutputPort;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.OutputPort;
+import org.knime.python2.ports.PickledObjectInputPort;
+import org.knime.python2.ports.PickledObjectOutputPort;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

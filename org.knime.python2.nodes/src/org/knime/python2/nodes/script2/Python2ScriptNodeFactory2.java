@@ -62,6 +62,14 @@ import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.util.Pair;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.DataTableOutputPort;
+import org.knime.python2.ports.DatabasePort;
+import org.knime.python2.ports.ImageOutputPort;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.OutputPort;
+import org.knime.python2.ports.PickledObjectInputPort;
+import org.knime.python2.ports.PickledObjectOutputPort;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -140,17 +148,6 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
         return new Pair<>(inPorts, outPorts);
     }
 
-    @Override
-    public boolean hasDialog() {
-        return true;
-    }
-
-    @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        final Pair<InputPort[], OutputPort[]> ports = createPorts(creationConfig.getPortConfig().get());
-        return new PythonScriptNodeDialog2(ports.getFirst(), ports.getSecond());
-    }
-
     // TODO: we'll need a PortsConfiguration here to determine the correct number of views (2 + x) for when there are x
     // image outputs.
     @Override
@@ -168,5 +165,16 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
         } else {
             return null;
         }
+    }
+
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
+
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        final Pair<InputPort[], OutputPort[]> ports = createPorts(creationConfig.getPortConfig().get());
+        return PythonScriptNodeDialog2.create(ports.getFirst(), ports.getSecond());
     }
 }

@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,31 +41,82 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.objectreader2;
+package org.knime.python2.ports;
 
-import org.knime.python2.nodes.PythonDataUnawareNodeDialog;
-import org.knime.python2.nodes.PythonNodeDialogContent;
-import org.knime.python2.ports.InputPort;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.config.WorkspacePreparer;
+import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PythonObjectReaderNodeDialog2 extends PythonDataUnawareNodeDialog {
+public final class PickledObjectInputPort implements InputPort {
 
-    public static PythonObjectReaderNodeDialog2 create() {
-        final PythonObjectReaderNodeDialog2 dialog = new PythonObjectReaderNodeDialog2();
-        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
-            new InputPort[0], new PythonObjectReaderNodeConfig2(), PythonObjectReaderNodeConfig2.getVariableNames(),
-            "python-objectreader");
-        dialog.initializeContent(content);
-        return dialog;
+    private final String m_variableName;
+
+    public PickledObjectInputPort(final String variableName) {
+        m_variableName = variableName;
     }
 
-    private PythonObjectReaderNodeDialog2() {}
+    @Override
+    public String getVariableName() {
+        return m_variableName;
+    }
+
+    @Override
+    public double getExecuteProgressWeight() {
+        return 0.1;
+    }
+
+    @Override
+    public Collection<PythonModuleSpec> getRequiredModules() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void configure(final PortObjectSpec inSpec) throws InvalidSettingsException {
+        // Nothing to configure.
+    }
+
+    @Override
+    public WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException {
+        // Nothing to prepare.
+        return null;
+    }
+
+    @Override
+    public WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException {
+        // Nothing to prepare.
+        return null;
+    }
+
+    @Override
+    public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
+        throws Exception {
+        kernel.putObject(m_variableName, extractWorkspaceObject(inObject), monitor);
+    }
+
+    public static PickledObject extractWorkspaceObject(final PortObject inObject) throws IOException {
+        try {
+            return ((PickledObjectFileStorePortObject)inObject).getPickledObject();
+        } catch (final IOException ex) {
+            throw new IOException("Failed to load pickled object.", ex);
+        }
+    }
 }

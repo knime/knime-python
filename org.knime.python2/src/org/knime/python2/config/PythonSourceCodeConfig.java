@@ -46,12 +46,10 @@
 package org.knime.python2.config;
 
 import java.util.Locale;
-import java.util.Objects;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.python2.ManualPythonCommand;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
@@ -71,9 +69,9 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_PYTHON_VERSION_OPTION = "pythonVersionOption";
 
-    static final String CFG_PYTHON2COMMAND = "python2Command";
+    private static final String CFG_PYTHON2_COMMAND = "python2Command";
 
-    static final String CFG_PYTHON3COMMAND = "python3Command";
+    private static final String CFG_PYTHON3_COMMAND = "python3Command";
 
     private static final String CFG_CHUNK_SIZE = "chunkSize";
 
@@ -85,24 +83,13 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_SENTINEL_VALUE = "sentinelValue";
 
-    /**
-     * {@link #m_python2Command} and {@link #m_python3Command} are special in that they currently aren't configurable
-     * via a Python scripting node's dialog but only using flow variables. If no respective flow variables are set,
-     * their value is retrieved from the Python preferences.
-     */
-    private static final String INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE = "";
-
     private PythonVersion m_pythonVersion = PythonPreferences.getPythonVersionPreference();
 
-    /**
-     * {@code null} means to fall back to {@link PythonPreferences#getPython2CommandPreference()}.
-     */
-    private PythonCommand m_python2Command = null;
+    private PythonCommandFlowVariableConfig m_python2CommandConfig = new PythonCommandFlowVariableConfig(CFG_PYTHON2_COMMAND,
+        PythonVersion.PYTHON2, PythonPreferences::getCondaInstallationPath);
 
-    /**
-     * {@code null} means to fall back to {@link PythonPreferences#getPython2CommandPreference()}.
-     */
-    private PythonCommand m_python3Command = null;
+    private PythonCommandFlowVariableConfig m_python3CommandConfig = new PythonCommandFlowVariableConfig(CFG_PYTHON3_COMMAND,
+        PythonVersion.PYTHON3, PythonPreferences::getCondaInstallationPath);
 
     private int m_chunkSize = SerializationOptions.DEFAULT_CHUNK_SIZE;
 
@@ -120,7 +107,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      * @return {@code true} if Python 3 shall be used, {@code false} if Python 2 shall be used.
      */
     public boolean getUsePython3() {
-        return m_pythonVersion.equals(PythonVersion.PYTHON3);
+        return m_pythonVersion == PythonVersion.PYTHON3;
     }
 
     /**
@@ -138,12 +125,19 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     }
 
     /**
+     * @return The config of the Python 2 command.
+     */
+    public PythonCommandFlowVariableConfig getPython2CommandConfig() {
+        return m_python2CommandConfig;
+    }
+
+    /**
      * @return The Python 2 command to use. May be {@code null} in which case no specific Python 2 command is configured
      *         and one has to resort to - e.g., - the {@link PythonPreferences#getPython2CommandPreference() global
      *         preferences}.
      */
     public PythonCommand getPython2Command() {
-        return m_python2Command;
+        return m_python2CommandConfig.getCommand().orElse(null);
     }
 
     /**
@@ -152,7 +146,14 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      *            {@link PythonPreferences#getPython2CommandPreference() global preferences}.
      */
     public void setPython2Command(final PythonCommand python2Command) {
-        m_python2Command = python2Command;
+        m_python2CommandConfig.setCommand(python2Command);
+    }
+
+    /**
+     * @return The config of the Python 3 command.
+     */
+    public PythonCommandFlowVariableConfig getPython3CommandConfig() {
+        return m_python3CommandConfig;
     }
 
     /**
@@ -161,7 +162,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      *         preferences}.
      */
     public PythonCommand getPython3Command() {
-        return m_python3Command;
+        return m_python3CommandConfig.getCommand().orElse(null);
     }
 
     /**
@@ -170,7 +171,7 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
      *            {@link PythonPreferences#getPython3CommandPreference() global preferences}.
      */
     public void setPython3Command(final PythonCommand python3Command) {
-        m_python3Command = python3Command;
+        m_python3CommandConfig.setCommand(python3Command);
     }
 
     /**
@@ -257,13 +258,13 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     public void saveTo(final NodeSettingsWO settings) {
         super.saveTo(settings);
         settings.addString(CFG_PYTHON_VERSION_OPTION, getPythonVersion().getId());
-        settings.addString(CFG_PYTHON2COMMAND, commandToString(getPython2Command()));
-        settings.addString(CFG_PYTHON3COMMAND, commandToString(getPython3Command()));
         settings.addInt(CFG_CHUNK_SIZE, getChunkSize());
         settings.addBoolean(CFG_CONVERT_MISSING_TO_PYTHON, getConvertMissingToPython());
         settings.addBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, getConvertMissingFromPython());
         settings.addString(CFG_SENTINEL_OPTION, getSentinelOption().name());
         settings.addInt(CFG_SENTINEL_VALUE, getSentinelValue());
+        m_python2CommandConfig.saveSettingsTo(settings);
+        m_python3CommandConfig.saveSettingsTo(settings);
     }
 
     @Override
@@ -275,39 +276,25 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     @Override
     public void loadFromInDialog(final NodeSettingsRO settings) {
         super.loadFromInDialog(settings);
-        loadFromSettings(settings);
+        try {
+            loadFromSettings(settings);
+        } catch (final InvalidSettingsException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
-    private void loadFromSettings(final NodeSettingsRO settings) {
+    private void loadFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         final String pythonVersionString = settings.getString(CFG_PYTHON_VERSION_OPTION, getPythonVersion().getId());
         // Backward compatibility: old saved versions may be all upper case.
         setPythonVersion(PythonVersion.fromId(pythonVersionString.toLowerCase(Locale.ROOT)));
-        final String python2CommandString =
-            settings.getString(CFG_PYTHON2COMMAND, commandToString(getPython2Command()));
-        setPython2Command(commandFromString(PythonVersion.PYTHON2, python2CommandString));
-        final String python3CommandString =
-            settings.getString(CFG_PYTHON3COMMAND, commandToString(getPython3Command()));
-        setPython3Command(commandFromString(PythonVersion.PYTHON3, python3CommandString));
         setChunkSize(settings.getInt(CFG_CHUNK_SIZE, getChunkSize()));
         setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, getConvertMissingToPython()));
         setConvertMissingFromPython(
             settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, getConvertMissingFromPython()));
         setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, getSentinelOption().name())));
         setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, getSentinelValue()));
-    }
-
-    private static String commandToString(final PythonCommand command) {
-        return command != null //
-            ? command.toString() //
-            : INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE;
-    }
-
-    private static PythonCommand commandFromString(final PythonVersion pythonVersion, final String commandString) {
-        return Objects.equals(commandString, INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE) //
-            ? null //
-            // TODO: This only works for ordinary paths ("manual configuration"), not for Conda directory + environment
-            // name ("Conda configuration").
-            : new ManualPythonCommand(pythonVersion, commandString);
+        m_python2CommandConfig.loadSettingsFrom(settings);
+        m_python3CommandConfig.loadSettingsFrom(settings);
     }
 
     /**

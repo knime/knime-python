@@ -46,7 +46,7 @@
  * History
  *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.ports;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -54,15 +54,17 @@ import java.util.Collections;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.config.WorkspacePreparer;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class DataTableInputPort implements InputPort {
+public final class DataTableInputPort implements InputPort {
 
     private final String m_variableName;
 
@@ -91,12 +93,24 @@ final class DataTableInputPort implements InputPort {
     }
 
     @Override
+    public WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException {
+        // Nothing to prepare.
+        return null;
+    }
+
+    @Override
+    public WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException {
+        // Nothing to prepare.
+        return null;
+    }
+
+    @Override
     public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
         throws Exception {
         kernel.putDataTable(m_variableName, extractWorkspaceObject(inObject), monitor);
     }
 
-    static BufferedDataTable extractWorkspaceObject(final PortObject inObject) {
+    public static BufferedDataTable extractWorkspaceObject(final PortObject inObject) {
         return (BufferedDataTable)inObject;
     }
 }

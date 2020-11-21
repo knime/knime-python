@@ -46,7 +46,7 @@
  * History
  *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.ports;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +57,8 @@ import java.util.LinkedList;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.database.DatabasePortObject;
@@ -67,12 +69,13 @@ import org.knime.core.node.port.database.aggregation.DBAggregationFunctionFactor
 import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.config.WorkspacePreparer;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class DatabasePort implements InputPort, OutputPort {
+public final class DatabasePort implements InputPort, OutputPort {
 
     private final String m_variableName;
 
@@ -113,6 +116,37 @@ final class DatabasePort implements InputPort, OutputPort {
     }
 
     @Override
+    public WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException {
+        final DatabasePortObjectSpec inDatabaseSpec = (DatabasePortObjectSpec)inSpec;
+        if (inDatabaseSpec != null) {
+            final DatabaseQueryConnectionSettings inDatabaseConnection;
+            final Collection<String> jars;
+            try {
+                inDatabaseConnection = inDatabaseSpec.getConnectionSettings(m_credentials);
+                jars = getDatabaseDriverJarPaths(inDatabaseConnection);
+            } catch (final InvalidSettingsException | IOException e) {
+                throw new NotConfigurableException(e.getMessage(), e);
+            }
+            return kernel -> {
+                try {
+                    kernel.putSql(m_variableName, inDatabaseConnection, m_credentials, jars);
+                } catch (final Exception ex) {
+                    NodeLogger.getLogger(DatabasePort.class).debug(ex);
+                }
+            };
+
+        } else {
+            throw new NotConfigurableException("No database connection available.");
+        }
+    }
+
+    @Override
+    public WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException {
+        // Nothing more to prepare.
+        return null;
+    }
+
+    @Override
     public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
         throws Exception {
         final DatabasePortObject inDatabase = (DatabasePortObject)inObject;
@@ -129,7 +163,7 @@ final class DatabasePort implements InputPort, OutputPort {
         }
     }
 
-    static Collection<String> getDatabaseDriverJarPaths(final DatabaseQueryConnectionSettings connection)
+    public static Collection<String> getDatabaseDriverJarPaths(final DatabaseQueryConnectionSettings connection)
         throws IOException {
         final Collection<String> jars = new LinkedList<>();
         final DatabaseUtility utility = connection.getUtility();

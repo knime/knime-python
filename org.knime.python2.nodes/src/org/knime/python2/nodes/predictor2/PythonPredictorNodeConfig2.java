@@ -49,14 +49,30 @@ package org.knime.python2.nodes.predictor2;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.PickledObjectInputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonPredictorNodeConfig2 extends PythonSourceCodeConfig {
+final class PythonPredictorNodeConfig2 extends PythonSourceCodeConfig {
 
-    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables", new String[]{"input_table"},
-        new String[]{"output_table"}, null, new String[]{"input_model"}, null);
+    private static final String INPUT_MODEL_NAME = "input_model";
+
+    private static final String INPUT_TABLE_NAME = "input_table";
+
+    private static final VariableNames VARIABLE_NAMES = new VariableNames("flow_variables",
+        new String[]{INPUT_TABLE_NAME}, new String[]{"output_table"}, null, new String[]{INPUT_MODEL_NAME}, null);
+
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new PickledObjectInputPort(INPUT_MODEL_NAME), new DataTableInputPort(INPUT_TABLE_NAME)};
+    }
+
+    public static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
     @Override
     protected String getDefaultSourceCode() {
@@ -71,14 +87,5 @@ class PythonPredictorNodeConfig2 extends PythonSourceCodeConfig {
             + VARIABLE_NAMES.getOutputTables()[0] + " = " + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n"
             + "# Append predictions\n" + VARIABLE_NAMES.getOutputTables()[0]
             + "['prediction'] = Series(predictions, index=" + VARIABLE_NAMES.getOutputTables()[0] + ".index)\n";
-    }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
-        return VARIABLE_NAMES;
     }
 }

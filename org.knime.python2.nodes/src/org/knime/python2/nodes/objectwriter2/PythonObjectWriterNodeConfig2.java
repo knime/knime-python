@@ -49,14 +49,27 @@ package org.knime.python2.nodes.objectwriter2;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.PickledObjectInputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonObjectWriterNodeConfig2 extends PythonSourceCodeConfig {
+final class PythonObjectWriterNodeConfig2 extends PythonSourceCodeConfig {
+
+    private static final String INPUT_OBJECT_NAME = "input_object";
 
     private static final VariableNames VARIABLE_NAMES =
-        new VariableNames("flow_variables", null, null, null, new String[]{"input_object"}, null);
+        new VariableNames("flow_variables", null, null, null, new String[]{INPUT_OBJECT_NAME}, null);
+
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new PickledObjectInputPort(INPUT_OBJECT_NAME)};
+    }
+
+    public static VariableNames getVariableNames() {
+        return VARIABLE_NAMES;
+    }
 
     @Override
     protected String getDefaultSourceCode() {
@@ -64,14 +77,5 @@ class PythonObjectWriterNodeConfig2 extends PythonSourceCodeConfig {
             + VARIABLE_NAMES.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl'\n"
             + "# Save object as pickle file\n" + "pickle.dump(" + VARIABLE_NAMES.getInputObjects()[0]
             + ", open(path, 'wb'), pickle.HIGHEST_PROTOCOL)\n";
-    }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
-        return VARIABLE_NAMES;
     }
 }

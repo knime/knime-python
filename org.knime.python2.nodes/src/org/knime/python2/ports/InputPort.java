@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,31 +41,40 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.objectreader2;
+package org.knime.python2.ports;
 
-import org.knime.python2.nodes.PythonDataUnawareNodeDialog;
-import org.knime.python2.nodes.PythonNodeDialogContent;
-import org.knime.python2.ports.InputPort;
+import java.util.Collection;
+
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.config.WorkspacePreparer;
+import org.knime.python2.kernel.PythonKernel;
 
 /**
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PythonObjectReaderNodeDialog2 extends PythonDataUnawareNodeDialog {
+public interface InputPort {
 
-    public static PythonObjectReaderNodeDialog2 create() {
-        final PythonObjectReaderNodeDialog2 dialog = new PythonObjectReaderNodeDialog2();
-        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
-            new InputPort[0], new PythonObjectReaderNodeConfig2(), PythonObjectReaderNodeConfig2.getVariableNames(),
-            "python-objectreader");
-        dialog.initializeContent(content);
-        return dialog;
-    }
+    String getVariableName();
 
-    private PythonObjectReaderNodeDialog2() {}
+    double getExecuteProgressWeight();
+
+    Collection<PythonModuleSpec> getRequiredModules();
+
+    void configure(final PortObjectSpec inSpec) throws InvalidSettingsException;
+
+    WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException;
+
+    WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException;
+
+    void execute(PortObject inObject, PythonKernel kernel, ExecutionMonitor monitor) throws Exception;
 }

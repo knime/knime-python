@@ -57,11 +57,16 @@ import org.knime.core.node.NodeView;
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2ObjectReaderNodeFactory2 extends ContextAwareNodeFactory<PythonObjectReaderNodeModel2> {
+public final class Python2ObjectReaderNodeFactory2 extends ContextAwareNodeFactory<PythonObjectReaderNodeModel2> {
 
     @Override
     public PythonObjectReaderNodeModel2 createNodeModel() {
         return new PythonObjectReaderNodeModel2();
+    }
+
+    @Override
+    public PythonObjectReaderNodeModel2 createNodeModel(final NodeCreationContext context) {
+        return new PythonObjectReaderNodeModel2(context);
     }
 
     @Override
@@ -87,11 +92,6 @@ public class Python2ObjectReaderNodeFactory2 extends ContextAwareNodeFactory<Pyt
 
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonObjectReaderNodeDialog2();
-    }
-
-    @Override
-    public PythonObjectReaderNodeModel2 createNodeModel(final NodeCreationContext context) {
-        return new PythonObjectReaderNodeModel2(context);
+        return PythonObjectReaderNodeDialog2.create();
     }
 }

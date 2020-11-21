@@ -54,57 +54,38 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2Script2In2OutNodeFactory extends NodeFactory<PythonScript2In2OutNodeModel> {
+public final class Python2Script2In2OutNodeFactory extends NodeFactory<PythonScript2In2OutNodeModel> {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public PythonScript2In2OutNodeModel createNodeModel() {
         return new PythonScript2In2OutNodeModel();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getNrNodeViews() {
         return 2;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeView<PythonScript2In2OutNodeModel> createNodeView(final int viewIndex,
         final PythonScript2In2OutNodeModel nodeModel) {
         if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonScript2In2OutNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<>(nodeModel);
         } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonScript2In2OutNodeModel>(nodeModel);
+            return new ExtToolStderrNodeView<>(nodeModel);
         }
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasDialog() {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonScript2In2OutNodeDialog();
+        return PythonScript2In2OutNodeDialog.create();
     }
-
 }

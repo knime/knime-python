@@ -13,3 +13,5 @@ Require-Bundle: org.knime.base;bundle-version="[4.0.0,5.0.0)",
    org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
+Export-Package: org.knime.python2.nodes,
+ org.knime.python2.ports

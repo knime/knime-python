@@ -53,15 +53,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
@@ -70,18 +66,13 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.core.util.ThreadUtils;
-import org.knime.python2.ManualPythonCommand;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.PythonVersion;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -177,50 +168,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
         m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManagerWrapper>();
         m_resetInProgress = new AtomicBoolean(false);
-
-        initVariableModels(parent);
     }
 
-    /**
-     * @param parent
-     */
-    private void initVariableModels(final NodeDialogPane parent) {
-        final FlowVariableModel python2CommandVariable =
-            parent.createFlowVariableModel(PythonSourceCodeConfig.CFG_PYTHON2COMMAND, Type.STRING);
-        python2CommandVariable.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                Optional<FlowVariable> fv = ((FlowVariableModel)(e.getSource())).getVariableValue();
-                final String command;
-                if (fv.isPresent()) {
-                    command = fv.get().getStringValue();
-                } else {
-                    command = "";
-                }
-                setPython2Command(command);
-            }
-        });
-
-        final FlowVariableModel python3CommandVariable =
-            parent.createFlowVariableModel(PythonSourceCodeConfig.CFG_PYTHON3COMMAND, Type.STRING);
-        python3CommandVariable.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                Optional<FlowVariable> fv = ((FlowVariableModel)(e.getSource())).getVariableValue();
-                final String command;
-                if (fv.isPresent()) {
-                    command = fv.get().getStringValue();
-                } else {
-                    command = "";
-                }
-                setPython3Command(command);
-            }
-        });
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void open() {
         super.open();
@@ -416,7 +365,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * {@inheritDoc}
      */
     @Override
-    protected void updateVariables() {
+    public void updateVariables() {
         if (getKernelManager() != null) {
             m_lock.lock();
             try {
@@ -669,13 +618,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      *
      * @param python2Command the python 2 command
      */
-    public synchronized void setPython2Command(final String python2Command) {
-        final PythonCommand python2CommandObject = python2Command != null && !python2Command.equals("") //
-            ? new ManualPythonCommand(PythonVersion.PYTHON2, python2Command) //
-            : null;
+    public synchronized void setPython2Command(final PythonCommand python2Command) {
         if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython2Command().equals(python2CommandObject)) {
-            m_kernelOptions = m_kernelOptions.forPython2Command(python2CommandObject);
+            && !m_kernelOptions.getPython2Command().equals(python2Command)) {
+            m_kernelOptions = m_kernelOptions.forPython2Command(python2Command);
             runResetJob();
         }
     }
@@ -685,13 +631,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      *
      * @param python3Command python 3 command
      */
-    public synchronized void setPython3Command(final String python3Command) {
-        final PythonCommand python3CommandObject = python3Command != null && !python3Command.equals("") //
-            ? new ManualPythonCommand(PythonVersion.PYTHON3, python3Command) //
-            : null;
+    public synchronized void setPython3Command(final PythonCommand python3Command) {
         if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython3Command().equals(python3CommandObject)) {
-            m_kernelOptions = m_kernelOptions.forPython3Command(python3CommandObject);
+            && !m_kernelOptions.getPython3Command().equals(python3Command)) {
+            m_kernelOptions = m_kernelOptions.forPython3Command(python3Command);
             runResetJob();
         }
     }

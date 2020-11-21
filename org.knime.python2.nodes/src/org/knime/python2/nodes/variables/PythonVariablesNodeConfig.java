@@ -50,27 +50,22 @@ package org.knime.python2.nodes.variables;
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
 
-class PythonVariablesNodeConfig extends PythonSourceCodeConfig {
+/**
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonVariablesNodeConfig extends PythonSourceCodeConfig {
 
     private static final VariableNames VARIABLE_NAMES =
-            new VariableNames("flow_variables", new String[0], new String[0], null, null, null);
+        new VariableNames("flow_variables", new String[0], new String[0], null, null, null);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected String getDefaultSourceCode() {
-        return "# create flow variable named random with 0 <= value <= 100\n" + "import random\n"
-                + VARIABLE_NAMES.getFlowVariables() + "['random'] = random.randint(0, 100)";
-    }
-
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
+    public static VariableNames getVariableNames() {
         return VARIABLE_NAMES;
     }
 
+    @Override
+    protected String getDefaultSourceCode() {
+        return "# create flow variable named random with 0 <= value <= 100\n" + "import random\n"
+            + VARIABLE_NAMES.getFlowVariables() + "['random'] = random.randint(0, 100)";
+    }
 }

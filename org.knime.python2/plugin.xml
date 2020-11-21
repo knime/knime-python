@@ -48,5 +48,11 @@
             class="org.knime.python2.prefs.advanced.PythonAdvancedPreferencesInitializer">
       </initializer>
    </extension>
+   <extension
+         point="org.knime.core.FlowVariableType">
+      <VariableType
+            extension="org.knime.python2.CondaEnvironmentPropagation$CondaEnvironmentType$CondaEnvironmentTypeExtension">
+      </VariableType>
+   </extension>
 
 </plugin>

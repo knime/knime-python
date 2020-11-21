@@ -288,6 +288,26 @@ public class PythonSourceCodeOptionsPanel
         }
     }
 
+    /**
+     * Update this panel with a new Python 2 command.
+     *
+     * @param python2Command The command.
+     */
+    public void updatePython2Command(final PythonCommand python2Command) {
+        m_python2Command = python2Command;
+        getSourceCodePanel().setPython2Command(python2Command);
+    }
+
+    /**
+     * Update this panel with a new Python 3 command.
+     *
+     * @param python3Command The command.
+     */
+    public void updatePython3Command(final PythonCommand python3Command) {
+        m_python3Command = python3Command;
+        getSourceCodePanel().setPython3Command(python3Command);
+    }
+
     @Override
     public void saveSettingsTo(final PythonSourceCodeConfig config) {
         super.saveSettingsTo(config);

@@ -477,7 +477,7 @@ public abstract class SourceCodePanel extends JPanel {
      *
      * @param text The message to append.
      */
-    protected void messageToConsole(final String text) {
+    public void messageToConsole(final String text) {
         printToConsole(text, Level.INFO);
     }
 
@@ -486,7 +486,7 @@ public abstract class SourceCodePanel extends JPanel {
      *
      * @param text The warning to append.
      */
-    protected void warningToConsole(final String text) {
+    public void warningToConsole(final String text) {
         printToConsole(text, Level.WARNING);
     }
 
@@ -495,7 +495,7 @@ public abstract class SourceCodePanel extends JPanel {
      *
      * @param text The error to append.
      */
-    protected void errorToConsole(final String text) {
+    public void errorToConsole(final String text) {
         printToConsole(text, Level.ERROR);
     }
 

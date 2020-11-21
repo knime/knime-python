@@ -62,17 +62,15 @@ import org.knime.python2.CondaPackageSpec;
  */
 final class CondaPackagesConfig {
 
-    private static final String CFG_KEY_PACKAGES = "packages";
+    private static final String CFG_KEY_PACKAGES = "included_packages";
 
-    private static final String CFG_KEY_NUM_PACKAGES = "number_packages";
+    private static final String CFG_KEY_PACKAGE_NAMES = "names";
 
-    private static final String CFG_KEY_PACKAGE_NAME = "name";
+    private static final String CFG_KEY_PACKAGE_VERSIONS = "versions";
 
-    private static final String CFG_KEY_PACKAGE_VERSION = "version";
+    private static final String CFG_KEY_PACKAGE_BUILDS = "builds";
 
-    private static final String CFG_KEY_PACKAGE_BUILD = "build";
-
-    private static final String CFG_KEY_PACKAGE_CHANNEL = "channel";
+    private static final String CFG_KEY_PACKAGE_CHANNELS = "channels";
 
     private List<CondaPackageSpec> m_packages = Collections.emptyList();
 
@@ -85,17 +83,23 @@ final class CondaPackagesConfig {
     }
 
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        final List<CondaPackageSpec> packages = m_packages;
-        final NodeSettingsWO subSettings = settings.addNodeSettings(CFG_KEY_PACKAGES);
-        subSettings.addInt(CFG_KEY_NUM_PACKAGES, packages.size());
-        for (int i = 0; i < packages.size(); i++) {
-            final NodeSettingsWO packageSettings = subSettings.addNodeSettings(Integer.toString(i));
-            final CondaPackageSpec pkg = packages.get(i);
-            packageSettings.addString(CFG_KEY_PACKAGE_NAME, pkg.getName());
-            packageSettings.addString(CFG_KEY_PACKAGE_VERSION, pkg.getVersion());
-            packageSettings.addString(CFG_KEY_PACKAGE_BUILD, pkg.getBuild());
-            packageSettings.addString(CFG_KEY_PACKAGE_CHANNEL, pkg.getChannel());
+        final int numPackages = m_packages.size();
+        final String[] names = new String[numPackages];
+        final String[] versions = new String[numPackages];
+        final String[] builds = new String[numPackages];
+        final String[] channels = new String[numPackages];
+        for (int i = 0; i < numPackages; i++) {
+            final CondaPackageSpec pkg = m_packages.get(i);
+            names[i] = pkg.getName();
+            versions[i] = pkg.getVersion();
+            builds[i] = pkg.getBuild();
+            channels[i] = pkg.getChannel();
         }
+        final NodeSettingsWO subSettings = settings.addNodeSettings(CFG_KEY_PACKAGES);
+        subSettings.addStringArray(CFG_KEY_PACKAGE_NAMES, names);
+        subSettings.addStringArray(CFG_KEY_PACKAGE_VERSIONS, versions);
+        subSettings.addStringArray(CFG_KEY_PACKAGE_BUILDS, builds);
+        subSettings.addStringArray(CFG_KEY_PACKAGE_CHANNELS, channels);
     }
 
     public static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -109,15 +113,18 @@ final class CondaPackagesConfig {
     private static List<CondaPackageSpec> readPackagesFrom(final NodeSettingsRO settings)
         throws InvalidSettingsException {
         final NodeSettingsRO subSettings = settings.getNodeSettings(CFG_KEY_PACKAGES);
-        final int numPackages = subSettings.getInt(CFG_KEY_NUM_PACKAGES);
+        final String[] names = subSettings.getStringArray(CFG_KEY_PACKAGE_NAMES);
+        final String[] versions = subSettings.getStringArray(CFG_KEY_PACKAGE_VERSIONS);
+        final String[] builds = subSettings.getStringArray(CFG_KEY_PACKAGE_BUILDS);
+        final String[] channels = subSettings.getStringArray(CFG_KEY_PACKAGE_CHANNELS);
+        final int numPackages = names.length;
+        if (!(versions.length == numPackages && builds.length == numPackages && channels.length == numPackages)) {
+            throw new InvalidSettingsException(
+                "The arrays containing the individual parts of the package specifications must be of equal length.");
+        }
         final List<CondaPackageSpec> packages = new ArrayList<>(numPackages);
         for (int i = 0; i < numPackages; i++) {
-            final NodeSettingsRO packageSettings = subSettings.getNodeSettings(Integer.toString(i));
-            final String name = packageSettings.getString(CFG_KEY_PACKAGE_NAME);
-            final String version = packageSettings.getString(CFG_KEY_PACKAGE_VERSION);
-            final String build = packageSettings.getString(CFG_KEY_PACKAGE_BUILD);
-            final String channel = packageSettings.getString(CFG_KEY_PACKAGE_CHANNEL);
-            packages.add(new CondaPackageSpec(name, version, build, channel));
+            packages.add(new CondaPackageSpec(names[i], versions[i], builds[i], channels[i]));
         }
         return packages;
     }

@@ -56,7 +56,7 @@ import org.knime.core.node.NodeView;
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2ObjectWriterNodeFactory2 extends NodeFactory<PythonObjectWriterNodeModel2> {
+public final class Python2ObjectWriterNodeFactory2 extends NodeFactory<PythonObjectWriterNodeModel2> {
 
     @Override
     public PythonObjectWriterNodeModel2 createNodeModel() {
@@ -86,6 +86,6 @@ public class Python2ObjectWriterNodeFactory2 extends NodeFactory<PythonObjectWri
 
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonObjectWriterNodeDialog2();
+        return PythonObjectWriterNodeDialog2.create();
     }
 }

@@ -49,30 +49,35 @@ package org.knime.python2.nodes.script2in2out;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
 
-class PythonScript2In2OutNodeConfig extends PythonSourceCodeConfig {
+/**
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ */
+final class PythonScript2In2OutNodeConfig extends PythonSourceCodeConfig {
+
+    private static final String INPUT_TABLE_1_NAME = "input_table_1";
+
+    private static final String INPUT_TABLE_2_NAME = "input_table_2";
 
     private static final VariableNames VARIABLE_NAMES =
-            new VariableNames("flow_variables", new String[]{"input_table_1", "input_table_2"},
-                new String[]{"output_table_1", "output_table_2"}, null, null, null);
+        new VariableNames("flow_variables", new String[]{INPUT_TABLE_1_NAME, INPUT_TABLE_2_NAME},
+            new String[]{"output_table_1", "output_table_2"}, null, null, null);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected String getDefaultSourceCode() {
-        return "# Copy input to output\n" + VARIABLE_NAMES.getOutputTables()[0] + " = "
-                + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" + VARIABLE_NAMES.getOutputTables()[1] + " = "
-                + VARIABLE_NAMES.getInputTables()[1] + ".copy()\n";
+    public static InputPort[] getInputPorts() {
+        return new InputPort[]{new DataTableInputPort(INPUT_TABLE_1_NAME), new DataTableInputPort(INPUT_TABLE_2_NAME)};
     }
 
-    /**
-     * Get the variable names for this node
-     *
-     * @return The variable names
-     */
-    static VariableNames getVariableNames() {
+    public static VariableNames getVariableNames() {
         return VARIABLE_NAMES;
     }
 
+    @Override
+    protected String getDefaultSourceCode() {
+        return "# Copy input to output\n" + VARIABLE_NAMES.getOutputTables()[0] + " = "
+            + VARIABLE_NAMES.getInputTables()[0] + ".copy()\n" + VARIABLE_NAMES.getOutputTables()[1] + " = "
+            + VARIABLE_NAMES.getInputTables()[1] + ".copy()\n";
+    }
 }

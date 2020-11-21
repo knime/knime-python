@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,31 +41,72 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Sep 25, 2014 (Patrick Winter): created
+ *   Oct 29, 2020 (marcel): created
  */
-package org.knime.python2.nodes.objectreader2;
+package org.knime.python2.ports;
 
-import org.knime.python2.nodes.PythonDataUnawareNodeDialog;
-import org.knime.python2.nodes.PythonNodeDialogContent;
-import org.knime.python2.ports.InputPort;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
+import org.knime.base.data.xml.SvgCell;
+import org.knime.base.data.xml.SvgImageContent;
+import org.knime.core.data.image.png.PNGImageContent;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.node.port.inactive.InactiveBranchPortObject;
+import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.kernel.PythonKernel;
 
 /**
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PythonObjectReaderNodeDialog2 extends PythonDataUnawareNodeDialog {
+public final class ImageOutputPort implements OutputPort {
 
-    public static PythonObjectReaderNodeDialog2 create() {
-        final PythonObjectReaderNodeDialog2 dialog = new PythonObjectReaderNodeDialog2();
-        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
-            new InputPort[0], new PythonObjectReaderNodeConfig2(), PythonObjectReaderNodeConfig2.getVariableNames(),
-            "python-objectreader");
-        dialog.initializeContent(content);
-        return dialog;
+    private final String m_variableName;
+
+    public ImageOutputPort(final String variableName) {
+        m_variableName = variableName;
     }
 
-    private PythonObjectReaderNodeDialog2() {}
+    @Override
+    public String getVariableName() {
+        return m_variableName;
+    }
+
+    @Override
+    public double getExecuteProgressWeight() {
+        return 0.1;
+    }
+
+    @Override
+    public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
+        final ImageContainer image = kernel.getImage(m_variableName, exec);
+        final PortObject imagePortObject;
+        if (image.hasSvgDocument()) {
+            imagePortObject =
+                new ImagePortObject(new SvgImageContent(image.getSvgDocument()), new ImagePortObjectSpec(SvgCell.TYPE));
+        } else if (image.getBufferedImage() != null) {
+            imagePortObject = new ImagePortObject(new PNGImageContent(imageToBytes(image.getBufferedImage())),
+                new ImagePortObjectSpec(PNGImageContent.TYPE));
+        } else {
+            // TODO: this follows the behavior of the old Python View node - what was the rationale behind this?
+            imagePortObject = InactiveBranchPortObject.INSTANCE;
+        }
+        return imagePortObject;
+    }
+
+    private static byte[] imageToBytes(final BufferedImage image) throws IOException {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", os);
+            return os.toByteArray();
+        }
+    }
 }

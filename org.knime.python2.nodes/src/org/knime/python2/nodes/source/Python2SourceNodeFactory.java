@@ -54,56 +54,37 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
- * <code>NodeFactory</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2SourceNodeFactory extends NodeFactory<PythonSourceNodeModel> {
+public final class Python2SourceNodeFactory extends NodeFactory<PythonSourceNodeModel> {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public PythonSourceNodeModel createNodeModel() {
         return new PythonSourceNodeModel();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getNrNodeViews() {
         return 2;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeView<PythonSourceNodeModel> createNodeView(final int viewIndex, final PythonSourceNodeModel nodeModel) {
         if (viewIndex == 0) {
-            return new ExtToolStdoutNodeView<PythonSourceNodeModel>(nodeModel);
+            return new ExtToolStdoutNodeView<>(nodeModel);
         } else if (viewIndex == 1) {
-            return new ExtToolStderrNodeView<PythonSourceNodeModel>(nodeModel);
+            return new ExtToolStderrNodeView<>(nodeModel);
         }
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasDialog() {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonSourceNodeDialog();
+        return PythonSourceNodeDialog.create();
     }
-
 }

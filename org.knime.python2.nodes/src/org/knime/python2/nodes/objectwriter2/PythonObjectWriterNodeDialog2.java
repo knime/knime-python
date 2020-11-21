@@ -47,95 +47,24 @@
  */
 package org.knime.python2.nodes.objectwriter2;
 
-import java.io.IOException;
-
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.DataAwareNodeDialogPane;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.config.PythonSourceCodeOptionsPanel;
-import org.knime.python2.config.PythonSourceCodePanel;
-import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.port.PickledObject;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.nodes.PythonDataAwareNodeDialog;
+import org.knime.python2.nodes.PythonNodeDialogContent;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-class PythonObjectWriterNodeDialog2 extends DataAwareNodeDialogPane {
+final class PythonObjectWriterNodeDialog2 extends PythonDataAwareNodeDialog {
 
-    PythonSourceCodePanel m_sourceCodePanel;
-
-    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-
-    SourceCodeTemplatesPanel m_templatesPanel;
-
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonObjectWriterNodeDialog2() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectWriterNodeConfig2.getVariableNames());
-        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
-        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectwriter");
-        addTab("Script", m_sourceCodePanel, false);
-        addTab("Options", m_sourceCodeOptionsPanel, true);
-        addTab("Templates", m_templatesPanel, true);
+    public static PythonObjectWriterNodeDialog2 create() {
+        final PythonObjectWriterNodeDialog2 dialog = new PythonObjectWriterNodeDialog2();
+        final PythonNodeDialogContent content = PythonNodeDialogContent.createWithDefaultPanels(dialog,
+            PythonObjectWriterNodeConfig2.getInputPorts(), new PythonObjectWriterNodeConfig2(),
+            PythonObjectWriterNodeConfig2.getVariableNames(), "python-objectwriter");
+        dialog.initializeContent(content);
+        return dialog;
     }
 
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final PythonObjectWriterNodeConfig2 config = new PythonObjectWriterNodeConfig2();
-        m_sourceCodePanel.saveSettingsTo(config);
-        m_sourceCodeOptionsPanel.saveSettingsTo(config);
-        config.saveTo(settings);
-    }
-
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        final PythonObjectWriterNodeConfig2 config = new PythonObjectWriterNodeConfig2();
-        config.loadFromInDialog(settings);
-        m_sourceCodePanel.loadSettingsFrom(config, specs);
-        m_sourceCodePanel.updateFlowVariables(
-            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
-        m_sourceCodePanel.updateData(new BufferedDataTable[0], new PickledObject[]{null});
-        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-    }
-
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
-        throws NotConfigurableException {
-        loadSettingsFrom(settings, new PortObjectSpec[0]);
-        PickledObject pickledObject = null;
-        if (input[0] != null) {
-            try {
-                pickledObject = ((PickledObjectFileStorePortObject)input[0]).getPickledObject();
-            } catch (final IOException ex) {
-                throw new NotConfigurableException("Failed to load pickled object.");
-            }
-        }
-        m_sourceCodePanel.updateData(new BufferedDataTable[0], new PickledObject[]{pickledObject});
-    }
-
-    @Override
-    public boolean closeOnESC() {
-        return false;
-    }
-
-    @Override
-    public void onOpen() {
-        m_sourceCodePanel.open();
-    }
-
-    @Override
-    public void onClose() {
-        m_sourceCodePanel.close();
-    }
+    private PythonObjectWriterNodeDialog2() {}
 }

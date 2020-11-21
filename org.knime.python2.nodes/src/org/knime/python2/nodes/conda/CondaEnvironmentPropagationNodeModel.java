@@ -78,6 +78,9 @@ import org.knime.core.util.Pair;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentCreationMonitor;
 import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.CondaEnvironmentPropagation;
+import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironment;
+import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
 import org.knime.python2.CondaPackageSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.CondaEnvironmentsConfig;
@@ -89,9 +92,9 @@ import org.knime.python2.prefs.PythonPreferences;
  */
 final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
-    private static final String CFG_KEY_CONDA_ENV_NAME = "conda_environment_name";
+    private static final String CFG_KEY_CONDA_ENV = "conda_environment";
 
-    private static final String CFG_KEY_ENV_VALIDATION_METHOD = "environment_validation_method";
+    private static final String CFG_KEY_ENV_VALIDATION_METHOD = "environment_validation";
 
     private static final String VALIDATION_METHOD_NAME = "name";
 
@@ -107,10 +110,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String SOURCE_OS_WINDOWS = "windows";
 
-    private static final String OUTPUT_FLOW_VAR_NAME = "conda_environment";
-
     static SettingsModelString createCondaEnvironmentNameModel() {
-        return new SettingsModelString(CFG_KEY_CONDA_ENV_NAME, CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME);
+        return new SettingsModelString(CFG_KEY_CONDA_ENV, CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME);
     }
 
     static CondaPackagesConfig createPackagesConfig() {
@@ -206,7 +207,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String environmentName = m_environmentNameModel.getStringValue();
         final Optional<CondaEnvironmentSpec> environment = findEnvironment(environmentName, environments);
         if (environment.isPresent()) {
-            pushFlowVariableString(OUTPUT_FLOW_VAR_NAME, environment.get().getDirectoryPath());
+            pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
             return new PortObjectSpec[]{FlowVariablePortObjectSpec.INSTANCE};
         } else {
             // Environment not present: create it during execution.
@@ -296,7 +297,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             PythonKernelQueue.clear();
         }
 
-        pushFlowVariableString(OUTPUT_FLOW_VAR_NAME, environment.get().getDirectoryPath());
+        pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
@@ -376,6 +377,11 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return environments.stream() //
             .filter(e -> e.getName().equals(environmentName)) //
             .findFirst();
+    }
+
+    private void pushEnvironmentFlowVariable(final String environmentName, final String environmentDirectoryPath) {
+        pushFlowVariable(CondaEnvironmentPropagation.FLOW_VAR_NAME, CondaEnvironmentType.INSTANCE,
+            new CondaEnvironment(new CondaEnvironmentSpec(environmentName, environmentDirectoryPath)));
     }
 
     private static final class Monitor extends CondaEnvironmentCreationMonitor {

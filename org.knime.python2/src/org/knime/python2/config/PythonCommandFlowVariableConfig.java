@@ -44,22 +44,67 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Nov 19, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.config;
 
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.port.PortObject;
-import org.knime.python2.kernel.PythonKernel;
+import java.util.function.Supplier;
+
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.python2.CondaPythonCommand;
+import org.knime.python2.PythonVersion;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-interface OutputPort {
+public final class PythonCommandFlowVariableConfig extends PythonCommandConfig {
 
-    String getVariableName();
+    private static final String CFG_KEY_DIALOG_WAS_OPENED = "dialog_was_opened";
 
-    double getExecuteProgressWeight();
+    private boolean m_dialogWasOpened = false;
 
-    PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception;
+    /**
+     * @param pythonVersion The Python version of the command.
+     * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
+     *            {@link CondaPythonCommand Conda-based commands}.
+     */
+    public PythonCommandFlowVariableConfig(final PythonVersion pythonVersion,
+        final Supplier<String> condaInstallationDirectoryPath) {
+        super(pythonVersion, condaInstallationDirectoryPath);
+    }
+
+    /**
+     * @param commandConfigKey The key for the command entry of this config.
+     * @param pythonVersion The Python version of the command.
+     * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
+     *            {@link CondaPythonCommand Conda-based commands}.
+     */
+    public PythonCommandFlowVariableConfig(final String commandConfigKey, final PythonVersion pythonVersion,
+        final Supplier<String> condaInstallationDirectoryPath) {
+        super(commandConfigKey, pythonVersion, condaInstallationDirectoryPath);
+    }
+
+    public boolean getDialogWasOpened() {
+        return m_dialogWasOpened;
+    }
+
+    public void setDialogWasOpened(final boolean dialogWasOpened) {
+        m_dialogWasOpened = dialogWasOpened;
+    }
+
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
+        super.saveSettingsTo(settings);
+        settings.addBoolean(CFG_KEY_DIALOG_WAS_OPENED, m_dialogWasOpened);
+    }
+
+    @Override
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        super.loadSettingsFrom(settings);
+        // Backward compatibility: let "old" nodes also benefit from the auto-controlled command by defaulting to
+        // "false" here.
+        m_dialogWasOpened = settings.getBoolean(CFG_KEY_DIALOG_WAS_OPENED, false);
+    }
 }

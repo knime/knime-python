@@ -47,114 +47,24 @@
  */
 package org.knime.python2.nodes.db;
 
-import java.io.IOException;
-import java.util.Collection;
-
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.database.DatabasePortObjectSpec;
-import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.config.PythonSourceCodeOptionsPanel;
-import org.knime.python2.config.PythonSourceCodePanel;
-import org.knime.python2.config.WorkspacePreparer;
-import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.nodes.PythonDataAwareNodeDialog;
+import org.knime.python2.nodes.PythonNodeDialogContent;
 
 /**
- * <code>NodeDialog</code> for the node.
- *
  * @author Tobias Koetter, KNIME AG, Zurich, Switzerland
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-class PythonScriptDBNodeDialog extends NodeDialogPane {
+final class PythonScriptDBNodeDialog extends PythonDataAwareNodeDialog {
 
-    PythonSourceCodePanel m_sourceCodePanel;
-    SourceCodeTemplatesPanel m_templatesPanel;
-    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
-
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonScriptDBNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonScriptDBNodeConfig.getVariableNames());
-        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
-        m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-script");
-        addTab("Script", m_sourceCodePanel, false);
-        addTab("Options", m_sourceCodeOptionsPanel, true);
-        addTab("Templates", m_templatesPanel, true);
+    public static PythonScriptDBNodeDialog create() {
+        final PythonScriptDBNodeDialog dialog = new PythonScriptDBNodeDialog();
+        final PythonNodeDialogContent content =
+            PythonNodeDialogContent.createWithDefaultPanels(dialog, PythonScriptDBNodeConfig.getInputPorts(),
+                new PythonScriptDBNodeConfig(), PythonScriptDBNodeConfig.getVariableNames(), "python-script");
+        dialog.initializeContent(content);
+        return dialog;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-        m_sourceCodePanel.saveSettingsTo(config);
-        m_sourceCodeOptionsPanel.saveSettingsTo(config);
-        config.saveTo(settings);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-        if (specs == null || specs.length < 1 || specs[0] == null) {
-            throw new NotConfigurableException("No database connection available");
-        }
-        final PythonScriptDBNodeConfig config = new PythonScriptDBNodeConfig();
-        config.loadFromInDialog(settings);
-        m_sourceCodePanel.loadSettingsFrom(config, specs);
-        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateFlowVariables(getAvailableFlowVariables().values().toArray(
-                new FlowVariable[getAvailableFlowVariables().size()]));
-        final DatabasePortObjectSpec dbSpec = (DatabasePortObjectSpec) specs[0];
-        try {
-            final DatabaseQueryConnectionSettings connectionSettings = dbSpec.getConnectionSettings(getCredentialsProvider());
-            final Collection<String> jars = PythonScriptDBNodeModel.getJars(connectionSettings);
-            m_sourceCodePanel.registerWorkspacePreparer(new WorkspacePreparer() {
-                @Override
-                public void prepareWorkspace(final PythonKernel kernel) {
-                    try {
-                        kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0],
-                                connectionSettings, getCredentialsProvider(), jars);
-                    } catch (Exception e) {
-                    }
-                }
-            });
-            m_sourceCodePanel.addAdditionalRequiredModule("jpype");
-        } catch (final InvalidSettingsException|IOException e) {
-            throw new NotConfigurableException(e.getMessage(), e);
-        }
-    }
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean closeOnESC() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onOpen() {
-        m_sourceCodePanel.open();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onClose() {
-        m_sourceCodePanel.close();
-    }
-
+    private PythonScriptDBNodeDialog() {}
 }

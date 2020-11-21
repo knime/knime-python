@@ -56,7 +56,7 @@ import org.knime.core.node.NodeView;
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class Python2LearnerNodeFactory2 extends NodeFactory<PythonLearnerNodeModel2> {
+public final class Python2LearnerNodeFactory2 extends NodeFactory<PythonLearnerNodeModel2> {
 
     @Override
     public PythonLearnerNodeModel2 createNodeModel() {
@@ -86,6 +86,6 @@ public class Python2LearnerNodeFactory2 extends NodeFactory<PythonLearnerNodeMod
 
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new PythonLearnerNodeDialog2();
+        return PythonLearnerNodeDialog2.create();
     }
 }

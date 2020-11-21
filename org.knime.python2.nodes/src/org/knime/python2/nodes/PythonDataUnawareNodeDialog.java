@@ -44,65 +44,68 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Nov 16, 2020 (marcel): created
  */
-package org.knime.python2.nodes.script2;
+package org.knime.python2.nodes;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObject;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.port.PickledObject;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
+ * Base class for data-unaware dialogs of Python scripting nodes.
+ *
+ * @see PythonDataAwareNodeDialog
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PickledObjectInputPort implements InputPort {
+public abstract class PythonDataUnawareNodeDialog extends NodeDialogPane {
 
-    private final String m_variableName;
+    private PythonNodeDialogContent m_content;
 
-    public PickledObjectInputPort(final String variableName) {
-        m_variableName = variableName;
-    }
-
-    @Override
-    public String getVariableName() {
-        return m_variableName;
-    }
-
-    @Override
-    public double getExecuteProgressWeight() {
-        return 0.1;
-    }
-
-    @Override
-    public Collection<PythonModuleSpec> getRequiredModules() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void configure(final PortObjectSpec inSpec) throws InvalidSettingsException {
-        // Nothing to configure.
-    }
-
-    @Override
-    public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
-        throws Exception {
-        kernel.putObject(m_variableName, extractWorkspaceObject(inObject), monitor);
-    }
-
-    static PickledObject extractWorkspaceObject(final PortObject inObject) throws IOException {
-        try {
-            return ((PickledObjectFileStorePortObject)inObject).getPickledObject();
-        } catch (final IOException ex) {
-            throw new IOException("Failed to load pickled object.", ex);
+    /**
+     * Must be called before this instance can be used. Initializing the content via this method instead of via a
+     * constructor is required because {@code content} indirectly requires a reference to this instance which cannot be
+     * provided during the construction of the instance.
+     *
+     * @param content This dialog pane's content.
+     */
+    protected void initializeContent(final PythonNodeDialogContent content) {
+        if (m_content == null) {
+            m_content = content;
+            addTab("Script", m_content.getScriptPanel(), false);
+            addTab("Options", m_content.getOptionsPanel(), true);
+            addTab("Templates", m_content.getTemplatesPanel(), true);
+        } else {
+            throw new IllegalStateException("Content has already been initialized.");
         }
+    }
+
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        m_content.loadSettingsFrom(settings, specs, getCredentialsProvider());
+    }
+
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        m_content.saveSettingsTo(settings);
+    }
+
+    @Override
+    public boolean closeOnESC() {
+        return PythonNodeDialogContent.closeDialogOnESC();
+    }
+
+    @Override
+    public void onOpen() {
+        m_content.onDialogOpen();
+    }
+
+    @Override
+    public void onClose() {
+        m_content.onDialogClose();
     }
 }
