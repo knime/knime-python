@@ -49,11 +49,15 @@ package org.knime.python2.nodes.script;
 
 import org.knime.python2.nodes.PythonDataAwareNodeDialog;
 import org.knime.python2.nodes.PythonNodeDialogContent;
+import org.knime.python2.nodes.script2.Python2ScriptNodeFactory2;
 
 /**
+ * @deprecated Replaced by {@link Python2ScriptNodeFactory2} and its components.
+ *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
+@Deprecated
 final class PythonScriptNodeDialog extends PythonDataAwareNodeDialog {
 
     public static PythonScriptNodeDialog create() {

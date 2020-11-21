@@ -60,25 +60,20 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
+import org.knime.python2.nodes.script2.Python2ScriptNodeFactory2;
 
 /**
- * This is the model implementation.
- *
+ * @deprecated Replaced by {@link Python2ScriptNodeFactory2} and its components.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
+@Deprecated
+final class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
 
-    /**
-     * Constructor for the node model.
-     */
-    protected PythonScriptNodeModel() {
+    public PythonScriptNodeModel() {
         super(new PortType[]{BufferedDataTable.TYPE}, new PortType[]{BufferedDataTable.TYPE});
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
         BufferedDataTable table = null;
@@ -101,9 +96,6 @@ class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
         return new BufferedDataTable[]{table};
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         return new DataTableSpec[]{null};
@@ -113,5 +105,4 @@ class PythonScriptNodeModel extends PythonNodeModel<PythonScriptNodeConfig> {
     protected PythonScriptNodeConfig createConfig() {
         return new PythonScriptNodeConfig();
     }
-
 }

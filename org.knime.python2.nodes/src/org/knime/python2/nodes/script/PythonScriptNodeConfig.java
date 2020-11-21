@@ -49,13 +49,17 @@ package org.knime.python2.nodes.script;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
+import org.knime.python2.nodes.script2.Python2ScriptNodeFactory2;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.InputPort;
 
 /**
+ * @deprecated Replaced by {@link Python2ScriptNodeFactory2} and its components.
+ *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
+@Deprecated
 final class PythonScriptNodeConfig extends PythonSourceCodeConfig {
 
     private static final String INPUT_TABLE_NAME = "input_table";

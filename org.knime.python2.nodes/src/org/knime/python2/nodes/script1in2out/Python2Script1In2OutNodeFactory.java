@@ -52,10 +52,14 @@ import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.python2.nodes.script2.Python2ScriptNodeFactory2;
 
 /**
+ *  @deprecated Replaced by {@link Python2ScriptNodeFactory2} and its components.
+ *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 public final class Python2Script1In2OutNodeFactory extends NodeFactory<PythonScript1In2OutNodeModel> {
 
     @Override

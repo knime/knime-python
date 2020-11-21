@@ -60,26 +60,21 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
+import org.knime.python2.nodes.script2.Python2ScriptNodeFactory2;
 
 /**
- * This is the model implementation.
- *
+ * @deprecated Replaced by {@link Python2ScriptNodeFactory2} and its components.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNodeConfig> {
+@Deprecated
+final class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNodeConfig> {
 
-    /**
-     * Constructor for the node model.
-     */
-    protected PythonScript2In2OutNodeModel() {
+    public PythonScript2In2OutNodeModel() {
         super(new PortType[]{BufferedDataTable.TYPE, BufferedDataTable.TYPE},
             new PortType[]{BufferedDataTable.TYPE, BufferedDataTable.TYPE});
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws Exception {
         BufferedDataTable table1 = null;
@@ -107,9 +102,6 @@ class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNo
         return new BufferedDataTable[]{table1, table2};
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         return new DataTableSpec[]{null, null};
@@ -119,5 +111,4 @@ class PythonScript2In2OutNodeModel extends PythonNodeModel<PythonScript2In2OutNo
     protected PythonScript2In2OutNodeConfig createConfig() {
         return new PythonScript2In2OutNodeConfig();
     }
-
 }

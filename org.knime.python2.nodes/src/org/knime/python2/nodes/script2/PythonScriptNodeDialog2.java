@@ -61,7 +61,7 @@ final class PythonScriptNodeDialog2 extends PythonDataAwareNodeDialog {
         final PythonScriptNodeDialog2 dialog = new PythonScriptNodeDialog2();
         final PythonNodeDialogContent content =
             PythonNodeDialogContent.createWithDefaultPanels(dialog, inPorts, new PythonScriptNodeConfig2(),
-                PythonScriptNodeConfig2.getVariableNames(inPorts, outPorts), "python-script-dynamic-ports");
+                PythonScriptNodeConfig2.getVariableNames(inPorts, outPorts), "python-script");
         dialog.initializeContent(content);
         return dialog;
     }
