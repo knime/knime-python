@@ -77,9 +77,9 @@ import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.Pair;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentCreationMonitor;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.CondaEnvironmentPropagation;
-import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironment;
+import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentSpec;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
 import org.knime.python2.CondaPackageSpec;
 import org.knime.python2.PythonVersion;
@@ -181,7 +181,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         final Conda conda = createConda();
-        final List<CondaEnvironmentSpec> environments;
+        final List<CondaEnvironmentIdentifier> environments;
         try {
             environments = conda.getEnvironments();
         } catch (IOException ex) {
@@ -205,7 +205,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
 
         final String environmentName = m_environmentNameModel.getStringValue();
-        final Optional<CondaEnvironmentSpec> environment = findEnvironment(environmentName, environments);
+        final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
         if (environment.isPresent()) {
             pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
             return new PortObjectSpec[]{FlowVariablePortObjectSpec.INSTANCE};
@@ -218,7 +218,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     /**
      * Auto-configuration: select environment configured in the Preferences.
      */
-    private void autoConfigureOnSourceMachine(final Conda conda, final List<CondaEnvironmentSpec> environments)
+    private void autoConfigureOnSourceMachine(final Conda conda, final List<CondaEnvironmentIdentifier> environments)
         throws InvalidSettingsException {
         final PythonVersion pythonVersion = PythonPreferences.getPythonVersionPreference();
         final String environmentDirectory = pythonVersion == PythonVersion.PYTHON2 //
@@ -232,7 +232,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         final Optional<String> environmentNameOpt = environments.stream() //
             .filter(e -> e.getDirectoryPath().equals(environmentDirectory)) //
-            .map(CondaEnvironmentSpec::getName) //
+            .map(CondaEnvironmentIdentifier::getName) //
             .findFirst();
         final String environmentName;
         if (environmentNameOpt.isPresent()) {
@@ -275,8 +275,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 new Monitor(packages.size(), exec.getProgressMonitor()));
         }
 
-        final List<CondaEnvironmentSpec> environments = conda.getEnvironments();
-        final Optional<CondaEnvironmentSpec> environment = findEnvironment(environmentName, environments);
+        final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
+        final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
         if (!environment.isPresent()) {
             if (createEnvironment) {
                 throw new IllegalStateException("Failed to create Conda environment '" + environmentName
@@ -372,8 +372,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
     }
 
-    private static Optional<CondaEnvironmentSpec> findEnvironment(final String environmentName,
-        final List<CondaEnvironmentSpec> environments) {
+    private static Optional<CondaEnvironmentIdentifier> findEnvironment(final String environmentName,
+        final List<CondaEnvironmentIdentifier> environments) {
         return environments.stream() //
             .filter(e -> e.getName().equals(environmentName)) //
             .findFirst();
@@ -381,7 +381,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private void pushEnvironmentFlowVariable(final String environmentName, final String environmentDirectoryPath) {
         pushFlowVariable(CondaEnvironmentPropagation.FLOW_VAR_NAME, CondaEnvironmentType.INSTANCE,
-            new CondaEnvironment(new CondaEnvironmentSpec(environmentName, environmentDirectoryPath)));
+            new CondaEnvironmentSpec(new CondaEnvironmentIdentifier(environmentName, environmentDirectoryPath)));
     }
 
     private static final class Monitor extends CondaEnvironmentCreationMonitor {

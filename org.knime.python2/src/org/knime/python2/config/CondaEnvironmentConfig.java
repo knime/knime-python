@@ -53,7 +53,7 @@ import java.util.List;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
 
@@ -82,7 +82,7 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     private final SettingsModelString m_condaDirectory;
 
     /** Not meant for saving/loading. We just want observable values here to communicate with the view. */
-    private final ObservableValue<CondaEnvironmentSpec[]> m_availableEnvironments;
+    private final ObservableValue<CondaEnvironmentIdentifier[]> m_availableEnvironments;
 
     /**
      * @param pythonVersion The Python version of Conda environments described by this instance.
@@ -94,13 +94,13 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
      */
     public CondaEnvironmentConfig(final PythonVersion pythonVersion, //
         final String environmentDirectoryConfigKey, //
-        final CondaEnvironmentSpec defaultEnvironment, //
+        final CondaEnvironmentIdentifier defaultEnvironment, //
         final SettingsModelString condaDirectory) {
         m_pythonVersion = pythonVersion;
         m_environmentDirectory =
             new SettingsModelString(environmentDirectoryConfigKey, defaultEnvironment.getDirectoryPath());
         m_defaultEnvironmentDirectory = m_environmentDirectory.getStringValue();
-        m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentSpec[]{defaultEnvironment});
+        m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentIdentifier[]{defaultEnvironment});
         m_condaDirectory = condaDirectory;
     }
 
@@ -114,7 +114,7 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     /**
      * @return The list of the currently available Python Conda environments. Not meant for saving/loading.
      */
-    public ObservableValue<CondaEnvironmentSpec[]> getAvailableEnvironments() {
+    public ObservableValue<CondaEnvironmentIdentifier[]> getAvailableEnvironments() {
         return m_availableEnvironments;
     }
 
@@ -172,9 +172,9 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     private boolean tryConvertEnvironmentNameIntoDirectory(final String environmentName,
         final PythonConfigStorage storage) {
         try {
-            final List<CondaEnvironmentSpec> environments =
+            final List<CondaEnvironmentIdentifier> environments =
                 new Conda(m_condaDirectory.getStringValue()).getEnvironments();
-            for (final CondaEnvironmentSpec environment : environments) {
+            for (final CondaEnvironmentIdentifier environment : environments) {
                 if (environmentName.equals(environment.getName())) {
                     m_environmentDirectory.setStringValue(environment.getDirectoryPath());
                     storage.saveStringModel(m_environmentDirectory);

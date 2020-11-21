@@ -339,14 +339,14 @@ public final class Conda {
      * @return The descriptions of the existing Conda environments.
      * @throws IOException If an error occurs during execution of the underlying command.
      */
-    public List<CondaEnvironmentSpec> getEnvironments() throws IOException {
+    public List<CondaEnvironmentIdentifier> getEnvironments() throws IOException {
         if (m_rootPrefix == null) {
             m_rootPrefix = getRootPrefix();
         }
         final String jsonOutput = callCondaAndAwaitTermination("env", "list", JSON);
         try (final JsonReader reader = Json.createReader(new StringReader(jsonOutput))) {
             final JsonArray environmentsJson = reader.readObject().getJsonArray("envs");
-            final List<CondaEnvironmentSpec> environments = new ArrayList<>(environmentsJson.size());
+            final List<CondaEnvironmentIdentifier> environments = new ArrayList<>(environmentsJson.size());
             for (int i = 0; i < environmentsJson.size(); i++) {
                 final String environmentPath = environmentsJson.getString(i);
                 final String environmentName;
@@ -355,7 +355,7 @@ public final class Conda {
                 } else {
                     environmentName = new File(environmentPath).getName();
                 }
-                environments.add(new CondaEnvironmentSpec(environmentName, environmentPath));
+                environments.add(new CondaEnvironmentIdentifier(environmentName, environmentPath));
             }
             return environments;
         }
@@ -364,7 +364,7 @@ public final class Conda {
     private List<String> getEnvironmentNames() throws IOException {
         return getEnvironments() //
             .stream() //
-            .map(CondaEnvironmentSpec::getName) //
+            .map(CondaEnvironmentIdentifier::getName) //
             .collect(Collectors.toList());
     }
 
@@ -495,7 +495,7 @@ public final class Conda {
      * @throws UnsupportedOperationException If creating a default environment is not supported for the local operating
      *             system.
      */
-    public CondaEnvironmentSpec createDefaultPython2Environment(final String environmentName,
+    public CondaEnvironmentIdentifier createDefaultPython2Environment(final String environmentName,
         final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
         return createEnvironmentFromFile(PythonVersion.PYTHON2, CondaEnvironments.getPathToPython2CondaConfigFile(),
             environmentName, monitor);
@@ -517,7 +517,7 @@ public final class Conda {
      * @throws UnsupportedOperationException If creating a default environment is not supported for the local operating
      *             system.
      */
-    public CondaEnvironmentSpec createDefaultPython3Environment(final String environmentName,
+    public CondaEnvironmentIdentifier createDefaultPython3Environment(final String environmentName,
         final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
         return createEnvironmentFromFile(PythonVersion.PYTHON3, CondaEnvironments.getPathToPython3CondaConfigFile(),
             environmentName, monitor);
@@ -541,7 +541,7 @@ public final class Conda {
      *             an environment of name {@code environmentName} is already present in this Conda installation.
      * @throws PythonCanceledExecutionException If environment creation was canceled via the given monitor.
      */
-    public CondaEnvironmentSpec createEnvironmentFromFile(final PythonVersion pythonVersion, final String pathToFile,
+    public CondaEnvironmentIdentifier createEnvironmentFromFile(final PythonVersion pythonVersion, final String pathToFile,
         String environmentName, final CondaEnvironmentCreationMonitor monitor)
         throws IOException, PythonCanceledExecutionException {
         if (environmentName == null || environmentName.isEmpty()) {
@@ -561,8 +561,8 @@ public final class Conda {
         }
         // Check if environment creation was successful. Fail if not.
 
-        final List<CondaEnvironmentSpec> environments = getEnvironments();
-        for (final CondaEnvironmentSpec environment : environments) {
+        final List<CondaEnvironmentIdentifier> environments = getEnvironments();
+        for (final CondaEnvironmentIdentifier environment : environments) {
             if (Objects.equals(environmentName, environment.getName())) {
                 return environment;
             }
@@ -814,9 +814,9 @@ public final class Conda {
     }
 
     /**
-     * Describes a Conda environment.
+     * Identifies a Conda environment.
      */
-    public static final class CondaEnvironmentSpec {
+    public static final class CondaEnvironmentIdentifier {
 
         private final String m_name;
 
@@ -828,7 +828,7 @@ public final class Conda {
          * @param name The name of the Conda environment.
          * @param directoryPath The absolute path to the Conda environment's directory.
          */
-        public CondaEnvironmentSpec(final String name, final String directoryPath) {
+        public CondaEnvironmentIdentifier(final String name, final String directoryPath) {
             m_name = name;
             m_directoryPath = directoryPath;
         }
@@ -857,10 +857,10 @@ public final class Conda {
             if (obj == this) {
                 return true;
             }
-            if (!(obj instanceof CondaEnvironmentSpec)) {
+            if (!(obj instanceof CondaEnvironmentIdentifier)) {
                 return false;
             }
-            final CondaEnvironmentSpec other = (CondaEnvironmentSpec)obj;
+            final CondaEnvironmentIdentifier other = (CondaEnvironmentIdentifier)obj;
             return Objects.equals(other.m_name, m_name) //
                 && Objects.equals(other.m_directoryPath, m_directoryPath);
         }

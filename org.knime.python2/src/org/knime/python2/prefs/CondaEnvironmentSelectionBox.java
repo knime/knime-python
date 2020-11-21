@@ -71,7 +71,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver;
 import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
@@ -109,7 +109,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * @param parent The parent widget.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentIdentifier[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString errorMessageModel, final CondaEnvironmentCreationObserver environmentCreator,
         final Composite parent) {
@@ -138,7 +138,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * @param parent The parent widget.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentIdentifier[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
         final CondaEnvironmentCreationObserver environmentCreator, final Composite parent) {
@@ -169,7 +169,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
      * @param openCreationDialog A consumer which opens a creation dialog with the given parent.
      */
     public CondaEnvironmentSelectionBox(final PythonVersion pythonVersion, final SettingsModelString environmentModel,
-        final ObservableValue<CondaEnvironmentSpec[]> availableEnvironmentsModel, final String headerLabel,
+        final ObservableValue<CondaEnvironmentIdentifier[]> availableEnvironmentsModel, final String headerLabel,
         final String selectionBoxLabel, final SettingsModelString infoMessageModel,
         final SettingsModelString warningMessageModel, final SettingsModelString errorMessageModel,
         final AbstractCondaEnvironmentCreationObserver environmentCreator, final Composite parent,
@@ -205,8 +205,8 @@ public final class CondaEnvironmentSelectionBox extends Composite {
 
             @Override
             public String getText(final Object element) {
-                if (element instanceof CondaEnvironmentSpec) {
-                    return ((CondaEnvironmentSpec)element).getName();
+                if (element instanceof CondaEnvironmentIdentifier) {
+                    return ((CondaEnvironmentIdentifier)element).getName();
                 }
                 return super.getText(element);
             }
@@ -266,7 +266,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
         });
     }
 
-    private void setAvailableEnvironments(final CondaEnvironmentSpec[] availableEnvironments) {
+    private void setAvailableEnvironments(final CondaEnvironmentIdentifier[] availableEnvironments) {
         String selectedEnvironment = m_environmentModel.getStringValue();
         performActionOnWidgetInUiThread(m_environmentSelection.getCombo(), () -> {
             m_environmentSelection.setInput(availableEnvironments);
@@ -280,7 +280,7 @@ public final class CondaEnvironmentSelectionBox extends Composite {
 
     private String getSelectedEnvironment() {
         return performActionOnWidgetInUiThread(m_environmentSelection.getCombo(),
-            () -> ((CondaEnvironmentSpec)((IStructuredSelection)m_environmentSelection.getSelection())
+            () -> ((CondaEnvironmentIdentifier)((IStructuredSelection)m_environmentSelection.getSelection())
                 .getFirstElement()).getDirectoryPath(),
             false);
     }
@@ -290,8 +290,8 @@ public final class CondaEnvironmentSelectionBox extends Composite {
             final int numEnvironments = m_environmentSelection.getCombo().getItemCount();
             for (int i = 0; i < numEnvironments; i++) {
                 final Object element = m_environmentSelection.getElementAt(i);
-                if (element instanceof CondaEnvironmentSpec
-                    && Objects.equals(environmentToSelect, ((CondaEnvironmentSpec)element).getDirectoryPath())) {
+                if (element instanceof CondaEnvironmentIdentifier
+                    && Objects.equals(environmentToSelect, ((CondaEnvironmentIdentifier)element).getDirectoryPath())) {
                     m_environmentSelection.setSelection(new StructuredSelection(element), true);
                     break;
                 }

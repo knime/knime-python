@@ -51,7 +51,7 @@ package org.knime.python2.config;
 import java.nio.file.Paths;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonVersion;
 
 /**
@@ -122,9 +122,9 @@ public final class CondaEnvironmentsConfig implements PythonEnvironmentsConfig {
         return "";
     }
 
-    private static CondaEnvironmentSpec getDefaultCondaEnvironment(final String condaDirectoryPath) {
+    private static CondaEnvironmentIdentifier getDefaultCondaEnvironment(final String condaDirectoryPath) {
         // TODO: change to sensible default
-        return new CondaEnvironmentSpec(PLACEHOLDER_CONDA_ENV_NAME, PLACEHOLDER_CONDA_ENV_DIR);
+        return new CondaEnvironmentIdentifier(PLACEHOLDER_CONDA_ENV_NAME, PLACEHOLDER_CONDA_ENV_DIR);
     }
 
     /**

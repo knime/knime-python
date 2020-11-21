@@ -57,7 +57,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentCreationMonitor;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 
@@ -169,7 +169,7 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
             try {
                 onEnvironmentCreationStarting(status);
                 final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
-                final CondaEnvironmentSpec createdEnvironment;
+                final CondaEnvironmentIdentifier createdEnvironment;
                 if (pathToEnvFile.isPresent()) {
                     createdEnvironment = conda.createEnvironmentFromFile(m_pythonVersion, pathToEnvFile.get(),
                         environmentName, m_currentCreationMonitor);
@@ -219,7 +219,7 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
     }
 
     private void onEnvironmentCreationFinished(final CondaEnvironmentCreationStatus status,
-        final CondaEnvironmentSpec createdEnvironment) {
+        final CondaEnvironmentIdentifier createdEnvironment) {
         status.m_statusMessage.setStringValue(
             "Environment creation finished.\nNew environment's name: '" + createdEnvironment.getName() + "'.");
         for (final CondaEnvironmentCreationStatusListener listener : m_listeners) {
@@ -286,7 +286,7 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
          * @param createdEnvironment A description of the created environment.
          */
         void condaEnvironmentCreationFinished(CondaEnvironmentCreationStatus status,
-            CondaEnvironmentSpec createdEnvironment);
+            CondaEnvironmentIdentifier createdEnvironment);
 
         /**
          * Called asynchronously, that is, possibly not in a UI thread.

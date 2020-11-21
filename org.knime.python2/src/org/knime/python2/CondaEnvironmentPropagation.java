@@ -58,7 +58,7 @@ import org.knime.core.node.config.Config;
 import org.knime.core.node.config.base.ConfigEntries;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeExtension;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 
 import com.google.common.collect.Sets;
 
@@ -76,15 +76,15 @@ public final class CondaEnvironmentPropagation {
 
     private CondaEnvironmentPropagation() {}
 
-    public static final class CondaEnvironment {
+    public static final class CondaEnvironmentSpec {
 
-        private CondaEnvironmentSpec m_identifier;
+        private CondaEnvironmentIdentifier m_identifier;
 
-        public CondaEnvironment(final CondaEnvironmentSpec identifier) {
+        public CondaEnvironmentSpec(final CondaEnvironmentIdentifier identifier) {
             m_identifier = identifier;
         }
 
-        public CondaEnvironmentSpec getIdentifier() {
+        public CondaEnvironmentIdentifier getIdentifier() {
             return m_identifier;
         }
 
@@ -95,7 +95,7 @@ public final class CondaEnvironmentPropagation {
         }
     }
 
-    public static final class CondaEnvironmentType extends VariableType<CondaEnvironment> {
+    public static final class CondaEnvironmentType extends VariableType<CondaEnvironmentSpec> {
 
         /**
          * The singleton instance of the {@link CondaEnvironmentType} type.
@@ -118,36 +118,36 @@ public final class CondaEnvironmentPropagation {
         private CondaEnvironmentType() {}
 
         @Override
-        public Class<CondaEnvironment> getSimpleType() {
-            return CondaEnvironment.class;
+        public Class<CondaEnvironmentSpec> getSimpleType() {
+            return CondaEnvironmentSpec.class;
         }
 
         @Override
-        protected VariableValue<CondaEnvironment> loadValue(final NodeSettingsRO settings)
+        protected VariableValue<CondaEnvironmentSpec> loadValue(final NodeSettingsRO settings)
             throws InvalidSettingsException {
             final NodeSettingsRO subSettings = settings.getNodeSettings(CFG_KEY_VALUE);
             final String name = subSettings.getString(CFG_KEY_ENV_NAME);
             final String directoryPath = subSettings.getString(CFG_KEY_ENV_DIRECTORY_PATH);
-            return new CondaEnvironmentValue(new CondaEnvironment(new CondaEnvironmentSpec(name, directoryPath)));
+            return new CondaEnvironmentValue(new CondaEnvironmentSpec(new CondaEnvironmentIdentifier(name, directoryPath)));
         }
 
         @Override
-        protected void saveValue(final NodeSettingsWO settings, final VariableValue<CondaEnvironment> v) {
-            final CondaEnvironment environment = ((CondaEnvironmentValue)v).get();
+        protected void saveValue(final NodeSettingsWO settings, final VariableValue<CondaEnvironmentSpec> v) {
+            final CondaEnvironmentSpec environment = ((CondaEnvironmentValue)v).get();
             final NodeSettingsWO subSettings = settings.addNodeSettings(CFG_KEY_VALUE);
-            final CondaEnvironmentSpec identifier = environment.getIdentifier();
+            final CondaEnvironmentIdentifier identifier = environment.getIdentifier();
             subSettings.addString(CFG_KEY_ENV_NAME, identifier.getName());
             subSettings.addString(CFG_KEY_ENV_DIRECTORY_PATH, identifier.getDirectoryPath());
         }
 
         @Override
-        protected VariableValue<CondaEnvironment> newValue(final CondaEnvironment v) {
+        protected VariableValue<CondaEnvironmentSpec> newValue(final CondaEnvironmentSpec v) {
             return new CondaEnvironmentValue(v);
         }
 
         @Override
-        protected VariableValue<CondaEnvironment> defaultValue() {
-            return new CondaEnvironmentValue(new CondaEnvironment(new CondaEnvironmentSpec("", "")));
+        protected VariableValue<CondaEnvironmentSpec> defaultValue() {
+            return new CondaEnvironmentValue(new CondaEnvironmentSpec(new CondaEnvironmentIdentifier("", "")));
         }
 
         @Override
@@ -156,7 +156,7 @@ public final class CondaEnvironmentPropagation {
         }
 
         @Override
-        protected void overwrite(final CondaEnvironment value, final Config config, final String configKey)
+        protected void overwrite(final CondaEnvironmentSpec value, final Config config, final String configKey)
             throws InvalidConfigEntryException {
             config.addString(configKey, valueToString(value));
         }
@@ -169,7 +169,7 @@ public final class CondaEnvironmentPropagation {
         }
 
         @Override
-        protected CondaEnvironment createFrom(final Config config, final String configKey)
+        protected CondaEnvironmentSpec createFrom(final Config config, final String configKey)
             throws InvalidSettingsException, InvalidConfigEntryException {
             // TODO: this will only be possible once we use more than just the directory path for overwriting (see
             // below)
@@ -182,7 +182,7 @@ public final class CondaEnvironmentPropagation {
         }
 
         @Override
-        protected <U> U getAs(final CondaEnvironment value, final VariableType<U> conversionTarget) {
+        protected <U> U getAs(final CondaEnvironmentSpec value, final VariableType<U> conversionTarget) {
             if (StringType.INSTANCE.equals(conversionTarget)) {
                 @SuppressWarnings("unchecked") // Type safety has been ensured.
                 final U casted = (U)valueToString(value);
@@ -192,7 +192,7 @@ public final class CondaEnvironmentPropagation {
             }
         }
 
-        private static String valueToString(final CondaEnvironment value) {
+        private static String valueToString(final CondaEnvironmentSpec value) {
             // TODO: we may want to include more than just the environment directory path here
             return value.getIdentifier().getDirectoryPath();
         }
@@ -205,14 +205,14 @@ public final class CondaEnvironmentPropagation {
             }
         }
 
-        private static final class CondaEnvironmentValue extends VariableValue<CondaEnvironment> {
+        private static final class CondaEnvironmentValue extends VariableValue<CondaEnvironmentSpec> {
 
-            public CondaEnvironmentValue(final CondaEnvironment value) {
+            public CondaEnvironmentValue(final CondaEnvironmentSpec value) {
                 super(INSTANCE, value);
             }
 
             @Override
-            protected CondaEnvironment get() { // NOSONAR -- We must override this method for visibility.
+            protected CondaEnvironmentSpec get() { // NOSONAR -- We must override this method for visibility.
                 return super.get();
             }
         }

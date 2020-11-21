@@ -57,7 +57,7 @@ import java.util.Objects;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
@@ -228,7 +228,7 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
             } catch (final Exception ex) {
                 return;
             }
-            final List<CondaEnvironmentSpec> availableEnvironments;
+            final List<CondaEnvironmentIdentifier> availableEnvironments;
             try {
                 availableEnvironments = getAvailableCondaEnvironments(conda, true, true);
             } catch (final Exception ex) {
@@ -285,7 +285,7 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         }
     }
 
-    private List<CondaEnvironmentSpec> getAvailableCondaEnvironments(final Conda conda,
+    private List<CondaEnvironmentIdentifier> getAvailableCondaEnvironments(final Conda conda,
         final boolean updatePython2StatusMessage, final boolean updatePython3StatusMessage) throws Exception {
         try {
             final String determiningEnvironmentsMessage = "Collecting available environments...";
@@ -321,16 +321,16 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
     }
 
     private void setAvailableCondaEnvironments(final boolean isPython3,
-        List<CondaEnvironmentSpec> availableEnvironments) {
+        List<CondaEnvironmentIdentifier> availableEnvironments) {
         final CondaEnvironmentConfig condaConfig = isPython3 //
             ? m_condaEnvironmentsConfig.getPython3Config() //
             : m_condaEnvironmentsConfig.getPython2Config();
         if (availableEnvironments.isEmpty()) {
             availableEnvironments =
-                Arrays.asList(new CondaEnvironmentSpec(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME,
+                Arrays.asList(new CondaEnvironmentIdentifier(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME,
                     CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR));
         }
-        condaConfig.getAvailableEnvironments().setValue(availableEnvironments.toArray(new CondaEnvironmentSpec[0]));
+        condaConfig.getAvailableEnvironments().setValue(availableEnvironments.toArray(new CondaEnvironmentIdentifier[0]));
         final String currentlySelectedEnvironment = condaConfig.getEnvironmentDirectory().getStringValue();
         if (availableEnvironments.stream()
             .noneMatch(env -> Objects.equals(env.getDirectoryPath(), currentlySelectedEnvironment))) {
@@ -430,14 +430,14 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
 
             @Override
             public void condaEnvironmentCreationFinished(final CondaEnvironmentCreationStatus status,
-                final CondaEnvironmentSpec createdEnvironment) {
+                final CondaEnvironmentIdentifier createdEnvironment) {
                 final Conda conda;
                 try {
                     conda = testCondaInstallation();
                 } catch (final Exception ex) {
                     return;
                 }
-                final List<CondaEnvironmentSpec> availableEnvironments;
+                final List<CondaEnvironmentIdentifier> availableEnvironments;
                 try {
                     availableEnvironments = getAvailableCondaEnvironments(conda, !isPython3, isPython3);
                 } catch (final Exception ex) {

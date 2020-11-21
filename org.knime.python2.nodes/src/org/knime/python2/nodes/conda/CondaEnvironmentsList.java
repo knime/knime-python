@@ -75,7 +75,7 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentSpec;
+import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -153,9 +153,9 @@ final class CondaEnvironmentsList {
     public void initializeEnvironments() {
         try {
             final String environmentName = m_environmentNameModel.getStringValue();
-            final List<CondaEnvironmentSpec> environments = m_conda.get().getEnvironments();
+            final List<CondaEnvironmentIdentifier> environments = m_conda.get().getEnvironments();
             final List<String> environmentNames = environments.stream() //
-                .map(CondaEnvironmentSpec::getName) //
+                .map(CondaEnvironmentIdentifier::getName) //
                 .collect(Collectors.toList());
             if (environmentNames.isEmpty()) {
                 throw new IOException("No Conda environments available.\nPlease review the Conda "
