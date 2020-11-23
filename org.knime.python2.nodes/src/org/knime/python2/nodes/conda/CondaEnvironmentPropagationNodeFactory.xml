@@ -18,10 +18,12 @@
 					<a href="https://docs.knime.com/?category=integrations">installation guide</a>.</li>
 				<li>Configure this node by selecting the Conda environment to propagate and selecting the packages to
 					include in the environment in case it needs to be recreated.</li>
-				<li>Connect the output port of the node to the variable input port of any Python node. The Python node
-					as well as all subsequent Python nodes in the flow will automatically reconfigure themselves to pick
-					up the propagated Conda environment (unless their environment is already controlled by a flow
-					variable).</li>
+				<li>Connect the output port of the node to the variable input port of any Python node.</li>
+				<li>Successively open the configuration dialogues of the Python node and all subsequent Python nodes in
+					the flow that you want to make portable. Upon opening their dialogues for the very first time, they
+					will automatically pick up the environment by setting their respective Python 2 and/or Python 3
+					entries on the <i>Flow Variables</i> tab to the propagated <i>conda.environment</i> variable.
+					Otherwise, you have to perform this step manually.</li>
 				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
 					it. Make sure that this node is reset before or during the deployment process.</li>
 				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME
@@ -30,8 +32,8 @@
 					<a href="https://docs.knime.com/?category=server">server administration guides</a> in order to do
 					this.</li>
 				<li>During execution (on either machine), the node will check whether a local Conda environment exists
-					that matches the configured environment. The node will recreate the environment if necessary,
-					ensuring its availability to the connected downstream Python nodes.</li>
+					that matches its configured environment. The node will recreate the environment if necessary,
+					ensuring its availability to the connected and properly configured downstream Python nodes.</li>
 			</ol>
 		</intro>
 		<tab name="Options">
@@ -74,7 +76,7 @@
 	</fullDescription>
 	<ports>
 		<outPort name="Conda environment" index="0">
-			Flow variable <i>conda_environment</i> that points to the configured Conda environment.
+			Flow variable <i>conda.environment</i> that points to the configured Conda environment.
 		</outPort>
 	</ports>
 </knimeNode>
