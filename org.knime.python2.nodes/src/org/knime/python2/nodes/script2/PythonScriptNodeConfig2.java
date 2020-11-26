@@ -77,7 +77,7 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
 
             // Imports:
             if (variables.getOutputTables().length > 0) {
-                defaultCode += "from pandas import DataFrame\n\n";
+                defaultCode += "import pandas as pd\n\n";
             }
 
             // Populate outputs:
@@ -85,7 +85,7 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
                 final OutputPort outPort = outPorts[i];
                 final String outVariableName = outPort.getVariableName();
                 if (outPort instanceof DataTableOutputPort) {
-                    defaultCode += outVariableName + " = DataFrame()";
+                    defaultCode += outVariableName + " = pd.DataFrame()";
                 } else if (outPort instanceof ImageOutputPort) {
                     defaultCode += outVariableName + " = None";
                 } else if (outPort instanceof PickledObjectOutputPort) {
@@ -196,9 +196,9 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
     }
 
     private static String getPythonSourceDefaultSourceCode(final VariableNames variables) {
-        return "from pandas import DataFrame\n" //
+        return "import pandas as pd\n\n" //
             + "# Create empty table\n" //
-            + variables.getOutputTables()[0] + " = DataFrame()\n";
+            + variables.getOutputTables()[0] + " = pd.DataFrame()\n";
     }
 
     private static String getPythonScript1To1DefaultSourceCode(final VariableNames variables) {
@@ -225,7 +225,7 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
     }
 
     private static String getPythonViewDefaultSourceCode(final VariableNames variables) {
-        return "from io import BytesIO\n" //
+        return "from io import BytesIO\n\n" //
             + "# Only use numeric columns\n" //
             + "data = " + variables.getInputTables()[0] + "._get_numeric_data()\n" //
             + "# Replace row ID by number\n" //
@@ -240,8 +240,8 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
 
     private static String getPythonObjectReaderDefaultSourceCode(final VariableNames variables, final String path) {
         final String pathOS = path.replace("/", "' + os.sep + '");
-        return "import pickle\n" //
-            + "import os\n" //
+        return "import os\n" //
+            + "import pickle\n\n" //
             + "# Path is <workspace>/" + path + "\n" //
             + "path = " + variables.getFlowVariables() + "['knime.workspace'] + os.sep + '" + pathOS + "'\n" //
             + "# Load object from pickle file\n" //
@@ -249,8 +249,8 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
     }
 
     private static String getPythonObjectWriterDefaultSourceCode(final VariableNames variables) {
-        return "import pickle\n" //
-            + "import os\n" //
+        return "import os\n" //
+            + "import pickle\n\n" //
             + "# Path is <workspace>/python_object.pkl\n" //
             + "path = " + variables.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl'\n" //
             + "# Save object as pickle file\n" //
@@ -258,19 +258,19 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
     }
 
     private static String getPythonLearnerDefaultSourceCode(final VariableNames variables) {
-        return "from numpy import array, ones, linalg\n" //
+        return "import numpy as np\n\n" //
             + "# Only use numeric columns\n" //
             + "data = " + variables.getInputTables()[0] + "._get_numeric_data()\n" //
             + "# Use first column as value column\n" //
             + "value_column = data[data.columns[0]]\n" //
             + "# Use second column as target column\n" //
-            + "target_column = data[data.columns[1]]\n" + "A = array([array(value_column), ones(len(value_column))])\n" //
+            + "target_column = data[data.columns[1]]\n" + "A = np.array([np.array(value_column), np.ones(len(value_column))])\n" //
             + "# Calculate linear regression\n" //
-            + variables.getOutputObjects()[0] + " = linalg.lstsq(A.T, target_column)[0]\n";
+            + variables.getOutputObjects()[0] + " = np.linalg.lstsq(A.T, target_column)[0]\n";
     }
 
     private static String getPythonPredictorDefaultSourceCode(final VariableNames variables) {
-        return "from pandas import Series\n" //
+        return "import pandas as pd\n\n" //
             + "# Only use numeric columns\n" //
             + "data = " + variables.getInputTables()[0] + "._get_numeric_data()\n" //
             + "# Use first column as value\n" //
@@ -289,7 +289,7 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
             + "# Copy input table to output table\n" //
             + variables.getOutputTables()[0] + " = " + variables.getInputTables()[0] + ".copy()\n" //
             + "# Append predictions\n" //
-            + variables.getOutputTables()[0] + "['prediction'] = Series(predictions, index="
+            + variables.getOutputTables()[0] + "['prediction'] = pd.Series(predictions, index="
             + variables.getOutputTables()[0] + ".index)\n";
     }
 }
