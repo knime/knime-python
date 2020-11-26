@@ -110,7 +110,7 @@ abstract class EditorPanel {
                 // Line = how many newlines are in the code?
                 final int line = StringUtils.countMatches(codeBeforeCaret, "\n");
                 // Column = how long is the last line of the code?
-                final int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf("\n") + 1).length();
+                final int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf('\n') + 1).length();
                 // Add completions from getCompletionsFor()
                 providedCompletions.addAll(getCompletionsFor(this, sourceCode, line, column));
                 return providedCompletions;
@@ -158,7 +158,7 @@ abstract class EditorPanel {
         return text.substring(cutStart, cutEnd);
     }
 
-    public void installAutoCompletion() {
+    public final void installAutoCompletion() {
         if (m_autoCompletion != null) {
             m_autoCompletion.uninstall();
         }

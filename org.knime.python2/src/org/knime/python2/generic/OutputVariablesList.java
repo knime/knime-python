@@ -67,10 +67,12 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
  */
 final class OutputVariablesList {
 
+    private final VariableNames m_variableNames;
+
     private final JPanel m_panel;
 
-    public OutputVariablesList(final VariableNames variableNames, final RSyntaxTextArea editor,
-        final JPanel workspaceButtons) {
+    public OutputVariablesList(final VariableNames variableNames, final RSyntaxTextArea editor) {
+        m_variableNames = variableNames;
         final DefaultListModel<String> model = new DefaultListModel<>();
         for (final String outTable : variableNames.getOutputTables()) {
             model.addElement(outTable);
@@ -104,10 +106,16 @@ final class OutputVariablesList {
             }
         });
         m_panel.add(new JScrollPane(list), BorderLayout.CENTER);
-        m_panel.add(workspaceButtons, BorderLayout.SOUTH);
     }
 
     public JPanel getPanel() {
         return m_panel;
+    }
+
+    public boolean hasEntries() {
+        return (m_variableNames.getOutputTables().length //
+            + m_variableNames.getOutputImages().length //
+            + m_variableNames.getOutputObjects().length //
+            + m_variableNames.getGeneralOutputObjects().length) > 0;
     }
 }

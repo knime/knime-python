@@ -49,10 +49,12 @@ package org.knime.python2.generic;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.LayoutManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +87,7 @@ import org.knime.python2.generic.ConsolePanel.Level;
  * Abstract source code panel as basis for source code panels for a specific programming language.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("serial") // Not intended for serialization.
 public abstract class SourceCodePanel extends JPanel {
@@ -105,6 +108,8 @@ public abstract class SourceCodePanel extends JPanel {
 
     private final JButton m_execSelection = new JButton("Execute selected lines");
 
+    private final JSplitPane m_workspaceVarsOutputVarsSplit;
+
     private final WorkspaceVariablesTable m_workspaceVars;
 
     private final OutputVariablesList m_outputVars;
@@ -114,6 +119,8 @@ public abstract class SourceCodePanel extends JPanel {
     private final JButton m_reset = new JButton("Reset workspace");
 
     private final JButton m_showImages = new JButton("Show Image");
+
+    private final JSplitPane m_editorWorkspaceVarsOutputVarsSplit;
 
     private final ConsolePanel m_console = new ConsolePanel();
 
@@ -128,7 +135,7 @@ public abstract class SourceCodePanel extends JPanel {
     private boolean m_stopped = true;
 
     /**
-     * Protected editor Buttons, that can be overwritten
+     * Protected editor buttons. Can be overwritten.
      */
     protected JPanel m_editorButtons;
 
@@ -209,15 +216,15 @@ public abstract class SourceCodePanel extends JPanel {
 
         // Right-hand side of the panel:
 
-        final JSplitPane workspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        workspaceVarsOutputVarsSplit.setResizeWeight(0.6);
-        workspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
-        workspaceVarsOutputVarsSplit.setDividerSize(8);
+        m_workspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        m_workspaceVarsOutputVarsSplit.setResizeWeight(0.6);
+        m_workspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
+        m_workspaceVarsOutputVarsSplit.setDividerSize(8);
 
         m_workspaceVars = new WorkspaceVariablesTable(newFont, m_console);
         final JPanel workspacePanel = m_workspaceVars.getPanel();
         workspacePanel.setPreferredSize(new Dimension(0, 0));
-        workspaceVarsOutputVarsSplit.setTopComponent(workspacePanel);
+        m_workspaceVarsOutputVarsSplit.setTopComponent(workspacePanel);
 
         m_reset.addActionListener(e -> runReset());
         m_workspaceButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
@@ -226,24 +233,26 @@ public abstract class SourceCodePanel extends JPanel {
         }
         m_workspaceButtons.add(m_reset);
         if (variableNames.getOutputImages().length > 0) {
+            m_showImages.addActionListener(e -> showImages());
             m_workspaceButtons.add(m_showImages);
-            initShowImages();
         }
 
-        m_outputVars = new OutputVariablesList(variableNames, m_editor.getEditor(), m_workspaceButtons);
+        m_outputVars = new OutputVariablesList(variableNames, m_editor.getEditor());
         final JPanel outputVarsPanel = m_outputVars.getPanel();
         outputVarsPanel.setPreferredSize(new Dimension(0, 0));
-        workspaceVarsOutputVarsSplit.setBottomComponent(outputVarsPanel);
+        m_workspaceVarsOutputVarsSplit.setBottomComponent(outputVarsPanel);
 
-        final JSplitPane editorWorkspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        editorWorkspaceVarsOutputVarsSplit.setResizeWeight(0.7);
-        editorWorkspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
-        editorWorkspaceVarsOutputVarsSplit.setDividerSize(8);
+        m_editorWorkspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        m_editorWorkspaceVarsOutputVarsSplit.setResizeWeight(0.7);
+        m_editorWorkspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
+        m_editorWorkspaceVarsOutputVarsSplit.setDividerSize(8);
 
-        editorWorkspaceVarsOutputVarsSplit.setLeftComponent(m_inputVarsFlowVarsEditorSplit);
+        m_editorWorkspaceVarsOutputVarsSplit.setLeftComponent(m_inputVarsFlowVarsEditorSplit);
 
-        workspaceVarsOutputVarsSplit.setPreferredSize(new Dimension(0, 0));
-        editorWorkspaceVarsOutputVarsSplit.setRightComponent(workspaceVarsOutputVarsSplit);
+        m_workspaceVarsOutputVarsSplit.setPreferredSize(new Dimension(0, 0));
+        m_editorWorkspaceVarsOutputVarsSplit.setRightComponent(m_workspaceVarsOutputVarsSplit);
+
+        setOutputVariablesViewVisible(m_outputVars.hasEntries());
 
         // Console:
 
@@ -252,7 +261,7 @@ public abstract class SourceCodePanel extends JPanel {
         editorConsoleSplit.setOneTouchExpandable(true);
         editorConsoleSplit.setDividerSize(8);
 
-        editorConsoleSplit.setTopComponent(editorWorkspaceVarsOutputVarsSplit);
+        editorConsoleSplit.setTopComponent(m_editorWorkspaceVarsOutputVarsSplit);
 
         final JPanel consolePanel = m_console.getPanel();
         consolePanel.setPreferredSize(new Dimension(0, 0));
@@ -263,45 +272,49 @@ public abstract class SourceCodePanel extends JPanel {
         setPreferredSize(new Dimension(1000, 600));
     }
 
+    @Override
+    public final void setLayout(final LayoutManager mgr) {
+        super.setLayout(mgr);
+    }
+
+    @Override
+    public final void add(final Component comp, final Object constraints) {
+        super.add(comp, constraints);
+    }
+
+    @Override
+    public final void setPreferredSize(final Dimension preferredSize) {
+        super.setPreferredSize(preferredSize);
+    }
+
+    /**
+     * @param visible If {@code true}, the "Input variables" view will be shown in the panel, otherwise it will be
+     *            hidden.
+     */
+    private void setInputVariablesViewVisible(final boolean visible) {
+        m_inputVarsFlowVarsEditorSplit.setLeftComponent(visible ? m_inputVarsFlowVarsSplit : m_flowVars.getPanel());
+    }
+
+    /**
+     * @param visible If {@code true}, the "Output variables" view will be shown in the panel, otherwise it will be
+     *            hidden.
+     */
+    private void setOutputVariablesViewVisible(final boolean visible) {
+        final JPanel rightComponentWithButtons = new JPanel(new BorderLayout());
+        rightComponentWithButtons.setBorder(new EmptyBorder(0, 0, 0, 0));
+        rightComponentWithButtons.add(visible ? m_workspaceVarsOutputVarsSplit : m_workspaceVars.getPanel(),
+            BorderLayout.CENTER);
+        rightComponentWithButtons.add(m_workspaceButtons, BorderLayout.SOUTH);
+        rightComponentWithButtons.setPreferredSize(new Dimension(0, 0));
+        m_editorWorkspaceVarsOutputVarsSplit.setRightComponent(rightComponentWithButtons);
+    }
+
     /**
      * Subclasses should invoke this if they override {@link #loadSettingsFrom(SourceCodeConfig, PortObjectSpec[])} and
      * do not call super.
      */
     protected final void installAutoCompletion() {
         m_editor.installAutoCompletion();
-    }
-
-    /**
-     * Initializes the show images button.
-     */
-    private void initShowImages() {
-        m_showImages.addActionListener(e -> {
-            final JFrame window = new JFrame();
-            window.setTitle("Python image");
-            final Container contentPane = window.getContentPane();
-            contentPane.setLayout(new BorderLayout());
-            final JLabel imageLabel = new JLabel();
-            imageLabel.setForeground(Color.RED);
-            setImage(imageLabel, m_variableNames.getOutputImages()[0]);
-            contentPane.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
-            final JPanel buttons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-            final JButton closeButton = new JButton("Close");
-            buttons.add(closeButton);
-            contentPane.add(buttons, BorderLayout.SOUTH);
-            if (m_variableNames.getOutputImages().length > 1) {
-                window.setTitle("Python images");
-                final JComboBox<String> imageSelection = new JComboBox<>(m_variableNames.getOutputImages());
-                contentPane.add(imageSelection, BorderLayout.NORTH);
-                imageSelection.addActionListener(ev -> {
-                    setImage(imageLabel, (String)imageSelection.getSelectedItem());
-                    window.pack();
-                });
-            }
-            closeButton.addActionListener(ev -> window.setVisible(false));
-            window.pack();
-            window.setLocationRelativeTo(SourceCodePanel.this);
-            window.setVisible(true);
-        });
     }
 
     /**
@@ -323,6 +336,34 @@ public abstract class SourceCodePanel extends JPanel {
         }
     }
 
+    private void showImages() {
+        final JFrame window = new JFrame();
+        window.setTitle("Python image");
+        final Container contentPane = window.getContentPane();
+        contentPane.setLayout(new BorderLayout());
+        final JLabel imageLabel = new JLabel();
+        imageLabel.setForeground(Color.RED);
+        setImage(imageLabel, m_variableNames.getOutputImages()[0]);
+        contentPane.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
+        final JPanel buttons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+        final JButton closeButton = new JButton("Close");
+        buttons.add(closeButton);
+        contentPane.add(buttons, BorderLayout.SOUTH);
+        if (m_variableNames.getOutputImages().length > 1) {
+            window.setTitle("Python images");
+            final JComboBox<String> imageSelection = new JComboBox<>(m_variableNames.getOutputImages());
+            contentPane.add(imageSelection, BorderLayout.NORTH);
+            imageSelection.addActionListener(ev -> {
+                setImage(imageLabel, (String)imageSelection.getSelectedItem());
+                window.pack();
+            });
+        }
+        closeButton.addActionListener(ev -> window.setVisible(false));
+        window.pack();
+        window.setLocationRelativeTo(SourceCodePanel.this);
+        window.setVisible(true);
+    }
+
     /**
      * Opens and initializes the panel.
      */
@@ -336,7 +377,7 @@ public abstract class SourceCodePanel extends JPanel {
      * Closes and cleans up the panel.
      */
     public void close() {
-        // Nothing to do
+        // Nothing to do.
     }
 
     /**
@@ -398,13 +439,6 @@ public abstract class SourceCodePanel extends JPanel {
      */
     protected List<FlowVariable> getFlowVariables() {
         return m_flowVars.getFlowVariables();
-    }
-
-    /**
-     * @param enabled If {@code true}, the "Input variables" tree will be shown in the panel, otherwise it will be hidden.
-     */
-    protected void setInputVariablesTreeEnabled(final boolean enabled) {
-        m_inputVarsFlowVarsEditorSplit.setLeftComponent(enabled ? m_inputVarsFlowVarsSplit : m_flowVars.getPanel());
     }
 
     /**
