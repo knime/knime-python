@@ -63,6 +63,7 @@ import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -88,11 +89,10 @@ import org.knime.python2.port.PickledObject;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@SuppressWarnings("serial") // Not intended for serialization.
 public class PythonSourceCodePanel extends SourceCodePanel {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
-
-    private static final long serialVersionUID = -3111905445745421972L;
 
     private final NodeDialogPane m_parent;
 
@@ -240,9 +240,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }).start();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void close() {
         super.close();
@@ -281,39 +278,20 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updateData(final BufferedDataTable[] inputData) {
-        super.updateData(inputData);
-        m_inputData = inputData;
-        //putDataIntoPython();
-    }
-
-    /**
-     * Get updated input data tables and put them into the python workspace.
-     */
-    public void updateData() {
-        super.updateData(m_inputData);
-        //putDataIntoPython();
-    }
-
-    /**
-     * Update input data tables and objects and put them into the python workspace.
+     * Update input data tables and objects and put them into the Python workspace.
      *
-     * @param inputData the new input tables
-     * @param inputObjects the new input objects
+     * @param inTableSpecs The specs of the new input tables.
+     * @param inTables The new input tables. Must match the given table specs but may contain {@code null} entries in
+     *            case there is no data available at the corresponding input port.
+     * @param inPickledObjects The new input objects.
      */
-    public void updateData(final BufferedDataTable[] inputData, final PickledObject[] inputObjects) {
-        super.updateData(inputData);
-        m_inputData = inputData;
-        m_pythonInputObjects = inputObjects;
-        //putDataIntoPython();
+    public void updateData(final DataTableSpec[] inTableSpecs, final BufferedDataTable[] inTables,
+        final PickledObject[] inPickledObjects) {
+        super.updateSpec(inTableSpecs);
+        m_inputData = inTables;
+        m_pythonInputObjects = inPickledObjects;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void runExec(final String sourceCode) {
         if (getKernelManager() != null) {
@@ -361,9 +339,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void updateVariables() {
         if (getKernelManager() != null) {
@@ -406,9 +381,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void runReset() {
         if (getKernelManagerWrapper() != null) {
@@ -423,9 +395,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected List<Completion> getCompletionsFor(final CompletionProvider provider, final String sourceCode,
         final int line, final int column) {
@@ -472,9 +441,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         return completions;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void finalize() throws Throwable {
         close();
@@ -562,9 +528,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected ImageContainer getOutImage(final String name) {
         if (getKernelManager() != null) {
@@ -586,9 +549,6 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected String createVariableAccessString(final String variable, final String field) {
         return variable + "['" + field.replace("\\", "\\\\").replace("'", "\\'") + "']";

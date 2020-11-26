@@ -247,11 +247,24 @@ public class PythonKernelManager implements AutoCloseable {
                 try {
                     kernel.putFlowVariables(variablesName, variables);
                     for (int i = 0; i < objects.length; i++) {
-                        kernel.putObject(objectNames[i], objects[i]);
+                        final String name = objectNames[i];
+                        final PickledObject object = objects[i];
+                        if (object != null) {
+                            kernel.putObject(name, object);
+                        } else {
+                            kernel.execute("workspace.put_variable('" + name + "', None)");
+                        }
                     }
                     for (int i = 0; i < tables.length; i++) {
-                        kernel.putDataTable(tableNames[i], tables[i],
-                            executionMonitor.createSubProgress(1 / (double)tables.length), rowLimit);
+                        final String name = tableNames[i];
+                        final BufferedDataTable table = tables[i];
+                        if (table != null) {
+                            final ExecutionMonitor monitor =
+                                executionMonitor.createSubProgress(1 / (double)tables.length);
+                            kernel.putDataTable(name, table, monitor, rowLimit);
+                        } else {
+                            kernel.execute("workspace.put_variable('" + name + "', None)");
+                        }
                     }
                 } catch (final Exception e) {
                     exception = e;

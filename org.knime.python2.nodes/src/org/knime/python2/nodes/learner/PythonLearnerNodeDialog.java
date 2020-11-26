@@ -47,6 +47,7 @@
  */
 package org.knime.python2.nodes.learner;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
@@ -58,6 +59,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.port.PickledObject;
 
 /**
  * <code>NodeDialog</code> for the node.
@@ -101,14 +103,16 @@ class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         final PythonLearnerNodeConfig config = new PythonLearnerNodeConfig();
         config.loadFromInDialog(settings);
         m_sourceCodePanel.loadSettingsFrom(config, specs);
         m_sourceCodePanel.updateFlowVariables(
             getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateData(new BufferedDataTable[]{null});
+        m_sourceCodePanel.updateData(new DataTableSpec[]{(DataTableSpec)specs[0]}, new BufferedDataTable[]{null},
+            new PickledObject[0]);
     }
 
     /**
@@ -116,9 +120,11 @@ class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
      */
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final BufferedDataTable[] input)
-            throws NotConfigurableException {
-        loadSettingsFrom(settings, new PortObjectSpec[]{input[0] == null ? null : input[0].getDataTableSpec()});
-        m_sourceCodePanel.updateData(input);
+        throws NotConfigurableException {
+        final BufferedDataTable inTable = input[0];
+        final DataTableSpec inSpec = inTable != null ? inTable.getDataTableSpec() : new DataTableSpec();
+        loadSettingsFrom(settings, new PortObjectSpec[]{inSpec});
+        m_sourceCodePanel.updateData(new DataTableSpec[]{inSpec}, input, new PickledObject[0]);
     }
 
     /**

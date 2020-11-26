@@ -47,6 +47,7 @@
  */
 package org.knime.python2.nodes.objectwriter;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
@@ -111,8 +112,8 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
         m_sourceCodePanel.loadSettingsFrom(config, specs);
         m_sourceCodePanel.updateFlowVariables(
             getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
-        m_sourceCodePanel.updateData(new BufferedDataTable[0], new PickledObject[]{null});
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_sourceCodePanel.updateData(new DataTableSpec[0], new BufferedDataTable[0], new PickledObject[]{null});
     }
 
     /**
@@ -121,12 +122,13 @@ class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
         throws NotConfigurableException {
-        loadSettingsFrom(settings, new PortObjectSpec[0]);
-        PickledObject pickledObject = null;
-        if (input[0] != null) {
-            pickledObject = ((PickledObjectPortObject)input[0]).getPickledObject();
-        }
-        m_sourceCodePanel.updateData(new BufferedDataTable[0], new PickledObject[]{pickledObject});
+        final PickledObjectPortObject inObject = (PickledObjectPortObject)input[0];
+        final PortObjectSpec inObjectSpec = inObject != null ? inObject.getSpec() : null;
+        loadSettingsFrom(settings, new PortObjectSpec[]{inObjectSpec});
+
+        final PickledObject inPickledObject = inObject != null ? inObject.getPickledObject() : null;
+        m_sourceCodePanel.updateData(new DataTableSpec[0], new BufferedDataTable[0],
+            new PickledObject[]{inPickledObject});
     }
 
     /**

@@ -47,6 +47,7 @@
  */
 package org.knime.python2.nodes.predictor;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.DataAwareNodeDialogPane;
 import org.knime.core.node.InvalidSettingsException;
@@ -112,7 +113,8 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
         m_sourceCodePanel.updateFlowVariables(
             getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateData(new BufferedDataTable[]{null}, new PickledObject[]{null});
+        m_sourceCodePanel.updateData(new DataTableSpec[]{(DataTableSpec)specs[1]}, new BufferedDataTable[]{null},
+            new PickledObject[]{null});
     }
 
     /**
@@ -121,17 +123,17 @@ class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
         throws NotConfigurableException {
-        final PortObjectSpec[] specs = new PortObjectSpec[input.length];
-        for (int i = 0; i < specs.length; i++) {
-            specs[i] = input[i] == null ? null : input[i].getSpec();
-        }
+        final PickledObjectPortObject inObject = (PickledObjectPortObject)input[0];
+        final BufferedDataTable inTable = (BufferedDataTable)input[1];
+
+        final PortObjectSpec inObjectSpec = inObject != null ? inObject.getSpec() : null;
+        final DataTableSpec inTableSpec = inTable != null ? inTable.getDataTableSpec() : new DataTableSpec();
+        final PortObjectSpec[] specs = new PortObjectSpec[]{inObjectSpec, inTableSpec};
         loadSettingsFrom(settings, specs);
-        PickledObject pickledObject = null;
-        if (input[0] != null) {
-            pickledObject = ((PickledObjectPortObject)input[0]).getPickledObject();
-        }
-        m_sourceCodePanel.updateData(new BufferedDataTable[]{(BufferedDataTable)input[1]},
-            new PickledObject[]{pickledObject});
+
+        final PickledObject inPickledObject = inObject != null ? inObject.getPickledObject() : null;
+        m_sourceCodePanel.updateData(new DataTableSpec[]{inTableSpec}, new BufferedDataTable[]{inTable},
+            new PickledObject[]{inPickledObject});
     }
 
     /**

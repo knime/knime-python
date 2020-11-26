@@ -75,7 +75,6 @@ import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
@@ -87,9 +86,8 @@ import org.knime.python2.generic.ConsolePanel.Level;
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@SuppressWarnings("serial") // Not intended for serialization.
 public abstract class SourceCodePanel extends JPanel {
-
-    private static final long serialVersionUID = -3216788918504383870L;
 
     private final VariableNames m_variableNames;
 
@@ -353,38 +351,26 @@ public abstract class SourceCodePanel extends JPanel {
 
     /**
      * Loads settings from the given {@link SourceCodeConfig}. If subclasses override this method and do not invoke
-     * super, then they <b>must</b> invoke {@link #installAutoCompletion()} lest problems of the ilk of
-     * https://knime-com.atlassian.net/browse/AP-10515 occur.
+     * super, then they <b>must</b> invoke {@link #installAutoCompletion()} otherwise problems similar to AP-10515 will
+     * occur.
      *
-     * @param config The config to load from
-     * @param specs Input port specs
-     * @throws NotConfigurableException If the panel is not configurable
+     * @param config The config to load from.
+     * @param specs The input specs of the node, entries corresponding to input {@link DataTableSpec tables} may not be
+     *            {@code null}.
+     * @throws NotConfigurableException If the panel is not configurable.
      */
     public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs)
         throws NotConfigurableException {
         installAutoCompletion();
 
         m_editor.getEditor().setText(config.getSourceCode());
-        final List<DataTableSpec> tableSpecs = new ArrayList<DataTableSpec>();
+        final List<DataTableSpec> tableSpecs = new ArrayList<>();
         for (final PortObjectSpec spec : specs) {
             if (spec instanceof DataTableSpec) {
                 tableSpecs.add((DataTableSpec)spec);
             }
         }
         updateSpec(tableSpecs.toArray(new DataTableSpec[tableSpecs.size()]));
-    }
-
-    /**
-     * Updates the input data tables.
-     *
-     * @param inputData The input data tables
-     */
-    public void updateData(final BufferedDataTable[] inputData) {
-        final DataTableSpec[] tableSpecs = new DataTableSpec[inputData.length];
-        for (int i = 0; i < inputData.length; i++) {
-            tableSpecs[i] = inputData[i] == null ? null : inputData[i].getDataTableSpec();
-        }
-        updateSpec(tableSpecs);
     }
 
     /**

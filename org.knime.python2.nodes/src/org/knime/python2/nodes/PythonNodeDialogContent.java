@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -199,24 +200,28 @@ public final class PythonNodeDialogContent {
         final Map<String, FlowVariable> inFlowVariables = m_dialog.getAvailableFlowVariables();
         m_scriptPanel.updateFlowVariables(inFlowVariables.values().toArray(new FlowVariable[inFlowVariables.size()]));
 
-        int numTables = 0;
+        final List<DataTableSpec> inTableSpecs = new ArrayList<>();
         int numPickledObjects = 0;
         for (int i = 0; i < m_inPorts.length; i++) {
             final InputPort inPort = m_inPorts[i];
+            final PortObjectSpec inSpec = specs[i];
             for (final PythonModuleSpec module : inPort.getRequiredModules()) {
                 m_scriptPanel.addAdditionalRequiredModule(module.getName());
             }
             if (inPort instanceof DataTableInputPort) {
-                numTables++;
+                inTableSpecs.add((DataTableSpec)inSpec);
             } else if (inPort instanceof PickledObjectInputPort) {
                 numPickledObjects++;
             } else if (inPort instanceof DatabasePort) {
                 ((DatabasePort)inPort).setCredentialsProvider(credentials);
             }
-            final WorkspacePreparer preparer = inPort.prepareInDialog(specs[i]);
-            updatePreparers(inPort, preparer, false);
+            if (inSpec != null) {
+                final WorkspacePreparer preparer = inPort.prepareInDialog(inSpec);
+                updatePreparers(inPort, preparer, false);
+            }
         }
-        m_scriptPanel.updateData(new BufferedDataTable[numTables], new PickledObject[numPickledObjects]);
+        m_scriptPanel.updateData(inTableSpecs.toArray(new DataTableSpec[0]), new BufferedDataTable[inTableSpecs.size()],
+            new PickledObject[numPickledObjects]);
     }
 
     /**
@@ -232,6 +237,7 @@ public final class PythonNodeDialogContent {
     public void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input,
         final CredentialsProvider credentials) throws NotConfigurableException {
         final PortObjectSpec[] inSpecs = new PortObjectSpec[input.length];
+        final List<DataTableSpec> inTableSpecs = new ArrayList<>();
         final List<BufferedDataTable> inTables = new ArrayList<>();
         final List<PickledObject> inPickledObjects = new ArrayList<>();
         for (int i = 0; i < m_inPorts.length; i++) {
@@ -239,21 +245,30 @@ public final class PythonNodeDialogContent {
             final PortObject inObject = input[i];
             if (inObject != null) {
                 inSpecs[i] = inObject.getSpec();
-            }
-            if (inPort instanceof DataTableInputPort) {
-                inTables.add(DataTableInputPort.extractWorkspaceObject(inObject));
-            } else if (inPort instanceof PickledObjectInputPort) {
-                try {
-                    inPickledObjects.add(PickledObjectInputPort.extractWorkspaceObject(inObject));
-                } catch (IOException ex) {
-                    throw new NotConfigurableException(ex.getMessage(), ex);
+                if (inPort instanceof DataTableInputPort) {
+                    final BufferedDataTable table = DataTableInputPort.extractWorkspaceObject(inObject);
+                    inTableSpecs.add(table.getDataTableSpec());
+                    inTables.add(table);
+                } else if (inPort instanceof PickledObjectInputPort) {
+                    try {
+                        inPickledObjects.add(PickledObjectInputPort.extractWorkspaceObject(inObject));
+                    } catch (IOException ex) {
+                        throw new NotConfigurableException(ex.getMessage(), ex);
+                    }
                 }
+                final WorkspacePreparer preparer = inPort.prepareInDialog(input[i]);
+                updatePreparers(inPort, preparer, true);
+            } else if (inPort instanceof DataTableInputPort) {
+                final DataTableSpec tableSpec = new DataTableSpec();
+                inSpecs[i] = tableSpec;
+                inTableSpecs.add(tableSpec);
+                inTables.add(null);
+            } else if (inPort instanceof PickledObjectInputPort) {
+                inPickledObjects.add(null);
             }
-            final WorkspacePreparer preparer = inPort.prepareInDialog(input[i]);
-            updatePreparers(inPort, preparer, true);
         }
         loadSettingsFrom(settings, inSpecs, credentials);
-        m_scriptPanel.updateData(inTables.toArray(new BufferedDataTable[0]),
+        m_scriptPanel.updateData(inTableSpecs.toArray(new DataTableSpec[0]), inTables.toArray(new BufferedDataTable[0]),
             inPickledObjects.toArray(new PickledObject[0]));
     }
 
