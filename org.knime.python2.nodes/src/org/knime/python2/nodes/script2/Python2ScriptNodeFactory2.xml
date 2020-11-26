@@ -121,12 +121,6 @@
 		</tab>
 	</fullDescription>
 	<ports>
-		<dynInPort name="Database connection (legacy)" group-identifier="Database connection (legacy)"
-			insert-before="0">
-			An input database connection. It provides all relevant information needed to connect to a database as well
-			as an input SQL query used to initially fetch data from the database. In the Python script, it is available
-			as variable <b>db_util</b> of type <i>DBUtil</i>.
-		</dynInPort>
 		<dynInPort name="Pickled object" group-identifier="Input object (pickled)" insert-before="0">
 			An input object. Input objects are automatically unpickled and made available to the Python script as
 			variables whose names follow the scheme: <b>input_object_&lt;index&gt;</b>. For example, variable
@@ -138,13 +132,6 @@
 			<b>input_table_&lt;index&gt;</b>. For example, variable <b>input_table_1</b> refers to the table at the
 			first inbound <i>Table</i> port.
 		</dynInPort>
-		<dynOutPort name="Database connection (legacy)" group-identifier="Database connection (legacy)"
-			insert-before="0">
-			An output database connection. It holds the result table containing data from the database. The data in the
-			result table is fetched either using the output SQL query that was explicitly set in the script via
-			<i>db_util.set_output_query(...)</i> or -- if the former was not set -- an automatically determined SQL
-			query.
-		</dynOutPort>
 		<dynOutPort name="Table" group-identifier="Output table" insert-before="0">
 			An output table. The corresponding variable must be defined in the Python script. It must be of type
 			<i>pandas.DataFrame</i> and its name must follow the scheme: <b>output_table_&lt;index&gt;</b>. For example,

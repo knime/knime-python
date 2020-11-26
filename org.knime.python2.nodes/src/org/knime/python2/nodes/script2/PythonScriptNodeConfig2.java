@@ -48,14 +48,12 @@
 package org.knime.python2.nodes.script2;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
-import org.knime.python2.ports.DatabasePort;
 import org.knime.python2.ports.ImageOutputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
@@ -69,24 +67,12 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
 
     static final String FLOW_VARIABLES_NAME = "flow_variables";
 
-    static final String DB_UTIL_NAME = "db_util";
-
-    private static final String DEFAULT_DB_SOURCE_CODE = //
-        "# To prevent changes to the database in the node dialog,\n" //
-            + "# do NOT call commit() in your script!\n" //
-            + "# All changes to the database are automatically\n" //
-            + "# committed once the node is executed.\n" //
-            + "# To list all functions of the DBUtil object, call\n" //
-            + "# " + DB_UTIL_NAME + ".print_description()\n\n" //
-            + "df = " + DB_UTIL_NAME + ".get_dataframe()\n" //
-            + DB_UTIL_NAME + ".write_dataframe('resultTableName', df)";
-
     public static String getDefaultSourceCode(final InputPort[] inPorts, final OutputPort[] outPorts) {
         final VariableNames variables = getVariableNames(inPorts, outPorts);
         String defaultCode = getOldNodesDefaultSourceCode(inPorts, outPorts, variables);
         if (defaultCode == null) {
             // No old/known node configuration. Fall back to some generic default code that simply populates all output
-            // variables with empty/null values. Take special care of the database connection if one is present.
+            // variables with empty/null values.
             defaultCode = "";
 
             // Imports:
@@ -94,12 +80,7 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
                 defaultCode += "from pandas import DataFrame\n\n";
             }
 
-            // Database:
-            if (Arrays.stream(inPorts).anyMatch(DatabasePort.class::isInstance)) {
-                defaultCode += DEFAULT_DB_SOURCE_CODE + "\n\n";
-            }
-
-            // Non-database outputs:
+            // Populate outputs:
             for (int i = 0; i < outPorts.length; i++) {
                 final OutputPort outPort = outPorts[i];
                 final String outVariableName = outPort.getVariableName();
@@ -135,19 +116,15 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
         final List<String> outputObjects = new ArrayList<>(2);
         final List<String> outputMisc = new ArrayList<>(2);
         for (final OutputPort outPort : outPorts) {
-            // Output variables are variables that need to be defined by the user. Therefore we filter out outputs that
-            // are also inputs and as such are already defined (for example a database connection).
-            if (!(outPort instanceof InputPort)) {
-                final String variableName = outPort.getVariableName();
-                if (outPort instanceof DataTableOutputPort) {
-                    outputTables.add(variableName);
-                } else if (outPort instanceof ImageOutputPort) {
-                    outputImages.add(variableName);
-                } else if (outPort instanceof PickledObjectOutputPort) {
-                    outputObjects.add(variableName);
-                } else {
-                    outputMisc.add(variableName);
-                }
+            final String variableName = outPort.getVariableName();
+            if (outPort instanceof DataTableOutputPort) {
+                outputTables.add(variableName);
+            } else if (outPort instanceof ImageOutputPort) {
+                outputImages.add(variableName);
+            } else if (outPort instanceof PickledObjectOutputPort) {
+                outputObjects.add(variableName);
+            } else {
+                outputMisc.add(variableName);
             }
         }
         return new VariableNames(FLOW_VARIABLES_NAME, //
@@ -214,10 +191,6 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
         // Python Predictor node
         if (numInputs == 2 && numInObjects == 1 && numInTables == 1 && numOutputs == 1 && numOutTables == 1) {
             return getPythonPredictorDefaultSourceCode(variables);
-        }
-        // Python Script (DB) (legacy) node
-        if (numInputs == 1 && inPorts[0] instanceof DatabasePort && numOutputs == 1) {
-            return DEFAULT_DB_SOURCE_CODE;
         }
         return null;
     }

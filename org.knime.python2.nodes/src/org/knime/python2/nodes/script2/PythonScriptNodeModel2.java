@@ -63,9 +63,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.nodes.PythonNodeModel;
-import org.knime.python2.ports.DatabasePort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 
@@ -123,9 +121,6 @@ final class PythonScriptNodeModel2 extends PythonNodeModel<PythonScriptNodeConfi
             }
             for (int i = 0; i < m_inPorts.length; i++) {
                 final InputPort inPort = m_inPorts[i];
-                if (inPort instanceof DatabasePort) {
-                    ((DatabasePort)inPort).setCredentialsProvider(getCredentialsProvider());
-                }
                 final ExecutionMonitor inPortMonitor = inWeight > 0d //
                     ? inMonitor.createSubProgress(inPort.getExecuteProgressWeight() / inWeight) //
                     : inMonitor;
@@ -164,15 +159,6 @@ final class PythonScriptNodeModel2 extends PythonNodeModel<PythonScriptNodeConfi
                 outObjects[i] = outPort.execute(kernel, outPortExec);
             }
             return outObjects;
-        } catch (final PythonKernelCleanupException ex) {
-            if (Arrays.stream(m_inPorts).anyMatch(DatabasePort.class::isInstance)) {
-                throw new PythonKernelCleanupException(
-                    ex.getMessage() + "\nDatabase connections that were opened during "
-                        + "the run of the Python script may not have been closed properly.",
-                    ex);
-            } else {
-                throw ex;
-            }
         }
     }
 }

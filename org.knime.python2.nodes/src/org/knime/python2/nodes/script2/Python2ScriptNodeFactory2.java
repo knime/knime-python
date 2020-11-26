@@ -58,13 +58,11 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortType;
-import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.util.Pair;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
-import org.knime.python2.ports.DatabasePort;
 import org.knime.python2.ports.ImageOutputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
@@ -82,7 +80,6 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
         final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
-        b.addOptionalPortGroup("Database connection (legacy)", DatabasePortObject.TYPE);
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
@@ -106,7 +103,6 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
         int inTableSuffix = 1;
         int inObjectSuffix = 1;
         final InputPort[] inPorts = new InputPort[inTypes.length];
-        DatabasePort databasePort = null;
         for (int i = 0; i < inTypes.length; i++) {
             final PortType inType = inTypes[i];
             final InputPort inPort;
@@ -114,9 +110,6 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
                 inPort = new DataTableInputPort("input_table_" + inTableSuffix++);
             } else if (PickledObjectFileStorePortObject.TYPE.equals(inType)) {
                 inPort = new PickledObjectInputPort("input_object_" + inObjectSuffix++);
-            } else if (DatabasePortObject.TYPE.equals(inType)) {
-                databasePort = new DatabasePort(PythonScriptNodeConfig2.DB_UTIL_NAME);
-                inPort = databasePort;
             } else {
                 throw new IllegalStateException("Unsupported input type: " + inType.getName());
             }
@@ -137,8 +130,6 @@ public final class Python2ScriptNodeFactory2 extends ConfigurableNodeFactory<Pyt
                 outPort = new ImageOutputPort("output_image_" + outImageSuffix++);
             } else if (PickledObjectFileStorePortObject.TYPE.equals(outType)) {
                 outPort = new PickledObjectOutputPort("output_object_" + outObjectSuffix++);
-            } else if (DatabasePortObject.TYPE.equals(outType)) {
-                outPort = databasePort;
             } else {
                 throw new IllegalStateException("Unsupported output type: " + outType.getName());
             }
