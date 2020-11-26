@@ -205,7 +205,7 @@ public abstract class SourceCodePanel extends JPanel {
         editorPanel.setPreferredSize(new Dimension(0, 0));
         m_inputVarsFlowVarsEditorSplit.setRightComponent(editorPanel);
 
-        setColumnListEnabled(variableNames.getInputTables().length > 0);
+        setInputVariablesViewVisible(m_inputVars.hasEntries());
 
         // Right-hand side of the panel:
 
@@ -225,7 +225,7 @@ public abstract class SourceCodePanel extends JPanel {
             m_showImages.setText("Show Images");
         }
         m_workspaceButtons.add(m_reset);
-        if (m_variableNames.getOutputImages().length > 0) {
+        if (variableNames.getOutputImages().length > 0) {
             m_workspaceButtons.add(m_showImages);
             initShowImages();
         }
@@ -401,11 +401,9 @@ public abstract class SourceCodePanel extends JPanel {
     }
 
     /**
-     * Sets whether the column list is shown or not
-     *
-     * @param enabled If true the column list will be shown in the upper left, if false it will be hidden
+     * @param enabled If {@code true}, the "Input variables" tree will be shown in the panel, otherwise it will be hidden.
      */
-    protected void setColumnListEnabled(final boolean enabled) {
+    protected void setInputVariablesTreeEnabled(final boolean enabled) {
         m_inputVarsFlowVarsEditorSplit.setLeftComponent(enabled ? m_inputVarsFlowVarsSplit : m_flowVars.getPanel());
     }
 

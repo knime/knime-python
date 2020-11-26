@@ -106,6 +106,12 @@ final class InputVariablesTree {
         return m_panel;
     }
 
+    public boolean hasEntries() {
+        return (m_variableNames.getGeneralInputObjects().length //
+            + m_variableNames.getInputObjects().length //
+            + m_variableNames.getInputTables().length) > 0;
+    }
+
     public void updateInputs(final DataTableSpec[] specs) {
         for (int i = m_root.getChildCount() - 1; i >= 0; i--) {
             m_root.remove(i);
