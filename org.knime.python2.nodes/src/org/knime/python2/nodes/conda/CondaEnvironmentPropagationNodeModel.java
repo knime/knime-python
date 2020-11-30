@@ -51,6 +51,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -109,6 +111,28 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private static final String SOURCE_OS_MAC = "mac";
 
     private static final String SOURCE_OS_WINDOWS = "windows";
+
+    private static final Set<String> CROSS_PLATFORM_EXCLUDED_PACKAGES =
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList( //
+            "appnope", // MacOS-only
+            "libcxx", // no Linux
+            "libcxxabi", // no Linux
+            "libgfortran", // no Linux
+            "mkl_fft", // conflicts on Linux coming from Windows
+            "mkl_random", // conflicts on Linux coming from Windows
+            "vc", //
+            "m2w64-libwinpthread-git", //
+            "icc_rt", //
+            "m2w64-gmp", //
+            "pywinpty", //
+            "wincertstore", //
+            "msys2-conda-epoch", //
+            "winpty", //
+            "m2w64-gcc-libs", //
+            "m2w64-gcc-libgfortran", //
+            "vs2015_runtime", //
+            "win_inet_pton", //
+            "m2w64-gcc-libs-core")));
 
     static SettingsModelString createCondaEnvironmentNameModel() {
         return new SettingsModelString(CFG_KEY_CONDA_ENV, CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME);
@@ -270,7 +294,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             exec.setMessage(creationMessage);
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
 
-            final List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
+            List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
+            if (!sameOs) {
+                packages = packages.stream() //
+                    .filter(pkg -> !CROSS_PLATFORM_EXCLUDED_PACKAGES.contains(pkg.getName())) //
+                    .collect(Collectors.toList());
+            }
             conda.createEnvironment(environmentName, packages, sameOs,
                 new Monitor(packages.size(), exec.getProgressMonitor()));
         }
