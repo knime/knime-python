@@ -224,16 +224,26 @@ final class CondaPackagesTable {
         }
     }
 
-    private void refreshPackages(final boolean keepCurrentSelection) {
+    private void refreshPackages(final boolean isInitialRefresh) {
+        invokeOnEDT(() -> setState(REFRESHING));
+        final String environmentName = m_environmentNameModel.getStringValue();
+        List<CondaPackageSpec> packages;
         try {
-            invokeOnEDT(() -> setState(REFRESHING));
-            final String environmentName = m_environmentNameModel.getStringValue();
-            final List<CondaPackageSpec> packages = m_conda.get().getPackages(environmentName);
-            invokeOnEDT(() -> setPackages(packages, keepCurrentSelection ? m_config.getPackages() : packages));
-            invokeOnEDT(() -> setState(POPULATED));
+            packages = m_conda.get().getPackages(environmentName);
         } catch (final IOException ex) {
-            setToErrorView(ex);
+            if (isInitialRefresh) {
+                // Retain the currently configured packages if the configured environment is not present on the local
+                // machine. This way, the dialog can be opened on the target machine before the environment has been
+                // recreated without overriding the current configuration.
+                packages = m_config.getPackages();
+            } else {
+                setToErrorView(ex);
+                return;
+            }
         }
+        final List<CondaPackageSpec> packagesFinal = packages;
+        invokeOnEDT(() -> setPackages(packagesFinal, isInitialRefresh ? m_config.getPackages() : packagesFinal));
+        invokeOnEDT(() -> setState(POPULATED));
     }
 
     private void setPackages(final List<CondaPackageSpec> packages, final List<CondaPackageSpec> selectedPackages) {

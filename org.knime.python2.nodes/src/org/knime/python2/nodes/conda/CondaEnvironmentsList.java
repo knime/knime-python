@@ -58,6 +58,7 @@ import java.awt.GridBagLayout;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -76,6 +77,7 @@ import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.Conda;
 import org.knime.python2.Conda.CondaEnvironmentIdentifier;
+import org.knime.python2.config.CondaEnvironmentsConfig;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -98,7 +100,11 @@ final class CondaEnvironmentsList {
 
     private final DialogComponentStringSelection m_environmentNameSelection;
 
+    private final JLabel m_warningLabel = new JLabel("");
+
     private final JLabel m_errorLabel = new JLabel("", SwingConstants.CENTER);
+
+    private volatile String m_configuredNonExistingEnvironmentName = null;
 
     public CondaEnvironmentsList(final SettingsModelString evironmentNameModel, final Supplier<Conda> conda) {
         m_environmentNameModel = evironmentNameModel;
@@ -119,10 +125,25 @@ final class CondaEnvironmentsList {
         gbc.gridx++;
         gbc.weightx = 1;
         listPanel.add(getFirstComponent(m_environmentNameSelection, JComboBox.class), gbc);
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        gbc.ipady = 10;
+        m_warningLabel.setForeground(Color.BLUE);
+        listPanel.add(m_warningLabel, gbc);
         m_panel.add(listPanel, POPULATED);
 
         m_errorLabel.setForeground(Color.RED);
         m_panel.add(m_errorLabel, ERROR);
+
+        m_environmentNameModel.addChangeListener(e -> {
+            if (m_configuredNonExistingEnvironmentName != null
+                && !m_configuredNonExistingEnvironmentName.equals(m_environmentNameModel.getStringValue())) {
+                m_configuredNonExistingEnvironmentName = null;
+                m_warningLabel.setText("");
+                m_warningLabel.setVisible(false);
+            }
+        });
     }
 
     public JComponent getComponent() {
@@ -152,16 +173,36 @@ final class CondaEnvironmentsList {
 
     public void initializeEnvironments() {
         try {
+            m_configuredNonExistingEnvironmentName = null;
+            invokeOnEDT(() -> {
+                m_warningLabel.setText("");
+                m_warningLabel.setVisible(false);
+            });
             final String environmentName = m_environmentNameModel.getStringValue();
             final List<CondaEnvironmentIdentifier> environments = m_conda.get().getEnvironments();
-            final List<String> environmentNames = environments.stream() //
+            final TreeSet<String> environmentNames = environments.stream() //
                 .map(CondaEnvironmentIdentifier::getName) //
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(TreeSet::new));
+            String nonExistingEnvironmentName = null;
+            if (!environmentName.equals(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME)
+                // Include the configured environment even if it is not present on the local machine. This way, the
+                // dialog can be opened on the target machine before the environment has been recreated without
+                // overriding the current configuration.
+                && environmentNames.add(environmentName)) {
+                nonExistingEnvironmentName = environmentName;
+                invokeOnEDT(() -> {
+                    m_warningLabel.setText("Note: the selected environment does currently not exist on this machine.");
+                    m_warningLabel.setVisible(true);
+                });
+            }
             if (environmentNames.isEmpty()) {
                 throw new IOException("No Conda environments available.\nPlease review the Conda "
                     + "installation specified in the Preferences of the KNIME Python Integration.");
             }
             invokeOnEDT(() -> m_environmentNameSelection.replaceListItems(environmentNames, environmentName));
+            // Must be set after the selection has been refreshed, otherwise the action listener defined in the
+            // constructor would immediately clear the field.
+            m_configuredNonExistingEnvironmentName = nonExistingEnvironmentName;
             invokeOnEDT(() -> setState(POPULATED));
         } catch (final IOException ex) {
             invokeOnEDT(() -> {
