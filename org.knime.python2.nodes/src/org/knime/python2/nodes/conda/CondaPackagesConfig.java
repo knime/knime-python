@@ -51,8 +51,11 @@ package org.knime.python2.nodes.conda;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -119,6 +122,17 @@ final class CondaPackagesConfig {
 
     public static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         final List<CondaPackageSpec> included = readPackagesFrom(settings.getNodeSettings(CFG_KEY_INCLUDED_PACKAGES));
+        final List<String> duplicateNames = included.stream() //
+            .collect(Collectors.groupingBy(CondaPackageSpec::getName, LinkedHashMap::new, Collectors.counting())) //
+            .entrySet().stream() //
+            .filter(m -> m.getValue() > 1) //
+            .map(Map.Entry::getKey) //
+            .collect(Collectors.toList());
+        if (!duplicateNames.isEmpty()) {
+            throw new InvalidSettingsException(
+                "The same package cannot be selected for inclusion multiple times. Package(s): "
+                    + String.join(", ", duplicateNames) + ".");
+        }
         final List<CondaPackageSpec> excluded = readExcludedPackages(settings);
         final Set<CondaPackageSpec> intersection = new HashSet<>(included);
         intersection.retainAll(excluded);
