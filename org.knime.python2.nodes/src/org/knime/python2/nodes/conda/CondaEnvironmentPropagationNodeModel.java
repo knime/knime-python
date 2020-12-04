@@ -286,7 +286,15 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String environmentName = m_environmentNameModel.getStringValue();
         final boolean sameOs = getCurrentOsType().equals(m_sourceOsModel.getStringValue());
 
-        final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, sameOs);
+        List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
+        if (!sameOs) {
+            packages = packages.stream() //
+                .filter(pkg -> !CROSS_PLATFORM_EXCLUDED_PACKAGES.contains(pkg.getName())) //
+                .collect(Collectors.toList());
+        }
+
+        final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, packages,
+            m_validationMethodModel.getStringValue(), sameOs);
         final boolean createEnvironment = p.getFirst();
         final String creationMessage = p.getSecond();
 
@@ -294,12 +302,6 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             exec.setMessage(creationMessage);
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
 
-            List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
-            if (!sameOs) {
-                packages = packages.stream() //
-                    .filter(pkg -> !CROSS_PLATFORM_EXCLUDED_PACKAGES.contains(pkg.getName())) //
-                    .collect(Collectors.toList());
-            }
             conda.createEnvironment(environmentName, packages, sameOs,
                 new Monitor(packages.size(), exec.getProgressMonitor()));
         }
@@ -330,17 +332,16 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
-    private Pair<Boolean, String> checkWhetherToCreateEnvironment(final Conda conda, final String environmentName,
+    private static Pair<Boolean, String> checkWhetherToCreateEnvironment(final Conda conda,
+        final String environmentName, final List<CondaPackageSpec> requiredPackages, final String validationMethod,
         final boolean sameOs) throws IOException, InvalidSettingsException {
         final boolean nameExists = findEnvironment(environmentName, conda.getEnvironments()).isPresent();
-        final String validationMethod = m_validationMethodModel.getStringValue();
 
         final boolean createEnvironment;
         String creationMessage;
         if (VALIDATION_METHOD_NAME.equals(validationMethod)
             || VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
             if (nameExists && VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
-                final List<CondaPackageSpec> requiredPackages = m_packagesConfig.getPackages();
                 final List<CondaPackageSpec> existingPackages = conda.getPackages(environmentName);
                 // Ignore/zero build specs if source and target operating systems differ.
                 final UnaryOperator<CondaPackageSpec> adaptToOs =
