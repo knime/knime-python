@@ -52,6 +52,7 @@ import static org.knime.python2.nodes.conda.CondaEnvironmentPropagationNodeDialo
 
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -60,13 +61,12 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 import java.util.function.Supplier;
 
 import javax.swing.JButton;
@@ -75,9 +75,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellRenderer;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
@@ -85,6 +87,8 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.core.util.Pair;
+import org.knime.core.util.Version;
 import org.knime.python2.conda.Conda;
 import org.knime.python2.conda.CondaPackageSpec;
 
@@ -99,8 +103,6 @@ final class CondaPackagesTable {
 
     private static final String POPULATED = "populated";
 
-    private static final String[] COLUMN_NAMES = new String[]{"Include?", "Name", "Version", "Build", "Channel"};
-
     private static final String ERROR = "error";
 
     private final CondaPackagesConfig m_config;
@@ -113,28 +115,29 @@ final class CondaPackagesTable {
 
     private final JLabel m_refreshingLabel = new JLabel("Collecting packages...", SwingConstants.CENTER);
 
-    @SuppressWarnings("serial") // Not intended for serialization.
-    private final DefaultTableModel m_model = new DefaultTableModel(COLUMN_NAMES, 0) {
-
-        @Override
-        public boolean isCellEditable(final int row, final int column) {
-            // Only allow to edit (toggle) checkbox, nothing else.
-            return column == 0;
-        }
-    };
+    private final TableModel m_model = new TableModel();
 
     @SuppressWarnings("serial") // Not intended for serialization.
     private final JTable m_table = new JTable(m_model) {
 
         @Override
-        public Class<?> getColumnClass(final int column) {
-            if (column == 0) {
-                return Boolean.class;
+        public Component prepareRenderer(final TableCellRenderer renderer, final int row, final int column) {
+            final JComponent c = (JComponent)super.prepareRenderer(renderer, row, column);
+            final TableModel.Entry entry = m_model.getEntryAt(row);
+            if (entry.m_unconfigured) {
+                c.setBackground(new Color(225, 237, 255));
+            } else if (entry.m_removed) {
+                c.setBackground(new Color(255, 242, 225));
             } else {
-                return String.class;
+                c.setBackground(null);
             }
+            return c;
         }
     };
+
+    private final JTextArea m_removedLabel = new JTextArea();
+
+    private final JTextArea m_unconfiguredLabel = new JTextArea();
 
     private /* final **/ JButton m_includeExplicit;
 
@@ -158,7 +161,6 @@ final class CondaPackagesTable {
     private JPanel createTablePanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
         final GridBagConstraints gbc = new GridBagConstraints();
-        gbc.ipadx = 0;
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 3;
@@ -168,22 +170,47 @@ final class CondaPackagesTable {
         gbc.fill = GridBagConstraints.BOTH;
         final JScrollPane pane = new JScrollPane(m_table);
         final Dimension panePreferredSize = pane.getPreferredSize();
-        panePreferredSize.width += 100;
+        panePreferredSize.width += 125;
         pane.setPreferredSize(panePreferredSize);
         panel.add(pane, gbc);
+
+        gbc.gridy++;
+        gbc.weighty = 0;
+        gbc.insets = new Insets(3, 0, 2, 0);
+        m_removedLabel.setEditable(false);
+        m_removedLabel.setLineWrap(true);
+        m_removedLabel.setWrapStyleWord(true);
+        m_removedLabel.setForeground(new Color(154, 120, 0));
+        m_removedLabel.setBackground(m_errorLabel.getBackground());
+        m_removedLabel.setFont(m_errorLabel.getFont());
+        m_removedLabel.setMinimumSize(new Dimension(panePreferredSize.width,
+            m_removedLabel.getFontMetrics(m_removedLabel.getFont()).getHeight()));
+        panel.add(m_removedLabel, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        m_unconfiguredLabel.setEditable(false);
+        m_unconfiguredLabel.setLineWrap(true);
+        m_unconfiguredLabel.setWrapStyleWord(true);
+        m_unconfiguredLabel.setForeground(Color.BLUE);
+        m_unconfiguredLabel.setBackground(m_errorLabel.getBackground());
+        m_unconfiguredLabel.setFont(m_errorLabel.getFont());
+        m_unconfiguredLabel.setMinimumSize(new Dimension(panePreferredSize.width,
+            m_unconfiguredLabel.getFontMetrics(m_unconfiguredLabel.getFont()).getHeight() * 2));
+        panel.add(m_unconfiguredLabel, gbc);
+
         gbc.gridy++;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
-        gbc.weighty = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(5, 0, 5, 3);
         final JButton includeAll = new JButton("Include all");
-        includeAll.addActionListener(e -> includeAllPackages());
+        includeAll.addActionListener(e -> m_model.includeAllPackages());
         panel.add(includeAll, gbc);
         gbc.gridx++;
         gbc.insets = new Insets(5, 3, 5, 3);
         final JButton excludeAll = new JButton("Exclude all");
-        excludeAll.addActionListener(e -> excludeAllPackages());
+        excludeAll.addActionListener(e -> m_model.excludeAllPackages());
         panel.add(excludeAll, gbc);
         gbc.gridx++;
         gbc.insets = new Insets(5, 3, 5, 0);
@@ -230,22 +257,24 @@ final class CondaPackagesTable {
 
     private void refreshPackages(final boolean isInitialRefresh) {
         invokeOnEDT(() -> setState(REFRESHING));
+        invokeOnEDT(() -> {
+            m_removedLabel.setText("");
+            m_removedLabel.setVisible(false);
+            m_unconfiguredLabel.setText("");
+            m_unconfiguredLabel.setVisible(false);
+        });
         final Conda conda = m_conda.get();
-        final String environmentName = m_environmentNameModel.getStringValue();
-        List<CondaPackageSpec> included;
-        List<CondaPackageSpec> excluded;
+        List<CondaPackageSpec> included = new ArrayList<>();
+        List<CondaPackageSpec> excluded = new ArrayList<>();
+        List<CondaPackageSpec> removed = new ArrayList<>();
+        List<CondaPackageSpec> unconfigured = new ArrayList<>();
         try {
+            final String environmentName = m_environmentNameModel.getStringValue();
             final List<CondaPackageSpec> packages = conda.getPackages(environmentName);
             if (isInitialRefresh) {
-                final Set<CondaPackageSpec> includedSet = new HashSet<>(m_config.getIncludedPackages());
-                included = new ArrayList<>();
-                excluded = new ArrayList<>();
-                for (final CondaPackageSpec pkg : packages) {
-                    (includedSet.contains(pkg) ? included : excluded).add(pkg);
-                }
+                categorizePackages(packages, m_config, included, excluded, removed, unconfigured);
             } else {
                 included = packages;
-                excluded = Collections.emptyList();
             }
         } catch (final IOException ex) {
             if (isInitialRefresh) {
@@ -254,62 +283,75 @@ final class CondaPackagesTable {
                 // recreated without overriding the current configuration.
                 included = m_config.getIncludedPackages();
                 excluded = m_config.getExcludedPackages();
+                removed = Collections.emptyList();
+                unconfigured = Collections.emptyList();
             } else {
                 setToErrorView(ex);
                 return;
             }
         }
-        final List<CondaPackageSpec> includedFinal = included;
-        final List<CondaPackageSpec> excludedFinal = excluded;
-        invokeOnEDT(() -> setPackages(includedFinal, excludedFinal));
+        setPackages(included, excluded, removed, unconfigured);
         if (isInitialRefresh) {
             m_includeExplicit.setEnabled(conda.isPackageNamesFromHistoryAvailable());
         }
         invokeOnEDT(() -> setState(POPULATED));
     }
 
-    private void setPackages(final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded) {
-        final Object[][] dataVector = new Object[included.size() + excluded.size()][];
-        addPackages(dataVector, 0, included, true);
-        addPackages(dataVector, included.size(), excluded, false);
-        Arrays.sort(dataVector, Comparator.comparing( //
-            entry -> entry[1].toString() //
-                + entry[2].toString() //
-                + entry[3].toString() //
-                + entry[4].toString()));
-        m_model.setDataVector(dataVector, COLUMN_NAMES);
-    }
-
-    private static void addPackages(final Object[][] dataVector, final int startIndex,
-        final List<CondaPackageSpec> packages, final boolean included) {
-        for (int i = 0; i < packages.size(); i++) {
-            final CondaPackageSpec pkg = packages.get(i);
-            final Object[] entry = new Object[5];
-            entry[0] = included;
-            entry[1] = pkg.getName();
-            entry[2] = pkg.getVersion();
-            entry[3] = pkg.getBuild();
-            entry[4] = pkg.getChannel();
-            dataVector[startIndex + i] = entry;
+    private static void categorizePackages(final List<CondaPackageSpec> packages, final CondaPackagesConfig config,
+        final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded,
+        final List<CondaPackageSpec> removed, final List<CondaPackageSpec> unconfigured) {
+        final Set<CondaPackageSpec> includedSet = new HashSet<>(config.getIncludedPackages());
+        final Set<CondaPackageSpec> excludedSet = new HashSet<>(config.getExcludedPackages());
+        for (final CondaPackageSpec pkg : packages) {
+            if (includedSet.contains(pkg)) {
+                included.add(pkg);
+            } else if (excludedSet.contains(pkg)) {
+                excluded.add(pkg);
+            } else {
+                unconfigured.add(pkg);
+            }
+        }
+        final Set<CondaPackageSpec> packagesSet = new HashSet<>(packages);
+        for (final CondaPackageSpec pkg : includedSet) {
+            if (!packagesSet.contains(pkg)) {
+                removed.add(pkg);
+            }
         }
     }
 
-    private void includeAllPackages() {
-        @SuppressWarnings("unchecked")
-        final Vector<Vector<Object>> dataVector = m_model.getDataVector();
-        for (final Vector<Object> entry : dataVector) {
-            entry.set(0, Boolean.TRUE);
+    private void setPackages(final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded,
+        final List<CondaPackageSpec> removed, final List<CondaPackageSpec> unconfigured) {
+        if (!removed.isEmpty()) {
+            invokeOnEDT(() -> {
+                final int numPackages = removed.size();
+                final boolean pl = numPackages > 1;
+                m_removedLabel
+                    .setText(numPackages + String.format(" %s configured for inclusion %s not present locally.",
+                        pl ? "packages" : "package", pl ? "are" : "is"));
+                m_removedLabel.setVisible(true);
+            });
         }
-        m_model.fireTableDataChanged();
+        if (!unconfigured.isEmpty()) {
+            invokeOnEDT(() -> {
+                final int numPackages = unconfigured.size();
+                final boolean pl = numPackages > 1;
+                m_unconfiguredLabel.setText(numPackages
+                    + String.format(" %s present locally %s not yet been configured for inclusion or exclusion.",
+                        pl ? "packages" : "package", pl ? "have" : "has"));
+                m_unconfiguredLabel.setVisible(true);
+            });
+        }
+        invokeOnEDT(() -> m_model.setPackages(included, excluded, removed, unconfigured));
     }
 
-    private void excludeAllPackages() {
-        @SuppressWarnings("unchecked")
-        final Vector<Vector<Object>> dataVector = m_model.getDataVector();
-        for (final Vector<Object> entry : dataVector) {
-            entry.set(0, Boolean.FALSE);
-        }
-        m_model.fireTableDataChanged();
+    private void setToErrorView(final Exception ex) {
+        invokeOnEDT(() -> {
+            m_model.setPackages(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyList());
+            m_errorLabel.setText(ex.getMessage());
+            setState(ERROR);
+        });
+        NodeLogger.getLogger(CondaEnvironmentPropagationNodeDialog.class).error(ex.getMessage(), ex);
     }
 
     private void includeExplicitPackages() {
@@ -318,13 +360,7 @@ final class CondaPackagesTable {
         try {
             final Set<String> explicitPackages =
                 new HashSet<>(m_conda.get().getPackageNamesFromHistory(m_environmentNameModel.getStringValue()));
-            @SuppressWarnings("unchecked")
-            final Vector<Vector<Object>> dataVector = m_model.getDataVector();
-            for (final Vector<Object> entry : dataVector) {
-                final String name = (String)entry.get(1);
-                entry.set(0, explicitPackages.contains(name));
-            }
-            m_model.fireTableDataChanged();
+            m_model.setIncludedPackages(explicitPackages);
         } catch (final IOException ex) {
             setToErrorView(ex);
         } finally {
@@ -332,34 +368,156 @@ final class CondaPackagesTable {
         }
     }
 
-    private void setToErrorView(final Exception ex) {
-        invokeOnEDT(() -> {
-            setPackages(Collections.emptyList(), Collections.emptyList());
-            m_errorLabel.setText(ex.getMessage());
-            setState(ERROR);
-        });
-        NodeLogger.getLogger(CondaEnvironmentPropagationNodeDialog.class).error(ex.getMessage(), ex);
-    }
-
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        final Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> p = getPackages();
+        final Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> p = m_model.getPackages();
         m_config.setPackages(p.getFirst(), p.getSecond());
         m_config.saveSettingsTo(settings);
     }
 
-    private Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> getPackages() {
-        @SuppressWarnings("unchecked")
-        final Vector<Vector<?>> dataVector = m_model.getDataVector();
-        final List<CondaPackageSpec> included = new ArrayList<>();
-        final List<CondaPackageSpec> excluded = new ArrayList<>();
-        for (final Vector<?> entry : dataVector) {
-            final String name = (String)entry.get(1);
-            final String version = (String)entry.get(2);
-            final String build = (String)entry.get(3);
-            final String channel = (String)entry.get(4);
-            final CondaPackageSpec pkg = new CondaPackageSpec(name, version, build, channel);
-            ((boolean)entry.get(0) ? included : excluded).add(pkg);
+    @SuppressWarnings("serial") // Not intended for serialization.
+    private static final class TableModel extends AbstractTableModel {
+
+        private static final String[] COLUMN_NAMES = new String[]{"Include?", "Name", "Version", "Build", "Channel"};
+
+        private List<Entry> m_packages = Collections.emptyList();
+
+        @Override
+        public int getRowCount() {
+            return m_packages.size();
         }
-        return new Pair<>(included, excluded);
+
+        @Override
+        public int getColumnCount() {
+            return COLUMN_NAMES.length;
+        }
+
+        @Override
+        public String getColumnName(final int column) {
+            return COLUMN_NAMES[column];
+        }
+
+        @Override
+        public Class<?> getColumnClass(final int column) {
+            if (column == 0) {
+                return Boolean.class;
+            } else {
+                return String.class;
+            }
+        }
+
+        @Override
+        public boolean isCellEditable(final int row, final int column) {
+            // Only allow to edit (toggle) checkbox, nothing else.
+            return column == 0;
+        }
+
+        @Override
+        public Object getValueAt(final int row, final int column) {
+            final Entry entry = m_packages.get(row);
+            final CondaPackageSpec pkg = entry.m_package;
+            Object value = null;
+            if (column == 0) {
+                value = entry.m_included;
+            } else if (column == 1) {
+                value = pkg.getName();
+            } else if (column == 2) {
+                value = pkg.getVersion();
+            } else if (column == 3) {
+                value = pkg.getBuild();
+            } else if (column == 4) {
+                value = pkg.getChannel();
+            }
+            return value;
+        }
+
+        @Override
+        public void setValueAt(final Object value, final int row, final int column) {
+            if (column == 0) {
+                getEntryAt(row).m_included = (boolean)value;
+            }
+        }
+
+        public Entry getEntryAt(final int row) {
+            return m_packages.get(row);
+        }
+
+        private void setPackages(final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded,
+            final List<CondaPackageSpec> removed, final List<CondaPackageSpec> unconfigured) {
+            final List<Entry> packages =
+                new ArrayList<>(included.size() + excluded.size() + unconfigured.size() + removed.size());
+            included.forEach(pkg -> packages.add(new Entry(true, pkg)));
+            excluded.forEach(pkg -> packages.add(new Entry(false, pkg)));
+            unconfigured.forEach(pkg -> {
+                final Entry entry = new Entry(false, pkg);
+                entry.m_unconfigured = true;
+                packages.add(entry);
+            });
+            removed.forEach(pkg -> {
+                final Entry entry = new Entry(true, pkg);
+                entry.m_removed = true;
+                packages.add(entry);
+            });
+
+            packages.sort(Comparator.<Entry, String> comparing(e -> e.m_package.getName()) //
+                .thenComparing((e1, e2) -> {
+                    final String v1 = e1.m_package.getVersion();
+                    final String v2 = e2.m_package.getVersion();
+                    try {
+                        return new Version(v1).compareTo(new Version(v2));
+                    } catch (final Exception ex) {
+                        return v1.compareTo(v2);
+                    }
+                }) //
+                .thenComparing(e -> e.m_package.getBuild()) //
+                .thenComparing(e -> e.m_package.getChannel()));
+            m_packages = packages;
+            fireTableDataChanged();
+        }
+
+        private void includeAllPackages() {
+            for (final Entry entry : m_packages) {
+                entry.m_included = true;
+            }
+            fireTableDataChanged();
+        }
+
+        private void excludeAllPackages() {
+            for (final Entry entry : m_packages) {
+                entry.m_included = false;
+            }
+            fireTableDataChanged();
+        }
+
+        private void setIncludedPackages(final Collection<String> explicitPackages) {
+            for (final Entry entry : m_packages) {
+                entry.m_included = explicitPackages.contains(entry.m_package.getName());
+            }
+            fireTableDataChanged();
+        }
+
+        private Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> getPackages() {
+            final List<CondaPackageSpec> included = new ArrayList<>();
+            final List<CondaPackageSpec> excluded = new ArrayList<>();
+            for (final Entry entry : m_packages) {
+                (entry.m_included ? included : excluded).add(entry.m_package);
+            }
+            return new Pair<>(included, excluded);
+        }
+
+        private static final class Entry {
+
+            private boolean m_included;
+
+            private boolean m_unconfigured;
+
+            private boolean m_removed;
+
+            private CondaPackageSpec m_package;
+
+            public Entry(final boolean included, final CondaPackageSpec pkg) {
+                m_included = included;
+                m_package = pkg;
+            }
+        }
     }
 }
