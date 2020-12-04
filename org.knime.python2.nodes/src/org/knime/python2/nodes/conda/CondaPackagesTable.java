@@ -60,7 +60,9 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -230,42 +232,66 @@ final class CondaPackagesTable {
         invokeOnEDT(() -> setState(REFRESHING));
         final Conda conda = m_conda.get();
         final String environmentName = m_environmentNameModel.getStringValue();
-        List<CondaPackageSpec> packages;
+        List<CondaPackageSpec> included;
+        List<CondaPackageSpec> excluded;
         try {
-            packages = conda.getPackages(environmentName);
+            final List<CondaPackageSpec> packages = conda.getPackages(environmentName);
+            if (isInitialRefresh) {
+                final Set<CondaPackageSpec> includedSet = new HashSet<>(m_config.getIncludedPackages());
+                included = new ArrayList<>();
+                excluded = new ArrayList<>();
+                for (final CondaPackageSpec pkg : packages) {
+                    (includedSet.contains(pkg) ? included : excluded).add(pkg);
+                }
+            } else {
+                included = packages;
+                excluded = Collections.emptyList();
+            }
         } catch (final IOException ex) {
             if (isInitialRefresh) {
                 // Retain the currently configured packages if the configured environment is not present on the local
                 // machine. This way, the dialog can be opened on the target machine before the environment has been
                 // recreated without overriding the current configuration.
-                packages = m_config.getPackages();
+                included = m_config.getIncludedPackages();
+                excluded = m_config.getExcludedPackages();
             } else {
                 setToErrorView(ex);
                 return;
             }
         }
-        final List<CondaPackageSpec> packagesFinal = packages;
-        invokeOnEDT(() -> setPackages(packagesFinal, isInitialRefresh ? m_config.getPackages() : packagesFinal));
+        final List<CondaPackageSpec> includedFinal = included;
+        final List<CondaPackageSpec> excludedFinal = excluded;
+        invokeOnEDT(() -> setPackages(includedFinal, excludedFinal));
         if (isInitialRefresh) {
             m_includeExplicit.setEnabled(conda.isPackageNamesFromHistoryAvailable());
         }
         invokeOnEDT(() -> setState(POPULATED));
     }
 
-    private void setPackages(final List<CondaPackageSpec> packages, final List<CondaPackageSpec> selectedPackages) {
-        final Set<CondaPackageSpec> selectedPackagesSet = new HashSet<>(selectedPackages);
-        final Object[][] dataVector = new Object[packages.size()][];
+    private void setPackages(final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded) {
+        final Object[][] dataVector = new Object[included.size() + excluded.size()][];
+        addPackages(dataVector, 0, included, true);
+        addPackages(dataVector, included.size(), excluded, false);
+        Arrays.sort(dataVector, Comparator.comparing( //
+            entry -> entry[1].toString() //
+                + entry[2].toString() //
+                + entry[3].toString() //
+                + entry[4].toString()));
+        m_model.setDataVector(dataVector, COLUMN_NAMES);
+    }
+
+    private static void addPackages(final Object[][] dataVector, final int startIndex,
+        final List<CondaPackageSpec> packages, final boolean included) {
         for (int i = 0; i < packages.size(); i++) {
             final CondaPackageSpec pkg = packages.get(i);
             final Object[] entry = new Object[5];
-            entry[0] = selectedPackagesSet.contains(pkg);
+            entry[0] = included;
             entry[1] = pkg.getName();
             entry[2] = pkg.getVersion();
             entry[3] = pkg.getBuild();
             entry[4] = pkg.getChannel();
-            dataVector[i] = entry;
+            dataVector[startIndex + i] = entry;
         }
-        m_model.setDataVector(dataVector, COLUMN_NAMES);
     }
 
     private void includeAllPackages() {
@@ -316,23 +342,24 @@ final class CondaPackagesTable {
     }
 
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        m_config.setPackages(getSelectedPackages());
+        final Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> p = getPackages();
+        m_config.setPackages(p.getFirst(), p.getSecond());
         m_config.saveSettingsTo(settings);
     }
 
-    private List<CondaPackageSpec> getSelectedPackages() {
+    private Pair<List<CondaPackageSpec>, List<CondaPackageSpec>> getPackages() {
         @SuppressWarnings("unchecked")
         final Vector<Vector<?>> dataVector = m_model.getDataVector();
-        final List<CondaPackageSpec> packages = new ArrayList<>(dataVector.size());
+        final List<CondaPackageSpec> included = new ArrayList<>();
+        final List<CondaPackageSpec> excluded = new ArrayList<>();
         for (final Vector<?> entry : dataVector) {
-            if ((boolean)entry.get(0)) {
-                final String name = (String)entry.get(1);
-                final String version = (String)entry.get(2);
-                final String build = (String)entry.get(3);
-                final String channel = (String)entry.get(4);
-                packages.add(new CondaPackageSpec(name, version, build, channel));
-            }
+            final String name = (String)entry.get(1);
+            final String version = (String)entry.get(2);
+            final String build = (String)entry.get(3);
+            final String channel = (String)entry.get(4);
+            final CondaPackageSpec pkg = new CondaPackageSpec(name, version, build, channel);
+            ((boolean)entry.get(0) ? included : excluded).add(pkg);
         }
-        return packages;
+        return new Pair<>(included, excluded);
     }
 }
