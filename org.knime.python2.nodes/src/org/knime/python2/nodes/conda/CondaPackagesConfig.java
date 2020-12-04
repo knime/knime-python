@@ -50,7 +50,9 @@ package org.knime.python2.nodes.conda;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -62,7 +64,9 @@ import org.knime.python2.conda.CondaPackageSpec;
  */
 final class CondaPackagesConfig {
 
-    private static final String CFG_KEY_PACKAGES = "included_packages";
+    private static final String CFG_KEY_INCLUDED_PACKAGES = "included_packages";
+
+    private static final String CFG_KEY_EXCLUDED_PACKAGES = "excluded_packages";
 
     private static final String CFG_KEY_PACKAGE_NAMES = "names";
 
@@ -72,30 +76,41 @@ final class CondaPackagesConfig {
 
     private static final String CFG_KEY_PACKAGE_CHANNELS = "channels";
 
-    private List<CondaPackageSpec> m_packages = Collections.emptyList();
+    private List<CondaPackageSpec> m_included = Collections.emptyList();
 
-    public List<CondaPackageSpec> getPackages() {
-        return Collections.unmodifiableList(m_packages);
+    private List<CondaPackageSpec> m_excluded = Collections.emptyList();
+
+    public List<CondaPackageSpec> getIncludedPackages() {
+        return Collections.unmodifiableList(m_included);
     }
 
-    public void setPackages(final List<CondaPackageSpec> packages) {
-        m_packages = new ArrayList<>(packages);
+    public List<CondaPackageSpec> getExcludedPackages() {
+        return Collections.unmodifiableList(m_excluded);
+    }
+
+    public void setPackages(final List<CondaPackageSpec> included, final List<CondaPackageSpec> excluded) {
+        m_included = new ArrayList<>(included);
+        m_excluded = new ArrayList<>(excluded);
     }
 
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        final int numPackages = m_packages.size();
+        writePackagesTo(m_included, settings.addNodeSettings(CFG_KEY_INCLUDED_PACKAGES));
+        writePackagesTo(m_excluded, settings.addNodeSettings(CFG_KEY_EXCLUDED_PACKAGES));
+    }
+
+    private static void writePackagesTo(final List<CondaPackageSpec> packages, final NodeSettingsWO subSettings) {
+        final int numPackages = packages.size();
         final String[] names = new String[numPackages];
         final String[] versions = new String[numPackages];
         final String[] builds = new String[numPackages];
         final String[] channels = new String[numPackages];
         for (int i = 0; i < numPackages; i++) {
-            final CondaPackageSpec pkg = m_packages.get(i);
+            final CondaPackageSpec pkg = packages.get(i);
             names[i] = pkg.getName();
             versions[i] = pkg.getVersion();
             builds[i] = pkg.getBuild();
             channels[i] = pkg.getChannel();
         }
-        final NodeSettingsWO subSettings = settings.addNodeSettings(CFG_KEY_PACKAGES);
         subSettings.addStringArray(CFG_KEY_PACKAGE_NAMES, names);
         subSettings.addStringArray(CFG_KEY_PACKAGE_VERSIONS, versions);
         subSettings.addStringArray(CFG_KEY_PACKAGE_BUILDS, builds);
@@ -103,16 +118,33 @@ final class CondaPackagesConfig {
     }
 
     public static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        readPackagesFrom(settings);
+        final List<CondaPackageSpec> included = readPackagesFrom(settings.getNodeSettings(CFG_KEY_INCLUDED_PACKAGES));
+        final List<CondaPackageSpec> excluded = readExcludedPackages(settings);
+        final Set<CondaPackageSpec> intersection = new HashSet<>(included);
+        intersection.retainAll(excluded);
+        if (!intersection.isEmpty()) {
+            throw new InvalidSettingsException(
+                "A package cannot be both included and excluded. Violating package(s): " + intersection);
+        }
     }
 
     public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_packages = readPackagesFrom(settings);
+        m_included = readPackagesFrom(settings.getNodeSettings(CFG_KEY_INCLUDED_PACKAGES));
+        m_excluded = readExcludedPackages(settings);
     }
 
-    private static List<CondaPackageSpec> readPackagesFrom(final NodeSettingsRO settings)
+    /**
+     * Backward compatibility: KNIME 4.3 did not maintain a list of excluded packages.
+     */
+    private static List<CondaPackageSpec> readExcludedPackages(final NodeSettingsRO settings)
         throws InvalidSettingsException {
-        final NodeSettingsRO subSettings = settings.getNodeSettings(CFG_KEY_PACKAGES);
+        return settings.containsKey(CFG_KEY_EXCLUDED_PACKAGES) //
+            ? readPackagesFrom(settings.getNodeSettings(CFG_KEY_EXCLUDED_PACKAGES)) //
+            : Collections.emptyList();
+    }
+
+    private static List<CondaPackageSpec> readPackagesFrom(final NodeSettingsRO subSettings)
+        throws InvalidSettingsException {
         final String[] names = subSettings.getStringArray(CFG_KEY_PACKAGE_NAMES);
         final String[] versions = subSettings.getStringArray(CFG_KEY_PACKAGE_VERSIONS);
         final String[] builds = subSettings.getStringArray(CFG_KEY_PACKAGE_BUILDS);
@@ -120,7 +152,8 @@ final class CondaPackagesConfig {
         final int numPackages = names.length;
         if (!(versions.length == numPackages && builds.length == numPackages && channels.length == numPackages)) {
             throw new InvalidSettingsException(
-                "The arrays containing the individual parts of the package specifications must be of equal length.");
+                "The arrays containing the individual parts of the package specifications (in " + subSettings.getKey()
+                    + ") must be of equal length.");
         }
         final List<CondaPackageSpec> packages = new ArrayList<>(numPackages);
         for (int i = 0; i < numPackages; i++) {

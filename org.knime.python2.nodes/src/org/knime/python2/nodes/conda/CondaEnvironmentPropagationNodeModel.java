@@ -216,7 +216,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             autoConfigureOnSourceMachine(conda, environments);
         }
 
-        final List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
+        final List<CondaPackageSpec> packages = m_packagesConfig.getIncludedPackages();
         if (packages.isEmpty()) {
             throw new InvalidSettingsException(
                 "Cannot propagate an empty environment. Please select at least one package.");
@@ -277,7 +277,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         } catch (final IOException ex) {
             throw new InvalidSettingsException(ex.getMessage(), ex);
         }
-        m_packagesConfig.setPackages(packages);
+        m_packagesConfig.setPackages(packages, Collections.emptyList());
     }
 
     @Override
@@ -286,7 +286,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String environmentName = m_environmentNameModel.getStringValue();
         final boolean sameOs = getCurrentOsType().equals(m_sourceOsModel.getStringValue());
 
-        List<CondaPackageSpec> packages = m_packagesConfig.getPackages();
+        List<CondaPackageSpec> packages = m_packagesConfig.getIncludedPackages();
         if (!sameOs) {
             packages = packages.stream() //
                 .filter(pkg -> !CROSS_PLATFORM_EXCLUDED_PACKAGES.contains(pkg.getName())) //
