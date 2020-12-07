@@ -428,10 +428,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
 
         @Override
-        protected void handleErrorMessage(final String error) {
+        protected void handleWarningMessage(final String warning) {
             NodeContext.pushContext(m_nodeContext);
             try {
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).error(error);
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(warning);
             } finally {
                 NodeContext.removeLastContext();
             }

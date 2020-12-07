@@ -365,6 +365,11 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
         }
 
         @Override
+        protected void handleWarningMessage(final String warning) {
+            handleErrorMessage(warning);
+        }
+
+        @Override
         protected void handleErrorMessage(final String message) {
             m_status.m_errorLog.setStringValue(m_status.m_errorLog.getStringValue() + message + "\n");
         }
