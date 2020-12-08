@@ -42,75 +42,51 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- *
+ * 
  * History
- *   Nov 5, 2020 (marcel): created
+ *   Dec 8, 2020 (marcel): created
  */
-package org.knime.python2;
+package org.knime.python2.conda;
 
 import java.util.Objects;
 
 /**
- * Describes a package inside a Conda environment.
- *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * Identifies a Conda environment.
  */
-public final class CondaPackageSpec {
+public final class CondaEnvironmentIdentifier {
 
     private final String m_name;
 
-    private final String m_version;
-
-    private final String m_build;
-
-    private final String m_channel;
+    private final String m_directoryPath;
 
     /**
-     * Creates a new specification of a Conda package.
+     * Creates a new specification of a Conda environment.
      *
-     * @param name The name of the package.
-     * @param version The version of the package.
-     * @param build The build spec of the package.
-     * @param channel The source channel from which the package was retrieved.
+     * @param name The name of the Conda environment.
+     * @param directoryPath The absolute path to the Conda environment's directory.
      */
-    public CondaPackageSpec(final String name, final String version, final String build, final String channel) {
+    public CondaEnvironmentIdentifier(final String name, final String directoryPath) {
         m_name = name;
-        m_version = version;
-        m_build = build;
-        m_channel = channel;
+        m_directoryPath = directoryPath;
     }
 
     /**
-     * @return The name of the package.
+     * @return The name of the Conda environment.
      */
     public String getName() {
         return m_name;
     }
 
     /**
-     * @return The version of the package.
+     * @return The absolute path to the Conda environment's directory.
      */
-    public String getVersion() {
-        return m_version;
-    }
-
-    /**
-     * @return The build string of the package.
-     */
-    public String getBuild() {
-        return m_build;
-    }
-
-    /**
-     * @return The channel from which the package was retrieved.
-     */
-    public String getChannel() {
-        return m_channel;
+    public String getDirectoryPath() {
+        return m_directoryPath;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(m_name, m_version, m_build, m_channel);
+        return Objects.hash(m_name, m_directoryPath);
     }
 
     @Override
@@ -118,18 +94,11 @@ public final class CondaPackageSpec {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof CondaPackageSpec)) {
+        if (!(obj instanceof CondaEnvironmentIdentifier)) {
             return false;
         }
-        final CondaPackageSpec other = (CondaPackageSpec)obj;
+        final CondaEnvironmentIdentifier other = (CondaEnvironmentIdentifier)obj;
         return Objects.equals(other.m_name, m_name) //
-            && Objects.equals(other.m_version, m_version) //
-            && Objects.equals(other.m_build, m_build) //
-            && Objects.equals(other.m_channel, m_channel);
-    }
-
-    @Override
-    public String toString() {
-        return m_name + "=" + m_version + "=" + m_build + " (" + m_channel + ")";
+            && Objects.equals(other.m_directoryPath, m_directoryPath);
     }
 }

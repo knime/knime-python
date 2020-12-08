@@ -58,7 +58,7 @@ import org.knime.core.node.config.Config;
 import org.knime.core.node.config.base.ConfigEntries;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeExtension;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 
 import com.google.common.collect.Sets;
 

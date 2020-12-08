@@ -56,11 +56,11 @@ import java.util.List;
 import java.util.Objects;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;

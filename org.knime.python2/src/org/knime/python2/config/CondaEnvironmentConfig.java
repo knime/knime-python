@@ -52,10 +52,10 @@ import java.io.IOException;
 import java.util.List;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

@@ -69,7 +69,7 @@ import org.knime.core.node.defaultnodesettings.DialogComponentButtonGroup;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.util.ThreadUtils;
-import org.knime.python2.Conda;
+import org.knime.python2.conda.Conda;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

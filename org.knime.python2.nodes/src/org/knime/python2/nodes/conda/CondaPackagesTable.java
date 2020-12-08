@@ -83,8 +83,8 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda;
-import org.knime.python2.CondaPackageSpec;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaPackageSpec;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

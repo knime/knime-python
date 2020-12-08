@@ -51,8 +51,8 @@ package org.knime.python2.config;
 import java.nio.file.Paths;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

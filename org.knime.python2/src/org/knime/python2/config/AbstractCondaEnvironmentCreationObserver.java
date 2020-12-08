@@ -55,10 +55,10 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentCreationMonitor;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaEnvironmentCreationMonitor;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 
 /**
