@@ -123,7 +123,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             file = FileUtil.createTempFile("java-to-python-", ".csv", m_tempDir, false);
             final File finalFile = file;
             return PythonUtils.Misc.executeCancelable(
-                () -> tableToBytesInternal(tableIterator, serializationOptions, finalFile), m_executorService,
+                () -> tableToBytesInternal(tableIterator, serializationOptions, finalFile), m_executorService::submit,
                 cancelable);
         } catch (final IOException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
@@ -447,7 +447,7 @@ public class CsvSerializationLibrary implements SerializationLibrary {
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, serializationOptions, finalFile);
                 return null;
-            }, m_executorService, cancelable);
+            }, m_executorService::submit, cancelable);
         } catch (final PythonIOException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {

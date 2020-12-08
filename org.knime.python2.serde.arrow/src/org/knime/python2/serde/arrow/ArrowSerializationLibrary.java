@@ -251,7 +251,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
                     return tableToBytesInternal(tableIterator, serializationOptions, channel,
                         finalFile.getAbsolutePath());
                 }
-            }, m_executorService, cancelable);
+            }, m_executorService::submit, cancelable);
         } catch (IOException e) {
             PythonUtils.Misc.invokeSafely(null, File::delete, file);
             throw new SerializationException("An error occurred during serialization. See log for errors.", e);
@@ -487,7 +487,7 @@ public class ArrowSerializationLibrary implements SerializationLibrary {
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, serializationOptions, spec, finalFile);
                 return null;
-            }, m_executorService, cancelable);
+            }, m_executorService::submit, cancelable);
         } catch (final PythonIOException e) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", e);
         } finally {
