@@ -70,7 +70,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -1015,7 +1014,7 @@ public final class Conda {
         private static int awaitTermination(final Process conda, final CondaExecutionMonitor monitor)
             throws IOException, PythonCanceledExecutionException {
             try {
-                return PythonUtils.Misc.executeCancelable(conda::waitFor, Executors.newSingleThreadExecutor(),
+                return PythonUtils.Misc.executeCancelable(conda::waitFor, KNIMEConstants.GLOBAL_THREAD_POOL::enqueue,
                     new PythonCancelableFromCondaExecutionMonitor(monitor));
             } catch (final PythonCanceledExecutionException ex) {
                 conda.destroy();

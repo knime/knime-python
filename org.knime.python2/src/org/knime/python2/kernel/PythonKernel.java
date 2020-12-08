@@ -1122,7 +1122,7 @@ public class PythonKernel implements AutoCloseable {
             PythonUtils.Misc.executeCancelable(() -> {
                 putObject(name, object);
                 return null;
-            }, m_executorService, new PythonExecutionMonitorCancelable(executionMonitor));
+            }, m_executorService::submit, new PythonExecutionMonitorCancelable(executionMonitor));
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
@@ -1148,7 +1148,7 @@ public class PythonKernel implements AutoCloseable {
         final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
         try {
             final byte[] bytes = PythonUtils.Misc.executeCancelable(() -> m_commands.getObject(name).get(),
-                m_executorService, cancelable);
+                m_executorService::submit, cancelable);
             final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, cancelable);
             final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
             m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions(), cancelable);
@@ -1267,7 +1267,7 @@ public class PythonKernel implements AutoCloseable {
     public ImageContainer getImage(final String name, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(() -> getImage(name), m_executorService,
+            return PythonUtils.Misc.executeCancelable(() -> getImage(name), m_executorService::submit,
                 new PythonExecutionMonitorCancelable(executionMonitor));
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
@@ -1476,7 +1476,7 @@ public class PythonKernel implements AutoCloseable {
     private String[] executeCommandCancelable(final Callable<String[]> executeCommand,
         final PythonCancelable cancelable) throws PythonIOException, CanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(executeCommand, m_executorService, cancelable);
+            return PythonUtils.Misc.executeCancelable(executeCommand, m_executorService::submit, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         }
@@ -1716,7 +1716,7 @@ public class PythonKernel implements AutoCloseable {
     private <T> T waitForFutureCancelable(final Future<T> future, final PythonCancelable cancelable)
         throws PythonIOException, PythonCanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(future::get, m_executorService, cancelable);
+            return PythonUtils.Misc.executeCancelable(future::get, m_executorService::submit, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             future.cancel(true);
             throw ex;

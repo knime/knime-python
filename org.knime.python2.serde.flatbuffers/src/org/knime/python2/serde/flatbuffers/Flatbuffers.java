@@ -143,7 +143,7 @@ public class Flatbuffers implements SerializationLibrary {
         final PythonCancelable cancelable) throws SerializationException, PythonCanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(() -> tableToBytesInternal(tableIterator, serializationOptions),
-                m_executorService, cancelable);
+                m_executorService::submit, cancelable);
         } catch (final PythonIOException ex) {
             throw new SerializationException("An error occurred during serialization. See log for errors.", ex);
         } catch (final AssertionError ex) {
@@ -298,7 +298,7 @@ public class Flatbuffers implements SerializationLibrary {
             PythonUtils.Misc.executeCancelable(() -> {
                 bytesIntoTableInternal(tableCreator, bytes, serializationOptions);
                 return null;
-            }, m_executorService, cancelable);
+            }, m_executorService::submit, cancelable);
         } catch (final PythonIOException ex) {
             throw new SerializationException("An error occurred during deserialization. See log for details.", ex);
         }

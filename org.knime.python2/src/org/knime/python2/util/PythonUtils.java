@@ -54,7 +54,6 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -253,7 +252,7 @@ public final class PythonUtils {
          * occurs.
          *
          * @param task the task to run cancelable
-         * @param executorService the executor service to which to submit the task
+         * @param submitTask the routine (e.g. of an executor service) to which to submit the task
          * @param cancelable the cancelable to check for cancellation
          * @return the result of the task, if any
          * @throws RejectedExecutionException if the task cannot be submitted to the executor service
@@ -262,9 +261,9 @@ public final class PythonUtils {
          *             {@link PythonCanceledExecutionException}, {@link CanceledExecutionException}, or
          *             {@link CancellationException}
          */
-        public static <T> T executeCancelable(final Callable<T> task, final ExecutorService executorService,
+        public static <T> T executeCancelable(final Callable<T> task, final Function<Callable<T>, Future<T>> submitTask,
             final PythonCancelable cancelable) throws PythonIOException, PythonCanceledExecutionException {
-            final Future<T> future = executorService.submit(task);
+            final Future<T> future = submitTask.apply(task);
             // Wait until execution is done or cancelled.
             final int waitTimeoutMilliseconds = 1000;
             while (true) {
