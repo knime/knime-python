@@ -8,6 +8,7 @@ Bundle-Activator: org.knime.python2.Activator
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.python2,
  org.knime.python2.base,
+ org.knime.python2.conda,
  org.knime.python2.config,
  org.knime.python2.extensions.serializationlibrary,
  org.knime.python2.extensions.serializationlibrary.interfaces,

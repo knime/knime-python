@@ -75,8 +75,8 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.Conda;
-import org.knime.python2.Conda.CondaEnvironmentIdentifier;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.CondaEnvironmentsConfig;
 
 /**

@@ -46,17 +46,12 @@
  * History
  *   Feb 2, 2019 (marcel): created
  */
-package org.knime.python2;
+package org.knime.python2.conda;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
@@ -69,31 +64,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.ThreadPool;
 import org.knime.core.util.Version;
+import org.knime.python2.CondaPythonCommand;
+import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.envconfigs.CondaEnvironments;
-import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.util.PythonUtils;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
@@ -331,7 +319,7 @@ public final class Conda {
         callCondaAndAwaitTermination(new CondaExecutionMonitor() {
 
             @Override
-            void handleCustomNonJsonOutput(final String output) {
+            protected void handleCustomNonJsonOutput(final String output) {
                 version.set(output);
             }
         }, "--version");
@@ -352,7 +340,7 @@ public final class Conda {
         callCondaAndAwaitTermination(new CondaExecutionMonitor() {
 
             @Override
-            void handleCustomJsonOutput(final TreeNode json) {
+            protected void handleCustomJsonOutput(final TreeNode json) {
                 final ArrayNode environmentsJson = (ArrayNode)json.get("envs");
                 for (int i = 0; i < environmentsJson.size(); i++) {
                     final String environmentPath = environmentsJson.get(i).textValue();
@@ -382,7 +370,7 @@ public final class Conda {
         callCondaAndAwaitTermination(new CondaExecutionMonitor() {
 
             @Override
-            void handleCustomJsonOutput(final TreeNode json) {
+            protected void handleCustomJsonOutput(final TreeNode json) {
                 rootPrefix.set(((JsonNode)json.get("root_prefix")).textValue());
             }
         }, "info", JSON);
@@ -401,7 +389,7 @@ public final class Conda {
         callCondaAndAwaitTermination(new CondaExecutionMonitor() {
 
             @Override
-            void handleCustomJsonOutput(final TreeNode json) {
+            protected void handleCustomJsonOutput(final TreeNode json) {
                 final ArrayNode packagesJson = (ArrayNode)json;
                 for (int i = 0; i < packagesJson.size(); i++) {
                     final JsonNode packageJson = packagesJson.get(i);
@@ -430,7 +418,7 @@ public final class Conda {
         callCondaAndAwaitTermination(new CondaExecutionMonitor() {
 
             @Override
-            void handleCustomJsonOutput(final TreeNode json) {
+            protected void handleCustomJsonOutput(final TreeNode json) {
                 final ArrayNode packagesJson = (ArrayNode)json.get("dependencies");
                 for (int i = 0; i < packagesJson.size(); i++) {
                     String name = packagesJson.get(i).textValue();
@@ -711,7 +699,7 @@ public final class Conda {
         try {
             callCondaAndMonitorExecution(monitor, arguments);
         } catch (final PythonCanceledExecutionException ex) {
-            throw new IOException("Execution was interrupted. This is an implementation error.", ex);
+            throw new IOException("Execution was interrupted.", ex);
         }
     }
 
@@ -732,346 +720,5 @@ public final class Conda {
         Collections.addAll(argumentList, arguments);
         final ProcessBuilder pb = new ProcessBuilder(argumentList);
         return pb.start();
-    }
-
-    /**
-     * Identifies a Conda environment.
-     */
-    public static final class CondaEnvironmentIdentifier {
-
-        private final String m_name;
-
-        private final String m_directoryPath;
-
-        /**
-         * Creates a new specification of a Conda environment.
-         *
-         * @param name The name of the Conda environment.
-         * @param directoryPath The absolute path to the Conda environment's directory.
-         */
-        public CondaEnvironmentIdentifier(final String name, final String directoryPath) {
-            m_name = name;
-            m_directoryPath = directoryPath;
-        }
-
-        /**
-         * @return The name of the Conda environment.
-         */
-        public String getName() {
-            return m_name;
-        }
-
-        /**
-         * @return The absolute path to the Conda environment's directory.
-         */
-        public String getDirectoryPath() {
-            return m_directoryPath;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(m_name, m_directoryPath);
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if (obj == this) {
-                return true;
-            }
-            if (!(obj instanceof CondaEnvironmentIdentifier)) {
-                return false;
-            }
-            final CondaEnvironmentIdentifier other = (CondaEnvironmentIdentifier)obj;
-            return Objects.equals(other.m_name, m_name) //
-                && Objects.equals(other.m_directoryPath, m_directoryPath);
-        }
-    }
-
-    /**
-     * Allows to monitor the progress of a Conda environment creation command. Conda only reports progress for package
-     * downloads, at the moment.
-     */
-    public abstract static class CondaEnvironmentCreationMonitor extends CondaExecutionMonitor {
-
-        @Override
-        void handleCustomJsonOutput(final TreeNode json) {
-            final TreeNode fetch = json.get("fetch");
-            if (fetch != null) {
-                final String packageNameValue = ((JsonNode)fetch).textValue().split(" ")[0];
-                final boolean finishedValue = ((JsonNode)json.get("finished")).booleanValue();
-                final double maxvalValue = ((JsonNode)json.get("maxval")).doubleValue();
-                final double progressValue = ((JsonNode)json.get("progress")).doubleValue();
-                handlePackageDownloadProgress(packageNameValue, finishedValue, progressValue / maxvalValue);
-            }
-        }
-
-        /**
-         * Asynchronous callback that allows to process progress in the download of a Python package.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param currentPackage The package for which progress is reported.
-         * @param packageFinished {@code true} if downloading the current package is finished, {@code false} otherwise.
-         *            Should be accompanied by a {@code progress} value of 1.
-         * @param progress The progress as a fraction in [0, 1].
-         */
-        protected abstract void handlePackageDownloadProgress(String currentPackage, boolean packageFinished,
-            double progress);
-    }
-
-    private static class CondaExecutionMonitor {
-
-        private final List<String> m_standardOutputErrors = new ArrayList<>();
-
-        private final List<String> m_errorOutputErrors = new ArrayList<>();
-
-        private boolean m_isCanceled;
-
-        private void monitorExecution(final Process conda, final boolean hasJsonOutput)
-            throws IOException, PythonCanceledExecutionException {
-            Future<?> outputListener = null;
-            Future<?> errorListener = null;
-            try {
-                final ThreadPool pool = KNIMEConstants.GLOBAL_THREAD_POOL;
-                outputListener = pool.enqueue(() -> handleOutputStream(conda.getInputStream(), hasJsonOutput));
-                errorListener = pool.enqueue(() -> handleErrorStream(conda.getErrorStream()));
-                final int condaExitCode = awaitTermination(conda, this);
-                if (condaExitCode != 0) {
-                    // Wait for listeners to finish consuming their streams before creating the error message.
-                    try {
-                        outputListener.get();
-                        errorListener.get();
-                    } catch (final InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                        throw new PythonCanceledExecutionException(ex);
-                    } catch (final ExecutionException ex) {
-                        // Ignore, use whatever error-related output we have so far.
-                    }
-                    final String errorMessage = createErrorMessage(condaExitCode);
-                    throw new IOException(errorMessage);
-                }
-            } finally {
-                if (outputListener != null) {
-                    outputListener.cancel(true);
-                }
-                if (errorListener != null) {
-                    errorListener.cancel(true);
-                }
-            }
-        }
-
-        /**
-         * Asynchronous callback that allows to process the normal output of the monitored Conda command. Should be
-         * {@link Thread#interrupt() interruptible}.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param standardOutput The standard output stream of the Conda process.
-         */
-        private void handleOutputStream(final InputStream standardOutput, final boolean isJsonOutput) {
-            try {
-                if (isJsonOutput) {
-                    parseJsonOutput(standardOutput);
-                } else {
-                    parseNonJsonOutput(standardOutput);
-                }
-            } catch (final IOException ex) {
-                if (!isCanceledOrInterrupted()) {
-                    throw new UncheckedIOException(ex);
-                }
-            }
-        }
-
-        private void parseJsonOutput(final InputStream standardOutput) throws IOException {
-            try (final JsonParser parser =
-                new JsonFactory(new ObjectMapper()).createParser(new BufferedInputStream(standardOutput))) {
-                while (!isCanceledOrInterrupted()) {
-                    try {
-                        final TreeNode json = parser.readValueAsTree();
-                        if (json == null) {
-                            // EOF
-                            break;
-                        }
-                        final String errorMessage = parseErrorFromJsonOutput(json);
-                        if (!errorMessage.isEmpty()) {
-                            m_standardOutputErrors.add(errorMessage);
-                            handleErrorMessage(errorMessage);
-                        } else {
-                            handleCustomJsonOutput(json);
-                        }
-                    } catch (final JsonParseException ex) {
-                        // Ignore and continue; wait for proper output.
-                    }
-                }
-            }
-        }
-
-        private static String parseErrorFromJsonOutput(final TreeNode json) {
-            String errorMessage = "";
-            final TreeNode error = json.get("error");
-            if (error != null) {
-                final TreeNode exceptionName = json.get("exception_name");
-                if (exceptionName != null && "ResolvePackageNotFound".equals(((JsonNode)exceptionName).textValue())) {
-                    errorMessage += "Failed to resolve the following list of packages.\nPlease make sure these "
-                        + "packages are available for the local platform or exclude them from the creation process.";
-                }
-                final TreeNode message = json.get("message");
-                if (message != null) {
-                    errorMessage += ((JsonNode)message).textValue();
-                } else {
-                    errorMessage += ((JsonNode)error).textValue();
-                }
-                final TreeNode reason = json.get("reason");
-                if (reason != null && ((JsonNode)reason).textValue().equals("CONNECTION FAILED")) {
-                    errorMessage += "\nPlease check your internet connection.";
-                }
-            }
-            return errorMessage;
-        }
-
-        /**
-         * Asynchronous callback that allows to process an error output message (usually just one line at a time) of the
-         * monitored Conda command.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param error The error message, neither {@code null} nor empty.
-         */
-        protected void handleErrorMessage(final String error) {
-            // Do nothing by default.
-        }
-
-        /**
-         * Asynchronous callback that allows to process JSON output that is not interpreted by
-         * {@link CondaEnvironmentCreationMonitor#handleOutputStream(InputStream)}.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param json The node that represents the root element of the read JSON output.
-         */
-        void handleCustomJsonOutput(final TreeNode json) {
-            // Do nothing by default.
-        }
-
-        private void parseNonJsonOutput(final InputStream standardOutput) {
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(standardOutput))) {
-                String line;
-                while (!isCanceledOrInterrupted() && (line = reader.readLine()) != null) {
-                    line = line.trim();
-                    if (!line.equals("")) {
-                        handleCustomNonJsonOutput(line);
-                    }
-                }
-            } catch (final IOException ex) {
-                if (!isCanceledOrInterrupted()) {
-                    throw new UncheckedIOException(ex);
-                }
-            }
-        }
-
-        void handleCustomNonJsonOutput(final String output) {
-            // Do nothing by default.
-        }
-
-        /**
-         * Asynchronous callback that allows to process the error output of the monitored Conda command. Should be
-         * {@link Thread#interrupt() interruptible}.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param errorOutput The error output stream of the Conda process.
-         */
-        private void handleErrorStream(final InputStream errorOutput) {
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(errorOutput))) {
-                String line;
-                boolean inWarning = false;
-                while (!isCanceledOrInterrupted() && (line = reader.readLine()) != null) {
-                    line = line.trim();
-                    if (!line.equals("")) {
-                        inWarning = inWarning || line.startsWith("==> WARNING: A newer version of conda exists. <==");
-                        if (inWarning) {
-                            handleWarningMessage(line);
-                        } else {
-                            m_errorOutputErrors.add(line);
-                            handleErrorMessage(line);
-                        }
-                        inWarning = inWarning && !line.startsWith("$ conda update -n base");
-                    }
-                }
-            } catch (final IOException ex) {
-                if (!isCanceledOrInterrupted()) {
-                    throw new UncheckedIOException(ex);
-                }
-            }
-        }
-
-        /**
-         * Asynchronous callback that allows to process a warning output message (usually just one line at a time) of
-         * the monitored Conda command.<br>
-         * Exceptions thrown by this callback are discarded.
-         *
-         * @param warning The warning message, neither {@code null} nor empty.
-         */
-        protected void handleWarningMessage(final String warning) {
-            // Do nothing by default.
-        }
-
-        private static int awaitTermination(final Process conda, final CondaExecutionMonitor monitor)
-            throws IOException, PythonCanceledExecutionException {
-            try {
-                return PythonUtils.Misc.executeCancelable(conda::waitFor, KNIMEConstants.GLOBAL_THREAD_POOL::enqueue,
-                    new PythonCancelableFromCondaExecutionMonitor(monitor));
-            } catch (final PythonCanceledExecutionException ex) {
-                conda.destroy();
-                throw ex;
-            }
-        }
-
-        private String createErrorMessage(final int condaExitCode) {
-            String errorMessage = null;
-            if (!m_standardOutputErrors.isEmpty()) {
-                errorMessage = String.join("\n", m_standardOutputErrors);
-            }
-            if (errorMessage == null && !m_errorOutputErrors.isEmpty()) {
-                errorMessage = "Failed to execute Conda";
-                final String detailMessage = String.join("\n", m_errorOutputErrors);
-                if (detailMessage.contains("CONNECTION FAILED") && detailMessage.contains("SSLError")) {
-                    errorMessage += ". Please uninstall and reinstall Conda.\n";
-                } else {
-                    errorMessage += ":\n";
-                }
-                errorMessage += detailMessage;
-            }
-            if (errorMessage == null) {
-                errorMessage = "Conda process terminated with error code " + condaExitCode + ".";
-            }
-            return errorMessage;
-        }
-
-        /**
-         * Cancels the execution of the monitored conda command.
-         */
-        public synchronized void cancel() {
-            m_isCanceled = true;
-        }
-
-        private synchronized boolean isCanceled() {
-            return m_isCanceled || Thread.currentThread().isInterrupted();
-        }
-
-        private synchronized boolean isCanceledOrInterrupted() {
-            return m_isCanceled || Thread.currentThread().isInterrupted();
-        }
-    }
-
-    private static final class PythonCancelableFromCondaExecutionMonitor implements PythonCancelable {
-
-        private final CondaExecutionMonitor m_monitor;
-
-        private PythonCancelableFromCondaExecutionMonitor(final CondaExecutionMonitor monitor) {
-            m_monitor = monitor;
-        }
-
-        @Override
-        public void checkCanceled() throws PythonCanceledExecutionException {
-            if (m_monitor.isCanceled()) {
-                throw new PythonCanceledExecutionException();
-            }
-        }
     }
 }
