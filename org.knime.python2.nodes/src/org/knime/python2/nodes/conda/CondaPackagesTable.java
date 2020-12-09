@@ -134,6 +134,8 @@ final class CondaPackagesTable {
         }
     };
 
+    private /* final **/ JButton m_includeExplicit;
+
     private final JLabel m_errorLabel = new JLabel("", SwingConstants.CENTER);
 
     private volatile boolean m_allowsRefresh = false;
@@ -183,9 +185,9 @@ final class CondaPackagesTable {
         panel.add(excludeAll, gbc);
         gbc.gridx++;
         gbc.insets = new Insets(5, 3, 5, 0);
-        final JButton includeExplicit = new JButton("Include only explicitly installed");
-        includeExplicit.addActionListener(e -> includeExplicitPackages());
-        panel.add(includeExplicit, gbc);
+        m_includeExplicit = new JButton("Include only explicitly installed");
+        m_includeExplicit.addActionListener(e -> includeExplicitPackages());
+        panel.add(m_includeExplicit, gbc);
         return panel;
     }
 
@@ -226,10 +228,11 @@ final class CondaPackagesTable {
 
     private void refreshPackages(final boolean isInitialRefresh) {
         invokeOnEDT(() -> setState(REFRESHING));
+        final Conda conda = m_conda.get();
         final String environmentName = m_environmentNameModel.getStringValue();
         List<CondaPackageSpec> packages;
         try {
-            packages = m_conda.get().getPackages(environmentName);
+            packages = conda.getPackages(environmentName);
         } catch (final IOException ex) {
             if (isInitialRefresh) {
                 // Retain the currently configured packages if the configured environment is not present on the local
@@ -243,6 +246,9 @@ final class CondaPackagesTable {
         }
         final List<CondaPackageSpec> packagesFinal = packages;
         invokeOnEDT(() -> setPackages(packagesFinal, isInitialRefresh ? m_config.getPackages() : packagesFinal));
+        if (isInitialRefresh) {
+            m_includeExplicit.setEnabled(conda.isPackageNamesFromHistoryAvailable());
+        }
         invokeOnEDT(() -> setState(POPULATED));
     }
 

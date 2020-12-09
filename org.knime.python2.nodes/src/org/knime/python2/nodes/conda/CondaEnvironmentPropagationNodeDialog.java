@@ -211,7 +211,11 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
 
     static void invokeOnEDT(final Runnable r) {
         try {
-            SwingUtilities.invokeAndWait(r);
+            if (SwingUtilities.isEventDispatchThread()) {
+                r.run();
+            } else {
+                SwingUtilities.invokeAndWait(r);
+            }
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         } catch (final InvocationTargetException ex) {

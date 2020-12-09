@@ -94,6 +94,8 @@ public final class Conda {
 
     private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 2);
 
+    private static final Version CONDA_ENV_EXPORT_FROM_HISTORY_MINIMUM_VERSION = new Version(4, 7, 12);
+
     private static final String ROOT_ENVIRONMENT_NAME = "base";
 
     private static final String ROOT_ENVIRONMENT_LEGACY_NAME = "root";
@@ -405,9 +407,31 @@ public final class Conda {
     }
 
     /**
+     * {@code conda env export --name <environmentName> --from-history} is only available from Conda 4.7.12 onward. This
+     * method determines whether the corresponding method in this class -- {@link #getPackageNamesFromHistory(String)}
+     * -- can safely be invoked.
+     *
+     * @return {@code true} if {@link #getPackageNamesFromHistory(String)} is available, {@code false} otherwise (also
+     *         if determining the Conda version failed).
+     */
+    public boolean isPackageNamesFromHistoryAvailable() {
+        try {
+            final String versionString = getVersionString();
+            final Version version = condaVersionStringToVersion(versionString);
+            return version.compareTo(CONDA_ENV_EXPORT_FROM_HISTORY_MINIMUM_VERSION) >= 0;
+        } catch (final Exception ex) {
+            NodeLogger.getLogger(Conda.class).debug("Could not detect installed Conda version.", ex);
+            return false;
+        }
+    }
+
+    /**
      * {@code conda env export --name <environmentName> --from-history}
      * <P>
      * Channel and build/version affixes are stripped from the raw output of the command.
+     * <P>
+     * Note that this method is only available from Conda 4.7.12 onward, see
+     * {@link #isPackageNamesFromHistoryAvailable()}.
      *
      * @param environmentName The name of the environment whose packages to return.
      * @return The names of the explicitly installed packages contained in the environment.
