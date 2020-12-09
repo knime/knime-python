@@ -52,7 +52,7 @@
 				has explicitly been asked for to install (that is, automatically resolved dependencies are excluded).
 				This can facilitate configuring an environment that is compatible with different platforms. Note,
 				however, that this also excludes any packages installed via pip, regardless of whether they have been
-				installed explicitly.
+				installed explicitly. <i>This option is only available when using Conda version 4.7.12 or newer.</i>
 			</option>
 			<option name="Environment validation">
 				Defines how the node checks whether it has to recreate the configured environment.
