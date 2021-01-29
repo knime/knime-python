@@ -47,6 +47,7 @@ package org.knime.python2.extensions.serializationlibrary.interfaces.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -493,7 +494,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                                         listCells.add(new MissingCell(null));
                                     } else {
                                         try {
-                                            listCells.add(new StringCell(value.toString()));
+                                            listCells.add(new StringCell(Arrays.toString(value)));
                                         } catch (final IllegalStateException e) {
                                             LOGGER.error(e.getMessage(), e);
                                             listCells.add(new MissingCell(null));
@@ -539,7 +540,7 @@ public class BufferedDataTableCreator implements TableCreator<BufferedDataTable>
                             } else {
                                 for (final byte[] value : cell.getBytesArrayValue()) {
                                     try {
-                                        setCells.add(new StringCell(value.toString()));
+                                        setCells.add(new StringCell(Arrays.toString(value)));
                                     } catch (final IllegalStateException e) {
                                         LOGGER.error(e.getMessage(), e);
                                         setCells.add(new MissingCell(null));
