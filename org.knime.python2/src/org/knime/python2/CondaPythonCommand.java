@@ -117,9 +117,11 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
     private static String createExecutableString(final String environmentDirectoryPath) {
         final Path executablePath;
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
-            executablePath = Paths.get(environmentDirectoryPath, "bin", "python");
+            // No Sonar: Path is supposed to be user configurable.
+            executablePath = Paths.get(environmentDirectoryPath, "bin", "python"); // NOSONAR
         } else if (SystemUtils.IS_OS_WINDOWS) {
-            executablePath = Paths.get(environmentDirectoryPath, "python.exe");
+            // No Sonar: Path is supposed to be user configurable.
+            executablePath = Paths.get(environmentDirectoryPath, "python.exe"); // NOSONAR
         } else {
             throw Conda.createUnknownOSException();
         }

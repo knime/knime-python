@@ -97,7 +97,7 @@ class CondaExecutionMonitor {
                 } catch (final InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     throw new PythonCanceledExecutionException(ex);
-                } catch (final ExecutionException ex) {
+                } catch (final ExecutionException ex) { // NOSONAR Errors are recorded elsewhere. Nothing to add here.
                     // Ignore, use whatever error-related output we have so far.
                 }
                 final String errorMessage = createErrorMessage(condaExitCode);
@@ -144,7 +144,10 @@ class CondaExecutionMonitor {
                     } else {
                         handleCustomJsonOutput(json);
                     }
-                } catch (final JsonParseException ex) {
+                }
+                // No Sonar: Receiving improper output from Conda is expected. Catching an exception here is part of the
+                // normal control flow.
+                catch (final JsonParseException ex) { // NOSONAR
                     // Ignore and continue; wait for proper output.
                 }
             }

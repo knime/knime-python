@@ -63,6 +63,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.NodeLogger;
 import org.knime.python2.PythonFrameSummary;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
@@ -269,33 +270,46 @@ public final class PythonUtils {
             while (true) {
                 try {
                     return future.get(waitTimeoutMilliseconds, TimeUnit.MILLISECONDS);
-                } catch (TimeoutException | InterruptedException ex) {
-                    // The current thread has been interrupted or the task is not done yet.
-                    if (ex instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                    }
-                    try {
-                        cancelable.checkCanceled();
-                    } catch (final PythonCanceledExecutionException cancellation) {
-                        // Execution was canceled, cancel task.
-                        future.cancel(true);
-                        throw cancellation;
-                    }
+                } catch (final TimeoutException ex) { // NOSONAR: Timeout is expected and part of control flow.
+                    executeCancelableCheckCanceled(future, cancelable);
+                } catch (final InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    executeCancelableCheckCanceled(future, cancelable);
                 } catch (final CancellationException ex) {
                     // Should not happen since the handle to the future is local to this method.
+                    NodeLogger.getLogger(PythonUtils.class).debug(ex);
                     throw new PythonCanceledExecutionException();
                 } catch (final ExecutionException wrapper) {
-                    final Throwable ex = unwrapExecutionException(wrapper).orElse(wrapper);
-                    if (ex instanceof PythonCanceledExecutionException) {
-                        // May happen if the executed task checks for cancellation itself.
-                        throw (PythonCanceledExecutionException)ex;
-                    } else if (ex instanceof CanceledExecutionException || ex instanceof CancellationException) {
-                        // May happen if the executed task checks for cancellation itself.
-                        throw new PythonCanceledExecutionException(ex.getMessage());
-                    } else {
-                        throw new PythonIOException(ex.getMessage(), ex);
-                    }
+                    executeCancelableUnwrapExecutionException(wrapper);
                 }
+            }
+        }
+
+        private static <T> void executeCancelableCheckCanceled(final Future<T> future,
+            final PythonCancelable cancelable) throws PythonCanceledExecutionException {
+            // The current thread has been interrupted or the task is not done yet.
+            try {
+                cancelable.checkCanceled();
+            } catch (final PythonCanceledExecutionException cancellation) {
+                // Execution was canceled, cancel task.
+                future.cancel(true);
+                throw cancellation;
+            }
+        }
+
+        private static void executeCancelableUnwrapExecutionException(final ExecutionException wrapper)
+            throws PythonCanceledExecutionException, PythonIOException {
+            final Throwable ex = unwrapExecutionException(wrapper).orElse(wrapper);
+            if (ex instanceof PythonCanceledExecutionException) {
+                // May happen if the executed task checks for cancellation itself.
+                throw (PythonCanceledExecutionException)ex;
+            } else if (ex instanceof CanceledExecutionException || ex instanceof CancellationException) {
+                // May happen if the executed task checks for cancellation itself.
+                throw new PythonCanceledExecutionException(ex.getMessage());
+            } else {
+                throw new PythonIOException( //
+                    ex.getMessage(), // NOSONAR Guaranteed to be non-null.
+                    ex);
             }
         }
 

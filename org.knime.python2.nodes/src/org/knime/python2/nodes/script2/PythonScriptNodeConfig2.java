@@ -141,8 +141,8 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
      * If the ports configuration of this node matches the ports of a non-dynamic Python scripting node, use the default
      * source code of that node.
      */
-    private static String getOldNodesDefaultSourceCode(final InputPort[] inPorts, final OutputPort[] outPorts,
-        final VariableNames variables) {
+    private static String getOldNodesDefaultSourceCode( // NOSONAR There is no point in further splitting up this method.
+        final InputPort[] inPorts, final OutputPort[] outPorts, final VariableNames variables) {
         final int numInputs = inPorts.length;
         final int numInObjects = variables.getInputObjects().length;
         final int numInTables = variables.getInputTables().length;
@@ -151,48 +151,51 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
         final int numOutImages = variables.getOutputImages().length;
         final int numOutObjects = variables.getOutputObjects().length;
 
+        String sourceCode = null;
+
         // Python Source node
         if (numInputs == 0 && numOutputs == 1 && numOutTables == 1) {
-            return getPythonSourceDefaultSourceCode(variables);
+            sourceCode = getPythonSourceDefaultSourceCode(variables);
         }
         // Python Script (1 -> 1) node
         if (numInputs == 1 && numInTables == 1 && numOutputs == 1 && numOutTables == 1) {
-            return getPythonScript1To1DefaultSourceCode(variables);
+            sourceCode = getPythonScript1To1DefaultSourceCode(variables);
         }
         // Python Script (1 -> 2) node
         if (numInputs == 1 && numInTables == 1 && numOutputs == 2 && numOutTables == 2) {
-            return getPythonScript1To2DefaultSourceCode(variables);
+            sourceCode = getPythonScript1To2DefaultSourceCode(variables);
         }
         // Python Script (2 -> 1) node
         if (numInputs == 2 && numInTables == 2 && numOutputs == 1 && numOutTables == 1) {
-            return getPythonScript2To1DefaultSourceCode(variables);
+            sourceCode = getPythonScript2To1DefaultSourceCode(variables);
         }
         // Python Script (2 -> 2) node
         if (numInputs == 2 && numInTables == 2 && numOutputs == 2 && numOutTables == 2) {
-            return getPythonScript2To2DefaultSourceCode(variables);
+            sourceCode = getPythonScript2To2DefaultSourceCode(variables);
         }
         // Python View node
         if (numInputs == 1 && numInTables == 1 && numOutputs == 1 && numOutImages == 1) {
-            return getPythonViewDefaultSourceCode(variables);
+            sourceCode = getPythonViewDefaultSourceCode(variables);
         }
         // Python Object Reader node
         if (numInputs == 0 && numOutputs == 1 && numOutObjects == 1) {
             // TODO: drag'n'drop support for .pkl files will require injecting the path.
-            return getPythonObjectReaderDefaultSourceCode(variables, "python_object.pkl");
+            sourceCode = getPythonObjectReaderDefaultSourceCode(variables, "python_object.pkl");
         }
         // Python Object Writer node
         if (numInputs == 1 && numInObjects == 1 && numOutputs == 0) {
-            return getPythonObjectWriterDefaultSourceCode(variables);
+            sourceCode = getPythonObjectWriterDefaultSourceCode(variables);
         }
         // Python Learner node
         if (numInputs == 1 && numInTables == 1 && numOutputs == 1 && numOutObjects == 1) {
-            return getPythonLearnerDefaultSourceCode(variables);
+            sourceCode = getPythonLearnerDefaultSourceCode(variables);
         }
         // Python Predictor node
         if (numInputs == 2 && numInObjects == 1 && numInTables == 1 && numOutputs == 1 && numOutTables == 1) {
-            return getPythonPredictorDefaultSourceCode(variables);
+            sourceCode = getPythonPredictorDefaultSourceCode(variables);
         }
-        return null;
+
+        return sourceCode;
     }
 
     private static String getPythonSourceDefaultSourceCode(final VariableNames variables) {

@@ -51,6 +51,7 @@ package org.knime.python2.config;
 import java.io.IOException;
 import java.util.List;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
@@ -182,6 +183,7 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
                 }
             }
         } catch (final IOException ex) {
+            NodeLogger.getLogger(CondaEnvironmentConfig.class).debug(ex);
             // Name conversion failed. Fall through and use directory path's default value instead.
         }
         return false;

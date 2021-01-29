@@ -240,40 +240,8 @@ public class PythonKernelManager implements AutoCloseable {
         final PickledObject[] objects, final PythonKernelResponseHandler<Void> responseHandler,
         final ExecutionMonitor executionMonitor, final int rowLimit) {
         final PythonKernel kernel = m_kernel;
-        runInThread(new Runnable() {
-            @Override
-            public void run() {
-                Exception exception = null;
-                try {
-                    kernel.putFlowVariables(variablesName, variables);
-                    for (int i = 0; i < objects.length; i++) {
-                        final String name = objectNames[i];
-                        final PickledObject object = objects[i];
-                        if (object != null) {
-                            kernel.putObject(name, object);
-                        } else {
-                            kernel.execute("workspace.put_variable('" + name + "', None)");
-                        }
-                    }
-                    for (int i = 0; i < tables.length; i++) {
-                        final String name = tableNames[i];
-                        final BufferedDataTable table = tables[i];
-                        if (table != null) {
-                            final ExecutionMonitor monitor =
-                                executionMonitor.createSubProgress(1 / (double)tables.length);
-                            kernel.putDataTable(name, table, monitor, rowLimit);
-                        } else {
-                            kernel.execute("workspace.put_variable('" + name + "', None)");
-                        }
-                    }
-                } catch (final Exception e) {
-                    exception = e;
-                }
-                if (kernel.equals(m_kernel)) {
-                    responseHandler.handleResponse(null, exception);
-                }
-            }
-        });
+        runInThread(new PutDataRunnable(kernel, tableNames, tables, variablesName, variables, objectNames, objects,
+            responseHandler, executionMonitor, rowLimit));
     }
 
     /**
@@ -465,4 +433,75 @@ public class PythonKernelManager implements AutoCloseable {
         m_kernel.removeStderrorListener(listener);
     }
 
+    private final class PutDataRunnable implements Runnable {
+
+        private final PythonKernel m_localKernel;
+
+        private final String[] m_tableNames;
+
+        private final BufferedDataTable[] m_tables;
+
+        private final String m_variablesName;
+
+        private final Collection<FlowVariable> m_variables;
+
+        private final PickledObject[] m_objects;
+
+        private final String[] m_objectNames;
+
+        private final PythonKernelResponseHandler<Void> m_responseHandler;
+
+        private final ExecutionMonitor m_executionMonitor;
+
+        private final int m_rowLimit;
+
+        private PutDataRunnable(final PythonKernel kernel, final String[] tableNames, final BufferedDataTable[] tables,
+            final String variablesName, final Collection<FlowVariable> variables, final String[] objectNames,
+            final PickledObject[] objects, final PythonKernelResponseHandler<Void> responseHandler,
+            final ExecutionMonitor executionMonitor, final int rowLimit) {
+            m_localKernel = kernel;
+            m_responseHandler = responseHandler;
+            m_variables = variables;
+            m_tables = tables;
+            m_tableNames = tableNames;
+            m_variablesName = variablesName;
+            m_rowLimit = rowLimit;
+            m_objectNames = objectNames;
+            m_objects = objects;
+            m_executionMonitor = executionMonitor;
+        }
+
+        @Override
+        public void run() {
+            Exception exception = null;
+            try {
+                m_localKernel.putFlowVariables(m_variablesName, m_variables);
+                for (int i = 0; i < m_objects.length; i++) {
+                    final String name = m_objectNames[i];
+                    final PickledObject object = m_objects[i];
+                    if (object != null) {
+                        m_localKernel.putObject(name, object);
+                    } else {
+                        m_localKernel.execute("workspace.put_variable('" + name + "', None)");
+                    }
+                }
+                for (int i = 0; i < m_tables.length; i++) {
+                    final String name = m_tableNames[i];
+                    final BufferedDataTable table = m_tables[i];
+                    if (table != null) {
+                        final ExecutionMonitor monitor =
+                            m_executionMonitor.createSubProgress(1 / (double)m_tables.length);
+                        m_localKernel.putDataTable(name, table, monitor, m_rowLimit);
+                    } else {
+                        m_localKernel.execute("workspace.put_variable('" + name + "', None)");
+                    }
+                }
+            } catch (final Exception e) {
+                exception = e;
+            }
+            if (m_localKernel.equals(m_kernel)) {
+                m_responseHandler.handleResponse(null, exception);
+            }
+        }
+    }
 }

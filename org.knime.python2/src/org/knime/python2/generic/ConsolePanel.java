@@ -65,6 +65,7 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.python2.Activator;
 
 /**
@@ -142,6 +143,7 @@ final class ConsolePanel {
         try {
             doc.insertString(doc.getLength(), string + "\n", style);
         } catch (final BadLocationException e) {
+            NodeLogger.getLogger(ConsolePanel.class).debug(e);
             // Ignore
         }
     }

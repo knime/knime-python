@@ -176,7 +176,7 @@ public class PythonCommandConfig implements NodeSettingsPersistable {
     private PythonCommand commandFromString(final String commandString) {
         final PythonCommand command;
         if (commandString != null && !INDICATE_FALLBACK_TO_PREFERENCES_COMMAND_VALUE.equals(commandString)) {
-            if (new File(commandString).isDirectory()) {
+            if (new File(commandString).isDirectory()) { // NOSONAR Command is supposed to be user configurable.
                 final String condaInstallationDirectoryPath = m_condaInstallationDirectoryPath.get();
                 command = new CondaPythonCommand(m_pythonVersion, condaInstallationDirectoryPath, commandString);
             } else {

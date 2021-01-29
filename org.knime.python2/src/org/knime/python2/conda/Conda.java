@@ -184,7 +184,7 @@ public final class Conda {
         final File directoryFile = resolveToInstallationDirectoryFile(condaInstallationDirectoryPath);
         try {
             condaInstallationDirectoryPath = directoryFile.getCanonicalPath();
-        } catch (final SecurityException ex) {
+        } catch (final SecurityException ex) { // NOSONAR We really do not care whether this works.
             // Stick with the unresolved path.
             condaInstallationDirectoryPath = directoryFile.getPath();
         }

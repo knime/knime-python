@@ -58,6 +58,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
@@ -288,6 +289,7 @@ public final class PythonNodeDialogContent {
                     preparer.prepareWorkspace(kernel);
                     m_scriptPanel.updateVariables();
                 } catch (final Exception ex) {
+                    NodeLogger.getLogger(PythonNodeDialogContent.class).debug(ex);
                     m_scriptPanel.errorToConsole(ex.getMessage());
                 } finally {
                     NodeContext.removeLastContext();
