@@ -105,6 +105,14 @@ final class CondaPackagesTable {
 
     private static final String ERROR = "error";
 
+    private static final Color REMOVED_ENTRY_BG_COLOR = new Color(255, 242, 225);
+
+    private static final Color UNCONFIGURED_ENTRY_BG_COLOR = new Color(225, 237, 255);
+
+    private static final Color REMOVED_LABEL_FG_COLOR = new Color(154, 120, 0);
+
+    private static final Color UNCONFIGURED_LABEL_FG_COLOR = Color.BLUE;
+
     private final CondaPackagesConfig m_config;
 
     private final SettingsModelString m_environmentNameModel;
@@ -125,9 +133,9 @@ final class CondaPackagesTable {
             final JComponent c = (JComponent)super.prepareRenderer(renderer, row, column);
             final TableModel.Entry entry = m_model.getEntryAt(row);
             if (entry.m_unconfigured) {
-                c.setBackground(new Color(225, 237, 255));
+                c.setBackground(UNCONFIGURED_ENTRY_BG_COLOR);
             } else if (entry.m_removed) {
-                c.setBackground(new Color(255, 242, 225));
+                c.setBackground(REMOVED_ENTRY_BG_COLOR);
             } else {
                 c.setBackground(null);
             }
@@ -180,7 +188,7 @@ final class CondaPackagesTable {
         m_removedLabel.setEditable(false);
         m_removedLabel.setLineWrap(true);
         m_removedLabel.setWrapStyleWord(true);
-        m_removedLabel.setForeground(new Color(154, 120, 0));
+        m_removedLabel.setForeground(REMOVED_LABEL_FG_COLOR);
         m_removedLabel.setBackground(m_errorLabel.getBackground());
         m_removedLabel.setFont(m_errorLabel.getFont());
         m_removedLabel.setMinimumSize(new Dimension(panePreferredSize.width,
@@ -192,7 +200,7 @@ final class CondaPackagesTable {
         m_unconfiguredLabel.setEditable(false);
         m_unconfiguredLabel.setLineWrap(true);
         m_unconfiguredLabel.setWrapStyleWord(true);
-        m_unconfiguredLabel.setForeground(Color.BLUE);
+        m_unconfiguredLabel.setForeground(UNCONFIGURED_LABEL_FG_COLOR);
         m_unconfiguredLabel.setBackground(m_errorLabel.getBackground());
         m_unconfiguredLabel.setFont(m_errorLabel.getFont());
         m_unconfiguredLabel.setMinimumSize(new Dimension(panePreferredSize.width,
