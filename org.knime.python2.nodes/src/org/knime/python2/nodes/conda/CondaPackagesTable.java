@@ -472,7 +472,7 @@ final class CondaPackagesTable {
                     final String v2 = e2.m_package.getVersion();
                     try {
                         return new Version(v1).compareTo(new Version(v2));
-                    } catch (final Exception ex) {
+                    } catch (final Exception ex) { // NOSONAR Deviating version formats are expected and handled.
                         return v1.compareTo(v2);
                     }
                 }) //
