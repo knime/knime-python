@@ -66,7 +66,9 @@ import org.knime.python2.conda.Conda;
  */
 public final class CondaPythonCommand extends AbstractPythonCommand {
 
-    private static final String PATH_ENVIRONMENT_VARIABLE_NAME = "PATH";
+    private static final String PATH_ENVIRONMENT_VARIABLE_NAME_WINDOWS = "Path";
+
+    private static final String PATH_ENVIRONMENT_VARIABLE_NAME_UNIX = "PATH";
 
     private final String m_environmentDirectoryPath;
 
@@ -141,7 +143,10 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
     public ProcessBuilder createProcessBuilder() {
         final ProcessBuilder pb = super.createProcessBuilder();
         if (m_pathPrefix != null) {
-            pb.environment().merge(PATH_ENVIRONMENT_VARIABLE_NAME, m_pathPrefix,
+            final String pathVariableName = SystemUtils.IS_OS_WINDOWS //
+                ? PATH_ENVIRONMENT_VARIABLE_NAME_WINDOWS //
+                : PATH_ENVIRONMENT_VARIABLE_NAME_UNIX;
+            pb.environment().merge(pathVariableName, m_pathPrefix,
                 (oldPath, pathPrefix) -> pathPrefix + File.pathSeparatorChar + oldPath);
         }
         return pb;
