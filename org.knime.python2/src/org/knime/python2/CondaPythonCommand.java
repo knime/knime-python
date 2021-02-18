@@ -66,9 +66,7 @@ import org.knime.python2.conda.Conda;
  */
 public final class CondaPythonCommand extends AbstractPythonCommand {
 
-    private static final String PATH_ENVIRONMENT_VARIABLE_NAME_WINDOWS = "Path";
-
-    private static final String PATH_ENVIRONMENT_VARIABLE_NAME_UNIX = "PATH";
+    private static final String PATH_ENVIRONMENT_VARIABLE_NAME = "PATH";
 
     private final String m_environmentDirectoryPath;
 
@@ -143,12 +141,28 @@ public final class CondaPythonCommand extends AbstractPythonCommand {
     public ProcessBuilder createProcessBuilder() {
         final ProcessBuilder pb = super.createProcessBuilder();
         if (m_pathPrefix != null) {
-            final String pathVariableName = SystemUtils.IS_OS_WINDOWS //
-                ? PATH_ENVIRONMENT_VARIABLE_NAME_WINDOWS //
-                : PATH_ENVIRONMENT_VARIABLE_NAME_UNIX;
+            final String pathVariableName = findPathVariableName(pb);
             pb.environment().merge(pathVariableName, m_pathPrefix,
                 (oldPath, pathPrefix) -> pathPrefix + File.pathSeparatorChar + oldPath);
         }
         return pb;
+    }
+
+    /**
+     * On Windows, the exact spelling/capitalization of the PATH variable name cannot be known in advance (and actually
+     * should not matter since Windows is case-insensitive; Java does not seem to respect this fact, though). That is
+     * why we have to scan the environment for the variable name and just pick whatever version of it is present.
+     */
+    private static String findPathVariableName(final ProcessBuilder pb) {
+        String pathVariableName = PATH_ENVIRONMENT_VARIABLE_NAME;
+        if (SystemUtils.IS_OS_WINDOWS) {
+            for (final String variableName : pb.environment().keySet()) {
+                if (PATH_ENVIRONMENT_VARIABLE_NAME.equalsIgnoreCase(variableName)) {
+                    pathVariableName = variableName;
+                    break;
+                }
+            }
+        }
+        return pathVariableName;
     }
 }
