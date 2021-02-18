@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -80,11 +81,11 @@ import org.knime.core.util.Pair;
 import org.knime.python2.CondaEnvironmentPropagation;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentSpec;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.conda.Conda;
 import org.knime.python2.conda.CondaEnvironmentCreationMonitor;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.conda.CondaPackageSpec;
-import org.knime.python2.PythonVersion;
 import org.knime.python2.config.CondaEnvironmentsConfig;
 import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.prefs.PythonPreferences;
@@ -207,7 +208,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final Conda conda = createConda();
         final List<CondaEnvironmentIdentifier> environments;
         try {
-            environments = conda.getEnvironments();
+            environments = getSelectableEnvironments(conda);
         } catch (IOException ex) {
             throw new InvalidSettingsException(ex.getMessage(), ex);
         }
@@ -265,9 +266,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             // Environment selected in the Preferences does not exist anymore, default to first environment in the list.
             environmentName = environments.get(0).getName();
         } else {
-            throw new InvalidSettingsException("No Conda environments available.\nPlease review the Conda "
-                + "installation specified in the Preferences of the KNIME Python Integration.\nThen select the "
-                + "Conda environment to propagate via the configuration dialog of this node.");
+            throw new InvalidSettingsException("No Conda environment available for propagation." //
+                + "\nNote that Conda's \"" + Conda.ROOT_ENVIRONMENT_NAME + "\" environment cannot be propagated "
+                + "because it is not allowed to be overwritten." //
+                + "\nThis is, however, a prerequisite for environment propagation."
+                + "\nPlease create at least one additional Conda environment before using this node." //
+                + "\nThen select the environment to propagate via the configuration dialog of the node.");
         }
         m_environmentNameModel.setStringValue(environmentName);
 
@@ -400,6 +404,18 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 + "the KNIME Python Integration.\nThen select the Conda environment to propagate via the "
                 + "configuration dialog of this node.", ex);
         }
+    }
+
+    /**
+     * @return The descriptions of all installed Conda environments except for the {@link Conda.ROOT_ENVIRONMENT_NAME
+     *         base} environment. The base environment cannot be overwritten. It can therefore not be propagated when
+     *         using the {@link #VALIDATION_METHOD_NAME_PACKAGES} or {@link #VALIDATION_METHOD_OVERWRITE} validation
+     *         options.
+     */
+    static List<CondaEnvironmentIdentifier> getSelectableEnvironments(final Conda conda) throws IOException {
+        return conda.getEnvironments().stream() //
+            .filter(e -> !Objects.equals(e.getName(), Conda.ROOT_ENVIRONMENT_NAME)) //
+            .collect(Collectors.toList());
     }
 
     private static Optional<CondaEnvironmentIdentifier> findEnvironment(final String environmentName,
