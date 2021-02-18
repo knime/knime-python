@@ -66,6 +66,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -102,7 +103,7 @@ final class CondaEnvironmentsList {
 
     private final JLabel m_warningLabel = new JLabel("");
 
-    private final JLabel m_errorLabel = new JLabel("", SwingConstants.CENTER);
+    private final JTextArea m_errorLabel = new JTextArea("");
 
     private volatile String m_configuredNonExistingEnvironmentName = null;
 
@@ -133,6 +134,9 @@ final class CondaEnvironmentsList {
         listPanel.add(m_warningLabel, gbc);
         m_panel.add(listPanel, POPULATED);
 
+        m_errorLabel.setEditable(false);
+        m_errorLabel.setBackground(m_warningLabel.getBackground());
+        m_errorLabel.setFont(m_warningLabel.getFont());
         m_errorLabel.setForeground(Color.RED);
         m_panel.add(m_errorLabel, ERROR);
 
@@ -179,7 +183,8 @@ final class CondaEnvironmentsList {
                 m_warningLabel.setVisible(false);
             });
             final String environmentName = m_environmentNameModel.getStringValue();
-            final List<CondaEnvironmentIdentifier> environments = m_conda.get().getEnvironments();
+            final List<CondaEnvironmentIdentifier> environments =
+                CondaEnvironmentPropagationNodeModel.getSelectableEnvironments(m_conda.get());
             final TreeSet<String> environmentNames = environments.stream() //
                 .map(CondaEnvironmentIdentifier::getName) //
                 .collect(Collectors.toCollection(TreeSet::new));
@@ -190,14 +195,24 @@ final class CondaEnvironmentsList {
                 // overriding the current configuration.
                 && environmentNames.add(environmentName)) {
                 nonExistingEnvironmentName = environmentName;
-                invokeOnEDT(() -> {
-                    m_warningLabel.setText("Note: the selected environment does currently not exist on this machine.");
-                    m_warningLabel.setVisible(true);
-                });
+                // "Backward compatibility": AP-15970 excluded the base environment from selection. In older nodes that
+                // still have the environment selected, this would lead to the below message being displayed. This would
+                // be confusing to users since the base environment of course exists (it is just not "visible" to
+                // this node anymore).
+                if (!environmentName.equals(Conda.ROOT_ENVIRONMENT_NAME)) {
+                    invokeOnEDT(() -> {
+                        m_warningLabel
+                            .setText("Note: the selected environment does currently not exist on this machine.");
+                        m_warningLabel.setVisible(true);
+                    });
+                }
             }
             if (environmentNames.isEmpty()) {
-                throw new IOException("No Conda environments available.\nPlease review the Conda "
-                    + "installation specified in the Preferences of the KNIME Python Integration.");
+                throw new IOException("No Conda environment available for propagation." //
+                    + "\nNote that Conda's \"" + Conda.ROOT_ENVIRONMENT_NAME + "\" environment cannot be propagated "
+                    + "because it is not allowed to be overwritten." //
+                    + "\nThis is, however, a prerequisite for environment propagation."
+                    + "\nPlease create at least one additional Conda environment before using this node.");
             }
             invokeOnEDT(() -> m_environmentNameSelection.replaceListItems(environmentNames, environmentName));
             // Must be set after the selection has been refreshed, otherwise the action listener defined in the

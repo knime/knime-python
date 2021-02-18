@@ -92,11 +92,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
  */
 public final class Conda {
 
+    /**
+     * The name of the Conda root/base environment.
+     */
+    public static final String ROOT_ENVIRONMENT_NAME = "base";
+
     private static final Version CONDA_MINIMUM_VERSION = new Version(4, 6, 2);
 
     private static final Version CONDA_ENV_EXPORT_FROM_HISTORY_MINIMUM_VERSION = new Version(4, 7, 12);
-
-    private static final String ROOT_ENVIRONMENT_NAME = "base";
 
     private static final String ROOT_ENVIRONMENT_LEGACY_NAME = "root";
 
