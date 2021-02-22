@@ -176,6 +176,10 @@ final class CondaPackagesTable {
         gbc.weighty = 1;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.BOTH;
+        // Disallow cell selection which interferes with our custom cell rendering (see above) as it changes both the
+        // cell foreground and background colors on platforms such as Windows.
+        m_table.setCellSelectionEnabled(false);
+        m_table.setFocusable(false);
         final JScrollPane pane = new JScrollPane(m_table);
         final Dimension panePreferredSize = pane.getPreferredSize();
         panePreferredSize.width += 125;
@@ -191,8 +195,10 @@ final class CondaPackagesTable {
         m_removedLabel.setForeground(REMOVED_LABEL_FG_COLOR);
         m_removedLabel.setBackground(m_errorLabel.getBackground());
         m_removedLabel.setFont(m_errorLabel.getFont());
-        m_removedLabel.setMinimumSize(new Dimension(panePreferredSize.width,
-            m_removedLabel.getFontMetrics(m_removedLabel.getFont()).getHeight()));
+        final Insets removedLabelInsets = m_removedLabel.getInsets();
+        m_removedLabel.setPreferredSize(
+            new Dimension(panePreferredSize.width, m_removedLabel.getFontMetrics(m_removedLabel.getFont()).getHeight()
+                + removedLabelInsets.top + removedLabelInsets.bottom));
         panel.add(m_removedLabel, gbc);
 
         gbc.gridy++;
@@ -203,8 +209,10 @@ final class CondaPackagesTable {
         m_unconfiguredLabel.setForeground(UNCONFIGURED_LABEL_FG_COLOR);
         m_unconfiguredLabel.setBackground(m_errorLabel.getBackground());
         m_unconfiguredLabel.setFont(m_errorLabel.getFont());
-        m_unconfiguredLabel.setMinimumSize(new Dimension(panePreferredSize.width,
-            m_unconfiguredLabel.getFontMetrics(m_unconfiguredLabel.getFont()).getHeight() * 2));
+        final Insets unconfiguredLabelInsets = m_unconfiguredLabel.getInsets();
+        m_unconfiguredLabel.setPreferredSize(new Dimension(panePreferredSize.width,
+            m_unconfiguredLabel.getFontMetrics(m_unconfiguredLabel.getFont()).getHeight() + unconfiguredLabelInsets.top
+                + unconfiguredLabelInsets.bottom));
         panel.add(m_unconfiguredLabel, gbc);
 
         gbc.gridy++;
