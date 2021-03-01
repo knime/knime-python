@@ -29,6 +29,8 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.7.0,4.0.0)",
   com.fifesoft.spellchecker;bundle-version="[2.5.7,3.0.0)",
   org.knime.python2;bundle-version="[4.0.0,5.0.0)",
   org.knime.python.typeextensions;bundle-version="[4.0.0,5.0.0)";visibility:=reexport
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
+Automatic-Module-Name: org.knime.python
+Import-Package: org.w3c.dom.events;version="3.0.0"

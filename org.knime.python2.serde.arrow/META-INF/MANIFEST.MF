@@ -15,5 +15,5 @@ Require-Bundle: org.knime.python2;bundle-version="[4.0.0,5.0.0)",
  org.apache.arrow.memory-core;bundle-version="[3.0.0,4.0.0)",
  org.apache.arrow.format;bundle-version="[3.0.0,4.0.0)",
  org.apache.arrow.vector;bundle-version="[3.0.0,4.0.0)"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-BundleShape: dir
