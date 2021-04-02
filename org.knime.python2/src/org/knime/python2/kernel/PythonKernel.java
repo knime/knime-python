@@ -386,7 +386,7 @@ public class PythonKernel implements AutoCloseable {
     // Initial setup methods:
 
     private Future<Socket> setupSocket() {
-        return Executors.newSingleThreadExecutor().submit(m_serverSocket::accept);
+        return m_executorService.submit(m_serverSocket::accept);
     }
 
     private Process setupPythonProcess(final PythonCommand command) throws IOException {
