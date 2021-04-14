@@ -13,7 +13,7 @@ properties([
 ])
 
 try {
-	knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python2 && python3')
+	knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python2 && python3 && java11')
 
     
     withEnv([ "KNIME_POSTGRES_USER=knime01", "KNIME_POSTGRES_PASSWORD=password",
