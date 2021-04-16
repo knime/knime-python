@@ -1,0 +1,20 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Python - Data Transfer using Apache Arrow
+Bundle-SymbolicName: org.knime.python3.arrow;singleton:=true
+Bundle-Version: 4.4.0.qualifier
+Bundle-ClassPath: .
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.knime.python3;bundle-version="[4.4.0,5.0.0)",
+ org.knime.core.table;bundle-version="[4.4.0,5.0.0)",
+ org.knime.core.columnar;bundle-version="[4.4.0,5.0.0)",
+ org.knime.core.columnar.arrow;bundle-version="[4.4.0,5.0.0)",
+ org.slf4j.api;bundle-version="[1.7.2,2.0.0)",
+ org.apache.commons.io;bundle-version="[2.6.0,3.0.0)",
+ org.apache.arrow.format;bundle-version="[4.0.1,5.0.0)",
+ org.apache.arrow.memory-core;bundle-version="[4.0.1,5.0.0)",
+ org.apache.arrow.vector;bundle-version="[4.0.1,5.0.0)"
+Export-Package: org.knime.python3.arrow
+Automatic-Module-Name: org.knime.python3.arrow
