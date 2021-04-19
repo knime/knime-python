@@ -276,15 +276,19 @@ class CondaExecutionMonitor {
         if (!m_standardOutputErrors.isEmpty()) {
             errorMessage = String.join("\n", m_standardOutputErrors);
         }
-        if (errorMessage == null && !m_errorOutputErrors.isEmpty()) {
-            errorMessage = "Failed to execute Conda";
+        if (!m_errorOutputErrors.isEmpty()) {
             final String detailMessage = String.join("\n", m_errorOutputErrors);
-            if (detailMessage.contains("CONNECTION FAILED") && detailMessage.contains("SSLError")) {
-                errorMessage += ". Please uninstall and reinstall Conda.\n";
+            if (errorMessage == null) {
+                errorMessage = "Failed to execute Conda";
+                if (detailMessage.contains("CONNECTION FAILED") && detailMessage.contains("SSLError")) {
+                    errorMessage += ". Please uninstall and reinstall Conda.\n";
+                } else {
+                    errorMessage += ":\n";
+                }
+                errorMessage += detailMessage;
             } else {
-                errorMessage += ":\n";
+                errorMessage += "\nAdditional output: " + detailMessage;
             }
-            errorMessage += detailMessage;
         }
         if (errorMessage == null) {
             errorMessage = "Conda process terminated with error code " + condaExitCode + ".";
