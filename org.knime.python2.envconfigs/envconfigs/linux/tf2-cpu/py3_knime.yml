@@ -17,6 +17,7 @@ dependencies:         # List of packages that should be installed
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
 - jpype1=0.6.3        # Databases
+- pip
 - pip:
   - tensorflow==2.2
   - tensorflow-hub==0.8

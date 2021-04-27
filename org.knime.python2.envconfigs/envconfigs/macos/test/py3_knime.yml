@@ -22,6 +22,7 @@ dependencies:         # List of packages that should be installed
 - h5py=2.8
 - libiconv=1.15       # MDF Reader node
 - asammdf=5.19.14     # MDF Reader node
+- pip
 - pip:
   - onnx==1.4.1
   - onnx-tf==1.2.1
