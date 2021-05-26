@@ -104,6 +104,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String VALIDATION_METHOD_OVERWRITE = "overwrite";
 
+    private static final String CFG_KEY_ENV_VARIABLE_NAME = "environment_variable_name";
+
     private static final String CFG_KEY_SOURCE_OS_NAME = "source_operating_system";
 
     private static final String OS_LINUX = "linux";
@@ -133,6 +135,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new SettingsModelString(CFG_KEY_ENV_VALIDATION_METHOD, createEnvironmentValidationMethodKeys()[0]);
     }
 
+    static SettingsModelString createEnvironmentVariableNameModel() {
+        return new SettingsModelString(CFG_KEY_ENV_VARIABLE_NAME, CondaEnvironmentPropagation.FLOW_VAR_NAME);
+    }
+
     static SettingsModelString createSourceOsModel() {
         return new SettingsModelString(CFG_KEY_SOURCE_OS_NAME, getCurrentOsType());
     }
@@ -142,6 +148,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private final CondaPackagesConfig m_packagesConfig = createPackagesConfig();
 
     private final SettingsModelString m_validationMethodModel = createEnvironmentValidationMethodModel();
+
+    private final SettingsModelString m_environmentVariableNameModel = createEnvironmentVariableNameModel();
 
     private final SettingsModelString m_sourceOsModel = createSourceOsModel();
 
@@ -154,6 +162,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_environmentNameModel.saveSettingsTo(settings);
         m_packagesConfig.saveSettingsTo(settings);
         m_validationMethodModel.saveSettingsTo(settings);
+        m_environmentVariableNameModel.saveSettingsTo(settings);
         m_sourceOsModel.saveSettingsTo(settings);
     }
 
@@ -162,6 +171,11 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_environmentNameModel.validateSettings(settings);
         CondaPackagesConfig.validateSettings(settings);
         m_validationMethodModel.validateSettings(settings);
+        // Backward compatibility: environment variable name model was introduced in KNIME 4.4; only attempt to validate
+        // it if present.
+        if (settings.containsKey(m_environmentVariableNameModel.getKey())) {
+            m_environmentVariableNameModel.validateSettings(settings);
+        }
         m_sourceOsModel.validateSettings(settings);
     }
 
@@ -170,6 +184,15 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_environmentNameModel.loadSettingsFrom(settings);
         m_packagesConfig.loadSettingsFrom(settings);
         m_validationMethodModel.loadSettingsFrom(settings);
+        // Backward compatibility: environment variable name model was introduced in KNIME 4.4; only attempt to load it
+        // if present.
+        if (settings.containsKey(m_environmentVariableNameModel.getKey())) {
+            m_environmentVariableNameModel.loadSettingsFrom(settings);
+            final String environmentVariableName = m_environmentVariableNameModel.getStringValue();
+            if (environmentVariableName == null || environmentVariableName.isBlank()) {
+                throw new InvalidSettingsException("The environment variable name may not be blank.");
+            }
+        }
         m_sourceOsModel.loadSettingsFrom(settings);
     }
 
@@ -428,7 +451,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     }
 
     private void pushEnvironmentFlowVariable(final String environmentName, final String environmentDirectoryPath) {
-        pushFlowVariable(CondaEnvironmentPropagation.FLOW_VAR_NAME, CondaEnvironmentType.INSTANCE,
+        pushFlowVariable(m_environmentVariableNameModel.getStringValue(), CondaEnvironmentType.INSTANCE,
             new CondaEnvironmentSpec(new CondaEnvironmentIdentifier(environmentName, environmentDirectoryPath)));
     }
 

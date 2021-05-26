@@ -22,8 +22,8 @@
 				<li>Successively open the configuration dialogues of the Python node and all subsequent Python nodes in
 					the flow that you want to make portable. Upon opening their dialogues for the very first time, they
 					will automatically pick up the environment by setting their respective Python 2 and/or Python 3
-					entries on the <i>Flow Variables</i> tab to the propagated <i>conda.environment</i> variable.
-					Otherwise, you have to perform this step manually.</li>
+					entries on the <i>Flow Variables</i> tab to the variable propagating the configured Conda
+					environment. Otherwise, you have to perform this step manually.</li>
 				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
 					it. Make sure that this node is reset before or during the deployment process.</li>
 				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME
@@ -72,11 +72,16 @@
 						same name.</li>
 				</ul>
 			</option>
+			<option name="Environment variable name">
+				The name of the output flow variable that propagates the configured Conda environment. The default name
+				is <i>conda.environment</i>. You can specify a custom name to avoid name collisions that may otherwise
+				occur when employing multiple Conda Environment Propagation nodes in a single workflow.
+			</option>
 		</tab>
 	</fullDescription>
 	<ports>
 		<outPort name="Conda environment" index="0">
-			Flow variable <i>conda.environment</i> that points to the configured Conda environment.
+			Flow variable of the specified name that points to the configured Conda environment.
 		</outPort>
 	</ports>
 </knimeNode>
