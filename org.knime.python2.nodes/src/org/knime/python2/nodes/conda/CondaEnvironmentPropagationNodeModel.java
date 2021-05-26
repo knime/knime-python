@@ -136,7 +136,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     }
 
     static SettingsModelString createEnvironmentVariableNameModel() {
-        return new SettingsModelString(CFG_KEY_ENV_VARIABLE_NAME, CondaEnvironmentPropagation.FLOW_VAR_NAME);
+        return new SettingsModelString(CFG_KEY_ENV_VARIABLE_NAME,
+            CondaEnvironmentPropagation.DEFAULT_ENV_FLOW_VAR_NAME);
     }
 
     static SettingsModelString createSourceOsModel() {

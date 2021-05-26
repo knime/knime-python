@@ -72,7 +72,7 @@ public final class CondaEnvironmentPropagation {
      * validated/recreated Conda environment. We define the variable here to avoid other Python-based extensions (such
      * as deep learning or MDF) having dependencies directly on the node.
      */
-    public static final String FLOW_VAR_NAME = "conda.environment";
+    public static final String DEFAULT_ENV_FLOW_VAR_NAME = "conda.environment";
 
     private CondaEnvironmentPropagation() {}
 

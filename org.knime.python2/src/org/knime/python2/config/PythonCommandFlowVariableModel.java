@@ -48,9 +48,9 @@
  */
 package org.knime.python2.config;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -63,7 +63,6 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.StringType;
-import org.knime.python2.CondaEnvironmentPropagation;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
 import org.knime.python2.PythonCommand;
 
@@ -71,15 +70,12 @@ import org.knime.python2.PythonCommand;
  * Monitors the control of a given {@link PythonCommandConfig} by flow variable such that the value provided by the
  * variable is also reflected in the node dialog.
  * <P>
- * Additionally offers functionality to automatically control the given config by flow variable
- * {@link CondaEnvironmentPropagation#FLOW_VAR_NAME}.
+ * Additionally offers functionality to automatically control the given config by the first flow variable of type
+ * {@link CondaEnvironmentType} in the stack of flow variables available to the surrounding node.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonCommandFlowVariableModel {
-
-    private static final VariableType<?>[] SUPPORTED_FLOW_VAR_TYPES =
-        new VariableType[]{CondaEnvironmentType.INSTANCE, StringType.INSTANCE};
 
     private final NodeDialogPane m_dialog;
 
@@ -89,7 +85,7 @@ public final class PythonCommandFlowVariableModel {
 
     private final CopyOnWriteArrayList<Consumer<Optional<PythonCommand>>> m_listeners = new CopyOnWriteArrayList<>();
 
-    private Set<String> m_availableFlowVarNames;
+    private List<String> m_availableFlowVarNames;
 
     /**
      * @param dialog The parent node dialog.
@@ -140,7 +136,8 @@ public final class PythonCommandFlowVariableModel {
         } catch (final InvalidSettingsException ex) {
             throw new NotConfigurableException(ex.getMessage(), ex);
         }
-        m_availableFlowVarNames = new HashSet<>(m_dialog.getAvailableFlowVariables(SUPPORTED_FLOW_VAR_TYPES).keySet());
+        m_availableFlowVarNames =
+            new ArrayList<>(m_dialog.getAvailableFlowVariables(CondaEnvironmentType.INSTANCE).keySet());
     }
 
     /**
@@ -160,9 +157,10 @@ public final class PythonCommandFlowVariableModel {
      * {@link CondaEnvironmentPropagationNodeFactory}, if that variable is present.
      */
     private void tryOverwriteSettingsByVariable() {
-        if (m_availableFlowVarNames.contains(CondaEnvironmentPropagation.FLOW_VAR_NAME)) {
-            m_model.setInputVariableName(CondaEnvironmentPropagation.FLOW_VAR_NAME);
+        if (!m_availableFlowVarNames.isEmpty()) {
+            m_model.setInputVariableName(m_availableFlowVarNames.get(0));
         }
+        m_availableFlowVarNames = null;
     }
 
     /**
