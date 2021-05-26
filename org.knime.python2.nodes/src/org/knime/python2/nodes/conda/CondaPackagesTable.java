@@ -67,7 +67,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -117,8 +116,6 @@ final class CondaPackagesTable {
 
     private final SettingsModelString m_environmentNameModel;
 
-    private final Supplier<Conda> m_conda;
-
     private final JPanel m_panel = new JPanel(new CardLayout());
 
     private final JLabel m_refreshingLabel = new JLabel("Collecting packages...", SwingConstants.CENTER);
@@ -151,13 +148,13 @@ final class CondaPackagesTable {
 
     private final JLabel m_errorLabel = new JLabel("", SwingConstants.CENTER);
 
+    private Conda m_conda;
+
     private volatile boolean m_allowsRefresh = false;
 
-    public CondaPackagesTable(final CondaPackagesConfig config, final SettingsModelString environmentNameModel,
-        final Supplier<Conda> conda) {
+    public CondaPackagesTable(final CondaPackagesConfig config, final SettingsModelString environmentNameModel) {
         m_config = config;
         m_environmentNameModel = environmentNameModel;
-        m_conda = conda;
 
         m_panel.add(new JPanel(), UNINITIALIZED);
         m_panel.add(m_refreshingLabel, REFRESHING);
@@ -182,7 +179,7 @@ final class CondaPackagesTable {
         m_table.setFocusable(false);
         final JScrollPane pane = new JScrollPane(m_table);
         final Dimension panePreferredSize = pane.getPreferredSize();
-        panePreferredSize.width += 125;
+        panePreferredSize.width += 135;
         pane.setPreferredSize(panePreferredSize);
         panel.add(pane, gbc);
 
@@ -257,7 +254,8 @@ final class CondaPackagesTable {
         }
     }
 
-    public void initializePackages() {
+    public void initializePackages(final Conda conda) {
+        m_conda = conda;
         refreshPackages(true);
     }
 
@@ -279,14 +277,13 @@ final class CondaPackagesTable {
             m_unconfiguredLabel.setText("");
             m_unconfiguredLabel.setVisible(false);
         });
-        final Conda conda = m_conda.get();
         List<CondaPackageSpec> included = new ArrayList<>();
         List<CondaPackageSpec> excluded = new ArrayList<>();
         List<CondaPackageSpec> removed = new ArrayList<>();
         List<CondaPackageSpec> unconfigured = new ArrayList<>();
         try {
             final String environmentName = m_environmentNameModel.getStringValue();
-            final List<CondaPackageSpec> packages = conda.getPackages(environmentName);
+            final List<CondaPackageSpec> packages = m_conda.getPackages(environmentName);
             if (isInitialRefresh) {
                 categorizePackages(packages, m_config, included, excluded, removed, unconfigured);
             } else {
@@ -308,7 +305,7 @@ final class CondaPackagesTable {
         }
         setPackages(included, excluded, removed, unconfigured);
         if (isInitialRefresh) {
-            m_includeExplicit.setEnabled(conda.isPackageNamesFromHistoryAvailable());
+            m_includeExplicit.setEnabled(m_conda.isPackageNamesFromHistoryAvailable());
         }
         invokeOnEDT(() -> setState(POPULATED));
     }
@@ -375,7 +372,7 @@ final class CondaPackagesTable {
         dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try {
             final Set<String> explicitPackages =
-                new HashSet<>(m_conda.get().getPackageNamesFromHistory(m_environmentNameModel.getStringValue()));
+                new HashSet<>(m_conda.getPackageNamesFromHistory(m_environmentNameModel.getStringValue()));
             m_model.setIncludedPackages(explicitPackages);
         } catch (final IOException ex) {
             setToErrorView(ex);

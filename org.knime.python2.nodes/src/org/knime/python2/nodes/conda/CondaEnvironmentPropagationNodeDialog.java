@@ -47,6 +47,8 @@
  */
 package org.knime.python2.nodes.conda;
 
+import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -57,6 +59,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
@@ -79,14 +82,19 @@ import org.knime.python2.conda.Conda;
  */
 final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
 
+    private static final String NORMAL = "populated";
+
+    private static final String ERROR = "error";
+
+    private final JPanel m_panel = new JPanel(new CardLayout());
+
     private final SettingsModelString m_environmentNameModel =
         CondaEnvironmentPropagationNodeModel.createCondaEnvironmentNameModel();
 
-    private final CondaEnvironmentsList m_environmentsList =
-        new CondaEnvironmentsList(m_environmentNameModel, this::getOrCreateConda);
+    private final CondaEnvironmentsList m_environmentsList = new CondaEnvironmentsList(m_environmentNameModel);
 
-    private final CondaPackagesTable m_packagesTable = new CondaPackagesTable(
-        CondaEnvironmentPropagationNodeModel.createPackagesConfig(), m_environmentNameModel, this::getOrCreateConda);
+    private final CondaPackagesTable m_packagesTable =
+        new CondaPackagesTable(CondaEnvironmentPropagationNodeModel.createPackagesConfig(), m_environmentNameModel);
 
     private final DialogComponentButtonGroup m_validationMethodSelection = new DialogComponentButtonGroup(
         CondaEnvironmentPropagationNodeModel.createEnvironmentValidationMethodModel(), "Environment validation", true,
@@ -96,6 +104,8 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
     private final DialogComponentString m_environmentVariableNameInput;
 
     private final SettingsModelString m_sourceOsModel = CondaEnvironmentPropagationNodeModel.createSourceOsModel();
+
+    private final JTextArea m_errorLabel = new JTextArea("");
 
     private final ReentrantLock m_refreshVsSaveLock = new ReentrantLock();
 
@@ -129,7 +139,22 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         gbc.gridy++;
         panel.add(createEnvironmentVariableNameInputPanel(m_environmentVariableNameInput), gbc);
 
-        addTab("Options", panel, false);
+        m_panel.add(panel, NORMAL);
+
+        final JPanel errorPanel = new JPanel(new GridBagLayout());
+        final GridBagConstraints errorGbc = new GridBagConstraints();
+        errorGbc.anchor = GridBagConstraints.CENTER;
+        errorGbc.fill = GridBagConstraints.BOTH;
+        m_errorLabel.setEditable(false);
+        final JLabel dummy = new JLabel();
+        m_errorLabel.setBackground(dummy.getBackground());
+        m_errorLabel.setFont(dummy.getFont());
+        m_errorLabel.setForeground(Color.RED);
+        errorPanel.add(m_errorLabel, errorGbc);
+
+        m_panel.add(errorPanel, ERROR);
+
+        addTab("Options", m_panel, false);
 
         m_environmentNameModel.addChangeListener(e -> refreshPackages());
     }
@@ -153,6 +178,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
         throws NotConfigurableException {
+        ((CardLayout)m_panel.getLayout()).show(m_panel, NORMAL);
         m_environmentsList.setToInitializingView();
         m_packagesTable.setToUninitializedView();
 
@@ -166,15 +192,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
             throw new NotConfigurableException(ex.getMessage(), ex);
         }
 
-        ThreadUtils.threadWithContext(() -> {
-            m_refreshVsSaveLock.lock();
-            try {
-                m_environmentsList.initializeEnvironments();
-                m_packagesTable.initializePackages();
-            } finally {
-                m_refreshVsSaveLock.unlock();
-            }
-        }).start();
+        ThreadUtils.threadWithContext(new EnvironmentsAndPackagesInitializer()).start();
     }
 
     private void refreshPackages() {
@@ -213,20 +231,6 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         m_conda = null;
     }
 
-    /**
-     * Validating the Conda installation takes some time, so cache the instance once it has been created.
-     */
-    private synchronized Conda getOrCreateConda() {
-        if (m_conda == null) {
-            try {
-                m_conda = CondaEnvironmentPropagationNodeModel.createConda();
-            } catch (final InvalidSettingsException ex) {
-                throw new IllegalStateException(ex.getMessage(), ex);
-            }
-        }
-        return m_conda;
-    }
-
     static <T extends Component> T getFirstComponent(final DialogComponent dialogComponent,
         final Class<T> componentClass) {
         for (final Component c : dialogComponent.getComponentPanel().getComponents()) {
@@ -250,6 +254,37 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
             Thread.currentThread().interrupt();
         } catch (final InvocationTargetException ex) {
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeDialog.class).error(ex);
+        }
+    }
+
+    private final class EnvironmentsAndPackagesInitializer implements Runnable {
+
+        @Override
+        public void run() {
+            m_refreshVsSaveLock.lock();
+            try {
+                final Conda conda = getOrCreateConda();
+                m_environmentsList.initializeEnvironments(conda);
+                m_packagesTable.initializePackages(conda);
+            } catch (final InvalidSettingsException ex) {
+                invokeOnEDT(() -> {
+                    m_errorLabel.setText(ex.getMessage());
+                    ((CardLayout)m_panel.getLayout()).show(m_panel, ERROR);
+                });
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeDialog.class).warn(ex.getMessage(), ex);
+            } finally {
+                m_refreshVsSaveLock.unlock();
+            }
+        }
+
+        /**
+         * Validating the Conda installation takes some time, so cache the instance once it has been created.
+         */
+        private synchronized Conda getOrCreateConda() throws InvalidSettingsException {
+            if (m_conda == null) {
+                m_conda = CondaEnvironmentPropagationNodeModel.createConda();
+            }
+            return m_conda;
         }
     }
 }

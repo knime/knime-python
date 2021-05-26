@@ -59,7 +59,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.swing.JComboBox;
@@ -93,8 +92,6 @@ final class CondaEnvironmentsList {
 
     private final SettingsModelString m_environmentNameModel;
 
-    private final Supplier<Conda> m_conda;
-
     private final JPanel m_panel = new JPanel(new CardLayout());
 
     private final JLabel m_initializingLabel = new JLabel("Collecting environments...", SwingConstants.CENTER);
@@ -107,9 +104,8 @@ final class CondaEnvironmentsList {
 
     private volatile String m_configuredNonExistingEnvironmentName = null;
 
-    public CondaEnvironmentsList(final SettingsModelString evironmentNameModel, final Supplier<Conda> conda) {
+    public CondaEnvironmentsList(final SettingsModelString evironmentNameModel) {
         m_environmentNameModel = evironmentNameModel;
-        m_conda = conda;
 
         m_panel.add(m_initializingLabel, INITIALIZING);
 
@@ -175,7 +171,7 @@ final class CondaEnvironmentsList {
         }
     }
 
-    public void initializeEnvironments() {
+    public void initializeEnvironments(final Conda conda) {
         try {
             m_configuredNonExistingEnvironmentName = null;
             invokeOnEDT(() -> {
@@ -184,7 +180,7 @@ final class CondaEnvironmentsList {
             });
             final String environmentName = m_environmentNameModel.getStringValue();
             final List<CondaEnvironmentIdentifier> environments =
-                CondaEnvironmentPropagationNodeModel.getSelectableEnvironments(m_conda.get());
+                CondaEnvironmentPropagationNodeModel.getSelectableEnvironments(conda);
             final TreeSet<String> environmentNames = environments.stream() //
                 .map(CondaEnvironmentIdentifier::getName) //
                 .collect(Collectors.toCollection(TreeSet::new));
