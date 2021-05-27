@@ -65,9 +65,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
+ * @noreference Only exposed for cross-plugin testing purposes.
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-final class PlatformCondaPackageFilter {
+@SuppressWarnings("javadoc") // This class should be treated as package-private, the corresponding javadoc rules apply.
+public final class PlatformCondaPackageFilter {
 
     private static final String OS_LINUX = "Linux";
 
