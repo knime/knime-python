@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -107,33 +106,16 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String CFG_KEY_SOURCE_OS_NAME = "source_operating_system";
 
-    private static final String SOURCE_OS_LINUX = "linux";
+    private static final String OS_LINUX = "linux";
 
-    private static final String SOURCE_OS_MAC = "mac";
+    private static final String OS_MAC = "mac";
 
-    private static final String SOURCE_OS_WINDOWS = "windows";
+    private static final String OS_WINDOWS = "windows";
 
-    private static final Set<String> CROSS_PLATFORM_EXCLUDED_PACKAGES =
-        Collections.unmodifiableSet(new HashSet<>(Arrays.asList( //
-            "appnope", // MacOS-only
-            "libcxx", // no Linux
-            "libcxxabi", // no Linux
-            "libgfortran", // no Linux
-            "mkl_fft", // conflicts on Linux coming from Windows
-            "mkl_random", // conflicts on Linux coming from Windows
-            "vc", //
-            "m2w64-libwinpthread-git", //
-            "icc_rt", //
-            "m2w64-gmp", //
-            "pywinpty", //
-            "wincertstore", //
-            "msys2-conda-epoch", //
-            "winpty", //
-            "m2w64-gcc-libs", //
-            "m2w64-gcc-libgfortran", //
-            "vs2015_runtime", //
-            "win_inet_pton", //
-            "m2w64-gcc-libs-core")));
+    /**
+     * Lazily populated upon the first execution of an instance of this class.
+     */
+    private static /* final */ PlatformCondaPackageFilter platformPackageFilter;
 
     static SettingsModelString createCondaEnvironmentNameModel() {
         return new SettingsModelString(CFG_KEY_CONDA_ENV, CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME);
@@ -288,14 +270,11 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final Conda conda = createConda();
         final String environmentName = m_environmentNameModel.getStringValue();
-        final boolean sameOs = getCurrentOsType().equals(m_sourceOsModel.getStringValue());
+        final String targetOs = getCurrentOsType();
+        final boolean sameOs = targetOs.equals(m_sourceOsModel.getStringValue());
 
-        List<CondaPackageSpec> packages = m_packagesConfig.getIncludedPackages();
-        if (!sameOs) {
-            packages = packages.stream() //
-                .filter(pkg -> !CROSS_PLATFORM_EXCLUDED_PACKAGES.contains(pkg.getName())) //
-                .collect(Collectors.toList());
-        }
+        final List<CondaPackageSpec> packages =
+            filterIncludedPackagesForTargetOs(m_packagesConfig.getIncludedPackages(), targetOs);
 
         final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, packages,
             m_validationMethodModel.getStringValue(), sameOs);
@@ -334,6 +313,29 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
+    }
+
+    private static List<CondaPackageSpec> filterIncludedPackagesForTargetOs(
+        final List<CondaPackageSpec> allIncludedPackages, final String targetOs) throws IOException {
+        populatePlatformPackageFilter(targetOs);
+        return allIncludedPackages.stream() //
+            .filter(pkg -> !platformPackageFilter.excludesPackage(pkg.getName())) //
+            .collect(Collectors.toList());
+    }
+
+    private static synchronized void populatePlatformPackageFilter(final String targetOs) throws IOException {
+        if (platformPackageFilter == null) {
+            if (targetOs.equals(OS_LINUX)) {
+                platformPackageFilter = PlatformCondaPackageFilter.createLinuxFilterList();
+            } else if (targetOs.equals(OS_MAC)) {
+                platformPackageFilter = PlatformCondaPackageFilter.createMacFilterList();
+            } else if (targetOs.equals(OS_WINDOWS)) {
+                platformPackageFilter = PlatformCondaPackageFilter.createWindowsFilterList();
+            } else {
+                throw new IllegalStateException(
+                    "Unknown operating system identifier: " + targetOs + ". This is an implementation error.");
+            }
+        }
     }
 
     private static Pair<Boolean, String> checkWhetherToCreateEnvironment(final Conda conda,
@@ -383,11 +385,11 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private static String getCurrentOsType() {
         final String osType;
         if (SystemUtils.IS_OS_LINUX) {
-            osType = SOURCE_OS_LINUX;
+            osType = OS_LINUX;
         } else if (SystemUtils.IS_OS_MAC) {
-            osType = SOURCE_OS_MAC;
+            osType = OS_MAC;
         } else if (SystemUtils.IS_OS_WINDOWS) {
-            osType = SOURCE_OS_WINDOWS;
+            osType = OS_WINDOWS;
         } else {
             throw Conda.createUnknownOSException();
         }
