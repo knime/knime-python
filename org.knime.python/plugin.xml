@@ -6,7 +6,8 @@
          point="org.knime.core.PortType">
       <portType
             color="#1eb9dc"
-            name="Python"
+            name="Python (deprecated)"
+            hidden="true"
             objectClass="org.knime.python.port.PickledObjectPortObject"
             objectSerializer="org.knime.python.port.PickledObjectPortObject$Serializer"
             specClass="org.knime.python.port.PickledObjectPortObjectSpec"
