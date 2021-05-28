@@ -85,30 +85,8 @@
 		</repository>
 	</repositories>
 
-	<!-- This whole block is only needed if the repository contains plug-ins that don't have any sources. If it is omitted
-		 Tycho will complain. -->
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.eclipse.tycho.extras</groupId>
-				<artifactId>tycho-source-feature-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>source-feature</id>
-						<phase>package</phase>
-						<goals>
-							<goal>source-feature</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<excludes>
-						<!-- List all plug-in that do NOT contain sources here. -->
-						<plugin id="org.python.plugin"/>
-					</excludes>
-				</configuration>
-			</plugin>
-			
             <plugin>
                 <groupId>org.eclipse.tycho</groupId>
                 <artifactId>tycho-surefire-plugin</artifactId>
@@ -116,7 +94,7 @@
                     <!-- org.knime.python2.tests currently only has abstract test classes -->
                     <failIfNoTests>false</failIfNoTests>
                 </configuration>
-            </plugin>			
+            </plugin>
 		</plugins>
 	</build>
 </project>
