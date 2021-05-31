@@ -692,6 +692,16 @@ public final class Conda {
     }
 
     /**
+     * Delete the conda environment with the given name. E.g. {@code conda env remove -n <name>}.
+     *
+     * @param environmentName the name of the environment
+     * @throws IOException if running the command failed.
+     */
+    public void deleteEnvironment(final String environmentName) throws IOException {
+        callCondaAndAwaitTermination(new CondaExecutionMonitor(), "env", "remove", "-n", environmentName);
+    }
+
+    /**
      * Traverses {@code packages} and adds each package either to {@code outInstalledByPip} or to
      * {@code outInstalledByConda} depending on its source channel. Also returns whether package {@code pip} is
      * contained in {@code packages}.

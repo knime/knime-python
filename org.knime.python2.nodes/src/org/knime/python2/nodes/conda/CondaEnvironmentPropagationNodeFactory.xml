@@ -76,6 +76,12 @@
 				is <i>conda.environment</i>. You can specify a custom name to avoid name collisions that may otherwise
 				occur when employing multiple Conda Environment Propagation nodes in a single workflow.
 			</option>
+			<option name="Preserve a possibly incomplete conda environment if the creation fails">
+				If this checkbox is checked the conda environment will not be removed if the creation of the environment
+				failed. This can be useful for debugging why the environment creation failed. <b>WARNING:</b> if the
+				node is executed again and "Check name only" is selected this might lead to an executed node with
+				missing packages in the conda environment. Downstream nodes might fail.
+			</option>
 		</tab>
 	</fullDescription>
 	<ports>
