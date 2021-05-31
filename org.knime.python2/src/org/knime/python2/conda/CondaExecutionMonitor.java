@@ -303,11 +303,7 @@ class CondaExecutionMonitor {
         m_isCanceled = true;
     }
 
-    private synchronized boolean isCanceled() {
-        return m_isCanceled || Thread.currentThread().isInterrupted();
-    }
-
-    private synchronized boolean isCanceledOrInterrupted() {
+    protected synchronized boolean isCanceledOrInterrupted() {
         return m_isCanceled || Thread.currentThread().isInterrupted();
     }
 
@@ -321,7 +317,7 @@ class CondaExecutionMonitor {
 
         @Override
         public void checkCanceled() throws PythonCanceledExecutionException {
-            if (m_monitor.isCanceled()) {
+            if (m_monitor.isCanceledOrInterrupted()) {
                 throw new PythonCanceledExecutionException();
             }
         }

@@ -627,7 +627,6 @@ public final class Conda {
 
     /**
      * {@code conda env create --file <file generated from arguments> --name <environmentName> --force}
-     * <P>
      * Overwrites environment {@code <environmentName>} if it already exists.
      *
      * @param environmentName The name of the environment to create. If an environment with the given name already
@@ -692,13 +691,19 @@ public final class Conda {
     }
 
     /**
-     * Delete the conda environment with the given name. E.g. {@code conda env remove -n <name>}.
+     * Delete the conda environment with the given name. E.g. {@code conda env remove -n <name>}. The operation will not
+     * be canceled it the thread is interrupted.
      *
      * @param environmentName the name of the environment
      * @throws IOException if running the command failed.
      */
     public void deleteEnvironment(final String environmentName) throws IOException {
-        callCondaAndAwaitTermination(new CondaExecutionMonitor(), "env", "remove", "-n", environmentName);
+        callCondaAndAwaitTermination(new CondaExecutionMonitor() {
+            @Override
+            protected synchronized boolean isCanceledOrInterrupted() {
+                return false;
+            }
+        }, "env", "remove", "-n", environmentName);
     }
 
     /**

@@ -87,6 +87,7 @@ import org.knime.python2.conda.CondaEnvironmentCreationMonitor;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.conda.CondaPackageSpec;
 import org.knime.python2.config.CondaEnvironmentsConfig;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.prefs.PythonPreferences;
 
@@ -328,7 +329,6 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 conda.createEnvironment(environmentName, packages, sameOs,
                     new Monitor(packages.size(), exec.getProgressMonitor()));
             } catch (final IOException ex) {
-                // TODO also delete on cancel!
                 if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
                     // Creating the environment failed -> We still keep it
                     NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
@@ -341,6 +341,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                             + "If an incomplete environment has been created it will be removed.");
                     conda.deleteEnvironment(environmentName);
                 }
+                throw ex;
+            } catch (final PythonCanceledExecutionException ex) {
+                // Creating the environment canceled -> We make sure to remove what might be already there
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info("Environment creating canceled. "
+                    + "If an incomplete environment has been created it will be removed.");
+                conda.deleteEnvironment(environmentName);
                 throw ex;
             } finally {
                 // If a new environment has been created (either overwriting an existing environment or "overwriting" a
