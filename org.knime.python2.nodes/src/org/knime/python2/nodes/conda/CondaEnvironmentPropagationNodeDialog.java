@@ -57,6 +57,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.swing.Box;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -70,8 +71,10 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.DialogComponent;
+import org.knime.core.node.defaultnodesettings.DialogComponentBoolean;
 import org.knime.core.node.defaultnodesettings.DialogComponentButtonGroup;
 import org.knime.core.node.defaultnodesettings.DialogComponentString;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.util.ThreadUtils;
@@ -102,6 +105,8 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         CondaEnvironmentPropagationNodeModel.createEnvironmentValidationMethodKeys());
 
     private final DialogComponentString m_outputVariableNameInput;
+
+    private final DialogComponentBoolean m_preserveIncompleteEnvsCheckbox;
 
     private final SettingsModelString m_sourceOsModel = CondaEnvironmentPropagationNodeModel.createSourceOsModel();
 
@@ -139,6 +144,13 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         panel.add(createOutputVariableNameInputPanel(m_outputVariableNameInput), gbc);
 
         m_panel.add(panel, NORMAL);
+
+        final SettingsModelBoolean preserveIncompleteEnvsModel =
+            CondaEnvironmentPropagationNodeModel.createPreserveIncompleEnvsModel();
+        m_preserveIncompleteEnvsCheckbox = new DialogComponentBoolean(preserveIncompleteEnvsModel,
+            "Preserve a possibly incomplete conda environment if the creation fails");
+        gbc.gridy++;
+        panel.add(getFirstComponent(m_preserveIncompleteEnvsCheckbox, JCheckBox.class), gbc);
 
         final JPanel errorPanel = new JPanel(new GridBagLayout());
         final GridBagConstraints errorGbc = new GridBagConstraints();
@@ -184,6 +196,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         m_packagesTable.loadSettingsFrom(settings);
         m_validationMethodSelection.loadSettingsFrom(settings, specs);
         m_outputVariableNameInput.loadSettingsFrom(settings, specs);
+        m_preserveIncompleteEnvsCheckbox.loadSettingsFrom(settings, specs);
         try {
             m_sourceOsModel.loadSettingsFrom(settings);
         } catch (InvalidSettingsException ex) {
@@ -214,6 +227,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
                 m_packagesTable.saveSettingsTo(settings);
                 m_validationMethodSelection.saveSettingsTo(settings);
                 m_outputVariableNameInput.saveSettingsTo(settings);
+                m_preserveIncompleteEnvsCheckbox.saveSettingsTo(settings);
                 m_sourceOsModel.saveSettingsTo(settings);
             } finally {
                 m_refreshVsSaveLock.unlock();

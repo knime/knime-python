@@ -69,6 +69,7 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeProgressMonitor;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
@@ -108,6 +109,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String CFG_KEY_SOURCE_OS_NAME = "source_operating_system";
 
+    private static final String CFG_KEY_PRESERVE_INCOMPLETE_ENVS = "preserve_incomplete_envs";
+
     private static final String OS_LINUX = "linux";
 
     private static final String OS_MAC = "mac";
@@ -144,6 +147,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new SettingsModelString(CFG_KEY_SOURCE_OS_NAME, getCurrentOsType());
     }
 
+    static SettingsModelBoolean createPreserveIncompleEnvsModel() {
+        return new SettingsModelBoolean(CFG_KEY_PRESERVE_INCOMPLETE_ENVS, false);
+    }
+
     private final SettingsModelString m_environmentNameModel = createCondaEnvironmentNameModel();
 
     private final CondaPackagesConfig m_packagesConfig = createPackagesConfig();
@@ -153,6 +160,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private final SettingsModelString m_outputVariableNameModel = createOutputVariableNameModel();
 
     private final SettingsModelString m_sourceOsModel = createSourceOsModel();
+
+    private final SettingsModelBoolean m_preserveIncompleteEnvsModel = createPreserveIncompleEnvsModel();
 
     public CondaEnvironmentPropagationNodeModel() {
         super(new PortType[0], new PortType[]{FlowVariablePortObject.TYPE});
@@ -165,6 +174,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_validationMethodModel.saveSettingsTo(settings);
         m_outputVariableNameModel.saveSettingsTo(settings);
         m_sourceOsModel.saveSettingsTo(settings);
+        m_preserveIncompleteEnvsModel.saveSettingsTo(settings);
     }
 
     @Override
@@ -176,6 +186,9 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         // it if present.
         if (settings.containsKey(m_outputVariableNameModel.getKey())) {
             m_outputVariableNameModel.validateSettings(settings);
+        }
+        if (settings.containsKey(CFG_KEY_PRESERVE_INCOMPLETE_ENVS)) {
+            m_preserveIncompleteEnvsModel.validateSettings(settings);
         }
         m_sourceOsModel.validateSettings(settings);
     }
@@ -193,6 +206,9 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             if (outputVariableName == null || outputVariableName.isBlank()) {
                 throw new InvalidSettingsException("The output variable name may not be blank.");
             }
+        }
+        if (settings.containsKey(CFG_KEY_PRESERVE_INCOMPLETE_ENVS)) {
+            m_preserveIncompleteEnvsModel.loadSettingsFrom(settings);
         }
         m_sourceOsModel.loadSettingsFrom(settings);
     }
@@ -306,12 +322,26 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String creationMessage = p.getSecond();
 
         if (createEnvironment) {
+            exec.setMessage(creationMessage);
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
             try {
-                exec.setMessage(creationMessage);
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
-
                 conda.createEnvironment(environmentName, packages, sameOs,
                     new Monitor(packages.size(), exec.getProgressMonitor()));
+            } catch (final IOException ex) {
+                // TODO also delete on cancel!
+                if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
+                    // Creating the environment failed -> We still keep it
+                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                        .warn("Creating the environment failed. There might be an incomplete environment present. "
+                            + "Proceed with caution!");
+                } else {
+                    // Creating the environment failed -> We make sure to remove what might be already there
+                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                        .warn("Creating the environment failed. "
+                            + "If an incomplete environment has been created it will be removed.");
+                    conda.deleteEnvironment(environmentName);
+                }
+                throw ex;
             } finally {
                 // If a new environment has been created (either overwriting an existing environment or "overwriting" a
                 // previously non-existent environment), the entries in the kernel queue that reference the old
