@@ -63,15 +63,6 @@
               factory-class="org.knime.python.nodes.db.PythonScriptDBNodeFactory"/>
 	</extension>
      <extension
-           point="org.knime.workbench.repository.registeredFileExtensions">
-        <FileExtensionMapping
-              NodeFactory="org.knime.python.nodes.objectreader.PythonObjectReaderNodeFactory">
-           <FileExtension
-                 extension=".pkl">
-           </FileExtension>
-        </FileExtensionMapping>
-     </extension>
-     <extension
            point="org.knime.python.sourcecodetemplates">
         <directory
               path="templates/">
