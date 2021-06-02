@@ -49,6 +49,8 @@ package org.knime.python2.nodes.conda;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +58,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -78,6 +81,7 @@ import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObjectSpec;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.Pair;
+import org.knime.core.util.PathUtils;
 import org.knime.python2.CondaEnvironmentPropagation;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentSpec;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
@@ -317,47 +321,37 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final List<CondaPackageSpec> packages =
             filterIncludedPackagesForTargetOs(m_packagesConfig.getIncludedPackages(), targetOs);
 
-        final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, packages,
+        final var p = checkWhetherToCreateEnvironment(conda, environmentName, packages,
             m_validationMethodModel.getStringValue(), sameOs);
-        final boolean createEnvironment = p.getFirst();
+        final boolean createEnvironment = p.getFirst().getFirst();
+        final Optional<CondaEnvironmentIdentifier> existingEnvironment = p.getFirst().getSecond();
         final String creationMessage = p.getSecond();
 
         if (createEnvironment) {
             exec.setMessage(creationMessage);
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
-            try {
-                conda.createEnvironment(environmentName, packages, sameOs,
-                    new Monitor(packages.size(), exec.getProgressMonitor()));
-            } catch (final IOException ex) {
-                if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
-                    // Creating the environment failed -> We still keep it
-                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                        .warn("Creating the environment failed. There might be an incomplete environment present. "
-                            + "Proceed with caution!");
-                } else {
-                    // Creating the environment failed -> We make sure to remove what might be already there
-                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                        .warn("Creating the environment failed. "
-                            + "If an incomplete environment has been created it will be removed.");
-                    conda.deleteEnvironment(environmentName);
+            // Create a temporary backup of the existing environment
+            try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
+                try {
+                    conda.createEnvironment(environmentName, packages, sameOs,
+                        new Monitor(packages.size(), exec.getProgressMonitor()));
+                } catch (final IOException ex) {
+                    handleFailedEnvCreation(conda, environmentName, envBackup);
+                    throw ex;
+                } catch (final PythonCanceledExecutionException ex) {
+                    handleCanceledEnvCreation(conda, environmentName, envBackup);
+                    throw ex;
+                } finally {
+                    // If a new environment has been created (either overwriting an existing environment or
+                    // "overwriting" a previously non-existent environment), the entries in the kernel queue that
+                    // reference the old environment are rendered obsolete and therefore need to be invalidated. The
+                    // same is true in case the environment creation failed, which likely leaves the environment in a
+                    // corrupt state and also needs to be reflected by the queue.
+                    // Unfortunately, clearing only the entries of the queue that reference the old environment is not
+                    // straightforwardly done in the queue's current implementation, therefore we need to clear the
+                    // entire queue for now.
+                    PythonKernelQueue.clear();
                 }
-                throw ex;
-            } catch (final PythonCanceledExecutionException ex) {
-                // Creating the environment canceled -> We make sure to remove what might be already there
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info("Environment creating canceled. "
-                    + "If an incomplete environment has been created it will be removed.");
-                conda.deleteEnvironment(environmentName);
-                throw ex;
-            } finally {
-                // If a new environment has been created (either overwriting an existing environment or "overwriting" a
-                // previously non-existent environment), the entries in the kernel queue that reference the old
-                // environment are rendered obsolete and therefore need to be invalidated. The same is true in case the
-                // environment creation failed, which likely leaves the environment in a corrupt state and also needs to
-                // be reflected by the queue.
-                // Unfortunately, clearing only the entries of the queue that reference the old environment is not
-                // straightforwardly done in the queue's current implementation, therefore we need to clear the entire
-                // queue for now.
-                PythonKernelQueue.clear();
             }
         }
 
@@ -401,10 +395,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
     }
 
-    private static Pair<Boolean, String> checkWhetherToCreateEnvironment(final Conda conda,
-        final String environmentName, final List<CondaPackageSpec> requiredPackages, final String validationMethod,
-        final boolean sameOs) throws IOException, InvalidSettingsException {
-        final boolean nameExists = findEnvironment(environmentName, conda.getEnvironments()).isPresent();
+    private static Pair<Pair<Boolean, Optional<CondaEnvironmentIdentifier>>, String> checkWhetherToCreateEnvironment(
+        final Conda conda, final String environmentName, final List<CondaPackageSpec> requiredPackages,
+        final String validationMethod, final boolean sameOs) throws IOException, InvalidSettingsException {
+        final Optional<CondaEnvironmentIdentifier> existingEnvironment =
+            findEnvironment(environmentName, conda.getEnvironments());
+        final boolean nameExists = existingEnvironment.isPresent();
 
         final boolean createEnvironment;
         String creationMessage;
@@ -437,7 +433,33 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             throw new InvalidSettingsException("Invalid validation method selected. Allowed methods: " +
                 Arrays.toString(createEnvironmentValidationMethodKeys()));
         }
-        return new Pair<>(createEnvironment, creationMessage + " This might take a while...");
+        return new Pair<>(new Pair<>(createEnvironment, existingEnvironment),
+            creationMessage + " This might take a while...");
+    }
+
+    private void handleFailedEnvCreation(final Conda conda, final String environmentName,
+        final EnvironmentBackup envBackup) throws IOException {
+        if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
+            // Creating the environment failed -> We still keep it
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                .warn("Creating the environment failed. There might be an incomplete environment present. "
+                    + "Proceed with caution!");
+        } else {
+            // Creating the environment failed -> We make sure to remove what might be already there
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn("Creating the environment failed. "
+                + "If an incomplete environment has been created it will be removed.");
+            conda.deleteEnvironment(environmentName);
+            envBackup.recover();
+        }
+    }
+
+    private static void handleCanceledEnvCreation(final Conda conda, final String environmentName,
+        final EnvironmentBackup envBackup) throws IOException {
+        // Creating the environment canceled -> We make sure to remove what might be already there
+        NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(
+            "Environment creating canceled. If an incomplete environment has been created it will be removed.");
+        conda.deleteEnvironment(environmentName);
+        envBackup.recover();
     }
 
     @Override
@@ -528,6 +550,56 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 final Double totalProgress = m_monitor.getProgress();
                 m_monitor.setProgress((totalProgress != null ? totalProgress : 0d) + m_progressPerPackage,
                     "Creating Conda environment...");
+            }
+        }
+    }
+
+    private static final class EnvironmentBackup implements AutoCloseable {
+
+        private final Path m_existingEnv;
+
+        private final Path m_backupEnv;
+
+        private final boolean m_backupSuccessful;
+
+        private EnvironmentBackup(final CondaEnvironmentIdentifier environment) {
+            Path existingEnv = null;
+            Path backupEnv = null;
+            boolean backupSuccessful = false;
+
+            if (environment != null) {
+                try {
+                    existingEnv = Path.of(environment.getDirectoryPath());
+                    final Path backupFolder = existingEnv //
+                        .normalize().getParent() // envs directory /foo/anaconda3/envs
+                        .resolve("tmp-" + UUID.randomUUID().toString()); // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
+                    backupEnv = backupFolder.resolve(existingEnv.getFileName());
+                    // NOTE: this should always work because it's on the same file system
+                    Files.createDirectories(backupFolder);
+                    Files.move(existingEnv, backupEnv);
+                    backupSuccessful = true;
+                } catch (final Exception ex) { // NOSONAR -- Catch all exceptions to make sure this does not hinder the node execution
+                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
+                        "Could not backup environment. The environment will be overwritten without chance for recovery.",
+                        ex);
+                }
+            }
+            m_existingEnv = existingEnv;
+            m_backupEnv = backupEnv;
+            m_backupSuccessful = backupSuccessful;
+        }
+
+        private void recover() throws IOException {
+            if (m_backupSuccessful) {
+                Files.move(m_backupEnv, m_existingEnv);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            // Delete the backup folder if it exists (no matter if the backup was successful or not)
+            if (m_backupEnv != null && Files.exists(m_backupEnv.getParent())) {
+                PathUtils.deleteDirectoryIfExists(m_backupEnv.getParent());
             }
         }
     }
