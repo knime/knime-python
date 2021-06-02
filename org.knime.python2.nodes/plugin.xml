@@ -28,7 +28,7 @@
         <category description="Nodes to interface with the Conda tool." icon="icons/condacategory.png" level-id="conda" name="Conda" path="/scripting/python"/>
     </extension>
     <extension point="org.knime.workbench.repository.registeredFileExtensions">
-        <FileExtensionMapping NodeFactory="org.knime.python2.nodes.objectreader.Python2ObjectReaderNodeFactory">
+        <FileExtensionMapping NodeFactory="org.knime.python2.nodes.objectreader2.Python2ObjectReaderNodeFactory2">
             <FileExtension extension=".pkl"/>
         </FileExtensionMapping>
     </extension>
