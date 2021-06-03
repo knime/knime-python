@@ -407,17 +407,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         if (VALIDATION_METHOD_NAME.equals(validationMethod) ||
             VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
             if (nameExists && VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
-                final List<CondaPackageSpec> existingPackages = conda.getPackages(environmentName);
-                // Ignore/zero build specs if source and target operating systems differ.
-                final UnaryOperator<CondaPackageSpec> adaptToOs =
-                    pkg -> sameOs ? pkg : new CondaPackageSpec(pkg.getName(), pkg.getVersion(), "", pkg.getChannel());
-                final Set<CondaPackageSpec> existingPackagesBuildSpecAdapted = existingPackages.stream() //
-                    .map(adaptToOs) //
-                    .collect(Collectors.toSet());
-                final boolean requiredPackagesExist = requiredPackages.stream() //
-                    .map(adaptToOs) //
-                    .allMatch(existingPackagesBuildSpecAdapted::contains);
-                createEnvironment = !requiredPackagesExist;
+                createEnvironment = !requiredPackagesExist(conda, environmentName, requiredPackages, sameOs);
                 creationMessage = "Environment '" + environmentName +
                     "' exists but does not contain all of the configured packages. Overwriting the environment.";
             } else {
@@ -435,6 +425,20 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
         return new Pair<>(new Pair<>(createEnvironment, existingEnvironment),
             creationMessage + " This might take a while...");
+    }
+
+    private static boolean requiredPackagesExist(final Conda conda, final String environmentName,
+        final List<CondaPackageSpec> requiredPackages, final boolean sameOs) throws IOException {
+        final List<CondaPackageSpec> existingPackages = conda.getPackages(environmentName);
+        // Ignore/zero build specs if source and target operating systems differ.
+        final UnaryOperator<CondaPackageSpec> adaptToOs =
+            pkg -> sameOs ? pkg : new CondaPackageSpec(pkg.getName(), pkg.getVersion(), "", pkg.getChannel());
+        final Set<CondaPackageSpec> existingPackagesBuildSpecAdapted = existingPackages.stream() //
+            .map(adaptToOs) //
+            .collect(Collectors.toSet());
+        return requiredPackages.stream() //
+            .map(adaptToOs) //
+            .allMatch(existingPackagesBuildSpecAdapted::contains);
     }
 
     private void handleFailedEnvCreation(final Conda conda, final String environmentName,
