@@ -55,10 +55,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -311,10 +313,17 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_packagesConfig.setPackages(packages, Collections.emptyList());
     }
 
+    /**
+     * Only one {@link CondaEnvironmentPropagationNodeModel} may execute on an environment with a given name. This maps
+     * the environment names to the lock objects.
+     */
+    private static final Map<String, Object> ENVIRONMENT_MODIFICATION_LOCKS = new ConcurrentHashMap<>();
+
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final Conda conda = createConda();
         final String environmentName = m_environmentNameModel.getStringValue();
+        ENVIRONMENT_MODIFICATION_LOCKS.putIfAbsent(environmentName, new Object());
         final String targetOs = getCurrentOsType();
         final boolean sameOs = targetOs.equals(m_sourceOsModel.getStringValue());
 
@@ -330,27 +339,30 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         if (createEnvironment) {
             exec.setMessage(creationMessage);
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
-            // Create a temporary backup of the existing environment
-            try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
-                try {
-                    conda.createEnvironment(environmentName, packages, sameOs,
-                        new Monitor(packages.size(), exec.getProgressMonitor()));
-                } catch (final IOException ex) {
-                    handleFailedEnvCreation(conda, environmentName, envBackup);
-                    throw ex;
-                } catch (final PythonCanceledExecutionException ex) {
-                    handleCanceledEnvCreation(conda, environmentName, envBackup);
-                    throw ex;
-                } finally {
-                    // If a new environment has been created (either overwriting an existing environment or
-                    // "overwriting" a previously non-existent environment), the entries in the kernel queue that
-                    // reference the old environment are rendered obsolete and therefore need to be invalidated. The
-                    // same is true in case the environment creation failed, which likely leaves the environment in a
-                    // corrupt state and also needs to be reflected by the queue.
-                    // Unfortunately, clearing only the entries of the queue that reference the old environment is not
-                    // straightforwardly done in the queue's current implementation, therefore we need to clear the
-                    // entire queue for now.
-                    PythonKernelQueue.clear();
+            // we want at most one env prop node to operate on a specific environment
+            synchronized (ENVIRONMENT_MODIFICATION_LOCKS.get(environmentName)) {
+                // Create a temporary backup of the existing environment
+                try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
+                    try {
+                        conda.createEnvironment(environmentName, packages, sameOs,
+                            new Monitor(packages.size(), exec.getProgressMonitor()));
+                    } catch (final IOException ex) {
+                        handleFailedEnvCreation(conda, environmentName, envBackup);
+                        throw ex;
+                    } catch (final PythonCanceledExecutionException ex) {
+                        handleCanceledEnvCreation(conda, environmentName, envBackup);
+                        throw ex;
+                    } finally {
+                        // If a new environment has been created (either overwriting an existing environment or
+                        // "overwriting" a previously non-existent environment), the entries in the kernel queue that
+                        // reference the old environment are rendered obsolete and therefore need to be invalidated. The
+                        // same is true in case the environment creation failed, which likely leaves the environment in a
+                        // corrupt state and also needs to be reflected by the queue.
+                        // Unfortunately, clearing only the entries of the queue that reference the old environment is not
+                        // straightforwardly done in the queue's current implementation, therefore we need to clear the
+                        // entire queue for now.
+                        PythonKernelQueue.clear();
+                    }
                 }
             }
         }
@@ -395,6 +407,17 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
     }
 
+    /**
+     * TODO
+     * @param conda
+     * @param environmentName
+     * @param requiredPackages
+     * @param validationMethod
+     * @param sameOs
+     * @return
+     * @throws IOException
+     * @throws InvalidSettingsException
+     */
     private static Pair<Pair<Boolean, Optional<CondaEnvironmentIdentifier>>, String> checkWhetherToCreateEnvironment(
         final Conda conda, final String environmentName, final List<CondaPackageSpec> requiredPackages,
         final String validationMethod, final boolean sameOs) throws IOException, InvalidSettingsException {
@@ -564,33 +587,47 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         private final Path m_backupEnv;
 
+        // TODO what are the consequences of this being true/false?
         private final boolean m_backupSuccessful;
 
         private EnvironmentBackup(final CondaEnvironmentIdentifier environment) {
-            Path existingEnv = null;
-            Path backupEnv = null;
-            boolean backupSuccessful = false;
-
-            if (environment != null) {
-                try {
-                    existingEnv = Path.of(environment.getDirectoryPath());
-                    final Path backupFolder = existingEnv //
-                        .normalize().getParent() // envs directory /foo/anaconda3/envs
-                        .resolve("tmp-" + UUID.randomUUID().toString()); // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
-                    backupEnv = backupFolder.resolve(existingEnv.getFileName());
-                    // NOTE: this should always work because it's on the same file system
-                    Files.createDirectories(backupFolder);
-                    Files.move(existingEnv, backupEnv);
-                    backupSuccessful = true;
-                } catch (final Exception ex) { // NOSONAR -- Catch all exceptions to make sure this does not hinder the node execution
-                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
-                        "Could not backup environment. The environment will be overwritten without chance for recovery.",
-                        ex);
+            if (environment == null) {
+                // TODO or should the backup be considered trivially successful?
+                m_backupSuccessful = false;
+                m_existingEnv = null;
+                m_backupEnv = null;
+            } else {
+                var paths = createBackup(environment);
+                if (paths.isEmpty()) {
+                    m_backupSuccessful = false;
+                    m_existingEnv = null;
+                    m_backupEnv = null;
+                } else {
+                    m_backupSuccessful = true;
+                    m_existingEnv = paths.get().getFirst();
+                    m_backupEnv = paths.get().getSecond();
                 }
             }
-            m_existingEnv = existingEnv;
-            m_backupEnv = backupEnv;
-            m_backupSuccessful = backupSuccessful;
+        }
+
+        private static Optional<Pair<Path, Path>> createBackup(final CondaEnvironmentIdentifier environment) {
+            try {
+                final Path existingEnv = Path.of(environment.getDirectoryPath());
+                final Path backupFolder = existingEnv //
+                    .normalize().getParent() // envs directory /foo/anaconda3/envs
+                    .resolve("tmp-" + UUID.randomUUID().toString()); // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
+                final Path backupEnv = backupFolder.resolve(existingEnv.getFileName());
+                // NOTE: this should always work because it's on the same file system
+                Files.createDirectories(backupFolder);
+                Files.move(existingEnv, backupEnv);
+                return Optional.of(Pair.create(existingEnv, backupEnv));
+            } catch (final Exception ex) { // NOSONAR -- Catch all exceptions to make sure this does not hinder the node execution
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
+                    "Could not backup environment. The environment will be overwritten without chance for recovery.",
+                    ex);
+            }
+
+            return Optional.empty();
         }
 
         private void recover() throws IOException {
