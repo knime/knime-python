@@ -408,15 +408,13 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     }
 
     /**
-     * TODO
-     * @param conda
-     * @param environmentName
-     * @param requiredPackages
-     * @param validationMethod
-     * @param sameOs
-     * @return
-     * @throws IOException
-     * @throws InvalidSettingsException
+     * Checks whether the requested conda environment should be created. If the validationMethod is set to "name" the
+     * env is only created if the name does not exist. If the validationMethod is set to "name_packages" the env is
+     * created if the name does not exist or the existing env does not contain all requested packages. If the
+     * validationMethod is set to "overwrite" the env is always created.
+     *
+     * @return a nested pair with a boolean stating if the env should be created, an optional identifier of the existing
+     *         environment and a creation message
      */
     private static Pair<Pair<Boolean, Optional<CondaEnvironmentIdentifier>>, String> checkWhetherToCreateEnvironment(
         final Conda conda, final String environmentName, final List<CondaPackageSpec> requiredPackages,
@@ -483,8 +481,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private static void handleCanceledEnvCreation(final Conda conda, final String environmentName,
         final EnvironmentBackup envBackup) throws IOException {
         // Creating the environment canceled -> We make sure to remove what might be already there
-        NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(
-            "Environment creating canceled. If an incomplete environment has been created it will be removed.");
+        NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+            .info("Environment creating canceled. If an incomplete environment has been created it will be removed.");
         conda.deleteEnvironment(environmentName);
         envBackup.recover();
     }
@@ -587,23 +585,16 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         private final Path m_backupEnv;
 
-        // TODO what are the consequences of this being true/false?
-        private final boolean m_backupSuccessful;
-
         private EnvironmentBackup(final CondaEnvironmentIdentifier environment) {
             if (environment == null) {
-                // TODO or should the backup be considered trivially successful?
-                m_backupSuccessful = false;
                 m_existingEnv = null;
                 m_backupEnv = null;
             } else {
-                var paths = createBackup(environment);
+                final var paths = createBackup(environment);
                 if (paths.isEmpty()) {
-                    m_backupSuccessful = false;
                     m_existingEnv = null;
                     m_backupEnv = null;
                 } else {
-                    m_backupSuccessful = true;
                     m_existingEnv = paths.get().getFirst();
                     m_backupEnv = paths.get().getSecond();
                 }
@@ -611,9 +602,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
 
         private static Optional<Pair<Path, Path>> createBackup(final CondaEnvironmentIdentifier environment) {
+            Path backupFolder = null;
             try {
                 final Path existingEnv = Path.of(environment.getDirectoryPath());
-                final Path backupFolder = existingEnv //
+                backupFolder = existingEnv //
                     .normalize().getParent() // envs directory /foo/anaconda3/envs
                     .resolve("tmp-" + UUID.randomUUID().toString()); // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
                 final Path backupEnv = backupFolder.resolve(existingEnv.getFileName());
@@ -625,13 +617,15 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
                     "Could not backup environment. The environment will be overwritten without chance for recovery.",
                     ex);
+                // Clean up the backup folder if the backup did not succeed
+                deleteBackupIfExists(backupFolder);
             }
 
             return Optional.empty();
         }
 
         private void recover() throws IOException {
-            if (m_backupSuccessful) {
+            if (m_backupEnv != null && m_existingEnv != null) {
                 Files.move(m_backupEnv, m_existingEnv);
             }
         }
@@ -639,8 +633,20 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         @Override
         public void close() throws Exception {
             // Delete the backup folder if it exists (no matter if the backup was successful or not)
-            if (m_backupEnv != null && Files.exists(m_backupEnv.getParent())) {
-                PathUtils.deleteDirectoryIfExists(m_backupEnv.getParent());
+            if (m_backupEnv != null) {
+                deleteBackupIfExists(m_backupEnv.getParent());
+            }
+        }
+
+        private static void deleteBackupIfExists(final Path folder) {
+            try {
+                if (folder != null && Files.exists(folder)) {
+                    PathUtils.deleteDirectoryIfExists(folder);
+                }
+            } catch (final IOException ex) {
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                    .warn("Could not clean up backup directory. The directory " + folder.toAbsolutePath().toString()
+                        + " exists and needs to be deleted manually.", ex);
             }
         }
     }
