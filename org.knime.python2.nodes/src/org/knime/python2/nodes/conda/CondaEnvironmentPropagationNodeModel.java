@@ -306,11 +306,23 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String creationMessage = p.getSecond();
 
         if (createEnvironment) {
-            exec.setMessage(creationMessage);
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
+            try {
+                exec.setMessage(creationMessage);
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
 
-            conda.createEnvironment(environmentName, packages, sameOs,
-                new Monitor(packages.size(), exec.getProgressMonitor()));
+                conda.createEnvironment(environmentName, packages, sameOs,
+                    new Monitor(packages.size(), exec.getProgressMonitor()));
+            } finally {
+                // If a new environment has been created (either overwriting an existing environment or "overwriting" a
+                // previously non-existent environment), the entries in the kernel queue that reference the old
+                // environment are rendered obsolete and therefore need to be invalidated. The same is true in case the
+                // environment creation failed, which likely leaves the environment in a corrupt state and also needs to
+                // be reflected by the queue.
+                // Unfortunately, clearing only the entries of the queue that reference the old environment is not
+                // straightforwardly done in the queue's current implementation, therefore we need to clear the entire
+                // queue for now.
+                PythonKernelQueue.clear();
+            }
         }
 
         final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
@@ -323,16 +335,6 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 throw new IllegalStateException("Conda environment '" + environmentName + "' does not exist anymore.\n"
                     + "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
             }
-        }
-
-        if (createEnvironment) {
-            // If a new environment has been created (either overwriting an existing environment or "overwriting" a
-            // previously non-existent environment), the entries in the kernel queue that reference the old environment
-            // are rendered obsolete and therefore need to be invalidated.
-            // Unfortunately, clearing only the entries of the queue that reference the old environment is not
-            // straightforwardly done in the queue's current implementation, therefore we need to clear the entire queue
-            // for now.
-            PythonKernelQueue.clear();
         }
 
         pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
