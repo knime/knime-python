@@ -94,6 +94,8 @@ import org.knime.python2.prefs.PythonPreferences;
  */
 final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class);
+
     private static final String CFG_KEY_CONDA_ENV = "conda_environment";
 
     private static final String CFG_KEY_ENV_VALIDATION_METHOD = "environment_validation";
@@ -294,13 +296,16 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final Conda conda = createConda();
         final String environmentName = m_environmentNameModel.getStringValue();
+        final String sourceOs = m_sourceOsModel.getStringValue();
         final String targetOs = getCurrentOsType();
-        final boolean sameOs = targetOs.equals(m_sourceOsModel.getStringValue());
+        final boolean sameOs = targetOs.equals(sourceOs);
 
-        final List<CondaPackageSpec> packages =
-            filterIncludedPackagesForTargetOs(m_packagesConfig.getIncludedPackages(), targetOs);
+        final List<CondaPackageSpec> includedPackages = new ArrayList<>();
+        final List<CondaPackageSpec> excludedPackages = new ArrayList<>();
+        filterIncludedPackagesForTargetOs(m_packagesConfig.getIncludedPackages(), targetOs, includedPackages,
+            excludedPackages);
 
-        final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, packages,
+        final Pair<Boolean, String> p = checkWhetherToCreateEnvironment(conda, environmentName, includedPackages,
             m_validationMethodModel.getStringValue(), sameOs);
         final boolean createEnvironment = p.getFirst();
         final String creationMessage = p.getSecond();
@@ -308,10 +313,13 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         if (createEnvironment) {
             try {
                 exec.setMessage(creationMessage);
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
+                LOGGER.info(creationMessage);
+                if (!sameOs) {
+                    printCrossPlatformInfo(sourceOs, targetOs, excludedPackages);
+                }
 
-                conda.createEnvironment(environmentName, packages, sameOs,
-                    new Monitor(packages.size(), exec.getProgressMonitor()));
+                conda.createEnvironment(environmentName, includedPackages, sameOs,
+                    new Monitor(includedPackages.size(), exec.getProgressMonitor()));
             } finally {
                 // If a new environment has been created (either overwriting an existing environment or "overwriting" a
                 // previously non-existent environment), the entries in the kernel queue that reference the old
@@ -342,12 +350,17 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
-    private static List<CondaPackageSpec> filterIncludedPackagesForTargetOs(
-        final List<CondaPackageSpec> allIncludedPackages, final String targetOs) throws IOException {
+    private static void filterIncludedPackagesForTargetOs(final List<CondaPackageSpec> allIncludedPackages,
+        final String targetOs, final List<CondaPackageSpec> outIncludedPackages,
+        final List<CondaPackageSpec> outExcludedPackages) throws IOException {
         populatePlatformPackageFilter(targetOs);
-        return allIncludedPackages.stream() //
-            .filter(pkg -> !platformPackageFilter.excludesPackage(pkg.getName())) //
-            .collect(Collectors.toList());
+        for (final CondaPackageSpec pkg : allIncludedPackages) {
+            if (platformPackageFilter.excludesPackage(pkg.getName())) {
+                outExcludedPackages.add(pkg);
+            } else {
+                outIncludedPackages.add(pkg);
+            }
+        }
     }
 
     private static synchronized void populatePlatformPackageFilter(final String targetOs) throws IOException {
@@ -404,6 +417,27 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new Pair<>(createEnvironment, creationMessage + " This might take a while...");
     }
 
+    private static void printCrossPlatformInfo(final String sourceOs, final String targetOs,
+        final List<CondaPackageSpec> excludedPackages) {
+        final String sourceOsPrettyName = toPrettyOsName(sourceOs);
+        final String targetOsPrettyName = toPrettyOsName(targetOs);
+        String message = "The environment to create was configured on " + sourceOsPrettyName +
+            ". Ignoring the configured packages' build specs to ensure cross-platform compatibility.";
+        if (!excludedPackages.isEmpty()) {
+            final boolean pl = excludedPackages.size() > 1;
+            message += String.format(
+                "%nAlso, the following configured %s known to be available on %s but not on %s. %s therefore " +
+                    "excluded from the creation process:%s",
+                pl ? "packages are" : "package is", //
+                sourceOsPrettyName, //
+                targetOsPrettyName, //
+                pl ? "They are" : "It is", //
+                excludedPackages.stream().map(CondaPackageSpec::getName).sorted()
+                    .collect(Collectors.joining("\n  - ", "\n  - ", "")));
+        }
+        LOGGER.info(message);
+    }
+
     @Override
     protected void reset() {
         // Nothing to do.
@@ -421,6 +455,20 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             throw Conda.createUnknownOSException();
         }
         return osType;
+    }
+
+    private static String toPrettyOsName(final String osType) {
+        final String osName;
+        if (OS_LINUX.equals(osType)) {
+            osName = "Linux";
+        } else if (OS_MAC.equals(osType)) {
+            osName = "Mac";
+        } else if (OS_WINDOWS.equals(osType)) {
+            osName = "Windows";
+        } else {
+            osName = osType;
+        }
+        return osName;
     }
 
     static Conda createConda() throws InvalidSettingsException {
@@ -477,7 +525,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         protected void handleWarningMessage(final String warning) {
             NodeContext.pushContext(m_nodeContext);
             try {
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(warning);
+                LOGGER.warn(warning);
             } finally {
                 NodeContext.removeLastContext();
             }
