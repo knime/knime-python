@@ -104,7 +104,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String VALIDATION_METHOD_OVERWRITE = "overwrite";
 
-    private static final String CFG_KEY_ENV_VARIABLE_NAME = "environment_variable_name";
+    private static final String CFG_KEY_OUTPUT_VARIABLE_NAME = "output_variable_name";
 
     private static final String CFG_KEY_SOURCE_OS_NAME = "source_operating_system";
 
@@ -135,8 +135,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         return new SettingsModelString(CFG_KEY_ENV_VALIDATION_METHOD, createEnvironmentValidationMethodKeys()[0]);
     }
 
-    static SettingsModelString createEnvironmentVariableNameModel() {
-        return new SettingsModelString(CFG_KEY_ENV_VARIABLE_NAME,
+    static SettingsModelString createOutputVariableNameModel() {
+        return new SettingsModelString(CFG_KEY_OUTPUT_VARIABLE_NAME,
             CondaEnvironmentPropagation.DEFAULT_ENV_FLOW_VAR_NAME);
     }
 
@@ -150,7 +150,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private final SettingsModelString m_validationMethodModel = createEnvironmentValidationMethodModel();
 
-    private final SettingsModelString m_environmentVariableNameModel = createEnvironmentVariableNameModel();
+    private final SettingsModelString m_outputVariableNameModel = createOutputVariableNameModel();
 
     private final SettingsModelString m_sourceOsModel = createSourceOsModel();
 
@@ -163,7 +163,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_environmentNameModel.saveSettingsTo(settings);
         m_packagesConfig.saveSettingsTo(settings);
         m_validationMethodModel.saveSettingsTo(settings);
-        m_environmentVariableNameModel.saveSettingsTo(settings);
+        m_outputVariableNameModel.saveSettingsTo(settings);
         m_sourceOsModel.saveSettingsTo(settings);
     }
 
@@ -174,8 +174,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_validationMethodModel.validateSettings(settings);
         // Backward compatibility: environment variable name model was introduced in KNIME 4.4; only attempt to validate
         // it if present.
-        if (settings.containsKey(m_environmentVariableNameModel.getKey())) {
-            m_environmentVariableNameModel.validateSettings(settings);
+        if (settings.containsKey(m_outputVariableNameModel.getKey())) {
+            m_outputVariableNameModel.validateSettings(settings);
         }
         m_sourceOsModel.validateSettings(settings);
     }
@@ -187,10 +187,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_validationMethodModel.loadSettingsFrom(settings);
         // Backward compatibility: environment variable name model was introduced in KNIME 4.4; only attempt to load it
         // if present.
-        if (settings.containsKey(m_environmentVariableNameModel.getKey())) {
-            m_environmentVariableNameModel.loadSettingsFrom(settings);
-            final String environmentVariableName = m_environmentVariableNameModel.getStringValue();
-            if (environmentVariableName == null || environmentVariableName.isBlank()) {
+        if (settings.containsKey(m_outputVariableNameModel.getKey())) {
+            m_outputVariableNameModel.loadSettingsFrom(settings);
+            final String outputVariableName = m_outputVariableNameModel.getStringValue();
+            if (outputVariableName == null || outputVariableName.isBlank()) {
                 throw new InvalidSettingsException("The environment variable name may not be blank.");
             }
         }
@@ -231,8 +231,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final List<CondaPackageSpec> installedByPip = new ArrayList<>();
         final boolean pipExists = Conda.filterPipInstalledPackages(packages, installedByPip, null);
         if (!pipExists && !installedByPip.isEmpty()) {
-            throw new InvalidSettingsException("There are packages included in the environment that need to be "
-                + "installed using pip. Therefore you also need to include package 'pip'.");
+            throw new InvalidSettingsException("There are packages included in the environment that need to be " +
+                "installed using pip. Therefore you also need to include package 'pip'.");
         }
 
         final String environmentName = m_environmentNameModel.getStringValue();
@@ -256,9 +256,9 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             ? PythonPreferences.getPython2CondaEnvironmentDirectoryPath() //
             : PythonPreferences.getPython3CondaEnvironmentDirectoryPath();
         if (CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR.equals(environmentDirectory)) {
-            throw new InvalidSettingsException("Please make sure Conda is properly configured in the Preferences "
-                + "of the KNIME Python Integration.\nThen select the Conda environment to propagate via the "
-                + "configuration dialog of this node.");
+            throw new InvalidSettingsException("Please make sure Conda is properly configured in the Preferences " +
+                "of the KNIME Python Integration.\nThen select the Conda environment to propagate via the " +
+                "configuration dialog of this node.");
         }
 
         final Optional<String> environmentNameOpt = environments.stream() //
@@ -273,10 +273,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             environmentName = environments.get(0).getName();
         } else {
             throw new InvalidSettingsException("No Conda environment available for propagation." //
-                + "\nNote that Conda's \"" + Conda.ROOT_ENVIRONMENT_NAME + "\" environment cannot be propagated "
-                + "because it is not allowed to be overwritten." //
-                + "\nThis is, however, a prerequisite for environment propagation."
-                + "\nPlease create at least one additional Conda environment before using this node." //
+                + "\nNote that Conda's \"" + Conda.ROOT_ENVIRONMENT_NAME + "\" environment cannot be propagated " +
+                "because it is not allowed to be overwritten." //
+                + "\nThis is, however, a prerequisite for environment propagation." +
+                "\nPlease create at least one additional Conda environment before using this node." //
                 + "\nThen select the environment to propagate via the configuration dialog of the node.");
         }
         m_environmentNameModel.setStringValue(environmentName);
@@ -329,11 +329,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
         if (!environment.isPresent()) {
             if (createEnvironment) {
-                throw new IllegalStateException("Failed to create Conda environment '" + environmentName
-                    + "' for unknown reasons.\nPlease check the log for any relevant information.");
+                throw new IllegalStateException("Failed to create Conda environment '" + environmentName +
+                    "' for unknown reasons.\nPlease check the log for any relevant information.");
             } else {
-                throw new IllegalStateException("Conda environment '" + environmentName + "' does not exist anymore.\n"
-                    + "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
+                throw new IllegalStateException(
+                    "Conda environment '" + environmentName + "' does not exist anymore.\n" +
+                        "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
             }
         }
 
@@ -371,8 +372,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         final boolean createEnvironment;
         String creationMessage;
-        if (VALIDATION_METHOD_NAME.equals(validationMethod)
-            || VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
+        if (VALIDATION_METHOD_NAME.equals(validationMethod) ||
+            VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
             if (nameExists && VALIDATION_METHOD_NAME_PACKAGES.equals(validationMethod)) {
                 final List<CondaPackageSpec> existingPackages = conda.getPackages(environmentName);
                 // Ignore/zero build specs if source and target operating systems differ.
@@ -385,8 +386,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                     .map(adaptToOs) //
                     .allMatch(existingPackagesBuildSpecAdapted::contains);
                 createEnvironment = !requiredPackagesExist;
-                creationMessage = "Environment '" + environmentName
-                    + "' exists but does not contain all of the configured packages. Overwriting the environment.";
+                creationMessage = "Environment '" + environmentName +
+                    "' exists but does not contain all of the configured packages. Overwriting the environment.";
             } else {
                 createEnvironment = !nameExists;
                 creationMessage = "Environment '" + environmentName + "' does not exist. Creating the environment.";
@@ -397,8 +398,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 ? ("Environment '" + environmentName + "' exists. Overwriting the environment.") //
                 : ("Environment '" + environmentName + "' does not exist. Creating the environment.");
         } else {
-            throw new InvalidSettingsException("Invalid validation method selected. Allowed methods: "
-                + Arrays.toString(createEnvironmentValidationMethodKeys()));
+            throw new InvalidSettingsException("Invalid validation method selected. Allowed methods: " +
+                Arrays.toString(createEnvironmentValidationMethodKeys()));
         }
         return new Pair<>(createEnvironment, creationMessage + " This might take a while...");
     }
@@ -427,10 +428,10 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         try {
             return new Conda(condaInstallationPath, false);
         } catch (final IOException ex) {
-            throw new InvalidSettingsException("Failed to reach out to the Conda installation located at '"
-                + condaInstallationPath + "'.\nPlease make sure Conda is properly configured in the Preferences of "
-                + "the KNIME Python Integration.\nThen select the Conda environment to propagate via the "
-                + "configuration dialog of this node.", ex);
+            throw new InvalidSettingsException("Failed to reach out to the Conda installation located at '" +
+                condaInstallationPath + "'.\nPlease make sure Conda is properly configured in the Preferences of " +
+                "the KNIME Python Integration.\nThen select the Conda environment to propagate via the " +
+                "configuration dialog of this node.", ex);
         }
     }
 
@@ -454,7 +455,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     }
 
     private void pushEnvironmentFlowVariable(final String environmentName, final String environmentDirectoryPath) {
-        pushFlowVariable(m_environmentVariableNameModel.getStringValue(), CondaEnvironmentType.INSTANCE,
+        pushFlowVariable(m_outputVariableNameModel.getStringValue(), CondaEnvironmentType.INSTANCE,
             new CondaEnvironmentSpec(new CondaEnvironmentIdentifier(environmentName, environmentDirectoryPath)));
     }
 

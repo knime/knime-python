@@ -101,7 +101,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         new String[]{"Check name only", "Check name and packages", "Always overwrite existing environment"},
         CondaEnvironmentPropagationNodeModel.createEnvironmentValidationMethodKeys());
 
-    private final DialogComponentString m_environmentVariableNameInput;
+    private final DialogComponentString m_outputVariableNameInput;
 
     private final SettingsModelString m_sourceOsModel = CondaEnvironmentPropagationNodeModel.createSourceOsModel();
 
@@ -132,12 +132,11 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         gbc.weighty = 0;
         panel.add(getFirstComponent(m_validationMethodSelection, Box.class), gbc);
 
-        final SettingsModelString environmentVariableNameModel =
-            CondaEnvironmentPropagationNodeModel.createEnvironmentVariableNameModel();
-        m_environmentVariableNameInput =
-            new DialogComponentString(environmentVariableNameModel, "Environment variable name");
+        final SettingsModelString outputVariableNameModel =
+            CondaEnvironmentPropagationNodeModel.createOutputVariableNameModel();
+        m_outputVariableNameInput = new DialogComponentString(outputVariableNameModel, "Output variable name");
         gbc.gridy++;
-        panel.add(createEnvironmentVariableNameInputPanel(m_environmentVariableNameInput), gbc);
+        panel.add(createOutputVariableNameInputPanel(m_outputVariableNameInput), gbc);
 
         m_panel.add(panel, NORMAL);
 
@@ -159,8 +158,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         m_environmentNameModel.addChangeListener(e -> refreshPackages());
     }
 
-    private static Component
-        createEnvironmentVariableNameInputPanel(final DialogComponentString environmentVariableNameInput) {
+    private static Component createOutputVariableNameInputPanel(final DialogComponentString outputVariableNameInput) {
         final JPanel panel = new JPanel(new GridBagLayout());
         final GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.NORTHWEST;
@@ -168,10 +166,10 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         gbc.ipadx = 5;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(getFirstComponent(environmentVariableNameInput, JLabel.class), gbc);
+        panel.add(getFirstComponent(outputVariableNameInput, JLabel.class), gbc);
         gbc.gridx++;
         gbc.weightx = 1;
-        panel.add(getFirstComponent(environmentVariableNameInput, JTextField.class), gbc);
+        panel.add(getFirstComponent(outputVariableNameInput, JTextField.class), gbc);
         return panel;
     }
 
@@ -185,7 +183,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         m_environmentsList.loadSettingsFrom(settings);
         m_packagesTable.loadSettingsFrom(settings);
         m_validationMethodSelection.loadSettingsFrom(settings, specs);
-        m_environmentVariableNameInput.loadSettingsFrom(settings, specs);
+        m_outputVariableNameInput.loadSettingsFrom(settings, specs);
         try {
             m_sourceOsModel.loadSettingsFrom(settings);
         } catch (InvalidSettingsException ex) {
@@ -215,7 +213,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
                 m_environmentsList.saveSettingsTo(settings);
                 m_packagesTable.saveSettingsTo(settings);
                 m_validationMethodSelection.saveSettingsTo(settings);
-                m_environmentVariableNameInput.saveSettingsTo(settings);
+                m_outputVariableNameInput.saveSettingsTo(settings);
                 m_sourceOsModel.saveSettingsTo(settings);
             } finally {
                 m_refreshVsSaveLock.unlock();
