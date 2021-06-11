@@ -72,7 +72,7 @@
 						same name.</li>
 				</ul>
 			</option>
-			<option name="Environment variable name">
+			<option name="Output variable name">
 				The name of the output flow variable that propagates the configured Conda environment. The default name
 				is <i>conda.environment</i>. You can specify a custom name to avoid name collisions that may otherwise
 				occur when employing multiple Conda Environment Propagation nodes in a single workflow.
