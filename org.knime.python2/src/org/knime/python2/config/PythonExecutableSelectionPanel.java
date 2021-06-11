@@ -44,77 +44,63 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 16, 2020 (marcel): created
+ *   Jun 11, 2021 (marcel): created
  */
-package org.knime.python2.nodes;
+package org.knime.python2.config;
 
-import org.knime.core.node.DataAwareNodeDialogPane;
-import org.knime.core.node.InvalidSettingsException;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeListener;
+
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.config.PythonExecutableSelectionPanel;
+import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonVersion;
 
 /**
- * Base class for {@link DataAwareNodeDialogPane data-aware} dialogs of Python scripting nodes.
- *
- * @see PythonDataUnawareNodeDialog
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public abstract class PythonDataAwareNodeDialog extends DataAwareNodeDialogPane {
-
-    private PythonNodeDialogContent m_content;
+@SuppressWarnings("serial") // Not intended for serialization.
+public abstract class PythonExecutableSelectionPanel extends JPanel {
 
     /**
-     * Must be called before this instance can be used. Initializing the content via this method instead of via a
-     * constructor is required because {@code content} indirectly requires a reference to this instance which cannot be
-     * provided during the construction of the instance.
-     *
-     * @param content This dialog pane's content.
+     * The suggested tab name for when using this panel as tab in a node dialog.
      */
-    protected void initializeContent(final PythonNodeDialogContent content) {
-        if (m_content == null) {
-            m_content = content;
-            addTab("Script", m_content.getScriptPanel(), false);
-            addTab("Options", m_content.getOptionsPanel());
-            addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_content.getExecutableSelectionPanel());
-            addTab("Templates", m_content.getTemplatesPanel());
-        } else {
-            throw new IllegalStateException("Content has already been initialized.");
-        }
-    }
+    public static final String DEFAULT_TAB_NAME = "Executable Selection";
 
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        m_content.loadSettingsFrom(settings, specs, getCredentialsProvider());
-    }
+    /**
+     * @return The (currently) configured Python version.
+     */
+    public abstract PythonVersion getPythonVersion();
 
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
-        throws NotConfigurableException {
-        m_content.loadSettingsFrom(settings, input, getCredentialsProvider());
-    }
+    /**
+     * @return The currently configured Python command.
+     */
+    public abstract PythonCommand getPythonCommand();
 
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        m_content.saveSettingsTo(settings);
-    }
+    /**
+     * @param listener The listener that will be notified if the Python version and/or command selected via this panel
+     *            changed.
+     */
+    public abstract void addChangeListener(ChangeListener listener);
 
-    @Override
-    public boolean closeOnESC() {
-        return PythonNodeDialogContent.closeDialogOnESC();
-    }
+    /**
+     * @param listener The listener to remove.
+     */
+    public abstract void removeChangeListener(ChangeListener listener);
 
-    @Override
-    public void onOpen() {
-        m_content.onDialogOpen();
-    }
+    /**
+     * Load this panel's configuration from the given settings.
+     *
+     * @param settings The settings.
+     * @throws NotConfigurableException If loading the configuration failed.
+     */
+    public abstract void loadSettingsFrom(NodeSettingsRO settings) throws NotConfigurableException;
 
-    @Override
-    public void onClose() {
-        m_content.onDialogClose();
-    }
+    /**
+     * Save this panel's configuration to the given settings.
+     *
+     * @param settings The settings.
+     */
+    public abstract void saveSettingsTo(NodeSettingsWO settings);
 }

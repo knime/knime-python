@@ -44,77 +44,75 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 16, 2020 (marcel): created
+ *   Jun 10, 2021 (marcel): created
  */
-package org.knime.python2.nodes;
+package org.knime.python2.config;
 
-import org.knime.core.node.DataAwareNodeDialogPane;
+import java.util.Locale;
+
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.config.PythonExecutableSelectionPanel;
+import org.knime.core.node.context.NodeSettingsPersistable;
+import org.knime.python2.PythonVersion;
 
 /**
- * Base class for {@link DataAwareNodeDialogPane data-aware} dialogs of Python scripting nodes.
- *
- * @see PythonDataUnawareNodeDialog
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public abstract class PythonDataAwareNodeDialog extends DataAwareNodeDialogPane {
+public final class PythonVersionNodeConfig implements NodeSettingsPersistable {
 
-    private PythonNodeDialogContent m_content;
+    private static final String DEFAULT_CFG_KEY_PYTHON_VERSION = "python_version";
+
+    private final String m_configKey;
+
+    private PythonVersion m_pythonVersion;
 
     /**
-     * Must be called before this instance can be used. Initializing the content via this method instead of via a
-     * constructor is required because {@code content} indirectly requires a reference to this instance which cannot be
-     * provided during the construction of the instance.
-     *
-     * @param content This dialog pane's content.
+     * @param pythonVersion The initial Python version.
      */
-    protected void initializeContent(final PythonNodeDialogContent content) {
-        if (m_content == null) {
-            m_content = content;
-            addTab("Script", m_content.getScriptPanel(), false);
-            addTab("Options", m_content.getOptionsPanel());
-            addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_content.getExecutableSelectionPanel());
-            addTab("Templates", m_content.getTemplatesPanel());
-        } else {
-            throw new IllegalStateException("Content has already been initialized.");
-        }
+    public PythonVersionNodeConfig(final PythonVersion pythonVersion) {
+        this(DEFAULT_CFG_KEY_PYTHON_VERSION, pythonVersion);
+    }
+
+    /**
+     * @param configKey The key for this config.
+     * @param pythonVersion The initial Python version.
+     */
+    public PythonVersionNodeConfig(final String configKey, final PythonVersion pythonVersion) {
+        m_configKey = configKey;
+        m_pythonVersion = pythonVersion;
+    }
+
+    /**
+     * @return The key of this configuration entry.
+     */
+    public String getConfigKey() {
+        return m_configKey;
+    }
+
+    /**
+     * @return The configured Python version.
+     */
+    public PythonVersion getPythonVersion() {
+        return m_pythonVersion;
+    }
+
+    /**
+     * @param pythonVersion The configured Python version.
+     */
+    public void setPythonVersion(final PythonVersion pythonVersion) {
+        m_pythonVersion = pythonVersion;
     }
 
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        m_content.loadSettingsFrom(settings, specs, getCredentialsProvider());
+    public void saveSettingsTo(final NodeSettingsWO settings) {
+        settings.addString(m_configKey, getPythonVersion().getId());
     }
 
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObject[] input)
-        throws NotConfigurableException {
-        m_content.loadSettingsFrom(settings, input, getCredentialsProvider());
-    }
-
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        m_content.saveSettingsTo(settings);
-    }
-
-    @Override
-    public boolean closeOnESC() {
-        return PythonNodeDialogContent.closeDialogOnESC();
-    }
-
-    @Override
-    public void onOpen() {
-        m_content.onDialogOpen();
-    }
-
-    @Override
-    public void onClose() {
-        m_content.onDialogClose();
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        final String pythonVersionString = settings.getString(m_configKey, getPythonVersion().getId());
+        // Backward compatibility: older saved versions are all upper case.
+        setPythonVersion(PythonVersion.fromId(pythonVersionString.toLowerCase(Locale.ROOT)));
     }
 }

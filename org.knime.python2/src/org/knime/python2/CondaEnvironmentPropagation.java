@@ -112,8 +112,9 @@ public final class CondaEnvironmentPropagation {
 
         private static final String CFG_KEY_ENV_DIRECTORY_PATH = "directory";
 
+        @SuppressWarnings("unchecked")
         private static final Set<VariableType<?>> CONVERTIBLE =
-            Collections.unmodifiableSet(Sets.newHashSet(StringType.INSTANCE));
+            Collections.unmodifiableSet(Sets.newHashSet(CondaEnvironmentType.INSTANCE, StringType.INSTANCE));
 
         private CondaEnvironmentType() {}
 
@@ -183,7 +184,11 @@ public final class CondaEnvironmentPropagation {
 
         @Override
         protected <U> U getAs(final CondaEnvironmentSpec value, final VariableType<U> conversionTarget) {
-            if (StringType.INSTANCE.equals(conversionTarget)) {
+            if (CondaEnvironmentType.INSTANCE.equals(conversionTarget)) {
+                @SuppressWarnings("unchecked") // Casting value to its own type.
+                final U casted = (U)value;
+                return casted;
+            } else if (StringType.INSTANCE.equals(conversionTarget)) {
                 @SuppressWarnings("unchecked") // Type safety has been ensured.
                 final U casted = (U)valueToString(value);
                 return casted;

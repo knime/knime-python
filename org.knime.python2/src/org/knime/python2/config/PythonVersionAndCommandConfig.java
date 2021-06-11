@@ -44,67 +44,70 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 19, 2020 (marcel): created
+ *   Dec 1, 2020 (marcel): created
  */
 package org.knime.python2.config;
 
 import java.util.function.Supplier;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.python2.CondaPythonCommand;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonCommandFlowVariableConfig extends PythonCommandConfig {
+public final class PythonVersionAndCommandConfig {
 
-    private static final String CFG_KEY_DIALOG_WAS_OPENED = "dialog_was_opened";
+    private static final String CFG_PYTHON_VERSION = "pythonVersionOption";
 
-    private boolean m_dialogWasOpened = false;
+    private static final String CFG_PYTHON2_COMMAND = "python2Command";
 
-    /**
-     * @param pythonVersion The Python version of the command.
-     * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
-     *            {@link CondaPythonCommand Conda-based commands}.
-     */
-    public PythonCommandFlowVariableConfig(final PythonVersion pythonVersion,
-        final Supplier<String> condaInstallationDirectoryPath) {
-        super(pythonVersion, condaInstallationDirectoryPath);
-    }
+    private static final String CFG_PYTHON3_COMMAND = "python3Command";
+
+    private final PythonVersionNodeConfig m_pythonVersionConfig;
+
+    private final PythonCommandConfig m_python2SelectionConfig;
+
+    private final PythonCommandConfig m_python3SelectionConfig;
 
     /**
-     * @param commandConfigKey The key for the command entry of this config.
-     * @param pythonVersion The Python version of the command.
-     * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
-     *            {@link CondaPythonCommand Conda-based commands}.
+     * @param pythonVersion The initial Python version.
+     * @param condaInstallationPathPreference A supplier that returns the centrally configured directory of the Conda
+     *            installation. Needed to create {@link CondaPythonCommand Conda-based commands}.
+     * @param python2CommandPreference A supplier that returns the Python 2 command to use if no node-specific command
+     *            is configured.
+     * @param python3CommandPreference A supplier that returns the Python 3 command to use if no node-specific command
+     *            is configured.
      */
-    public PythonCommandFlowVariableConfig(final String commandConfigKey, final PythonVersion pythonVersion,
-        final Supplier<String> condaInstallationDirectoryPath) {
-        super(commandConfigKey, pythonVersion, condaInstallationDirectoryPath);
+    public PythonVersionAndCommandConfig(final PythonVersion pythonVersion,
+        final Supplier<String> condaInstallationPathPreference, final Supplier<PythonCommand> python2CommandPreference,
+        final Supplier<PythonCommand> python3CommandPreference) {
+        m_pythonVersionConfig = new PythonVersionNodeConfig(CFG_PYTHON_VERSION, pythonVersion);
+        m_python2SelectionConfig = new PythonCommandConfig(CFG_PYTHON2_COMMAND, PythonVersion.PYTHON2,
+            condaInstallationPathPreference, python2CommandPreference);
+        m_python3SelectionConfig = new PythonCommandConfig(CFG_PYTHON3_COMMAND, PythonVersion.PYTHON3,
+            condaInstallationPathPreference, python3CommandPreference);
     }
 
-    public boolean getDialogWasOpened() {
-        return m_dialogWasOpened;
+    /**
+     * @return The config of the Python version.
+     */
+    public PythonVersionNodeConfig getPythonVersionConfig() {
+        return m_pythonVersionConfig;
     }
 
-    public void setDialogWasOpened(final boolean dialogWasOpened) {
-        m_dialogWasOpened = dialogWasOpened;
+    /**
+     * @return The config of the Python 2 command.
+     */
+    public PythonCommandConfig getPython2CommandConfig() {
+        return m_python2SelectionConfig;
     }
 
-    @Override
-    public void saveSettingsTo(final NodeSettingsWO settings) {
-        super.saveSettingsTo(settings);
-        settings.addBoolean(CFG_KEY_DIALOG_WAS_OPENED, m_dialogWasOpened);
-    }
-
-    @Override
-    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        super.loadSettingsFrom(settings);
-        // Backward compatibility: let "old" nodes also benefit from the auto-controlled command by defaulting to
-        // "false" here.
-        m_dialogWasOpened = settings.getBoolean(CFG_KEY_DIALOG_WAS_OPENED, false);
+    /**
+     * @return The config of the Python 3 command.
+     */
+    public PythonCommandConfig getPython3CommandConfig() {
+        return m_python3SelectionConfig;
     }
 }

@@ -68,10 +68,12 @@ import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.config.PythonCommandFlowVariableModel;
+import org.knime.python2.config.PythonExecutableSelectionPanel;
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.config.PythonVersionAndCommandConfig;
+import org.knime.python2.config.PythonVersionAndExecutableSelectionPanel;
 import org.knime.python2.config.WorkspacePreparer;
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.generic.templates.SourceCodeTemplate;
@@ -82,6 +84,7 @@ import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DatabasePort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
  * Works around multi-inheritance limitations of {@link PythonDataAwareNodeDialog} vs.
@@ -107,9 +110,16 @@ public final class PythonNodeDialogContent {
     public static PythonNodeDialogContent createWithDefaultPanels(final NodeDialogPane dialog,
         final InputPort[] inPorts, final PythonSourceCodeConfig config, final VariableNames variableNames,
         final String templateRepositoryId) {
-        final PythonSourceCodePanel scriptPanel = new PythonSourceCodePanel(dialog, variableNames);
-        final PythonSourceCodeOptionsPanel optionsPanel = new PythonSourceCodeOptionsPanel(scriptPanel);
-        return new PythonNodeDialogContent(dialog, inPorts, config, scriptPanel, optionsPanel, templateRepositoryId);
+        final PythonSourceCodeOptionsPanel optionsPanel = new PythonSourceCodeOptionsPanel();
+        final PythonVersionAndExecutableSelectionPanel executablePanel =
+            new PythonVersionAndExecutableSelectionPanel(dialog,
+                new PythonVersionAndCommandConfig(PythonPreferences.getPythonVersionPreference(),
+                    PythonPreferences::getCondaInstallationPath, PythonPreferences::getPython2CommandPreference,
+                    PythonPreferences::getPython3CommandPreference));
+        final PythonSourceCodePanel scriptPanel =
+            new PythonSourceCodePanel(dialog, variableNames, optionsPanel, executablePanel);
+        return new PythonNodeDialogContent(dialog, inPorts, config, scriptPanel, optionsPanel, executablePanel,
+            templateRepositoryId);
     }
 
     private final NodeDialogPane m_dialog;
@@ -118,13 +128,11 @@ public final class PythonNodeDialogContent {
 
     private final PythonSourceCodeConfig m_config;
 
-    private final PythonCommandFlowVariableModel m_python2CommandFlowVar;
-
-    private final PythonCommandFlowVariableModel m_python3CommandFlowVar;
-
     private final PythonSourceCodePanel m_scriptPanel;
 
     private final PythonSourceCodeOptionsPanel m_optionsPanel;
+
+    private final PythonExecutableSelectionPanel m_executablePanel;
 
     private final SourceCodeTemplatesPanel m_templatesPanel;
 
@@ -138,24 +146,22 @@ public final class PythonNodeDialogContent {
      * @param config The configuration object of the node.
      * @param scriptPanel The script panel.
      * @param optionsPanel The options panel.
+     * @param executablePanel The Python executable selection panel.
      * @param templateRepositoryId The unique name of the {@link SourceCodeTemplateRepository repository} containing the
      *            {@link SourceCodeTemplate script templates} of the node.
      */
     public PythonNodeDialogContent(final NodeDialogPane dialog, final InputPort[] inPorts,
         final PythonSourceCodeConfig config, final PythonSourceCodePanel scriptPanel,
-        final PythonSourceCodeOptionsPanel optionsPanel, final String templateRepositoryId) {
+        final PythonSourceCodeOptionsPanel optionsPanel, final PythonExecutableSelectionPanel executablePanel,
+        final String templateRepositoryId) {
         m_dialog = dialog;
         m_inPorts = inPorts;
         m_config = config;
-        m_python2CommandFlowVar = new PythonCommandFlowVariableModel(dialog, config.getPython2CommandConfig());
-        m_python3CommandFlowVar = new PythonCommandFlowVariableModel(dialog, config.getPython3CommandConfig());
         m_scriptPanel = scriptPanel;
         m_optionsPanel = optionsPanel;
+        m_executablePanel = executablePanel;
         // TODO: ideally, we should filter the offered templates based upon the current port configuration.
         m_templatesPanel = new SourceCodeTemplatesPanel(m_scriptPanel, templateRepositoryId);
-
-        m_python2CommandFlowVar.addCommandChangeListener(c -> m_optionsPanel.updatePython2Command(c.orElse(null)));
-        m_python3CommandFlowVar.addCommandChangeListener(c -> m_optionsPanel.updatePython3Command(c.orElse(null)));
     }
 
     /**
@@ -170,6 +176,13 @@ public final class PythonNodeDialogContent {
      */
     public PythonSourceCodeOptionsPanel getOptionsPanel() {
         return m_optionsPanel;
+    }
+
+    /**
+     * @return The Python executable selection panel.
+     */
+    public PythonExecutableSelectionPanel getExecutableSelectionPanel() {
+        return m_executablePanel;
     }
 
     /**
@@ -191,11 +204,10 @@ public final class PythonNodeDialogContent {
      */
     public void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs,
         final CredentialsProvider credentials) throws NotConfigurableException {
-        m_python2CommandFlowVar.loadSettingsFrom(settings);
-        m_python3CommandFlowVar.loadSettingsFrom(settings);
         m_config.loadFromInDialog(settings);
-        m_scriptPanel.loadSettingsFrom(m_config, specs);
         m_optionsPanel.loadSettingsFrom(m_config);
+        m_executablePanel.loadSettingsFrom(settings);
+        m_scriptPanel.loadSettingsFrom(m_config, specs);
 
         @SuppressWarnings("deprecation")
         final Map<String, FlowVariable> inFlowVariables = m_dialog.getAvailableFlowVariables();
@@ -307,11 +319,10 @@ public final class PythonNodeDialogContent {
      * @throws InvalidSettingsException If writing the settings failed.
      */
     public void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        m_scriptPanel.saveSettingsTo(m_config);
         m_optionsPanel.saveSettingsTo(m_config);
+        m_executablePanel.saveSettingsTo(settings);
+        m_scriptPanel.saveSettingsTo(m_config);
         m_config.saveTo(settings);
-        m_python2CommandFlowVar.saveSettingsTo(settings);
-        m_python3CommandFlowVar.saveSettingsTo(settings);
     }
 
     /**
@@ -325,8 +336,6 @@ public final class PythonNodeDialogContent {
      * Notifies this instance that the parent content is opening.
      */
     public void onDialogOpen() {
-        m_python2CommandFlowVar.onDialogOpen();
-        m_python3CommandFlowVar.onDialogOpen();
         m_scriptPanel.open();
     }
 

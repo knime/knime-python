@@ -49,10 +49,7 @@
 package org.knime.python2.base;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -60,38 +57,36 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.config.PythonCommandFlowVariableConfig;
-import org.knime.python2.config.PythonCommandFlowVariableModel;
+import org.knime.python2.config.PythonCommandConfig;
+import org.knime.python2.config.PythonExecutableSelectionPanel;
+import org.knime.python2.config.PythonFixedVersionExecutableSelectionPanel;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public abstract class PythonBasedDataUnawareNodeDialog extends NodeDialogPane {
 
-    private final Map<PythonCommandFlowVariableConfig, Supplier<PythonCommand>> m_configs = new LinkedHashMap<>(1);
+    private final List<PythonExecutableSelectionPanel> m_executableSelectionTabs = new ArrayList<>(1);
 
-    private final List<PythonCommandFlowVariableModel> m_models = new ArrayList<>(1);
-
-    /**
-     * May only be constructed during construction of the node dialog.
-     */
-    protected final void addPythonCommandConfig(final PythonCommandFlowVariableConfig config,
-        final Supplier<PythonCommand> fallback) {
-        m_configs.put(config, fallback);
-        final PythonCommandFlowVariableModel model = new PythonCommandFlowVariableModel(this, config);
-        m_models.add(model);
+    protected final void addDefaultPythonExecutableSelectionTab(final PythonCommandConfig config) {
+        addPythonExecutableSelectionTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, config);
     }
 
-    protected final PythonCommand getConfiguredPythonCommand(final PythonCommandFlowVariableConfig config) {
-        return config.getCommand().orElseGet(m_configs.get(config));
+    protected final void addPythonExecutableSelectionTab(final String tabName, final PythonCommandConfig config) {
+        final PythonExecutableSelectionPanel selectionTab =
+            new PythonFixedVersionExecutableSelectionPanel(this, config);
+        selectionTab.addChangeListener(e -> onPythonCommandChanged(config));
+        m_executableSelectionTabs.add(selectionTab);
+        addTab(tabName, selectionTab);
     }
+
+    protected abstract void onPythonCommandChanged(PythonCommandConfig config);
 
     @Override
     protected final void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
         throws NotConfigurableException {
-        for (final PythonCommandFlowVariableModel model : m_models) {
-            model.loadSettingsFrom(settings);
+        for (final PythonExecutableSelectionPanel tab : m_executableSelectionTabs) {
+            tab.loadSettingsFrom(settings);
         }
         loadSettingsFromDerived(settings, specs);
     }
@@ -102,20 +97,10 @@ public abstract class PythonBasedDataUnawareNodeDialog extends NodeDialogPane {
     @Override
     protected final void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         saveSettingsToDerived(settings);
-        for (final PythonCommandFlowVariableModel model : m_models) {
-            model.saveSettingsTo(settings);
+        for (final PythonExecutableSelectionPanel tab : m_executableSelectionTabs) {
+            tab.saveSettingsTo(settings);
         }
     }
 
     protected abstract void saveSettingsToDerived(NodeSettingsWO settings) throws InvalidSettingsException;
-
-    @Override
-    public final void onOpen() {
-        m_models.forEach(PythonCommandFlowVariableModel::onDialogOpen);
-        onOpenDerived();
-    }
-
-    public void onOpenDerived() {
-        // Do nothing by default.
-    }
 }

@@ -145,7 +145,8 @@ public abstract class SourceCodePanel extends JPanel {
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
      * @param variableNames An object managing all the known variable names in the workspace.
      */
-    public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
+    public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames,
+        final SourceCodeOptionsPanel<?> optionsPanel) {
         m_variableNames = variableNames;
         setLayout(new BorderLayout());
 
@@ -270,6 +271,9 @@ public abstract class SourceCodePanel extends JPanel {
         add(editorConsoleSplit, BorderLayout.CENTER);
 
         setPreferredSize(new Dimension(1000, 600));
+
+        m_rowLimit.set(optionsPanel.getRowLimit());
+        optionsPanel.addRowLimitChangeListener(this::setRowLimit);
     }
 
     @Override

@@ -47,44 +47,42 @@
  */
 package org.knime.python2.generic;
 
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.IntConsumer;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 /**
- * Panel containing additinal options to the {@link SourceCodePanel}.
+ * A panel to configure the various options of a scripting node. Intended to be used as a base class for more specific
+ * options panels.
  *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  *
- * @param <Panel> the associated {@link SourceCodePanel}'s type
- * @param <Config> the associated {@link SourceCodeConfig}'s type
+ * @param <C> The associated {@link SourceCodeConfig}.
  */
-public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extends SourceCodeConfig> extends JPanel {
-
-    private static final long serialVersionUID = 526829042113254402L;
+@SuppressWarnings("serial") // Not intended for serialization.
+public class SourceCodeOptionsPanel<C extends SourceCodeConfig> extends JPanel {
 
     private final JLabel m_rowLimitLabel = new JLabel("Row limit (dialog)");
 
     private final JSpinner m_rowLimit =
-            new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0, Integer.MAX_VALUE, 100));
+        new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0, Integer.MAX_VALUE, 100));
 
-    private final Panel m_sourceCodePanel;
+    // Not intended for serialization.
+    private final CopyOnWriteArrayList<IntConsumer> m_listeners = new CopyOnWriteArrayList<>(); // NOSONAR
 
     /**
-     * Create a source code options panel.
-     *
-     * @param sourceCodePanel The corresponding source code panel
+     * Creates a scripting node's options panel.
      */
-    public SourceCodeOptionsPanel(final Panel sourceCodePanel) {
-        m_sourceCodePanel = sourceCodePanel;
-        setLayout(new GridBagLayout());
+    public SourceCodeOptionsPanel() {
+        super(new GridBagLayout());
         final GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.NORTHWEST;
@@ -107,47 +105,61 @@ public class SourceCodeOptionsPanel<Panel extends SourceCodePanel, Config extend
         }
         gbc.weighty = Double.MIN_NORMAL;
         add(new JLabel(), gbc);
-        m_rowLimit.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                sourceCodePanel.setRowLimit((int)m_rowLimit.getValue());
-            }
-        });
+
+        m_rowLimit.addChangeListener(e -> onRowLimitChanged());
     }
 
     /**
-     * Save current settings into the given config.
-     *
-     * @param config The config
+     * Made final because the method is called from this class's constructor.
+     * <P>
+     * {@inheritDoc}
      */
-    public void saveSettingsTo(final Config config) {
-        config.setRowLimit((int)m_rowLimit.getValue());
+    @Override
+    public final void add(final Component comp, final Object constraints) {
+        super.add(comp, constraints);
+    }
+
+    public int getRowLimit() {
+        return (int)m_rowLimit.getValue();
+    }
+
+    public void addRowLimitChangeListener(final IntConsumer listener) {
+        m_listeners.add(listener); // NOSONAR Small collection, not performance critical.
+    }
+
+    public void removeRowLimitChangeListener(final IntConsumer listener) {
+        m_listeners.remove(listener); // NOSONAR Small collection, not performance critical.
+    }
+
+    private void onRowLimitChanged() {
+        final int rowLimit = getRowLimit();
+        for (IntConsumer listener : m_listeners) {
+            listener.accept(rowLimit);
+        }
     }
 
     /**
-     * Load settings from the given config.
+     * Load the panel's settings from the given config.
      *
-     * @param config The config
+     * @param config The config.
      */
-    public void loadSettingsFrom(final Config config) {
+    public void loadSettingsFrom(final C config) {
         m_rowLimit.setValue(config.getRowLimit());
-        m_sourceCodePanel.setRowLimit(config.getRowLimit());
     }
 
     /**
-     * @return the associated {@link SourceCodePanel}
-     */
-    protected Panel getSourceCodePanel() {
-        return m_sourceCodePanel;
-    }
-
-    /**
-     * Default implementation returning null
+     * Save the panel's current settings into the given config.
      *
-     * @return null
+     * @param config The config.
+     */
+    public void saveSettingsTo(final C config) {
+        config.setRowLimit(getRowLimit());
+    }
+
+    /**
+     * @return The default implementation returns {@code null}.
      */
     protected JPanel getAdditionalOptionsPanel() {
         return null;
     }
-
 }

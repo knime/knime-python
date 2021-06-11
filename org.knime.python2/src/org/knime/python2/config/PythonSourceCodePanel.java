@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -73,7 +73,8 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.PythonVersion;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
@@ -92,11 +93,14 @@ import org.knime.python2.port.PickledObject;
 @SuppressWarnings("serial") // Not intended for serialization.
 public class PythonSourceCodePanel extends SourceCodePanel {
 
+    // TODO: set serialization options here and in PySpark panel
+
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
 
     private final NodeDialogPane m_parent;
 
-    private final ConcurrentLinkedDeque<PythonKernelManagerWrapper> m_kernelManagerQueue;
+    private final ConcurrentLinkedDeque<PythonKernelManagerWrapper> m_kernelManagerQueue =
+        new ConcurrentLinkedDeque<>();
 
     private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
 
@@ -108,15 +112,17 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private JProgressBarProgressMonitor m_progressMonitor;
 
-    private PythonKernelOptions m_kernelOptions;
+    private PythonKernelOptions m_kernelOptions = new PythonKernelOptions();
 
-    private final List<WorkspacePreparer> m_workspacePreparers = new ArrayList<WorkspacePreparer>();
+    private final List<WorkspacePreparer> m_workspacePreparers = new ArrayList<>();
 
-    private final PythonOutputListener m_stdoutToConsole;
+    private final PythonOutputListener m_stdoutToConsole =
+        new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
 
-    private final PythonOutputListener m_stderrorToConsole;
+    private final PythonOutputListener m_stderrorToConsole =
+        new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
 
-    private final AtomicBoolean m_resetInProgress;
+    private final AtomicBoolean m_resetInProgress = new AtomicBoolean(false);
 
     private Variable[] m_variables;
 
@@ -152,22 +158,20 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     };
 
     /**
-     * Create a source code panel.
-     *
-     * @param parent parent NodeDialogPane
-     *
+     * @param parent parent the enclosing node dialog
      * @param variableNames an object managing the known variable names in the python workspace (the "magic variables")
+     * @param optionsPanel the options panel of the dialog
+     * @param executablePanel the executable selection panel of the dialog
      */
-    public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames) {
-        super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames);
+    public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames,
+        final PythonSourceCodeOptionsPanel optionsPanel, final PythonExecutableSelectionPanel executablePanel) {
+        super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames, optionsPanel);
         m_parent = parent;
-        m_kernelOptions = new PythonKernelOptions();
-
-        m_stdoutToConsole = new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
-        m_stderrorToConsole = new PythonOutputLogger(this::messageToConsole, this::warningToConsole, null);
-
-        m_kernelManagerQueue = new ConcurrentLinkedDeque<PythonKernelManagerWrapper>();
-        m_resetInProgress = new AtomicBoolean(false);
+        setPythonCommand(executablePanel.getPythonVersion(), executablePanel.getPythonCommand());
+        executablePanel.addChangeListener(
+            e -> setPythonCommand(executablePanel.getPythonVersion(), executablePanel.getPythonCommand()));
+        setSerializationOptions(optionsPanel.getSerializationOptions());
+        optionsPanel.addSerializationOptionsChangeListener(this::setSerializationOptions);
     }
 
     @Override
@@ -573,48 +577,24 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         return m_workspacePreparers.remove(workspacePreparer);
     }
 
-    /**
-     * Update the internal PythonKernelOptions with the new command path
-     *
-     * @param python2Command the python 2 command
-     */
-    public synchronized void setPython2Command(final PythonCommand python2Command) {
-        if (!m_resetInProgress.get() && !m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython2Command().equals(python2Command)) {
-            m_kernelOptions = m_kernelOptions.forPython2Command(python2Command);
+    private synchronized void setPythonCommand(final PythonVersion pythonVersion, final PythonCommand pythonCommand) {
+        final PythonCommand oldCommand = m_kernelOptions.getUsePython3() //
+            ? m_kernelOptions.getPython3Command() //
+            : m_kernelOptions.getPython2Command();
+        if (m_kernelOptions.getPythonVersion() != pythonVersion || !Objects.equals(oldCommand, pythonCommand)) {
+            m_kernelOptions = m_kernelOptions.forPythonVersion(pythonVersion);
+            m_kernelOptions = m_kernelOptions.getUsePython3() //
+                ? m_kernelOptions.forPython3Command(pythonCommand) //
+                : m_kernelOptions.forPython2Command(pythonCommand);
             runResetJob();
         }
     }
 
-    /**
-     * Update the internal PythonKernelOptions with the new command path
-     *
-     * @param python3Command python 3 command
-     */
-    public synchronized void setPython3Command(final PythonCommand python3Command) {
-        if (!m_resetInProgress.get() && m_kernelOptions.getUsePython3()
-            && !m_kernelOptions.getPython3Command().equals(python3Command)) {
-            m_kernelOptions = m_kernelOptions.forPython3Command(python3Command);
-            runResetJob();
-        }
-    }
-
-    /**
-     * Update the internal PythonKernelOptions object with the current configuration.
-     *
-     * @param kernelOptions the currently configured {@link PythonKernelOptions}
-     */
-    public void setKernelOptions(PythonKernelOptions kernelOptions) {
+    private synchronized void setSerializationOptions(final SerializationOptions serializationOptions) {
         final String serializerId =
             new PythonFlowVariableOptions(m_parent.getAvailableFlowVariables()).getSerializerId().orElse(null);
-        // First, set serializer id of old options because it influences the returned additional required modules. We
-        // don't want to carry around dependencies of a serializer we won't use.
-        final Set<PythonModuleSpec> additionalRequiredModules = m_kernelOptions
-            .forSerializationOptions(kernelOptions.getSerializationOptions().forSerializerId(serializerId))
-            .getAdditionalRequiredModules();
-        kernelOptions =
-            kernelOptions.forSerializationOptions(kernelOptions.getSerializationOptions().forSerializerId(serializerId))
-                .forAddedAdditionalRequiredModules(additionalRequiredModules);
+        final PythonKernelOptions kernelOptions =
+            m_kernelOptions.forSerializationOptions(serializationOptions.forSerializerId(serializerId));
         if (!kernelOptions.equals(m_kernelOptions)) {
             m_kernelOptions = kernelOptions;
             runResetJob();

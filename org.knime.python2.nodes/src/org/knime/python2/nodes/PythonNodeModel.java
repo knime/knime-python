@@ -60,14 +60,18 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.config.PythonFlowVariableOptions;
 import org.knime.python2.config.PythonSourceCodeConfig;
+import org.knime.python2.config.PythonVersionAndCommandConfig;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelQueue;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
  * Base model for all python related nodes. Provides methods for loading and saving settings and for pushing a
@@ -78,7 +82,11 @@ import org.knime.python2.kernel.PythonKernelQueue;
  */
 public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends ExtToolOutputNodeModel {
 
-    private C m_config = createConfig();
+    private C m_scriptConfig = createConfig();
+
+    private final PythonVersionAndCommandConfig m_executableConfig = new PythonVersionAndCommandConfig(
+        PythonPreferences.getPythonVersionPreference(), PythonPreferences::getCondaInstallationPath,
+        PythonPreferences::getPython2CommandPreference, PythonPreferences::getPython3CommandPreference);
 
     /**
      * Constructor.
@@ -103,7 +111,7 @@ public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends 
      * @return the config
      */
     protected final C getConfig() {
-        return m_config;
+        return m_scriptConfig;
     }
 
     /**
@@ -112,10 +120,19 @@ public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends 
      * @return the kernel specific options
      */
     protected PythonKernelOptions getKernelOptions() {
-        final PythonKernelOptions options = getConfig().getKernelOptions();
+        final PythonVersion pythonVersion = m_executableConfig.getPythonVersionConfig().getPythonVersion();
+        final PythonCommand python2Command = m_executableConfig.getPython2CommandConfig().getCommand();
+        final PythonCommand python3Command = m_executableConfig.getPython3CommandConfig().getCommand();
+
+        final C config = getConfig();
         final String serializerId =
             new PythonFlowVariableOptions(getAvailableFlowVariables()).getSerializerId().orElse(null);
-        return options.forSerializationOptions(options.getSerializationOptions().forSerializerId(serializerId));
+        final SerializationOptions serializationOptions =
+            new SerializationOptions(config.getChunkSize(), config.isConvertingMissingToPython(),
+                config.isConvertingMissingFromPython(), config.getSentinelOption(), config.getSentinelValue())
+                    .forSerializerId(serializerId);
+
+        return new PythonKernelOptions(pythonVersion, python2Command, python3Command, serializationOptions);
     }
 
     protected PythonKernel getNextKernelFromQueue(final PythonCancelable cancelable)
@@ -187,19 +204,28 @@ public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends 
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_config.saveTo(settings);
+        m_scriptConfig.saveTo(settings);
+        m_executableConfig.getPythonVersionConfig().saveSettingsTo(settings);
+        m_executableConfig.getPython2CommandConfig().saveSettingsTo(settings);
+        m_executableConfig.getPython3CommandConfig().saveSettingsTo(settings);
     }
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         final C config = createConfig();
         config.loadFrom(settings);
+        m_executableConfig.getPythonVersionConfig().loadSettingsFrom(settings);
+        m_executableConfig.getPython2CommandConfig().loadSettingsFrom(settings);
+        m_executableConfig.getPython3CommandConfig().loadSettingsFrom(settings);
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         final C config = createConfig();
         config.loadFrom(settings);
-        m_config = config;
+        m_scriptConfig = config;
+        m_executableConfig.getPythonVersionConfig().loadSettingsFrom(settings);
+        m_executableConfig.getPython2CommandConfig().loadSettingsFrom(settings);
+        m_executableConfig.getPython3CommandConfig().loadSettingsFrom(settings);
     }
 }

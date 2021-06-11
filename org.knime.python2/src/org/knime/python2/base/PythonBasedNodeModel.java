@@ -48,24 +48,22 @@
  */
 package org.knime.python2.base;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.config.PythonCommandFlowVariableConfig;
+import org.knime.python2.config.PythonCommandConfig;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public abstract class PythonBasedNodeModel extends NodeModel {
 
-    private final Map<PythonCommandFlowVariableConfig, Supplier<PythonCommand>> m_configs = new LinkedHashMap<>(1);
+    private final List<PythonCommandConfig> m_configs = new ArrayList<>(1);
 
     public PythonBasedNodeModel(final int nrInDataPorts, final int nrOutDataPorts) {
         super(nrInDataPorts, nrOutDataPorts);
@@ -75,30 +73,22 @@ public abstract class PythonBasedNodeModel extends NodeModel {
         super(inPortTypes, outPortTypes);
     }
 
-    /**
-     * May only be constructed during construction of the node model.
-     */
-    protected final void addPythonCommandConfig(final PythonCommandFlowVariableConfig config,
-        final Supplier<PythonCommand> fallback) {
-        m_configs.put(config, fallback);
-    }
-
-    protected final PythonCommand getConfiguredPythonCommand(final PythonCommandFlowVariableConfig config) {
-        return config.getCommand().orElseGet(m_configs.get(config));
+    protected final void addPythonCommandConfig(final PythonCommandConfig config) {
+        m_configs.add(config);
     }
 
     @Override
     protected final void saveSettingsTo(final NodeSettingsWO settings) {
         saveSettingsToDerived(settings);
-        m_configs.keySet().forEach(config -> config.saveSettingsTo(settings));
+        m_configs.forEach(config -> config.saveSettingsTo(settings));
     }
 
     protected abstract void saveSettingsToDerived(NodeSettingsWO settings);
 
     @Override
     protected final void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        for (PythonCommandFlowVariableConfig config : m_configs.keySet()) {
-            config.validateSettings(settings);
+        for (PythonCommandConfig config : m_configs) {
+            config.loadSettingsFrom(settings);
         }
         validateSettingsDerived(settings);
     }
@@ -107,7 +97,7 @@ public abstract class PythonBasedNodeModel extends NodeModel {
 
     @Override
     protected final void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        for (PythonCommandFlowVariableConfig config : m_configs.keySet()) {
+        for (PythonCommandConfig config : m_configs) {
             config.loadSettingsFrom(settings);
         }
         loadValidatedSettingsFromDerived(settings);

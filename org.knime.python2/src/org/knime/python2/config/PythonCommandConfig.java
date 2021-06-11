@@ -49,7 +49,6 @@
 package org.knime.python2.config;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -64,7 +63,7 @@ import org.knime.python2.PythonVersion;
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz Germany
  */
-public class PythonCommandConfig implements NodeSettingsPersistable {
+public final class PythonCommandConfig implements NodeSettingsPersistable {
 
     private static final String DEFAULT_CFG_KEY_PYTHON2_COMMAND = "python2_command";
 
@@ -76,6 +75,8 @@ public class PythonCommandConfig implements NodeSettingsPersistable {
 
     private final Supplier<String> m_condaInstallationDirectoryPath;
 
+    private final Supplier<PythonCommand> m_commandPreference;
+
     private final String m_configKey;
 
     private PythonCommand m_command;
@@ -84,26 +85,31 @@ public class PythonCommandConfig implements NodeSettingsPersistable {
      * @param pythonVersion The Python version of the command.
      * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
      *            {@link CondaPythonCommand Conda-based commands}.
+     * @param pythonCommandPreference A supplier that returns the Python command to use if no node-specific command is
+     *            configured.
      */
-    public PythonCommandConfig(final PythonVersion pythonVersion,
-        final Supplier<String> condaInstallationDirectoryPath) {
+    public PythonCommandConfig(final PythonVersion pythonVersion, final Supplier<String> condaInstallationDirectoryPath,
+        final Supplier<PythonCommand> pythonCommandPreference) {
         this(pythonVersion == PythonVersion.PYTHON2 //
             ? DEFAULT_CFG_KEY_PYTHON2_COMMAND //
             : DEFAULT_CFG_KEY_PYTHON3_COMMAND, //
-            pythonVersion, condaInstallationDirectoryPath);
+            pythonVersion, condaInstallationDirectoryPath, pythonCommandPreference);
     }
 
     /**
      * @param configKey The key for this config.
      * @param pythonVersion The Python version of the command.
-     * @param condaInstallationDirectoryPath The directory of the Conda installation. Needed to create
-     *            {@link CondaPythonCommand Conda-based commands}.
+     * @param condaInstallationDirectoryPath A supplier that returns the currently configured directory of the Conda
+     *            installation. Needed to create {@link CondaPythonCommand Conda-based commands}.
+     * @param pythonCommandPreference A supplier that returns the currently configured Python command to use if no
+     *            node-specific command is configured.
      */
     public PythonCommandConfig(final String configKey, final PythonVersion pythonVersion,
-        final Supplier<String> condaInstallationDirectoryPath) {
+        final Supplier<String> condaInstallationDirectoryPath, final Supplier<PythonCommand> pythonCommandPreference) {
         m_pythonVersion = pythonVersion;
         m_configKey = configKey;
         m_condaInstallationDirectoryPath = condaInstallationDirectoryPath;
+        m_commandPreference = pythonCommandPreference;
     }
 
     /**
@@ -114,15 +120,15 @@ public class PythonCommandConfig implements NodeSettingsPersistable {
     }
 
     /**
-     * @return The Python command persisted by this config, if any.
+     * @return The configured Python command.
      */
-    public Optional<PythonCommand> getCommand() {
-        return Optional.ofNullable(m_command);
+    public PythonCommand getCommand() {
+        return m_command != null ? m_command : m_commandPreference.get();
     }
 
     /**
-     * @param command The command to set. May be {@code null} in which case no command is configured and
-     *            {@link #getCommand()} returns an empty optional.
+     * @param command The command to set. May be {@code null} in which case no specific command is configured and
+     *            {@link #getCommand()} returns a default value.
      */
     public void setCommand(final PythonCommand command) {
         m_command = command;
@@ -130,25 +136,30 @@ public class PythonCommandConfig implements NodeSettingsPersistable {
 
     /**
      * @param commandString The string representation of the command to set. May be {@code null} or empty in which case
-     *            no command is configured and {@link #getCommand()} returns an empty optional.
+     *            no specific command is configured and {@link #getCommand()} returns a default value.
      */
     public void setCommandString(final String commandString) {
         setCommand(commandFromString(commandString));
     }
 
-    @Override
-    public void saveSettingsTo(final NodeSettingsWO settings) {
-        settings.addString(m_configKey, commandToString(m_command));
+    /**
+     * @return The (designated) Python version of the configured command.
+     */
+    public PythonVersion getPythonVersion() {
+        return m_pythonVersion;
     }
 
     /**
-     * Validates the given settings object.
-     *
-     * @param settings The settings object.
-     * @throws InvalidSettingsException If the settings object is invalid.
+     * @return The supplier that is used to obtain the currently configured directory of the Conda installation. Needed
+     *         to create {@link CondaPythonCommand Conda-based commands}.
      */
-    public void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        loadSettingsFrom(settings);
+    public Supplier<String> getCondaInstallationDirectoryPath() {
+        return m_condaInstallationDirectoryPath;
+    }
+
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
+        settings.addString(m_configKey, commandToString(m_command));
     }
 
     @Override

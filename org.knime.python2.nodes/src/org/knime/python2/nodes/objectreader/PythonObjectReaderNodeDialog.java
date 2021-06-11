@@ -54,83 +54,76 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.config.PythonExecutableSelectionPanel;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.config.PythonVersionAndCommandConfig;
+import org.knime.python2.config.PythonVersionAndExecutableSelectionPanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
- * <code>NodeDialog</code> for the node.
- *
- *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 @Deprecated
-class PythonObjectReaderNodeDialog extends NodeDialogPane {
+final class PythonObjectReaderNodeDialog extends NodeDialogPane {
 
-    PythonSourceCodePanel m_sourceCodePanel;
+    private final PythonSourceCodePanel m_sourceCodePanel;
 
-    PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
+    private final PythonSourceCodeOptionsPanel m_sourceCodeOptionsPanel;
 
-    SourceCodeTemplatesPanel m_templatesPanel;
+    private final PythonExecutableSelectionPanel m_executableSelectionPanel;
 
-    /**
-     * Create the dialog for this node.
-     */
-    protected PythonObjectReaderNodeDialog() {
-        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig.getVariableNames());
-        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel(m_sourceCodePanel);
+    private final SourceCodeTemplatesPanel m_templatesPanel;
+
+    public PythonObjectReaderNodeDialog() {
+        m_sourceCodeOptionsPanel = new PythonSourceCodeOptionsPanel();
+        m_executableSelectionPanel = new PythonVersionAndExecutableSelectionPanel(this,
+            new PythonVersionAndCommandConfig(PythonPreferences.getPythonVersionPreference(),
+                PythonPreferences::getCondaInstallationPath, PythonPreferences::getPython2CommandPreference,
+                PythonPreferences::getPython3CommandPreference));
+        m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig.getVariableNames(),
+            m_sourceCodeOptionsPanel, m_executableSelectionPanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");
         addTab("Script", m_sourceCodePanel, false);
-        addTab("Options", m_sourceCodeOptionsPanel, true);
-        addTab("Templates", m_templatesPanel, true);
+        addTab("Options", m_sourceCodeOptionsPanel);
+        addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_executableSelectionPanel);
+        addTab("Templates", m_templatesPanel);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
+        final PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
+        config.loadFromInDialog(settings);
+        m_sourceCodePanel.loadSettingsFrom(config, specs);
+        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
+        m_executableSelectionPanel.loadSettingsFrom(settings);
+        m_sourceCodePanel.updateFlowVariables(
+            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
+    }
+
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         final PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
         m_sourceCodePanel.saveSettingsTo(config);
         m_sourceCodeOptionsPanel.saveSettingsTo(config);
+        m_executableSelectionPanel.saveSettingsTo(settings);
         config.saveTo(settings);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-        final PythonObjectReaderNodeConfig config = new PythonObjectReaderNodeConfig();
-        config.loadFromInDialog(settings);
-        m_sourceCodePanel.loadSettingsFrom(config, specs);
-        m_sourceCodeOptionsPanel.loadSettingsFrom(config);
-        m_sourceCodePanel.updateFlowVariables(
-            getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean closeOnESC() {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onOpen() {
         m_sourceCodePanel.open();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onClose() {
         m_sourceCodePanel.close();
     }
-
 }
