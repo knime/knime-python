@@ -20,10 +20,9 @@
 					include in the environment in case it needs to be recreated.</li>
 				<li>Connect the output port of the node to the variable input port of any Python node.</li>
 				<li>Successively open the configuration dialogues of the Python node and all subsequent Python nodes in
-					the flow that you want to make portable. Upon opening their dialogues for the very first time, they
-					will automatically pick up the environment by setting their respective Python 2 and/or Python 3
-					entries on the <i>Flow Variables</i> tab to the variable propagating the configured Conda
-					environment. Otherwise, you have to perform this step manually.</li>
+					the flow that you want to make portable. On each node's <i>Executable Selection</i> tab, enable
+					<i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
+					environment from the selection box.</li>
 				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
 					it. Make sure that this node is reset before or during the deployment process.</li>
 				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME

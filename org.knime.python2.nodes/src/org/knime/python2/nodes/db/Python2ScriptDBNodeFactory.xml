@@ -89,13 +89,6 @@
             This is useful to maintain the interactivity of script executions in the dialog when there are lots of input data.
             Changing this value only takes effect after resetting the node's workspace or closing and reopening the dialog.
          </option>
-         <option name="Use Python version">
-            Allows to choose the Python version that
-            is used to execute the node. The available
-            environments of the different versions can be checked and configured
-            under File → Preferences → KNIME →
-            Python. They can also be set via flow variable (see Flow Variables tab below).
-         </option>
          <option name="Missing values (Integer, Long)">
             By default, <i>Number (Integer)</i> and <i>Number (Long)</i> columns containing
             missing values are
@@ -147,6 +140,22 @@
             parameter helps getting reasonably sized chunks.
          </option>
       </tab>
+      <tab name="Executable Selection">
+         <option name="Use Python version">
+            Allows to choose the Python version used to execute the node.
+         </option>
+         <option name="Conda environment propagation">
+            Allows to choose whether to obtain the Python executable corresponding to the Python version selected
+            above from the KNIME Preferences or from flow variable.
+            <ul>
+               <li><b>Use KNIME preferences</b> Use the Python executable configured under File → Preferences →
+               KNIME → Python to execute the node.</li>
+               <li><b>Use Conda flow variable</b> Use the Conda environment propagated by the selected Conda flow
+               variable to execute the node. The Python version of the environment must match the version selected
+               above.</li>
+            </ul>
+         </option>
+      </tab>
       <tab name="Templates">
          <option name="Create from editor...">
             Clicking on this button creates a new template based on the
@@ -172,18 +181,22 @@
             The variable accepts either <i>python2</i> or <i>python3</i> as value.
          </option>
          <option name="python2Command">
-            Controls which Python 2 environment is employed by this node if it is configured to use Python 2.
-            This allows using an environment that is different from the one that is configured in the Preferences.
-            The flow variable accepts the path to a Python start script as described in the
+            Controls which Python 2 environment is employed by this node if it is configured to use Python 2. This
+            allows using an environment that is different from the one that is configured in the KNIME Preferences.
+            The flow variable accepts the path to a Python start script, executable, or Conda environment as
+            described in the
             <a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
-            KNIME Python Integration Installation Guide</a>.
+               KNIME Python Integration Installation Guide
+            </a>.
          </option>
          <option name="python3Command">
-            Controls which Python 3 environment is employed by this node if it is configured to use Python 3.
-            This allows using an environment that is different from the one that is configured in the Preferences.
-            The flow variable accepts the path to a Python start script as described in the
+            Controls which Python 3 environment is employed by this node if it is configured to use Python 3. This
+            allows using an environment that is different from the one that is configured in the KNIME Preferences.
+            The flow variable accepts the path to a Python start script, executable, or Conda environment as
+            described in the
             <a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
-            KNIME Python Integration Installation Guide</a>.
+               KNIME Python Integration Installation Guide
+            </a>.
          </option>
          <option name="sentinelOption">
             Controls the type of sentinel value.

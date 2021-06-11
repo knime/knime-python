@@ -120,12 +120,12 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.BOTH;
         final ButtonGroup flowVarButtonGroup = new ButtonGroup();
-        m_usePreferencesButton = new JRadioButton("Use KNIME Preferences (ignore Conda environment variables)");
+        m_usePreferencesButton = new JRadioButton("Use KNIME Preferences (ignore Conda flow variables)");
         flowVarButtonGroup.add(m_usePreferencesButton);
         gbc.gridwidth = 2;
         add(m_usePreferencesButton, gbc);
         gbc.gridy++;
-        m_useVariableButton = new JRadioButton("Use Conda environment variable");
+        m_useVariableButton = new JRadioButton("Use Conda flow variable");
         flowVarButtonGroup.add(m_useVariableButton);
         gbc.gridwidth = 1;
         add(m_useVariableButton, gbc);
