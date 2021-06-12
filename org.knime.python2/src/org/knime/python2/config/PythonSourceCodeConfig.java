@@ -164,11 +164,11 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     @Override
     public void saveTo(final NodeSettingsWO settings) {
         super.saveTo(settings);
-        settings.addInt(CFG_CHUNK_SIZE, getChunkSize());
         settings.addBoolean(CFG_CONVERT_MISSING_TO_PYTHON, isConvertingMissingToPython());
         settings.addBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, isConvertingMissingFromPython());
         settings.addString(CFG_SENTINEL_OPTION, getSentinelOption().name());
         settings.addInt(CFG_SENTINEL_VALUE, getSentinelValue());
+        settings.addInt(CFG_CHUNK_SIZE, getChunkSize());
     }
 
     @Override
@@ -184,11 +184,11 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     }
 
     private void loadFromSettings(final NodeSettingsRO settings) {
-        setChunkSize(settings.getInt(CFG_CHUNK_SIZE, getChunkSize()));
         setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, isConvertingMissingToPython()));
         setConvertMissingFromPython(
             settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, isConvertingMissingFromPython()));
         setSentinelOption(SentinelOption.valueOf(settings.getString(CFG_SENTINEL_OPTION, getSentinelOption().name())));
         setSentinelValue(settings.getInt(CFG_SENTINEL_VALUE, getSentinelValue()));
+        setChunkSize(settings.getInt(CFG_CHUNK_SIZE, getChunkSize()));
     }
 }

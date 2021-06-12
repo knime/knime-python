@@ -320,9 +320,9 @@ public final class PythonNodeDialogContent {
      */
     public void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_optionsPanel.saveSettingsTo(m_config);
-        m_executablePanel.saveSettingsTo(settings);
         m_scriptPanel.saveSettingsTo(m_config);
         m_config.saveTo(settings);
+        m_executablePanel.saveSettingsTo(settings);
     }
 
     /**
