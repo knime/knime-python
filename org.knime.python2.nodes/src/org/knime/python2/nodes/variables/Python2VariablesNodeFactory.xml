@@ -131,9 +131,9 @@
             Allows to choose whether to obtain the Python executable corresponding to the Python version selected
             above from the KNIME Preferences or from flow variable.
             <ul>
-               <li><b>Use KNIME preferences</b> Use the Python executable configured under File → Preferences →
+               <li>Use KNIME preferences: Use the Python executable configured under File → Preferences →
                KNIME → Python to execute the node.</li>
-               <li><b>Use Conda flow variable</b> Use the Conda environment propagated by the selected Conda flow
+               <li>Use Conda flow variable: Use the Conda environment propagated by the selected Conda flow
                variable to execute the node. The Python version of the environment must match the version selected
                above.</li>
             </ul>
