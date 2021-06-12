@@ -185,13 +185,13 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_environmentNameModel.loadSettingsFrom(settings);
         m_packagesConfig.loadSettingsFrom(settings);
         m_validationMethodModel.loadSettingsFrom(settings);
-        // Backward compatibility: environment variable name model was introduced in KNIME 4.4; only attempt to load it
+        // Backward compatibility: output variable name model was introduced in KNIME 4.4; only attempt to load it
         // if present.
         if (settings.containsKey(m_outputVariableNameModel.getKey())) {
             m_outputVariableNameModel.loadSettingsFrom(settings);
             final String outputVariableName = m_outputVariableNameModel.getStringValue();
             if (outputVariableName == null || outputVariableName.isBlank()) {
-                throw new InvalidSettingsException("The environment variable name may not be blank.");
+                throw new InvalidSettingsException("The output variable name may not be blank.");
             }
         }
         m_sourceOsModel.loadSettingsFrom(settings);
