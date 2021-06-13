@@ -145,6 +145,18 @@ public abstract class SourceCodePanel extends JPanel {
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
      * @param variableNames An object managing all the known variable names in the workspace.
      */
+    public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
+        this(syntaxStyle, variableNames, null);
+    }
+
+    /**
+     * Create a source code panel for the given language style.
+     *
+     * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
+     * @param variableNames An object managing all the known variable names in the workspace.
+     * @param optionsPanel The options panel of the node dialog, if any. The constructed source code panel subscribes to
+     *            changes in its configured {@link SourceCodeOptionsPanel#getRowLimit() row limit}.
+     */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames,
         final SourceCodeOptionsPanel<?> optionsPanel) {
         m_variableNames = variableNames;
@@ -272,8 +284,10 @@ public abstract class SourceCodePanel extends JPanel {
 
         setPreferredSize(new Dimension(1000, 600));
 
-        m_rowLimit.set(optionsPanel.getRowLimit());
-        optionsPanel.addRowLimitChangeListener(this::setRowLimit);
+        if (optionsPanel != null) {
+            m_rowLimit.set(optionsPanel.getRowLimit());
+            optionsPanel.addRowLimitChangeListener(this::setRowLimit);
+        }
     }
 
     @Override
