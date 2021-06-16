@@ -323,7 +323,6 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final Conda conda = createConda();
         final String environmentName = m_environmentNameModel.getStringValue();
-        ENVIRONMENT_MODIFICATION_LOCKS.putIfAbsent(environmentName, new Object());
         final String targetOs = getCurrentOsType();
         final boolean sameOs = targetOs.equals(m_sourceOsModel.getStringValue());
 
@@ -336,11 +335,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final Optional<CondaEnvironmentIdentifier> existingEnvironment = p.getFirst().getSecond();
         final String creationMessage = p.getSecond();
 
-        if (createEnvironment) {
-            exec.setMessage(creationMessage);
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
-            // we want at most one env prop node to operate on a specific environment
-            synchronized (ENVIRONMENT_MODIFICATION_LOCKS.get(environmentName)) {
+        // we want at most one env prop node to operate on a specific environment
+        synchronized (ENVIRONMENT_MODIFICATION_LOCKS.computeIfAbsent(environmentName, k -> new Object())) {
+
+            if (createEnvironment) {
+                exec.setMessage(creationMessage);
+                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
                 // Create a temporary backup of the existing environment
                 try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
                     try {
@@ -365,22 +365,24 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                     }
                 }
             }
-        }
 
-        final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
-        final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
-        if (!environment.isPresent()) {
-            if (createEnvironment) {
-                throw new IllegalStateException("Failed to create Conda environment '" + environmentName +
-                    "' for unknown reasons.\nPlease check the log for any relevant information.");
-            } else {
-                throw new IllegalStateException(
-                    "Conda environment '" + environmentName + "' does not exist anymore.\n" +
-                        "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
+            final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
+            final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
+            if (!environment.isPresent()) {
+                if (createEnvironment) {
+                    throw new IllegalStateException("Failed to create Conda environment '" + environmentName +
+                        "' for unknown reasons.\nPlease check the log for any relevant information.");
+                } else {
+                    throw new IllegalStateException(
+                        "Conda environment '" + environmentName + "' does not exist anymore.\n" +
+                            "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
+                }
             }
-        }
 
-        pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
+            pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
+
+            ENVIRONMENT_MODIFICATION_LOCKS.remove(environmentName);
+        }
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
