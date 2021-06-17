@@ -55,12 +55,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -313,12 +311,6 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_packagesConfig.setPackages(packages, Collections.emptyList());
     }
 
-    /**
-     * Only one {@link CondaEnvironmentPropagationNodeModel} may execute on an environment with a given name. This maps
-     * the environment names to the lock objects.
-     */
-    private static final Map<String, Object> ENVIRONMENT_MODIFICATION_LOCKS = new ConcurrentHashMap<>();
-
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final Conda conda = createConda();
@@ -335,54 +327,50 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final Optional<CondaEnvironmentIdentifier> existingEnvironment = p.getFirst().getSecond();
         final String creationMessage = p.getSecond();
 
-        // we want at most one env prop node to operate on a specific environment
-        synchronized (ENVIRONMENT_MODIFICATION_LOCKS.computeIfAbsent(environmentName, k -> new Object())) {
+        if (createEnvironment) {
+            exec.setMessage(creationMessage);
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
 
-            if (createEnvironment) {
-                exec.setMessage(creationMessage);
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
-                // Create a temporary backup of the existing environment
-                try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
-                    try {
-                        conda.createEnvironment(environmentName, packages, sameOs,
-                            new Monitor(packages.size(), exec.getProgressMonitor()));
-                    } catch (final IOException ex) {
-                        handleFailedEnvCreation(conda, environmentName, envBackup);
-                        throw ex;
-                    } catch (final PythonCanceledExecutionException ex) {
-                        handleCanceledEnvCreation(conda, environmentName, envBackup);
-                        throw ex;
-                    } finally {
-                        // If a new environment has been created (either overwriting an existing environment or
-                        // "overwriting" a previously non-existent environment), the entries in the kernel queue that
-                        // reference the old environment are rendered obsolete and therefore need to be invalidated. The
-                        // same is true in case the environment creation failed, which likely leaves the environment in a
-                        // corrupt state and also needs to be reflected by the queue.
-                        // Unfortunately, clearing only the entries of the queue that reference the old environment is not
-                        // straightforwardly done in the queue's current implementation, therefore we need to clear the
-                        // entire queue for now.
-                        PythonKernelQueue.clear();
-                    }
+            // Create a temporary backup of the existing environment
+            try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
+                try {
+                    conda.createEnvironment(environmentName, packages, sameOs,
+                        new Monitor(packages.size(), exec.getProgressMonitor()));
+                } catch (final IOException ex) {
+                    handleFailedEnvCreation(conda, environmentName, envBackup);
+                    throw ex;
+                } catch (final PythonCanceledExecutionException ex) {
+                    handleCanceledEnvCreation(conda, environmentName, envBackup);
+                    throw ex;
+                } finally {
+                    // If a new environment has been created (either overwriting an existing environment or
+                    // "overwriting" a previously non-existent environment), the entries in the kernel queue that
+                    // reference the old environment are rendered obsolete and therefore need to be invalidated. The
+                    // same is true in case the environment creation failed, which likely leaves the environment in a
+                    // corrupt state and also needs to be reflected by the queue.
+                    // Unfortunately, clearing only the entries of the queue that reference the old environment is not
+                    // straightforwardly done in the queue's current implementation, therefore we need to clear the
+                    // entire queue for now.
+                    PythonKernelQueue.clear();
                 }
             }
-
-            final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
-            final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
-            if (!environment.isPresent()) {
-                if (createEnvironment) {
-                    throw new IllegalStateException("Failed to create Conda environment '" + environmentName +
-                        "' for unknown reasons.\nPlease check the log for any relevant information.");
-                } else {
-                    throw new IllegalStateException(
-                        "Conda environment '" + environmentName + "' does not exist anymore.\n" +
-                            "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
-                }
-            }
-
-            pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
-
-            ENVIRONMENT_MODIFICATION_LOCKS.remove(environmentName);
         }
+
+        final List<CondaEnvironmentIdentifier> environments = conda.getEnvironments();
+        final Optional<CondaEnvironmentIdentifier> environment = findEnvironment(environmentName, environments);
+        if (!environment.isPresent()) {
+            if (createEnvironment) {
+                throw new IllegalStateException("Failed to create Conda environment '" + environmentName +
+                    "' for unknown reasons.\nPlease check the log for any relevant information.");
+            } else {
+                throw new IllegalStateException(
+                    "Conda environment '" + environmentName + "' does not exist anymore.\n" +
+                        "Please ensure that KNIME has exclusive control over Conda environment creation and deletion.");
+            }
+        }
+
+        pushEnvironmentFlowVariable(environmentName, environment.get().getDirectoryPath());
+
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
