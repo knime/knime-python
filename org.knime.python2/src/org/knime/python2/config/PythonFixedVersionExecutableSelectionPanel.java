@@ -48,16 +48,18 @@
  */
 package org.knime.python2.config;
 
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.util.Collection;
+import java.awt.event.ItemEvent;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
-import javax.swing.Icon;
 import javax.swing.JComboBox;
 import javax.swing.JRadioButton;
 import javax.swing.event.ChangeListener;
@@ -65,14 +67,12 @@ import javax.swing.event.ChangeListener;
 import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.defaultnodesettings.DialogComponent;
-import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.core.node.util.DefaultStringIconOption;
-import org.knime.core.node.util.StringIconOption;
+import org.knime.core.node.util.FlowVariableListCellRenderer;
+import org.knime.core.node.util.FlowVariableListCellRenderer.FlowVariableCell;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.python2.CondaEnvironmentPropagation.CondaEnvironmentType;
@@ -84,6 +84,8 @@ import org.knime.python2.PythonVersion;
  */
 @SuppressWarnings("serial") // Not intended for serialization.
 public final class PythonFixedVersionExecutableSelectionPanel extends PythonExecutableSelectionPanel {
+
+    private static final String UNKNOWN_FLOW_VARIABLE_COMMAND_STRING = "unknown_flow_variable_selected";
 
     private final NodeDialogPane m_dialog; // NOSONAR Not intended for serialization.
 
@@ -133,28 +135,9 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
         m_variableSelectionBox = new PythonEnvironmentVariableSelectionBox(m_flowVariableModel);
         add(m_variableSelectionBox.getSelectionBox(), gbc);
 
-        updateView();
-
-        final SettingsModelString variableSelectionModel = m_variableSelectionBox.getModel();
-        m_usePreferencesButton.addActionListener(e -> {
-            variableSelectionModel.setEnabled(false);
-            updateModel(null);
-        });
-        // Triggers the change listener one below which in turn updates the model.
-        m_useVariableButton.addActionListener(e -> variableSelectionModel.setEnabled(true));
-        variableSelectionModel.addChangeListener(e -> {
-            if (variableSelectionModel.isEnabled()) {
-                updateModel(m_variableSelectionBox.isPlaceholderSelected() //
-                    ? null //
-                    : variableSelectionModel.getStringValue());
-            }
-        });
-        m_flowVariableModel.addChangeListener(e -> {
-            final Optional<FlowVariable> variable = m_flowVariableModel.getVariableValue();
-            final String commandString = variable.map(v -> v.getValue(StringType.INSTANCE)).orElse(null);
-            m_config.setCommandString(commandString);
-            updateView();
-        });
+        m_usePreferencesButton.addActionListener(e -> updateModel(null));
+        m_useVariableButton.addActionListener(e -> updateModel(m_variableSelectionBox.getSelectedVariableName()));
+        m_flowVariableModel.addChangeListener(e -> updateConfigAndView());
     }
 
     @Override
@@ -191,12 +174,6 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
         } catch (InvalidSettingsException ex) {
             throw new NotConfigurableException(ex.getMessage(), ex);
         }
-
-        final Collection<FlowVariable> availableVariables =
-            m_dialog.getAvailableFlowVariables(CondaEnvironmentType.INSTANCE).values();
-        final String variableName = m_flowVariableModel.getInputVariableName();
-        m_variableSelectionBox.updateSelection(availableVariables, variableName);
-        updateModel(variableName);
         updateView();
     }
 
@@ -204,41 +181,90 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
         m_flowVariableModel.setInputVariableName(flowVariableName);
     }
 
-    // TODO: consolidate box-specific parts of this with logic in box constructor (--> box.updateView())
-    private void updateView() {
-        final boolean useVariable = m_flowVariableModel.isVariableReplacementEnabled();
-        if (useVariable) {
-            final String variableName = m_flowVariableModel.getInputVariableName();
-            if (!m_dialog.getAvailableFlowVariables(CondaEnvironmentType.INSTANCE).containsKey(variableName) &&
-                m_dialog.getAvailableFlowVariables(StringType.INSTANCE).containsKey(variableName)) {
-                // User selected a simple string variable on the Flow Variables tab. This is legitimate but not
-                // supported by this selection panel, so disable/override the panel.
-                setAllEnabled(this, false);
-                return;
+    /**
+     * See {@link PythonFixedVersionExecutableSelectionPanel#updateView()} for the documentation of the different
+     * states.
+     */
+    private void updateConfigAndView() {
+        final String commandString;
+        if (!m_flowVariableModel.isVariableReplacementEnabled()) {
+            // States 1 & 5
+            commandString = null;
+        } else {
+            final Optional<FlowVariable> variableValue = m_flowVariableModel.getVariableValue();
+            if (variableValue.isPresent()) {
+                // States 2 & 3
+                commandString = variableValue.map(v -> v.getValue(StringType.INSTANCE)).orElse(null);
+            } else {
+                // State 4
+                NodeLogger.getLogger(PythonFixedVersionExecutableSelectionPanel.class).warn("The variable \"" +
+                    m_flowVariableModel.getInputVariableName() +
+                    "\" that controls the Python executable of this node does not exist (anymore).\n" +
+                    "Please select a different Python executable via the respective tab of the configuration dialog " +
+                    "of this node.");
+                commandString = UNKNOWN_FLOW_VARIABLE_COMMAND_STRING;
             }
         }
-
-        setAllEnabled(this, true);
-
-        m_usePreferencesButton.setSelected(!useVariable);
-        m_useVariableButton.setSelected(useVariable);
-
-        if (useVariable) {
-            m_variableSelectionBox.getModel().setStringValue(m_flowVariableModel.getInputVariableName());
-        }
-
-        m_useVariableButton.setEnabled(!m_variableSelectionBox.isPlaceholderSelected());
-        m_variableSelectionBox.getModel().setEnabled(m_useVariableButton.isSelected());
-        m_variableSelectionBox.m_selectionBox.setEnabled(m_variableSelectionBox.getModel().isEnabled());
+        m_config.setCommandString(commandString);
+        updateView();
     }
 
-    private static void setAllEnabled(final Component component, final boolean enabled) {
-        component.setEnabled(enabled);
-        if (component instanceof Container) {
-            for (Component c : ((Container)component).getComponents()) {
-                setAllEnabled(c, enabled);
+    /**
+     * As a function of the current state of the {@link #m_flowVariableModel flow variable model} and the currently
+     * available flow variables, this panel and its underlying config can be in one of five different states at a time:
+     * <ul>
+     * <li><b>State 1:</b> no flow variable set -&gt; use preferences</i>
+     * <li><b>State 2:</b> conda flow variable set -&gt; use conda variable</i>
+     * <li><b>State 3:</b> string flow variable set -&gt; use string variable; disable the entire panel but leave it
+     * otherwise unchanged (Python nodes support string flow variables via the Flow Variables tab, but we do not want to
+     * display them in this panel. Therefore selecting one effectively overrides the panel.)</i>
+     * <li><b>State 4:</b> flow variable set but does not exist (anymore) -&gt; use variable but indicate that the
+     * selection is invalid</i>
+     * <li><b>State 5:</b> no flow variable set &amp; no conda flow variables available at all -&gt; like State 1 but
+     * also disable the option to choose a conda variable; add a placeholder to the selection box
+     * </ul>
+     */
+    private void updateView() {
+        if (!m_flowVariableModel.isVariableReplacementEnabled()) {
+            if (!m_dialog.getAvailableFlowVariables(CondaEnvironmentType.INSTANCE).isEmpty()) {
+                // State 1
+                m_usePreferencesButton.setEnabled(true);
+                m_usePreferencesButton.setSelected(true);
+                m_useVariableButton.setEnabled(true);
+                m_useVariableButton.setSelected(false);
+            } else {
+                // State 5
+                m_usePreferencesButton.setEnabled(true);
+                m_usePreferencesButton.setSelected(true);
+                m_useVariableButton.setEnabled(false);
+                m_useVariableButton.setSelected(false);
+            }
+        } else {
+            final Optional<FlowVariable> variableValue = m_flowVariableModel.getVariableValue();
+            if (variableValue.isPresent()) {
+                if (variableValue.get().getVariableType().equals(CondaEnvironmentType.INSTANCE)) {
+                    // State 2
+                    m_usePreferencesButton.setEnabled(true);
+                    m_usePreferencesButton.setSelected(false);
+                    m_useVariableButton.setEnabled(true);
+                    m_useVariableButton.setSelected(true);
+                } else {
+                    // State 3
+                    m_usePreferencesButton.setEnabled(false);
+                    m_useVariableButton.setEnabled(false);
+                }
+            } else {
+                // State 4
+                m_usePreferencesButton.setEnabled(true);
+                m_usePreferencesButton.setSelected(false);
+                m_useVariableButton.setEnabled(true);
+                m_useVariableButton.setSelected(true);
             }
         }
+
+        m_variableSelectionBox.updateSelection(
+            m_dialog.getAvailableFlowVariables(CondaEnvironmentType.INSTANCE, StringType.INSTANCE),
+            m_flowVariableModel);
     }
 
     @Override
@@ -248,61 +274,114 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
 
     private static final class PythonEnvironmentVariableSelectionBox {
 
-        private static final String PLACEHOLDER_ENV_VARIABLE_NAME = CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME;
+        private final JComboBox<FlowVariableCell> m_selectionBox = new JComboBox<>();
 
-        private final SettingsModelString m_model;
-
-        private final DialogComponentStringSelection m_selection;
-
-        private final JComboBox<?> m_selectionBox;
+        private boolean m_isSelectionBoxUpdating = false;
 
         public PythonEnvironmentVariableSelectionBox(final FlowVariableModel model) {
-            final String initialValue = model.isVariableReplacementEnabled() //
-                ? model.getInputVariableName() //
-                : PLACEHOLDER_ENV_VARIABLE_NAME;
-            m_model = new SettingsModelString("dummy", initialValue);
-            m_model.setEnabled(model.isVariableReplacementEnabled());
-            m_selection = new DialogComponentStringSelection(m_model, "", initialValue);
-            m_selectionBox = getFirstComponent(m_selection, JComboBox.class);
+            m_selectionBox.setRenderer(new FlowVariableListCellRenderer());
+            m_selectionBox.addItemListener(e -> {
+                if (m_selectionBox.isEnabled() && !m_isSelectionBoxUpdating &&
+                    e.getStateChange() == ItemEvent.SELECTED) {
+                    model.setInputVariableName(getSelectedVariableName());
+                }
+            });
         }
 
-        public SettingsModelString getModel() {
-            return m_model;
-        }
-
-        public boolean isPlaceholderSelected() {
-            return m_model.getStringValue().equals(PLACEHOLDER_ENV_VARIABLE_NAME);
-        }
-
-        public JComboBox<?> getSelectionBox() {
+        public JComboBox<FlowVariableCell> getSelectionBox() {
             return m_selectionBox;
         }
 
-        public void updateSelection(final Collection<FlowVariable> availableVariables, final String variableToSelect) {
-            final Icon icon = CondaEnvironmentType.INSTANCE.getIcon();
-            StringIconOption[] environmentVariableNames = availableVariables.stream() //
-                .filter(v -> v.getVariableType().equals(CondaEnvironmentType.INSTANCE)) //
-                .map(FlowVariable::getName) //
-                .sorted() //
-                .map(name -> new DefaultStringIconOption(name, icon)) //
-                .toArray(StringIconOption[]::new);
-            if (environmentVariableNames.length == 0) {
-                environmentVariableNames =
-                    new StringIconOption[]{new DefaultStringIconOption(PLACEHOLDER_ENV_VARIABLE_NAME)};
-            }
-            m_selection.replaceListItems(environmentVariableNames, variableToSelect);
+        public String getSelectedVariableName() {
+            final FlowVariableCell flowVariable = ((FlowVariableCell)m_selectionBox.getSelectedItem());
+            return flowVariable != null ? flowVariable.getName() : null;
         }
 
-        private static <T extends Component> T getFirstComponent(final DialogComponent dialogComponent,
-            final Class<T> componentClass) {
-            for (final Component c : dialogComponent.getComponentPanel().getComponents()) {
-                if (componentClass.isInstance(c)) {
-                    @SuppressWarnings("unchecked")
-                    final T safe = (T)c;
-                    return safe;
+        /**
+         * See {@link PythonFixedVersionExecutableSelectionPanel#updateView()} for the documentation of the different
+         * states.
+         *
+         * @param availableVariables All flow variables of type {@link StringType} and {@link CondaEnvironmentType} that
+         *            are available to the enclosing node dialog.
+         */
+        public void updateSelection(final Map<String, FlowVariable> availableVariables,
+            @SuppressWarnings("javadoc") final FlowVariableModel flowVariableModel) {
+            final List<FlowVariableCell> environmentVariables =
+                collectAvailableEnvironmentVariables(availableVariables, flowVariableModel);
+
+            final boolean selectionBoxEnabledState;
+            final FlowVariableCell variableToSelect;
+            if (!flowVariableModel.isVariableReplacementEnabled()) {
+                // States 1 & 5
+                selectionBoxEnabledState = false;
+                variableToSelect = environmentVariables.get(0);
+            } else {
+                final Optional<FlowVariable> variableValue = flowVariableModel.getVariableValue();
+                if (variableValue.isPresent()) {
+                    if (variableValue.get().getVariableType().equals(CondaEnvironmentType.INSTANCE)) {
+                        // State 2
+                        selectionBoxEnabledState = true;
+                        final String variableNameToSelect = flowVariableModel.getInputVariableName();
+                        variableToSelect = findVariableByName(environmentVariables, variableNameToSelect).orElseThrow();
+                    } else {
+                        // State 3
+                        selectionBoxEnabledState = false;
+                        final FlowVariableCell oldSelectedVariable = (FlowVariableCell)m_selectionBox.getSelectedItem();
+                        final String oldSelectedVariableName = oldSelectedVariable != null //
+                            ? oldSelectedVariable.getName() //
+                            : null;
+                        variableToSelect = findVariableByName(environmentVariables, oldSelectedVariableName)
+                            .orElse(environmentVariables.get(0));
+                    }
+                } else {
+                    // State 4
+                    selectionBoxEnabledState = true;
+                    final String variableNameToSelect = flowVariableModel.getInputVariableName();
+                    variableToSelect = findVariableByName(environmentVariables, variableNameToSelect).orElseThrow();
                 }
             }
-            return null;
+
+            updateSelectionBox(selectionBoxEnabledState, environmentVariables, variableToSelect);
+        }
+
+        private static List<FlowVariableCell> collectAvailableEnvironmentVariables(
+            final Map<String, FlowVariable> availableVariables, final FlowVariableModel flowVariableModel) {
+            List<FlowVariableCell> environmentVariables = availableVariables.values().stream() //
+                .filter(v -> v.getVariableType().equals(CondaEnvironmentType.INSTANCE)) //
+                .map(FlowVariableCell::new) //
+                .collect(Collectors.toList());
+            if (flowVariableModel.isVariableReplacementEnabled() && flowVariableModel.getVariableValue().isEmpty()) {
+                // State 4
+                environmentVariables.add(new FlowVariableCell(flowVariableModel.getInputVariableName()));
+            } else if (environmentVariables.isEmpty()) {
+                // State 5
+                environmentVariables = Arrays.asList((FlowVariableCell)null);
+            }
+            environmentVariables.sort(Comparator.comparing(FlowVariableCell::getName));
+            return environmentVariables;
+        }
+
+        private static Optional<FlowVariableCell> findVariableByName(final List<FlowVariableCell> environmentVariables,
+            final String variableName) {
+            return environmentVariables.stream() //
+                .filter(v -> v != null && v.getName().equals(variableName)) //
+                .findFirst();
+        }
+
+        private void updateSelectionBox(final boolean selectionBoxEnabledState,
+            final List<FlowVariableCell> environmentVariables, final FlowVariableCell variableToSelect) {
+            m_selectionBox.setEnabled(selectionBoxEnabledState);
+
+            m_isSelectionBoxUpdating = true;
+            m_selectionBox.removeAllItems();
+            for (final FlowVariableCell variable : environmentVariables) {
+                m_selectionBox.addItem(variable);
+            }
+            m_selectionBox.setSelectedItem(variableToSelect);
+            m_isSelectionBoxUpdating = false;
+
+            m_selectionBox.setSize(m_selectionBox.getPreferredSize());
+            m_selectionBox.getParent().validate();
         }
     }
 }
