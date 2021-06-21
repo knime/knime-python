@@ -114,7 +114,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static final String CFG_KEY_SOURCE_OS_NAME = "source_operating_system";
 
-    private static final String CFG_KEY_PRESERVE_INCOMPLETE_ENVS = "preserve_incomplete_envs";
+    private static final String CFG_KEY_PRESERVE_INCOMPLETE_ENVS = "preserve_incomplete_environments";
 
     private static final String OS_LINUX = "linux";
 
@@ -148,12 +148,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             CondaEnvironmentPropagation.DEFAULT_ENV_FLOW_VAR_NAME);
     }
 
-    static SettingsModelString createSourceOsModel() {
-        return new SettingsModelString(CFG_KEY_SOURCE_OS_NAME, getCurrentOsType());
+    static SettingsModelBoolean createPreserveIncompleteEnvsModel() {
+        return new SettingsModelBoolean(CFG_KEY_PRESERVE_INCOMPLETE_ENVS, false);
     }
 
-    static SettingsModelBoolean createPreserveIncompleEnvsModel() {
-        return new SettingsModelBoolean(CFG_KEY_PRESERVE_INCOMPLETE_ENVS, false);
+    static SettingsModelString createSourceOsModel() {
+        return new SettingsModelString(CFG_KEY_SOURCE_OS_NAME, getCurrentOsType());
     }
 
     private final SettingsModelString m_environmentNameModel = createCondaEnvironmentNameModel();
@@ -164,9 +164,9 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private final SettingsModelString m_outputVariableNameModel = createOutputVariableNameModel();
 
-    private final SettingsModelString m_sourceOsModel = createSourceOsModel();
+    private final SettingsModelBoolean m_preserveIncompleteEnvsModel = createPreserveIncompleteEnvsModel();
 
-    private final SettingsModelBoolean m_preserveIncompleteEnvsModel = createPreserveIncompleEnvsModel();
+    private final SettingsModelString m_sourceOsModel = createSourceOsModel();
 
     public CondaEnvironmentPropagationNodeModel() {
         super(new PortType[0], new PortType[]{FlowVariablePortObject.TYPE});
@@ -178,8 +178,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         m_packagesConfig.saveSettingsTo(settings);
         m_validationMethodModel.saveSettingsTo(settings);
         m_outputVariableNameModel.saveSettingsTo(settings);
-        m_sourceOsModel.saveSettingsTo(settings);
         m_preserveIncompleteEnvsModel.saveSettingsTo(settings);
+        m_sourceOsModel.saveSettingsTo(settings);
     }
 
     @Override
@@ -192,7 +192,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         if (settings.containsKey(m_outputVariableNameModel.getKey())) {
             m_outputVariableNameModel.validateSettings(settings);
         }
-        if (settings.containsKey(CFG_KEY_PRESERVE_INCOMPLETE_ENVS)) {
+        if (settings.containsKey(m_preserveIncompleteEnvsModel.getConfigName())) {
             m_preserveIncompleteEnvsModel.validateSettings(settings);
         }
         m_sourceOsModel.validateSettings(settings);
@@ -212,7 +212,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 throw new InvalidSettingsException("The output variable name may not be blank.");
             }
         }
-        if (settings.containsKey(CFG_KEY_PRESERVE_INCOMPLETE_ENVS)) {
+        if (settings.containsKey(m_preserveIncompleteEnvsModel.getConfigName())) {
             m_preserveIncompleteEnvsModel.loadSettingsFrom(settings);
         }
         m_sourceOsModel.loadSettingsFrom(settings);
@@ -457,12 +457,13 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
             // Creating the environment failed -> We still keep it
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                .warn("Creating the environment failed. There might be an incomplete environment present. "
-                    + "Proceed with caution!");
+                .warn("Creating the environment failed. There might be an incomplete environment present. " +
+                    "Proceed with caution!");
         } else {
             // Creating the environment failed -> We make sure to remove what might be already there
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn("Creating the environment failed. "
-                + "If an incomplete environment has been created it will be removed.");
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn("Creating the environment failed. " +
+                "If an incomplete environment has been created, it will be removed and the original environment, if " +
+                "any, will be recovered.");
             conda.deleteEnvironment(environmentName);
             envBackup.recover();
         }
@@ -472,7 +473,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final EnvironmentBackup envBackup) throws IOException {
         // Creating the environment canceled -> We make sure to remove what might be already there
         NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-            .info("Environment creating canceled. If an incomplete environment has been created it will be removed.");
+            .info("Environment creation canceled. If an incomplete environment has been created, it will be removed " +
+                "and the original environment, if any, will be recovered.");
         conda.deleteEnvironment(environmentName);
         envBackup.recover();
     }
@@ -597,15 +599,18 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 final Path existingEnv = Path.of(environment.getDirectoryPath());
                 backupFolder = existingEnv //
                     .normalize().getParent() // envs directory /foo/anaconda3/envs
-                    .resolve("tmp-" + UUID.randomUUID().toString()); // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
+                    // temporary folder for the backup /foo/anaconda3/envs/tmp-6ffc2c08
+                    .resolve("tmp-" + UUID.randomUUID().toString());
                 final Path backupEnv = backupFolder.resolve(existingEnv.getFileName());
                 // NOTE: this should always work because it's on the same file system
                 Files.createDirectories(backupFolder);
                 Files.move(existingEnv, backupEnv);
                 return Optional.of(Pair.create(existingEnv, backupEnv));
-            } catch (final Exception ex) { // NOSONAR -- Catch all exceptions to make sure this does not hinder the node execution
+            }
+            // Sonar: Catch all exceptions to make sure this does not hinder the node execution
+            catch (final Exception ex) { // NOSONAR
                 NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
-                    "Could not backup environment. The environment will be overwritten without chance for recovery.",
+                    "Could not back up environment. The environment will be overwritten without chance for recovery.",
                     ex);
                 // Clean up the backup folder if the backup did not succeed
                 deleteBackupIfExists(backupFolder);
@@ -635,8 +640,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 }
             } catch (final IOException ex) {
                 NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                    .warn("Could not clean up backup directory. The directory " + folder.toAbsolutePath().toString()
-                        + " exists and needs to be deleted manually.", ex);
+                    .warn("Could not clean up backup directory. The directory " + folder.toAbsolutePath().toString() +
+                        " exists and needs to be deleted manually.", ex);
             }
         }
     }
