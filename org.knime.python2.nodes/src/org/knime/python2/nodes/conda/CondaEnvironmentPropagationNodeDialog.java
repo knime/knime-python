@@ -146,9 +146,9 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
         m_panel.add(panel, NORMAL);
 
         final SettingsModelBoolean preserveIncompleteEnvsModel =
-            CondaEnvironmentPropagationNodeModel.createPreserveIncompleEnvsModel();
+            CondaEnvironmentPropagationNodeModel.createPreserveIncompleteEnvsModel();
         m_preserveIncompleteEnvsCheckbox = new DialogComponentBoolean(preserveIncompleteEnvsModel,
-            "Preserve a possibly incomplete conda environment if the creation fails");
+            "Preserve a possibly incomplete Conda environment if the creation fails");
         gbc.gridy++;
         panel.add(getFirstComponent(m_preserveIncompleteEnvsCheckbox, JCheckBox.class), gbc);
 
