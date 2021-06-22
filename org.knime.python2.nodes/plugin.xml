@@ -12,7 +12,7 @@
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.learner2.Python2LearnerNodeFactory2" after="org.knime.python2.nodes.objectwriter2.Python2ObjectWriterNodeFactory2"/>
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.predictor2.Python2PredictorNodeFactory2" after="org.knime.python2.nodes.learner2.Python2LearnerNodeFactory2"/>
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.db.Python2ScriptDBNodeFactory" after="org.knime.python2.nodes.predictor2.Python2PredictorNodeFactory2"/>
-        <node category-path="/scripting/python/conda" factory-class="org.knime.python2.nodes.conda.CondaEnvironmentPropagationNodeFactory"/>
+        <node category-path="/scripting/conda" factory-class="org.knime.python2.nodes.conda.CondaEnvironmentPropagationNodeFactory"/>
 
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script.Python2ScriptNodeFactory" deprecated="true"/>
         <node category-path="/scripting/python" factory-class="org.knime.python2.nodes.script1in2out.Python2Script1In2OutNodeFactory" deprecated="true"/>
@@ -25,7 +25,7 @@
     </extension>
     <extension point="org.knime.workbench.repository.categories">
         <category description="Python nodes" icon="icons/python.png" level-id="python" name="Python" path="/scripting" />
-        <category description="Nodes to interface with the Conda tool." icon="icons/condacategory.png" level-id="conda" name="Conda" path="/scripting/python"/>
+        <category description="Nodes to interface with the Conda tool." icon="icons/condacategory.png" level-id="conda" name="Conda" path="/scripting"/>
     </extension>
     <extension point="org.knime.workbench.repository.registeredFileExtensions">
         <FileExtensionMapping NodeFactory="org.knime.python2.nodes.objectreader2.Python2ObjectReaderNodeFactory2">
