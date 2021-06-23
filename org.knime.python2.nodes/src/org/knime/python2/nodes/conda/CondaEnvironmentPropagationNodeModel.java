@@ -453,7 +453,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     }
 
     private void handleFailedEnvCreation(final Conda conda, final String environmentName,
-        final EnvironmentBackup envBackup) throws IOException {
+        final EnvironmentBackup envBackup) {
         if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
             // Creating the environment failed -> We still keep it
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
@@ -464,19 +464,37 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn("Creating the environment failed. " +
                 "If an incomplete environment has been created, it will be removed and the original environment, if " +
                 "any, will be recovered.");
-            conda.deleteEnvironment(environmentName);
-            envBackup.recover();
+            deleteEnvironmentAndRecoverBackup(conda, environmentName, envBackup);
         }
     }
 
     private static void handleCanceledEnvCreation(final Conda conda, final String environmentName,
-        final EnvironmentBackup envBackup) throws IOException {
+        final EnvironmentBackup envBackup) {
         // Creating the environment canceled -> We make sure to remove what might be already there
         NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
             .info("Environment creation canceled. If an incomplete environment has been created, it will be removed " +
                 "and the original environment, if any, will be recovered.");
-        conda.deleteEnvironment(environmentName);
-        envBackup.recover();
+        deleteEnvironmentAndRecoverBackup(conda, environmentName, envBackup);
+    }
+
+    private static void deleteEnvironmentAndRecoverBackup(final Conda conda, final String environmentName,
+        final EnvironmentBackup envBackup) {
+        try {
+            conda.deleteEnvironment(environmentName);
+        }
+        // Sonar: This method will only be called if the node fails or is canceled. We do not want any exceptions thrown
+        // here to override the original cause of why the environment creation was terminated. So only log them and let
+        // the node report the original cause to the runtime.
+        catch (final Exception ex) { // NOSONAR
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                .warn("Could not delete the incomplete environment.", ex);
+        }
+        try {
+            envBackup.recover();
+        } catch (final Exception ex) { // NOSONAR See above.
+            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                .warn("Could not recover the original environment.", ex);
+        }
     }
 
     @Override
@@ -626,7 +644,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             // Delete the backup folder if it exists (no matter if the backup was successful or not)
             if (m_backupEnv != null) {
                 deleteBackupIfExists(m_backupEnv.getParent());
@@ -634,14 +652,18 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         }
 
         private static void deleteBackupIfExists(final Path folder) {
-            try {
-                if (folder != null && Files.exists(folder)) {
-                    PathUtils.deleteDirectoryIfExists(folder);
+            if (folder != null) {
+                try {
+                    if (Files.exists(folder)) {
+                        PathUtils.deleteDirectoryIfExists(folder);
+                    }
                 }
-            } catch (final IOException ex) {
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                    .warn("Could not clean up backup directory. The directory " + folder.toAbsolutePath().toString() +
-                        " exists and needs to be deleted manually.", ex);
+                // Sonar: Catch all exceptions to make sure this does not hinder the node execution
+                catch (final Exception ex) { // NOSONAR
+                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+                        .warn("Could not clean up backup directory. The directory " +
+                            folder.toAbsolutePath().toString() + " exists and needs to be deleted manually.", ex);
+                }
             }
         }
     }
