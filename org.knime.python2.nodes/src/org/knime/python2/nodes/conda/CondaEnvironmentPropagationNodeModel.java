@@ -100,6 +100,8 @@ import org.knime.python2.prefs.PythonPreferences;
  */
 final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class);
+
     private static final String CFG_KEY_CONDA_ENV = "conda_environment";
 
     private static final String CFG_KEY_ENV_VALIDATION_METHOD = "environment_validation";
@@ -329,7 +331,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
         if (createEnvironment) {
             exec.setMessage(creationMessage);
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).info(creationMessage);
+            LOGGER.info(creationMessage);
 
             // Create a temporary backup of the existing environment
             try (final EnvironmentBackup envBackup = new EnvironmentBackup(existingEnvironment.orElse(null))) {
@@ -456,12 +458,11 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final EnvironmentBackup envBackup) {
         if (m_preserveIncompleteEnvsModel.getBooleanValue()) {
             // Creating the environment failed -> We still keep it
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                .warn("Creating the environment failed. There might be an incomplete environment present. " +
-                    "Proceed with caution!");
+            LOGGER.warn("Creating the environment failed. There might be an incomplete environment present. " +
+                "Proceed with caution!");
         } else {
             // Creating the environment failed -> We make sure to remove what might be already there
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn("Creating the environment failed. " +
+            LOGGER.warn("Creating the environment failed. " +
                 "If an incomplete environment has been created, it will be removed and the original environment, if " +
                 "any, will be recovered.");
             deleteEnvironmentAndRecoverBackup(conda, environmentName, envBackup);
@@ -471,7 +472,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private static void handleCanceledEnvCreation(final Conda conda, final String environmentName,
         final EnvironmentBackup envBackup) {
         // Creating the environment canceled -> We make sure to remove what might be already there
-        NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
+        LOGGER
             .info("Environment creation canceled. If an incomplete environment has been created, it will be removed " +
                 "and the original environment, if any, will be recovered.");
         deleteEnvironmentAndRecoverBackup(conda, environmentName, envBackup);
@@ -486,14 +487,12 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         // here to override the original cause of why the environment creation was terminated. So only log them and let
         // the node report the original cause to the runtime.
         catch (final Exception ex) { // NOSONAR
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                .warn("Could not delete the incomplete environment.", ex);
+            LOGGER.warn("Could not delete the incomplete environment.", ex);
         }
         try {
             envBackup.recover();
         } catch (final Exception ex) { // NOSONAR See above.
-            NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                .warn("Could not recover the original environment.", ex);
+            LOGGER.warn("Could not recover the original environment.", ex);
         }
     }
 
@@ -570,7 +569,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         protected void handleWarningMessage(final String warning) {
             NodeContext.pushContext(m_nodeContext);
             try {
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(warning);
+                LOGGER.warn(warning);
             } finally {
                 NodeContext.removeLastContext();
             }
@@ -627,7 +626,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             }
             // Sonar: Catch all exceptions to make sure this does not hinder the node execution
             catch (final Exception ex) { // NOSONAR
-                NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class).warn(
+                LOGGER.warn(
                     "Could not back up environment. The environment will be overwritten without chance for recovery.",
                     ex);
                 // Clean up the backup folder if the backup did not succeed
@@ -660,9 +659,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
                 }
                 // Sonar: Catch all exceptions to make sure this does not hinder the node execution
                 catch (final Exception ex) { // NOSONAR
-                    NodeLogger.getLogger(CondaEnvironmentPropagationNodeModel.class)
-                        .warn("Could not clean up backup directory. The directory " +
-                            folder.toAbsolutePath().toString() + " exists and needs to be deleted manually.", ex);
+                    LOGGER.warn("Could not clean up backup directory. The directory " +
+                        folder.toAbsolutePath().toString() + " exists and needs to be deleted manually.", ex);
                 }
             }
         }
