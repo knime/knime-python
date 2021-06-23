@@ -9,7 +9,8 @@
 	<fullDescription>
 		<intro>
 			This node ensures the existence of a specific configurable Conda environment and propagates the environment
-			to downstream Python nodes. This is useful to make workflows that contain Python nodes more portable by
+			to downstream nodes that can make use of a Conda environment (e.g. Python or R nodes). 
+			This is useful to make workflows that contain Conda-aware nodes more portable by
 			allowing to recreate the Conda environment used on the source machine (for example your personal computer)
 			on the target machine (for example a KNIME Server instance). The node is intended to be used as follows:
 			<ol>
@@ -18,10 +19,10 @@
 					<a href="https://docs.knime.com/?category=integrations">installation guide</a>.</li>
 				<li>Configure this node by selecting the Conda environment to propagate and selecting the packages to
 					include in the environment in case it needs to be recreated.</li>
-				<li>Connect the output port of the node to the variable input port of any Python node.</li>
-				<li>Successively open the configuration dialogues of the Python node and all subsequent Python nodes in
-					the flow that you want to make portable. On each node's <i>Executable Selection</i> tab, enable
-					<i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
+				<li>Connect the output port of the node to the variable input port of any Conda-aware node.</li>
+				<li>Successively open the configuration dialogues of the Conda-aware node and all subsequent Conda-aware 
+				    nodes in the flow that you want to make portable. On each node's <i>Executable Selection</i> tab, 
+					enable <i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
 					environment from the selection box.</li>
 				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
 					it. Make sure that this node is reset before or during the deployment process.</li>
@@ -32,13 +33,13 @@
 					this.</li>
 				<li>During execution (on either machine), the node will check whether a local Conda environment exists
 					that matches its configured environment. The node will recreate the environment if necessary,
-					ensuring its availability to the connected and properly configured downstream Python nodes.</li>
+					ensuring its availability to the connected and properly configured downstream Conda-aware nodes.</li>
 			</ol>
 		</intro>
 		<tab name="Options">
 			<option name="Conda environment">
 				The Conda environment whose existence to ensure during the execution of the node and which to propagate
-				to downstream Python nodes.
+				to downstream Conda-aware nodes.
 			</option>
 			<option name="Packages">
 				The list of packages contained in the selected Conda environment. For each individual package, you can
