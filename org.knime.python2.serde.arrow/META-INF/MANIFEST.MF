@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python Serialization - Arrow
 Bundle-SymbolicName: org.knime.python2.serde.arrow;singleton:=true
-Bundle-Version: 4.4.0.qualifier
+Bundle-Version: 4.5.0.qualifier
 Bundle-ClassPath: python-serde-arrow.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.python2.serde.arrow
