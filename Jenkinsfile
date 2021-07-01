@@ -36,7 +36,8 @@ try {
                     'knime-python',
                     'knime-testing-internal',
                     'knime-xml'
-                ]
+                ],
+                ius: [ 'org.knime.features.ext.jython.feature.group' ]
             ],
             sidecarContainers: [
                 [ image: "${dockerTools.ECR}/knime/postgres:12", namePrefix: "POSTGRES", port: 5432, 
