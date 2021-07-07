@@ -64,17 +64,13 @@ import org.knime.python2.conda.CondaEnvironmentIdentifier;
  */
 public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfig {
 
-    private PythonVersion m_pythonVersion;
+    private final PythonVersion m_pythonVersion;
 
     private final SettingsModelString m_environmentDirectory;
 
+    private final String m_legacyEnvironmentNameConfigKey;
+
     private final String m_defaultEnvironmentDirectory;
-
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
-    private static final String LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
-
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
-    private static final String LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME = "python3CondaEnvironmentName";
 
     /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
     private static final String LEGACY_PLACEHOLDER_CONDA_ENV_NAME = "<no environment>";
@@ -89,17 +85,22 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
      * @param pythonVersion The Python version of Conda environments described by this instance.
      * @param environmentDirectoryConfigKey The identifier of the Conda environment directory config. Used for
      *            saving/loading the path to the environment's directory.
+     * @param legacyEnvironmentNameConfigKey Legacy support: we used to only save the environment's name, not the path
+     *            to its directory. This parameter is used to support configs of the old format. Leave it {@code null}
+     *            if no legacy support is necessary.
      * @param defaultEnvironment The initial Conda environment.
      * @param condaDirectory The settings model that specifies the Conda installation directory. Not saved/loaded or
      *            otherwise managed by this config.
      */
     public CondaEnvironmentConfig(final PythonVersion pythonVersion, //
         final String environmentDirectoryConfigKey, //
+        final String legacyEnvironmentNameConfigKey, //
         final CondaEnvironmentIdentifier defaultEnvironment, //
         final SettingsModelString condaDirectory) {
         m_pythonVersion = pythonVersion;
         m_environmentDirectory =
             new SettingsModelString(environmentDirectoryConfigKey, defaultEnvironment.getDirectoryPath());
+        m_legacyEnvironmentNameConfigKey = legacyEnvironmentNameConfigKey;
         m_defaultEnvironmentDirectory = m_environmentDirectory.getStringValue();
         m_availableEnvironments = new ObservableValue<>(new CondaEnvironmentIdentifier[]{defaultEnvironment});
         m_condaDirectory = condaDirectory;
@@ -160,10 +161,11 @@ public final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
      * available, we need to convert it into the correct path.
      */
     private boolean tryUseEnvironmentNameEntry(final PythonConfigStorage storage) {
-        final SettingsModelString environmentName = new SettingsModelString(m_pythonVersion == PythonVersion.PYTHON2 //
-            ? LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME //
-            : LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME, //
-            LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
+        if (m_legacyEnvironmentNameConfigKey == null) {
+            return false;
+        }
+        final SettingsModelString environmentName =
+            new SettingsModelString(m_legacyEnvironmentNameConfigKey, LEGACY_PLACEHOLDER_CONDA_ENV_NAME);
         storage.loadStringModel(environmentName);
         final String environmentNameValue = environmentName.getStringValue();
         final boolean environmentNameEntryExists = !LEGACY_PLACEHOLDER_CONDA_ENV_NAME.equals(environmentNameValue);
