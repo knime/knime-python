@@ -59,10 +59,10 @@ import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.conda.Conda;
-import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.conda.Conda;
+import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
 import org.knime.python2.extensions.serializationlibrary.SerializationLibraryExtensions;
@@ -326,9 +326,7 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
             ? m_condaEnvironmentsConfig.getPython3Config() //
             : m_condaEnvironmentsConfig.getPython2Config();
         if (availableEnvironments.isEmpty()) {
-            availableEnvironments =
-                Arrays.asList(new CondaEnvironmentIdentifier(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME,
-                    CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR));
+            availableEnvironments = Arrays.asList(AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV);
         }
         condaConfig.getAvailableEnvironments().setValue(availableEnvironments.toArray(new CondaEnvironmentIdentifier[0]));
         final String currentlySelectedEnvironment = condaConfig.getEnvironmentDirectory().getStringValue();
@@ -407,7 +405,8 @@ public final class PythonConfigsObserver extends AbstractPythonConfigsObserver {
         final SettingsModelString condaEnvironmentDirectory = isPython3 //
             ? m_condaEnvironmentsConfig.getPython3Config().getEnvironmentDirectory() //
             : m_condaEnvironmentsConfig.getPython2Config().getEnvironmentDirectory();
-        return CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR.equals(condaEnvironmentDirectory.getStringValue());
+        return AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV.getDirectoryPath()
+            .equals(condaEnvironmentDirectory.getStringValue());
     }
 
     private void testSerializer() {

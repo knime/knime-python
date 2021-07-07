@@ -90,7 +90,7 @@ import org.knime.python2.conda.Conda;
 import org.knime.python2.conda.CondaEnvironmentCreationMonitor;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.conda.CondaPackageSpec;
-import org.knime.python2.config.CondaEnvironmentsConfig;
+import org.knime.python2.config.AbstractCondaEnvironmentsConfig;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.prefs.PythonPreferences;
@@ -130,7 +130,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
     private static /* final */ PlatformCondaPackageFilter platformPackageFilter;
 
     static SettingsModelString createCondaEnvironmentNameModel() {
-        return new SettingsModelString(CFG_KEY_CONDA_ENV, CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME);
+        return new SettingsModelString(CFG_KEY_CONDA_ENV,
+            AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV.getName());
     }
 
     static CondaPackagesConfig createPackagesConfig() {
@@ -242,7 +243,8 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
             throw new InvalidSettingsException(ex.getMessage(), ex);
         }
 
-        if (CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME.equals(m_environmentNameModel.getStringValue())) {
+        if (AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV.getName()
+            .equals(m_environmentNameModel.getStringValue())) {
             autoConfigureOnSourceMachine(conda, environments);
         }
 
@@ -278,7 +280,7 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
         final String environmentDirectory = pythonVersion == PythonVersion.PYTHON2 //
             ? PythonPreferences.getPython2CondaEnvironmentDirectoryPath() //
             : PythonPreferences.getPython3CondaEnvironmentDirectoryPath();
-        if (CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_DIR.equals(environmentDirectory)) {
+        if (AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV.getDirectoryPath().equals(environmentDirectory)) {
             throw new InvalidSettingsException("Please make sure Conda is properly configured in the Preferences " +
                 "of the KNIME Python Integration.\nThen select the Conda environment to propagate via the " +
                 "configuration dialog of this node.");

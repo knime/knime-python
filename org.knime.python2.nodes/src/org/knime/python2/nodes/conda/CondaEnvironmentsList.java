@@ -77,7 +77,7 @@ import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.conda.Conda;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
-import org.knime.python2.config.CondaEnvironmentsConfig;
+import org.knime.python2.config.AbstractCondaEnvironmentsConfig;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -185,7 +185,7 @@ final class CondaEnvironmentsList {
                 .map(CondaEnvironmentIdentifier::getName) //
                 .collect(Collectors.toCollection(TreeSet::new));
             String nonExistingEnvironmentName = null;
-            if (!environmentName.equals(CondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV_NAME)
+            if (!environmentName.equals(AbstractCondaEnvironmentsConfig.PLACEHOLDER_CONDA_ENV.getDirectoryPath())
                 // Include the configured environment even if it is not present on the local machine. This way, the
                 // dialog can be opened on the target machine before the environment has been recreated without
                 // overriding the current configuration.

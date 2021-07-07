@@ -51,6 +51,8 @@ package org.knime.python2.prefs;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.knime.core.node.NodeLogger;
 import org.osgi.service.prefs.BackingStoreException;
@@ -102,7 +104,7 @@ public final class PreferenceStorage {
         m_readContexts = readContexts;
     }
 
-    Preferences getWritePreferences() {
+    IEclipsePreferences getWritePreferences() {
         return m_writeContext.getNode(m_qualifier);
     }
 
@@ -112,6 +114,26 @@ public final class PreferenceStorage {
             readPreferences[i] = m_readContexts[i].getNode(m_qualifier);
         }
         return readPreferences;
+    }
+
+    /**
+     * Equivalent to calling the linked method on the primary context of this storage.
+     *
+     * @see IEclipsePreferences#addPreferenceChangeListener(IPreferenceChangeListener)
+     */
+    @SuppressWarnings("javadoc")
+    public void addPrimaryPreferenceChangeListener(final IPreferenceChangeListener listener) {
+        getWritePreferences().addPreferenceChangeListener(listener);
+    }
+
+    /**
+     * Equivalent to calling the linked method on the primary context of this storage.
+     *
+     * @see IEclipsePreferences#removePreferenceChangeListener(IPreferenceChangeListener)
+     */
+    @SuppressWarnings("javadoc")
+    public void removePrimaryPreferenceChangeListener(final IPreferenceChangeListener listener) {
+        getWritePreferences().removePreferenceChangeListener(listener);
     }
 
     /**

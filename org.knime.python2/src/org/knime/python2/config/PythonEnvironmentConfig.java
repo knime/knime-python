@@ -76,6 +76,12 @@ public interface PythonEnvironmentConfig extends PythonConfig {
     SettingsModelString getPythonInstallationInfo();
 
     /**
+     * @return The most recent installation warning message of the Python environment configured by this instance. Not
+     *         meant of saving/loading.
+     */
+    SettingsModelString getPythonInstallationWarning();
+
+    /**
      * @return The most recent installation error message of the Python environment configured by this instance. Not
      *         meant for saving/loading.
      */

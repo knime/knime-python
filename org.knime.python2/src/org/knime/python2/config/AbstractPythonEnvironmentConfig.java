@@ -65,6 +65,8 @@ public abstract class AbstractPythonEnvironmentConfig implements PythonEnvironme
 
     private final SettingsModelString m_installationInfo = new SettingsModelString(DUMMY_CFG_KEY, "");
 
+    private final SettingsModelString m_installationWarning = new SettingsModelString(DUMMY_CFG_KEY, "");
+
     private final SettingsModelString m_installationError = new SettingsModelString(DUMMY_CFG_KEY, "");
 
     @Override
@@ -75,6 +77,11 @@ public abstract class AbstractPythonEnvironmentConfig implements PythonEnvironme
     @Override
     public SettingsModelString getPythonInstallationInfo() {
         return m_installationInfo;
+    }
+
+    @Override
+    public SettingsModelString getPythonInstallationWarning() {
+        return m_installationWarning;
     }
 
     @Override
