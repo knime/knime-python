@@ -53,6 +53,7 @@ import java.util.List;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DefaultColumnarSchema;
 
 // TODO(extensiontypes) This should be replaced with something that works on virtual types/extension types
 @SuppressWarnings("javadoc")
@@ -76,17 +77,6 @@ public class PythonColumnarSchemaBuilder {
 
     public ColumnarSchema build() {
         m_built = true;
-        return new ColumnarSchema() {
-
-            @Override
-            public int numColumns() {
-                return m_specs.size();
-            }
-
-            @Override
-            public DataSpec getSpec(final int index) {
-                return m_specs.get(index);
-            }
-        };
+        return new DefaultColumnarSchema(m_specs.toArray(new DataSpec[0]));
     }
 }

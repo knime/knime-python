@@ -84,6 +84,7 @@ import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.StructDataSpec;
 
 @SuppressWarnings("javadoc")
@@ -152,9 +153,9 @@ public class ExampleTests {
                 // Define a PythonArrowDataCallback getting the data from Python
                 final var outPath = TestUtils.createTmpKNIMEArrowPath();
                 final var expectedSchema =
-                    TestUtils.createSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.intSpec());
+                    new DefaultColumnarSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.intSpec());
                 // final var expectedSchema =
-                //    TestUtils.createSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.doubleSpec());
+                //    new DefaultColumnarSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.doubleSpec());
                 final var dataCallback = PythonArrowDataUtils.createCallback(outPath);
 
                 // Call Python
@@ -291,7 +292,7 @@ public class ExampleTests {
         final var numBatches = 5;
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = TestUtils.createSchema(DataSpec.localDateSpec());
+        final var schema = new DefaultColumnarSchema(DataSpec.localDateSpec());
         try (final var store = m_storeFactory.createStore(schema, path)) {
 
             // Write some data to the store
@@ -338,7 +339,7 @@ public class ExampleTests {
         final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = TestUtils.createSchema(DataSpec.zonedDateTimeSpec());
+        final var schema = new DefaultColumnarSchema(DataSpec.zonedDateTimeSpec());
         try (final var store = m_storeFactory.createStore(schema, path)) {
 
             // Write some data to the store
@@ -388,7 +389,7 @@ public class ExampleTests {
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
         final var savePath = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = TestUtils.createSchema(DataSpec.zonedDateTimeSpec());
+        final var schema = new DefaultColumnarSchema(DataSpec.zonedDateTimeSpec());
         try (final var writeStore = m_storeFactory.createStore(schema, path)) {
             // Write some data to the store
             try (final BatchWriter writer = writeStore.getWriter()) {
@@ -437,7 +438,7 @@ public class ExampleTests {
         final var numBatches = 5;
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = TestUtils.createSchema(new StructDataSpec(DataSpec.intSpec(), DataSpec.doubleSpec()));
+        final var schema = new DefaultColumnarSchema(new StructDataSpec(DataSpec.intSpec(), DataSpec.doubleSpec()));
         try (final var store = m_storeFactory.createStore(schema, path)) {
 
             // Write some data to the store
@@ -480,7 +481,7 @@ public class ExampleTests {
     static ArrowBatchStore createExampleStore(final ArrowColumnStoreFactory storeFactory, final int numRows,
         final int numBatches) throws IOException {
         final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = TestUtils.createSchema(DataSpec.stringSpec(), DataSpec.intSpec());
+        final var schema = new DefaultColumnarSchema(DataSpec.stringSpec(), DataSpec.intSpec());
         final var store = storeFactory.createStore(schema, path);
 
         // Write some data to the store
