@@ -56,9 +56,9 @@ import java.util.stream.Collectors;
 import org.apache.arrow.memory.BufferAllocator;
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
-import org.knime.core.columnar.arrow.ArrowPartialFileBatchReadStore;
+import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
-import org.knime.core.columnar.store.BatchReadStore;
+import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.python3.PythonDataCallback;
@@ -113,46 +113,40 @@ public final class PythonArrowDataUtils {
     }
 
     /**
-     * Create a {@link BatchReadStore} that provides batches from the data written by the Python process to the given
-     * {@link PythonArrowDataCallback}.
+     * Create a {@link RandomAccessBatchReadable} that provides batches from the data written by the Python process to
+     * the given {@link PythonArrowDataCallback}.
      *
      * @param callback the callback which was given to the Python process
      * @param allocator an allocator to allocate memory for data read from disc
-     * @return the {@link BatchReadStore} with the data
+     * @return the {@link RandomAccessBatchReadable} with the data
      */
-    public static BatchReadStore createReadStore(final DefaultPythonArrowDataCallback callback,
+    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
         final BufferAllocator allocator) {
-        // TODO can we use of the ArrowColumnStoreFactory
-        return new ArrowPartialFileBatchReadStore(callback.getSchema(), callback.getPath(), allocator,
-            getOffsetProvider(callback));
+        // TODO Do not require DefaultPythonArrowDataCallback but an interface
+        return new ArrowColumnStoreFactory(allocator).createPartialFileReadable(callback.getSchema(),
+            callback.getPath(), getOffsetProvider(callback));
     }
 
     /**
-     * Create a {@link BatchReadStore} that provides batches from the data written by the Python process to the given
-     * {@link PythonArrowDataCallback} and check that the data has a specific schema.
+     * Create a {@link RandomAccessBatchReadable} that provides batches from the data written by the Python process to
+     * the given {@link PythonArrowDataCallback} and check that the data has a specific schema.
      *
      * @param callback the callback which was given to the Python process
      * @param expectedSchema the expected schema
      * @param allocator an allocator to allocate memory for data read from disc
-     * @return the {@link BatchReadStore} with the data
+     * @return the {@link RandomAccessBatchReadable} with the data
      * @throws IllegalStateException if Python did not report data with the expected schema to the callback
      */
-    public static BatchReadStore createReadStore(final DefaultPythonArrowDataCallback callback,
+    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
         final ColumnarSchema expectedSchema, final BufferAllocator allocator) {
-        // TODO can we use of the ArrowColumnStoreFactory
+        // TODO Do not require DefaultPythonArrowDataCallback but an interface
         // TODO(extensiontypes) we need an expected schema with virtual types/extension types
-        final ColumnarSchema schema = callback.getSchema();
-        checkSchema(schema, expectedSchema);
-        return new ArrowPartialFileBatchReadStore(schema, callback.getPath(), allocator, getOffsetProvider(callback));
+        checkSchema(callback.getSchema(), expectedSchema);
+        return createReadable(callback, allocator);
     }
 
     private static OffsetProvider getOffsetProvider(final DefaultPythonArrowDataCallback callback) {
         return new OffsetProvider() {
-
-            @Override
-            public int numBatches() {
-                return callback.getRecordBatchOffsets().size();
-            }
 
             @Override
             public long getRecordBatchOffset(final int index) {
@@ -185,7 +179,7 @@ public final class PythonArrowDataUtils {
         }
     }
 
-    private final static class PythonArrowBatchStoreDataProvider implements PythonArrowDataProvider {
+    private static final class PythonArrowBatchStoreDataProvider implements PythonArrowDataProvider {
 
         private final String m_path;
 

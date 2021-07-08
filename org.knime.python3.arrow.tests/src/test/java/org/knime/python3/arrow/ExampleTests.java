@@ -71,6 +71,7 @@ import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
+import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.data.DoubleData.DoubleWriteData;
@@ -81,7 +82,6 @@ import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
-import org.knime.core.columnar.store.BatchReadStore;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.StructDataSpec;
@@ -127,9 +127,8 @@ public class ExampleTests {
                 entryPoint.testSimpleComputation(dataProvider, dataCallback);
 
                 // Read the data back
-                try (final var readStore = PythonArrowDataUtils.createReadStore(dataCallback,
-                    m_allocator.newChildAllocator("ArrowColumnReadStore", 0, m_allocator.getLimit()))) {
-                    checkReadStore(readStore, numRows, numBatches);
+                try (final var readStore = PythonArrowDataUtils.createReadable(dataCallback, m_allocator)) {
+                    checkReadable(readStore, numRows, numBatches);
                 }
             }
         }
@@ -162,9 +161,9 @@ public class ExampleTests {
                 entryPoint.testSimpleComputation(dataProvider, dataCallback);
 
                 // Read the data back
-                try (final var readStore = PythonArrowDataUtils.createReadStore(dataCallback, expectedSchema,
-                    m_allocator.newChildAllocator("ArrowColumnReadStore", 0, m_allocator.getLimit()))) {
-                    checkReadStore(readStore, numRows, numBatches);
+                try (final var readStore =
+                    PythonArrowDataUtils.createReadable(dataCallback, expectedSchema, m_allocator)) {
+                    checkReadable(readStore, numRows, numBatches);
                 }
             }
         }
@@ -203,9 +202,8 @@ public class ExampleTests {
                 entryPoint.testSimpleComputation(dataProvider, dataCallback);
 
                 // Read the data back
-                try (final var readStore = PythonArrowDataUtils.createReadStore(dataCallback,
-                    m_allocator.newChildAllocator("ArrowColumnReadStore", 0, m_allocator.getLimit()))) {
-                    checkReadStore(readStore, numRows, numBatches);
+                try (final var readStore = PythonArrowDataUtils.createReadable(dataCallback, m_allocator)) {
+                    checkReadable(readStore, numRows, numBatches);
                 }
             }
         }
@@ -337,7 +335,7 @@ public class ExampleTests {
         // pa.ipc.read_dictionary()
         final var numRows = 100;
         final var numBatches = 5;
-        final List<String> availableZoneIds = new ArrayList(ZoneId.getAvailableZoneIds());
+        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
         final var schema = TestUtils.createSchema(DataSpec.zonedDateTimeSpec());
@@ -386,7 +384,7 @@ public class ExampleTests {
         // This fails. Somehow the dictionary delta is "invalid/unsupported".
         final var numRows = 100;
         final var numBatches = 5;
-        final List<String> availableZoneIds = new ArrayList(ZoneId.getAvailableZoneIds());
+        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
 
         final var path = TestUtils.createTmpKNIMEArrowPath();
         final var savePath = TestUtils.createTmpKNIMEArrowPath();
@@ -509,7 +507,8 @@ public class ExampleTests {
         return store;
     }
 
-    static void checkReadStore(final BatchReadStore store, final int numRows, final int numBatches) throws IOException {
+    static void checkReadable(final RandomAccessBatchReadable store, final int numRows, final int numBatches)
+        throws IOException {
 
         // Check for the expected schema
         final ColumnarSchema schema = store.getSchema();
