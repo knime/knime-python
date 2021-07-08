@@ -56,8 +56,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataCallback;
 import org.knime.python3.PythonDataProvider;
@@ -86,27 +84,6 @@ public class TestUtils {
         final Path path = Files.createTempFile("KNIME-" + UUID.randomUUID().toString(), ".knarrow");
         path.toFile().deleteOnExit();
         return path;
-    }
-
-    /**
-     * Create a schema with the given types for test purposes.
-     *
-     * @param types the types of the columns
-     * @return the schema
-     */
-    public static ColumnarSchema createSchema(final DataSpec... types) {
-        return new ColumnarSchema() {
-
-            @Override
-            public int numColumns() {
-                return types.length;
-            }
-
-            @Override
-            public DataSpec getSpec(final int index) {
-                return types[index];
-            }
-        };
     }
 
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException {
