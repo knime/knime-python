@@ -100,6 +100,7 @@ public class TestUtils {
         return new PythonGateway<>(command, launcherPath, ArrowTestsEntryPoint.class, extensions, pythonPath);
     }
 
+    // TODO(benjamin) remove unused
     public interface ArrowTestsEntryPoint extends PythonEntryPoint {
 
         void testSimpleComputation(PythonArrowDataProvider dataProvider, PythonArrowDataCallback dataCallback);
@@ -111,5 +112,7 @@ public class TestUtils {
         void testStruct(PythonArrowDataProvider dataProvider);
 
         void testMultipleInputsOutputs(List<PythonDataProvider> dataProviders, List<PythonDataCallback> dataCallbacks);
+
+        void testTypeToPython(String type, PythonDataProvider dataProvider);
     }
 }
