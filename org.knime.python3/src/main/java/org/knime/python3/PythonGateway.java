@@ -115,7 +115,7 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         // Mostly copied from PythonKernel.
         // If the original process was a script, we have to kill the actual Python
         // process by PID.

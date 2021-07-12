@@ -54,6 +54,10 @@ import pyarrow.compute as pc
 import knime
 
 
+FLOAT_COMPARISON_EPSILON = 1e-6
+DOUBLE_COMPARISON_EPSILON = 1e-12
+
+
 class EntryPoint(knime.client.EntryPoint):
 
     def testSimpleComputation(self, data_provider, data_callback):
@@ -131,13 +135,6 @@ class EntryPoint(knime.client.EntryPoint):
         print("First column:", column0)
         print("First column DateTime:", column0_datetime.to_array())
 
-    def testZonedDateTime(self, data_provider):
-        data = knime.data.mapDataProvider(data_provider)
-        batch0 = data[0]
-        column0 = batch0.column(0)
-        print(column0)
-        # TODO check the values
-
     def testStruct(self, data_provider):
         data = knime.data.mapDataProvider(data_provider)
 
@@ -155,9 +152,172 @@ class EntryPoint(knime.client.EntryPoint):
         # TODO check the values
         # TODO test multiple outputs
 
+    def testTypeToPython(self, data_type, data_provider):
+        data = knime.data.mapDataProvider(data_provider)
+
+        # Helper functions
+        def assert_row_value(row, batch, expected, value):
+            assert value == expected, \
+                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
+                    row, batch, expected, value)
+
+        def assert_row_value_float(row, batch, expected, value):
+            assert abs(value - expected) < FLOAT_COMPARISON_EPSILON, \
+                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
+                    row, batch, expected, value)
+
+        def assert_row_value_double(row, batch, expected, value):
+            assert abs(value - expected) < DOUBLE_COMPARISON_EPSILON, \
+                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
+                    row, batch, expected, value)
+
+        def assert_array_type(array, expected_type):
+            assert isinstance(array, expected_type), \
+                "Array has wrong type. Expected '{}', got '{}'.".format(
+                    expected_type, type(array))
+
+        # Checkers for different types
+        if data_type == 'boolean':
+            def check_value(r, b, v):
+                assert_row_value(r, b, (r + b) % 5 == 0, v.as_py())
+            expected_array_type = pa.BooleanArray
+
+        elif data_type == 'byte':
+            def check_value(r, b, v):
+                assert_row_value(r, b, (r + b) % 256 - 128, v.as_py())
+            expected_array_type = pa.Int8Array
+
+        elif data_type == 'double':
+            def check_value(r, b, v):
+                assert pa.types.is_float64(v.type)
+                assert_row_value_double(r, b, r / 10.0 + b, v.as_py())
+            expected_array_type = pa.FloatingPointArray
+
+        elif data_type == 'float':
+            def check_value(r, b, v):
+                assert pa.types.is_float32(v.type)
+                assert_row_value_float(r, b, r / 10.0 + b, v.as_py())
+            expected_array_type = pa.FloatingPointArray
+
+        elif data_type == 'int':
+            def check_value(r, b, v):
+                assert_row_value(r, b, r + b, v.as_py())
+            expected_array_type = pa.Int32Array
+
+        elif data_type == 'long':
+            def check_value(r, b, v):
+                assert_row_value(r, b, r + b * 10_000_000_000, v.as_py())
+            expected_array_type = pa.Int64Array
+
+        elif data_type == 'varbinary':
+            def check_value(r, b, v):
+                assert_row_value(r, b, bytes(
+                    [(b + i) % 128 for i in range(r % 10)]), v.as_py())
+            expected_array_type = pa.LargeBinaryArray
+
+        elif data_type == 'void':
+            def check_value(r, b, v):
+                pass
+            expected_array_type = pa.NullArray
+
+        elif data_type == 'struct':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, {'0': r + b, '1': "Row: {}, Batch: {}".format(r, b)}, v.as_py())
+            expected_array_type = pa.StructArray
+
+        elif data_type == 'structcomplex':
+            def check_value(r, b, v):
+                list_length = r % 10
+                int_list = [r + b + i for i in range(list_length)]
+                string_list = [
+                    'r:{},b:{},i:{}'.format(r, b, i) if i % 7 != 0 else None for i in range(list_length)
+                ]
+                expected = {
+                    '0': [{'0': a, '1': b} for a, b in zip(int_list, string_list)],
+                    '1': r + b
+                }
+                assert_row_value(r, b, expected, v.as_py())
+            expected_array_type = pa.StructArray
+
+        elif data_type == 'list':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, [b + r + i for i in range(r % 10)], v.as_py())
+            expected_array_type = pa.ListArray
+
+        elif data_type == 'string':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, "Row: {}, Batch: {}".format(r, b), v.as_py())
+            expected_array_type = pa.StringArray
+
+        elif data_type == 'duration':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, {'seconds': datetime.timedelta(seconds=r), 'nanos': b}, v.as_py())
+            expected_array_type = pa.StructArray
+
+        elif data_type == 'localdate':
+            def check_value(r, b, v):
+                assert_row_value(r, b, r + b * 100, v.as_py())
+            expected_array_type = pa.Int64Array
+
+        elif data_type == 'localdatetime':
+            def check_value(r, b, v):
+                fields = [
+                    pa.field('epochDay', type=pa.int64()),
+                    pa.field('nanoOfDay', type=pa.time64('ns'))
+                ]
+                expected = pa.scalar(
+                    {'epochDay': r + b * 100, 'nanoOfDay': r * 500 + b}, type=pa.struct(fields))
+                assert_row_value(r, b, expected, v)
+            expected_array_type = pa.StructArray
+
+        elif data_type == 'localtime':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, pa.scalar(r * 500 + b, type=pa.time64('ns')), v)
+            expected_array_type = pa.Time64Array
+
+        elif data_type == 'period':
+            def check_value(r, b, v):
+                assert_row_value(
+                    r, b, {'years': r, 'months': b % 12, 'days': (r + b) % 28}, v.as_py())
+            expected_array_type = pa.StructArray
+
+        elif data_type == 'zoneddatetime':
+            def check_value(r, b, v):
+                print(v)
+                assert_row_value(r, b, None, v.as_py())
+            expected_array_type = pa.StructArray
+
+        else:
+            raise ValueError("Unknown type to check: '{}'.".format(data_type))
+
+        # Check the values in one batch
+        def check_batch(batch, b):
+            array = batch.column(0)
+            assert_array_type(array, expected_array_type)
+            for r, v in enumerate(array):
+                if r % 13 == 0:
+                    assert_row_value(r, b, None, v.as_py())
+                else:
+                    check_value(r, b, v)
+
+        # Loop over batches and check each value
+        check_all_batches(data, check_batch)
+        data.close()
+
     class Java:
         implements = [
             "org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]
+
+
+def check_all_batches(data, check_batch):
+    for b in range(len(data)):
+        batch = data[b]
+        check_batch(batch, b)
 
 
 knime.client.connectToJava(EntryPoint())

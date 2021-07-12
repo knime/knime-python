@@ -74,18 +74,15 @@ import org.knime.core.columnar.batch.BatchWriter;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
-import org.knime.core.columnar.data.DoubleData.DoubleWriteData;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.columnar.data.LocalDateData.LocalDateWriteData;
 import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
-import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.StructDataSpec;
 
 @SuppressWarnings("javadoc")
 public class ExampleTests {
@@ -374,103 +371,6 @@ public class ExampleTests {
 
                 // Call Python
                 entryPoint.testZonedDateTime(dataProvider);
-            }
-        }
-    }
-
-    @Test
-    @Ignore
-    public void testZonedDateTime2() throws Exception {
-        // TODO
-        // This fails. Somehow the dictionary delta is "invalid/unsupported".
-        final var numRows = 100;
-        final var numBatches = 5;
-        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
-
-        final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var savePath = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = new DefaultColumnarSchema(DataSpec.zonedDateTimeSpec());
-        try (final var writeStore = m_storeFactory.createStore(schema, path)) {
-            // Write some data to the store
-            try (final BatchWriter writer = writeStore.getWriter()) {
-                for (int b = 0; b < numBatches; b++) {
-                    final var batch = writer.create(numRows);
-                    final var data = (ZonedDateTimeWriteData)batch.get(0);
-
-                    // Fill data
-                    for (int r = 0; r < numRows; r++) {
-                        final ZoneId zoneId = ZoneId.of(availableZoneIds.get(b % 3));
-                        final LocalDate localDate = LocalDate.ofEpochDay(r + b);
-                        final LocalTime localTime = LocalTime.of(r % 24, b % 60);
-                        final LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
-                        final ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId);
-                        data.setZonedDateTime(r, zonedDateTime);
-                    }
-
-                    // Write data
-                    final var readBatch = batch.close(numRows);
-                    writer.write(readBatch);
-                    readBatch.release();
-                }
-            }
-
-            Files.copy(writeStore.getPath(), savePath, StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        try (final var store = m_storeFactory.createReadStore(schema, savePath)) {
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store);
-
-                // Call Python
-                entryPoint.testZonedDateTime(dataProvider);
-            }
-        }
-    }
-
-    @Test
-    public void testStruct() throws Exception {
-        final var numRows = 100;
-        final var numBatches = 5;
-
-        final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = new DefaultColumnarSchema(new StructDataSpec(DataSpec.intSpec(), DataSpec.doubleSpec()));
-        try (final var store = m_storeFactory.createStore(schema, path)) {
-
-            // Write some data to the store
-            try (final BatchWriter writer = store.getWriter()) {
-                for (int b = 0; b < numBatches; b++) {
-                    final var batch = writer.create(numRows);
-                    final var structData = (StructWriteData)batch.get(0);
-                    final var intData = (IntWriteData)structData.getWriteDataAt(0);
-                    final var doubleData = (DoubleWriteData)structData.getWriteDataAt(1);
-
-                    // Fill data
-                    for (int r = 0; r < numRows; r++) {
-                        intData.setInt(r, r + b);
-                        doubleData.setDouble(r, 0.1 * r / (b + 1.));
-                    }
-
-                    // Write data
-                    final ReadBatch readBatch = batch.close(numRows);
-                    writer.write(readBatch);
-                    readBatch.release();
-                }
-            }
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store, numBatches);
-
-                // Call Python
-                entryPoint.testStruct(dataProvider);
             }
         }
     }
