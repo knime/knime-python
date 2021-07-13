@@ -48,6 +48,7 @@
 
 import datetime
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 
@@ -56,6 +57,9 @@ import knime
 
 FLOAT_COMPARISON_EPSILON = 1e-6
 DOUBLE_COMPARISON_EPSILON = 1e-12
+
+NUM_ROWS = 20
+NUM_BATCHES = 3
 
 
 class EntryPoint(knime.client.EntryPoint):
@@ -308,6 +312,134 @@ class EntryPoint(knime.client.EntryPoint):
         # Loop over batches and check each value
         check_all_batches(data, check_batch)
         data.close()
+
+    def testTypeFromPython(self, data_type, data_callback):
+        writer = knime.data.mapDataCallback(data_callback)
+
+        # Writers for different types
+        if data_type == 'boolean':
+            def get_value(b, r):
+                return (r + b) % 5 == 0
+            arrow_type = pa.bool_()
+
+        elif data_type == 'byte':
+            def get_value(b, r):
+                return (r + b) % 256 - 128
+            arrow_type = pa.int8()
+
+        elif data_type == 'double':
+            def get_value(b, r):
+                return r / 10.0 + b
+            arrow_type = pa.float64()
+
+        elif data_type == 'float':
+            def get_value(b, r):
+                return r / 10.0 + b
+            arrow_type = pa.float32()
+
+        elif data_type == 'int':
+            def get_value(b, r):
+                return r + b
+            arrow_type = pa.int32()
+
+        elif data_type == 'long':
+            def get_value(b, r):
+                return r + b * 10_000_000_000
+            arrow_type = pa.int64()
+
+        elif data_type == 'varbinary':
+            def get_value(b, r):
+                return bytes([(b + i) % 128 for i in range(r % 10)])
+            arrow_type = pa.large_binary()
+
+        elif data_type == 'void':
+            def get_value(b, r):
+                return None
+            arrow_type = pa.null()
+
+        elif data_type == 'struct':
+            def get_value(b, r):
+                return {'0': r + b, '1': 'Row: {}, Batch: {}'.format(r, b)}
+            arrow_type = pa.struct([pa.field('0', type=pa.int32()),
+                                    pa.field('1', type=pa.string())])
+
+        elif data_type == 'structcomplex':
+            def get_value(b, r):
+                list_length = r % 10
+                int_list = [r + b + i for i in range(list_length)]
+                string_list = [
+                    'r:{},b:{},i:{}'.format(r, b, i) if i % 7 != 0 else None for i in range(list_length)
+                ]
+                return {
+                    '0': [{'0': a, '1': b} for a, b in zip(int_list, string_list)],
+                    '1': r + b
+                }
+            arrow_type = pa.struct([
+                pa.field('0', type=pa.list_(pa.struct([
+                    pa.field('0', type=pa.int32()),
+                    pa.field('1', type=pa.string())
+                ]))),
+                pa.field('1', type=pa.int32())
+            ])
+
+        elif data_type == 'list':
+            def get_value(b, r):
+                return [b + r + i for i in range(r % 10)]
+            arrow_type = pa.list_(pa.int32())
+
+        elif data_type == 'string':
+            def get_value(b, r):
+                return "Row: {}, Batch: {}".format(r, b)
+            arrow_type = pa.string()
+
+        elif data_type == 'duration':
+            def get_value(b, r):
+                return {'seconds': datetime.timedelta(seconds=r), 'nanos': b}
+            arrow_type = pa.struct([pa.field('seconds', pa.duration('s')),
+                                    pa.field('nanos', pa.int32())])
+
+        elif data_type == 'localdate':
+            # TODO(extensiontypes) how to say to Java that this is localdate?
+            def get_value(b, r):
+                return r + b * 100
+            arrow_type = pa.int64()
+
+        elif data_type == 'localdatetime':
+            def get_value(b, r):
+                return {'epochDay': r + b * 100, 'nanoOfDay': r * 500 + b}
+            arrow_type = pa.struct([pa.field('epochDay', type=pa.int64()),
+                                    pa.field('nanoOfDay', type=pa.time64('ns'))])
+
+        elif data_type == 'localtime':
+            def get_value(b, r):
+                return r * 500 + b
+            arrow_type = pa.time64('ns')
+
+        elif data_type == 'period':
+            def get_value(b, r):
+                return {'years': r, 'months': b % 12, 'days': (r + b) % 28}
+            arrow_type = pa.struct([pa.field('years', type=pa.int32()),
+                                    pa.field('months', type=pa.int32()),
+                                    pa.field('days', type=pa.int32())])
+
+        elif data_type == 'zoneddatetime':
+            # TODO(dictionary) implement this test
+            def get_value(b, r):
+                return 0
+            arrow_type = None
+
+        else:
+            raise ValueError("Unknown type to check: '{}'.".format(data_type))
+
+        # Create the data and write
+        mask = np.array([r % 13 == 0 for r in range(NUM_ROWS)])
+        for b in range(NUM_BATCHES):
+            data = pa.array([get_value(b, r) for r in range(NUM_ROWS)],
+                            type=arrow_type, mask=mask)
+            record_batch = pa.record_batch([data], ['0'])
+            writer.write(record_batch)
+
+        writer.close()
 
     class Java:
         implements = [

@@ -114,5 +114,7 @@ public class TestUtils {
         void testMultipleInputsOutputs(List<PythonDataProvider> dataProviders, List<PythonDataCallback> dataCallbacks);
 
         void testTypeToPython(String type, PythonDataProvider dataProvider);
+
+        void testTypeFromPython(String type, PythonDataCallback dataCallback);
     }
 }

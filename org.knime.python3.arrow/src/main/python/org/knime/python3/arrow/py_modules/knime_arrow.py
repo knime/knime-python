@@ -55,8 +55,7 @@ ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
 
 
 def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
-    # TODO structs and lists?
-    factory_versions = ','.join(['0' for t in schema.types])
+    factory_versions = ','.join([factory_version_for(t) for t in schema.types])
     # TODO bytes instead of strings?
     metadata = {
         ARROW_CHUNK_SIZE_KEY: str(chunk_size),
@@ -65,19 +64,58 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
     return schema.with_metadata(metadata)
 
 
+def factory_version_for(arrow_type: pa.DataType):
+    # TODO synchronize with the versions on the Java side
+    if isinstance(arrow_type, pa.StructType):
+        return '0[{}]'.format(''.join([factory_version_for(f.type) + ';' for f in arrow_type]))
+    if isinstance(arrow_type, pa.ListType):
+        return '0[{};]'.format(factory_version_for(arrow_type.value_type))
+    return '0'
+
+
 def convert_schema(schema: pa.Schema):
     # TODO we would like to use a schema with the virtual types not the physical types
-    gateway = knime.client.client_server
-    spec_fns = {
-        pa.int32(): gateway.jvm.org.knime.core.table.schema.DataSpec.intSpec,
-        pa.float64(): gateway.jvm.org.knime.core.table.schema.DataSpec.doubleSpec,
-        pa.string(): gateway.jvm.org.knime.core.table.schema.DataSpec.stringSpec,
-    }
-    schemaBuilder = gateway.jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
+    schemaBuilder = GATEWAY.jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
     for t in schema.types:
-        schemaBuilder.addColumn(spec_fns[t]())
-
+        schemaBuilder.addColumn(convert_type(t))
     return schemaBuilder.build()
+
+
+GATEWAY = knime.client.client_server
+SPEC_FNS = {
+    pa.bool_(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.booleanSpec,
+    pa.int8(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.byteSpec,
+    pa.float64(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.doubleSpec,
+    pa.float32(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.floatSpec,
+    pa.int32(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.intSpec,
+    pa.int64(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.longSpec,
+    pa.large_binary(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.varBinarySpec,
+    pa.null(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.voidSpec,
+    pa.string(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.stringSpec,
+    pa.time64('ns'): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.localTimeSpec,
+}
+
+
+def convert_type(arrow_type: pa.DataType):
+    # Struct
+    if isinstance(arrow_type, pa.StructType):
+        dataspec_class = GATEWAY.jvm.org.knime.core.table.schema.DataSpec
+        children_spec = GATEWAY.new_array(
+            dataspec_class, arrow_type.num_fields)
+        for i, f in enumerate(arrow_type):
+            children_spec[i] = convert_type(f.type)
+        return GATEWAY.jvm.org.knime.core.table.schema.StructDataSpec(children_spec)
+
+    # List
+    if isinstance(arrow_type, pa.ListType):
+        child_spec = convert_type(arrow_type.value_type)
+        return GATEWAY.jvm.org.knime.core.table.schema.ListDataSpec(child_spec)
+
+    # Others
+    if arrow_type in SPEC_FNS:
+        return SPEC_FNS[arrow_type]()
+    
+    raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
 
 
 class _OffsetBasedRecordBatchFileReader(object):
