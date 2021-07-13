@@ -47,6 +47,7 @@
 """
 
 import os
+import sys
 import importlib
 
 from py4j.clientserver import ClientServer, JavaParameters, PythonParameters
@@ -72,6 +73,15 @@ class EntryPoint(object):
 
 
 def connectToJava(entry_point: EntryPoint):
+    # The first two program arguments are always the ports
+    java_port = int(sys.argv[1])
+    python_port = int(sys.argv[2])
+
+    # Create the client server
+    java_parameters = JavaParameters(port=java_port)
+    python_paramters = PythonParameters(port=python_port,
+                                        propagate_java_exceptions=True)
     global client_server
-    client_server = ClientServer(java_parameters=JavaParameters(), python_parameters=PythonParameters(
-        propagate_java_exceptions=True), python_server_entry_point=entry_point)
+    client_server = ClientServer(java_parameters=java_parameters,
+                                 python_parameters=python_paramters,
+                                 python_server_entry_point=entry_point)

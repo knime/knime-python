@@ -50,6 +50,7 @@ package org.knime.python3;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -88,10 +89,16 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
      */
     public PythonGateway(final PythonCommand command, final String launcherPath, final Class<T> entryPointClass,
         final Collection<PythonExtension> extensions, final PythonPath pythonPath) throws IOException {
+        // Find free ports to use
+        final int javaPort = findFreePort();
+        final int pythonPort = findFreePort();
+
         // Create the process
         final ProcessBuilder pb = command.createProcessBuilder();
         pb.command().add("-u"); // TODO needed? Use unbuffered stdout, stderr
         pb.command().add(launcherPath); // Path to the python script
+        pb.command().add("" + javaPort);
+        pb.command().add("" + pythonPort);
         pb.inheritIO(); // TODO we should handle stdin and stdout manually
 
         // Set the PYTHONPATH variable to be able to import the Python modules
@@ -99,12 +106,21 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
 
         // Start the Python process and connect to it
         m_process = pb.start();
-        m_clientServer = new ClientServer(null);
+        m_clientServer = new ClientServer.ClientServerBuilder().javaPort(javaPort).pythonPort(pythonPort).build();
         m_entryPoint = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
         waitForConnection(m_entryPoint);
 
         // Register extensions
-        m_entryPoint.registerExtensions(extensions.stream().map(e -> e.getPythonModule()).collect(Collectors.toList()));
+        m_entryPoint
+            .registerExtensions(extensions.stream().map(PythonExtension::getPythonModule).collect(Collectors.toList()));
+    }
+
+    /** @return a free port on the system */
+    private static int findFreePort() throws IOException {
+        // TODO is there a better way to find a free port?
+        try (final ServerSocket serverSocket = new ServerSocket(0)) {
+            return serverSocket.getLocalPort();
+        }
     }
 
     /**
