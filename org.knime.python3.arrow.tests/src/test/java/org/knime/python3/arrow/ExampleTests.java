@@ -53,12 +53,6 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.arrow.memory.BufferAllocator;
@@ -76,10 +70,8 @@ import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
-import org.knime.core.columnar.data.LocalDateData.LocalDateWriteData;
 import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
-import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -104,112 +96,9 @@ public class ExampleTests {
     }
 
     @Test
-    public void testSimple() throws Exception {
-        final var numRows = 100;
-        final var numBatches = 5;
-
-        try (final var store = createExampleStore(m_storeFactory, numRows, numBatches)) {
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store, numBatches);
-
-                // Define a PythonArrowDataCallback getting the data from Python
-                final var outPath = TestUtils.createTmpKNIMEArrowPath();
-                final var dataCallback = PythonArrowDataUtils.createCallback(outPath);
-
-                // Call Python
-                entryPoint.testSimpleComputation(dataProvider, dataCallback);
-
-                // Read the data back
-                try (final var readStore = PythonArrowDataUtils.createReadable(dataCallback, m_allocator)) {
-                    checkReadable(readStore, numRows, numBatches);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testExpectedSchema() throws Exception {
-        // TODO test failing
-        final var numRows = 100;
-        final var numBatches = 5;
-
-        try (final var store = createExampleStore(m_storeFactory, numRows, numBatches)) {
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store, numBatches);
-
-                // Define a PythonArrowDataCallback getting the data from Python
-                final var outPath = TestUtils.createTmpKNIMEArrowPath();
-                final var expectedSchema =
-                    new DefaultColumnarSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.intSpec());
-                // final var expectedSchema =
-                //    new DefaultColumnarSchema(DataSpec.stringSpec(), DataSpec.intSpec(), DataSpec.doubleSpec());
-                final var dataCallback = PythonArrowDataUtils.createCallback(outPath);
-
-                // Call Python
-                entryPoint.testSimpleComputation(dataProvider, dataCallback);
-
-                // Read the data back
-                try (final var readStore =
-                    PythonArrowDataUtils.createReadable(dataCallback, expectedSchema, m_allocator)) {
-                    checkReadable(readStore, numRows, numBatches);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testProvideReadStore() throws Exception {
-        final var numRows = 100;
-        final var numBatches = 5;
-
-        // Write some data using a WriteStore copy it to permanent storage to be
-        // read using a ReadStore again
-        final var path = TestUtils.createTmpKNIMEArrowPath();
-        final ColumnarSchema schema;
-        try (final var writeStore = createExampleStore(m_storeFactory, numRows, numBatches)) {
-            // Save the file to "permanent" storage
-            Files.copy(writeStore.getPath(), path, StandardCopyOption.REPLACE_EXISTING);
-            schema = writeStore.getSchema();
-        }
-
-        // NOTE: store is now an ArrowBatchReadStore!
-        try (final var store = m_storeFactory.createReadStore(schema, path)) {
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store);
-
-                // Define a PythonArrowDataCallback getting the data from Python
-                final var outPath = TestUtils.createTmpKNIMEArrowPath();
-                final var dataCallback = PythonArrowDataUtils.createCallback(outPath);
-
-                // Call Python
-                entryPoint.testSimpleComputation(dataProvider, dataCallback);
-
-                // Read the data back
-                try (final var readStore = PythonArrowDataUtils.createReadable(dataCallback, m_allocator)) {
-                    checkReadable(readStore, numRows, numBatches);
-                }
-            }
-        }
-    }
-
-    @Test
     @Ignore
     public void testBigTable() throws Exception {
+        // TODO turn this into a benchmark
         final var numRows = 100_000;
         final var numBatches = 200;
 
@@ -280,98 +169,6 @@ public class ExampleTests {
             //                .createReadStore(m_allocator.newChildAllocator("ArrowColumnReadStore", 0, m_allocator.getLimit()))) {
             //                checkReadStore(readStore, numRows, numBatches);
             //            }
-        }
-    }
-
-    @Test
-    public void testDateTime() throws Exception {
-        final var numRows = 100;
-        final var numBatches = 5;
-
-        final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = new DefaultColumnarSchema(DataSpec.localDateSpec());
-        try (final var store = m_storeFactory.createStore(schema, path)) {
-
-            // Write some data to the store
-            try (final BatchWriter writer = store.getWriter()) {
-                for (int b = 0; b < numBatches; b++) {
-                    final var batch = writer.create(numRows);
-                    final var data = (LocalDateWriteData)batch.get(0);
-
-                    // Fill data
-                    for (int r = 0; r < numRows; r++) {
-                        final var localDate = LocalDate.ofEpochDay(r + b);
-                        data.setLocalDate(r, localDate);
-                    }
-
-                    // Write data
-                    final var readBatch = batch.close(numRows);
-                    writer.write(readBatch);
-                    readBatch.release();
-                }
-            }
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store, numBatches);
-
-                // Call Python
-                entryPoint.testLocalDate(dataProvider);
-            }
-        }
-    }
-
-    @Test
-    @Ignore
-    public void testZonedDateTime() throws Exception {
-        // TODO
-        // This requires dictionary encoding. In pyarrow we cannot read record batches which are dictionary encoded by offset
-        // We should ask the Arrow Community for API:
-        // pa.ipc.read_dictionary()
-        final var numRows = 100;
-        final var numBatches = 5;
-        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
-
-        final var path = TestUtils.createTmpKNIMEArrowPath();
-        final var schema = new DefaultColumnarSchema(DataSpec.zonedDateTimeSpec());
-        try (final var store = m_storeFactory.createStore(schema, path)) {
-
-            // Write some data to the store
-            try (final BatchWriter writer = store.getWriter()) {
-                for (int b = 0; b < numBatches; b++) {
-                    final var batch = writer.create(numRows);
-                    final var data = (ZonedDateTimeWriteData)batch.get(0);
-
-                    // Fill data
-                    for (int r = 0; r < numRows; r++) {
-                        final ZoneId zoneId = ZoneId.of(availableZoneIds.get(b % 3));
-                        final LocalDate localDate = LocalDate.ofEpochDay(r + b);
-                        final LocalTime localTime = LocalTime.of(r % 24, b % 60);
-                        final LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
-                        final ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId);
-                        data.setZonedDateTime(r, zonedDateTime);
-                    }
-
-                    // Write data
-                    final var readBatch = batch.close(numRows);
-                    writer.write(readBatch);
-                    readBatch.release();
-                }
-            }
-
-            // Open connection to Python
-            try (final var pythonGateway = TestUtils.openPythonGateway()) {
-                final var entryPoint = pythonGateway.getEntryPoint();
-
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store, numBatches);
-
-                // Call Python
-                entryPoint.testZonedDateTime(dataProvider);
-            }
         }
     }
 

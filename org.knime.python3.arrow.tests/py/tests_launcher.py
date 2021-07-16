@@ -53,7 +53,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 
 import knime
-
+import knime_arrow
 
 FLOAT_COMPARISON_EPSILON = 1e-6
 DOUBLE_COMPARISON_EPSILON = 1e-12
@@ -148,13 +148,6 @@ class EntryPoint(knime.client.EntryPoint):
         column0 = batch0.column(0)
         print("First column:", column0)
         # TODO check the values
-
-    def testMultipleInputsOutputs(self, data_providers, data_callbacks):
-        print("Called testMultipleInputsOutputs", data_providers)
-        inputs = knime.data.mapDataProviders(data_providers)
-        print("Inputs", inputs)
-        # TODO check the values
-        # TODO test multiple outputs
 
     def testTypeToPython(self, data_type, data_provider):
         data = knime.data.mapDataProvider(data_provider)
@@ -440,6 +433,61 @@ class EntryPoint(knime.client.EntryPoint):
             writer.write(record_batch)
 
         writer.close()
+
+    def testExpectedSchema(self, data_callback):
+        num_batches = 2
+        num_rows = 5
+
+        writer = knime.data.mapDataCallback(data_callback)
+
+        for b in range(num_batches):
+            intData = pa.array(
+                [i + b for i in range(num_rows)],
+                type=pa.int32())
+            stringData = pa.array(
+                ["{},{}".format(i, b) for i in range(num_rows)],
+                type=pa.string())
+            structData = pa.array(
+                [{'0': [x for x in range(i % 3)], '1': i * 0.1}
+                 for i in range(num_rows)],
+                type=pa.struct([
+                    pa.field('0', type=pa.list_(pa.int32())),
+                    pa.field('1', type=pa.float64())
+                ])
+            )
+            batch = pa.record_batch(
+                [intData, stringData, structData], ['0', '1', '2'])
+            writer.write(batch)
+
+        writer.close()
+
+    def testMultipleInputsOutputs(self, data_providers, data_callbacks):
+        inputs = knime.data.mapDataProviders(data_providers)
+        outputs = knime.data.mapDataCallbacks(data_callbacks)
+
+        # Check the values in the inputs
+        assert len(inputs) == 4
+        for idx, inp in enumerate(inputs):
+            if idx == 2:
+                assert isinstance(
+                    inp._reader, knime_arrow._OffsetBasedRecordBatchFileReader)
+            else:
+                assert isinstance(inp._reader, pa.RecordBatchFileReader)
+            assert len(inp) == 1
+            batch0 = inp[0]
+            assert len(batch0) == 1
+            col0 = batch0[0]
+            assert len(col0) == 1
+            assert col0[0].as_py() == idx
+            inp.close()
+
+        # Write values to the outputs
+        assert len(outputs) == 5
+        for idx, oup in enumerate(outputs):
+            data = pa.array([idx], type=pa.int32())
+            rb = pa.record_batch([data], ['0'])
+            oup.write(rb)
+            oup.close()
 
     class Java:
         implements = [

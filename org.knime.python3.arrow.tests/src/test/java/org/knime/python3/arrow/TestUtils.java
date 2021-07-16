@@ -111,10 +111,13 @@ public class TestUtils {
 
         void testStruct(PythonArrowDataProvider dataProvider);
 
-        void testMultipleInputsOutputs(List<PythonDataProvider> dataProviders, List<PythonDataCallback> dataCallbacks);
+        void testMultipleInputsOutputs(List<? extends PythonDataProvider> dataProviders,
+            List<? extends PythonDataCallback> dataCallbacks);
 
         void testTypeToPython(String type, PythonDataProvider dataProvider);
 
         void testTypeFromPython(String type, PythonDataCallback dataCallback);
+
+        void testExpectedSchema(PythonDataCallback callback);
     }
 }

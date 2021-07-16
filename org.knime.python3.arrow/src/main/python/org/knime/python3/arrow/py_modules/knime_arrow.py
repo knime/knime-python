@@ -54,6 +54,10 @@ ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
 
 
+def gateway():
+    return knime.client.client_server
+
+
 def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
     factory_versions = ','.join([factory_version_for(t) for t in schema.types])
     # TODO bytes instead of strings?
@@ -75,46 +79,49 @@ def factory_version_for(arrow_type: pa.DataType):
 
 def convert_schema(schema: pa.Schema):
     # TODO we would like to use a schema with the virtual types not the physical types
-    schemaBuilder = GATEWAY.jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
+    schemaBuilder = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
     for t in schema.types:
         schemaBuilder.addColumn(convert_type(t))
     return schemaBuilder.build()
 
 
-GATEWAY = knime.client.client_server
-SPEC_FNS = {
-    pa.bool_(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.booleanSpec,
-    pa.int8(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.byteSpec,
-    pa.float64(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.doubleSpec,
-    pa.float32(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.floatSpec,
-    pa.int32(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.intSpec,
-    pa.int64(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.longSpec,
-    pa.large_binary(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.varBinarySpec,
-    pa.null(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.voidSpec,
-    pa.string(): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.stringSpec,
-    pa.time64('ns'): GATEWAY.jvm.org.knime.core.table.schema.DataSpec.localTimeSpec,
-}
-
-
 def convert_type(arrow_type: pa.DataType):
     # Struct
     if isinstance(arrow_type, pa.StructType):
-        dataspec_class = GATEWAY.jvm.org.knime.core.table.schema.DataSpec
-        children_spec = GATEWAY.new_array(
+        dataspec_class = gateway().jvm.org.knime.core.table.schema.DataSpec
+        children_spec = gateway().new_array(
             dataspec_class, arrow_type.num_fields)
         for i, f in enumerate(arrow_type):
             children_spec[i] = convert_type(f.type)
-        return GATEWAY.jvm.org.knime.core.table.schema.StructDataSpec(children_spec)
+        return gateway().jvm.org.knime.core.table.schema.StructDataSpec(children_spec)
 
     # List
     if isinstance(arrow_type, pa.ListType):
         child_spec = convert_type(arrow_type.value_type)
-        return GATEWAY.jvm.org.knime.core.table.schema.ListDataSpec(child_spec)
+        return gateway().jvm.org.knime.core.table.schema.ListDataSpec(child_spec)
 
     # Others
-    if arrow_type in SPEC_FNS:
-        return SPEC_FNS[arrow_type]()
-    
+    if arrow_type == pa.bool_():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.booleanSpec()
+    if arrow_type == pa.int8():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.byteSpec()
+    if arrow_type == pa.float64():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.doubleSpec()
+    if arrow_type == pa.float32():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.floatSpec()
+    if arrow_type == pa.int32():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.intSpec()
+    if arrow_type == pa.int64():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.longSpec()
+    if arrow_type == pa.large_binary():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.varBinarySpec()
+    if arrow_type == pa.null():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.voidSpec()
+    if arrow_type == pa.string():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.stringSpec()
+    if arrow_type == pa.time64('ns'):
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.localTimeSpec()
+
     raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
 
 
