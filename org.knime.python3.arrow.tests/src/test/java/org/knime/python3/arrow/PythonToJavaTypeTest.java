@@ -70,6 +70,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.data.BooleanData.BooleanReadData;
@@ -110,12 +111,15 @@ public class PythonToJavaTypeTest {
 
     private static final double FLOAT_COMPARISON_EPSILON = 1e-6;
 
+    private ArrowColumnStoreFactory m_storeFactory;
+
     private BufferAllocator m_allocator;
 
     /** Create allocator */
     @Before
     public void before() {
         m_allocator = new RootAllocator();
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator);
     }
 
     /** Close allocator */
@@ -411,8 +415,7 @@ public class PythonToJavaTypeTest {
 
     private <T extends NullableReadData> void checkData(final DataSpec spec, final ValueChecker<T> valueChecker,
         final DefaultPythonArrowDataCallback dataCallback) throws IOException, AssertionError {
-        // TODO change createReadable to take a store factory?
-        try (final var store = PythonArrowDataUtils.createReadable(dataCallback, m_allocator)) {
+        try (final var store = PythonArrowDataUtils.createReadable(dataCallback, m_storeFactory)) {
             final ColumnarSchema schema = store.getSchema();
             assertEquals(1, schema.numColumns());
             assertEquals(spec, schema.getSpec(0));

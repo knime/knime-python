@@ -85,7 +85,6 @@ import org.knime.core.table.schema.StructDataSpec;
  */
 public class PythonArrowDataUtilsTest {
 
-    // TODO add store parameter to createReadable
     private ArrowColumnStoreFactory m_storeFactory;
 
     private BufferAllocator m_allocator;
@@ -106,7 +105,7 @@ public class PythonArrowDataUtilsTest {
 
     /**
      * Test
-     * {@link PythonArrowDataUtils#createReadable(DefaultPythonArrowDataCallback, ColumnarSchema, BufferAllocator)}.
+     * {@link PythonArrowDataUtils#createReadable(DefaultPythonArrowDataCallback, ColumnarSchema, ArrowColumnStoreFactory)}.
      *
      * @throws IOException
      */
@@ -127,13 +126,13 @@ public class PythonArrowDataUtilsTest {
                     new ListDataSpec(DataSpec.intSpec()), //
                     DataSpec.doubleSpec()) //
             );
-            try (var r = PythonArrowDataUtils.createReadable(callback, trueSchema, m_allocator)) {
+            try (var r = PythonArrowDataUtils.createReadable(callback, trueSchema, m_storeFactory)) {
             }
 
             // Schema too short - should fail
             final var falseSchema1 = new DefaultColumnarSchema(DataSpec.intSpec(), DataSpec.stringSpec());
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema1, m_allocator));
+                () -> PythonArrowDataUtils.createReadable(callback, falseSchema1, m_storeFactory));
 
             // Schema wrong - should fail
             final var falseSchema2 = new DefaultColumnarSchema(//
@@ -144,7 +143,7 @@ public class PythonArrowDataUtilsTest {
                     DataSpec.doubleSpec()) //
             );
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema2, m_allocator));
+                () -> PythonArrowDataUtils.createReadable(callback, falseSchema2, m_storeFactory));
 
             // Schema wrong - should fail
             final var falseSchema3 = new DefaultColumnarSchema(//
@@ -155,7 +154,7 @@ public class PythonArrowDataUtilsTest {
                     DataSpec.byteSpec()) //
             );
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema3, m_allocator));
+                () -> PythonArrowDataUtils.createReadable(callback, falseSchema3, m_storeFactory));
         }
     }
 
@@ -233,7 +232,7 @@ public class PythonArrowDataUtilsTest {
     }
 
     private void checkReadable(final DefaultPythonArrowDataCallback callback, final int idx) throws IOException {
-        try (final var readable = PythonArrowDataUtils.createReadable(callback, m_allocator);
+        try (final var readable = PythonArrowDataUtils.createReadable(callback, m_storeFactory);
                 var reader = readable.createRandomAccessReader()) {
             final var batch = reader.readRetained(0);
             assertEquals(1, batch.length());

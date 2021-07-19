@@ -53,7 +53,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.arrow.memory.BufferAllocator;
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
@@ -117,14 +116,13 @@ public final class PythonArrowDataUtils {
      * the given {@link PythonArrowDataCallback}.
      *
      * @param callback the callback which was given to the Python process
-     * @param allocator an allocator to allocate memory for data read from disc
+     * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
      * @return the {@link RandomAccessBatchReadable} with the data
      */
     public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
-        final BufferAllocator allocator) {
+        final ArrowColumnStoreFactory storeFactory) {
         // TODO Do not require DefaultPythonArrowDataCallback but an interface
-        return new ArrowColumnStoreFactory(allocator).createPartialFileReadable(callback.getSchema(),
-            callback.getPath(), getOffsetProvider(callback));
+        return storeFactory.createPartialFileReadable(callback.getSchema(), callback.getPath(), getOffsetProvider(callback));
     }
 
     /**
@@ -133,16 +131,16 @@ public final class PythonArrowDataUtils {
      *
      * @param callback the callback which was given to the Python process
      * @param expectedSchema the expected schema
-     * @param allocator an allocator to allocate memory for data read from disc
+     * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
      * @return the {@link RandomAccessBatchReadable} with the data
      * @throws IllegalStateException if Python did not report data with the expected schema to the callback
      */
     public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
-        final ColumnarSchema expectedSchema, final BufferAllocator allocator) {
+        final ColumnarSchema expectedSchema, final ArrowColumnStoreFactory storeFactory) {
         // TODO Do not require DefaultPythonArrowDataCallback but an interface
         // TODO(extensiontypes) we need an expected schema with virtual types/extension types
         checkSchema(callback.getSchema(), expectedSchema);
-        return createReadable(callback, allocator);
+        return createReadable(callback, storeFactory);
     }
 
     private static OffsetProvider getOffsetProvider(final DefaultPythonArrowDataCallback callback) {
