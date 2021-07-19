@@ -3,11 +3,11 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3
 Bundle-SymbolicName: org.knime.python3;singleton:=true
 Bundle-Version: 4.4.0.qualifier
-Bundle-ClassPath: .,
- lib/py4j-0.10.9.2.jar
+Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
-Require-Bundle: org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
+Require-Bundle: org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)",
+ net.sf.py4j;bundle-version="[0.10.9,0.11.0)"
 Export-Package: org.knime.python3
 Automatic-Module-Name: org.knime.python3
