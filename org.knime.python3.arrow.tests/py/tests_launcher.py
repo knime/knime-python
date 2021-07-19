@@ -50,7 +50,6 @@ import datetime
 
 import numpy as np
 import pyarrow as pa
-import pyarrow.compute as pc
 
 import knime
 import knime_arrow
@@ -62,92 +61,51 @@ NUM_ROWS = 20
 NUM_BATCHES = 3
 
 
+# TODO(typextensions) There are multiple options to handle special types from Java
+#
+# * Not using Extension types:
+#   Only map them in the Data class when accessing higher level API (like pandas).
+#   We need to know the ColumnSchema to do this.
+#
+# * Using Extension types only in Python:
+#   Only map them in the Data class after reading.
+#   We need to know the ColumnSchema to do this.
+#
+# * Using Extension types in Python and Java:
+#   Save them using an Extension type in Java and let Arrow take care of reading it
+#   to the ExtenionArray.
+#   We do not need to know the ColumnSchema.
+#   Does not work for more special types (not our primitive types)
+
+# class LocalDateType(pa.ExtensionType):
+#
+#     def __init__(self) -> None:
+#         pa.ExtensionType.__init__(
+#             self, pa.int64(), "org.knime.localdate")
+#
+#     def __arrow_ext_serialize__(self):
+#         # No parameters -> no metadata needed
+#         return b''
+#
+#     @classmethod
+#     def __arrow_ext_deserialize__(self, storage_type, serialized):
+#         # No metadata
+#         return LocalDateType()
+#
+#     def __arrow_ext_class__(self):
+#         return LocalDateArray
+#
+# class LocalDateArray(pa.ExtensionArray):
+#     def to_array(self):
+#         # TODO what about day-light savings and leap seconds?
+#         return [datetime.datetime.utcfromtimestamp(d * 24 * 60 * 60) for d in self.storage.to_numpy()]
+#
+# pa.register_extension_type(LocalDateType())
+# column0_datetime = pa.ExtensionArray.from_storage(
+#     LocalDateType(), column0)
+
+
 class EntryPoint(knime.client.EntryPoint):
-
-    def testSimpleComputation(self, data_provider, data_callback):
-        data = knime.data.mapDataProvider(data_provider)
-        writer = knime.data.mapDataCallback(data_callback)
-        # writer = knime_arrow_data.DataWriter(data_callback, client_server)
-
-        def compute_fn(batch):
-            column_str = batch.column(0)
-            column_int = batch.column(1)
-
-            column_0 = column_str  # Leave the string column
-            column_1 = pc.add(column_int, column_int)  # Sum
-            column_2 = pc.multiply(column_int, column_int)  # Product
-            return pa.record_batch([column_0, column_1, column_2], ['0', 'sum', 'product'])
-
-        # Loop over the data and apply the compute function
-        for i in range(len(data)):
-            input_batch = data[i]
-            output_batch = compute_fn(input_batch)
-            writer.write(output_batch)
-
-        data.close()
-        writer.close()
-
-    def testLocalDate(self, data_provider):
-        class LocalDateType(pa.ExtensionType):
-
-            def __init__(self) -> None:
-                pa.ExtensionType.__init__(
-                    self, pa.int64(), "org.knime.localdate")
-
-            def __arrow_ext_serialize__(self):
-                # No parameters -> no metadata needed
-                return b''
-
-            @classmethod
-            def __arrow_ext_deserialize__(self, storage_type, serialized):
-                # No metadata
-                return LocalDateType()
-
-            def __arrow_ext_class__(self):
-                return LocalDateArray
-
-        class LocalDateArray(pa.ExtensionArray):
-            def to_array(self):
-                # TODO what about day-light savings and leap seconds?
-                return [datetime.datetime.utcfromtimestamp(d * 24 * 60 * 60) for d in self.storage.to_numpy()]
-
-        pa.register_extension_type(LocalDateType())
-        data = knime.data.mapDataProvider(data_provider)
-
-        # TODO There are multiple options to handle special types from Java
-        #
-        # * Not using Extension types:
-        #   Only map them in the Data class when accessing higher level API (like pandas).
-        #   We need to know the ColumnSchema to do this.
-        #
-        # * Using Extension types only in Python:
-        #   Only map them in the Data class after reading.
-        #   We need to know the ColumnSchema to do this.
-        #
-        # * Using Extension types in Python and Java:
-        #   Save them using an Extension type in Java and let Arrow take care of reading it
-        #   to the ExtenionArray.
-        #   We do not need to know the ColumnSchema.
-        #   Does not work for more special types (not our primitive types)
-
-        print("Schema:", data.schema)
-        batch0 = data[0]
-        column0 = batch0.column(0)
-        column0_datetime = pa.ExtensionArray.from_storage(
-            LocalDateType(), column0)
-        print("First batch:", batch0)
-        print("First column:", column0)
-        print("First column DateTime:", column0_datetime.to_array())
-
-    def testStruct(self, data_provider):
-        data = knime.data.mapDataProvider(data_provider)
-
-        print("Schema:", data.schema)
-        batch0 = data[0]
-        print("First batch:", batch0)
-        column0 = batch0.column(0)
-        print("First column:", column0)
-        # TODO check the values
 
     def testTypeToPython(self, data_type, data_provider):
         data = knime.data.mapDataProvider(data_provider)
@@ -303,7 +261,9 @@ class EntryPoint(knime.client.EntryPoint):
                     check_value(r, b, v)
 
         # Loop over batches and check each value
-        check_all_batches(data, check_batch)
+        for b in range(len(data)):
+            batch = data[b]
+            check_batch(batch, b)
         data.close()
 
     def testTypeFromPython(self, data_type, data_callback):
@@ -490,14 +450,7 @@ class EntryPoint(knime.client.EntryPoint):
             oup.close()
 
     class Java:
-        implements = [
-            "org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]
-
-
-def check_all_batches(data, check_batch):
-    for b in range(len(data)):
-        batch = data[b]
-        check_batch(batch, b)
+        implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]
 
 
 knime.client.connectToJava(EntryPoint())

@@ -67,8 +67,12 @@ import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
 
-@SuppressWarnings("javadoc")
-public class TestUtils {
+/**
+ * Utilities for Python Arrow data transfer tests.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+ */
+public final class TestUtils {
 
     private TestUtils() {
         // Static utility class
@@ -86,6 +90,10 @@ public class TestUtils {
         return path;
     }
 
+    /**
+     * @return a new {@link PythonGateway} for running tests.
+     * @throws IOException
+     */
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException {
         // TODO get the command from an environment variable or similar
         final PythonCommand command =
@@ -100,24 +108,42 @@ public class TestUtils {
         return new PythonGateway<>(command, launcherPath, ArrowTestsEntryPoint.class, extensions, pythonPath);
     }
 
-    // TODO(benjamin) remove unused
+    /**
+     * {@link PythonEntryPoint} for the tests. This interface is implemented on Python and calling a method will execute
+     * Python code.
+     */
     public interface ArrowTestsEntryPoint extends PythonEntryPoint {
 
-        void testSimpleComputation(PythonArrowDataProvider dataProvider, PythonArrowDataCallback dataCallback);
-
-        void testLocalDate(PythonArrowDataProvider dataProvider);
-
-        void testZonedDateTime(PythonArrowDataProvider dataProvider);
-
-        void testStruct(PythonArrowDataProvider dataProvider);
-
-        void testMultipleInputsOutputs(List<? extends PythonDataProvider> dataProviders,
-            List<? extends PythonDataCallback> dataCallbacks);
-
+        /**
+         * Assert that the data is the expected data for the given type.
+         *
+         * @param type the expected type
+         * @param dataProvider the data
+         */
         void testTypeToPython(String type, PythonDataProvider dataProvider);
 
+        /**
+         * Create data for the given type and write it to the data callback.
+         *
+         * @param type the type to write
+         * @param dataCallback the callback to write to
+         */
         void testTypeFromPython(String type, PythonDataCallback dataCallback);
 
-        void testExpectedSchema(PythonDataCallback callback);
+        /**
+         * Create data with the schema 0: int, 1: string, 2: struct<list<int>, float> and write it to the callback
+         *
+         * @param dataCallback the data callback to write to
+         */
+        void testExpectedSchema(PythonDataCallback dataCallback);
+
+        /**
+         * Assert that the list of data providers is as expected and write to a list of data callbacks.
+         *
+         * @param dataProviders providers of data
+         * @param dataCallbacks callbacks to write to
+         */
+        void testMultipleInputsOutputs(List<? extends PythonDataProvider> dataProviders,
+            List<? extends PythonDataCallback> dataCallbacks);
     }
 }
