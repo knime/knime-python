@@ -109,7 +109,7 @@ public class PythonToJavaTypeTest {
 
     private static final double DOUBLE_COMPARISON_EPSILON = 1e-12;
 
-    private static final double FLOAT_COMPARISON_EPSILON = 1e-6;
+    private static final double FLOAT_COMPARISON_EPSILON = 1e-5;
 
     private ArrowColumnStoreFactory m_storeFactory;
 
@@ -206,11 +206,10 @@ public class PythonToJavaTypeTest {
      */
     @Test
     public void testVarBinary() throws Exception {
-        // TODO check this. Unsigned vs signed?
         final ValueChecker<VarBinaryReadData> valueChecker = (data, b, r) -> {
             final byte[] v = new byte[r % 10];
             for (int i = 0; i < v.length; i++) {
-                v[i] = (byte)((b + i) % 128);
+                v[i] = (byte)((b + i) % 256);
             }
             assertArrayEquals(v, data.getBytes(r));
         };

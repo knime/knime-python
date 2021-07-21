@@ -54,7 +54,7 @@ import pyarrow as pa
 import knime_gateway as kg
 import knime_arrow as ka
 
-FLOAT_COMPARISON_EPSILON = 1e-6
+FLOAT_COMPARISON_EPSILON = 1e-5
 DOUBLE_COMPARISON_EPSILON = 1e-12
 
 NUM_ROWS = 20
@@ -105,290 +105,191 @@ NUM_BATCHES = 3
 #     LocalDateType(), column0)
 
 
+def structcomplex_test_value(r, b):
+    list_length = r % 10
+    int_list = [r + b + i for i in range(list_length)]
+    string_list = [
+        f"r:{r},b:{b},i:{i}" if i % 7 != 0 else None for i in range(list_length)
+    ]
+    return {"0": [{"0": a, "1": b} for a, b in zip(int_list, string_list)], "1": r + b}
+
+
+TEST_VALUES = {
+    "boolean": lambda r, b: (r + b) % 5 == 0,
+    "byte": lambda r, b: (r + b) % 256 - 128,
+    "double": lambda r, b: r / 10.0 + b,
+    "float": lambda r, b: r / 10.0 + b,
+    "int": lambda r, b: r + b,
+    "long": lambda r, b: r + b * 10_000_000_000,
+    "varbinary": lambda r, b: bytes([(b + i) % 256 for i in range(r % 10)]),
+    "void": lambda r, b: None,
+    "struct": lambda r, b: {"0": r + b, "1": f"Row: {r}, Batch: {b}"},
+    "structcomplex": structcomplex_test_value,
+    "list": lambda r, b: [b + r + i for i in range(r % 10)],
+    "string": lambda r, b: f"Row: {r}, Batch: {b}",
+    "duration": lambda r, b: {"seconds": datetime.timedelta(seconds=r), "nanos": b},
+    "localdate": lambda r, b: r + b * 100,
+    "localdatetime": lambda r, b: {"epochDay": r + b * 100, "nanoOfDay": r * 500 + b},
+    "localtime": lambda r, b: r * 500 + b,
+    "period": lambda r, b: {"years": r, "months": b % 12, "days": (r + b) % 28},
+    "zoneddatetime": lambda r, b: None,
+}
+
+TEST_ARRAY_TYPES = {
+    "boolean": pa.BooleanArray,
+    "byte": pa.Int8Array,
+    "double": pa.FloatingPointArray,
+    "float": pa.FloatingPointArray,
+    "int": pa.Int32Array,
+    "long": pa.Int64Array,
+    "varbinary": pa.LargeBinaryArray,
+    "void": pa.NullArray,
+    "struct": pa.StructArray,
+    "structcomplex": pa.StructArray,
+    "list": pa.ListArray,
+    "string": pa.StringArray,
+    "duration": pa.StructArray,
+    "localdate": pa.Int64Array,
+    "localdatetime": pa.StructArray,
+    "localtime": pa.Time64Array,
+    "period": pa.StructArray,
+    "zoneddatetime": pa.StructArray,
+}
+
+TEST_VALUE_TYPES = {
+    "boolean": pa.bool_(),
+    "byte": pa.int8(),
+    "double": pa.float64(),
+    "float": pa.float32(),
+    "int": pa.int32(),
+    "long": pa.int64(),
+    "varbinary": pa.large_binary(),
+    "void": pa.null(),
+    "struct": pa.struct(
+        [pa.field("0", type=pa.int32()), pa.field("1", type=pa.string())]
+    ),
+    "structcomplex": pa.struct(
+        [
+            pa.field(
+                "0",
+                type=pa.list_(
+                    pa.field(
+                        "$data$",
+                        type=pa.struct(
+                            [
+                                pa.field("0", type=pa.int32()),
+                                pa.field("1", type=pa.string()),
+                            ]
+                        ),
+                    )
+                ),
+            ),
+            pa.field("1", type=pa.int32()),
+        ]
+    ),
+    "list": pa.list_(pa.field("$data$", type=pa.int32())),
+    "string": pa.string(),
+    "duration": pa.struct(
+        [pa.field("seconds", pa.duration("s")), pa.field("nanos", pa.int32())]
+    ),
+    "localdate": pa.int64(),
+    "localdatetime": pa.struct(
+        [
+            pa.field("epochDay", type=pa.int64()),
+            pa.field("nanoOfDay", type=pa.time64("ns")),
+        ]
+    ),
+    "localtime": pa.time64("ns"),
+    "period": pa.struct(
+        [
+            pa.field("years", type=pa.int32()),
+            pa.field("months", type=pa.int32()),
+            pa.field("days", type=pa.int32()),
+        ]
+    ),
+    "zoneddatetime": None,
+}
+
+
 class EntryPoint(kg.EntryPoint):
-
     def testTypeToPython(self, data_type, data_source):
+        expected_array_type = TEST_ARRAY_TYPES[data_type]
+        expected_value_type = TEST_VALUE_TYPES[data_type]
 
-        # Helper functions
-        def assert_row_value(row, batch, expected, value):
-            assert value == expected, \
-                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
-                    row, batch, expected, value)
+        def wrong_value_message(row, batch, expected, value):
+            return f"Wrong value for row {row} in batch {batch}. Expected '{expected}', got '{value}'."
 
-        def assert_row_value_float(row, batch, expected, value):
-            assert abs(value - expected) < FLOAT_COMPARISON_EPSILON, \
-                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
-                    row, batch, expected, value)
+        def assert_value(r, b, v):
+            expected = TEST_VALUES[data_type](r, b)
 
-        def assert_row_value_double(row, batch, expected, value):
-            assert abs(value - expected) < DOUBLE_COMPARISON_EPSILON, \
-                "Wrong value for row {} in batch {}. Expected '{}', got '{}'.".format(
-                    row, batch, expected, value)
-
-        def assert_array_type(array, expected_type):
-            assert isinstance(array, expected_type), \
-                "Array has wrong type. Expected '{}', got '{}'.".format(
-                    expected_type, type(array))
-
-        # Checkers for different types
-        if data_type == 'boolean':
-            def check_value(r, b, v):
-                assert_row_value(r, b, (r + b) % 5 == 0, v.as_py())
-            expected_array_type = pa.BooleanArray
-
-        elif data_type == 'byte':
-            def check_value(r, b, v):
-                assert_row_value(r, b, (r + b) % 256 - 128, v.as_py())
-            expected_array_type = pa.Int8Array
-
-        elif data_type == 'double':
-            def check_value(r, b, v):
-                assert pa.types.is_float64(v.type)
-                assert_row_value_double(r, b, r / 10.0 + b, v.as_py())
-            expected_array_type = pa.FloatingPointArray
-
-        elif data_type == 'float':
-            def check_value(r, b, v):
-                assert pa.types.is_float32(v.type)
-                assert_row_value_float(r, b, r / 10.0 + b, v.as_py())
-            expected_array_type = pa.FloatingPointArray
-
-        elif data_type == 'int':
-            def check_value(r, b, v):
-                assert_row_value(r, b, r + b, v.as_py())
-            expected_array_type = pa.Int32Array
-
-        elif data_type == 'long':
-            def check_value(r, b, v):
-                assert_row_value(r, b, r + b * 10_000_000_000, v.as_py())
-            expected_array_type = pa.Int64Array
-
-        elif data_type == 'varbinary':
-            def check_value(r, b, v):
-                assert_row_value(r, b, bytes(
-                    [(b + i) % 128 for i in range(r % 10)]), v.as_py())
-            expected_array_type = pa.LargeBinaryArray
-
-        elif data_type == 'void':
-            def check_value(r, b, v):
+            if data_type == "void":
+                # Nothing to check for void
                 pass
-            expected_array_type = pa.NullArray
 
-        elif data_type == 'struct':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, {'0': r + b, '1': "Row: {}, Batch: {}".format(r, b)}, v.as_py())
-            expected_array_type = pa.StructArray
+            elif data_type == "float":
+                # Compare with epsilon
+                assert (
+                    abs(v.as_py() - expected) < FLOAT_COMPARISON_EPSILON
+                ), wrong_value_message(r, b, expected, v)
 
-        elif data_type == 'structcomplex':
-            def check_value(r, b, v):
-                list_length = r % 10
-                int_list = [r + b + i for i in range(list_length)]
-                string_list = [
-                    'r:{},b:{},i:{}'.format(r, b, i) if i % 7 != 0 else None for i in range(list_length)
-                ]
-                expected = {
-                    '0': [{'0': a, '1': b} for a, b in zip(int_list, string_list)],
-                    '1': r + b
-                }
-                assert_row_value(r, b, expected, v.as_py())
-            expected_array_type = pa.StructArray
+            elif data_type == "double":
+                # Compare with epsilon
+                assert (
+                    abs(v.as_py() - expected) < DOUBLE_COMPARISON_EPSILON
+                ), wrong_value_message(r, b, expected, v)
 
-        elif data_type == 'list':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, [b + r + i for i in range(r % 10)], v.as_py())
-            expected_array_type = pa.ListArray
+            elif data_type in ["localdatetime", "localtime"]:
+                # We do not compare python values but arrow values for them
+                pa_expected = pa.scalar(expected, type=TEST_VALUE_TYPES[data_type])
+                assert v == pa_expected, wrong_value_message(r, b, expected, v)
 
-        elif data_type == 'string':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, "Row: {}, Batch: {}".format(r, b), v.as_py())
-            expected_array_type = pa.StringArray
-
-        elif data_type == 'duration':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, {'seconds': datetime.timedelta(seconds=r), 'nanos': b}, v.as_py())
-            expected_array_type = pa.StructArray
-
-        elif data_type == 'localdate':
-            def check_value(r, b, v):
-                assert_row_value(r, b, r + b * 100, v.as_py())
-            expected_array_type = pa.Int64Array
-
-        elif data_type == 'localdatetime':
-            def check_value(r, b, v):
-                fields = [
-                    pa.field('epochDay', type=pa.int64()),
-                    pa.field('nanoOfDay', type=pa.time64('ns'))
-                ]
-                expected = pa.scalar(
-                    {'epochDay': r + b * 100, 'nanoOfDay': r * 500 + b}, type=pa.struct(fields))
-                assert_row_value(r, b, expected, v)
-            expected_array_type = pa.StructArray
-
-        elif data_type == 'localtime':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, pa.scalar(r * 500 + b, type=pa.time64('ns')), v)
-            expected_array_type = pa.Time64Array
-
-        elif data_type == 'period':
-            def check_value(r, b, v):
-                assert_row_value(
-                    r, b, {'years': r, 'months': b % 12, 'days': (r + b) % 28}, v.as_py())
-            expected_array_type = pa.StructArray
-
-        elif data_type == 'zoneddatetime':
-            def check_value(r, b, v):
-                print(v)
-                assert_row_value(r, b, None, v.as_py())
-            expected_array_type = pa.StructArray
-
-        else:
-            raise ValueError("Unknown type to check: '{}'.".format(data_type))
+            else:
+                # Default: Compare the python values
+                assert v.as_py() == expected, wrong_value_message(r, b, expected, v)
 
         # Check the values in one batch
         def check_batch(batch, b):
             array = batch.column(0)
-            assert_array_type(array, expected_array_type)
+            # Check length
+            assert (
+                len(array) == NUM_ROWS
+            ), f"Array has the wrong length. Expected {NUM_ROWS} got {len(array)}."
+            # Check array type
+            assert isinstance(
+                array, expected_array_type
+            ), f"Array has wrong type. Expected '{expected_array_type}', got '{type(array)}'."
             for r, v in enumerate(array):
                 if r % 13 == 0:
-                    assert_row_value(r, b, None, v.as_py())
+                    # Check that every 13th value is missing
+                    assert v.as_py() is None, wrong_value_message(r, b, None, v)
                 else:
-                    check_value(r, b, v)
+                    # Check value type
+                    assert (
+                        v.type == expected_value_type
+                    ), f"Value has wrong type. Expected '{expected_value_type}', got '{v.type}'"
+                    # Check value
+                    assert_value(r, b, v)
 
         # Loop over batches and check each value
         with kg.map_data_source(data_source) as source:
             for b in range(len(source)):
-                batch = source[b]
-                check_batch(batch, b)
+                check_batch(source[b], b)
 
     def testTypeFromPython(self, data_type, data_sink):
-
-        # Writers for different types
-        if data_type == 'boolean':
-            def get_value(b, r):
-                return (r + b) % 5 == 0
-            arrow_type = pa.bool_()
-
-        elif data_type == 'byte':
-            def get_value(b, r):
-                return (r + b) % 256 - 128
-            arrow_type = pa.int8()
-
-        elif data_type == 'double':
-            def get_value(b, r):
-                return r / 10.0 + b
-            arrow_type = pa.float64()
-
-        elif data_type == 'float':
-            def get_value(b, r):
-                return r / 10.0 + b
-            arrow_type = pa.float32()
-
-        elif data_type == 'int':
-            def get_value(b, r):
-                return r + b
-            arrow_type = pa.int32()
-
-        elif data_type == 'long':
-            def get_value(b, r):
-                return r + b * 10_000_000_000
-            arrow_type = pa.int64()
-
-        elif data_type == 'varbinary':
-            def get_value(b, r):
-                return bytes([(b + i) % 128 for i in range(r % 10)])
-            arrow_type = pa.large_binary()
-
-        elif data_type == 'void':
-            def get_value(b, r):
-                return None
-            arrow_type = pa.null()
-
-        elif data_type == 'struct':
-            def get_value(b, r):
-                return {'0': r + b, '1': 'Row: {}, Batch: {}'.format(r, b)}
-            arrow_type = pa.struct([pa.field('0', type=pa.int32()),
-                                    pa.field('1', type=pa.string())])
-
-        elif data_type == 'structcomplex':
-            def get_value(b, r):
-                list_length = r % 10
-                int_list = [r + b + i for i in range(list_length)]
-                string_list = [
-                    'r:{},b:{},i:{}'.format(r, b, i) if i % 7 != 0 else None for i in range(list_length)
-                ]
-                return {
-                    '0': [{'0': a, '1': b} for a, b in zip(int_list, string_list)],
-                    '1': r + b
-                }
-            arrow_type = pa.struct([
-                pa.field('0', type=pa.list_(pa.struct([
-                    pa.field('0', type=pa.int32()),
-                    pa.field('1', type=pa.string())
-                ]))),
-                pa.field('1', type=pa.int32())
-            ])
-
-        elif data_type == 'list':
-            def get_value(b, r):
-                return [b + r + i for i in range(r % 10)]
-            arrow_type = pa.list_(pa.int32())
-
-        elif data_type == 'string':
-            def get_value(b, r):
-                return "Row: {}, Batch: {}".format(r, b)
-            arrow_type = pa.string()
-
-        elif data_type == 'duration':
-            def get_value(b, r):
-                return {'seconds': datetime.timedelta(seconds=r), 'nanos': b}
-            arrow_type = pa.struct([pa.field('seconds', pa.duration('s')),
-                                    pa.field('nanos', pa.int32())])
-
-        elif data_type == 'localdate':
-            # TODO(extensiontypes) how to say to Java that this is localdate?
-            def get_value(b, r):
-                return r + b * 100
-            arrow_type = pa.int64()
-
-        elif data_type == 'localdatetime':
-            def get_value(b, r):
-                return {'epochDay': r + b * 100, 'nanoOfDay': r * 500 + b}
-            arrow_type = pa.struct([pa.field('epochDay', type=pa.int64()),
-                                    pa.field('nanoOfDay', type=pa.time64('ns'))])
-
-        elif data_type == 'localtime':
-            def get_value(b, r):
-                return r * 500 + b
-            arrow_type = pa.time64('ns')
-
-        elif data_type == 'period':
-            def get_value(b, r):
-                return {'years': r, 'months': b % 12, 'days': (r + b) % 28}
-            arrow_type = pa.struct([pa.field('years', type=pa.int32()),
-                                    pa.field('months', type=pa.int32()),
-                                    pa.field('days', type=pa.int32())])
-
-        elif data_type == 'zoneddatetime':
-            # TODO(dictionary) implement this test
-            def get_value(b, r):
-                return 0
-            arrow_type = None
-
-        else:
-            raise ValueError("Unknown type to check: '{}'.".format(data_type))
-
-        # Create the data and write
         with kg.map_data_sink(data_sink) as sink:
+            # Every 13th element is missing
             mask = np.array([r % 13 == 0 for r in range(NUM_ROWS)])
+
+            # Loop over batches
             for b in range(NUM_BATCHES):
-                data = pa.array([get_value(b, r) for r in range(NUM_ROWS)],
-                                type=arrow_type, mask=mask)
-                record_batch = pa.record_batch([data], ['0'])
+
+                # Create the array and write it to the sink
+                data = pa.array(
+                    [TEST_VALUES[data_type](r, b) for r in range(NUM_ROWS)],
+                    type=TEST_VALUE_TYPES[data_type],
+                    mask=mask,
+                )
+                record_batch = pa.record_batch([data], ["0"])
                 sink.write(record_batch)
 
     def testExpectedSchema(self, data_sink):
@@ -397,23 +298,31 @@ class EntryPoint(kg.EntryPoint):
 
         with kg.map_data_sink(data_sink) as sink:
 
+            # Loop over batches
             for b in range(num_batches):
-                int_data = pa.array(
-                    [i + b for i in range(num_rows)],
-                    type=pa.int32())
+
+                # Create some data of different types
+                int_data = pa.array([i + b for i in range(num_rows)], type=pa.int32())
                 string_data = pa.array(
-                    ["{},{}".format(i, b) for i in range(num_rows)],
-                    type=pa.string())
-                struct_data = pa.array(
-                    [{'0': [x for x in range(i % 3)], '1': i * 0.1}
-                     for i in range(num_rows)],
-                    type=pa.struct([
-                        pa.field('0', type=pa.list_(pa.int32())),
-                        pa.field('1', type=pa.float64())
-                    ])
+                    [f"{i},{b}" for i in range(num_rows)], type=pa.string()
                 )
+                struct_data = pa.array(
+                    [
+                        {"0": [x for x in range(i % 3)], "1": i * 0.1}
+                        for i in range(num_rows)
+                    ],
+                    type=pa.struct(
+                        [
+                            pa.field("0", type=pa.list_(pa.int32())),
+                            pa.field("1", type=pa.float64()),
+                        ]
+                    ),
+                )
+
+                # Write the data to the sink
                 batch = pa.record_batch(
-                    [int_data, string_data, struct_data], ['0', '1', '2'])
+                    [int_data, string_data, struct_data], ["0", "1", "2"]
+                )
                 sink.write(batch)
 
     def testMultipleInputsOutputs(self, data_sources, data_sinks):
@@ -424,8 +333,7 @@ class EntryPoint(kg.EntryPoint):
         assert len(inputs) == 4
         for idx, inp in enumerate(inputs):
             if idx == 2:
-                assert isinstance(
-                    inp._reader, ka._OffsetBasedRecordBatchFileReader)
+                assert isinstance(inp._reader, ka._OffsetBasedRecordBatchFileReader)
             else:
                 assert isinstance(inp._reader, pa.RecordBatchFileReader)
             assert len(inp) == 1
@@ -440,7 +348,7 @@ class EntryPoint(kg.EntryPoint):
         assert len(outputs) == 5
         for idx, oup in enumerate(outputs):
             data = pa.array([idx], type=pa.int32())
-            rb = pa.record_batch([data], ['0'])
+            rb = pa.record_batch([data], ["0"])
             oup.write(rb)
             oup.close()
 
