@@ -44,23 +44,53 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 30, 2021 (benjamin): created
+ *   May 6, 2021 (benjamin): created
  */
 package org.knime.python3;
 
+import org.knime.python3.PythonPath.PythonPathBuilder;
+
 /**
- * A callback to which a Python process can report data that has been created by the Python process.
+ * TODO(review) the Module handling could also be done differently. Having a PythonModule interface and singleton
+ * implementations?
  *
- * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
- * a way to report back the data computed. On the Python side they should be wrapped into a Python object (which
- * provides a pythonic API) using <code>knime.data.mapDataCallback(data_callback:JavaObject)</code>.
+ * Utilities for making the <code>knime_gateway</code> Python module available to a Python process.
+ *
+ * The function {@link #getPythonModuleFor(Class)} is a utility for accessing Python modules in the Java resource folder
+ * "py_modules".
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonDataCallback {
+public final class PythonModuleKnimeGateway {
+
+    private PythonModuleKnimeGateway() {
+        // Static utilities
+    }
 
     /**
-     * @return an unique identifier which will be used to identify the Python class wrapping this callback.
+     * @return the absolute path to the Python module <code>knime_gateway</code>
      */
-    String getIdentifier();
+    public static String getPythonModule() {
+        return getPythonModuleFor(PythonModuleKnimeGateway.class);
+    }
+
+    /**
+     * Add the <code>knime_gateway</code> Python module to the builder.
+     *
+     * @param builder the builder for creating the path
+     */
+    public static void addToPythonPathBuilder(final PythonPathBuilder builder) {
+        builder.add(getPythonModule());
+    }
+
+    /**
+     * Get the absolute path to the resource named "py_modules" for the given class. This path can be added to the
+     * {@link PythonPath} to make the modules at this location available to a Python script.
+     *
+     * @param clazz the class from which the resource should be loaded
+     * @return the path to the "py_modules" resource
+     */
+    public static String getPythonModuleFor(final Class<?> clazz) {
+        return clazz.getResource("py_modules").getPath();
+    }
 }

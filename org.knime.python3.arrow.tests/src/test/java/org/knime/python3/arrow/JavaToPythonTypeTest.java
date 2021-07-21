@@ -392,11 +392,11 @@ public class JavaToPythonTypeTest {
                 try (final BatchWriter writer = store.getWriter()) {
                     writeBatches(valueSetter, writer);
 
-                    // Define a PythonArrowDataProvider providing the data of the store
-                    final var dataProvider = PythonArrowDataUtils.createProvider(store, NUM_BATCHES);
+                    // Define a Python data source for the data of the store
+                    final var dataSource = PythonArrowDataUtils.createSource(store, NUM_BATCHES);
 
                     // Call Python (footer not written)
-                    entryPoint.testTypeToPython(type, dataProvider);
+                    entryPoint.testTypeToPython(type, dataSource);
                 } // <- Footer is written here
 
                 // Move the file to the read store location
@@ -406,11 +406,11 @@ public class JavaToPythonTypeTest {
             // Test using a read store -> footer written
             try (final var store = m_storeFactory.createReadStore(schema, readPath)) {
 
-                // Define a PythonArrowDataProvider providing the data of the store
-                final var dataProvider = PythonArrowDataUtils.createProvider(store);
+                // Define a Python data source for the data of the store
+                final var dataSource = PythonArrowDataUtils.createSource(store);
 
                 // Call Python (footer written)
-                entryPoint.testTypeToPython(type, dataProvider);
+                entryPoint.testTypeToPython(type, dataSource);
             }
         }
     }

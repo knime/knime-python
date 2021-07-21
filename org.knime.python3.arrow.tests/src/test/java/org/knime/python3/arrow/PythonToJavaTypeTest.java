@@ -401,21 +401,21 @@ public class PythonToJavaTypeTest {
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
             final var entryPoint = pythonGateway.getEntryPoint();
 
-            // Define a PythonArrowDataCallback getting the data from Python
+            // Define a Python data sink collecting the data
             final var outPath = TestUtils.createTmpKNIMEArrowPath();
-            final var dataCallback = PythonArrowDataUtils.createCallback(outPath);
+            final var dataSink = PythonArrowDataUtils.createSink(outPath);
 
             // Call Python
-            entryPoint.testTypeFromPython(type, dataCallback);
+            entryPoint.testTypeFromPython(type, dataSink);
 
             // Read the data back
-            checkData(spec, valueChecker, dataCallback);
+            checkData(spec, valueChecker, dataSink);
         }
     }
 
     private <T extends NullableReadData> void checkData(final DataSpec spec, final ValueChecker<T> valueChecker,
-        final DefaultPythonArrowDataCallback dataCallback) throws IOException, AssertionError {
-        try (final var store = PythonArrowDataUtils.createReadable(dataCallback, m_storeFactory)) {
+        final DefaultPythonArrowDataSink dataSink) throws IOException, AssertionError {
+        try (final var store = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory)) {
             final ColumnarSchema schema = store.getSchema();
             assertEquals(1, schema.numColumns());
             assertEquals(spec, schema.getSpec(0));

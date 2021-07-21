@@ -44,64 +44,23 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 19, 2021 (benjamin): created
+ *   Apr 30, 2021 (benjamin): created
  */
-package org.knime.python3.arrow;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.knime.core.columnar.store.BatchReadStore;
-import org.knime.core.table.schema.ColumnarSchema;
+package org.knime.python3;
 
 /**
- * A simple default implementation of the {@link PythonArrowDataCallback}. Use {@link PythonArrowDataUtils} to create an
- * instance and to convert it to a {@link BatchReadStore}.
+ * A sink to which a Python process can report data that has been created by the Python process.
+ *
+ * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
+ * a way to report back the data computed. On the Python side they should be wrapped into a Python object (which
+ * provides a pythonic API) using <code>knime_gateway.map_data_sink(java_data_sink:JavaObject)</code>.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class DefaultPythonArrowDataCallback implements PythonArrowDataCallback {
+public interface PythonDataSink {
 
-    private final Path m_path;
-
-    private final List<Long> m_recordBatchOffsets;
-
-    private ColumnarSchema m_schema;
-
-    DefaultPythonArrowDataCallback(final Path path) {
-        m_path = path;
-        m_recordBatchOffsets = new ArrayList<>();
-    }
-
-    @Override
-    public String getAbsolutePath() {
-        return m_path.toAbsolutePath().toString();
-    }
-
-    @Override
-    public void reportBatchWritten(final long offset) {
-        m_recordBatchOffsets.add(offset);
-    }
-
-    @Override
-    public void setColumnarSchema(final ColumnarSchema schema) {
-        m_schema = schema;
-    }
-
-    List<Long> getRecordBatchOffsets() {
-        return m_recordBatchOffsets;
-    }
-
-    ColumnarSchema getSchema() {
-        if (m_schema == null) {
-            throw new IllegalStateException(
-                "Cannot get the schema before it has been set. This is an implementation error.");
-        }
-        return m_schema;
-    }
-
-    Path getPath() {
-        return m_path;
-    }
+    /**
+     * @return an unique identifier which will be used to identify the Python class wrapping this data sink.
+     */
+    String getIdentifier();
 }

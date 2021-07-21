@@ -48,56 +48,60 @@
  */
 package org.knime.python3.arrow;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.knime.python3.PythonDataProvider;
+import org.knime.core.columnar.store.BatchReadStore;
+import org.knime.core.table.schema.ColumnarSchema;
 
 /**
- * A provider of Arrow data to a Python process.
+ * A simple default implementation of the {@link PythonArrowDataSink}. Use {@link PythonArrowDataUtils} to create an
+ * instance and to convert it to a {@link BatchReadStore}.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonArrowDataProvider extends PythonDataProvider {
+public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
 
-    @Override
-    default String getIdentifier() {
-        return "org.knime.python3.arrow";
+    private final Path m_path;
+
+    private final List<Long> m_recordBatchOffsets;
+
+    private ColumnarSchema m_schema;
+
+    DefaultPythonArrowDataSink(final Path path) {
+        m_path = path;
+        m_recordBatchOffsets = new ArrayList<>();
     }
 
-    /**
-     * @return the absolute path to the file in the Arrow IPC file format
-     */
-    String getAbsolutePath();
+    @Override
+    public String getAbsolutePath() {
+        return m_path.toAbsolutePath().toString();
+    }
 
-    /**
-     * @return true if the footer of the file has been written. In this case accessing the methods
-     *         {@link #getRecordBatchOffset(int)} and {@link #getDictionaryBatchOffsets(int)} is forbidden because the
-     *         offsets can be read from the footer.
-     */
-    boolean isFooterWritten();
+    @Override
+    public void reportBatchWritten(final long offset) {
+        m_recordBatchOffsets.add(offset);
+    }
 
-    /**
-     * Get the offset of the record batch at the given index. This method can lock if the record batch is not yet
-     * written to the file. When it returns it guarantees that the batch can be read at the retuned offset from the
-     * file.
-     *
-     * @param index the index of the record batch
-     * @return the offset of the record batch for the given index
-     */
-    long getRecordBatchOffset(int index);
+    @Override
+    public void setColumnarSchema(final ColumnarSchema schema) {
+        m_schema = schema;
+    }
 
-    /**
-     * Get the offsets of the dictionary batches relating to the record batch at the given index. This method can lock
-     * if the dictionary batches are not yet written to the file. When it returns it guarantees that the dictionary
-     * batches can be read at the returned offsets from the file.
-     *
-     * @param index the index of the dictionary batches
-     * @return the offsets of all dictionary batches for the given index
-     */
-    List<Long> getDictionaryBatchOffsets(int index);
+    List<Long> getRecordBatchOffsets() {
+        return m_recordBatchOffsets;
+    }
 
-    /**
-     * @return the total number of batches
-     */
-    int numBatches();
+    ColumnarSchema getSchema() {
+        if (m_schema == null) {
+            throw new IllegalStateException(
+                "Cannot get the schema before it has been set. This is an implementation error.");
+        }
+        return m_schema;
+    }
+
+    Path getPath() {
+        return m_path;
+    }
 }

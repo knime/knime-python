@@ -44,23 +44,42 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 30, 2021 (benjamin): created
+ *   Apr 19, 2021 (benjamin): created
  */
-package org.knime.python3;
+package org.knime.python3.arrow;
+
+import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.python3.PythonDataSink;
 
 /**
- * A provider for data to a Python process.
- *
- * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
- * data. On the Python side they should be wrapped into a Python object (which provides a pythonic API) using
- * <code>knime.data.mapDataProvider(data_callback:JavaObject)</code>.
+ * A sink for Arrow data from a Python process.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonDataProvider {
+public interface PythonArrowDataSink extends PythonDataSink {
+
+    @Override
+    default String getIdentifier() {
+        return "org.knime.python3.arrow";
+    }
 
     /**
-     * @return an unique identifier which will be used to identify the Python class wrapping this callback.
+     * @return the path the output file should be written to.
      */
-    String getIdentifier();
+    String getAbsolutePath();
+
+    /**
+     * Report that the next batch has been written to the file. Must be called by Python each time a new batch was
+     * written. Must be called for each batch in ascending order.
+     *
+     * @param offset the offset of the batch
+     */
+    void reportBatchWritten(long offset); // TODO(dictionary) add offsets for dictionary batches
+
+    /**
+     * TODO(extensiontypes) this should be replaced with something that uses virtual types/extension types
+     *
+     * @param schema the schema of the data that is written to the file
+     */
+    void setColumnarSchema(ColumnarSchema schema);
 }

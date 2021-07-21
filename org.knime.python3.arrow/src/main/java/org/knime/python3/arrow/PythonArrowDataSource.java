@@ -48,15 +48,16 @@
  */
 package org.knime.python3.arrow;
 
-import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.python3.PythonDataCallback;
+import java.util.List;
+
+import org.knime.python3.PythonDataSource;
 
 /**
- * A callback for Arrow data from a Python process.
+ * A source of Arrow data to a Python process.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonArrowDataCallback extends PythonDataCallback {
+public interface PythonArrowDataSource extends PythonDataSource {
 
     @Override
     default String getIdentifier() {
@@ -64,22 +65,39 @@ public interface PythonArrowDataCallback extends PythonDataCallback {
     }
 
     /**
-     * @return the path the output file should be written to.
+     * @return the absolute path to the file in the Arrow IPC file format
      */
     String getAbsolutePath();
 
     /**
-     * Report that the next batch has been written to the file. Must be called by Python each time a new batch was
-     * written. Must be called for each batch in ascending order.
-     *
-     * @param offset the offset of the batch
+     * @return true if the footer of the file has been written. In this case accessing the methods
+     *         {@link #getRecordBatchOffset(int)} and {@link #getDictionaryBatchOffsets(int)} is forbidden because the
+     *         offsets can be read from the footer.
      */
-    void reportBatchWritten(long offset); // TODO(dictionary) add offsets for dictionary batches
+    boolean isFooterWritten();
 
     /**
-     * TODO(extensiontypes) this should be replaced with something that uses virtual types/extension types
+     * Get the offset of the record batch at the given index. This method can lock if the record batch is not yet
+     * written to the file. When it returns it guarantees that the batch can be read at the retuned offset from the
+     * file.
      *
-     * @param schema the schema of the data that is written to the file
+     * @param index the index of the record batch
+     * @return the offset of the record batch for the given index
      */
-    void setColumnarSchema(ColumnarSchema schema);
+    long getRecordBatchOffset(int index);
+
+    /**
+     * Get the offsets of the dictionary batches relating to the record batch at the given index. This method can lock
+     * if the dictionary batches are not yet written to the file. When it returns it guarantees that the dictionary
+     * batches can be read at the returned offsets from the file.
+     *
+     * @param index the index of the dictionary batches
+     * @return the offsets of all dictionary batches for the given index
+     */
+    List<Long> getDictionaryBatchOffsets(int index);
+
+    /**
+     * @return the total number of batches
+     */
+    int numBatches();
 }

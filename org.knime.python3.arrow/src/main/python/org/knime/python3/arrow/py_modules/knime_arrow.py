@@ -45,25 +45,27 @@
 """
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
-
 import pyarrow as pa
-
-import knime
+import knime_gateway as kg
 
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
 
 
 def gateway():
-    return knime.client.client_server
+    if kg.client_server is None:
+        raise RuntimeError(
+            "A connection to KNIME must be established before using a knime_arrow source or sink."
+        )
+    return kg.client_server
 
 
 def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
-    factory_versions = ','.join([factory_version_for(t) for t in schema.types])
+    factory_versions = ",".join([factory_version_for(t) for t in schema.types])
     # TODO bytes instead of strings?
     metadata = {
         ARROW_CHUNK_SIZE_KEY: str(chunk_size),
-        ARROW_FACTORY_VERSIONS_KEY: factory_versions
+        ARROW_FACTORY_VERSIONS_KEY: factory_versions,
     }
     return schema.with_metadata(metadata)
 
@@ -71,26 +73,27 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
 def factory_version_for(arrow_type: pa.DataType):
     # TODO synchronize with the versions on the Java side
     if isinstance(arrow_type, pa.StructType):
-        return '0[{}]'.format(''.join([factory_version_for(f.type) + ';' for f in arrow_type]))
+        return "0[{}]".format(
+            "".join([factory_version_for(f.type) + ";" for f in arrow_type])
+        )
     if isinstance(arrow_type, pa.ListType):
-        return '0[{};]'.format(factory_version_for(arrow_type.value_type))
-    return '0'
+        return "0[{};]".format(factory_version_for(arrow_type.value_type))
+    return "0"
 
 
 def convert_schema(schema: pa.Schema):
     # TODO we would like to use a schema with the virtual types not the physical types
-    schemaBuilder = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
+    schema_builder = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
     for t in schema.types:
-        schemaBuilder.addColumn(convert_type(t))
-    return schemaBuilder.build()
+        schema_builder.addColumn(convert_type(t))
+    return schema_builder.build()
 
 
 def convert_type(arrow_type: pa.DataType):
     # Struct
     if isinstance(arrow_type, pa.StructType):
         dataspec_class = gateway().jvm.org.knime.core.table.schema.DataSpec
-        children_spec = gateway().new_array(
-            dataspec_class, arrow_type.num_fields)
+        children_spec = gateway().new_array(dataspec_class, arrow_type.num_fields)
         for i, f in enumerate(arrow_type):
             children_spec[i] = convert_type(f.type)
         return gateway().jvm.org.knime.core.table.schema.StructDataSpec(children_spec)
@@ -119,64 +122,84 @@ def convert_type(arrow_type: pa.DataType):
         return gateway().jvm.org.knime.core.table.schema.DataSpec.voidSpec()
     if arrow_type == pa.string():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.stringSpec()
-    if arrow_type == pa.time64('ns'):
+    if arrow_type == pa.time64("ns"):
         return gateway().jvm.org.knime.core.table.schema.DataSpec.localTimeSpec()
 
     raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
 
 
-class _OffsetBasedRecordBatchFileReader(object):
-
-    def __init__(self, source: pa.MemoryMappedFile, data_provider) -> None:
-        self._source = source
-        self._data_provider = data_provider
+class _OffsetBasedRecordBatchFileReader:
+    def __init__(self, source_file: pa.MemoryMappedFile, java_data_source) -> None:
+        self._source_file = source_file
+        self._java_data_source = java_data_source
         # TODO check the ARROW1 magic number???
 
         # Read the schema
-        self._source.seek(8)  # Skip the ARROW1 magic number + padding
-        self.schema = pa.ipc.read_schema(self._source)
+        self._source_file.seek(8)  # Skip the ARROW1 magic number + padding
+        self.schema = pa.ipc.read_schema(self._source_file)
 
     @property
     def num_record_batches(self):
-        return self._data_provider.numBatches()
+        return self._java_data_source.numBatches()
 
     def get_batch(self, index: int) -> pa.RecordBatch:
-        # TODO handle dictionaries
-        offset = self._data_provider.getRecordBatchOffset(index)
-        self._source.seek(offset)
+        # TODO(dictionary) handle dictionaries
+        offset = self._java_data_source.getRecordBatchOffset(index)
+        self._source_file.seek(offset)
         # TODO do we need to map columns somehow (in Java we have the factory versions)
-        return pa.ipc.read_record_batch(self._source, self.schema)
+        return pa.ipc.read_record_batch(self._source_file, self.schema)
 
 
-class Data(object):
+@kg.data_source("org.knime.python3.arrow")
+class ArrowDataSource:
     """A view on KNIME table data in an Arrow file.
 
     Note that __getitem__ memory-maps the data from disk each time and does not cache the data.
     """
-    # TODO rename
-    # TODO should we reproduce the reading API of pyarrow.Table???
-    # TODO context manager?
 
-    def __init__(self, data_provider) -> None:
-        # self._data_provider = data_provider
+    # TODO(benjamin) Do I want to enforce the usage of a context manager?
+    # TODO(benjamin) Context manager for lists of data sources
+
+    def __init__(self, java_data_source) -> None:
         self._file: pa.MemoryMappedFile = pa.memory_map(
-            data_provider.getAbsolutePath())
+            java_data_source.getAbsolutePath()
+        )
 
-        if data_provider.isFooterWritten():
+        if java_data_source.isFooterWritten():
             self._reader = pa.ipc.open_file(self._file)
         else:
             self._reader = _OffsetBasedRecordBatchFileReader(
-                self._file, data_provider)
+                self._file, java_data_source
+            )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     @property
     def schema(self) -> pa.Schema:
         return self._reader.schema
 
     def __len__(self) -> int:
-        # TODO: The number of batches can change (is this okay?)
         return self._reader.num_record_batches
 
     def __getitem__(self, index: int) -> pa.RecordBatch:
+        # The type of index must be int
+        if not isinstance(index, int):
+            raise TypeError(
+                "index must be an integer, not {}".format(type(index).__name__)
+            )
+
+        # Wrap negative indices and check if the index is valid
+        length = len(self)
+        if index < 0:
+            index = index + length
+        if index < 0 or index >= length:
+            raise IndexError("index out of range")
+
         # TODO do we need to map columns somehow (in Java we have the factory versions)
         return self._reader.get_batch(index)
 
@@ -190,38 +213,43 @@ class Data(object):
         raise NotImplementedError()
 
 
-class DataWriter(object):
-    """A class writing record batches to a file to be read by KNIME.
-    """
-    # TODO context manager?
+@kg.data_sink("org.knime.python3.arrow")
+class ArrowDataSink:
+    """A class writing record batches to a file to be read by KNIME."""
 
-    def __init__(self, data_callback) -> None:
-        self._callback = data_callback  # A callback to tell KNIME what is already written
+    def __init__(self, java_data_sink) -> None:
+        self._java_data_sink = java_data_sink
 
         # Open the file
-        self._file = pa.OSFile(data_callback.getAbsolutePath(), mode="wb")
+        self._file = pa.OSFile(java_data_sink.getAbsolutePath(), mode="wb")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     def write(self, b: pa.RecordBatch):
-        if not hasattr(self, '_writer'):
+        if not hasattr(self, "_writer"):
             # Init the writer if this is the first batch
-            # Also use the offset retuned by the init method because
-            # the file position is not updated yet
-            offset = self._init_writer(
-                schema_with_knime_metadata(b.schema, len(b)))
+            # Also use the offset retuned by the init method because the file position
+            # is not updated yet
+            offset = self._init_writer(schema_with_knime_metadata(b.schema, len(b)))
         else:
             # Remember the current file location
             offset = self._file.tell()
 
         self._writer.write(b)
         self._file.flush()
-        self._callback.reportBatchWritten(offset)
+        self._java_data_sink.reportBatchWritten(offset)
 
     def _init_writer(self, schema: pa.Schema):
         # Create the writer
         self._writer = pa.ipc.new_file(self._file, schema=schema)
 
         # Set the ColumnarSchema for java
-        self._callback.setColumnarSchema(convert_schema(schema))
+        self._java_data_sink.setColumnarSchema(convert_schema(schema))
 
         # We need to know the size of the serialized schema
         # to know the offset of the first batch
@@ -232,8 +260,3 @@ class DataWriter(object):
 
     def close(self):
         self._writer.close()
-
-
-# Register the data provider and data callback
-knime.data.registerDataProvider("org.knime.python3.arrow", Data)
-knime.data.registerDataCallback("org.knime.python3.arrow", DataWriter)

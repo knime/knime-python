@@ -60,13 +60,13 @@ import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
-import org.knime.python3.PythonDataCallback;
-import org.knime.python3.PythonDataProvider;
+import org.knime.python3.PythonDataSink;
+import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 
 /**
- * Utilities for handling {@link PythonDataProvider} and {@link PythonDataCallback} for Arrow data that needs to be
- * transfered to and from Python.
+ * Utilities for handling {@link PythonDataSource} and {@link PythonDataSink} for Arrow data that needs to be transfered
+ * to and from Python.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
@@ -76,79 +76,80 @@ public final class PythonArrowDataUtils {
     }
 
     /**
-     * Create a {@link PythonArrowDataProvider} that provides the data from the given {@link ArrowBatchStore}.
+     * Create a {@link PythonArrowDataSource} that provides the data from the given {@link ArrowBatchStore}.
      *
      * @param store the store which holds the data
      * @param numBatches the total number of batches that are available at the store
-     * @return the {@link PythonArrowDataProvider} that can be given to a {@link PythonEntryPoint} and will be wrapped
+     * @return the {@link PythonArrowDataSource} that can be given to a {@link PythonEntryPoint} and will be wrapped
      *         into a Python object for easy access to the data
      */
-    public static PythonArrowDataProvider createProvider(final ArrowBatchStore store, final int numBatches) {
-        return new PythonArrowBatchStoreDataProvider(store.getPath().toAbsolutePath().toString(),
+    public static PythonArrowDataSource createSource(final ArrowBatchStore store, final int numBatches) {
+        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(),
             store.getOffsetProvider(), numBatches);
     }
 
     /**
-     * Create a {@link PythonArrowDataProvider} that provides the data from the given {@link ArrowBatchReadStore}
+     * Create a {@link PythonArrowDataSource} that provides the data from the given {@link ArrowBatchReadStore}
      *
      * @param store the store which holds the data
-     * @return the {@link PythonArrowDataProvider} that can be given to a {@link PythonEntryPoint} and will be wrapped
+     * @return the {@link PythonArrowDataSource} that can be given to a {@link PythonEntryPoint} and will be wrapped
      *         into a Python object for easy access to the data
      */
-    public static PythonArrowDataProvider createProvider(final ArrowBatchReadStore store) {
-        return new PythonArrowBatchStoreDataProvider(store.getPath().toAbsolutePath().toString(), null,
+    public static PythonArrowDataSource createSource(final ArrowBatchReadStore store) {
+        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(), null,
             store.numBatches());
     }
 
     /**
-     * Create an {@link PythonArrowDataCallback} that writes an Arrow file to the given path.
+     * Create an {@link PythonArrowDataSink} that writes an Arrow file to the given path.
      *
      * @param targetPath the path to write the Arrow file to
-     * @return a {@link PythonArrowDataCallback} that can be given to a {@link PythonEntryPoint} and will be wrapped
-     *         into a Python object for easy access for setting the data
+     * @return a {@link PythonArrowDataSink} that can be given to a {@link PythonEntryPoint} and will be wrapped into a
+     *         Python object for easy access for setting the data
      */
-    public static DefaultPythonArrowDataCallback createCallback(final Path targetPath) {
-        return new DefaultPythonArrowDataCallback(targetPath);
+    public static DefaultPythonArrowDataSink createSink(final Path targetPath) {
+        return new DefaultPythonArrowDataSink(targetPath);
     }
 
     /**
      * Create a {@link RandomAccessBatchReadable} that provides batches from the data written by the Python process to
-     * the given {@link PythonArrowDataCallback}.
+     * the given {@link PythonArrowDataSink}.
      *
-     * @param callback the callback which was given to the Python process
+     * @param dataSink the data sink which was given to the Python process
      * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
      * @return the {@link RandomAccessBatchReadable} with the data
      */
-    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
+    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
         final ArrowColumnStoreFactory storeFactory) {
-        // TODO Do not require DefaultPythonArrowDataCallback but an interface
-        return storeFactory.createPartialFileReadable(callback.getSchema(), callback.getPath(), getOffsetProvider(callback));
+        // TODO Do not require DefaultPythonArrowDataSink but an interface
+        return storeFactory.createPartialFileReadable(dataSink.getSchema(), dataSink.getPath(),
+            getOffsetProvider(dataSink));
     }
 
     /**
      * Create a {@link RandomAccessBatchReadable} that provides batches from the data written by the Python process to
-     * the given {@link PythonArrowDataCallback} and check that the data has a specific schema.
+     * the given {@link PythonArrowDataSink} and check that the data has a specific schema.
      *
-     * @param callback the callback which was given to the Python process
+     * @param dataSink the data sink which was given to the Python process
      * @param expectedSchema the expected schema
      * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
      * @return the {@link RandomAccessBatchReadable} with the data
-     * @throws IllegalStateException if Python did not report data with the expected schema to the callback
+     * @throws IllegalStateException if Python did not report data with the expected schema to the sink
      */
-    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataCallback callback,
+    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
         final ColumnarSchema expectedSchema, final ArrowColumnStoreFactory storeFactory) {
-        // TODO Do not require DefaultPythonArrowDataCallback but an interface
+        // TODO Do not require DefaultPythonArrowDataSink but an interface
         // TODO(extensiontypes) we need an expected schema with virtual types/extension types
-        checkSchema(callback.getSchema(), expectedSchema);
-        return createReadable(callback, storeFactory);
+        checkSchema(dataSink.getSchema(), expectedSchema);
+        return createReadable(dataSink, storeFactory);
     }
 
-    private static OffsetProvider getOffsetProvider(final DefaultPythonArrowDataCallback callback) {
+    private static OffsetProvider getOffsetProvider(final DefaultPythonArrowDataSink dataSink) {
         return new OffsetProvider() {
 
             @Override
             public long getRecordBatchOffset(final int index) {
-                return callback.getRecordBatchOffsets().get(index);
+                return dataSink.getRecordBatchOffsets().get(index);
             }
 
             @Override
@@ -177,7 +178,7 @@ public final class PythonArrowDataUtils {
         }
     }
 
-    private static final class PythonArrowBatchStoreDataProvider implements PythonArrowDataProvider {
+    private static final class PythonArrowBatchStoreDataSource implements PythonArrowDataSource {
 
         private final String m_path;
 
@@ -185,7 +186,7 @@ public final class PythonArrowDataUtils {
 
         private final int m_numBatches;
 
-        public PythonArrowBatchStoreDataProvider(final String path, final OffsetProvider offsetProvider,
+        public PythonArrowBatchStoreDataSource(final String path, final OffsetProvider offsetProvider,
             final int numBatches) {
             m_path = path;
             m_offsetProvider = offsetProvider;

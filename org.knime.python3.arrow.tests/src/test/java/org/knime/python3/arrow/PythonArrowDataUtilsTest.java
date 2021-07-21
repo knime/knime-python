@@ -105,7 +105,7 @@ public class PythonArrowDataUtilsTest {
 
     /**
      * Test
-     * {@link PythonArrowDataUtils#createReadable(DefaultPythonArrowDataCallback, ColumnarSchema, ArrowColumnStoreFactory)}.
+     * {@link PythonArrowDataUtils#createReadable(DefaultPythonArrowDataSink, ColumnarSchema, ArrowColumnStoreFactory)}.
      *
      * @throws IOException
      */
@@ -115,8 +115,8 @@ public class PythonArrowDataUtilsTest {
 
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
             final var entryPoint = pythonGateway.getEntryPoint();
-            final DefaultPythonArrowDataCallback callback = PythonArrowDataUtils.createCallback(path);
-            entryPoint.testExpectedSchema(callback);
+            final DefaultPythonArrowDataSink dataSink = PythonArrowDataUtils.createSink(path);
+            entryPoint.testExpectedSchema(dataSink);
 
             // Expected schema - should work
             final var trueSchema = new DefaultColumnarSchema(//
@@ -126,13 +126,13 @@ public class PythonArrowDataUtilsTest {
                     new ListDataSpec(DataSpec.intSpec()), //
                     DataSpec.doubleSpec()) //
             );
-            try (var r = PythonArrowDataUtils.createReadable(callback, trueSchema, m_storeFactory)) {
+            try (var r = PythonArrowDataUtils.createReadable(dataSink, trueSchema, m_storeFactory)) {
             }
 
             // Schema too short - should fail
             final var falseSchema1 = new DefaultColumnarSchema(DataSpec.intSpec(), DataSpec.stringSpec());
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema1, m_storeFactory));
+                () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema1, m_storeFactory));
 
             // Schema wrong - should fail
             final var falseSchema2 = new DefaultColumnarSchema(//
@@ -143,7 +143,7 @@ public class PythonArrowDataUtilsTest {
                     DataSpec.doubleSpec()) //
             );
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema2, m_storeFactory));
+                () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema2, m_storeFactory));
 
             // Schema wrong - should fail
             final var falseSchema3 = new DefaultColumnarSchema(//
@@ -154,12 +154,12 @@ public class PythonArrowDataUtilsTest {
                     DataSpec.byteSpec()) //
             );
             assertThrows(IllegalStateException.class,
-                () -> PythonArrowDataUtils.createReadable(callback, falseSchema3, m_storeFactory));
+                () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema3, m_storeFactory));
         }
     }
 
     /**
-     * Test transfer of multiple tables to Python and from Python as a List of providers/callbacks.
+     * Test transfer of multiple tables to Python and from Python as a List of sources/sinks.
      *
      * @throws Exception
      */
@@ -169,10 +169,10 @@ public class PythonArrowDataUtilsTest {
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
             final var entryPoint = pythonGateway.getEntryPoint();
 
-            // Create the data providers
+            // Create the data sources
             BatchWriter writer = null;
             final List<AutoCloseable> stores = new ArrayList<>();
-            final List<PythonArrowDataProvider> providers = new ArrayList<>();
+            final List<PythonArrowDataSource> sources = new ArrayList<>();
             for (int idx = 0; idx < 4; idx++) {
                 if (idx == 2) {
                     // Footer not written
@@ -181,22 +181,22 @@ public class PythonArrowDataUtilsTest {
                     writeData(writer, idx);
 
                     stores.add(store);
-                    providers.add(PythonArrowDataUtils.createProvider(store, 1));
+                    sources.add(PythonArrowDataUtils.createSource(store, 1));
                 } else {
                     // Footer written
                     final var store = createReadStore(idx);
                     stores.add(store);
-                    providers.add(PythonArrowDataUtils.createProvider(store));
+                    sources.add(PythonArrowDataUtils.createSource(store));
                 }
             }
 
-            // Create the callbacks
-            final List<DefaultPythonArrowDataCallback> callbacks = new ArrayList<>();
+            // Create the data sinks
+            final List<DefaultPythonArrowDataSink> sinks = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 final Path p = TestUtils.createTmpKNIMEArrowPath();
-                callbacks.add(PythonArrowDataUtils.createCallback(p));
+                sinks.add(PythonArrowDataUtils.createSink(p));
             }
-            entryPoint.testMultipleInputsOutputs(providers, callbacks);
+            entryPoint.testMultipleInputsOutputs(sources, sinks);
 
             // Close the stores
             writer.close(); // NOSONAR: We know that writer is not null
@@ -205,8 +205,8 @@ public class PythonArrowDataUtilsTest {
             }
 
             // Check the data from Python
-            for (int idx = 0; idx < callbacks.size(); idx++) {
-                checkReadable(callbacks.get(idx), idx);
+            for (int idx = 0; idx < sinks.size(); idx++) {
+                checkReadable(sinks.get(idx), idx);
             }
         }
     }
@@ -231,8 +231,8 @@ public class PythonArrowDataUtilsTest {
         return m_storeFactory.createReadStore(schema, path);
     }
 
-    private void checkReadable(final DefaultPythonArrowDataCallback callback, final int idx) throws IOException {
-        try (final var readable = PythonArrowDataUtils.createReadable(callback, m_storeFactory);
+    private void checkReadable(final DefaultPythonArrowDataSink dataSink, final int idx) throws IOException {
+        try (final var readable = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory);
                 var reader = readable.createRandomAccessReader()) {
             final var batch = reader.readRetained(0);
             assertEquals(1, batch.length());

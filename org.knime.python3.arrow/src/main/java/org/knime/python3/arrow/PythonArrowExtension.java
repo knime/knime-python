@@ -51,8 +51,8 @@ package org.knime.python3.arrow;
 import org.knime.python3.PythonExtension;
 
 /**
- * A {@link PythonExtension} that registers the mapping for the {@link PythonArrowDataProvider} and the
- * {@link PythonArrowDataCallback} to Python objects.
+ * A {@link PythonExtension} that registers the mapping for the {@link PythonArrowDataSource} and the
+ * {@link PythonArrowDataSink} to Python objects.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */

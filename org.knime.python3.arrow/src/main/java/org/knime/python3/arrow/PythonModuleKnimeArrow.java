@@ -48,7 +48,7 @@
  */
 package org.knime.python3.arrow;
 
-import org.knime.python3.PythonModuleKnime;
+import org.knime.python3.PythonModuleKnimeGateway;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 
 /**
@@ -68,7 +68,7 @@ public final class PythonModuleKnimeArrow {
      * @return the absolute path to the Python module <code>knime_arrow</code>
      */
     public static String getPythonModule() {
-        return PythonModuleKnime.getPythonModuleFor(PythonModuleKnimeArrow.class);
+        return PythonModuleKnimeGateway.getPythonModuleFor(PythonModuleKnimeArrow.class);
     }
 
     /**

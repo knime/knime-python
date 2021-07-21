@@ -57,12 +57,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.knime.python3.PythonCommand;
-import org.knime.python3.PythonDataCallback;
-import org.knime.python3.PythonDataProvider;
+import org.knime.python3.PythonDataSink;
+import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonModuleKnime;
+import org.knime.python3.PythonModuleKnimeGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
@@ -100,7 +100,7 @@ public final class TestUtils {
             new SimplePythonCommand("/home/benjamin/apps/miniconda3/envs/sharedmem/bin/python");
         final String launcherPath = Paths.get(System.getProperty("user.dir"), "py", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //
-            .add(PythonModuleKnime.getPythonModule()) //
+            .add(PythonModuleKnimeGateway.getPythonModule()) //
             .add(PythonModuleKnimeArrow.getPythonModule()) //
             .build();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
@@ -117,33 +117,33 @@ public final class TestUtils {
         /**
          * Assert that the data is the expected data for the given type.
          *
-         * @param type the expected type
-         * @param dataProvider the data
+         * @param dataType the expected type
+         * @param dataSource the data
          */
-        void testTypeToPython(String type, PythonDataProvider dataProvider);
+        void testTypeToPython(String dataType, PythonDataSource dataSource);
 
         /**
-         * Create data for the given type and write it to the data callback.
+         * Create data for the given type and write it to the data sink.
          *
-         * @param type the type to write
-         * @param dataCallback the callback to write to
+         * @param dataType the type to write
+         * @param dataSink the data sink to write to
          */
-        void testTypeFromPython(String type, PythonDataCallback dataCallback);
+        void testTypeFromPython(String dataType, PythonDataSink dataSink);
 
         /**
-         * Create data with the schema 0: int, 1: string, 2: struct<list<int>, float> and write it to the callback
+         * Create data with the schema 0: int, 1: string, 2: struct<list<int>, float> and write it to the sink.
          *
-         * @param dataCallback the data callback to write to
+         * @param dataSink the data sink to write to
          */
-        void testExpectedSchema(PythonDataCallback dataCallback);
+        void testExpectedSchema(PythonDataSink dataSink);
 
         /**
-         * Assert that the list of data providers is as expected and write to a list of data callbacks.
+         * Assert that the list of data sources is as expected and write to a list of data sinks.
          *
-         * @param dataProviders providers of data
-         * @param dataCallbacks callbacks to write to
+         * @param dataSources sources of data
+         * @param dataSinks sinks to write to
          */
-        void testMultipleInputsOutputs(List<? extends PythonDataProvider> dataProviders,
-            List<? extends PythonDataCallback> dataCallbacks);
+        void testMultipleInputsOutputs(List<? extends PythonDataSource> dataSources,
+            List<? extends PythonDataSink> dataSinks);
     }
 }
