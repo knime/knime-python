@@ -58,12 +58,12 @@ public final class CondaEnvironmentsConfig extends AbstractCondaEnvironmentsConf
 
     private static final String CFG_KEY_PYTHON2_CONDA_ENV_DIR = "python2CondaEnvironmentDirectoryPath";
 
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
+    /** Only used for legacy support. See {@link CondaEnvironmentConfig#loadConfigFrom(PythonConfigStorage)} below. */
     private static final String LEGACY_CFG_KEY_PYTHON2_CONDA_ENV_NAME = "python2CondaEnvironmentName";
 
     private static final String CFG_KEY_PYTHON3_CONDA_ENV_DIR = "python3CondaEnvironmentDirectoryPath";
 
-    /** Only used for legacy support. See {@link #loadConfigFrom(PythonConfigStorage)} below. */
+    /** Only used for legacy support. See {@link CondaEnvironmentConfig#loadConfigFrom(PythonConfigStorage)} below. */
     private static final String LEGACY_CFG_KEY_PYTHON3_CONDA_ENV_NAME = "python3CondaEnvironmentName";
 
     private final CondaEnvironmentConfig m_python2EnvironmentConfig = new CondaEnvironmentConfig( //
