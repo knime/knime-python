@@ -16,10 +16,14 @@
 			<ol>
 				<li>On your local machine, you need to have Conda set up and configured in the Preferences of the KNIME
 					Python Integration as described in the corresponding
-					<a href="https://docs.knime.com/?category=integrations">installation guide</a>.</li>
+					<a href="https://docs.knime.com/latest/python_installation_guide">
+					installation guide</a>.</li>
 				<li>Configure this node by selecting the Conda environment to propagate and selecting the packages to
 					include in the environment in case it needs to be recreated.</li>
-				<li>Connect the output port of the node to the variable input port of any Conda-aware node.</li>
+				<li>Connect the output port of the node to the variable input port of any Conda-aware node. For more
+					details on this, see the
+				    <a href="https://docs.knime.com/latest/analytics_platform_flow_control_guide">
+				    flow control guide</a>.</li>
 				<li>Successively open the configuration dialogues of the Conda-aware node and all subsequent Conda-aware 
 				    nodes in the flow that you want to make portable. On each node's <i>Executable Selection</i> tab, 
 					enable <i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
@@ -29,8 +33,8 @@
 				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME
 					Python Integration. If the target machine runs a KNIME Server, you may need to contact your server
 					administrator and/or refer to the
-					<a href="https://docs.knime.com/?category=server">server administration guides</a> in order to do
-					this.</li>
+					<a href="https://docs.knime.com/latest/server_admin_guide">
+					server administration guides</a> in order to do this.</li>
 				<li>During execution (on either machine), the node will check whether a local Conda environment exists
 					that matches its configured environment. The node will recreate the environment if necessary,
 					ensuring its availability to the connected and properly configured downstream Conda-aware nodes.</li>
