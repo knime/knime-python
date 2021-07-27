@@ -9,7 +9,7 @@
 	<fullDescription>
 		<intro>
 			This node ensures the existence of a specific configurable Conda environment and propagates the environment
-			to downstream nodes that can make use of a Conda environment (e.g. Python or R nodes). 
+			to Python, R, or other Conda-aware downstream nodes. 
 			This is useful to make workflows that contain Conda-aware nodes more portable by
 			allowing to recreate the Conda environment used on the source machine (for example your personal computer)
 			on the target machine (for example a KNIME Server instance). The node is intended to be used as follows:
