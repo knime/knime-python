@@ -326,31 +326,28 @@ class EntryPoint(kg.EntryPoint):
                 sink.write(batch)
 
     def testMultipleInputsOutputs(self, data_sources, data_sinks):
-        inputs = kg.map_data_source(data_sources)
-        outputs = kg.map_data_sink(data_sinks)
+        with kg.SequenceContextManager(kg.map_data_source(data_sources)) as inputs:
+            # Check the values in the inputs
+            assert len(inputs) == 4
+            for idx, inp in enumerate(inputs):
+                if idx == 2:
+                    assert isinstance(inp._reader, ka._OffsetBasedRecordBatchFileReader)
+                else:
+                    assert isinstance(inp._reader, pa.RecordBatchFileReader)
+                assert len(inp) == 1
+                batch0 = inp[0]
+                assert len(batch0) == 1
+                col0 = batch0[0]
+                assert len(col0) == 1
+                assert col0[0].as_py() == idx
 
-        # Check the values in the inputs
-        assert len(inputs) == 4
-        for idx, inp in enumerate(inputs):
-            if idx == 2:
-                assert isinstance(inp._reader, ka._OffsetBasedRecordBatchFileReader)
-            else:
-                assert isinstance(inp._reader, pa.RecordBatchFileReader)
-            assert len(inp) == 1
-            batch0 = inp[0]
-            assert len(batch0) == 1
-            col0 = batch0[0]
-            assert len(col0) == 1
-            assert col0[0].as_py() == idx
-            inp.close()
-
-        # Write values to the outputs
-        assert len(outputs) == 5
-        for idx, oup in enumerate(outputs):
-            data = pa.array([idx], type=pa.int32())
-            rb = pa.record_batch([data], ["0"])
-            oup.write(rb)
-            oup.close()
+        with kg.SequenceContextManager(kg.map_data_sink(data_sinks)) as outputs:
+            # Write values to the outputs
+            assert len(outputs) == 5
+            for idx, oup in enumerate(outputs):
+                data = pa.array([idx], type=pa.int32())
+                rb = pa.record_batch([data], ["0"])
+                oup.write(rb)
 
     class Java:
         implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]

@@ -50,7 +50,8 @@ Basic utilities for communicating with the KNIME instance which started the Pyth
 import os
 import sys
 import importlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
+from contextlib import ExitStack, AbstractContextManager
 
 from py4j.clientserver import ClientServer, JavaParameters, PythonParameters
 
@@ -230,3 +231,70 @@ def map_data_sink(java_data_sink):
         return [map(d) for d in java_data_sink]
     else:
         return map(java_data_sink)
+
+
+class SequenceContextManager(Sequence):
+    """A sequence of context managers.
+
+    When a SequenceContextManager enters a context all values enter a context and when it leaves
+    the context all values will leave the context. To access the values the context
+    must be entered.
+
+    Example:
+
+    >>> from contextlib import contextmanager
+    >>> @contextmanager
+    ... def resource(name):
+    ...     print(f"Entering {name}")
+    ...     try:
+    ...             yield None
+    ...     finally:
+    ...             print(f"Exiting {name}")
+    >>> context_managers = [resource(i) for i in range(3)]
+    >>> with kg.SequenceContextManager(context_managers) as context_list:
+    ...     # Do something with the resources
+    ...     print("Doing something inside of the context")
+    Entering 0
+    Entering 1
+    Entering 2
+    Doing something inside of the context
+    Exiting 2
+    Exiting 1
+    Exiting 0
+    """
+
+    def __init__(self, context_managers):
+        """Create a new SequenceContextManager.
+
+        Args:
+            context_managers: A list of context managers.
+        """
+        # In the docstring we ask for a list (because this is easy to understand)
+        # but a Sequence is alright
+        if not isinstance(context_managers, Sequence):
+            raise ValueError("context_managers must be a Sequence")
+        if any([not isinstance(cm, AbstractContextManager) for cm in context_managers]):
+            raise ValueError("all elements in the sequence must be context managers")
+        self.values = context_managers
+        self.entered = None
+
+    def __getitem__(self, index):
+        if self.entered is None:
+            raise RuntimeError("must enter the context before accessing values")
+        # Error handling for the index is done by the list 'entered'
+        return self.entered[index]
+
+    def __len__(self) -> int:
+        return len(self.values)
+
+    def __enter__(self):
+        with ExitStack() as stack:
+            # Enter the context of all values
+            self.entered = [stack.enter_context(v) for v in self.values]
+            # pop_all creates a new ExitStack and we remember close to close it later
+            self.close = stack.pop_all().close
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False

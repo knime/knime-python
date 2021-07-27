@@ -157,9 +157,6 @@ class ArrowDataSource:
     Note that __getitem__ memory-maps the data from disk each time and does not cache the data.
     """
 
-    # TODO(benjamin) Do I want to enforce the usage of a context manager?
-    # TODO(benjamin) Context manager for lists of data sources
-
     def __init__(self, java_data_source) -> None:
         self._file: pa.MemoryMappedFile = pa.memory_map(
             java_data_source.getAbsolutePath()
