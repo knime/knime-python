@@ -25,9 +25,15 @@
 				    <a href="https://docs.knime.com/latest/analytics_platform_flow_control_guide">
 				    flow control guide</a>.</li>
 				<li>Successively open the configuration dialogues of the Conda-aware node and all subsequent Conda-aware 
-				    nodes in the flow that you want to make portable. On each node's <i>Executable Selection</i> tab, 
-					enable <i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
-					environment from the selection box.</li>
+				    nodes in the flow that you want to make portable.<br></br>
+				    <b>Python nodes:</b> On each node's <i>Executable Selection</i> tab, 
+						enable <i>Use Conda environment variable</i> and choose the variable propagating the configured Conda
+						environment from the selection box.<br></br>
+					<b>R nodes:</b> In the <i>Advanced</i> tab of each R node, enable <i>Overwrite default path
+					to R home,</i> select <i>Use conda environment to find R home,</i> and choose the variable propagating 
+					the configured Conda environment from the selection box. 
+					</li>
+				    
 				<li>Deploy the workflow by uploading it to the KNIME Server, sharing it via the KNIME Hub, or exporting
 					it. Make sure that this node is reset before or during the deployment process.</li>
 				<li>On the target machine, Conda must also be set up and configured in the Preferences of the KNIME
