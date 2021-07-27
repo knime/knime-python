@@ -252,12 +252,16 @@ final class PythonScriptNodeConfig2 extends PythonSourceCodeConfig {
     }
 
     private static String getPythonObjectWriterDefaultSourceCode(final VariableNames variables) {
-        return "import os\n" //
-            + "import pickle\n\n" //
-            + "# Path is <workspace>/python_object.pkl\n" //
-            + "path = " + variables.getFlowVariables() + "['knime.workspace'] + os.sep + 'python_object.pkl'\n" //
-            + "# Save object as pickle file\n" //
-            + "pickle.dump(" + variables.getInputObjects()[0] + ", open(path, 'wb'), pickle.HIGHEST_PROTOCOL)\n";
+        final StringBuilder sb = new StringBuilder();
+        return sb.append("import pickle\n")//
+            .append("import os\n")//
+            .append("# Path is workspace/python_object.pkl\n")//
+            .append("filepath = os.path.join(").append(variables.getFlowVariables())
+            .append("['knime.workspace'], 'python_object.pkl')\n")//
+            .append("# Save object as pickle file\n")//
+            .append("with open(filepath, 'wb') as fh:\n")//
+            .append("    pickle.dump(").append(variables.getInputObjects()[0]).append(", fh)\n")//
+            .toString();
     }
 
     private static String getPythonLearnerDefaultSourceCode(final VariableNames variables) {
