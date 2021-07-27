@@ -74,8 +74,20 @@ import org.knime.python3.SimplePythonCommand;
  */
 public final class TestUtils {
 
+    private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
+
     private TestUtils() {
         // Static utility class
+    }
+
+    /** Create a Python command from the path in the env var PYTHON3_EXEC_PATH */
+    private static PythonCommand getPythonCommand() throws IOException {
+        final String python3path = System.getenv(PYTHON_EXE_ENV);
+        if (python3path != null) {
+            return new SimplePythonCommand(python3path);
+        }
+        throw new IOException(
+            "Please set the environment variable '" + PYTHON_EXE_ENV + "' to the path of the Python 3 executable.");
     }
 
     /**
@@ -95,9 +107,7 @@ public final class TestUtils {
      * @throws IOException
      */
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException {
-        // TODO get the command from an environment variable or similar
-        final PythonCommand command =
-            new SimplePythonCommand("/home/benjamin/apps/miniconda3/envs/sharedmem/bin/python");
+        final PythonCommand command = getPythonCommand();
         final String launcherPath = Paths.get(System.getProperty("user.dir"), "py", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //
             .add(PythonModuleKnimeGateway.getPythonModule()) //
