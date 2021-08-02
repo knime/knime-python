@@ -110,7 +110,7 @@ class TestDataSourceSinkMapping(unittest.TestCase):
             self.assertEqual(in_obj, obj)
             return FooDataSource(obj)
 
-        out_obj = kg.map_data_source(in_obj)
+        out_obj = kg.data_source_mapper(in_obj)
         self.assertIsInstance(out_obj, FooDataSource)
         self.assertEqual(2, out_obj.get_value())
 
@@ -122,7 +122,7 @@ class TestDataSourceSinkMapping(unittest.TestCase):
             self.assertEqual(in_obj, obj)
             return FooDataSink(obj)
 
-        out_obj = kg.map_data_sink(in_obj)
+        out_obj = kg.data_sink_mapper(in_obj)
         self.assertIsInstance(out_obj, FooDataSink)
         out_obj.set_value(2)
         self.assertEqual(2, in_obj.value)
@@ -134,7 +134,7 @@ class TestDataSourceSinkMapping(unittest.TestCase):
         def foo_mapper(obj):
             return FooDataSource(obj)
 
-        out_objs = kg.map_data_source(in_objs)
+        out_objs = [kg.data_source_mapper(i) for i in in_objs]
         with kg.SequenceContextManager(out_objs):
             for i, o in enumerate(out_objs):
                 self.assertIsInstance(o, FooDataSource)
@@ -151,7 +151,7 @@ class TestDataSourceSinkMapping(unittest.TestCase):
         def foo_mapper(obj):
             return FooDataSink(obj)
 
-        out_objs = kg.map_data_sink(in_objs)
+        out_objs = [kg.data_sink_mapper(i) for i in in_objs]
         with kg.SequenceContextManager(out_objs):
             for i, o in enumerate(out_objs):
                 self.assertIsInstance(o, FooDataSink)

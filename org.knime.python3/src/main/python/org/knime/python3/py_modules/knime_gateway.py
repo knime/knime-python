@@ -119,7 +119,7 @@ def connect_to_knime(entry_point: EntryPoint):
 def data_source(identifier: str):
     """Creates a function registering a function as a data source mapper.
 
-    If `map_data_source(obj)` will be called with an obj with the given identifier the
+    If `data_source_mapper(obj)` will be called with an obj with the given identifier the
     function will be called with `obj`.
 
     Example:
@@ -130,11 +130,13 @@ def data_source(identifier: str):
     >>> @kg.data_source("foo.bar.MySource")
     ... def f(o):
     ...     print("Mapped MySource")
-    ...     return [o.get(i) for i in range(10)  # Map to a Python list
-    >>> l = kg.map_data_source(obj)
+    ...     return [o.get(i) for i in range(10)]  # Map to a Python list
+    >>> l = kg.data_source_mapper(obj)
     Mapped MySource
     >>> l
     ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    >>> type(l)
+    <class 'list'>
 
     Args:
         identifier: A string identifier that uniquely identifies the data source type.
@@ -151,7 +153,7 @@ def data_source(identifier: str):
 def data_sink(identifier: str):
     """Creates a function registering a function as a data sink mapper.
 
-    If `map_data_sink(obj)` will be called with an obj with the given identifier the
+    If `data_sink_mapper(obj)` will be called with an obj with the given identifier the
     function will be called with `obj`.
 
     Args:
@@ -166,7 +168,7 @@ def data_sink(identifier: str):
     return f
 
 
-def map_data_source(java_data_source):
+def data_source_mapper(java_data_source):
     """Map a Java object which provides data to an Python object which gives access to the data
     using a Pythonic API.
 
@@ -174,63 +176,49 @@ def map_data_source(java_data_source):
 
     Args:
         java_data_source: The Java object providing data. The object must implement the method `getIdentifier`
-            which must return the indentifer of the decorated mapper. Or a list of such objects.
+            which must return the indentifer of the decorated mapper.
 
     Returns:
-        A Python object which provides the data. Or a list of such objects.
+        A Python object which provides the data.
 
     Raises:
         ValueError: If no mapper is registered for the type of data source.
     """
-
-    def map(d):
-        identifier = d.getIdentifier()
-        if identifier not in DATA_SOURCES:
-            raise ValueError(
-                f"No mapper registerd for identifier {identifier}. "
-                "Are you missing a KNIME Extension? "
-                "If this is your own extension make sure to register a mapper by "
-                "decorating a function with `@knime_gateway.data_source(identifier)`."
-            )
-        return DATA_SOURCES[identifier](d)
-
-    if isinstance(java_data_source, Iterable):
-        return [map(d) for d in java_data_source]
-    else:
-        return map(java_data_source)
+    identifier = java_data_source.getIdentifier()
+    if identifier not in DATA_SOURCES:
+        raise ValueError(
+            f"No mapper registerd for identifier {identifier}. "
+            "Are you missing a KNIME Extension? "
+            "If this is your own extension make sure to register a mapper by "
+            "decorating a function with `@knime_gateway.data_source(identifier)`."
+        )
+    return DATA_SOURCES[identifier](java_data_source)
 
 
-def map_data_sink(java_data_sink):
+def data_sink_mapper(java_data_sink):
     """Map a Java object which collects data to an Python object with a Pythonic API.
 
     The mapper for a type of data must be decorated with the decorator `@knime_gateway.data_sink(identifier)`.
 
     Args:
         java_data_sink: The Java object collecting data. The object must implement the method `getIdentifier`
-            which must return the indentifer of the decorated mapper. Or a list of such objects.
+            which must return the indentifer of the decorated mapper.
 
     Returns:
-        A Python object which collects the data. Or a list of such objects.
+        A Python object which collects the data.
 
     Raises:
         ValueError: If no mapper is registered for the type of data sink.
     """
-
-    def map(d):
-        identifier = d.getIdentifier()
-        if identifier not in DATA_SINKS:
-            raise ValueError(
-                f"No mapper registerd for identifier {identifier}. "
-                "Are you missing a KNIME Extension? "
-                "If this is your own extension make sure to register a mapper by "
-                "decorating a function with `@knime_gateway.data_sink(identifier)`."
-            )
-        return DATA_SINKS[identifier](d)
-
-    if isinstance(java_data_sink, Iterable):
-        return [map(d) for d in java_data_sink]
-    else:
-        return map(java_data_sink)
+    identifier = java_data_sink.getIdentifier()
+    if identifier not in DATA_SINKS:
+        raise ValueError(
+            f"No mapper registerd for identifier {identifier}. "
+            "Are you missing a KNIME Extension? "
+            "If this is your own extension make sure to register a mapper by "
+            "decorating a function with `@knime_gateway.data_sink(identifier)`."
+        )
+    return DATA_SINKS[identifier](java_data_sink)
 
 
 class SequenceContextManager(Sequence):

@@ -53,7 +53,7 @@ package org.knime.python3;
  *
  * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
  * a way to report back the data computed. On the Python side they should be wrapped into a Python object (which
- * provides a pythonic API) using <code>knime_gateway.map_data_sink(java_data_sink:JavaObject)</code>.
+ * provides a pythonic API) using <code>knime_gateway.data_sink_mapper(java_data_sink:JavaObject)</code>.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */

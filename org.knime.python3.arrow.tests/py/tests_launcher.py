@@ -271,12 +271,12 @@ class EntryPoint(kg.EntryPoint):
                     assert_value(r, b, v)
 
         # Loop over batches and check each value
-        with kg.map_data_source(data_source) as source:
+        with kg.data_source_mapper(data_source) as source:
             for b in range(len(source)):
                 check_batch(source[b], b)
 
     def testTypeFromPython(self, data_type, data_sink):
-        with kg.map_data_sink(data_sink) as sink:
+        with kg.data_sink_mapper(data_sink) as sink:
             # Every 13th element is missing
             mask = np.array([r % 13 == 0 for r in range(NUM_ROWS)])
 
@@ -296,7 +296,7 @@ class EntryPoint(kg.EntryPoint):
         num_batches = 2
         num_rows = 5
 
-        with kg.map_data_sink(data_sink) as sink:
+        with kg.data_sink_mapper(data_sink) as sink:
 
             # Loop over batches
             for b in range(num_batches):
@@ -326,7 +326,8 @@ class EntryPoint(kg.EntryPoint):
                 sink.write(batch)
 
     def testMultipleInputsOutputs(self, data_sources, data_sinks):
-        with kg.SequenceContextManager(kg.map_data_source(data_sources)) as inputs:
+        sources = [kg.data_source_mapper(d) for d in data_sources]
+        with kg.SequenceContextManager(sources) as inputs:
             # Check the values in the inputs
             assert len(inputs) == 4
             for idx, inp in enumerate(inputs):
@@ -341,7 +342,8 @@ class EntryPoint(kg.EntryPoint):
                 assert len(col0) == 1
                 assert col0[0].as_py() == idx
 
-        with kg.SequenceContextManager(kg.map_data_sink(data_sinks)) as outputs:
+        sinks = [kg.data_sink_mapper(d) for d in data_sinks]
+        with kg.SequenceContextManager(sinks) as outputs:
             # Write values to the outputs
             assert len(outputs) == 5
             for idx, oup in enumerate(outputs):
