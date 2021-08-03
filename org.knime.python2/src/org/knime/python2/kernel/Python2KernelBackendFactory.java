@@ -44,64 +44,26 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 10, 2018 (marcel): created
+ *   Jul 25, 2021 (marcel): created
  */
-package org.knime.python2.kernel.messaging;
+package org.knime.python2.kernel;
 
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import org.knime.python2.kernel.Python2KernelBackend;
-import org.knime.python2.kernel.PythonExecutionMonitor;
+import org.knime.python2.PythonCommand;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-final class DefaultMessageReceiverLoop extends AbstractMessageLoop implements MessageReceiver {
+public final class Python2KernelBackendFactory implements PythonKernelBackendFactory {
 
-    private final MessageReceiver m_receiver;
-
-    private final BlockingQueue<Message> m_receiveQueue;
-
-    private final int m_offerTimeout;
-
-    public DefaultMessageReceiverLoop(final MessageReceiver receiver, final BlockingQueue<Message> receiveQueue,
-        final PythonExecutionMonitor monitor) {
-        super(monitor, "python-message-receive-loop");
-        m_receiver = receiver;
-        m_receiveQueue = receiveQueue;
-        m_offerTimeout = Python2KernelBackend.getConnectionTimeoutInMillis();
+    @Override
+    public String getIdentifier() {
+        return PythonKernelBackendRegistry.PYTHON2_BACKEND_ID;
     }
 
     @Override
-    public Message receive() throws IOException, InterruptedException {
-        final Message message = m_receiveQueue.take();
-        if (message == m_monitor.getPoisonPill()) {
-            throw new IOException("Message receiver loop terminated.");
-        } else {
-            return message;
-        }
-    }
-
-    @Override
-    protected void loop() throws Exception {
-        while (isRunning()) {
-            try {
-                final Message message = m_receiver.receive();
-                while (!m_receiveQueue.offer(message, m_offerTimeout, TimeUnit.MILLISECONDS)) {
-                    LOGGER.debug(getClass().getName() + ": Waited " + m_offerTimeout + " ms to offer received message ("
-                        + message + ") to queue. Continue to wait.");
-                }
-            } catch (final Exception ex) {
-                throwExceptionInLoop("Failed to receive message from Python or forward received message.", ex);
-            }
-        }
-    }
-
-    @Override
-    protected void closeInternal() throws Exception {
-        clearQueueAndPutMessage(m_receiveQueue, m_monitor.getPoisonPill());
+    public PythonKernelBackend createBackend(final PythonCommand command) throws IOException {
+        return new Python2KernelBackend(command);
     }
 }

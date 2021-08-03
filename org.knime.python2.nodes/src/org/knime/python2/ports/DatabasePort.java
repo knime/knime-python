@@ -70,6 +70,7 @@ import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.config.WorkspacePreparer;
+import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
@@ -129,12 +130,13 @@ public final class DatabasePort implements InputPort, OutputPort {
             }
             return kernel -> {
                 try {
-                    kernel.putSql(m_variableName, inDatabaseConnection, m_credentials, jars);
-                } catch (final Exception ex) {
+                    @SuppressWarnings("resource") // Will be closed along with kernel.
+                    final Python2KernelBackend backend = castBackendToLegacy(kernel);
+                    backend.putSql(m_variableName, inDatabaseConnection, m_credentials, jars);
+                } catch (final IOException ex) {
                     NodeLogger.getLogger(DatabasePort.class).debug(ex);
                 }
             };
-
         } else {
             throw new NotConfigurableException("No database connection available.");
         }
@@ -153,7 +155,9 @@ public final class DatabasePort implements InputPort, OutputPort {
         checkDatabaseConnection(inDatabase.getSpec());
         m_inDatabaseConnection = inDatabase.getConnectionSettings(m_credentials);
         final Collection<String> jars = getDatabaseDriverJarPaths(m_inDatabaseConnection);
-        kernel.putSql(m_variableName, m_inDatabaseConnection, m_credentials, jars);
+        @SuppressWarnings("resource") // Back end will be closed along with kernel.
+        final Python2KernelBackend backend = castBackendToLegacy(kernel);
+        backend.putSql(m_variableName, m_inDatabaseConnection, m_credentials, jars);
     }
 
     private static void checkDatabaseConnection(final DatabasePortObjectSpec spec) throws InvalidSettingsException {
@@ -180,11 +184,32 @@ public final class DatabasePort implements InputPort, OutputPort {
 
     @Override
     public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
-        final DatabaseQueryConnectionSettings outDatabaseConnection =
-            new DatabaseQueryConnectionSettings(m_inDatabaseConnection, kernel.getSql(getVariableName()));
+        @SuppressWarnings("resource") // Back end will be closed along with kernel.
+        final DatabaseQueryConnectionSettings outDatabaseConnection = new DatabaseQueryConnectionSettings(
+            m_inDatabaseConnection, castBackendToLegacy(kernel).getSql(getVariableName()));
         final DBReader reader =
             new DatabaseUtility(null, null, (DBAggregationFunctionFactory[])null).getReader(outDatabaseConnection);
         return new DatabasePortObject(
             new DatabasePortObjectSpec(reader.getDataTableSpec(m_credentials), outDatabaseConnection));
+    }
+
+    // Utility:
+
+    /**
+     * Tries to cast the given kernel's back end to the legacy back end which is required by the Python Script (DB)
+     * (legacy) node. Throws a descriptive error indicating that the node does not support the new back end, if the cast
+     * fails.
+     *
+     * @param kernel The kernel.
+     * @return The casted back end.
+     * @throws IllegalStateException If the cast fails.
+     */
+    @SuppressWarnings("resource") // Back end will be closed along with kernel.
+    public static Python2KernelBackend castBackendToLegacy(final PythonKernel kernel) {
+        if (!(kernel.getBackend() instanceof Python2KernelBackend)) {
+            throw new IllegalStateException("The Python Script (DB) (legacy) node only supports the legacy back end "
+                + "(serialization libraries, etc.) of the Python kernel. Please change your settings accordingly.");
+        }
+        return (Python2KernelBackend)kernel.getBackend();
     }
 }

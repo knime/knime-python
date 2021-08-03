@@ -69,10 +69,12 @@ import org.knime.core.node.port.database.reader.DBReader;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.nodes.PythonNodeModel;
+import org.knime.python2.ports.DatabasePort;
 
 /**
  * This is the model implementation.
@@ -104,7 +106,8 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
             final CredentialsProvider cp = getCredentialsProvider();
             final DatabaseQueryConnectionSettings connIn = dbObj.getConnectionSettings(cp);
             final Collection<String> jars = getJars(connIn);
-            kernel.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
+            final Python2KernelBackend backend = DatabasePort.castBackendToLegacy(kernel);
+            backend.putSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0], connIn, cp, jars);
             final String[] output = kernel.execute(getConfig().getSourceCode(), cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
@@ -112,7 +115,7 @@ class PythonScriptDBNodeModel extends PythonNodeModel<PythonScriptDBNodeConfig> 
                     kernel.getFlowVariables(PythonScriptDBNodeConfig.getVariableNames().getFlowVariables());
             addNewVariables(variables);
             final DatabaseQueryConnectionSettings connOut = new DatabaseQueryConnectionSettings(connIn,
-                kernel.getSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]));
+                backend.getSql(PythonScriptDBNodeConfig.getVariableNames().getGeneralInputObjects()[0]));
             DatabaseUtility du = new DatabaseUtility(null, null, (DBAggregationFunctionFactory[])null);
             final DBReader reader = du.getReader(connOut);
             final DataTableSpec resultSpec = reader.getDataTableSpec(cp);

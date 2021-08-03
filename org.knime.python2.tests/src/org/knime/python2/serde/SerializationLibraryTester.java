@@ -70,6 +70,7 @@ import org.knime.python2.extensions.serializationlibrary.interfaces.Type;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.CellImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.RowImpl;
 import org.knime.python2.extensions.serializationlibrary.interfaces.impl.TableSpecImpl;
+import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonKernel;
@@ -196,14 +197,18 @@ public final class SerializationLibraryTester {
 	private void testOnlineSerializationDeserializationIdentity(final TestTable testTable) throws IOException {
 		final TableSpec originalSpec = testTable.m_spec;
 		final Row[] originalRows = testTable.m_rows;
-		try (@SuppressWarnings("deprecation")
-		PythonKernel kernel = new PythonKernel(createConfiguredKernelOptions(new PythonKernelOptions()))) {
-			kernel.putData(DEFAULT_TABLE_NAME,
+		final PythonKernelOptions options = createConfiguredKernelOptions(new PythonKernelOptions());
+		final Python2KernelBackend kernelBackend = new Python2KernelBackend(options.getUsePython3() //
+				? options.getPython3Command() //
+				: options.getPython2Command());
+		try (PythonKernel kernel = new PythonKernel(kernelBackend)) {
+			kernel.setOptions(options);
+			kernelBackend.putData(DEFAULT_TABLE_NAME,
 					new SingleChunkTableChunker(new RowListIterator(originalSpec, originalRows)), originalRows.length,
 					PythonCancelable.NOT_CANCELABLE);
 
 			@SuppressWarnings("unchecked")
-			final TableCreator<List<Row>> creator = (TableCreator<List<Row>>) kernel.getData(DEFAULT_TABLE_NAME,
+			final TableCreator<List<Row>> creator = (TableCreator<List<Row>>) kernelBackend.getData(DEFAULT_TABLE_NAME,
 					new RowListCreatorFactory(), PythonCancelable.NOT_CANCELABLE);
 
 			final TableSpec deserializedSpec = creator.getTableSpec();

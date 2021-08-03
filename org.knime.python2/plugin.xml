@@ -3,6 +3,7 @@
 <plugin>
    <extension-point id="org.knime.python2.sourcecodetemplates" name="Source code templates extension" schema="schema/sourcecodetemplates.exsd"/>
    <extension-point id="org.knime.python2.serializationlibrary" name="Python serialization library" schema="schema/serializationlibrary.exsd"/>
+   <extension-point id="org.knime.python2.PythonKernelBackend" name="Python kernel back end" schema="schema/PythonKernelBackend.exsd"/>
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
@@ -53,6 +54,12 @@
       <VariableType
             extension="org.knime.python2.CondaEnvironmentPropagation$CondaEnvironmentType$CondaEnvironmentTypeExtension">
       </VariableType>
+   </extension>
+   <extension
+         point="org.knime.python2.PythonKernelBackend">
+      <PythonKernelBackend
+            PythonKernelBackendFactory="org.knime.python2.kernel.Python2KernelBackendFactory">
+      </PythonKernelBackend>
    </extension>
 
 </plugin>
