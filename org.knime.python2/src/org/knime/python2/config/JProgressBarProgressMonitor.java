@@ -51,6 +51,7 @@ import javax.swing.JProgressBar;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.NodeProgressMonitor;
+import org.knime.core.node.util.ViewUtils;
 import org.knime.core.node.workflow.NodeProgressListener;
 
 /**
@@ -74,11 +75,13 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
     public JProgressBarProgressMonitor(final JProgressBar progressBar) {
         m_isCanceled = false;
         m_progressBar = progressBar;
-        m_progressBar.setIndeterminate(false);
-        m_progressBar.setMinimum(0);
-        m_progressBar.setMaximum(100);
-        m_progressBar.setValue(0);
-        m_progressBar.setStringPainted(true);
+        ViewUtils.invokeAndWaitInEDT(() -> {
+            m_progressBar.setIndeterminate(false);
+            m_progressBar.setMinimum(0);
+            m_progressBar.setMaximum(100);
+            m_progressBar.setValue(0);
+            m_progressBar.setStringPainted(true);
+        });
     }
 
     /**
@@ -106,8 +109,11 @@ public class JProgressBarProgressMonitor implements NodeProgressMonitor {
     @Override
     public void setProgress(final double progress) {
         m_progress = progress;
-        m_progressBar.setValue((int)Math.round(progress * 100));
-        m_progressBar.setString((int)Math.round(progress * 100) + "%");
+        ViewUtils.runOrInvokeLaterInEDT(() -> {
+            final int progressInPercent = (int)Math.round(progress * 100);
+            m_progressBar.setValue(progressInPercent);
+            m_progressBar.setString(progressInPercent + "%");
+        });
     }
 
     /**
