@@ -68,7 +68,6 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 
@@ -80,6 +79,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.util.ViewUtils;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.generic.ConsolePanel.Level;
 
@@ -386,9 +386,11 @@ public abstract class SourceCodePanel extends JPanel {
      * Opens and initializes the panel.
      */
     public void open() {
-        m_console.clear();
-        m_workspaceVars.clear();
-        m_statusBar.getProgressBar().setValue(0);
+        ViewUtils.invokeAndWaitInEDT(() -> {
+            m_console.clear();
+            m_workspaceVars.clear();
+            m_statusBar.getProgressBar().setValue(0);
+        });
     }
 
     /**
@@ -556,7 +558,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param runnable The runnable to call when stop is clicked
      */
     protected void setStopCallback(final Runnable runnable) {
-        m_statusBar.setStopCallback(runnable);
+        ViewUtils.invokeAndWaitInEDT(() -> m_statusBar.setStopCallback(runnable));
     }
 
     /**
@@ -616,13 +618,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param runnable The runnable to run in the UI thread
      */
     private static void runInUiThread(final Runnable runnable) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            // We are in UI thread, just run it
-            runnable.run();
-        } else {
-            // Queue up for execution in UI thread
-            SwingUtilities.invokeLater(runnable);
-        }
+        ViewUtils.runOrInvokeLaterInEDT(runnable);
     }
 
     /**
