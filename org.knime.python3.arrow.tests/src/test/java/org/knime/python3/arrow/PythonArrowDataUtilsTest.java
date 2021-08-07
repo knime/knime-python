@@ -236,7 +236,7 @@ public class PythonArrowDataUtilsTest {
                 var reader = readable.createRandomAccessReader()) {
             final var batch = reader.readRetained(0);
             assertEquals(1, batch.length());
-            assertEquals(1, batch.size());
+            assertEquals(1, batch.numData());
             final var data = (IntReadData)batch.get(0);
             assertEquals(idx, data.getInt(0));
             batch.release();
