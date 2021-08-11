@@ -62,7 +62,7 @@ import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.config.PythonVersionAndCommandConfig;
 import org.knime.python2.config.PythonVersionAndExecutableSelectionPanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.prefs.PythonPreferences;
 
 /**
@@ -105,7 +105,7 @@ final class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
         m_executableSelectionPanel.loadSettingsFrom(settings);
         m_sourceCodePanel.updateData(new DataTableSpec[]{(DataTableSpec)specs[0]}, new BufferedDataTable[]{null},
-            new PickledObject[0]);
+            new PickledObjectFile[0]);
     }
 
     @Override
@@ -114,7 +114,7 @@ final class PythonLearnerNodeDialog extends DataAwareNodeDialogPane {
         final BufferedDataTable inTable = input[0];
         final DataTableSpec inSpec = inTable != null ? inTable.getDataTableSpec() : new DataTableSpec();
         loadSettingsFrom(settings, new PortObjectSpec[]{inSpec});
-        m_sourceCodePanel.updateData(new DataTableSpec[]{inSpec}, input, new PickledObject[0]);
+        m_sourceCodePanel.updateData(new DataTableSpec[]{inSpec}, input, new PickledObjectFile[0]);
     }
 
     @Override

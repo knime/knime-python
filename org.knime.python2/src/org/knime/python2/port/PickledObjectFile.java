@@ -44,79 +44,61 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Aug 10, 2021 (marcel): created
  */
-package org.knime.python2.ports;
+package org.knime.python2.port;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.config.WorkspacePreparer;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.port.PickledObjectFile;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
+import java.io.File;
 
 /**
+ * Container for a pickled Python object consisting of a pointer to the file containing the object, the object's Python
+ * type, and a string representation.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public final class PickledObjectInputPort implements InputPort {
+public final class PickledObjectFile {
 
-    private final String m_variableName;
+    private final File m_file;
 
-    public PickledObjectInputPort(final String variableName) {
-        m_variableName = variableName;
+    private final String m_type;
+
+    private final String m_stringRepresentation;
+
+    /**
+     * @param file The file containing the pickled object
+     * @param type The object's Python type
+     * @param stringRepresentation A string representation of the object
+     */
+    public PickledObjectFile(final File file, final String type, final String stringRepresentation) {
+        m_file = file;
+        m_type = type;
+        m_stringRepresentation = stringRepresentation;
+    }
+
+    /**
+     * @return The file containing the pickled object
+     */
+    public File getFile() {
+        return m_file;
+    }
+
+    /**
+     * @return The string identifier of the pickled object's Python type
+     */
+    public String getType() {
+        return m_type;
+    }
+
+    /**
+     * @return A string representation of the pickled object
+     */
+    public String getRepresentation() {
+        return m_stringRepresentation;
     }
 
     @Override
-    public String getVariableName() {
-        return m_variableName;
+    public String toString() {
+        return m_type + "\n" + m_stringRepresentation;
     }
 
-    @Override
-    public double getExecuteProgressWeight() {
-        return 0.1;
-    }
-
-    @Override
-    public Collection<PythonModuleSpec> getRequiredModules() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void configure(final PortObjectSpec inSpec) throws InvalidSettingsException {
-        // Nothing to configure.
-    }
-
-    @Override
-    public WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException {
-        // Nothing to prepare.
-        return null;
-    }
-
-    @Override
-    public WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException {
-        // Nothing to prepare.
-        return null;
-    }
-
-    @Override
-    public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
-        throws Exception {
-        kernel.putObject(m_variableName, extractWorkspaceObject(inObject), monitor);
-    }
-
-    public static PickledObjectFile extractWorkspaceObject(final PortObject inObject) throws IOException {
-        try {
-            return ((PickledObjectFileStorePortObject)inObject).getPickledObjectFile();
-        } catch (final IOException ex) {
-            throw new IOException("Failed to load pickled object.", ex);
-        }
-    }
 }

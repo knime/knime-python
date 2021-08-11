@@ -111,7 +111,8 @@ class PythonObjectReaderNodeModel extends PythonNodeModel<PythonObjectReaderNode
             exec.createSubProgress(0.9).setProgress(1);
             final Collection<FlowVariable> variables =
                 kernel.getFlowVariables(PythonObjectReaderNodeConfig.getVariableNames().getFlowVariables());
-            object = kernel.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0], exec);
+            object = PickledObject.getObject(PythonObjectReaderNodeConfig.getVariableNames().getOutputObjects()[0],
+                kernel, exec);
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
         }

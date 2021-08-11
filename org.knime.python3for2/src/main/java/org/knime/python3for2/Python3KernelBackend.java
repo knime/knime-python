@@ -108,7 +108,7 @@ import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListeners;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.util.PythonUtils;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonExtension;
@@ -283,18 +283,18 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public void putObject(final String name, final PickledObject object) throws PythonIOException {
+    public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
         throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
     }
 
     @Override
-    public void putObject(final String name, final PickledObject object, final ExecutionMonitor executionMonitor)
+    public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
     }
 
     @Override
-    public PickledObject getObject(final String name, final ExecutionMonitor executionMonitor)
+    public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
     }

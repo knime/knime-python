@@ -52,9 +52,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.UUID;
 
-import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeCreationContext;
@@ -65,13 +63,16 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
-import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.PickledObjectOutputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 class PythonObjectReaderNodeModel2 extends PythonNodeModel<PythonObjectReaderNodeConfig2> {
+
+    private final PickledObjectOutputPort m_pickledObjectPort =
+        new PickledObjectOutputPort(PythonObjectReaderNodeConfig2.getVariableNames().getOutputObjects()[0]);
 
     protected PythonObjectReaderNodeModel2() {
         super(new PortType[0], new PortType[]{PickledObjectFileStorePortObject.TYPE});
@@ -93,7 +94,7 @@ class PythonObjectReaderNodeModel2 extends PythonNodeModel<PythonObjectReaderNod
 
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        PickledObject object = null;
+        PickledObjectFileStorePortObject portObject;
         final PythonExecutionMonitorCancelable cancelable = new PythonExecutionMonitorCancelable(exec);
         try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonObjectReaderNodeConfig2.getVariableNames().getFlowVariables(),
@@ -105,12 +106,11 @@ class PythonObjectReaderNodeModel2 extends PythonNodeModel<PythonObjectReaderNod
             exec.createSubProgress(0.9).setProgress(1);
             final Collection<FlowVariable> variables =
                 kernel.getFlowVariables(PythonObjectReaderNodeConfig2.getVariableNames().getFlowVariables());
-            object = kernel.getObject(PythonObjectReaderNodeConfig2.getVariableNames().getOutputObjects()[0], exec);
+            portObject = m_pickledObjectPort.execute(kernel, exec);
             exec.createSubProgress(0.1).setProgress(1);
             addNewVariables(variables);
         }
-        final FileStore fileStore = exec.createFileStore(UUID.randomUUID().toString());
-        return new PortObject[]{new PickledObjectFileStorePortObject(object, fileStore)};
+        return new PortObject[]{portObject};
     }
 
     @Override

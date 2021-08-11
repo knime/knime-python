@@ -61,11 +61,15 @@ import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.PickledObjectInputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 class PythonObjectWriterNodeModel2 extends PythonNodeModel<PythonObjectWriterNodeConfig2> {
+
+    private final PickledObjectInputPort m_pickledObjectPort =
+        new PickledObjectInputPort(PythonObjectWriterNodeConfig2.getVariableNames().getInputObjects()[0]);
 
     protected PythonObjectWriterNodeModel2() {
         super(new PortType[]{PickledObjectFileStorePortObject.TYPE}, new PortType[0]);
@@ -77,8 +81,7 @@ class PythonObjectWriterNodeModel2 extends PythonNodeModel<PythonObjectWriterNod
         try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonObjectWriterNodeConfig2.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
-            kernel.putObject(PythonObjectWriterNodeConfig2.getVariableNames().getInputObjects()[0],
-                ((PickledObjectFileStorePortObject)inData[0]).getPickledObject(), exec);
+            m_pickledObjectPort.execute(inData[0], kernel, exec);
             exec.createSubProgress(0.1).setProgress(1);
             final String[] output =
                 kernel.execute(getConfig().getSourceCode(), cancelable);

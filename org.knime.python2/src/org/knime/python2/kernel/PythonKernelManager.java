@@ -47,6 +47,7 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,6 +66,7 @@ import org.knime.python2.PythonCommand;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 
 /**
  * Manages a python kernel including executing commands in separate threads and switching the underling kernel.
@@ -125,7 +127,7 @@ public class PythonKernelManager implements AutoCloseable {
      * @param responseHandler the response handler
      *
      */
-    public synchronized void putObject(final String name, final PickledObject object,
+    public synchronized void putObject(final String name, final PickledObjectFile object,
         final PythonKernelResponseHandler<Void> responseHandler) {
         final PythonKernel kernel = m_kernel;
         runInThread(new Runnable() {
@@ -148,18 +150,19 @@ public class PythonKernelManager implements AutoCloseable {
      * Get a {@link PickledObject} from the python workspace (asynchronous).
      *
      * @param name the name of the variable in the python workspace
+     * @param file to pickle to
      * @param responseHandler the response handler
      */
-    public synchronized void getObject(final String name,
-        final PythonKernelResponseHandler<PickledObject> responseHandler) {
+    public synchronized void getObject(final String name, final File file,
+        final PythonKernelResponseHandler<PickledObjectFile> responseHandler) {
         final PythonKernel kernel = m_kernel;
         runInThread(new Runnable() {
             @Override
             public void run() {
-                PickledObject response = null;
+                PickledObjectFile response = null;
                 Exception exception = null;
                 try {
-                    response = kernel.getObject(name, null);
+                    response = kernel.getObject(name, file, null);
                 } catch (final Exception e) {
                     exception = e;
                 }
@@ -237,7 +240,7 @@ public class PythonKernelManager implements AutoCloseable {
      */
     public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
         final String variablesName, final Collection<FlowVariable> variables, final String[] objectNames,
-        final PickledObject[] objects, final PythonKernelResponseHandler<Void> responseHandler,
+        final PickledObjectFile[] objects, final PythonKernelResponseHandler<Void> responseHandler,
         final ExecutionMonitor executionMonitor, final int rowLimit) {
         final PythonKernel kernel = m_kernel;
         runInThread(new PutDataRunnable(kernel, tableNames, tables, variablesName, variables, objectNames, objects,
@@ -422,7 +425,7 @@ public class PythonKernelManager implements AutoCloseable {
 
         private final Collection<FlowVariable> m_variables;
 
-        private final PickledObject[] m_objects;
+        private final PickledObjectFile[] m_objects;
 
         private final String[] m_objectNames;
 
@@ -434,7 +437,7 @@ public class PythonKernelManager implements AutoCloseable {
 
         private PutDataRunnable(final PythonKernel kernel, final String[] tableNames, final BufferedDataTable[] tables,
             final String variablesName, final Collection<FlowVariable> variables, final String[] objectNames,
-            final PickledObject[] objects, final PythonKernelResponseHandler<Void> responseHandler,
+            final PickledObjectFile[] objects, final PythonKernelResponseHandler<Void> responseHandler,
             final ExecutionMonitor executionMonitor, final int rowLimit) {
             m_localKernel = kernel;
             m_responseHandler = responseHandler;
@@ -455,7 +458,7 @@ public class PythonKernelManager implements AutoCloseable {
                 m_localKernel.putFlowVariables(m_variablesName, m_variables);
                 for (int i = 0; i < m_objects.length; i++) {
                     final String name = m_objectNames[i];
-                    final PickledObject object = m_objects[i];
+                    final PickledObjectFile object = m_objects[i];
                     if (object != null) {
                         m_localKernel.putObject(name, object);
                     } else {

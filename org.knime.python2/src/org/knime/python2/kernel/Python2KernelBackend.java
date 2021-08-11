@@ -127,6 +127,7 @@ import org.knime.python2.kernel.messaging.DefaultMessage.PayloadEncoder;
 import org.knime.python2.kernel.messaging.Message;
 import org.knime.python2.kernel.messaging.TaskHandler;
 import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.util.PythonUtils;
 
 import com.google.common.base.Strings;
@@ -948,7 +949,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public void putObject(final String name, final PickledObject object) throws PythonIOException {
+    public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
         try {
             m_commands.putObject(name, object.getPickledObject()).get();
         } catch (InterruptedException | ExecutionException ex) {
@@ -957,7 +958,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public void putObject(final String name, final PickledObject object, final ExecutionMonitor executionMonitor)
+    public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         try {
             PythonUtils.Misc.executeCancelable(() -> {
@@ -972,7 +973,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public PickledObject getObject(final String name, final ExecutionMonitor executionMonitor)
+    public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
         try {

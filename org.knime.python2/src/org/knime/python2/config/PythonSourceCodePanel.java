@@ -86,7 +86,7 @@ import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListener;
 import org.knime.python2.kernel.PythonOutputLogger;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 
 /**
  * Source code panel for python code.
@@ -111,7 +111,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private BufferedDataTable[] m_inputData = new BufferedDataTable[0];
 
-    private PickledObject[] m_pythonInputObjects = new PickledObject[0];
+    private PickledObjectFile[] m_pythonInputObjects = new PickledObjectFile[0];
 
     private final Lock m_lock = new ReentrantLock();
 
@@ -304,7 +304,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      * @param inPickledObjects The new input objects.
      */
     public void updateData(final DataTableSpec[] inTableSpecs, final BufferedDataTable[] inTables,
-        final PickledObject[] inPickledObjects) {
+        final PickledObjectFile[] inPickledObjects) {
         super.updateSpec(inTableSpecs);
         m_inputData = inTables;
         m_pythonInputObjects = inPickledObjects;

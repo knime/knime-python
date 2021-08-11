@@ -47,6 +47,7 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -65,6 +66,7 @@ import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 
 /**
  * Provides operations on a Python kernel running in another process.
@@ -302,7 +304,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
      *             task
      */
-    public void putObject(final String name, final PickledObject object) throws PythonIOException {
+    public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
         m_backend.putObject(name, object);
     }
 
@@ -318,7 +320,7 @@ public class PythonKernel implements AutoCloseable {
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
-    public void putObject(final String name, final PickledObject object, final ExecutionMonitor executionMonitor)
+    public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         m_backend.putObject(name, object, executionMonitor);
     }
@@ -336,9 +338,9 @@ public class PythonKernel implements AutoCloseable {
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
-    public PickledObject getObject(final String name, final ExecutionMonitor executionMonitor)
+    public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        return m_backend.getObject(name, executionMonitor);
+        return m_backend.getObject(name, file, executionMonitor);
     }
 
     /**

@@ -63,7 +63,7 @@ import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.config.PythonVersionAndCommandConfig;
 import org.knime.python2.config.PythonVersionAndExecutableSelectionPanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.port.PickledObjectPortObject;
 import org.knime.python2.prefs.PythonPreferences;
 
@@ -107,7 +107,7 @@ final class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
         m_executableSelectionPanel.loadSettingsFrom(settings);
         m_sourceCodePanel.updateData(new DataTableSpec[]{(DataTableSpec)specs[1]}, new BufferedDataTable[]{null},
-            new PickledObject[]{null});
+            new PickledObjectFile[]{null});
     }
 
     @Override
@@ -121,9 +121,9 @@ final class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
         final PortObjectSpec[] specs = new PortObjectSpec[]{inObjectSpec, inTableSpec};
         loadSettingsFrom(settings, specs);
 
-        final PickledObject inPickledObject = inObject != null ? inObject.getPickledObject() : null;
+        final PickledObjectFile inPickledObject = inObject != null ? inObject.getPickledObjectFile() : null;
         m_sourceCodePanel.updateData(new DataTableSpec[]{inTableSpec}, new BufferedDataTable[]{inTable},
-            new PickledObject[]{inPickledObject});
+            new PickledObjectFile[]{inPickledObject});
     }
 
     @Override

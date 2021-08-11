@@ -48,13 +48,9 @@
  */
 package org.knime.python2.ports;
 
-import java.util.UUID;
-
-import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.port.PortObject;
 import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -79,9 +75,9 @@ public final class PickledObjectOutputPort implements OutputPort {
     }
 
     @Override
-    public PortObject execute(final PythonKernel kernel, final ExecutionContext exec) throws Exception {
-        final PickledObject pickledObject = kernel.getObject(m_variableName, exec);
-        final FileStore fileStore = exec.createFileStore(UUID.randomUUID().toString());
-        return new PickledObjectFileStorePortObject(pickledObject, fileStore);
+    public PickledObjectFileStorePortObject execute(final PythonKernel kernel, final ExecutionContext exec)
+        throws Exception {
+        return PickledObjectFileStorePortObject.create(FileStoreFactory.createFileStoreFactory(exec),
+            f -> kernel.getObject(m_variableName, f, exec));
     }
 }

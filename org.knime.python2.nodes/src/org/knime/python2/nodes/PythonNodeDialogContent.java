@@ -79,7 +79,7 @@ import org.knime.python2.generic.VariableNames;
 import org.knime.python2.generic.templates.SourceCodeTemplate;
 import org.knime.python2.generic.templates.SourceCodeTemplateRepository;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DatabasePort;
 import org.knime.python2.ports.InputPort;
@@ -234,7 +234,7 @@ public final class PythonNodeDialogContent {
             }
         }
         m_scriptPanel.updateData(inTableSpecs.toArray(new DataTableSpec[0]), new BufferedDataTable[inTableSpecs.size()],
-            new PickledObject[numPickledObjects]);
+            new PickledObjectFile[numPickledObjects]);
     }
 
     /**
@@ -252,7 +252,7 @@ public final class PythonNodeDialogContent {
         final PortObjectSpec[] inSpecs = new PortObjectSpec[input.length];
         final List<DataTableSpec> inTableSpecs = new ArrayList<>();
         final List<BufferedDataTable> inTables = new ArrayList<>();
-        final List<PickledObject> inPickledObjects = new ArrayList<>();
+        final List<PickledObjectFile> inPickledObjects = new ArrayList<>();
         for (int i = 0; i < m_inPorts.length; i++) {
             final InputPort inPort = m_inPorts[i];
             final PortObject inObject = input[i];
@@ -281,8 +281,8 @@ public final class PythonNodeDialogContent {
             }
         }
         loadSettingsFrom(settings, inSpecs, credentials);
-        m_scriptPanel.updateData(inTableSpecs.toArray(new DataTableSpec[0]), inTables.toArray(new BufferedDataTable[0]),
-            inPickledObjects.toArray(new PickledObject[0]));
+        m_scriptPanel.updateData(inTableSpecs.toArray(DataTableSpec[]::new), inTables.toArray(BufferedDataTable[]::new),
+            inPickledObjects.toArray(PickledObjectFile[]::new));
     }
 
     private void updatePreparers(final InputPort inPort, final WorkspacePreparer preparer, final boolean dataAware) {

@@ -62,11 +62,15 @@ import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.nodes.PythonNodeModel;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.PickledObjectInputPort;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 class PythonPredictorNodeModel2 extends PythonNodeModel<PythonPredictorNodeConfig2> {
+
+    private final PickledObjectInputPort m_pickledObjectPort =
+        new PickledObjectInputPort(PythonPredictorNodeConfig2.getVariableNames().getInputObjects()[0]);
 
     protected PythonPredictorNodeModel2() {
         super(new PortType[]{PickledObjectFileStorePortObject.TYPE, BufferedDataTable.TYPE},
@@ -80,8 +84,7 @@ class PythonPredictorNodeModel2 extends PythonNodeModel<PythonPredictorNodeConfi
         try (final PythonKernel kernel = getNextKernelFromQueue(cancelable)) {
             kernel.putFlowVariables(PythonPredictorNodeConfig2.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
-            kernel.putObject(PythonPredictorNodeConfig2.getVariableNames().getInputObjects()[0],
-                ((PickledObjectFileStorePortObject)inData[0]).getPickledObject(), exec);
+            m_pickledObjectPort.execute(inData[0], kernel, exec);
             exec.createSubProgress(0.1).setProgress(1);
             kernel.putDataTable(PythonPredictorNodeConfig2.getVariableNames().getInputTables()[0],
                 (BufferedDataTable)inData[1], exec.createSubProgress(0.2));

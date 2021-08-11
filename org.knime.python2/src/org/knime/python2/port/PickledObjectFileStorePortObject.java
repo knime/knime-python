@@ -56,6 +56,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -67,14 +68,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.filestore.FileStorePortObject;
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortObjectZipInputStream;
 import org.knime.core.node.port.PortObjectZipOutputStream;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.PortTypeRegistry;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.util.MemoryAlertAwareGuavaCache;
 
 /**
@@ -103,11 +107,16 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
 
     private final UUID m_key;
 
+    // effectively final
+    private PickledObjectFile m_pickledObjectFile;
+
     /**
      * @param pickledObject the pickled object to save
      * @param fileStore the file store at which to save the pickled object
      * @throws IOException if failed to write the pickled object to file store
+     * @deprecated use {@link #create(FileStoreFactory, PickledObjectFileProducer)} instead
      */
+    @Deprecated
     public PickledObjectFileStorePortObject(final PickledObject pickledObject, final FileStore fileStore)
         throws IOException {
         super(Arrays.asList(fileStore));
@@ -115,6 +124,65 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
         m_key = UUID.randomUUID();
         CACHE.put(m_key, pickledObject);
         flushToFileStore();
+        m_pickledObjectFile = null;
+    }
+
+    private PickledObjectFileStorePortObject(final PickledObjectFile pickledObjectFile, final FileStore fileStore) {
+        super(List.of(fileStore));
+        m_spec = new PickledObjectPortObjectSpec(pickledObjectFile.getType(),
+            pickledObjectFile.getRepresentation());
+        m_pickledObjectFile = pickledObjectFile;
+        // PickledObjectFileStores are light weight and therefore not cached, hence we need no key for retrieval
+        m_key = null;
+    }
+
+    /**
+     * Creates an instance of this PortObject.
+     *
+     * @param fileStoreFactory for creating file stores (see {@link FileStoreFactory#createFileStoreFactory(ExecutionContext)})
+     * @param pickledObjectFileProducer creates the {@link PickledObjectFile} given a {@link File}
+     * @return a new instance
+     * @throws IOException
+     * @throws CanceledExecutionException
+     */
+    public static PickledObjectFileStorePortObject create(final FileStoreFactory fileStoreFactory,
+        final PickledObjectFileProducer pickledObjectFileProducer) throws IOException, CanceledExecutionException {
+        final var fileStore = fileStoreFactory.createFileStore(UUID.randomUUID().toString());
+        var pickledObjectFile = pickledObjectFileProducer.produce(fileStore.getFile());
+        return new PickledObjectFileStorePortObject(pickledObjectFile, fileStore);
+    }
+
+    /**
+     * Essentially a function that given a {@link File} produces a {@link PickledObjectFile} and may throw certain exceptions.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface PickledObjectFileProducer {
+        /**
+         * Produces a {@link PickledObjectFile} given a {@link File} to pickle to.
+         *
+         * @param file to pickle the object to
+         * @return the PickledObjectFile
+         * @throws CanceledExecutionException if the user cancels the node execution
+         * @throws PythonIOException if there are I/O issues on Python side
+         */
+        PickledObjectFile produce(final File file) throws CanceledExecutionException, PythonIOException;
+    }
+
+    /**
+     * Deserialization constructor for version 2 (the pickled objects are held in the filestore and never deserialized
+     * in Java)
+     */
+    private PickledObjectFileStorePortObject(final PickledObjectPortObjectSpec spec) {
+        m_spec = spec;
+        m_key = null;
+    }
+
+    @Override
+    protected void postConstruct() throws IOException {
+        super.postConstruct();
+        m_pickledObjectFile =
+            new PickledObjectFile(getFileStore(0).getFile(), m_spec.getType(), m_spec.getRepresentation());
     }
 
     /**
@@ -123,38 +191,57 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
     private PickledObjectFileStorePortObject(final PickledObjectPortObjectSpec spec, final UUID key) {
         m_spec = spec;
         m_key = key;
+        m_pickledObjectFile = null;
     }
 
     /**
      * @return the contained {@link PickledObject}
      * @throws IOException if the pickled object needed to be loaded from file store, which failed
      */
+    @Deprecated
     public synchronized PickledObject getPickledObject() throws IOException {
-        try {
-            return CACHE.get(m_key, this::getPickledObjectFromFileStore);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof IOException) {
-                throw (IOException)e.getCause();
-            } else {
-                throw new IllegalStateException("Failed to load pickled object.", e);
+        if (m_key != null) {
+            try {
+                return CACHE.get(m_key, this::getPickledObjectFromFileStore);
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof IOException) {
+                    throw (IOException)e.getCause();
+                } else {
+                    throw new IllegalStateException("Failed to load pickled object.", e);
+                }
             }
+        } else {
+            return PickledObject.fromPickledObjectFile(m_pickledObjectFile);
         }
     }
 
+    @SuppressWarnings("deprecation")
     private PickledObject getPickledObjectFromFileStore() throws IOException {
-        final File file = getFileStore(0).getFile();
-        try (FileInputStream in = new FileInputStream(file)) {
+        final var file = getFileStore(0).getFile();
+        try (var in = new FileInputStream(file)) {
             return new PickledObject(in);
+        }
+    }
+
+    /**
+     * Retrieves the {@link PickledObjectFile} stored in the PortObject.
+     *
+     * @return the {@link PickledObjectFile}
+     * @throws IOException if creating the {@link PickledObjectFile} from an old {@link PickledObject} fails
+     */
+    @SuppressWarnings("deprecation")
+    public PickledObjectFile getPickledObjectFile() throws IOException {
+        if (m_key != null) {
+            // means that we have an old PickledObject on our hands
+            return getPickledObject().toPickledObjectFile();
+        } else {
+            return m_pickledObjectFile;
         }
     }
 
     @Override
     public String getSummary() {
-        try {
-            return shortenString(getPickledObject().toString(), 60, "...");
-        } catch (final IOException ex) {
-            return "[Failed to load pickled object.]";
-        }
+        return shortenString(m_spec.getType() + "\n" + m_spec.getRepresentation(), 60, "...");
     }
 
     @Override
@@ -164,27 +251,16 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
 
     @Override
     public JComponent[] getViews() {
-        String text;
-        PickledObject pickledObject;
-        try {
-            pickledObject = getPickledObject();
-        } catch (final IOException ex) {
-            throw new IllegalStateException("Failed to load pickled object.");
-        }
-        if (pickledObject != null) {
-            String pickledObjectString = pickledObject.getStringRepresentation();
-            pickledObjectString = shortenString(pickledObjectString, 1000, "\n...");
-            text = "<html><b>" + pickledObject.getType() + "</b><br><br><code>"
+        var pickledObjectString = m_spec.getRepresentation();
+        pickledObjectString = shortenString(pickledObjectString, 1000, "\n...");
+        String text = "<html><b>" + m_spec.getType() + "</b><br><br><code>"
                 + pickledObjectString.replace("\n", "<br>") + "</code></html>";
-        } else {
-            text = "No object available";
-        }
-        final JLabel label = new JLabel(text);
-        final Font font = label.getFont();
-        final Font plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
+        final var label = new JLabel(text);
+        final var font = label.getFont();
+        final var plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
         label.setFont(plainFont);
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GridBagConstraints gbc = new GridBagConstraints();
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.BOTH;
@@ -202,15 +278,23 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
     }
 
     private static String shortenString(final String string, final int maxLength, final String suffix) {
-        return string.length() > maxLength ? string.substring(0, maxLength - suffix.length()) + suffix : string;
+        return string.length() > maxLength ? (string.substring(0, maxLength - suffix.length()) + suffix) : string;
     }
 
     @Override
     public int hashCode() {
-        try {
-            return Objects.hashCode(getPickledObject());
-        } catch (final IOException ex) {
-            throw new IllegalStateException("Failed to load pickled object.", ex);
+        if (m_pickledObjectFile != null) {
+            // hashing on the type and representation ensures that objects that are considered to be equal have
+            // the same hashcode while still being relatively fast at the cost of a higher risk of hash collisions
+            // Those then need to be resolved using equals which will load the byte[] representing the
+            // pickled object into memory.
+            return Objects.hash(m_pickledObjectFile.getType(), m_pickledObjectFile.getRepresentation());
+        } else {
+            try {
+                return Objects.hashCode(getPickledObject());
+            } catch (final IOException ex) {
+                throw new IllegalStateException("Failed to load pickled object.", ex);
+            }
         }
     }
 
@@ -230,6 +314,7 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void flushToFileStore() throws IOException {
         final File file = getFileStore(0).getFile();
@@ -241,7 +326,9 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        CACHE.remove(m_key);
+        if (m_key != null) {
+            CACHE.remove(m_key);
+        }
     }
 
     /**
@@ -256,10 +343,15 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
             final PortObjectZipOutputStream out, final ExecutionMonitor exec)
             throws IOException, CanceledExecutionException {
             out.putNextEntry(new ZipEntry(ZIP_ENTRY_NAME));
-            DataOutputStream dataOut = new DataOutputStream(out);
+            var dataOut = new DataOutputStream(out);
             // Save "version" for forward compatibility reasons.
-            dataOut.writeInt(1);
-            dataOut.writeUTF(portObject.m_key.toString());
+            if (portObject.m_key != null) {
+                dataOut.writeInt(1);
+                dataOut.writeUTF(portObject.m_key.toString());
+            } else {
+                dataOut.writeInt(2);
+                // key is no longer used
+            }
             dataOut.flush();
         }
 
@@ -271,10 +363,16 @@ public final class PickledObjectFileStorePortObject extends FileStorePortObject 
                 throw new IOException("Failed to load pickled object port object. Invalid zip entry name '"
                     + entry.getName() + "', expected '" + ZIP_ENTRY_NAME + "'.");
             }
-            DataInputStream dataIn = new DataInputStream(in);
-            dataIn.readInt(); // ignore for now
-            UUID key = UUID.fromString(dataIn.readUTF());
-            return new PickledObjectFileStorePortObject((PickledObjectPortObjectSpec)spec, key);
+            var dataIn = new DataInputStream(in);
+            int version = dataIn.readInt(); // NOSONAR
+            if (version == 1) {
+                var key = UUID.fromString(dataIn.readUTF());
+                return new PickledObjectFileStorePortObject((PickledObjectPortObjectSpec)spec, key);
+            } else if (version == 2) {
+                return new PickledObjectFileStorePortObject((PickledObjectPortObjectSpec)spec);
+            } else {
+                throw new IllegalStateException("Unsupported version: " + version);
+            }
         }
     }
 }

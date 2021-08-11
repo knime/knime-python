@@ -90,7 +90,7 @@ class PythonPredictorNodeModel extends PythonNodeModel<PythonPredictorNodeConfig
             kernel.putFlowVariables(PythonPredictorNodeConfig.getVariableNames().getFlowVariables(),
                 getAvailableFlowVariables().values());
             kernel.putObject(PythonPredictorNodeConfig.getVariableNames().getInputObjects()[0],
-                ((PickledObjectPortObject)inData[0]).getPickledObject(), exec);
+                ((PickledObjectPortObject)inData[0]).getPickledObjectFile(), exec);
             exec.createSubProgress(0.1).setProgress(1);
             kernel.putDataTable(PythonPredictorNodeConfig.getVariableNames().getInputTables()[0],
                 (BufferedDataTable)inData[1], exec.createSubProgress(0.2));

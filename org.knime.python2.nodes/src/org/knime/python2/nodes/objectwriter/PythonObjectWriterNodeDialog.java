@@ -63,7 +63,7 @@ import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.config.PythonVersionAndCommandConfig;
 import org.knime.python2.config.PythonVersionAndExecutableSelectionPanel;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
-import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.port.PickledObjectPortObject;
 import org.knime.python2.prefs.PythonPreferences;
 
@@ -109,7 +109,7 @@ final class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
             getAvailableFlowVariables().values().toArray(new FlowVariable[getAvailableFlowVariables().size()]));
         m_sourceCodeOptionsPanel.loadSettingsFrom(config);
         m_executableSelectionPanel.loadSettingsFrom(settings);
-        m_sourceCodePanel.updateData(new DataTableSpec[0], new BufferedDataTable[0], new PickledObject[]{null});
+        m_sourceCodePanel.updateData(new DataTableSpec[0], new BufferedDataTable[0], new PickledObjectFile[]{null});
     }
 
     @Override
@@ -119,9 +119,9 @@ final class PythonObjectWriterNodeDialog extends DataAwareNodeDialogPane {
         final PortObjectSpec inObjectSpec = inObject != null ? inObject.getSpec() : null;
         loadSettingsFrom(settings, new PortObjectSpec[]{inObjectSpec});
 
-        final PickledObject inPickledObject = inObject != null ? inObject.getPickledObject() : null;
+        PickledObjectFile inPickledObject = inObject != null ? inObject.getPickledObjectFile() : null;
         m_sourceCodePanel.updateData(new DataTableSpec[0], new BufferedDataTable[0],
-            new PickledObject[]{inPickledObject});
+            new PickledObjectFile[]{inPickledObject});
     }
 
     @Override

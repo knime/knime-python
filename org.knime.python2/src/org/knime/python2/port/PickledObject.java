@@ -49,16 +49,22 @@ package org.knime.python2.port;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
+import org.knime.core.util.FileUtil;
+import org.knime.python2.kernel.PythonKernel;
 
 /**
  * Container for a pickled python object consisting of the object's byte representation, python type and a string
@@ -68,6 +74,7 @@ import org.knime.core.node.ModelContentWO;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
+@Deprecated
 public class PickledObject {
 
     private static final String CFG_PICKLED_OBJECT = "pickledObject";
@@ -131,6 +138,26 @@ public class PickledObject {
             throw new IOException("Failed to read in pickled object.");
         }
         m_stringRepresentation = new String(stringRepresentationBytes, StandardCharsets.UTF_8);
+    }
+
+    PickledObjectFile toPickledObjectFile() throws IOException {
+        final var tmpFile = FileUtil.createTempFile("", "pickle");
+        try (var outputStream = new FileOutputStream(tmpFile)) {
+            outputStream.write(m_pickledObject);
+        }
+        return new PickledObjectFile(tmpFile, m_type, m_stringRepresentation);
+    }
+
+    private static PickledObject fromPickledObjectFile(final PickledObjectFile pickledObjectFile) throws IOException {
+        byte[] pickledObject = FileUtils.readFileToByteArray(pickledObjectFile.getFile());
+        return new PickledObject(pickledObject, pickledObjectFile.getType(), pickledObjectFile.getRepresentation());
+    }
+
+    public static PickledObject getObject(final String name, final PythonKernel kernel, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
+        final var tmpFile = FileUtil.createTempFile("", "pickle");
+        var pickledObjectFile = kernel.getObject(name, tmpFile, exec);
+        return fromPickledObjectFile(pickledObjectFile);
     }
 
     /**

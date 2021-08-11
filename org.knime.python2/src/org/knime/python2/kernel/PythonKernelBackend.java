@@ -48,6 +48,7 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.port.PickledObject;
+import org.knime.python2.port.PickledObjectFile;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -176,44 +178,40 @@ public interface PythonKernelBackend extends AutoCloseable {
         throws PythonIOException, CanceledExecutionException;
 
     /**
-     * Put a {@link PickledObject} into the python workspace.
+     * Puts a pickled object into the Python workspace.
      *
-     * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
-     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
-     *             task
+     * @param name The name of the variable in the Python workspace to which to assign the unpickled object
+     * @param object contains the file the object is pickled to as well as some meta data
+     * @throws PythonIOException If an error occurred in Python or while communicating with Python
      */
-    void putObject(String name, PickledObject object) throws PythonIOException;
+    void putObject(String name, PickledObjectFile object) throws PythonIOException;
 
     /**
-     * Put a {@link PickledObject} into the python workspace while still checking whether the execution has been
-     * canceled.
+     * Puts a pickled object into the Python workspace while still checking whether the execution has been canceled.
      *
-     * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
-     * @param executionMonitor the {@link ExecutionMonitor} of the calling node
-     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
-     *             task
-     * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
+     * @param name The name of the variable in the Python workspace to which to assign the unpickled object
+     * @param pickledObjectFile contains the file that holds the object as well as some meta information
+     * @param executionMonitor The {@link ExecutionMonitor} of the calling node
+     * @throws PythonIOException If an error occurred in Python or while communicating with Python
+     * @throws CanceledExecutionException If canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
-    void putObject(String name, PickledObject object, ExecutionMonitor executionMonitor)
+    void putObject(String name, PickledObjectFile pickledObjectFile, ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException;
 
     /**
-     * Get a {@link PickledObject} from the python workspace while still checking whether the execution has been
-     * canceled.
+     * Gets a pickled object from the Python workspace while still checking whether the execution has been canceled.
      *
-     * @param name the name of the variable in the python workspace
-     * @param executionMonitor the {@link ExecutionMonitor} of the calling KNIME node
-     * @return a {@link PickledObject} containing the pickled object representation, the objects type and a string
-     *         representation of the object
-     * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
-     *             task
-     * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
+     * @param name The name of the variable in the Python workspace that holds the object
+     * @param file The file to which to pickle the object
+     * @param executionMonitor The {@link ExecutionMonitor} of the calling node
+     * @return A {@link PickledObject} containing a pointer to the given file to which the object was pickled, the
+     *         object's Python type, and a string representation of the object
+     * @throws PythonIOException If an error occurred in Python or while communicating with Python
+     * @throws CanceledExecutionException If canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
-    PickledObject getObject(String name, ExecutionMonitor executionMonitor)
+    PickledObjectFile getObject(String name, File file, ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException;
 
     /**

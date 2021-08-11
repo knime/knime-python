@@ -51,6 +51,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -62,6 +63,7 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.AbstractSimplePortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -113,6 +115,15 @@ public final class PickledObjectPortObject extends AbstractSimplePortObject {
      */
     public PickledObject getPickledObject() {
         return m_pickledObject;
+    }
+
+    public PickledObjectFile getPickledObjectFile() {
+        try {
+            return m_pickledObject.toPickledObjectFile();
+        } catch (IOException ex) {
+            NodeLogger.getLogger(PickledObjectPortObject.class).error("Failed to write PickledObject to file.", ex);
+            return null;
+        }
     }
 
     /**
