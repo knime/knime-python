@@ -5,6 +5,7 @@ channels:             # Repositories to search for packages
 - conda-forge
 dependencies:         # List of packages that should be installed
 - nbformat=4.4        # Notebook support
+- nomkl               # Prevents the use of Intel's MKL
 - jpype1=0.6.3        # Databases
 - ipython=7.1         # Notebook support
 - pillow=5.3          # Image inputs/outputs
