@@ -69,6 +69,8 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonKernelTester;
@@ -76,6 +78,7 @@ import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.generic.SourceCodeConfig;
 import org.knime.python2.generic.SourceCodePanel;
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.kernel.PythonKernelManager;
@@ -98,6 +101,10 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonSourceCodePanel.class);
 
     private final NodeDialogPane m_parent;
+
+    private final PythonSourceCodeOptionsPanel m_optionsPanel;
+
+    private final PythonExecutableSelectionPanel m_executablePanel;
 
     private final ConcurrentLinkedDeque<PythonKernelManagerWrapper> m_kernelManagerQueue =
         new ConcurrentLinkedDeque<>();
@@ -167,11 +174,18 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         final PythonSourceCodeOptionsPanel optionsPanel, final PythonExecutableSelectionPanel executablePanel) {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames, optionsPanel);
         m_parent = parent;
-        setPythonCommand(executablePanel.getPythonVersion(), executablePanel.getPythonCommand());
+        m_optionsPanel = optionsPanel;
+        m_executablePanel = executablePanel;
+        optionsPanel.addSerializationOptionsChangeListener(this::setSerializationOptions);
         executablePanel.addChangeListener(
             e -> setPythonCommand(executablePanel.getPythonVersion(), executablePanel.getPythonCommand()));
-        setSerializationOptions(optionsPanel.getSerializationOptions());
-        optionsPanel.addSerializationOptionsChangeListener(this::setSerializationOptions);
+    }
+
+    @Override
+    public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs) throws NotConfigurableException {
+        super.loadSettingsFrom(config, specs);
+        setSerializationOptions(m_optionsPanel.getSerializationOptions());
+        setPythonCommand(m_executablePanel.getPythonVersion(), m_executablePanel.getPythonCommand());
     }
 
     @Override
