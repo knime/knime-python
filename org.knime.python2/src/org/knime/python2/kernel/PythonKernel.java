@@ -218,6 +218,8 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonOutputLogger m_defaultStdoutListener;
 
+    private final PythonOutputLogger m_defaultStderrListener;
+
     private final boolean m_hasAutocomplete;
 
     /** Used to make kernel operations cancelable. */
@@ -281,7 +283,8 @@ public class PythonKernel implements AutoCloseable {
             // Log output and errors to console.
             m_defaultStdoutListener = new PythonOutputLogger(LOGGER);
             addStdoutListener(m_defaultStdoutListener);
-            addStderrorListener(new PythonOutputLogger(LOGGER));
+            m_defaultStderrListener = new PythonOutputLogger(LOGGER);
+            addStderrorListener(m_defaultStderrListener);
 
             try {
                 // Wait for Python to connect.
@@ -1614,10 +1617,16 @@ public class PythonKernel implements AutoCloseable {
 
     /**
      * @return the default stdout listener which logs to the info log by default
-     * @since 3.6.0
      */
     public PythonOutputListener getDefaultStdoutListener() {
         return m_defaultStdoutListener;
+    }
+
+    /**
+     * @return the default stderr listener which logs to the info log by default
+     */
+    public PythonOutputListener getDefaultStderrListener() {
+        return m_defaultStderrListener;
     }
 
     /**
