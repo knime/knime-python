@@ -156,9 +156,6 @@ public final class PythonMessaging implements MessageSender, MessageHandlerColle
             // Order is intended.
             final Error error =
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_sendLoop, m_receiveLoop, m_distributeLoop);
-            if (!isClosed()) {
-                LOGGER.debug("Python messaging system could not be shut down gracefully. Process will be killed.");
-            }
             if (error != null) {
                 throw error;
             }
@@ -183,16 +180,5 @@ public final class PythonMessaging implements MessageSender, MessageHandlerColle
             // Closing the messaging system should not be interrupted.
             Thread.currentThread().interrupt();
         }
-    }
-
-    private boolean isClosed() {
-        boolean closed = true;
-        try {
-            m_outToPython.write(0);
-            closed = false;
-        } catch (final IOException e) {
-            // Stream is closed. Python shut down properly.
-        }
-        return closed;
     }
 }
