@@ -245,7 +245,7 @@ public class JavaToPythonTypeTest {
             ((IntWriteData)data.getWriteDataAt(0)).setInt(r, r + b);
             ((StringWriteData)data.getWriteDataAt(1)).setString(r, "Row: " + r + ", Batch: " + b);
         };
-        test("struct", ColumnarSchema.of(STRUCT(INT, STRING)), valueSetter);
+        test("struct", ColumnarSchema.of(STRUCT.of(INT, STRING)), valueSetter);
     }
 
     /**
@@ -255,7 +255,7 @@ public class JavaToPythonTypeTest {
      */
     @Test
     public void testComplexStructList() throws Exception {
-        test("structcomplex", ColumnarSchema.of(STRUCT(LIST(STRUCT(INT, STRING)), INT)),
+        test("structcomplex", ColumnarSchema.of(STRUCT.of(LIST.of(STRUCT.of(INT, STRING)), INT)),
             JavaToPythonTypeTest::setComplexStructList);
     }
 
@@ -290,7 +290,7 @@ public class JavaToPythonTypeTest {
                 intData.setInt(i, r + b + i);
             }
         };
-        test("list", ColumnarSchema.of(LIST(INT)), valueSetter);
+        test("list", ColumnarSchema.of(LIST.of(INT)), valueSetter);
     }
 
     /**

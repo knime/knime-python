@@ -122,7 +122,7 @@ public class PythonArrowDataUtilsTest {
             entryPoint.testExpectedSchema(dataSink);
 
             // Expected schema - should work
-            final var trueSchema = ColumnarSchema.of(INT, STRING, STRUCT(LIST(INT), DOUBLE));
+            final var trueSchema = ColumnarSchema.of(INT, STRING, STRUCT.of(LIST.of(INT), DOUBLE));
 
             try (var r = PythonArrowDataUtils.createReadable(dataSink, trueSchema, m_storeFactory)) {
             }
@@ -133,13 +133,13 @@ public class PythonArrowDataUtilsTest {
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema1, m_storeFactory));
 
             // Schema wrong - should fail
-            final var falseSchema2 = ColumnarSchema.of(LONG, STRING, STRUCT(LIST(INT), DOUBLE));
+            final var falseSchema2 = ColumnarSchema.of(LONG, STRING, STRUCT.of(LIST.of(INT), DOUBLE));
 
             assertThrows(IllegalStateException.class,
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema2, m_storeFactory));
 
             // Schema wrong - should fail
-            final var falseSchema3 = ColumnarSchema.of(INT, STRING, STRUCT(LIST(INT), BYTE));
+            final var falseSchema3 = ColumnarSchema.of(INT, STRING, STRUCT.of(LIST.of(INT), BYTE));
             assertThrows(IllegalStateException.class,
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema3, m_storeFactory));
         }
