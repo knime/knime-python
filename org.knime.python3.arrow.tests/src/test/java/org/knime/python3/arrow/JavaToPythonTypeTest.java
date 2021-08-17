@@ -48,6 +48,24 @@
  */
 package org.knime.python3.arrow;
 
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.DURATION;
+import static org.knime.core.table.schema.DataSpecs.FLOAT;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LIST;
+import static org.knime.core.table.schema.DataSpecs.LOCALDATE;
+import static org.knime.core.table.schema.DataSpecs.LOCALDATETIME;
+import static org.knime.core.table.schema.DataSpecs.LOCALTIME;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.PERIOD;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.core.table.schema.DataSpecs.STRUCT;
+import static org.knime.core.table.schema.DataSpecs.VARBINARY;
+import static org.knime.core.table.schema.DataSpecs.VOID;
+import static org.knime.core.table.schema.DataSpecs.ZONEDDATETIME;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -90,10 +108,7 @@ import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
 import org.knime.core.columnar.data.VoidData.VoidWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.StructDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 
 /**
  * Test transfer of different Arrow types to Python. Always transfers one table with one column of a specific type.
@@ -132,7 +147,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testBoolean() throws Exception {
         final ValueSetter<BooleanWriteData> valueSetter = (data, b, r) -> data.setBoolean(r, (r + b) % 5 == 0);
-        test("boolean", DataSpec.booleanSpec(), valueSetter);
+        test("boolean", ColumnarSchema.of(BOOLEAN), valueSetter);
     }
 
     /**
@@ -143,7 +158,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testByte() throws Exception {
         final ValueSetter<ByteWriteData> valueSetter = (data, b, r) -> data.setByte(r, (byte)((r + b) % 256 - 128));
-        test("byte", DataSpec.byteSpec(), valueSetter);
+        test("byte", ColumnarSchema.of(BYTE), valueSetter);
     }
 
     /**
@@ -154,7 +169,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testDouble() throws Exception {
         final ValueSetter<DoubleWriteData> valueSetter = (data, b, r) -> data.setDouble(r, r / 10.0 + b);
-        test("double", DataSpec.doubleSpec(), valueSetter);
+        test("double", ColumnarSchema.of(DOUBLE), valueSetter);
     }
 
     /**
@@ -165,7 +180,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testFloat() throws Exception {
         final ValueSetter<FloatWriteData> valueSetter = (data, b, r) -> data.setFloat(r, (float)(r / 10.0 + b));
-        test("float", DataSpec.floatSpec(), valueSetter);
+        test("float", ColumnarSchema.of(FLOAT), valueSetter);
     }
 
     /**
@@ -176,7 +191,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testInt() throws Exception {
         final ValueSetter<IntWriteData> valueSetter = (data, b, r) -> data.setInt(r, r + b);
-        test("int", DataSpec.intSpec(), valueSetter);
+        test("int", ColumnarSchema.of(INT), valueSetter);
     }
 
     /**
@@ -187,7 +202,7 @@ public class JavaToPythonTypeTest {
     @Test
     public void testLong() throws Exception {
         final ValueSetter<LongWriteData> valueSetter = (data, b, r) -> data.setLong(r, r + b * 10_000_000_000L);
-        test("long", DataSpec.longSpec(), valueSetter);
+        test("long", ColumnarSchema.of(LONG), valueSetter);
     }
 
     /**
@@ -204,7 +219,7 @@ public class JavaToPythonTypeTest {
             }
             data.setBytes(r, v);
         };
-        test("varbinary", DataSpec.varBinarySpec(), valueSetter);
+        test("varbinary", ColumnarSchema.of(VARBINARY), valueSetter);
     }
 
     /**
@@ -216,7 +231,7 @@ public class JavaToPythonTypeTest {
     public void testVoid() throws Exception {
         final ValueSetter<VoidWriteData> valueSetter = (data, b, r) -> {
         };
-        test("void", DataSpec.voidSpec(), valueSetter);
+        test("void", ColumnarSchema.of(VOID), valueSetter);
     }
 
     /**
@@ -230,7 +245,7 @@ public class JavaToPythonTypeTest {
             ((IntWriteData)data.getWriteDataAt(0)).setInt(r, r + b);
             ((StringWriteData)data.getWriteDataAt(1)).setString(r, "Row: " + r + ", Batch: " + b);
         };
-        test("struct", new StructDataSpec(DataSpec.intSpec(), DataSpec.stringSpec()), valueSetter);
+        test("struct", ColumnarSchema.of(STRUCT(INT, STRING)), valueSetter);
     }
 
     /**
@@ -240,9 +255,7 @@ public class JavaToPythonTypeTest {
      */
     @Test
     public void testComplexStructList() throws Exception {
-        test("structcomplex",
-            new StructDataSpec(new ListDataSpec(new StructDataSpec(DataSpec.intSpec(), DataSpec.stringSpec())),
-                DataSpec.intSpec()),
+        test("structcomplex", ColumnarSchema.of(STRUCT(LIST(STRUCT(INT, STRING)), INT)),
             JavaToPythonTypeTest::setComplexStructList);
     }
 
@@ -277,7 +290,7 @@ public class JavaToPythonTypeTest {
                 intData.setInt(i, r + b + i);
             }
         };
-        test("list", new ListDataSpec(DataSpec.intSpec()), valueSetter);
+        test("list", ColumnarSchema.of(LIST(INT)), valueSetter);
     }
 
     /**
@@ -289,7 +302,7 @@ public class JavaToPythonTypeTest {
     public void testString() throws Exception {
         final ValueSetter<StringWriteData> valueSetter =
             (data, b, r) -> data.setString(r, "Row: " + r + ", Batch: " + b);
-        test("string", DataSpec.stringSpec(), valueSetter);
+        test("string", ColumnarSchema.of(STRING), valueSetter);
     }
 
     /**
@@ -301,7 +314,7 @@ public class JavaToPythonTypeTest {
     public void testDuration() throws Exception {
         final ValueSetter<DurationWriteData> valueSetter =
             (data, b, r) -> data.setDuration(r, Duration.ofSeconds(r, b));
-        test("duration", DataSpec.durationSpec(), valueSetter);
+        test("duration", ColumnarSchema.of(DURATION), valueSetter);
     }
 
     /**
@@ -313,7 +326,7 @@ public class JavaToPythonTypeTest {
     public void testLocalDate() throws Exception {
         final ValueSetter<LocalDateWriteData> valueSetter =
             (data, b, r) -> data.setLocalDate(r, LocalDate.ofEpochDay(r + b * 100L));
-        test("localdate", DataSpec.localDateSpec(), valueSetter);
+        test("localdate", ColumnarSchema.of(LOCALDATE), valueSetter);
     }
 
     /**
@@ -325,7 +338,7 @@ public class JavaToPythonTypeTest {
     public void testLocalDateTime() throws Exception {
         final ValueSetter<LocalDateTimeWriteData> valueSetter = (data, b, r) -> data.setLocalDateTime(r,
             LocalDateTime.of(LocalDate.ofEpochDay(r + b * 100L), LocalTime.ofNanoOfDay(r * 500L + b)));
-        test("localdatetime", DataSpec.localDateTimeSpec(), valueSetter);
+        test("localdatetime", ColumnarSchema.of(LOCALDATETIME), valueSetter);
     }
 
     /**
@@ -337,7 +350,7 @@ public class JavaToPythonTypeTest {
     public void testLocalTime() throws Exception {
         final ValueSetter<LocalTimeWriteData> valueSetter =
             (data, b, r) -> data.setLocalTime(r, LocalTime.ofNanoOfDay(r * 500L + b));
-        test("localtime", DataSpec.localTimeSpec(), valueSetter);
+        test("localtime", ColumnarSchema.of(LOCALTIME), valueSetter);
     }
 
     /**
@@ -349,7 +362,7 @@ public class JavaToPythonTypeTest {
     public void testPeriod() throws Exception {
         final ValueSetter<PeriodWriteData> valueSetter =
             (data, b, r) -> data.setPeriod(r, Period.of(r, b % 12, (r + b) % 28));
-        test("period", DataSpec.periodSpec(), valueSetter);
+        test("period", ColumnarSchema.of(PERIOD), valueSetter);
     }
 
     /**
@@ -372,13 +385,12 @@ public class JavaToPythonTypeTest {
             );
             data.setZonedDateTime(r, ZonedDateTime.of(localDateTime, zoneId));
         };
-        test("zoneddatetime", DataSpec.zonedDateTimeSpec(), valueSetter);
+        test("zoneddatetime", ColumnarSchema.of(ZONEDDATETIME), valueSetter);
     }
 
     /** Test sending data to Python for the given type using the values from the valueSetter */
-    private <T extends NullableWriteData> void test(final String type, final DataSpec spec,
+    private <T extends NullableWriteData> void test(final String type, final ColumnarSchema schema,
         final ValueSetter<T> valueSetter) throws IOException {
-        final var schema = new DefaultColumnarSchema(spec);
         final var writePath = TestUtils.createTmpKNIMEArrowPath();
         final var readPath = TestUtils.createTmpKNIMEArrowPath();
 

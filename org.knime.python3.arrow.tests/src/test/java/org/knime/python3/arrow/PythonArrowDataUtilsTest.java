@@ -50,6 +50,13 @@ package org.knime.python3.arrow;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LIST;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.core.table.schema.DataSpecs.STRUCT;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,10 +80,6 @@ import org.knime.core.columnar.batch.WriteBatch;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.StructDataSpec;
 
 /**
  * Test different special cases for transferring Arrow data between Java and Python.
@@ -119,40 +122,24 @@ public class PythonArrowDataUtilsTest {
             entryPoint.testExpectedSchema(dataSink);
 
             // Expected schema - should work
-            final var trueSchema = new DefaultColumnarSchema(//
-                DataSpec.intSpec(), //
-                DataSpec.stringSpec(), //
-                new StructDataSpec( //
-                    new ListDataSpec(DataSpec.intSpec()), //
-                    DataSpec.doubleSpec()) //
-            );
+            final var trueSchema = ColumnarSchema.of(INT, STRING, STRUCT(LIST(INT), DOUBLE));
+
             try (var r = PythonArrowDataUtils.createReadable(dataSink, trueSchema, m_storeFactory)) {
             }
 
             // Schema too short - should fail
-            final var falseSchema1 = new DefaultColumnarSchema(DataSpec.intSpec(), DataSpec.stringSpec());
+            final var falseSchema1 = ColumnarSchema.of(INT, STRING);
             assertThrows(IllegalStateException.class,
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema1, m_storeFactory));
 
             // Schema wrong - should fail
-            final var falseSchema2 = new DefaultColumnarSchema(//
-                DataSpec.longSpec(), //
-                DataSpec.stringSpec(), //
-                new StructDataSpec( //
-                    new ListDataSpec(DataSpec.intSpec()), //
-                    DataSpec.doubleSpec()) //
-            );
+            final var falseSchema2 = ColumnarSchema.of(LONG, STRING, STRUCT(LIST(INT), DOUBLE));
+
             assertThrows(IllegalStateException.class,
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema2, m_storeFactory));
 
             // Schema wrong - should fail
-            final var falseSchema3 = new DefaultColumnarSchema(//
-                DataSpec.intSpec(), //
-                DataSpec.stringSpec(), //
-                new StructDataSpec( //
-                    new ListDataSpec(DataSpec.intSpec()), //
-                    DataSpec.byteSpec()) //
-            );
+            final var falseSchema3 = ColumnarSchema.of(INT, STRING, STRUCT(LIST(INT), BYTE));
             assertThrows(IllegalStateException.class,
                 () -> PythonArrowDataUtils.createReadable(dataSink, falseSchema3, m_storeFactory));
         }
@@ -212,7 +199,7 @@ public class PythonArrowDataUtilsTest {
     }
 
     private ArrowBatchStore createWriteStore() throws IOException {
-        final var schema = new DefaultColumnarSchema(DataSpec.intSpec());
+        final var schema = ColumnarSchema.of(INT);
         final var path = TestUtils.createTmpKNIMEArrowPath();
         return m_storeFactory.createStore(schema, path);
     }
