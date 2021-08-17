@@ -49,11 +49,18 @@
 package org.knime.python3.arrow;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.ListDataSpec;
+import org.knime.core.table.schema.StructDataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.DefaultDataTraits;
+import org.knime.core.table.schema.traits.DefaultListDataTraits;
+import org.knime.core.table.schema.traits.DefaultStructDataTraits;
 
 // TODO(extensiontypes) This should be replaced with something that works on virtual types/extension types
 @SuppressWarnings("javadoc")
@@ -61,22 +68,43 @@ public class PythonColumnarSchemaBuilder {
 
     private final List<DataSpec> m_specs;
 
+    private final List<DataTraits> m_traits;
+
     private boolean m_built;
 
     public PythonColumnarSchemaBuilder() {
         m_specs = new ArrayList<>();
+        m_traits = new ArrayList<>();
         m_built = false;
     }
 
-    public void addColumn(final DataSpec spec) {
+    private static DataTraits emptyTraitsForSpec(final DataSpec spec) {
+        if (spec instanceof ListDataSpec) {
+            return new DefaultListDataTraits(emptyTraitsForSpec(((ListDataSpec)spec).getInner()));
+        } else if (spec instanceof StructDataSpec) {
+            return new DefaultStructDataTraits(
+                Arrays.stream(((StructDataSpec)spec)
+                    .getInner()).map(PythonColumnarSchemaBuilder::emptyTraitsForSpec)
+                    .toArray(DataTraits[]::new));
+        }
+
+        return DefaultDataTraits.EMPTY;
+    }
+
+    public void addColumn(final DataSpec spec, final DataTraits traits) {
         if (m_built) {
             throw new IllegalStateException("Cannot add columns after the Schema has been build.");
         }
         m_specs.add(spec);
+        m_traits.add(traits);
+    }
+
+    public void addColumn(final DataSpec spec) {
+        addColumn(spec, emptyTraitsForSpec(spec));
     }
 
     public ColumnarSchema build() {
         m_built = true;
-        return new DefaultColumnarSchema(m_specs.toArray(new DataSpec[0]));
+        return new DefaultColumnarSchema(m_specs.toArray(DataSpec[]::new), m_traits.toArray(DataTraits[]::new));
     }
 }
