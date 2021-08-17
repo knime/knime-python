@@ -76,14 +76,12 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
@@ -371,17 +369,14 @@ public class JavaToPythonTypeTest {
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testZonedDateTime() throws Exception {
-        // TODO(dictionary) MAKE THIS TEST WORK
-        // Fails with "pyarrow.lib.ArrowInvalid: Unsupported dictionary replacement or dictionary delta in IPC file"
-        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
+        final List<String> availableZoneIds = List.of("Etc/Universal", "Asia/Hong_Kong", "America/Los_Angeles");
 
         final ValueSetter<ZonedDateTimeWriteData> valueSetter = (data, b, r) -> {
-            final ZoneId zoneId = ZoneId.of(availableZoneIds.get(b % 3));
-            final LocalDateTime localDateTime = LocalDateTime.of( //
+            final var zoneId = ZoneId.of(availableZoneIds.get(r % 3));
+            final var localDateTime = LocalDateTime.of( //
                 LocalDate.ofEpochDay(r + b * 100L), //
-                LocalTime.ofNanoOfDay(r * 500L + b) //
+                LocalTime.ofNanoOfDay(r * 1000L) //
             );
             data.setZonedDateTime(r, ZonedDateTime.of(localDateTime, zoneId));
         };

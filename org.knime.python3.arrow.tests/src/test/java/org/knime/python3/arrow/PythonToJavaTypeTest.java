@@ -380,7 +380,6 @@ public class PythonToJavaTypeTest {
     @Test
     @Ignore
     public void testZonedDateTime() throws Exception {
-        // TODO(dictionary) implement this test
         // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
         final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
 

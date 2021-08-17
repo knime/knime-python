@@ -114,6 +114,15 @@ def structcomplex_test_value(r, b):
     return {"0": [{"0": a, "1": b} for a, b in zip(int_list, string_list)], "1": r + b}
 
 
+def zoneddatetime_test_value(r, b):
+    zone_ids = ["Etc/Universal", "Asia/Hong_Kong", "America/Los_Angeles"]
+    return {
+        "epochDay": r + b * 100,
+        "nanoOfDay": datetime.time(microsecond=r),
+        "zoneId": zone_ids[r % 3],
+    }
+
+
 TEST_VALUES = {
     "boolean": lambda r, b: (r + b) % 5 == 0,
     "byte": lambda r, b: (r + b) % 256 - 128,
@@ -132,7 +141,7 @@ TEST_VALUES = {
     "localdatetime": lambda r, b: {"epochDay": r + b * 100, "nanoOfDay": r * 500 + b},
     "localtime": lambda r, b: r * 500 + b,
     "period": lambda r, b: {"years": r, "months": b % 12, "days": (r + b) % 28},
-    "zoneddatetime": lambda r, b: None,
+    "zoneddatetime": zoneddatetime_test_value,
 }
 
 TEST_ARRAY_TYPES = {
@@ -207,7 +216,14 @@ TEST_VALUE_TYPES = {
             pa.field("days", type=pa.int32()),
         ]
     ),
-    "zoneddatetime": None,
+    "zoneddatetime": pa.struct(
+        [
+            pa.field("epochDay", type=pa.int64()),
+            pa.field("nanoOfDay", type=pa.time64("ns")),
+            pa.field("zoneOffset", type=pa.int32()),
+            pa.field("zoneId", type=pa.string()),
+        ]
+    ),
 }
 
 
@@ -241,7 +257,17 @@ class EntryPoint(kg.EntryPoint):
             elif data_type in ["localdatetime", "localtime"]:
                 # We do not compare python values but arrow values for them
                 pa_expected = pa.scalar(expected, type=TEST_VALUE_TYPES[data_type])
-                assert v == pa_expected, wrong_value_message(r, b, expected, v)
+                assert v == pa_expected, wrong_value_message(r, b, pa_expected, v)
+
+            elif data_type == "zoneddatetime":
+                # We do not compare the zoneOffset
+                pyv = v.as_py()
+                expected_nano = pa.scalar(expected["nanoOfDay"], type=pa.time64("ns"))
+                assert (
+                    pyv["epochDay"] == expected["epochDay"]
+                    and v["nanoOfDay"] == expected_nano
+                    and pyv["zoneId"] == expected["zoneId"]
+                ), wrong_value_message(r, b, expected, pyv)
 
             else:
                 # Default: Compare the python values
