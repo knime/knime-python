@@ -260,15 +260,21 @@ class CondaExecutionMonitor {
         // Do nothing by default.
     }
 
-    private static int awaitTermination(final Process conda, final CondaExecutionMonitor monitor)
+    private int awaitTermination(final Process conda, final CondaExecutionMonitor monitor)
         throws IOException, PythonCanceledExecutionException {
         try {
             return PythonUtils.Misc.executeCancelable(conda::waitFor, KNIMEConstants.GLOBAL_THREAD_POOL::enqueue,
                 new PythonCancelableFromCondaExecutionMonitor(monitor));
         } catch (final PythonCanceledExecutionException ex) {
-            conda.destroy();
+            handleCanceledExecution(conda);
             throw ex;
         }
+    }
+
+    protected void handleCanceledExecution(final Process conda) {
+        // Destroy the process by default
+        // NOTE: On Windows subprocesses will not be killed
+        conda.destroy();
     }
 
     private String createErrorMessage(final int condaExitCode) {
