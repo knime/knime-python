@@ -482,19 +482,51 @@ final class CondaEnvironmentPropagationNodeModel extends NodeModel {
 
     private static void deleteEnvironmentAndRecoverBackup(final Conda conda, final String environmentName,
         final EnvironmentBackup envBackup) {
-        try {
-            conda.deleteEnvironment(environmentName);
-        }
+        // Clear the interrupted state and remember
+        final boolean interrupted = Thread.interrupted();
+
         // Sonar: This method will only be called if the node fails or is canceled. We do not want any exceptions thrown
         // here to override the original cause of why the environment creation was terminated. So only log them and let
         // the node report the original cause to the runtime.
-        catch (final Exception ex) { // NOSONAR
-            LOGGER.warn("Could not delete the incomplete environment.", ex);
+
+        // Try the correct way: call conda env remove -n <env_name>
+        try {
+            conda.deleteEnvironment(environmentName);
+        } catch (final Exception ex) { // NOSONAR See above.
+            LOGGER.warn("Could not delete the incomplete environment using 'conda env remove -n <env_name>'. "
+                + "The environment will still be deleted by deleting the directory.", ex);
         }
+
+        // Try deleting the directory of the environment (on Windows it still exists after conda env remove)
+        try {
+            // Note: Using the first value of the envs_dirs list is correct:
+            //
+            // $ conda config --describe envs_dirs                                                                                                                                                                                               (bug/AP-16688-conda-cleanup-after-cancel-on-windows *$)
+            // # # envs_dirs (sequence: primitive)
+            // # #   aliases: envs_path
+            // # #   env var string delimiter: ':'
+            // # #   The list of directories to search for named environments. When
+            // # #   creating a new named environment, the environment will be placed in
+            // # #   the first writable location.
+            // # #
+            // # envs_dirs: []
+
+            final var envPath = Path.of(conda.getEnvsDirs().get(0), environmentName);
+            PathUtils.deleteDirectoryIfExists(envPath);
+        } catch (final Exception ex) { // NOSONAR See above.
+            LOGGER.warn("Deleting the environment directory failed.", ex);
+        }
+
+        // Try to recover the backup
         try {
             envBackup.recover();
         } catch (final Exception ex) { // NOSONAR See above.
             LOGGER.warn("Could not recover the original environment.", ex);
+        }
+
+        // Re-interrupt the thread if it was interrupted
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
