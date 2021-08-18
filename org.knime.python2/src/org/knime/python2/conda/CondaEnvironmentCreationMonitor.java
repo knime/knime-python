@@ -48,6 +48,11 @@
  */
 package org.knime.python2.conda;
 
+import java.io.IOException;
+
+import org.apache.commons.lang.SystemUtils;
+import org.knime.core.node.NodeLogger;
+
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -56,6 +61,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  * downloads, at the moment.
  */
 public abstract class CondaEnvironmentCreationMonitor extends CondaExecutionMonitor {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CondaEnvironmentCreationMonitor.class);
 
     @Override
     void handleCustomJsonOutput(final TreeNode json) {
@@ -80,4 +87,29 @@ public abstract class CondaEnvironmentCreationMonitor extends CondaExecutionMoni
      */
     protected abstract void handlePackageDownloadProgress(String currentPackage, boolean packageFinished,
         double progress);
+
+    @Override
+    protected void handleCanceledExecution(final Process conda) {
+        try {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                boolean interrupted = Thread.interrupted();
+                final long pid = conda.pid();
+                try {
+                    // Call `taskkill /F /T /PID <pid>` to kill the process and all its children
+                    new ProcessBuilder("taskkill", "/F", "/T", "/PID", "" + pid).start().waitFor();
+                } catch (final InterruptedException ex) { // NOSONAR: Re-interrupted later
+                    LOGGER.warn("Killing the conda process was interrupted.", ex);
+                    interrupted = true;
+                } catch (final IOException ex) {
+                    LOGGER.warn("Killing the conda process failed.", ex);
+                }
+                // Re-interrupt the thread
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } finally {
+            super.handleCanceledExecution(conda);
+        }
+    }
 }
