@@ -626,8 +626,8 @@ public final class Conda {
     }
 
     /**
-     * {@code conda env create --file <file generated from arguments> --name <environmentName> --force}
-     * Overwrites environment {@code <environmentName>} if it already exists.
+     * {@code conda env create --file <file generated from arguments> --name <environmentName> --force} Overwrites
+     * environment {@code <environmentName>} if it already exists.
      *
      * @param environmentName The name of the environment to create. If an environment with the given name already
      *            exists in this Conda installation, it will be overwritten.
@@ -704,6 +704,27 @@ public final class Conda {
                 return false;
             }
         }, "env", "remove", "-n", environmentName);
+    }
+
+    /**
+     * Get the directories in which environments are located. E.g. {@code conda config --show envs_dirs}. The first
+     * directory is used when {@code conda create} is called with an environment name.
+     *
+     * @return the list of directories in which conda environments are located
+     * @throws IOException if running the command failed.
+     */
+    public List<String> getEnvsDirs() throws IOException {
+        final List<String> envsDirs = new ArrayList<>();
+        callCondaAndAwaitTermination(new CondaExecutionMonitor() {
+            @Override
+            void handleCustomJsonOutput(final TreeNode json) {
+                final var envsDirsJson = (ArrayNode)json.get("envs_dirs");
+                for (var i = 0; i < envsDirsJson.size(); i++) {
+                    envsDirs.add(envsDirsJson.get(i).textValue());
+                }
+            }
+        }, "config", "--show", "envs_dirs", JSON);
+        return envsDirs;
     }
 
     /**
