@@ -162,16 +162,16 @@ def bytes_into_table(table, data_bytes):
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
                         if str(data_frame[names[i]][index]) != 'nan':
-                            data_frame.set_value(index, names[i], eval(data_frame[names[i]][index]))
+                            data_frame.at[index, names[i]] = eval(data_frame[names[i]][index])
                         else:
-                            data_frame.set_value(index, names[i], None)
+                            data_frame.at[index, names[i]] = None
                 if col_type_id == _types_.BYTES:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
                         if str(data_frame[names[i]][index]) != 'nan':
-                            data_frame.set_value(index, names[i], base64.b64decode(data_frame[names[i]][index]))
+                            data_frame.at[index, names[i]] = base64.b64decode(data_frame[names[i]][index])
                         else:
-                            data_frame.set_value(index, names[i], None)
+                            data_frame.at[index, names[i]] = None
                 elif col_type_id == _types_.BYTES_LIST:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
@@ -184,7 +184,7 @@ def bytes_into_table(table, data_bytes):
                                     bytes_list.append(base64.b64decode(bytes_value))
                                 else:
                                     bytes_list.append(None)
-                            data_frame.set_value(index, names[i], bytes_list)
+                            data_frame.at[index, names[i]] = bytes_list
                 elif col_type_id == _types_.BYTES_SET:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
@@ -196,7 +196,7 @@ def bytes_into_table(table, data_bytes):
                                     bytes_set.add(base64.b64decode(value))
                                 else:
                                     bytes_set.add(None)
-                            data_frame.set_value(index, names[i], bytes_set)
+                            data_frame.at[index, names[i]] = bytes_set
                 elif col_type_id == _types_.DOUBLE:
                     data_frame.iloc[:, i] = data_frame.iloc[:, i].astype('float', copy=False)
                 # Check if column contains only missing values. If so make sure dtype is object.
@@ -248,7 +248,7 @@ def table_to_bytes(table):
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
                         if data_frame[names[i]][index] is not None:
-                            data_frame.set_value(index, names[i], base64.b64encode(data_frame[names[i]][index]))
+                            data_frame.at[index, names[i]] = base64.b64encode(data_frame[names[i]][index])
                 elif col_type_id == _types_.BYTES_LIST:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
@@ -261,7 +261,7 @@ def table_to_bytes(table):
                                     base64_list.append(base64.b64encode(bytes_value))
                                 else:
                                     base64_list.append(None)
-                            data_frame.set_value(index, names[i], base64_list)
+                            data_frame.at[index, names[i]] = base64_list
                 elif col_type_id == _types_.BYTES_SET:
                     for j in range(len(data_frame)):
                         index = data_frame.index[j]
@@ -273,7 +273,7 @@ def table_to_bytes(table):
                                     base64_set.add(base64.b64encode(value))
                                 else:
                                     base64_set.add(None)
-                            data_frame.set_value(index, names[i], base64_set)
+                            data_frame.at[index, names[i]] = base64_set
             data_frame.to_csv(out_buffer, na_rep='MissingCell', float_format="%.17g")
             out_file.write(out_buffer.getvalue().encode('utf-8'))
         return bytearray(path, 'utf-8')
