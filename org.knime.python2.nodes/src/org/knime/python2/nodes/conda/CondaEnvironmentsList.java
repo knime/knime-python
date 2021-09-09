@@ -146,6 +146,10 @@ final class CondaEnvironmentsList {
         });
     }
 
+    public SettingsModelString getEnvironmentNameModel() {
+        return m_environmentNameModel;
+    }
+
     public JComponent getComponent() {
         return m_panel;
     }
@@ -225,6 +229,10 @@ final class CondaEnvironmentsList {
             });
             NodeLogger.getLogger(CondaEnvironmentPropagationNodeDialog.class).error(ex.getMessage(), ex);
         }
+    }
+
+    public boolean doesConfiguredEnvironmentExist() {
+        return m_configuredNonExistingEnvironmentName == null;
     }
 
     public void saveSettingsTo(final NodeSettingsWO settings) {

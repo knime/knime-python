@@ -85,7 +85,6 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.util.Pair;
 import org.knime.core.util.Version;
 import org.knime.python2.conda.Conda;
@@ -114,7 +113,7 @@ final class CondaPackagesTable {
 
     private final CondaPackagesConfig m_config;
 
-    private final SettingsModelString m_environmentNameModel;
+    private final CondaEnvironmentsList m_environmentsList;
 
     private final JPanel m_panel = new JPanel(new CardLayout());
 
@@ -150,11 +149,13 @@ final class CondaPackagesTable {
 
     private Conda m_conda;
 
+    private boolean m_condaPackageNamesFromHistoryIsAvailable;
+
     private volatile boolean m_allowsRefresh = false;
 
-    public CondaPackagesTable(final CondaPackagesConfig config, final SettingsModelString environmentNameModel) {
+    public CondaPackagesTable(final CondaPackagesConfig config, final CondaEnvironmentsList environmentsList) {
         m_config = config;
-        m_environmentNameModel = environmentNameModel;
+        m_environmentsList = environmentsList;
 
         m_panel.add(new JPanel(), UNINITIALIZED);
         m_panel.add(m_refreshingLabel, REFRESHING);
@@ -282,7 +283,7 @@ final class CondaPackagesTable {
         List<CondaPackageSpec> removed = new ArrayList<>();
         List<CondaPackageSpec> unconfigured = new ArrayList<>();
         try {
-            final String environmentName = m_environmentNameModel.getStringValue();
+            final String environmentName = m_environmentsList.getEnvironmentNameModel().getStringValue();
             final List<CondaPackageSpec> packages = m_conda.getPackages(environmentName);
             if (isInitialRefresh) {
                 categorizePackages(packages, m_config, included, excluded, removed, unconfigured);
@@ -305,9 +306,13 @@ final class CondaPackagesTable {
         }
         setPackages(included, excluded, removed, unconfigured);
         if (isInitialRefresh) {
-            m_includeExplicit.setEnabled(m_conda.isPackageNamesFromHistoryAvailable());
+            m_condaPackageNamesFromHistoryIsAvailable = m_conda.isPackageNamesFromHistoryAvailable();
         }
-        invokeOnEDT(() -> setState(POPULATED));
+        invokeOnEDT(() -> {
+            m_includeExplicit.setEnabled(
+                m_condaPackageNamesFromHistoryIsAvailable && m_environmentsList.doesConfiguredEnvironmentExist());
+            setState(POPULATED);
+        });
     }
 
     private static void categorizePackages(final List<CondaPackageSpec> packages, final CondaPackagesConfig config,
@@ -371,8 +376,8 @@ final class CondaPackagesTable {
         final Window dialog = SwingUtilities.getWindowAncestor(m_panel);
         dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try {
-            final Set<String> explicitPackages =
-                new HashSet<>(m_conda.getPackageNamesFromHistory(m_environmentNameModel.getStringValue()));
+            final Set<String> explicitPackages = new HashSet<>(
+                m_conda.getPackageNamesFromHistory(m_environmentsList.getEnvironmentNameModel().getStringValue()));
             m_model.setIncludedPackages(explicitPackages);
         } catch (final IOException ex) {
             setToErrorView(ex);
