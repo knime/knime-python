@@ -91,13 +91,11 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
 
     private final JPanel m_panel = new JPanel(new CardLayout());
 
-    private final SettingsModelString m_environmentNameModel =
-        CondaEnvironmentPropagationNodeModel.createCondaEnvironmentNameModel();
-
-    private final CondaEnvironmentsList m_environmentsList = new CondaEnvironmentsList(m_environmentNameModel);
+    private final CondaEnvironmentsList m_environmentsList =
+        new CondaEnvironmentsList(CondaEnvironmentPropagationNodeModel.createCondaEnvironmentNameModel());
 
     private final CondaPackagesTable m_packagesTable =
-        new CondaPackagesTable(CondaEnvironmentPropagationNodeModel.createPackagesConfig(), m_environmentNameModel);
+        new CondaPackagesTable(CondaEnvironmentPropagationNodeModel.createPackagesConfig(), m_environmentsList);
 
     private final DialogComponentButtonGroup m_validationMethodSelection = new DialogComponentButtonGroup(
         CondaEnvironmentPropagationNodeModel.createEnvironmentValidationMethodModel(), "Environment validation", true,
@@ -167,7 +165,7 @@ final class CondaEnvironmentPropagationNodeDialog extends NodeDialogPane {
 
         addTab("Options", m_panel, false);
 
-        m_environmentNameModel.addChangeListener(e -> refreshPackages());
+        m_environmentsList.getEnvironmentNameModel().addChangeListener(e -> refreshPackages());
     }
 
     private static Component createOutputVariableNameInputPanel(final DialogComponentString outputVariableNameInput) {
