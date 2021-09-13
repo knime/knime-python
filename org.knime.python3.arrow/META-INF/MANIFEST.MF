@@ -15,6 +15,9 @@ Require-Bundle: org.knime.python3;bundle-version="[4.4.0,5.0.0)",
  org.apache.commons.io;bundle-version="[2.6.0,3.0.0)",
  org.apache.arrow.format;bundle-version="[4.0.1,5.0.0)",
  org.apache.arrow.memory-core;bundle-version="[4.0.1,5.0.0)",
- org.apache.arrow.vector;bundle-version="[4.0.1,5.0.0)"
+ org.apache.arrow.vector;bundle-version="[4.0.1,5.0.0)",
+ org.eclipse.core.runtime;bundle-version="[3.20.100,4.0.0)",
+ org.knime.core;bundle-version="[4.5.0,5.0.0)"
 Export-Package: org.knime.python3.arrow
 Automatic-Module-Name: org.knime.python3.arrow
+Eclipse-ExtensibleAPI: true

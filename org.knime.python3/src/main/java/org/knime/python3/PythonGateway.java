@@ -49,20 +49,23 @@
 package org.knime.python3;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ConnectException;
-import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
 
 import py4j.ClientServer;
+import py4j.ClientServer.ClientServerBuilder;
+import py4j.GatewayServer;
 import py4j.Py4JException;
 
 /**
- * A gateway to a Python process. Starts a Python process when created and kills it when closed. Python functionallity
- * can be accessed via {@link #getEntryPoint()}.
+ * A gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
+ * {@link #close() closing} the instance. Python functionality can be accessed via a proxy {@link #getEntryPoint()}.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
@@ -89,38 +92,63 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
      */
     public PythonGateway(final PythonCommand command, final String launcherPath, final Class<T> entryPointClass,
         final Collection<PythonExtension> extensions, final PythonPath pythonPath) throws IOException {
-        // Find free ports to use
-        final int javaPort = findFreePort();
-        final int pythonPort = findFreePort();
+
+        // Setup Java server
+        m_clientServer = new ClientServerBuilder().javaPort(0).build();
+        final int javaPort = m_clientServer.getJavaServer().getListeningPort();
+        System.out.println("Java listening at: " + javaPort + ".");
+
+        //        GatewayServer.turnAllLoggingOn();
+        GatewayServer.turnLoggingOff();
 
         // Create the process
         final ProcessBuilder pb = command.createProcessBuilder();
-        pb.command().add("-u"); // TODO needed? Use unbuffered stdout, stderr
-        pb.command().add(launcherPath); // Path to the python script
-        pb.command().add("" + javaPort);
-        pb.command().add("" + pythonPort);
-        pb.inheritIO(); // TODO we should handle stdin and stdout manually
-
+        Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
+        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+        pb.redirectError(ProcessBuilder.Redirect.PIPE);
         // Set the PYTHONPATH variable to be able to import the Python modules
         pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
 
         // Start the Python process and connect to it
         m_process = pb.start();
-        m_clientServer = new ClientServer.ClientServerBuilder().javaPort(javaPort).pythonPort(pythonPort).build();
-        m_entryPoint = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
-        waitForConnection(m_entryPoint);
-
-        // Register extensions
-        m_entryPoint
-            .registerExtensions(extensions.stream().map(PythonExtension::getPythonModule).collect(Collectors.toList()));
+        // Start listening to stdout and stderror pipes.
+        try {
+            m_entryPoint = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
+            waitForConnection(m_entryPoint);
+            // Register extensions
+            m_entryPoint
+                .registerExtensions(extensions.stream().map(e -> e.getPythonModule()).collect(Collectors.toList()));
+        } catch (final Throwable th) {
+            // TODO: reenable non-blocking
+//            final BufferedReader reader = new BufferedReader(new InputStreamReader(m_process.getInputStream()));
+//            String message;
+//            try {
+//                while ((message = reader.readLine()) != null && !Thread.interrupted()) {
+//                    System.out.println(message);
+//                }
+//            } catch (final IOException ignore) {}
+//            final BufferedReader reader2 = new BufferedReader(new InputStreamReader(m_process.getErrorStream()));
+//            String message2;
+//            try {
+//                while ((message2 = reader2.readLine()) != null && !Thread.interrupted()) {
+//                    System.err.println(message2);
+//                }
+//            } catch (final IOException ignore) {}
+            try {
+                close();
+            } catch (final Exception ex) {
+                th.addSuppressed(ex);
+            }
+            throw th;
+        }
     }
 
-    /** @return a free port on the system */
-    private static int findFreePort() throws IOException {
-        // TODO is there a better way to find a free port?
-        try (final ServerSocket serverSocket = new ServerSocket(0)) {
-            return serverSocket.getLocalPort();
-        }
+    public InputStream getStandardOutputStream() {
+        return m_process.getInputStream();
+    }
+
+    public InputStream getStandardErrorStream() {
+        return m_process.getErrorStream();
     }
 
     /**
@@ -131,11 +159,16 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
     }
 
     @Override
-    public void close() {
+    public final void close() throws Exception {
         // Mostly copied from PythonKernel.
         // If the original process was a script, we have to kill the actual Python
-        // process by PID.
-        final int pid = m_entryPoint.getPid();
+        // process by PID (see below).
+        Integer pid = null;
+        try {
+            pid = m_entryPoint.getPid();
+        } catch (final Exception ex) { // NOSONAR: optional step, catch all types of exceptions and continue.
+            System.out.println(ex); // TODO: proper logging
+        }
 
         if (m_clientServer != null) {
             m_clientServer.shutdown();
@@ -144,28 +177,31 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
             m_clientServer = null;
         }
 
-        try {
-            ProcessBuilder pb;
-            if (SystemUtils.IS_OS_WINDOWS) {
-                pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + pid);
-            } else {
-                pb = new ProcessBuilder("kill", "-KILL", "" + pid);
-            }
-            final Process p = pb.start();
-            p.waitFor();
-        } catch (final InterruptedException ex) {
-            // Closing the kernel should not be interrupted.
-            Thread.currentThread().interrupt();
-        } catch (final Exception ignore) {
-            // Ignore.
-        }
         if (m_process != null) {
+            m_process.destroy();
             m_process.destroyForcibly();
-            // TODO: Further action required in case the process cannot be destroyed
-            // via Java. See PythonKernel#close()
+        }
+
+        if (pid != null) {
+            try {
+                ProcessBuilder pb;
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    pb = new ProcessBuilder("taskkill", "/F", "/PID", "" + pid);
+                } else {
+                    pb = new ProcessBuilder("kill", "-KILL", "" + pid);
+                }
+                final Process p = pb.start();
+                p.waitFor();
+            } catch (final InterruptedException ex) {
+                // Closing the kernel should not be interrupted.
+                Thread.currentThread().interrupt();
+            } catch (final Exception ignore) {
+                // Ignore.
+            }
         }
     }
 
+    // TODO: there must be a better way... Check if py4j sends us some kind of signal for which we can listen/block
     private static void waitForConnection(final PythonEntryPoint entryPoint) throws ConnectException {
         boolean connected = false;
         int numAttempts = 0;
@@ -176,8 +212,8 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
                 try {
                     final int pid = entryPoint.getPid(); // Fails if not yet connected.
                     final long time = Duration.ofNanos(System.nanoTime() - tic).toMillis();
-                    System.out.println("Connected to Python process with PID: " + pid + ", after attempts: "
-                        + numAttempts + ". Took ms: " + time + ".");
+                    System.out.println("Connected to Python process with PID: " + pid + ", after #attempts: " +
+                        numAttempts + ". Took ms: " + time + ".");
                     connected = true;
                 } catch (final Py4JException ex) {
                     if (!(ex.getCause() instanceof ConnectException)) {

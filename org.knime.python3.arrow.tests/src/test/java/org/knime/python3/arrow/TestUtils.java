@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -108,14 +109,31 @@ public final class TestUtils {
      */
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException {
         final PythonCommand command = getPythonCommand();
-        final String launcherPath = Paths.get(System.getProperty("user.dir"), "py", "tests_launcher.py").toString();
+        final String launcherPath =
+            Paths.get(System.getProperty("user.dir"), "src/test/python", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //
-            .add(PythonModuleKnimeGateway.getPythonModule()) //
-            .add(PythonModuleKnimeArrow.getPythonModule()) //
+            .add(removeLeadingSlashOnWindows(PythonModuleKnimeGateway.getPythonModule())) //
+            .add(removeLeadingSlashOnWindows(PythonModuleKnimeArrow.getPythonModule())) //
             .build();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
 
         return new PythonGateway<>(command, launcherPath, ArrowTestsEntryPoint.class, extensions, pythonPath);
+    }
+
+    /**
+     * This function removes the leading '/' of a path extracted from a URL if the operating system is Windows.
+     * Paths extracted from a URL typically start with a '/' which on Windows leads to paths like '/C:/...".
+     * 
+     * @param path extracted from a URL
+     * @return a path with the leading slash removed
+     */
+    public static String removeLeadingSlashOnWindows(final String path) {
+        if (SystemUtils.IS_OS_WINDOWS && path.startsWith("/")) {
+            String withoutLeadingSlash = path.substring(1);
+            return withoutLeadingSlash.replace("%20", " ");
+        } else {
+            return path;
+        }
     }
 
     /**

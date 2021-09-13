@@ -83,13 +83,16 @@ def factory_version_for(arrow_type: pa.DataType):
 
 def convert_schema(schema: pa.Schema):
     # TODO we would like to use a schema with the virtual types not the physical types
-    schema_builder = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder()
+    constructor = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder
+    print(constructor)
+    schema_builder = constructor()
     for t in schema.types:
         schema_builder.addColumn(convert_type(t))
     return schema_builder.build()
 
 
 def convert_type(arrow_type: pa.DataType):
+
     # Struct
     if isinstance(arrow_type, pa.StructType):
         dataspec_class = gateway().jvm.org.knime.core.table.schema.DataSpec
@@ -230,7 +233,7 @@ class ArrowDataSink:
     def write(self, b: pa.RecordBatch):
         if not hasattr(self, "_writer"):
             # Init the writer if this is the first batch
-            # Also use the offset retuned by the init method because the file position
+            # Also use the offset returned by the init method because the file position
             # is not updated yet
             offset = self._init_writer(schema_with_knime_metadata(b.schema, len(b)))
         else:

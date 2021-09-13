@@ -101,19 +101,20 @@ def connect_to_knime(entry_point: EntryPoint):
     Args:
         entry_point: A class implementing methods that can be called from Java.
     """
-    # The first two program arguments are always the ports
     java_port = int(sys.argv[1])
-    python_port = int(sys.argv[2])
+    java_params = JavaParameters(port=java_port, auto_convert=True)
+    python_params = PythonParameters(port=0, propagate_java_exceptions=True)  # Dynamically determine port.
 
     # Create the client server
     global client_server
-    client_server = ClientServer(
-        java_parameters=JavaParameters(port=java_port),
-        python_parameters=PythonParameters(
-            port=python_port, propagate_java_exceptions=True
-        ),
-        python_server_entry_point=entry_point,
-    )
+    client_server = ClientServer(java_parameters=java_params,
+                                 python_parameters=python_params,
+                                 python_server_entry_point=entry_point)
+    # Let Java reconnect to the dynamically determined Python port. This is necessary to be able to have several py4j
+    # connections established (i.e. several Python nodes running) at the same time.
+    python_address = client_server.java_gateway_server.getCallbackClient().getAddress()  # Has not changed.
+    python_port = client_server.get_callback_server().get_listening_port()  # Has changed.
+    client_server.java_gateway_server.resetCallbackClient(python_address, python_port)
 
 
 def data_source(identifier: str):

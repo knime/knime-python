@@ -385,7 +385,7 @@ public class JavaToPythonTypeTest {
 
     /** Test sending data to Python for the given type using the values from the valueSetter */
     private <T extends NullableWriteData> void test(final String type, final ColumnarSchema schema,
-        final ValueSetter<T> valueSetter) throws IOException {
+        final ValueSetter<T> valueSetter) throws Exception {
         final var writePath = TestUtils.createTmpKNIMEArrowPath();
         final var readPath = TestUtils.createTmpKNIMEArrowPath();
 

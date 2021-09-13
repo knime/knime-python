@@ -48,7 +48,16 @@
  */
 package org.knime.python3;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
+
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.Path;
+import org.knime.core.util.FileUtil;
 import org.knime.python3.PythonPath.PythonPathBuilder;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * TODO(review) the Module handling could also be done differently. Having a PythonModule interface and singleton
@@ -91,6 +100,36 @@ public final class PythonModuleKnimeGateway {
      * @return the path to the "py_modules" resource
      */
     public static String getPythonModuleFor(final Class<?> clazz) {
-        return clazz.getResource("py_modules").getPath();
+        return getPythonModuleFor(clazz, "src/main/python");
     }
+
+    /**
+     * Get the absolute path to the resource named "py_modules" for the given class. This path can be added to the
+     * {@link PythonPath} to make the modules at this location available to a Python script.
+     *
+     * @param clazz the class from which the resource should be loaded
+     * @return the path to the "py_modules" resource
+     */
+    public static String getPythonModuleFor(final Class<?> clazz, final String pathToModuleFolder) {
+        try {
+            final URL resourceURL = getResourceURL(clazz, pathToModuleFolder);
+            return FileUtil.resolveToPath(resourceURL).toString();
+        } catch (URISyntaxException | IOException ex) {
+            throw new IllegalStateException("Failed to find python module for class " + clazz, ex);
+        }
+    }
+
+    private static URL getResourceURL(final Class<?> clazz, final String resourceName) throws IOException {
+        final var bundle = FrameworkUtil.getBundle(clazz);
+        if (bundle == null) {
+            // not OSGI -> use class loader to get the resource
+            // FIXME: the returned URL is probably not helpful if we're inside a JAR. We need to configure Maven to keep
+            // the Python code outside the JAR.
+            return clazz.getResource(Paths.get(resourceName).isAbsolute() ? resourceName : ("/" + resourceName));
+        } else {
+            // OSGI -> use the bundle to get the resource
+            return FileLocator.toFileURL(FileLocator.find(bundle, new Path(resourceName), null));
+        }
+    }
+
 }
