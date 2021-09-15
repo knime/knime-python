@@ -50,6 +50,7 @@ package org.knime.python3.arrow;
 
 import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
 import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DICT_ENCODING;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.DURATION;
 import static org.knime.core.table.schema.DataSpecs.FLOAT;
@@ -76,6 +77,7 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.arrow.memory.BufferAllocator;
@@ -106,6 +108,8 @@ import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
 import org.knime.core.columnar.data.VoidData.VoidWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
+import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedStringWriteData;
+import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedVarBinaryWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -381,6 +385,51 @@ public class JavaToPythonTypeTest {
             data.setZonedDateTime(r, ZonedDateTime.of(localDateTime, zoneId));
         };
         test("zoneddatetime", ColumnarSchema.of(ZONEDDATETIME), valueSetter);
+    }
+
+    /**
+     * Test transfer of a dictionary encoded string column to Python.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testDictEncodedString() throws Exception {
+        final List<String> dict = List.of("foo", "bar", "car", "aaa");
+
+        final ValueSetter<DictEncodedStringWriteData> valueSetter = (data, b, r) -> {
+            if (b == 0) {
+                data.setString(r, dict.get(r % (dict.size() - 1)));
+            } else {
+                data.setString(r, dict.get(r % dict.size()));
+            }
+        };
+        test("dictstring", ColumnarSchema.of(STRING(DICT_ENCODING)), valueSetter);
+    }
+
+    /**
+     * Test transfer of a dictionary encoded varbinary column to Python.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testDictEncodedVarBinary() throws Exception {
+        final List<byte[]> dict = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            final byte[] v = new byte[i + 1];
+            for (int j = 0; j < v.length; j++) {
+                v[j] = (byte)((j + 50) % 128);
+            }
+            dict.add(v);
+        }
+
+        final ValueSetter<DictEncodedVarBinaryWriteData> valueSetter = (data, b, r) -> {
+            if (b == 0) {
+                data.setBytes(r, dict.get(r % (dict.size() - 1)));
+            } else {
+                data.setBytes(r, dict.get(r % dict.size()));
+            }
+        };
+        test("dictvarbinary", ColumnarSchema.of(VARBINARY(DICT_ENCODING)), valueSetter);
     }
 
     /** Test sending data to Python for the given type using the values from the valueSetter */

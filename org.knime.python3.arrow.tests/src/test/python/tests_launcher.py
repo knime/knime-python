@@ -114,13 +114,41 @@ def structcomplex_test_value(r, b):
     return {"0": [{"0": a, "1": b} for a, b in zip(int_list, string_list)], "1": r + b}
 
 
-def zoneddatetime_test_value(r, b):
+def zoneddatetime_test_value():
     zone_ids = ["Etc/Universal", "Asia/Hong_Kong", "America/Los_Angeles"]
-    return {
-        "epochDay": r + b * 100,
-        "nanoOfDay": datetime.time(microsecond=r),
-        "zoneId": zone_ids[r % 3],
-    }
+
+    def test_value(r, b):
+        return {
+            "epochDay": r + b * 100,
+            "nanoOfDay": datetime.time(microsecond=r),
+            "zoneId": zone_ids[r % 3],
+        }
+
+    return test_value
+
+
+def dictstring_test_value():
+    d = ["foo", "bar", "car", "aaa"]
+
+    def test_value(r, b):
+        if b == 0:
+            return d[r % (len(d) - 1)]
+        else:
+            return d[r % len(d)]
+
+    return test_value
+
+
+def dictvarbinary_test_value():
+    d = [bytes([(j + 50) % 128 for j in range(i + 1)]) for i in range(4)]
+
+    def test_value(r, b):
+        if b == 0:
+            return d[r % (len(d) - 1)]
+        else:
+            return d[r % len(d)]
+
+    return test_value
 
 
 TEST_VALUES = {
@@ -141,7 +169,9 @@ TEST_VALUES = {
     "localdatetime": lambda r, b: {"epochDay": r + b * 100, "nanoOfDay": r * 500 + b},
     "localtime": lambda r, b: r * 500 + b,
     "period": lambda r, b: {"years": r, "months": b % 12, "days": (r + b) % 28},
-    "zoneddatetime": zoneddatetime_test_value,
+    "zoneddatetime": zoneddatetime_test_value(),
+    "dictstring": dictstring_test_value(),
+    "dictvarbinary": dictvarbinary_test_value(),
 }
 
 TEST_ARRAY_TYPES = {
@@ -163,6 +193,8 @@ TEST_ARRAY_TYPES = {
     "localtime": pa.Time64Array,
     "period": pa.StructArray,
     "zoneddatetime": pa.StructArray,
+    "dictstring": ka.StructDictEncodedArray,
+    "dictvarbinary": ka.StructDictEncodedArray,
 }
 
 TEST_VALUE_TYPES = {
@@ -224,6 +256,8 @@ TEST_VALUE_TYPES = {
             pa.field("zoneId", type=pa.string()),
         ]
     ),
+    "dictstring": pa.string(),
+    "dictvarbinary": pa.large_binary(),
 }
 
 
@@ -276,6 +310,17 @@ class EntryPoint(kg.EntryPoint):
         # Check the values in one batch
         def check_batch(batch, b):
             array = batch.column(0)
+
+            # TODO(typeextensions) this should happen automatically
+            if data_type == "dictstring":
+                array = pa.ExtensionArray.from_storage(
+                    ka.StructDictEncodedType(pa.string()), array
+                )
+            elif data_type == "dictvarbinary":
+                array = pa.ExtensionArray.from_storage(
+                    ka.StructDictEncodedType(pa.large_binary()), array
+                )
+
             # Check length
             assert (
                 len(array) == NUM_ROWS
@@ -306,15 +351,25 @@ class EntryPoint(kg.EntryPoint):
             # Every 13th element is missing
             mask = np.array([r % 13 == 0 for r in range(NUM_ROWS)])
 
+            dict_encoded = data_type in ["dictstring", "dictvarbinary"]
+            if dict_encoded:
+                key_gen = ka.DictKeyGenerator()
+
             # Loop over batches
             for b in range(NUM_BATCHES):
 
-                # Create the array and write it to the sink
+                # Create the array
                 data = pa.array(
                     [TEST_VALUES[data_type](r, b) for r in range(NUM_ROWS)],
                     type=TEST_VALUE_TYPES[data_type],
                     mask=mask,
                 )
+
+                # Dictionary encode if necessary
+                if dict_encoded:
+                    data = ka.struct_dict_encode(data, key_gen)
+
+                # Write to the sink
                 record_batch = pa.record_batch([data], ["0"])
                 sink.write(record_batch)
 

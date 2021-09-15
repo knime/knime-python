@@ -52,6 +52,24 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.BYTE;
+import static org.knime.core.table.schema.DataSpecs.DICT_ENCODING;
+import static org.knime.core.table.schema.DataSpecs.DOUBLE;
+import static org.knime.core.table.schema.DataSpecs.DURATION;
+import static org.knime.core.table.schema.DataSpecs.FLOAT;
+import static org.knime.core.table.schema.DataSpecs.INT;
+import static org.knime.core.table.schema.DataSpecs.LIST;
+import static org.knime.core.table.schema.DataSpecs.LOCALDATE;
+import static org.knime.core.table.schema.DataSpecs.LOCALDATETIME;
+import static org.knime.core.table.schema.DataSpecs.LOCALTIME;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.PERIOD;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.core.table.schema.DataSpecs.STRUCT;
+import static org.knime.core.table.schema.DataSpecs.VARBINARY;
+import static org.knime.core.table.schema.DataSpecs.VOID;
+import static org.knime.core.table.schema.DataSpecs.ZONEDDATETIME;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -91,10 +109,10 @@ import org.knime.core.columnar.data.StructData.StructReadData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryReadData;
 import org.knime.core.columnar.data.VoidData.VoidReadData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeReadData;
+import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedStringReadData;
+import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedVarBinaryReadData;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.StructDataSpec;
+import org.knime.core.table.schema.DataSpecs;
 
 /**
  * Test transfer of different Arrow types from Python. Always transfers one table with one column of a specific type.
@@ -137,7 +155,7 @@ public class PythonToJavaTypeTest {
     public void testBoolean() throws Exception {
         final ValueChecker<BooleanReadData> valueChecker =
             (data, b, r) -> assertEquals((r + b) % 5 == 0, data.getBoolean(r));
-        test("boolean", DataSpec.booleanSpec(), valueChecker);
+        test("boolean", BOOLEAN, valueChecker);
     }
 
     /**
@@ -149,7 +167,7 @@ public class PythonToJavaTypeTest {
     public void testByte() throws Exception {
         final ValueChecker<ByteReadData> valueChecker =
             (data, b, r) -> assertEquals((byte)((r + b) % 256 - 128), data.getByte(r));
-        test("byte", DataSpec.byteSpec(), valueChecker);
+        test("byte", BYTE, valueChecker);
     }
 
     /**
@@ -161,7 +179,7 @@ public class PythonToJavaTypeTest {
     public void testDouble() throws Exception {
         final ValueChecker<DoubleReadData> valueChecker =
             (data, b, r) -> assertEquals(r / 10.0 + b, data.getDouble(r), DOUBLE_COMPARISON_EPSILON);
-        test("double", DataSpec.doubleSpec(), valueChecker);
+        test("double", DOUBLE, valueChecker);
     }
 
     /**
@@ -173,7 +191,7 @@ public class PythonToJavaTypeTest {
     public void testFloat() throws Exception {
         final ValueChecker<FloatReadData> valueChecker =
             (data, b, r) -> assertEquals(r / 10.0 + b, data.getFloat(r), FLOAT_COMPARISON_EPSILON);
-        test("float", DataSpec.floatSpec(), valueChecker);
+        test("float", FLOAT, valueChecker);
     }
 
     /**
@@ -184,7 +202,7 @@ public class PythonToJavaTypeTest {
     @Test
     public void testInt() throws Exception {
         final ValueChecker<IntReadData> valueChecker = (data, b, r) -> assertEquals((long)r + b, data.getInt(r));
-        test("int", DataSpec.intSpec(), valueChecker);
+        test("int", INT, valueChecker);
     }
 
     /**
@@ -196,7 +214,7 @@ public class PythonToJavaTypeTest {
     public void testLong() throws Exception {
         final ValueChecker<LongReadData> valueChecker =
             (data, b, r) -> assertEquals(r + b * 10_000_000_000L, data.getLong(r));
-        test("long", DataSpec.longSpec(), valueChecker);
+        test("long", LONG, valueChecker);
     }
 
     /**
@@ -213,7 +231,7 @@ public class PythonToJavaTypeTest {
             }
             assertArrayEquals(v, data.getBytes(r));
         };
-        test("varbinary", DataSpec.varBinarySpec(), valueChecker);
+        test("varbinary", VARBINARY, valueChecker);
     }
 
     /**
@@ -225,7 +243,7 @@ public class PythonToJavaTypeTest {
     public void testVoid() throws Exception {
         final ValueChecker<VoidReadData> valueChecker = (data, b, r) -> {
         };
-        test("void", DataSpec.voidSpec(), valueChecker);
+        test("void", VOID, valueChecker);
     }
 
     /**
@@ -239,7 +257,7 @@ public class PythonToJavaTypeTest {
             assertEquals((long)r + b, ((IntReadData)data.getReadDataAt(0)).getInt(r));
             assertEquals("Row: " + r + ", Batch: " + b, ((StringReadData)data.getReadDataAt(1)).getString(r));
         };
-        test("struct", new StructDataSpec(DataSpec.intSpec(), DataSpec.stringSpec()), valueChecker);
+        test("struct", STRUCT.of(INT, STRING), valueChecker);
     }
 
     /**
@@ -250,8 +268,7 @@ public class PythonToJavaTypeTest {
     @Test
     public void testComplexStructList() throws Exception {
         test("structcomplex",
-            new StructDataSpec(new ListDataSpec(new StructDataSpec(DataSpec.intSpec(), DataSpec.stringSpec())),
-                DataSpec.intSpec()),
+            STRUCT.of(LIST.of(STRUCT.of(INT, STRING)), INT),
             PythonToJavaTypeTest::checkComplexStructList);
     }
 
@@ -288,7 +305,7 @@ public class PythonToJavaTypeTest {
                 assertEquals((long)r + b + i, v.getInt(i));
             }
         };
-        test("list", new ListDataSpec(DataSpec.intSpec()), valueChecker);
+        test("list", LIST.of(INT), valueChecker);
     }
 
     /**
@@ -300,7 +317,7 @@ public class PythonToJavaTypeTest {
     public void testString() throws Exception {
         final ValueChecker<StringReadData> valueChecker =
             (data, b, r) -> assertEquals("Row: " + r + ", Batch: " + b, data.getString(r));
-        test("string", DataSpec.stringSpec(), valueChecker);
+        test("string", STRING, valueChecker);
     }
 
     /**
@@ -314,7 +331,7 @@ public class PythonToJavaTypeTest {
         // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
         final ValueChecker<DurationReadData> valueChecker =
             (data, b, r) -> assertEquals(Duration.ofSeconds(r, b), data.getDuration(r));
-        test("duration", DataSpec.durationSpec(), valueChecker);
+        test("duration", DURATION, valueChecker);
     }
 
     /**
@@ -328,7 +345,7 @@ public class PythonToJavaTypeTest {
         // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
         final ValueChecker<LocalDateReadData> valueChecker =
             (data, b, r) -> assertEquals(LocalDate.ofEpochDay(r + b * 100L), data.getLocalDate(r));
-        test("localdate", DataSpec.localDateSpec(), valueChecker);
+        test("localdate", LOCALDATE, valueChecker);
     }
 
     /**
@@ -343,7 +360,7 @@ public class PythonToJavaTypeTest {
         final ValueChecker<LocalDateTimeReadData> valueChecker = (data, b, r) -> assertEquals(
             LocalDateTime.of(LocalDate.ofEpochDay(r + b * 100L), LocalTime.ofNanoOfDay(r * 500L + b)),
             data.getLocalDateTime(r));
-        test("localdatetime", DataSpec.localDateTimeSpec(), valueChecker);
+        test("localdatetime", LOCALDATETIME, valueChecker);
     }
 
     /**
@@ -355,7 +372,7 @@ public class PythonToJavaTypeTest {
     public void testLocalTime() throws Exception {
         final ValueChecker<LocalTimeReadData> valueChecker =
             (data, b, r) -> assertEquals(LocalTime.ofNanoOfDay(r * 500L + b), data.getLocalTime(r));
-        test("localtime", DataSpec.localTimeSpec(), valueChecker);
+        test("localtime", LOCALTIME, valueChecker);
     }
 
     /**
@@ -369,7 +386,7 @@ public class PythonToJavaTypeTest {
         // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
         final ValueChecker<PeriodReadData> valueChecker =
             (data, b, r) -> assertEquals(Period.of(r, b % 12, (r + b) % 28), data.getPeriod(r));
-        test("period", DataSpec.periodSpec(), valueChecker);
+        test("period", PERIOD, valueChecker);
     }
 
     /**
@@ -391,10 +408,59 @@ public class PythonToJavaTypeTest {
             );
             assertEquals(ZonedDateTime.of(localDateTime, zoneId), data.getZonedDateTime(r));
         };
-        test("zoneddatetime", DataSpec.zonedDateTimeSpec(), valueChecker);
+        test("zoneddatetime", ZONEDDATETIME, valueChecker);
     }
 
-    private <T extends NullableReadData> void test(final String type, final DataSpec spec,
+    /**
+     * Test transfer of a dictionary encoded string column from Python.
+     *
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testDictEncodedString() throws Exception {
+        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
+        final List<String> dict = List.of("foo", "bar", "car", "aaa");
+
+        final ValueChecker<DictEncodedStringReadData> valueChecker = (data, b, r) -> {
+            if (b == 0) {
+                assertEquals(dict.get(r % (dict.size() - 1)), data.getString(r));
+            } else {
+                assertEquals(dict.get(r % dict.size()), data.getString(r));
+            }
+        };
+        test("dictstring", STRING(DICT_ENCODING), valueChecker);
+    }
+
+    /**
+     * Test transfer of a dictionary encoded varbinary column from Python.
+     *
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testDictEncodedVarBinary() throws Exception {
+        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
+        final List<byte[]> dict = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            final byte[] v = new byte[i + 1];
+            for (int j = 0; j < v.length; j++) {
+                v[j] = (byte)((j + 50) % 128);
+            }
+            dict.add(v);
+        }
+
+        final ValueChecker<DictEncodedVarBinaryReadData> valueChecker = (data, b, r) -> {
+            if (b == 0) {
+                assertArrayEquals(dict.get(r % (dict.size() - 1)), data.getBytes(r));
+            } else {
+                assertArrayEquals(dict.get(r % dict.size()), data.getBytes(r));
+            }
+        };
+        test("dictvarbinary", VARBINARY(DICT_ENCODING), valueChecker);
+    }
+
+    private <T extends NullableReadData> void test(final String type, final DataSpecs.DataSpecWithTraits spec,
         final ValueChecker<T> valueChecker) throws Exception {
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
             final var entryPoint = pythonGateway.getEntryPoint();
@@ -411,12 +477,14 @@ public class PythonToJavaTypeTest {
         }
     }
 
-    private <T extends NullableReadData> void checkData(final DataSpec spec, final ValueChecker<T> valueChecker,
+    private <T extends NullableReadData> void checkData(final DataSpecs.DataSpecWithTraits spec, final ValueChecker<T> valueChecker,
         final DefaultPythonArrowDataSink dataSink) throws IOException, AssertionError {
         try (final var store = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory)) {
             final ColumnarSchema schema = store.getSchema();
             assertEquals(1, schema.numColumns());
-            assertEquals(spec, schema.getSpec(0));
+            assertEquals(spec.spec(), schema.getSpec(0));
+            // TODO(AP-17518) compare traits? They don't have equals implemented
+            // assertEquals(spec.traits(), schema.getTraits(0));
 
             try (final RandomAccessBatchReader reader = store.createRandomAccessReader()) {
                 for (int b = 0; b < NUM_BATCHES; b++) {
