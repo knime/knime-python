@@ -46,7 +46,7 @@
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
 import unittest
-import kg_pythonpath
+import pythonpath
 
 import knime_gateway as kg
 

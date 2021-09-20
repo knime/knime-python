@@ -50,15 +50,19 @@ import sys
 
 # Path to knime_gateway.py
 sys.path.append(
-    os.path.join(
-        "..",
-        "org.knime.python3",
-        "src",
-        "main",
-        "python",
-        "org",
-        "knime",
-        "python3",
-        "py_modules",
+    os.path.normpath(
+        os.path.join(
+            __file__,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "org.knime.python3",
+            "src",
+            "main",
+            "python",
+        )
     )
 )
