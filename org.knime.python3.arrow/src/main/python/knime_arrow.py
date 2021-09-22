@@ -411,7 +411,9 @@ class _LazyArraySlice(_AbstractArray):
     def type(self):
         return self._delegate.type
 
-    @functools.cached_property
+    # NOTE: In Python >= 3.8 functools.cached_property could be used
+    @property
+    @functools.lru_cache()
     def null_count(self):
         is_null = self.is_null()
         if len(is_null) == 0:
@@ -452,7 +454,9 @@ class _LazyArrayTake(_AbstractArray):
     def type(self):
         return self._delegate.type
 
-    @functools.cached_property
+    # NOTE: In Python >= 3.8 functools.cached_property could be used
+    @property
+    @functools.lru_cache()
     def null_count(self):
         is_null = self.is_null()
         if len(is_null) == 0:
