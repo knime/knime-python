@@ -428,7 +428,7 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         self.assertIsInstance(dict_encoded, ka.StructDictEncodedArray)
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
-        self.assertEqual(ka.knime_struct_type(pa.int64(), pa.string()), storage.type)
+        self.assertEqual(ka.knime_struct_type(pa.uint64(), pa.string()), storage.type)
 
         # Check that the keys are as expected
         keys = storage.flatten()[0].to_pylist()
@@ -446,7 +446,7 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         self.assertIsInstance(dict_encoded, ka.StructDictEncodedArray)
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
-        self.assertEqual(ka.knime_struct_type(pa.int64(), pa.string()), storage.type)
+        self.assertEqual(ka.knime_struct_type(pa.uint64(), pa.string()), storage.type)
 
         # Check null values
         is_null = dict_encoded.is_null().to_pylist()

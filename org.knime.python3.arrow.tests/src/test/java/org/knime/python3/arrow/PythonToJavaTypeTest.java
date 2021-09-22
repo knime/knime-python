@@ -422,7 +422,7 @@ public class PythonToJavaTypeTest {
         // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
         final List<String> dict = List.of("foo", "bar", "car", "aaa");
 
-        final ValueChecker<DictEncodedStringReadData> valueChecker = (data, b, r) -> {
+        final ValueChecker<DictEncodedStringReadData<Long>> valueChecker = (data, b, r) -> {
             if (b == 0) {
                 assertEquals(dict.get(r % (dict.size() - 1)), data.getString(r));
             } else {
@@ -450,7 +450,7 @@ public class PythonToJavaTypeTest {
             dict.add(v);
         }
 
-        final ValueChecker<DictEncodedVarBinaryReadData> valueChecker = (data, b, r) -> {
+        final ValueChecker<DictEncodedVarBinaryReadData<Long>> valueChecker = (data, b, r) -> {
             if (b == 0) {
                 assertArrayEquals(dict.get(r % (dict.size() - 1)), data.getBytes(r));
             } else {

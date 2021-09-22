@@ -598,7 +598,7 @@ def struct_dict_encode(
             entries_array = pa.array(entries, type=type)
 
     mask_array = pa.array(mask)
-    keys_array = pa.array(keys)
+    keys_array = pa.array(keys, type=pa.uint64())
 
     # Create the storage
     # NOTE pyarrow >= 5 is needed for the mask argument
@@ -609,8 +609,10 @@ def struct_dict_encode(
 
 
 class StructDictEncodedType(pa.ExtensionType):
-    def __init__(self, inner_type):
-        pa.ExtensionType.__init__(self, knime_struct_type(pa.int64(), inner_type), "")
+    def __init__(self, inner_type, key_type=None):
+        if key_type is None:
+            key_type = pa.uint64()
+        pa.ExtensionType.__init__(self, knime_struct_type(key_type, inner_type), "")
 
     def __arrow_ext_serialize__(self):
         return b""
@@ -618,7 +620,9 @@ class StructDictEncodedType(pa.ExtensionType):
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
         # TODO assert the storage type is as expected?
-        return StructDictEncodedType(storage_type[1].type)
+        return StructDictEncodedType(
+            storage_type[1].type, key_type=storage_type[0].type
+        )
 
     def __arrow_ext_class__(self):
         return StructDictEncodedArray

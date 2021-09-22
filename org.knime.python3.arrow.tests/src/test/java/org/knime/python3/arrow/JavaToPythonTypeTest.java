@@ -396,7 +396,7 @@ public class JavaToPythonTypeTest {
     public void testDictEncodedString() throws Exception {
         final List<String> dict = List.of("foo", "bar", "car", "aaa");
 
-        final ValueSetter<DictEncodedStringWriteData> valueSetter = (data, b, r) -> {
+        final ValueSetter<DictEncodedStringWriteData<Long>> valueSetter = (data, b, r) -> {
             if (b == 0) {
                 data.setString(r, dict.get(r % (dict.size() - 1)));
             } else {
@@ -422,7 +422,7 @@ public class JavaToPythonTypeTest {
             dict.add(v);
         }
 
-        final ValueSetter<DictEncodedVarBinaryWriteData> valueSetter = (data, b, r) -> {
+        final ValueSetter<DictEncodedVarBinaryWriteData<Long>> valueSetter = (data, b, r) -> {
             if (b == 0) {
                 data.setBytes(r, dict.get(r % (dict.size() - 1)));
             } else {
