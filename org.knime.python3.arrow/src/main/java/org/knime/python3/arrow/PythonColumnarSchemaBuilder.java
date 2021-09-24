@@ -82,10 +82,10 @@ public class PythonColumnarSchemaBuilder {
         if (spec instanceof ListDataSpec) {
             return new DefaultListDataTraits(emptyTraitsForSpec(((ListDataSpec)spec).getInner()));
         } else if (spec instanceof StructDataSpec) {
-            return new DefaultStructDataTraits(
-                Arrays.stream(((StructDataSpec)spec)
-                    .getInner()).map(PythonColumnarSchemaBuilder::emptyTraitsForSpec)
-                    .toArray(DataTraits[]::new));
+            var structSpec = (StructDataSpec)spec;
+            final DataTraits[] dataTraits = new DataTraits[structSpec.size()];
+            Arrays.setAll(dataTraits, i -> emptyTraitsForSpec(structSpec.getDataSpec(i)) );
+            return new DefaultStructDataTraits(dataTraits);
         }
 
         return DefaultDataTraits.EMPTY;
