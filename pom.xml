@@ -41,6 +41,7 @@
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.arrow</module>
 		<module>org.knime.python3.py4j.dependencies</module>
+		<module>org.knime.python3.arrow.types</module>
 		<module>org.knime.python.nodes</module>
 		<module>org.knime.python.typeextensions</module>
 		<module>org.knime.update.python</module>

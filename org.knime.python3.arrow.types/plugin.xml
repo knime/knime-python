@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.knime.python3.PythonValueFactory">
+      <Module
+            modulePath="src/main/python/extension_types.py">
+         <PythonValueFactory
+               PythonClassName="FsLocationValueFactory"
+               ValueFactory="org.knime.filehandling.core.data.location.FSLocationValueFactory">
+         </PythonValueFactory>
+      </Module>
+   </extension>
+
+</plugin>
