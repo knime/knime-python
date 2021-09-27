@@ -11,3 +11,4 @@
 # Coverage.py
 .coverage
 **/htmlcov/
+**/.idea
