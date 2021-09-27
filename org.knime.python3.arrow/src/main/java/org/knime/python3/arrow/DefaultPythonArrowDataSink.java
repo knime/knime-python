@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.knime.core.columnar.store.BatchReadStore;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -68,6 +69,8 @@ public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
     private final List<Long> m_recordBatchOffsets;
 
     private ColumnarSchema m_schema;
+
+    private long m_size = -1;
 
     DefaultPythonArrowDataSink(final Path path) {
         m_path = path;
@@ -104,4 +107,20 @@ public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
     Path getPath() {
         return m_path;
     }
+
+    @Override
+    public void setFinalSize(final long size) {
+        CheckUtils.checkArgument(size > -1, "The size of a table can't be negative.");
+        m_size = size;
+    }
+
+    /**
+     * @return the size (i.e. number of rows) of the table
+     * @throws IllegalStateException if the size is not available, yet
+     */
+    public long getSize() {
+        CheckUtils.checkState(m_size > -1, "Cannot get the size before it has been set. Implementation error.");
+        return m_size;
+    }
+
 }

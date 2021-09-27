@@ -63,4 +63,14 @@ public interface PythonDataSource {
      * @return an unique identifier which will be used to identify the Python class wrapping this data source.
      */
     String getIdentifier();
+
+    /**
+     * @return the names of the columns
+     */
+    String[] getColumnNames();
+
+    /**
+     * @return indicates whether column names are available
+     */
+    boolean hasColumnNames();
 }

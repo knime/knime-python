@@ -48,7 +48,9 @@
  */
 package org.knime.python3.arrow;
 
+import java.io.Flushable;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,10 +58,26 @@ import java.util.stream.Collectors;
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.columnar.arrow.ArrowReaderWriterUtils;
 import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
+import org.knime.core.columnar.arrow.ArrowSchemaUtils;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.DataColumnSpecCreator;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataTypeRegistry;
+import org.knime.core.data.columnar.schema.ColumnarValueSchema;
+import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
+import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
+import org.knime.core.data.v2.DataCellSerializerFactory;
+import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.data.v2.ValueFactoryUtils;
+import org.knime.core.data.v2.ValueSchema;
+import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.schema.traits.LogicalTypeTrait;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -85,7 +103,24 @@ public final class PythonArrowDataUtils {
      */
     public static PythonArrowDataSource createSource(final ArrowBatchStore store, final int numBatches) {
         return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(),
-            store.getOffsetProvider(), numBatches);
+            store.getOffsetProvider(), numBatches, null);
+    }
+
+    /**
+     * Create a {@link PythonArrowDataSource} that provides the data from the given {@link ArrowBatchStore} and has the
+     * provided column names
+     *
+     *
+     * @param store the store which holds the data
+     * @param numBatches the total number of batches that are available at the store
+     * @param columnNames names of the columns in KNIME
+     * @return the {@link PythonArrowDataSource} that can be given to a {@link PythonEntryPoint} and will be wrapped
+     *         into a Python object for easy access to the data
+     */
+    public static PythonArrowDataSource createSource(final ArrowBatchStore store, final int numBatches,
+        final String[] columnNames) {
+        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(),
+            store.getOffsetProvider(), numBatches, columnNames);
     }
 
     /**
@@ -97,7 +132,7 @@ public final class PythonArrowDataUtils {
      */
     public static PythonArrowDataSource createSource(final ArrowBatchReadStore store) {
         return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(), null,
-            store.numBatches());
+            store.numBatches(), null);
     }
 
     /**
@@ -124,6 +159,65 @@ public final class PythonArrowDataUtils {
         // TODO Do not require DefaultPythonArrowDataSink but an interface
         return storeFactory.createPartialFileReadable(dataSink.getSchema(), dataSink.getPath(),
             getOffsetProvider(dataSink));
+    }
+
+    /**
+     * Creates a {@link UnsavedColumnarContainerTable table} from the provided {@link DefaultPythonArrowDataSink dataSink}.
+     *
+     * @param dataSink filled by Python
+     * @param storeFactory for creation Arrow stores in Java
+     * @param tableId for the newly created table (needed by KNIME for tracking)
+     * @return the table with the content written into dataSink
+     */
+    @SuppressWarnings("resource") // the readStore will be closed when the table is cleared
+    public static UnsavedColumnarContainerTable createTable(final DefaultPythonArrowDataSink dataSink,
+        final ArrowColumnStoreFactory storeFactory, final int tableId) {
+        var size = dataSink.getSize();
+        var path = dataSink.getPath();
+        var schema = createColumnarValueSchema(dataSink);
+        var readStore = storeFactory.createReadStore(schema, path);
+        // nothing to flash as of now
+        Flushable flushable = () -> {
+        };// prevent formatting
+        return UnsavedColumnarContainerTable.create(path, tableId, storeFactory, schema, readStore, flushable, size);
+    }
+
+    private static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink) {
+        final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
+        final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
+        final var names = ArrowSchemaUtils.extractColumnNames(schema);
+        final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
+        final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
+        factories.add(new DefaultRowKeyValueFactory());
+        for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
+            var traits = columnarSchema.getTraits(i);
+            var valueFactory = getValueFactory(
+                DataTraits.getTrait(traits, LogicalTypeTrait.class).map(LogicalTypeTrait::getLogicalType).orElse(null),
+                columnarSchema.getSpec(i));
+            factories.add(valueFactory);
+            var dataType = DataTypeRegistry.getInstance().getDataTypeForValueFactory(valueFactory);
+            specs.add(new DataColumnSpecCreator(names[i], dataType).createSpec());
+        }
+        var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
+        // TODO shouldn't be necessary once we store the serializer alongside the data (AP-17501)
+        var cellSerializerFactory = new DataCellSerializerFactory();
+        return ColumnarValueSchemaUtils.create(
+            ValueSchema.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new), cellSerializerFactory));
+    }
+
+    private static ValueFactory<?, ?> getValueFactory(final String valueFactoryClassName, final DataSpec dataSpec) {
+        if (valueFactoryClassName != null) {
+            // TODO special handling for collections (and DataCellValueFactories?)
+            return ValueFactoryUtils.createValueFactoryForClassName(valueFactoryClassName)//
+                .orElseThrow(() -> new IllegalStateException(
+                    String.format("No value factory with the name '%s' is known. Are you missing an extension?",
+                        valueFactoryClassName)));
+        } else {
+            return ValueFactoryUtils.getDefaultValueFactory(dataSpec)//
+                .orElseThrow(
+                    () -> new IllegalArgumentException(String.format("There was no value factory provided from python "
+                        + "and there also doesn't exist a default value factory for '%s'.", dataSpec)));
+        }
     }
 
     /**
@@ -186,11 +280,14 @@ public final class PythonArrowDataUtils {
 
         private final int m_numBatches;
 
+        private final String[] m_columnNames;
+
         public PythonArrowBatchStoreDataSource(final String path, final OffsetProvider offsetProvider,
-            final int numBatches) {
+            final int numBatches, final String[] columnNames) {
             m_path = path;
             m_offsetProvider = offsetProvider;
             m_numBatches = numBatches;
+            m_columnNames = columnNames;
         }
 
         @Override
@@ -217,6 +314,16 @@ public final class PythonArrowDataUtils {
         public List<Long> getDictionaryBatchOffsets(final int index) {
             return Arrays.stream(m_offsetProvider.getDictionaryBatchOffsets(index)).boxed()
                 .collect(Collectors.toList());
+        }
+
+        @Override
+        public String[] getColumnNames() {
+            return m_columnNames;
+        }
+
+        @Override
+        public boolean hasColumnNames() {
+            return m_columnNames != null;
         }
     }
 }

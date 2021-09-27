@@ -77,9 +77,14 @@ public interface PythonArrowDataSink extends PythonDataSink {
     void reportBatchWritten(long offset); // TODO(dictionary) add offsets for dictionary batches
 
     /**
-     * TODO(extensiontypes) this should be replaced with something that uses virtual types/extension types
+     * TODO check if this can be removed. We can now also read the schema from the arrow file directly
      *
      * @param schema the schema of the data that is written to the file
      */
     void setColumnarSchema(ColumnarSchema schema);
+
+    /**
+     * @param size the final size of the table
+     */
+    void setFinalSize(final long size);
 }

@@ -196,6 +196,17 @@ class ArrowDataSource:
                 self._file, java_data_source
             )
 
+        if java_data_source.hasColumnNames():
+            schema_without_names = self._reader.schema
+            names = [name for name in java_data_source.getColumnNames()]
+            names = ['<Row ID>'] + names
+            self._column_names = names
+            fields_with_name = [field.with_name(name) for field, name in zip(schema_without_names, names)]
+            self._schema = pa.schema(fields_with_name)
+        else:
+            self._column_names = None
+            self._schema = self._reader.schema
+
     def __enter__(self):
         return self
 
@@ -205,7 +216,7 @@ class ArrowDataSource:
 
     @property
     def schema(self) -> pa.Schema:
-        return self._reader.schema
+        return self._schema
 
     def __len__(self) -> int:
         return self._reader.num_record_batches
@@ -226,8 +237,16 @@ class ArrowDataSource:
     # API to get higher level access
 
     def to_pandas(self):
-        # TODO
-        raise NotImplementedError()
+        # TODO use arrow's build-in conversion whenever possible
+        arrow_table = self.to_arrow_table()
+        return kat.arrow_table_to_pandas_df(arrow_table)
+
+    def to_arrow_table(self):
+        table_without_names = pa.Table.from_batches(iter(self), self._reader.schema)
+        if self._column_names is None:
+            return table_without_names
+        else:
+            return table_without_names.rename_columns(self._column_names)
 
 
 @kg.data_sink("org.knime.python3.arrow")
@@ -239,6 +258,7 @@ class ArrowDataSink:
 
         # Open the file
         self._file = pa.OSFile(java_data_sink.getAbsolutePath(), mode="wb")
+        self._size = 0
 
     def __enter__(self):
         return self
@@ -260,6 +280,7 @@ class ArrowDataSink:
         self._writer.write(b)
         self._file.flush()
         self._java_data_sink.reportBatchWritten(offset)
+        self._size += b.num_rows
 
     def _init_writer(self, schema: pa.Schema):
         # Create the writer
@@ -277,6 +298,7 @@ class ArrowDataSink:
 
     def close(self):
         self._writer.close()
+        self._java_data_sink.setFinalSize(self._size)
 
 
 def knime_struct_type(*args):
