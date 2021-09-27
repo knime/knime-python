@@ -104,8 +104,8 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
         // Create the process
         final ProcessBuilder pb = command.createProcessBuilder();
         Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectError(ProcessBuilder.Redirect.PIPE);
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         // Set the PYTHONPATH variable to be able to import the Python modules
         pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
 
