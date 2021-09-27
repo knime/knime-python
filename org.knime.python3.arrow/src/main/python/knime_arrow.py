@@ -53,6 +53,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import knime_gateway as kg
+# TODO should this happen here or on java side?
+import knime_arrow_types as kat
 
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
@@ -78,6 +80,9 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
 
 def factory_version_for(arrow_type: pa.DataType):
     # TODO synchronize with the versions on the Java side
+    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+        return factory_version_for(arrow_type.storage_type)
+
     if isinstance(arrow_type, pa.StructType):
         return "0[{}]".format(
             "".join([factory_version_for(f.type) + ";" for f in arrow_type])
@@ -90,7 +95,6 @@ def factory_version_for(arrow_type: pa.DataType):
 def convert_schema(schema: pa.Schema):
     # TODO we would like to use a schema with the virtual types not the physical types
     constructor = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder
-    print(constructor)
     schema_builder = constructor()
     for t in schema.types:
         schema_builder.addColumn(convert_type(t))
@@ -98,6 +102,9 @@ def convert_schema(schema: pa.Schema):
 
 
 def convert_type(arrow_type: pa.DataType):
+    # Logical type
+    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+        return convert_type(arrow_type.storage_type)
 
     # Struct
     if isinstance(arrow_type, pa.StructType):
@@ -135,6 +142,17 @@ def convert_type(arrow_type: pa.DataType):
         return gateway().jvm.org.knime.core.table.schema.DataSpec.localTimeSpec()
 
     raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
+
+
+def extract_logical_types(schema: pa.Schema):
+    return [extract_logical_type(t) for t in schema.types]
+
+
+def extract_logical_type(arrow_type: pa.DataType):
+    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+        return str(arrow_type.java_value_factory)
+    else:
+        return None
 
 
 class _OffsetBasedRecordBatchFileReader:
