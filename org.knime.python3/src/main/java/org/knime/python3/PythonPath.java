@@ -85,6 +85,20 @@ public final class PythonPath {
         return String.join(seperator, m_paths);
     }
 
+    @Override
+    public String toString() {
+        return getPythonPath();
+    }
+
+    /**
+     * Convenience method to create a builder for PythonPaths.
+     * 
+     * @return a builder for PythonPath objects
+     */
+    public static PythonPathBuilder builder() {
+        return new PythonPathBuilder();
+    }
+
     /** A builder for {@link PythonPath}. */
     public static final class PythonPathBuilder {
 
