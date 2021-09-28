@@ -55,6 +55,7 @@ import java.util.List;
 import org.knime.core.columnar.store.BatchReadStore;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.python3.PythonException;
 
 /**
  * A simple default implementation of the {@link PythonArrowDataSink}. Use {@link PythonArrowDataUtils} to create an
@@ -72,9 +73,12 @@ public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
 
     private long m_size = -1;
 
+    private List<BatchListener> m_batchListeners;
+
     DefaultPythonArrowDataSink(final Path path) {
         m_path = path;
         m_recordBatchOffsets = new ArrayList<>();
+        m_batchListeners = new ArrayList<>();
     }
 
     @Override
@@ -83,8 +87,11 @@ public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
     }
 
     @Override
-    public void reportBatchWritten(final long offset) {
+    public void reportBatchWritten(final long offset) throws Exception {
         m_recordBatchOffsets.add(offset);
+        for (final BatchListener listener : m_batchListeners) {
+            listener.batchWritten();
+        }
     }
 
     @Override
@@ -123,4 +130,22 @@ public final class DefaultPythonArrowDataSink implements PythonArrowDataSink {
         return m_size;
     }
 
+    void registerBatchListener(final BatchListener listener) {
+        m_batchListeners.add(listener);
+    }
+
+    /**
+     * A listener that gets notified when a new batch has been reported to the sink. Register the listener with
+     * {@link DefaultPythonArrowDataSink#registerBatchListener(BatchListener)}.
+     */
+    @FunctionalInterface
+    interface BatchListener {
+
+        /**
+         * Called when a batch has been written to the file.
+         *
+         * @throws PythonException if the batch is somehow invalid. The exception is forwarded to the Python process
+         */
+        void batchWritten() throws PythonException;
+    }
 }

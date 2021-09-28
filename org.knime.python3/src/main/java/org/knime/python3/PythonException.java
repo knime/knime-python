@@ -44,48 +44,35 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 19, 2021 (benjamin): created
+ *   Sep 29, 2021 (benjamin): created
  */
-package org.knime.python3.arrow;
-
-import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.python3.PythonDataSink;
+package org.knime.python3;
 
 /**
- * A sink for Arrow data from a Python process.
+ * An checked {@link Exception} that is used if some processing in Python failed.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonArrowDataSink extends PythonDataSink {
+public class PythonException extends Exception {
 
-    @Override
-    default String getIdentifier() {
-        return "org.knime.python3.arrow";
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Create a new {@link PythonException} with the given message.
+     *
+     * @param message the message
+     */
+    public PythonException(final String message) {
+        super(message);
     }
 
     /**
-     * @return the path the output file should be written to.
-     */
-    String getAbsolutePath();
-
-    /**
-     * Report that the next batch has been written to the file. Must be called by Python each time a new batch was
-     * written. Must be called for each batch in ascending order.
+     * Create a new {@link PythonException} with the given message and cause
      *
-     * @param offset the offset of the batch
-     * @throws Exception
+     * @param message the message
+     * @param cause the cause
      */
-    void reportBatchWritten(long offset) throws Exception; // TODO(dictionary) add offsets for dictionary batches
-
-    /**
-     * TODO check if this can be removed. We can now also read the schema from the arrow file directly
-     *
-     * @param schema the schema of the data that is written to the file
-     */
-    void setColumnarSchema(ColumnarSchema schema);
-
-    /**
-     * @param size the final size of the table
-     */
-    void setFinalSize(final long size);
+    public PythonException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

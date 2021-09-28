@@ -44,48 +44,74 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 19, 2021 (benjamin): created
+ *   Sep 29, 2021 (benjamin): created
  */
 package org.knime.python3.arrow;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.knime.core.columnar.batch.RandomAccessBatchReadable;
+import org.knime.core.columnar.batch.RandomAccessBatchReader;
+import org.knime.core.columnar.batch.ReadBatch;
+import org.knime.core.columnar.batch.SequentialBatchReadable;
+import org.knime.core.columnar.batch.SequentialBatchReader;
+import org.knime.core.columnar.filter.ColumnSelection;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.python3.PythonDataSink;
 
 /**
- * A sink for Arrow data from a Python process.
+ * Wraps a {@link RandomAccessBatchReadable} as a {@link SequentialBatchReadable}.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonArrowDataSink extends PythonDataSink {
+public class RandomAccessAsSequentialBatchReadable implements SequentialBatchReadable {
 
-    @Override
-    default String getIdentifier() {
-        return "org.knime.python3.arrow";
+    private final RandomAccessBatchReadable m_readable;
+
+    /**
+     * Create a new {@link SequentialBatchReadable} that delegates to the given readable.
+     *
+     * @param readable the {@link RandomAccessBatchReadable}.
+     */
+    public RandomAccessAsSequentialBatchReadable(final RandomAccessBatchReadable readable) {
+        m_readable = readable;
     }
 
-    /**
-     * @return the path the output file should be written to.
-     */
-    String getAbsolutePath();
+    @Override
+    public ColumnarSchema getSchema() {
+        return m_readable.getSchema();
+    }
 
-    /**
-     * Report that the next batch has been written to the file. Must be called by Python each time a new batch was
-     * written. Must be called for each batch in ascending order.
-     *
-     * @param offset the offset of the batch
-     * @throws Exception
-     */
-    void reportBatchWritten(long offset) throws Exception; // TODO(dictionary) add offsets for dictionary batches
+    @Override
+    public SequentialBatchReader createSequentialReader(final ColumnSelection selection) {
+        return new RandomAsSequentialBatchReader(m_readable, selection);
+    }
 
-    /**
-     * TODO check if this can be removed. We can now also read the schema from the arrow file directly
-     *
-     * @param schema the schema of the data that is written to the file
-     */
-    void setColumnarSchema(ColumnarSchema schema);
+    @Override
+    public void close() throws IOException {
+        m_readable.close();
+    }
 
-    /**
-     * @param size the final size of the table
-     */
-    void setFinalSize(final long size);
+    private static final class RandomAsSequentialBatchReader implements SequentialBatchReader {
+
+        private final RandomAccessBatchReader m_reader;
+
+        private AtomicInteger m_nextIdx;
+
+        private RandomAsSequentialBatchReader(final RandomAccessBatchReadable readable,
+            final ColumnSelection selection) {
+            m_reader = readable.createRandomAccessReader(selection);
+            m_nextIdx = new AtomicInteger(0);
+        }
+
+        @Override
+        public ReadBatch forward() throws IOException {
+            return m_reader.readRetained(m_nextIdx.getAndIncrement());
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_reader.close();
+        }
+    }
 }

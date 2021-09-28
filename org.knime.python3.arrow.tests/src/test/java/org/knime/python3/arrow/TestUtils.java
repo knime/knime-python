@@ -61,6 +61,7 @@ import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
+import org.knime.python3.PythonException;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonModuleKnimeGateway;
@@ -121,9 +122,9 @@ public final class TestUtils {
     }
 
     /**
-     * This function removes the leading '/' of a path extracted from a URL if the operating system is Windows.
-     * Paths extracted from a URL typically start with a '/' which on Windows leads to paths like '/C:/...".
-     * 
+     * This function removes the leading '/' of a path extracted from a URL if the operating system is Windows. Paths
+     * extracted from a URL typically start with a '/' which on Windows leads to paths like '/C:/...".
+     *
      * @param path extracted from a URL
      * @return a path with the leading slash removed
      */
@@ -173,5 +174,16 @@ public final class TestUtils {
          */
         void testMultipleInputsOutputs(List<? extends PythonDataSource> dataSources,
             List<? extends PythonDataSink> dataSinks);
+
+        /**
+         * Write row keys and one other column to the data sink for checking the row keys.
+         *
+         * @param duplicates "none" if no duplicates should be used, "far" if duplicates should be far away, "close" if
+         *            the duplicates should be next to each other
+         * @param dataSink sinks to write to
+         * @throws PythonException if writing to the dataSink caused an exception because the data sink contains
+         *             duplicate keys
+         */
+        void testRowKeyChecking(String duplicates, PythonDataSink dataSink) throws PythonException;
     }
 }

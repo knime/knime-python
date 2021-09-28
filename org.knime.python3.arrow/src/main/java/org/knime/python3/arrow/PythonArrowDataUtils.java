@@ -49,6 +49,7 @@
 package org.knime.python3.arrow;
 
 import java.io.Flushable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,9 +79,11 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.LogicalTypeTrait;
+import org.knime.core.util.DuplicateKeyException;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
+import org.knime.python3.PythonException;
 
 /**
  * Utilities for handling {@link PythonDataSource} and {@link PythonDataSink} for Arrow data that needs to be transfered
@@ -147,6 +150,27 @@ public final class PythonArrowDataUtils {
     }
 
     /**
+     * Create a {@link RowKeyChecker} that checks all batches that are written to the dataSink.
+     *
+     * @param dataSink the {@link PythonArrowDataSink} that data is written to
+     * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
+     * @return A {@link RowKeyChecker}. After all batches have been written to the {@link PythonArrowDataSink}
+     *         {@link RowKeyChecker#allUnique()} can be called to check if the row keys are unique.
+     */
+    public static RowKeyChecker createRowKeyChecker(final DefaultPythonArrowDataSink dataSink,
+        final ArrowColumnStoreFactory storeFactory) {
+        final var rowKeyChecker = RowKeyChecker.fromRandomAccessReadable(() -> createReadable(dataSink, storeFactory));
+        dataSink.registerBatchListener(() -> {
+            try {
+                rowKeyChecker.checkNextBatch();
+            } catch (final DuplicateKeyException | IOException e) {
+                throw new PythonException(e.getMessage(), e);
+            }
+        });
+        return rowKeyChecker;
+    }
+
+    /**
      * Create a {@link RandomAccessBatchReadable} that provides batches from the data written by the Python process to
      * the given {@link PythonArrowDataSink}.
      *
@@ -162,7 +186,8 @@ public final class PythonArrowDataUtils {
     }
 
     /**
-     * Creates a {@link UnsavedColumnarContainerTable table} from the provided {@link DefaultPythonArrowDataSink dataSink}.
+     * Creates a {@link UnsavedColumnarContainerTable table} from the provided {@link DefaultPythonArrowDataSink
+     * dataSink}.
      *
      * @param dataSink filled by Python
      * @param storeFactory for creation Arrow stores in Java
@@ -201,8 +226,8 @@ public final class PythonArrowDataUtils {
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
         // TODO shouldn't be necessary once we store the serializer alongside the data (AP-17501)
         var cellSerializerFactory = new DataCellSerializerFactory();
-        return ColumnarValueSchemaUtils.create(
-            ValueSchema.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new), cellSerializerFactory));
+        return ColumnarValueSchemaUtils
+            .create(ValueSchema.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new), cellSerializerFactory));
     }
 
     private static ValueFactory<?, ?> getValueFactory(final String valueFactoryClassName, final DataSpec dataSpec) {

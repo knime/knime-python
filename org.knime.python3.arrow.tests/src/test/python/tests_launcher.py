@@ -432,6 +432,32 @@ class EntryPoint(kg.EntryPoint):
                 rb = pa.record_batch([data], ["0"])
                 oup.write(rb)
 
+    def testRowKeyChecking(self, duplicates, data_sink):
+        with kg.data_sink_mapper(data_sink) as sink:
+            num_batches = 5
+            b = 0
+            while True:
+                num_rows = 100
+                keys_py = [f"Row{b}_{i}" for i in range(num_rows)]
+
+                if duplicates == "far" and b == 3:
+                    # Duplicates at batch0,row0 and batch3,row20
+                    keys_py[20] = "Row0_0"
+                elif duplicates == "close" and b == 0:
+                    # Duplicates at batch0,row0 and batch0,row1
+                    keys_py[1] = "Row0_0"
+
+                b += 1
+
+                # For close duplicates we loop until we get the exception
+                if duplicates != "close" and b >= num_batches:
+                    break
+
+                keys = pa.array(keys_py, type=pa.string())
+                data = pa.array(list(range(num_rows)), type=pa.int32())
+                batch = pa.record_batch([keys, data], ["0", "1"])
+                sink.write(batch)
+
     class Java:
         implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]
 
