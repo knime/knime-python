@@ -48,8 +48,10 @@
  */
 package org.knime.python3;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Collection;
@@ -90,8 +92,9 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
      *            imported
      * @throws IOException TODO
      */
-    public PythonGateway(final PythonCommand command, final String launcherPath, final Class<T> entryPointClass,
-        final Collection<PythonExtension> extensions, final PythonPath pythonPath) throws IOException {
+    public PythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
+        final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
+        throws IOException {
 
         // Setup Java server
         m_clientServer = new ClientServerBuilder().javaPort(0).build();
@@ -102,7 +105,7 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
         GatewayServer.turnLoggingOff();
 
         // Create the process
-        final ProcessBuilder pb = command.createProcessBuilder();
+        final ProcessBuilder pb = pythonProcessBuilder;
         Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);

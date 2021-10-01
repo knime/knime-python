@@ -95,25 +95,33 @@ def connect_to_knime(entry_point: EntryPoint):
     """Connect to the KNIME instance that started this Python process.
 
     This function expects the Python process to have been created by the `PythonGateway`
-    Java class. After this function returns `knime_gateway.client_server` will not be
-    different from `None` and can be used to communicate with the JVM.
+    Java class. After this function returns `knime_gateway.client_server` will be populated
+    and can be used to communicate with the JVM.
 
     Args:
         entry_point: A class implementing methods that can be called from Java.
     """
     java_port = int(sys.argv[1])
     java_params = JavaParameters(port=java_port, auto_convert=True)
-    python_params = PythonParameters(port=0, propagate_java_exceptions=True)  # Dynamically determine port.
+    python_params = PythonParameters(
+        port=0, propagate_java_exceptions=True
+    )  # Dynamically determine port.
 
     # Create the client server
     global client_server
-    client_server = ClientServer(java_parameters=java_params,
-                                 python_parameters=python_params,
-                                 python_server_entry_point=entry_point)
+    client_server = ClientServer(
+        java_parameters=java_params,
+        python_parameters=python_params,
+        python_server_entry_point=entry_point,
+    )
     # Let Java reconnect to the dynamically determined Python port. This is necessary to be able to have several py4j
     # connections established (i.e. several Python nodes running) at the same time.
-    python_address = client_server.java_gateway_server.getCallbackClient().getAddress()  # Has not changed.
-    python_port = client_server.get_callback_server().get_listening_port()  # Has changed.
+    python_address = (
+        client_server.java_gateway_server.getCallbackClient().getAddress()
+    )  # Has not changed.
+    python_port = (
+        client_server.get_callback_server().get_listening_port()
+    )  # Has changed.
     client_server.java_gateway_server.resetCallbackClient(python_address, python_port)
 
 
