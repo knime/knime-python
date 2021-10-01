@@ -69,10 +69,11 @@ class PythonValueFactory:
 
 class PythonValueFactoryBundle:
 
-    def __init__(self, java_value_factory, data_spec_json, value_factory):
+    def __init__(self, java_value_factory, data_spec_json, value_factory, data_traits):
         self._java_value_factory = java_value_factory
         self._data_spec_json = data_spec_json
         self._value_factory = value_factory
+        self._data_traits = data_traits
 
     @property
     def java_value_factory(self):
@@ -86,6 +87,10 @@ class PythonValueFactoryBundle:
     def value_factory(self):
         return self._value_factory
 
+    @property
+    def data_traits(self):
+        return self._data_traits
+
 
 _value_factory_to_data_spec_json = {}
 
@@ -94,11 +99,13 @@ _java_value_factory_to_bundle = {}
 _types_to_bundle = {}
 
 
-def register_python_value_factory(python_module, python_value_factory_name, data_spec_json, java_value_factory):
+def register_python_value_factory(python_module, python_value_factory_name, data_spec_json, java_value_factory,
+                                  data_traits):
     module = importlib.import_module(python_module)
     value_factory_class = getattr(module, python_value_factory_name)
     value_factory = value_factory_class()
-    value_factory_bundle = PythonValueFactoryBundle(java_value_factory, data_spec_json, value_factory)
+    value_factory_bundle = PythonValueFactoryBundle(java_value_factory, data_spec_json, value_factory,
+                                                    data_traits)
     _types_to_bundle[value_factory.compatible_type] = value_factory_bundle
     _java_value_factory_to_bundle[java_value_factory] = value_factory_bundle
 

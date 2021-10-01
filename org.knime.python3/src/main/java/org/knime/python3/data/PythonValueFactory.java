@@ -49,7 +49,9 @@
 package org.knime.python3.data;
 
 import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.serialization.DataSpecSerializer;
+import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
@@ -88,6 +90,14 @@ public final class PythonValueFactory {
      */
     public String getDataSpecRepresentation() {
         var json = new DataSpecSerializer().save(m_valueFactory.getSpec(), JsonNodeFactory.instance);
+        return json.toString();
+    }
+
+    /**
+     * @return JSON representation of the {@link DataTraits}
+     */
+    public String getDataTraitsJson() {
+        var json = new DataTraitsSerializer(JsonNodeFactory.instance).save(m_valueFactory.getTraits());
         return json.toString();
     }
 

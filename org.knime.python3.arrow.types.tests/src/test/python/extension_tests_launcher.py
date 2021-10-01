@@ -54,8 +54,10 @@ import pyarrow as pa
 
 class EntryPoint(kg.EntryPoint):
 
-    def registerPythonValueFactory(self, python_module, python_value_factory_name, data_spec, java_value_factory):
-        kt.register_python_value_factory(python_module, python_value_factory_name, data_spec, java_value_factory)
+    def registerPythonValueFactory(self, python_module, python_value_factory_name, data_spec, java_value_factory,
+                                   data_traits):
+        kt.register_python_value_factory(python_module, python_value_factory_name, data_spec, java_value_factory,
+                                         data_traits)
 
     def assertFsLocationEquals(self, data_source, category, specifier, path):
         with kg.data_source_mapper(data_source) as source:
@@ -126,7 +128,6 @@ class EntryPoint(kg.EntryPoint):
         with kg.data_source_mapper(data_source) as source:
             with kg.data_sink_mapper(data_sink) as sink:
                 df = source.to_pandas()
-                print(df)
                 arrow_table = kat.pandas_df_to_arrow_table(df)
                 sink.write(arrow_table)
 

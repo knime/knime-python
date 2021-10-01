@@ -197,11 +197,11 @@ public class KnimeArrowExtensionTypesTest {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
 				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-						factory.getDataSpecRepresentation(), factory.getJavaValueFactoryName());
+						factory.getDataSpecRepresentation(), factory.getJavaValueFactoryName(), factory.getDataTraitsJson());
 			}
 		}
 	}
-
+	
 	private static void prepareUtf8EncodedStringData(final BatchWriter writer, final String value) throws IOException {
 		final var batch = writer.create(1);
 		final VarBinaryWriteData data = (VarBinaryWriteData) batch.get(0);
@@ -292,14 +292,7 @@ public class KnimeArrowExtensionTypesTest {
 		}
 	}
 
-	private static ColumnarSchema createTableSchema(final DataSpecWithTraits... columns) {
-		var builder = DefaultColumnarSchema.builder().addColumn(DataSpec.stringSpec());
-		for (var column : columns) {
-			builder.addColumn(column.spec(), column.traits());
-		}
-		return builder.build();
-	}
-
+	@SuppressWarnings("unchecked")
 	private static <W extends WriteAccess> WriteValue<?> createWriteValue(ValueFactory<?, W> valueFactory,
 			WriteAccess access) {
 		return valueFactory.createWriteValue((W) access);
@@ -381,6 +374,7 @@ public class KnimeArrowExtensionTypesTest {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <D extends NullableReadData> Consumer<RandomAccessBatchReadable> createSingleDataTester(int colIdx,
 			Class<D> dataClass, final Consumer<D> dataTester) {
 		return createSingleBatchTester(b -> dataTester.accept((D) b.get(colIdx)));
@@ -411,7 +405,7 @@ public class KnimeArrowExtensionTypesTest {
 	public interface KnimeArrowExtensionTypeEntryPoint extends PythonEntryPoint {
 
 		void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-				final String dataSpec, final String javaValueFactory);
+				final String dataSpec, final String javaValueFactory, final String dataTraits);
 
 		void assertFsLocationEquals(PythonDataSource dataSource, String category, String specifier, String path);
 
