@@ -434,16 +434,6 @@ public final class PythonCommands implements AutoCloseable {
     }
 
     /**
-     * Creates a runnable future that resets the Python workspace by emptying all variable definitions.
-     *
-     * @return a runnable future that resets the Python workspace
-     */
-    public synchronized RunnableFuture<Void> reset() {
-        return createTask(new VoidReturningTaskHandler(),
-            new DefaultMessage(m_messaging.createNextMessageId(), "reset", null, null));
-    }
-
-    /**
      * Creates a runnable future that cleans up all registered external resources (e.g., database connections) on Python
      * side.
      *

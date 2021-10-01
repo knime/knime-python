@@ -302,29 +302,6 @@ public class PythonKernelManager implements AutoCloseable {
     }
 
     /**
-     * Resets the workspace of the python kernel.
-     *
-     * @param responseHandler Handler called after execution (response object is always null)
-     */
-    public synchronized void resetWorkspace(final PythonKernelResponseHandler<Void> responseHandler) {
-        final PythonKernel kernel = m_kernel;
-        runInThread(new Runnable() {
-            @Override
-            public void run() {
-                Exception exception = null;
-                try {
-                    kernel.resetWorkspace();
-                } catch (final Exception e) {
-                    exception = e;
-                }
-                if (kernel.equals(m_kernel)) {
-                    responseHandler.handleResponse(null, exception);
-                }
-            }
-        });
-    }
-
-    /**
      * Returns the list of possible auto completions to the given source at the given position.
      *
      * Each auto completion contains the fields 'name', 'type' and 'doc'.

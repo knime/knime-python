@@ -421,7 +421,6 @@ _builtin_request_handlers = {'getpid': GetPidRequestHandler(),
                              'setCustomModulePaths': SetCustomModulePathsRequestHandler(),
                              'execute': ExecuteRequestHandler(),
                              'execute_async': ExecuteRequestHandler(),
-                             'reset': ResetRequestHandler(),
                              'cleanup': CleanupRequestHandler(),
                              'shutdown': ShutdownRequestHandler()}
 
