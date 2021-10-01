@@ -145,6 +145,7 @@ import org.knime.filehandling.core.data.location.FSLocationValue;
 import org.knime.filehandling.core.data.location.FSLocationValueFactory;
 import org.knime.filehandling.core.data.location.FSLocationValueFactory.FSLocationWriteValue;
 import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
+import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -152,14 +153,13 @@ import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonModule;
-import org.knime.python3.PythonModuleKnimeGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
+import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
-import org.knime.python3.arrow.PythonModuleKnimeArrow;
 import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
@@ -861,11 +861,9 @@ public class KnimeArrowExtensionTypesTest {
 		final PythonCommand command = getPythonCommand();
 		final String launcherPath = Paths.get(System.getProperty("user.dir"), "src/test/python", launcherModule)
 				.toString();
-		final String knimeGateway = PythonModuleKnimeGateway.getPythonModule();
-		final String knimeArrow = PythonModuleKnimeArrow.getPythonModule();
 		final PythonPathBuilder builder = PythonPath.builder()//
-				.add(knimeGateway) //
-				.add(knimeArrow);
+			.add(Python3SourceDirectory.getPath()) //
+			.add(Python3ArrowSourceDirectory.getPath());
 		for (final PythonModule module : modules) {
 			builder.add(module.getParentDirectory());
 		}
@@ -873,7 +871,7 @@ public class KnimeArrowExtensionTypesTest {
 		final List<PythonExtension> pyExtensions = new ArrayList<>();
 		pyExtensions.add(PythonArrowExtension.INSTANCE);
 
-		return new PythonGateway<>(command, launcherPath, entryPointClass, pyExtensions, pythonPath);
+		return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions, pythonPath);
 	}
 
 	/** Create a Python command from the path in the env var PYTHON3_EXEC_PATH */

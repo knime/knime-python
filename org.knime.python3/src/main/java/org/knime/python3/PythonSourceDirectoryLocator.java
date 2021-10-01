@@ -44,39 +44,59 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 6, 2021 (benjamin): created
+ *   Oct 1, 2021 (marcel): created
  */
-package org.knime.python3.arrow;
+package org.knime.python3;
 
-import org.knime.python3.PythonModuleKnimeGateway;
-import org.knime.python3.PythonPath.PythonPathBuilder;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+
+import org.eclipse.core.runtime.FileLocator;
+import org.knime.core.util.FileUtil;
+import org.osgi.framework.FrameworkUtil;
 
 /**
- * Utilities for making the <code>knime_arrow</code> Python module available to a Python process.
- *
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonModuleKnimeArrow {
+public final class PythonSourceDirectoryLocator {
 
-    private PythonModuleKnimeArrow() {
-        // Static utilities
+    /**
+     * The default relative path of the Python source code directory (to its bundle's base directory).
+     */
+    public static final String DEFAULT_SOURCE_DIRECTORY = "src/main/python";
+
+    private PythonSourceDirectoryLocator() {}
+
+    /**
+     * Resolves the location of the Python source code directory of the given class's containing bundle to an absolute
+     * path that is suitable to be added to Python's module path. The method assumes that the source code directory is
+     * located at {@value #DEFAULT_SOURCE_DIRECTORY} relative to the bundle's base directory.
+     *
+     * @param clazz The class whose bundle's Python source code directory to resolve.
+     * @return The absolute path to the Python source code directory.
+     */
+    public static Path getPathFor(final Class<?> clazz) {
+        return getPathFor(clazz, DEFAULT_SOURCE_DIRECTORY);
     }
 
     /**
-     * Add the <code>knime_arrow</code> Python module to the
+     * Resolves the location of the given relative Python source code directory to the base directory of the given
+     * class's containing bundle. The returned absolute path is suitable to be added to Python's module path.
      *
-     * @return the absolute path to the Python module <code>knime_arrow</code>
+     * @param clazz The class whose bundle's Python source code directory to resolve.
+     * @param sourceDirectory The relative path of the source code directory.
+     * @return The absolute path to the Python source code directory.
      */
-    public static String getPythonModule() {
-        return PythonModuleKnimeGateway.getPythonModuleFor(PythonModuleKnimeArrow.class);
-    }
-
-    /**
-     * Add the <code>knime_arrow</code> Python module to the builder.
-     *
-     * @param builder the builder for creating the path
-     */
-    public static void addToPythonPathBuilder(final PythonPathBuilder builder) {
-        builder.add(getPythonModule());
+    public static Path getPathFor(final Class<?> clazz, final String sourceDirectory) {
+        try {
+            final var bundle = FrameworkUtil.getBundle(clazz);
+            final var url = FileLocator
+                .toFileURL(FileLocator.find(bundle, new org.eclipse.core.runtime.Path(sourceDirectory), null));
+            return FileUtil.resolveToPath(url);
+        } catch (URISyntaxException | IOException ex) {
+            throw new IllegalStateException("Failed to resolve Python source code directory '" + sourceDirectory +
+                "' of the bundle of class '" + clazz + "'.", ex);
+        }
     }
 }

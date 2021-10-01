@@ -56,7 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.lang3.SystemUtils;
+import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -64,7 +64,6 @@ import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonException;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonModuleKnimeGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
@@ -113,28 +112,13 @@ public final class TestUtils {
         final String launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //
-            .add(removeLeadingSlashOnWindows(PythonModuleKnimeGateway.getPythonModule())) //
-            .add(removeLeadingSlashOnWindows(PythonModuleKnimeArrow.getPythonModule())) //
+            .add(Python3SourceDirectory.getPath()) //
+            .add(Python3ArrowSourceDirectory.getPath()) //
             .build();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
 
-        return new PythonGateway<>(command, launcherPath, ArrowTestsEntryPoint.class, extensions, pythonPath);
-    }
-
-    /**
-     * This function removes the leading '/' of a path extracted from a URL if the operating system is Windows. Paths
-     * extracted from a URL typically start with a '/' which on Windows leads to paths like '/C:/...".
-     *
-     * @param path extracted from a URL
-     * @return a path with the leading slash removed
-     */
-    public static String removeLeadingSlashOnWindows(final String path) {
-        if (SystemUtils.IS_OS_WINDOWS && path.startsWith("/")) {
-            String withoutLeadingSlash = path.substring(1);
-            return withoutLeadingSlash.replace("%20", " ");
-        } else {
-            return path;
-        }
+        return new PythonGateway<>(command.createProcessBuilder(), launcherPath, ArrowTestsEntryPoint.class, extensions,
+            pythonPath);
     }
 
     /**

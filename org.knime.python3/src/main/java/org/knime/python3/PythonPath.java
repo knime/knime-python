@@ -49,6 +49,7 @@
 package org.knime.python3;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -125,9 +126,8 @@ public final class PythonPath {
          * @param path absolute path to a folder containing Python modules
          * @return the builder
          */
-        public PythonPathBuilder add(final String path) {
-            // TODO we trust that strings are correct. Is this fine?
-            m_paths.add(path);
+        public PythonPathBuilder add(final Path path) {
+            m_paths.add(path.toString());
             return this;
         }
 

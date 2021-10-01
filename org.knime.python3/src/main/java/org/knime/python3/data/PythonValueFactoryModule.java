@@ -71,8 +71,8 @@ public final class PythonValueFactoryModule implements Iterable<PythonValueFacto
     }
 
     @Override
-    public String getParentDirectory() {
-        return m_modulePath.getParent().toString();
+    public Path getParentDirectory() {
+        return m_modulePath.getParent();
     }
 
     @Override

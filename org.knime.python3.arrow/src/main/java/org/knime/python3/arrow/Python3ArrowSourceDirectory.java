@@ -44,28 +44,28 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 27, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 6, 2021 (benjamin): created
  */
-package org.knime.python3;
+package org.knime.python3.arrow;
 
 import java.nio.file.Path;
 
+import org.knime.python3.PythonSourceDirectoryLocator;
+
 /**
- * Represents a Python module.
+ * Provides convenient access to the path of the Python source code directory of the org.knime.python3.arrow bundle.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonModule {
+public final class Python3ArrowSourceDirectory {
+
+    private Python3ArrowSourceDirectory() {}
 
     /**
-     * Provides the name of the module as one would use it for imports in Python.
-     *
-     * @return the name of the module
+     * @return The absolute path to the Python source code directory of the org.knime.python3.arrow bundle.
      */
-    String getModuleName();
-
-    /**
-     * @return the path to the parent directory
-     */
-    Path getParentDirectory();
+    public static Path getPath() {
+        return PythonSourceDirectoryLocator.getPathFor(Python3ArrowSourceDirectory.class);
+    }
 }
