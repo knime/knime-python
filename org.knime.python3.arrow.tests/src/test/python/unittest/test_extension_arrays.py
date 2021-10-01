@@ -404,13 +404,13 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
 
     def test_create_from_list(self):
         self._create_and_check(
-            lambda a, k: ka.struct_dict_encode(a, k, type=pa.string())
+            lambda a, k: ka.struct_dict_encode(a, k, value_type=pa.string())
         )
         self._create_and_check(lambda a, k: ka.struct_dict_encode(a, k))
 
     def test_create_from_numpy(self):
         self._create_and_check(
-            lambda a, k: ka.struct_dict_encode(np.array(a), k, type=pa.string())
+            lambda a, k: ka.struct_dict_encode(np.array(a), k, value_type=pa.string())
         )
         self._create_and_check(lambda a, k: ka.struct_dict_encode(np.array(a), k))
 

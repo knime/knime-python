@@ -80,8 +80,12 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
 
 def factory_version_for(arrow_type: pa.DataType):
     # TODO synchronize with the versions on the Java side
-    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+    if kat.is_value_factory_type(arrow_type):
         return factory_version_for(arrow_type.storage_type)
+
+    if is_struct_dict_encoded(arrow_type):
+        version = f"0[{factory_version_for(arrow_type.storage_type)};]"
+        return version
 
     if isinstance(arrow_type, pa.StructType):
         return "0[{}]".format(
@@ -103,7 +107,7 @@ def convert_schema(schema: pa.Schema):
 
 def convert_type(arrow_type: pa.DataType):
     # Logical type
-    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+    if isinstance(arrow_type, (kat.ValueFactoryExtensionType, StructDictEncodedType)):
         return convert_type(arrow_type.storage_type)
 
     # Struct
@@ -124,13 +128,19 @@ def convert_type(arrow_type: pa.DataType):
         return gateway().jvm.org.knime.core.table.schema.DataSpec.booleanSpec()
     if arrow_type == pa.int8():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.byteSpec()
+    if arrow_type == pa.uint8():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.byteSpec()
     if arrow_type == pa.float64():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.doubleSpec()
     if arrow_type == pa.float32():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.floatSpec()
     if arrow_type == pa.int32():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.intSpec()
+    if arrow_type == pa.uint32():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.intSpec()
     if arrow_type == pa.int64():
+        return gateway().jvm.org.knime.core.table.schema.DataSpec.longSpec()
+    if arrow_type == pa.uint64():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.longSpec()
     if arrow_type == pa.large_binary():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.varBinarySpec()
@@ -550,7 +560,7 @@ class DictKeyGenerator:
 
 # TODO benchmark and make this faster
 def struct_dict_encode(
-    array, key_generator: Callable[[Any], int], type: pa.DataType = None
+    array, key_generator: Callable[[Any], int], value_type: pa.DataType = None, key_type: pa.DataType = None
 ):
     """Create a struct based dictionary encoded array from the given data.
 
@@ -558,8 +568,9 @@ def struct_dict_encode(
         array (ArrayLike): The data which should be dictionary encoded.
         key_generator: A callable which returns keys for individual values.
             Only equal values can get the same key.
-        type (pa.DataType, optional): The type of the values in the array.
+        value_type (pa.DataType, optional): The type of the values in the array.
             Can be omitted if array is a pa.Array.
+        key_type (pa.DataType, optional): The type of keys to use. One of uint8, uint32 and uint64, defaults to uint64
 
     Returns:
         Dictionary encoded (StructDictEncodedArray)
@@ -575,11 +586,11 @@ def struct_dict_encode(
     # This saves only the indices of the values and uses pc.take
     if isinstance(array, pa.Array):
         # Check that the type fits or is not given
-        if type is not None and type != array.type:
+        if value_type is not None and value_type != array.type:
             raise ValueError(
-                f"The type ({type}) does not match the type of the array ({array.type})."
+                f"The type ({value_type}) does not match the type of the array ({array.type})."
             )
-        type = array.type  # NOSONAR: "type" is the default naming in pyarrow
+        value_type = array.type  # NOSONAR: "type" is the default naming in pyarrow
 
         # Loop and encode
         entry_indices = []
@@ -631,28 +642,40 @@ def struct_dict_encode(
                 entries.append(v)
                 mask.append(False)
 
-        if type is None:
+        if value_type is None:
             entries_array = pa.array(entries)
-            type = entries_array.type
+            value_type = entries_array.type
         else:
-            entries_array = pa.array(entries, type=type)
+            entries_array = pa.array(entries, type=value_type)
 
     mask_array = pa.array(mask)
-    keys_array = pa.array(keys, type=pa.uint64())
+    if key_type is None:
+        key_type = pa.uint64()
+    keys_array = pa.array(keys, type=key_type)
 
     # Create the storage
     # NOTE pyarrow >= 5 is needed for the mask argument
     storage = pa.StructArray.from_arrays(
         [keys_array, entries_array], names=["0", "1"], mask=mask_array
     )
-    return pa.ExtensionArray.from_storage(StructDictEncodedType(type), storage)
+    return pa.ExtensionArray.from_storage(StructDictEncodedType(value_type, key_type=key_type), storage)
 
 
 class StructDictEncodedType(pa.ExtensionType):
     def __init__(self, inner_type, key_type=None):
         if key_type is None:
             key_type = pa.uint64()
-        pa.ExtensionType.__init__(self, knime_struct_type(key_type, inner_type), "")
+        self._key_type = key_type
+        self._inner_type = inner_type
+        pa.ExtensionType.__init__(self, knime_struct_type(key_type, inner_type), "knime.struct_dict_encoded")
+
+    @property
+    def value_type(self):
+        return self._inner_type
+
+    @property
+    def key_type(self):
+        return self._key_type
 
     def __arrow_ext_serialize__(self):
         return b""
@@ -666,6 +689,13 @@ class StructDictEncodedType(pa.ExtensionType):
 
     def __arrow_ext_class__(self):
         return StructDictEncodedArray
+
+
+def is_struct_dict_encoded(type_: pa.DataType):
+    return isinstance(type_, StructDictEncodedType)
+
+
+pa.register_extension_type(StructDictEncodedType(pa.null()))
 
 
 class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
@@ -746,6 +776,12 @@ class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
 
     def _dict_values(self):
         return self.storage.flatten()[1]
+
+    def dictionary_decode(self):
+        # TODO use a more sophisticated mechanism. Maybe we can convert this to an (Arrow)dictionary encoded array
+        py_list = self.to_pylist()
+        return pa.array(py_list, type=self._value_type())
+
 
 
 ###############################################################################
