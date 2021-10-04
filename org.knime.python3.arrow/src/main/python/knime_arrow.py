@@ -247,9 +247,10 @@ class ArrowDataSource:
     # API to get higher level access
 
     def to_pandas(self):
+        import knime_arrow_pandas
         # TODO use arrow's build-in conversion whenever possible
         arrow_table = self.to_arrow_table()
-        return kat.arrow_table_to_pandas_df(arrow_table)
+        return knime_arrow_pandas.arrow_table_to_pandas_df(arrow_table)
 
     def to_arrow_table(self):
         table_without_names = pa.Table.from_batches(iter(self), self._reader.schema)

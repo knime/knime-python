@@ -53,51 +53,15 @@ import knime_arrow as ka
 import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
-import pandas as pd
 import json
 
 
-def pandas_df_to_arrow_table(data_frame):
-    schema = _extract_schema(data_frame)
-    # pyarrow doesn't allow to customize the conversion from pandas, so we convert the corresponding columns to storage
-    # format in the pandas DataFrame
-    storage_df, storage_schema = _to_storage(data_frame, schema)
-    arrow_table = pa.table(storage_df, schema=storage_schema)
-    return _reintroduce_extension_types(arrow_table, schema)
-
-
-def _extract_schema(data_frame: pd.DataFrame):
-    dtypes = data_frame.dtypes
-    columns = [
-        (column, _to_arrow_type(data_frame[column][0]))
-        for (column, dtype) in dtypes.items()
-    ]
-    return pa.schema(columns)
-
-
-def _to_arrow_type(first_value):
-    t = type(first_value)
-    if t == list or t == np.ndarray:
-        inner = _to_arrow_type(first_value[0])
-        return pa.list_(inner)
-    elif t == np.int64:  # TODO implement remaining primitive types
-        return pa.int64()
-    elif t == np.int32:
-        return pa.int32()
-    elif t == int:
-        return pa.int32()
-    elif t == str:
-        return pa.string()
-    else:
-        return _to_extension_type(t)
-
-
-def _to_extension_type(dtype):
+def to_extension_type(type_):
     # TODO consider more elaborate method for extension type matching e.g. based on value/structure not only type
     #  this would allow an extension type to claim a value for itself e.g. FSLocationValue could detect
     #  {'fs_category': 'foo', 'fs_specifier': 'bar', 'path': 'baz'}. Problem: What if multiple types match?
     try:
-        factory_bundle = kt.get_value_factory_bundle_for_type(dtype)
+        factory_bundle = kt.get_value_factory_bundle_for_type(type_)
         storage_type = _create_storage_type(factory_bundle)
         return ValueFactoryExtensionType(
             factory_bundle.value_factory,
@@ -105,7 +69,7 @@ def _to_extension_type(dtype):
             factory_bundle.java_value_factory,
         )
     except KeyError:
-        raise ValueError(f"The type {dtype} is unknown.")
+        raise ValueError(f"The type {type_} is unknown.")
 
 
 def _create_storage_type(factory_bundle):
@@ -123,7 +87,7 @@ def _add_dict_encoding(arrow_type, data_traits):
             for inner_field, inner_traits in zip(arrow_type, data_traits["inner"])
         ]
         return pa.struct(inner)
-    elif _is_list_type(arrow_type):
+    elif is_list_type(arrow_type):
         value_type = _add_dict_encoding(arrow_type.value_type, data_traits["inner"])
         if pat.is_list(arrow_type):
             return pa.list_(value_type)
@@ -155,84 +119,19 @@ def _get_dict_key_type(data_traits):
         return None
 
 
-def _to_storage(df: pd.DataFrame, schema: pa.Schema):
-    storage_schema = []
-    for name, arrow_type in zip(schema.names, schema.types):
-        storage_series, storage_type = _series_to_storage(df[name], arrow_type)
-        storage_schema.append((name, storage_type))
-        df[name] = storage_series
-    return df, pa.schema(storage_schema)
-
-
-def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
-    if _contains_ext_type(arrow_type):
-        storage_type, storage_func = _storage_type_and_fn(arrow_type)
-        storage_series = series.apply(storage_func)
-        return storage_series, storage_type
-    else:
-        return series, arrow_type
-
-
 def _pretty_type_string(type_: pa.DataType):
     if isinstance(type_, pa.ExtensionType):
         return f"{str(type_)}[{_pretty_type_string(type_.storage_type)}]"
     elif pat.is_struct(type_):
         return f"{[_pretty_type_string(inner.type) for inner in type_]}"
-    elif _is_list_type(type_):
+    elif is_list_type(type_):
         return f"[{_pretty_type_string(type_.value_type)}]"
     else:
         return str(type_)
 
 
-def _contains_ext_type(type_: pa.DataType):
-    if is_value_factory_type(type_) or ka.is_struct_dict_encoded(type_):
-        return True
-    elif _is_list_type(type_):
-        return _contains_ext_type(type_.value_type)
-    elif pat.is_struct(type_):
-        return any(_contains_ext_type(inner.type) for inner in type_)
-    else:
-        return False
-
-
-def _storage_type_and_fn(type_: pa.DataType):
-    """
-    Finds the storage type and a function that converts a complex object in a pandas DataFrame into its storage
-    representation
-    """
-    if is_value_factory_type(type_):
-        storage_type, storage_fn = _storage_type_and_fn(type_.storage_type)
-        return storage_type, lambda a: type_.encode(a)
-    elif ka.is_struct_dict_encoded(type_):
-        return type_.value_type, _identity
-    elif _is_list_type(type_):
-        inner_type, inner_fn = _storage_type_and_fn(type_.value_type)
-        if pat.is_list(type_):
-            return pa.list_(inner_type), lambda l: [inner_fn(x) for x in l]
-        elif pat.is_large_list(type_):
-            return pa.large_list(inner_type), lambda l: [inner_fn(x) for x in l]
-    elif pat.is_struct(type_):
-        inner_types, inner_fns = zip(
-            *[_storage_type_and_fn(inner.type) for inner in type_]
-        )
-        inner_fields = [
-            inner.with_type(new_type) for inner, new_type in zip(type_, inner_types)
-        ]
-        return pa.struct(inner_fields), lambda a: {
-            inner.key: fn(inner.value) for fn, inner in zip(inner_fns, a.items())
-        }
-    else:
-        return type_, _identity
-
-
-def _reintroduce_extension_types(table: pa.Table, schema_with_ext_types: pa.Schema):
-    for i, name in enumerate(schema_with_ext_types.names):
-        potential_ext_type = schema_with_ext_types.types[i]
-        if table.schema.types[i] != potential_ext_type:
-            assert potential_ext_type is not None
-            ext_array = _apply_to_array(table.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type))
-            table = table.set_column(i, schema_with_ext_types.field(i), ext_array)
-    return table
+def is_list_type(type_: pa.DataType):
+    return pat.is_large_list(type_) or pat.is_list(type_)
 
 
 def _get_arrow_storage_to_ext_fn(type_):
@@ -242,7 +141,7 @@ def _get_arrow_storage_to_ext_fn(type_):
     elif is_value_factory_type(type_):
         storage_fn = _get_arrow_storage_to_ext_fn(type_.storage_type) or _identity
         return lambda a: pa.ExtensionArray.from_storage(type_, storage_fn(a))
-    elif _is_list_type(type_):
+    elif is_list_type(type_):
         value_fn = _get_arrow_storage_to_ext_fn(type_.value_type) or _identity
         return lambda a: _create_list_array(a.offsets, value_fn(a.values))
     elif pat.is_struct(type_):
@@ -255,94 +154,8 @@ def _get_arrow_storage_to_ext_fn(type_):
         return _identity
 
 
-def _apply_to_array(array, func):
-    if isinstance(array, pa.ChunkedArray):
-        return pa.chunked_array([func(chunk) for chunk in array.chunks])
-    else:
-        return func(array)
-
-
-def arrow_table_to_pandas_df(table: pa.Table):
-    logical_columns = [
-        i for i, field in enumerate(table.schema) if _contains_logical_type(field.type)
-    ]
-    storage_table = _to_pandas_compatible_table(table)
-    storage_df = storage_table.to_pandas()
-    _encode_df(storage_df, logical_columns, table.schema)
-    return storage_df
-
-
-def _contains_logical_type(type_: pa.DataType):
-    if is_value_factory_type(type_):
-        return True
-    elif pat.is_struct(type_):
-        for inner in type_:
-            if _contains_logical_type(inner):
-                return True
-        return False
-    elif _is_list_type(type_):
-        return _contains_logical_type(type_.value_type)
-    else:
-        return False
-
-
-def _is_list_type(type_: pa.DataType):
-    return pat.is_large_list(type_) or pat.is_list(type_)
-
-
-def _to_pandas_compatible_table(table: pa.Table):
-    arrays = []
-    fields = []
-    for i, field in enumerate(table.schema):
-        compatible_array = _to_pandas_compatible_array(table.column(i))
-        arrays.append(compatible_array)
-        fields.append(field.with_type(compatible_array.type))
-    schema = pa.schema(fields)
-    return pa.table(arrays, schema=schema)
-
-
-def _to_pandas_compatible_array(array: pa.Array):
-    compatibility_fn = _get_compatibility_fn(array.type)
-    if compatibility_fn is None:
-        return array
-    else:
-        return _apply_to_array(array, compatibility_fn)
-
-
 def _identity(x):
     return x
-
-
-def _get_compatibility_fn(type_: pa.DataType):
-    if is_value_factory_type(type_):
-        storage_fn = _get_compatibility_fn(type_.storage_type) or _identity
-        return lambda a: storage_fn(a.storage)
-    elif ka.is_struct_dict_encoded(type_):
-        return lambda a: a.dictionary_decode()
-    elif _is_list_type(type_):
-        value_fn = _get_compatibility_fn(type_.value_type)
-        if value_fn is None:
-            return None
-        else:
-            return lambda a: _create_list_array(
-                a.offsets, _to_pandas_compatible_array(a.values)
-            )
-    elif pat.is_struct(type_):
-        inner_fns = [_get_compatibility_fn(inner.type) for inner in type_]
-        if all(i is None for i in inner_fns):
-            return None
-        else:
-            inner_fns = [_identity if fn is None else fn for fn in inner_fns]
-
-            def _to_pandas_compatible_struct(struct_array: pa.StructArray):
-                inner = [fn(struct_array.field(i)) for i, fn in enumerate(inner_fns)]
-                return pa.StructArray.from_arrays(
-                    inner, names=[field.name for field in type_]
-                )
-
-            return _to_pandas_compatible_struct
-    else:
-        return None
 
 
 def _create_list_array(offsets, values):
@@ -353,26 +166,113 @@ def _create_list_array(offsets, values):
         return pa.ListArray.from_arrays(offsets, values)
 
 
-def _to_storage_table(table: pa.Table, logical_columns):
-    storage_table = table
-    for i in logical_columns:
-        field = table.schema.field(i)
-        assert isinstance(
-            field.type, ValueFactoryExtensionType
-        ), f"Only extension type columns need encoding, not {field.type}."
-        storage_field = field.with_type(field.type.storage_type)
-        storage_array = _apply_to_array(storage_table.column(i), lambda c: c.storage)
-        storage_table = table.set_column(i, storage_field, storage_array)
-    return storage_table
+def to_storage_table(table: pa.Table):
+    arrays = []
+    fields = []
+    for i, field in enumerate(table.schema):
+        compatible_array = _to_storage_array(table.column(i))
+        arrays.append(compatible_array)
+        fields.append(field.with_type(compatible_array.type))
+    schema = pa.schema(fields)
+    return pa.table(arrays, schema=schema)
 
 
-def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
-    for i in logical_columns:
-        field = schema.field(i)
-        assert isinstance(
-            field.type, ValueFactoryExtensionType
-        ), f"Only extension type columns need encoding, not {field.type}."
-        df[field.name] = df[field.name].apply(field.type.decode)
+def _to_storage_array(array: pa.Array):
+    compatibility_fn = _get_to_storage_fn(array.type)
+    if compatibility_fn is None:
+        return array
+    else:
+        return _apply_to_array(array, compatibility_fn)
+
+
+def _get_to_storage_fn(type_: pa.DataType):
+    if is_value_factory_type(type_):
+        storage_fn = _get_to_storage_fn(type_.storage_type) or _identity
+        return lambda a: storage_fn(a.storage)
+    elif ka.is_struct_dict_encoded(type_):
+        return lambda a: a.dictionary_decode()
+    elif is_list_type(type_):
+        value_fn = _get_to_storage_fn(type_.value_type)
+        if value_fn is None:
+            return None
+        else:
+            return lambda a: _create_list_array(
+                a.offsets, _to_storage_array(a.values)
+            )
+    elif pat.is_struct(type_):
+        inner_fns = [_get_to_storage_fn(inner.type) for inner in type_]
+        if all(i is None for i in inner_fns):
+            return None
+        else:
+            inner_fns = [_identity if fn is None else fn for fn in inner_fns]
+
+            def _to_storage_struct(struct_array: pa.StructArray):
+                inner = [fn(struct_array.field(i)) for i, fn in enumerate(inner_fns)]
+                return pa.StructArray.from_arrays(
+                    inner, names=[field.name for field in type_]
+                )
+
+            return _to_storage_struct
+    else:
+        return None
+
+
+def contains_knime_extension_type(type_: pa.DataType):
+    if is_value_factory_type(type_) or ka.is_struct_dict_encoded(type_):
+        return True
+    elif is_list_type(type_):
+        return contains_knime_extension_type(type_.value_type)
+    elif pat.is_struct(type_):
+        return any(contains_knime_extension_type(inner.type) for inner in type_)
+    else:
+        return False
+
+
+def get_storage_type_and_fn(type_: pa.DataType):
+    """
+    Finds the storage type and a function that converts a complex object in a pandas DataFrame into its storage
+    representation
+    """
+    if is_value_factory_type(type_):
+        storage_type, storage_fn = get_storage_type_and_fn(type_.storage_type)
+        return storage_type, lambda a: type_.encode(a)
+    elif ka.is_struct_dict_encoded(type_):
+        return type_.value_type, _identity
+    elif is_list_type(type_):
+        inner_type, inner_fn = get_storage_type_and_fn(type_.value_type)
+        if pat.is_list(type_):
+            return pa.list_(inner_type), lambda l: [inner_fn(x) for x in l]
+        elif pat.is_large_list(type_):
+            return pa.large_list(inner_type), lambda l: [inner_fn(x) for x in l]
+    elif pat.is_struct(type_):
+        inner_types, inner_fns = zip(
+            *[get_storage_type_and_fn(inner.type) for inner in type_]
+        )
+        inner_fields = [
+            inner.with_type(new_type) for inner, new_type in zip(type_, inner_types)
+        ]
+        return pa.struct(inner_fields), lambda a: {
+            inner.key: fn(inner.value) for fn, inner in zip(inner_fns, a.items())
+        }
+    else:
+        return type_, _identity
+
+
+def storage_table_to_extension_table(table: pa.Table, schema_with_ext_types: pa.Schema):
+    for i, name in enumerate(schema_with_ext_types.names):
+        potential_ext_type = schema_with_ext_types.types[i]
+        if table.schema.types[i] != potential_ext_type:
+            assert potential_ext_type is not None
+            ext_array = _apply_to_array(table.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type))
+            table = table.set_column(i, schema_with_ext_types.field(i), ext_array)
+    return table
+
+
+def _apply_to_array(array, func):
+    if isinstance(array, pa.ChunkedArray):
+        return pa.chunked_array([func(chunk) for chunk in array.chunks])
+    else:
+        return func(array)
 
 
 class ValueFactoryExtensionType(pa.ExtensionType):
@@ -537,15 +437,15 @@ def unpickle_knime_extension_scalar(ext_type, storage_scalar):
 
 
 def knime_extension_scalar(value):
-    ext_type = _to_extension_type(type(value))
+    ext_type = to_extension_type(type(value))
     py_storage = ext_type.encode(value)
     arrow_scalar = pa.scalar(py_storage)
     return KnimeExtensionScalar(ext_type, arrow_scalar)
 
 
 def knime_extension_array(array):
-    ext_type = _to_extension_type(type(array[0]))
-    storage_type, storage_fn = _storage_type_and_fn(ext_type)
+    type_ = to_extension_type(type(array[0]))
+    storage_type, storage_fn = get_storage_type_and_fn(type_)
     py_list = [storage_fn(x) for x in array]
     storage_array = pa.array(py_list, type=storage_type)
-    return _get_arrow_storage_to_ext_fn(ext_type)(storage_array)
+    return _get_arrow_storage_to_ext_fn(type_)(storage_array)

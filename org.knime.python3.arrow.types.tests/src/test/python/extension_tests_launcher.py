@@ -46,6 +46,7 @@
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 import knime_arrow_types as kat
+import knime_arrow_pandas as kap
 import knime_gateway as kg
 import knime_types as kt
 import pandas as pd
@@ -103,7 +104,7 @@ class EntryPoint(kg.EntryPoint):
             utf8_string = utf8_string.Utf8EncodedString(value)
             df = pd.DataFrame()
             df['utf8_encoded_string'] = [utf8_string]
-            table = kat.pandas_df_to_arrow_table(df)
+            table = kap.pandas_df_to_arrow_table(df)
             sink.write(table)
 
     def writeUtf8EncodedStringViaPyList(self, data_sink, value):
@@ -118,7 +119,7 @@ class EntryPoint(kg.EntryPoint):
             fs_location = et.FsLocationValue(category, specifier, path)
             df = pd.DataFrame()
             df['fs_location'] = [fs_location]
-            table = kat.pandas_df_to_arrow_table(df)
+            table = kap.pandas_df_to_arrow_table(df)
             sink.write(table)
 
     def writeFsLocationViaPyList(self, data_sink, category, specifier, path):
@@ -143,7 +144,7 @@ class EntryPoint(kg.EntryPoint):
         with kg.data_source_mapper(data_source) as source:
             with kg.data_sink_mapper(data_sink) as sink:
                 df = source.to_pandas()
-                arrow_table = kat.pandas_df_to_arrow_table(df)
+                arrow_table = kap.pandas_df_to_arrow_table(df)
                 sink.write(arrow_table)
 
     class Java:
@@ -156,13 +157,13 @@ kg.connect_to_knime(EntryPoint())
 def test_primitive_in_df():
     df = pd.DataFrame()
     df['column'] = [1]
-    arrow_table = kat.pandas_df_to_arrow_table(df)
+    arrow_table = kap.pandas_df_to_arrow_table(df)
 
 
 def test_primitive_list_in_df():
     df = pd.DataFrame()
     df['column'] = [[1]]
-    arrow_table = kat.pandas_df_to_arrow_table(df)
+    arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert field.type == pa.list_(pa.int32())
     assert field.name == 'column'
@@ -172,7 +173,7 @@ def test_list_of_ext_type_in_df():
     import utf8_string
     df = pd.DataFrame()
     df['column'] = [[utf8_string.Utf8EncodedString('foobar')]]
-    arrow_table = kat.pandas_df_to_arrow_table(df)
+    arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert isinstance(field.type.value_type, kat.ValueFactoryExtensionType)
     assert field.name == 'column'
@@ -184,7 +185,7 @@ def test_ext_type_in_df():
     import utf8_string
     df = pd.DataFrame()
     df['column'] = [utf8_string.Utf8EncodedString('barfoo')]
-    arrow_table = kat.pandas_df_to_arrow_table(df)
+    arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert isinstance(field.type, kat.ValueFactoryExtensionType)
     assert arrow_table[0].to_pylist()[0].value == 'barfoo'
