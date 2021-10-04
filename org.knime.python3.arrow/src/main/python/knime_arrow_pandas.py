@@ -43,9 +43,7 @@
 # ------------------------------------------------------------------------
 
 import pyarrow as pa
-import pyarrow.types as pat
 import knime_arrow_types as kat
-import knime_arrow as ka
 import pandas as pd
 import numpy as np
 
@@ -68,17 +66,26 @@ def _extract_schema(data_frame: pd.DataFrame):
     return pa.schema(columns)
 
 
+_pd_to_arrow_type_map = {
+    np.int32: pa.int32(),
+    int: pa.int32(),
+    np.int64: pa.int64(),
+    np.uint32: pa.uint32(),
+    np.int8: pa.int8(),
+    np.float32: pa.float32(),
+    np.float64: pa.float64(),
+    str: pa.string(),
+    np.bool_: pa.bool_()
+}
+
+
 def _to_arrow_type(first_value):
     t = type(first_value)
     if t == list or t == np.ndarray:
         inner = _to_arrow_type(first_value[0])
         return pa.list_(inner)
-    elif t == np.int64:  # TODO implement remaining primitive types
-        return pa.int64()
-    elif t == int:
-        return pa.int32()
-    elif t == str:
-        return pa.string()
+    elif t in _pd_to_arrow_type_map:
+        return _pd_to_arrow_type_map[t]
     else:
         return kat.to_extension_type(t)
 
