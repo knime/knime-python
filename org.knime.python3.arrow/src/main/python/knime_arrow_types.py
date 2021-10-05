@@ -49,7 +49,7 @@ Arrow implementation of the knime_types.
 """
 
 import knime_types as kt
-import knime_arrow as ka
+import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
@@ -98,7 +98,7 @@ def _add_dict_encoding(arrow_type, data_traits):
     else:
         key_type = _get_dict_key_type(data_traits)
         if key_type is not None:
-            return ka.StructDictEncodedType(arrow_type, key_type)
+            return kas.StructDictEncodedType(arrow_type, key_type)
         else:
             return arrow_type
 
@@ -135,9 +135,9 @@ def is_list_type(type_: pa.DataType):
 
 
 def _get_arrow_storage_to_ext_fn(type_):
-    if ka.is_struct_dict_encoded(type_):
-        key_gen = ka.DictKeyGenerator()
-        return lambda a: ka.struct_dict_encode(a, key_gen, key_type=type_.key_type)
+    if kas.is_struct_dict_encoded(type_):
+        key_gen = kas.DictKeyGenerator()
+        return lambda a: kas.struct_dict_encode(a, key_gen, key_type=type_.key_type)
     elif is_value_factory_type(type_):
         storage_fn = _get_arrow_storage_to_ext_fn(type_.storage_type) or _identity
         return lambda a: pa.ExtensionArray.from_storage(type_, storage_fn(a))
@@ -189,7 +189,7 @@ def _get_to_storage_fn(type_: pa.DataType):
     if is_value_factory_type(type_):
         storage_fn = _get_to_storage_fn(type_.storage_type) or _identity
         return lambda a: storage_fn(a.storage)
-    elif ka.is_struct_dict_encoded(type_):
+    elif kas.is_struct_dict_encoded(type_):
         return lambda a: a.dictionary_decode()
     elif is_list_type(type_):
         value_fn = _get_to_storage_fn(type_.value_type)
@@ -218,7 +218,7 @@ def _get_to_storage_fn(type_: pa.DataType):
 
 
 def contains_knime_extension_type(type_: pa.DataType):
-    if is_value_factory_type(type_) or ka.is_struct_dict_encoded(type_):
+    if is_value_factory_type(type_) or kas.is_struct_dict_encoded(type_):
         return True
     elif is_list_type(type_):
         return contains_knime_extension_type(type_.value_type)
@@ -236,7 +236,7 @@ def get_storage_type_and_fn(type_: pa.DataType):
     if is_value_factory_type(type_):
         storage_type, storage_fn = get_storage_type_and_fn(type_.storage_type)
         return storage_type, lambda a: type_.encode(a)
-    elif ka.is_struct_dict_encoded(type_):
+    elif kas.is_struct_dict_encoded(type_):
         return type_.value_type, _identity
     elif is_list_type(type_):
         inner_type, inner_fn = get_storage_type_and_fn(type_.value_type)
@@ -286,7 +286,6 @@ class ValueFactoryExtensionType(pa.ExtensionType):
 
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
-        # TODO we could avoid serializing the java_value_factory if we can get access to the extension type identifier
         java_value_factory = serialized.decode()
         value_factory = kt.get_value_factory(java_value_factory)
         return ValueFactoryExtensionType(
