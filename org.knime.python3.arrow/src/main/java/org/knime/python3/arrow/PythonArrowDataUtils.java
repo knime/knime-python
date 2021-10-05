@@ -69,6 +69,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTypeRegistry;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
+import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.v2.DataCellSerializerFactory;
 import org.knime.core.data.v2.ValueFactory;
@@ -200,7 +201,9 @@ public final class PythonArrowDataUtils {
         var size = dataSink.getSize();
         var path = dataSink.getPath();
         var schema = createColumnarValueSchema(dataSink);
-        var readStore = storeFactory.createReadStore(schema, path);
+        var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(schema, path)) //
+                .enableDictEncoding(true) //
+                .build();
         // nothing to flash as of now
         Flushable flushable = () -> {
         };// prevent formatting
