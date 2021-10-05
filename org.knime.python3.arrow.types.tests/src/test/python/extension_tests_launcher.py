@@ -50,6 +50,7 @@ import knime_gateway as kg
 import knime_types as kt
 import pandas as pd
 import pyarrow as pa
+import numpy as np
 
 
 class EntryPoint(kg.EntryPoint):
@@ -69,6 +70,20 @@ class EntryPoint(kg.EntryPoint):
             expected = {'fs_category': category, 'fs_specifier': specifier, 'path': path}
             assert v.to_dict() == expected, 'Wrong location dictionary. Expected ' + str(expected) + ' got ' + str(
                 v.to_dict())
+
+    def assertIntListEquals(self, data_source, a, b, c, d, e):
+        with kg.data_source_mapper(data_source) as source:
+            batch = source[0]
+            array = batch.column(0)
+            pd_array = array.to_pandas()
+            py_array = array.to_pylist()
+            values = [[a,b,c,d,e]]
+
+            assert py_array == values, f"Wrong list of ints, expected '{values}' got '{py_array}'"
+            assert pd_array.shape == (1,), f"Wrong shape returned from pandas, expected '(1,)', got '{pd_array.shape}'"
+            assert type(pd_array[0]) == np.ndarray, f"Wrong type returned from pandas, expected 'numpy.ndarray' got '{type(pd_array[0])}'"
+            assert len(pd_array[0]) == 5, f"Wrong length of list returned from pandas, expected '5', got '{len(pd_array[0])}'"
+            assert np.all(pd_array[0] == values[0]), f"Wrong list of ints returned from pandas, expected '{values}' got '{pd_array[0]}'"
 
     def assertUtf8EncodedStringEquals(self, data_source, value):
         with kg.data_source_mapper(data_source) as source:

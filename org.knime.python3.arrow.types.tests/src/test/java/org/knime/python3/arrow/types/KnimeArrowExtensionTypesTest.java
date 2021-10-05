@@ -48,20 +48,26 @@
  */
 package org.knime.python3.arrow.types;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.STRING;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.junit.After;
@@ -76,6 +82,8 @@ import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.columnar.batch.ReadBatch;
+import org.knime.core.columnar.data.IntData.IntWriteData;
+import org.knime.core.columnar.data.ListData.ListWriteData;
 import org.knime.core.columnar.data.NullableReadData;
 import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
@@ -87,7 +95,9 @@ import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.RowKeyValue;
+import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
+import org.knime.core.data.def.IntCell;
 import org.knime.core.data.v2.RowCursor;
 import org.knime.core.data.v2.RowKeyWriteValue;
 import org.knime.core.data.v2.RowRead;
@@ -97,9 +107,11 @@ import org.knime.core.data.v2.RowWrite;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.WriteValue;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
+import org.knime.core.data.v2.value.IntListValueFactory;
+import org.knime.core.data.v2.value.IntListValueFactory.IntListReadValue;
+import org.knime.core.data.v2.value.IntListValueFactory.IntListWriteValue;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -153,6 +165,10 @@ public class KnimeArrowExtensionTypesTest {
 
 	private static final String[] UTF8_ENCODED_STRING_LOGICAL_TYPE = { Utf8StringValueFactory.class.getName() };
 
+	private static final String INT_LIST_VALUE_FACTORY = IntListValueFactory.class.getName();
+
+	private static final String[] INT_LIST_LOGICAL_TYPE = { INT_LIST_VALUE_FACTORY };
+
 	private ArrowColumnStoreFactory m_storeFactory;
 
 	private BufferAllocator m_allocator;
@@ -184,6 +200,26 @@ public class KnimeArrowExtensionTypesTest {
 		return DataSpecs.STRUCT(new LogicalTypeTrait(FS_LOCATION_VALUE_FACTORY)).of(STRING, STRING, STRING);
 	}
 
+	private static void prepareIntListData(final BatchWriter writer, final int... ints) throws IOException {
+		final var batch = writer.create(ints.length);
+		final ListWriteData data = (ListWriteData) batch.get(0);
+		final var intData = (IntWriteData) data.createWriteData(0, ints.length);
+		for (int idx = 0; idx < ints.length; idx++) {
+			intData.setInt(idx, ints[idx]);
+		}
+		final ReadBatch readBatch = batch.close(1);
+		writer.write(readBatch);
+		readBatch.release();
+	}
+
+	private static ColumnarSchema createIntListSchema() {
+		return ColumnarSchema.of(createIntListSpec());
+	}
+
+	private static DataSpecWithTraits createIntListSpec() {
+		return DataSpecs.LIST(new LogicalTypeTrait(INT_LIST_VALUE_FACTORY)).of(INT);
+	}
+
 	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester() throws IOException {
 		final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
 		final var tester = new PythonArrowEntryPointTester<>(KnimeArrowExtensionTypeEntryPoint.class,
@@ -198,11 +234,12 @@ public class KnimeArrowExtensionTypesTest {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
 				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-						factory.getDataSpecRepresentation(), factory.getJavaValueFactoryName(), factory.getDataTraitsJson());
+						factory.getDataSpecRepresentation(), factory.getJavaValueFactoryName(),
+						factory.getDataTraitsJson());
 			}
 		}
 	}
-	
+
 	private static void prepareUtf8EncodedStringData(final BatchWriter writer, final String value) throws IOException {
 		final var batch = writer.create(1);
 		final VarBinaryWriteData data = (VarBinaryWriteData) batch.get(0);
@@ -246,6 +283,18 @@ public class KnimeArrowExtensionTypesTest {
 			tester.runPythonToJavaTest(//
 					(e, s) -> e.writeUtf8EncodedStringViaPandas(s, "raboof"), //
 					createSingleUtf8Tester("raboof"));
+		}
+	}
+
+	@Test
+	public void testIntListJavaToPython() throws Exception {
+		try (var tester = createTester()) {
+			tester.runJavaToPythonTest(//
+					createIntListSchema(), //
+					INT_LIST_LOGICAL_TYPE, //
+					w -> prepareIntListData(w, 1, 2, 3, 4, 5), //
+					(e, s) -> e.assertIntListEquals(s, 1, 2, 3, 4, 5)//
+			);
 		}
 	}
 
@@ -332,6 +381,19 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@Test
+	public void testCopyingSingleIntListCellTable() throws Exception {
+		final var values = new int[] { 1, 2, 3, 4, 5 };
+		var rowFiller = singleRowFiller("Row0", r -> {
+			final var data = r.<IntListWriteValue>getWriteValue(0);
+			data.setValue(values);
+		});
+		var tableTester = singleRowTableTester(dataTableSpec("my ints", DataType.getType(ListCell.class, IntCell.TYPE)),
+				createRowTester("Row0",
+						r -> assertTrue(Arrays.equals(values, r.<IntListReadValue>getValue(0).getIntArray()))));
+		testCopyingData(() -> rowFiller, tableTester, List.of("my ints"), List.of(new IntListValueFactory()));
+	}
+
+	@Test
 	public void testCopyingSingleUtf8EncodedStringCellTable() throws Exception {
 		var rowFiller = singleRowFiller("foobar", r -> r.<Utf8StringWriteValue>getWriteValue(0).setValue("barfoo"));
 		var tableTester = singleRowTableTester(dataTableSpec("dummy", Utf8StringCell.TYPE),
@@ -409,6 +471,8 @@ public class KnimeArrowExtensionTypesTest {
 
 		void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
 				final String dataSpec, final String javaValueFactory, final String dataTraits);
+
+		void assertIntListEquals(PythonArrowDataSource dataSource, int a, int b, int c, int d, int e);
 
 		void assertFsLocationEquals(PythonDataSource dataSource, String category, String specifier, String path);
 

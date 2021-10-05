@@ -77,11 +77,13 @@ def _extract_schema(data_frame: pd.DataFrame):
 
 def _to_arrow_type(first_value):
     t = type(first_value)
-    if t == list:
+    if t == list or t == np.ndarray:
         inner = _to_arrow_type(first_value[0])
         return pa.list_(inner)
     elif t == np.int64:  # TODO implement remaining primitive types
         return pa.int64()
+    elif t == np.int32:
+        return pa.int32()
     elif t == int:
         return pa.int32()
     elif t == str:
