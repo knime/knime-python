@@ -13,6 +13,6 @@ Require-Bundle: org.knime.core.table;bundle-version="[4.5.0,5.0.0)",
  org.apache.arrow.memory-core;bundle-version="[4.0.1,5.0.0)",
  org.apache.arrow.vector;bundle-version="[4.0.1,5.0.0)",
  org.junit;bundle-version="[4.13.0,5.0.0)",
- org.knime.core.data.columnar
+ org.knime.core.data.columnar;bundle-version="[4.5.0,5.0.0)"
 Automatic-Module-Name: org.knime.python3.arrow.types.tests
 Export-Package: org.knime.python3.arrow.types

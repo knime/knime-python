@@ -204,9 +204,9 @@ public final class PythonArrowDataUtils {
         var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(schema, path)) //
                 .enableDictEncoding(true) //
                 .build();
-        // nothing to flash as of now
+        // nothing to flush as of now
         Flushable flushable = () -> {
-        };// prevent formatting
+        };
         return UnsavedColumnarContainerTable.create(path, tableId, storeFactory, schema, readStore, flushable, size);
     }
 

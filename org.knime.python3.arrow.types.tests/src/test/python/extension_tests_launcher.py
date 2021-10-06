@@ -138,7 +138,8 @@ class EntryPoint(kg.EntryPoint):
     def copy(self, data_source, data_sink):
         with kg.data_source_mapper(data_source) as source:
             with kg.data_sink_mapper(data_sink) as sink:
-                sink.write(source.to_arrow_table())
+                table = source.to_arrow_table()
+                sink.write(table)
 
     def copyThroughPandas(self, data_source, data_sink):
         with kg.data_source_mapper(data_source) as source:

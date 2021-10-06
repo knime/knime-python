@@ -48,6 +48,7 @@
  */
 package org.knime.python3.arrow.types;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -66,6 +67,7 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.arrow.memory.BufferAllocator;
@@ -91,13 +93,23 @@ import org.knime.core.columnar.data.StructData.StructReadData;
 import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryReadData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
+import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
+import org.knime.core.data.DataValue;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IntValue;
+import org.knime.core.data.LongValue;
 import org.knime.core.data.RowKeyValue;
 import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.def.IntCell;
+import org.knime.core.data.StringValue;
+import org.knime.core.data.def.BooleanCell;
+import org.knime.core.data.def.DoubleCell;
+import org.knime.core.data.def.LongCell;
+import org.knime.core.data.def.StringCell;
 import org.knime.core.data.v2.RowCursor;
 import org.knime.core.data.v2.RowKeyWriteValue;
 import org.knime.core.data.v2.RowRead;
@@ -106,10 +118,16 @@ import org.knime.core.data.v2.RowValueWrite;
 import org.knime.core.data.v2.RowWrite;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.WriteValue;
+import org.knime.core.data.v2.value.BooleanValueFactory;
+import org.knime.core.data.v2.value.BooleanValueFactory.BooleanWriteValue;
+import org.knime.core.data.v2.value.DoubleValueFactory.DoubleWriteValue;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.data.v2.value.IntListValueFactory;
 import org.knime.core.data.v2.value.IntListValueFactory.IntListReadValue;
 import org.knime.core.data.v2.value.IntListValueFactory.IntListWriteValue;
+import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
+import org.knime.core.data.v2.value.DoubleValueFactory;
+import org.knime.core.data.v2.value.IntValueFactory;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
@@ -145,12 +163,32 @@ import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.core.data.v2.value.IntValueFactory.IntWriteValue;
+import org.knime.core.data.v2.value.LongValueFactory.LongWriteValue;
+import org.knime.core.data.v2.value.StringValueFactory.StringWriteValue;
+import org.knime.core.data.v2.value.LongValueFactory;
 
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public class KnimeArrowExtensionTypesTest {
+
+	@SuppressWarnings("deprecation")
+	private static final TypeAndFactory<StringValue, StringWriteValue> STRING_TF = TypeAndFactory
+			.create(StringCell.TYPE, new DictEncodedStringValueFactory(), StringWriteValue.class);
+
+	private static final TypeAndFactory<DoubleValue, DoubleWriteValue> DOUBLE_TF = TypeAndFactory.create(DoubleCell.TYPE,
+			new DoubleValueFactory(), DoubleWriteValue.class);
+
+	private static final TypeAndFactory<LongValue, LongWriteValue> LONG_TF = TypeAndFactory.create(LongCell.TYPE,
+			new LongValueFactory(), LongWriteValue.class);
+
+	private static final TypeAndFactory<BooleanValue, BooleanWriteValue> BOOLEAN_TF = TypeAndFactory
+			.create(BooleanCell.TYPE, new BooleanValueFactory(), BooleanWriteValue.class);
+
+	private static final TypeAndFactory<IntValue, IntWriteValue> INT_TF = TypeAndFactory.create(IntCell.TYPE,
+			new IntValueFactory(), IntWriteValue.class);
 
 	/**
 	 * Only OK in this test setting. When used in a workflow, the table id should be
@@ -372,11 +410,130 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@Test
+	public void testCopyingSingleRowMultipleColumns() throws Exception {
+		final var location = new FSLocation(FSCategory.CUSTOM_URL, "1000", "https://www.dummy.com");
+		var rowFiller = singleRowFiller("foo", w -> {
+			w.<FSLocationWriteValue>getWriteValue(0).setLocation(location);
+			w.<Utf8StringWriteValue>getWriteValue(1).setValue("bar");
+		});
+		var tableTester = singleRowTableTester(dataTableSpec(List.of("location", "utf8string"),
+				List.of(SimpleFSLocationCellFactory.TYPE, Utf8StringCell.TYPE)), "foo", r -> {
+					assertEquals(location, r.<FSLocationValue>getValue(0).getFSLocation());
+					assertEquals("bar", r.<Utf8StringValue>getValue(1).getString());
+				});
+		testCopyingData(() -> rowFiller, tableTester, List.of("location", "utf8string"),
+				List.of(new FSLocationValueFactory(), new Utf8StringValueFactory()));
+	}
+
+	@Test
+	public void testCopyingSingleIntCell() throws Exception {
+		testCopySingleCell(INT_TF, w -> w.setIntValue(42), r -> assertEquals(42, r.getIntValue()));
+	}
+
+	@Test
+	public void testCopyingMissingIntCell() throws Exception {
+		testCopySingleMissingCell(INT_TF);
+	}
+
+	@Test
+	public void testCopyingSingleBooleanCell() throws Exception {
+		testCopySingleCell(BOOLEAN_TF, w -> w.setBooleanValue(true), r -> assertTrue(r.getBooleanValue()));
+	}
+
+	@Test
+	public void testCopyingMissingBooleanCell() throws Exception {
+		testCopySingleMissingCell(BOOLEAN_TF);
+	}
+
+	@Test
+	public void testCopyingSingleSmallLongCell() throws Exception {
+		testCopySingleCell(LONG_TF, w -> w.setLongValue(1337L), r -> assertEquals(1337L, r.getLongValue()));
+	}
+
+	public void testCopyingSingleLargeLongCell() throws Exception {
+		testCopySingleCell(LONG_TF, w -> w.setLongValue(Long.MAX_VALUE),
+				r -> assertEquals(Long.MAX_VALUE, r.getLongValue()));
+	}
+
+	@Test
+	public void testCopyingMissingLongCell() throws Exception {
+		testCopySingleMissingCell(LONG_TF);
+	}
+
+	@Test
+	public void testCopyingSingleDoubleCell() throws Exception {
+		testCopySingleCell(DOUBLE_TF, w -> w.setDoubleValue(13.37), r -> assertEquals(13.37, r.getDoubleValue(), 1e-5));
+	}
+
+	@Test
+	public void testCopyingMissingDoubleCell() throws Exception {
+		testCopySingleMissingCell(DOUBLE_TF);
+	}
+
+	@Test
+	public void testCopyingSingleStringCell() throws Exception {
+		testCopySingleCell(STRING_TF, w -> w.setStringValue("foobar"),
+				r -> assertEquals("foobar", r.getStringValue()));
+	}
+
+	@Test
+	public void testCopyingMissingStringCell() throws Exception {
+		testCopySingleMissingCell(STRING_TF);
+	}
+
+	private static class TypeAndFactory<D extends DataValue, W extends WriteValue<D>> {
+
+		private final DataType m_type;
+
+		private final ValueFactory<?, ?> m_valueFactory;
+
+		private TypeAndFactory(DataType type, ValueFactory<?, ?> valueFactory) {
+			m_type = type;
+			m_valueFactory = valueFactory;
+		}
+
+		static <D extends DataValue, W extends WriteValue<D>> TypeAndFactory<D, W> create(final DataType type,
+				final ValueFactory<?, ?> factory, final Class<W> writeValueClass) {// NOSONAR
+			return new TypeAndFactory<>(type, factory);
+		}
+
+		private DataType getType() {
+			return m_type;
+		}
+
+		private ValueFactory<?, ?> getValueFactory() {// NOSONAR
+			return m_valueFactory;
+		}
+	}
+
+	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleCell(TypeAndFactory<D, W> typeAndFactory,
+			Consumer<W> valueFiller, Consumer<D> valueTester) throws Exception {
+		var rowFiller = singleRowFiller("row key", w -> valueFiller.accept(w.getWriteValue(0)));
+		var tableTester = singleRowTableTester(dataTableSpec("single column", typeAndFactory.getType()), "row key",
+				r -> valueTester.accept(r.getValue(0)));
+		testCopyingData(() -> rowFiller, tableTester, List.of("single column"),
+				List.of(typeAndFactory.getValueFactory()));
+	}
+
+	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleMissingCell(
+			TypeAndFactory<D, W> typeAndFactory) throws Exception {
+		var rowFiller = singleRowFiller("row key", w -> w.setMissing(0));
+		var tableTester = singleRowTableTester(dataTableSpec("single column", typeAndFactory.getType()), "row key",
+				r -> assertTrue(r.isMissing(0)));
+		testCopyingData(() -> rowFiller, tableTester, List.of("single column"),
+				List.of(typeAndFactory.getValueFactory()));
+	}
+
+	private static DataTableSpec dataTableSpec(List<String> names, List<DataType> types) {
+		return new DataTableSpec("default", names.toArray(String[]::new), types.toArray(DataType[]::new));
+	}
+
+	@Test
 	public void testCopyingSingleFsLocationCellTable() throws Exception {
 		final var location = new FSLocation(FSCategory.CUSTOM_URL, "1000", "https://www.knime.com");
 		var rowFiller = singleRowFiller("Row0", r -> r.<FSLocationWriteValue>getWriteValue(0).setLocation(location));
-		var tableTester = singleRowTableTester(dataTableSpec("my column", SimpleFSLocationCellFactory.TYPE),
-				createRowTester("Row0", r -> assertEquals(location, r.<FSLocationValue>getValue(0).getFSLocation())));
+		var tableTester = singleRowTableTester(dataTableSpec("my column", SimpleFSLocationCellFactory.TYPE), "Row0",
+				r -> assertEquals(location, r.<FSLocationValue>getValue(0).getFSLocation()));
 		testCopyingData(() -> rowFiller, tableTester, List.of("my column"), List.of(new FSLocationValueFactory()));
 	}
 
@@ -388,48 +545,49 @@ public class KnimeArrowExtensionTypesTest {
 			data.setValue(values);
 		});
 		var tableTester = singleRowTableTester(dataTableSpec("my ints", DataType.getType(ListCell.class, IntCell.TYPE)),
-				createRowTester("Row0",
-						r -> assertTrue(Arrays.equals(values, r.<IntListReadValue>getValue(0).getIntArray()))));
+				"Row0", r -> assertArrayEquals(values, r.<IntListReadValue>getValue(0).getIntArray()));
 		testCopyingData(() -> rowFiller, tableTester, List.of("my ints"), List.of(new IntListValueFactory()));
 	}
 
 	@Test
 	public void testCopyingSingleUtf8EncodedStringCellTable() throws Exception {
 		var rowFiller = singleRowFiller("foobar", r -> r.<Utf8StringWriteValue>getWriteValue(0).setValue("barfoo"));
-		var tableTester = singleRowTableTester(dataTableSpec("dummy", Utf8StringCell.TYPE),
-				createRowTester("foobar", r -> assertEquals("barfoo", r.<Utf8StringValue>getValue(0).getString())));
+		var tableTester = singleRowTableTester(dataTableSpec("dummy", Utf8StringCell.TYPE), "foobar",
+				r -> assertEquals("barfoo", r.<Utf8StringValue>getValue(0).getString()));
 		testCopyingData(() -> rowFiller, tableTester, List.of("dummy"), List.of(new Utf8StringValueFactory()));
 	}
 
-	private void testCopyingData(Supplier<RowFiller> rowFiller, Consumer<UnsavedColumnarContainerTable> tableTester,
-			List<String> columnNames, List<ValueFactory<?, ?>> valueFactories) throws Exception {
+	private void testCopyingData(Supplier<RowFiller> rowFillerSupplier,
+			Consumer<UnsavedColumnarContainerTable> tableTester, List<String> columnNames,
+			List<ValueFactory<?, ?>> valueFactories) throws Exception {
 		try (var tester = createTester()) {
-			tester.runJavaToPythonToJavaTest((e, source, sink) -> e.copy(source, sink), rowFiller.get(), tableTester,
-					columnNames, valueFactories);
-			tester.runJavaToPythonToJavaTest((e, source, sink) -> e.copyThroughPandas(source, sink), rowFiller.get(),
+			tester.runJavaToPythonToJavaTest((e, source, sink) -> e.copy(source, sink), rowFillerSupplier.get(),
 					tableTester, columnNames, valueFactories);
+			tester.runJavaToPythonToJavaTest((e, source, sink) -> e.copyThroughPandas(source, sink),
+					rowFillerSupplier.get(), tableTester, columnNames, valueFactories);
 		}
 	}
 
 	private static Consumer<UnsavedColumnarContainerTable> singleRowTableTester(DataTableSpec expectedSpec,
-			final Consumer<RowRead> rowTester) {
+			String expectedRowKey, final Consumer<RowValueRead> rowTester) {
 		return table -> {
-			assertEquals(expectedSpec, table.getDataTableSpec());
+			DataTableSpec spec = table.getDataTableSpec();
+			assertEquals(String.format("Expected: %s Got: %s", colsToString(expectedSpec), colsToString(spec)),
+					expectedSpec, spec);
 			try (RowCursor cursor = table.cursor()) {
 				assertTrue(cursor.canForward());
 				RowRead row = cursor.forward();
+				assertEquals(expectedRowKey, row.getRowKey().getString());
 				rowTester.accept(row);
 				assertFalse(cursor.canForward());
 			}
 		};
 	}
-
-	private static Consumer<RowRead> createRowTester(final String expectedRowKey,
-			Consumer<RowValueRead> columnValueTester) {
-		return row -> {
-			assertEquals(expectedRowKey, row.getRowKey().getString());
-			columnValueTester.accept(row);
-		};
+	
+	private static String colsToString(final DataTableSpec spec) {
+		return spec.stream()//
+				.map(Object::toString)//
+				.collect(Collectors.joining(",", "[", "]"));
 	}
 
 	@Test
