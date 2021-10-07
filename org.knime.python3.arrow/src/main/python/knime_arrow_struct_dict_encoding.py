@@ -318,7 +318,14 @@ def struct_dict_encode(
     Returns:
         Dictionary encoded (StructDictEncodedArray)
     """
+    storage = create_storage_for_struct_dict_encoded_array(array, key_generator, value_type, key_type)
+    key_type = storage.field(0).type
+    value_type = storage.field(1).type
+    return pa.ExtensionArray.from_storage(StructDictEncodedType(value_type, key_type=key_type), storage)
 
+
+def create_storage_for_struct_dict_encoded_array(array, key_generator: Callable[[Any], int],
+                                                 value_type: pa.DataType = None, key_type: pa.DataType = None):
     # Encode
     entry_to_key = {}
 
@@ -398,10 +405,9 @@ def struct_dict_encode(
 
     # Create the storage
     # NOTE pyarrow >= 5 is needed for the mask argument
-    storage = pa.StructArray.from_arrays(
+    return pa.StructArray.from_arrays(
         [keys_array, entries_array], names=["0", "1"], mask=mask_array
     )
-    return pa.ExtensionArray.from_storage(StructDictEncodedType(value_type, key_type=key_type), storage)
 
 
 class StructDictEncodedType(pa.ExtensionType):
@@ -444,7 +450,8 @@ pa.register_extension_type(StructDictEncodedType(pa.null()))
 class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
     """A struct dictionary encoded array.
 
-    Saves struct<dictKey: int64, dictValue>. The dictValue is only non-null if the dictKey appears first for this array.
+    Saves struct<dictKey: uint, dictValue>. The dictValue is only non-null if the dictKey appears first for this array.
+    dictKey can be one of [uint8, uint32, uint64]
     """
 
     # NOTE:

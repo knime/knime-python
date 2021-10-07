@@ -80,7 +80,7 @@ def factory_version_for(arrow_type: pa.DataType):
     if kat.is_value_factory_type(arrow_type):
         return factory_version_for(arrow_type.storage_type)
 
-    if kas.is_struct_dict_encoded(arrow_type):
+    if kas.is_struct_dict_encoded(arrow_type) or kat.is_dict_encoded_value_factory_type(arrow_type):
         version = f"0[{factory_version_for(arrow_type.storage_type)};]"
         return version
 
@@ -104,11 +104,11 @@ def convert_schema(schema: pa.Schema):
 
 def convert_type(arrow_type: pa.DataType):
     # Logical type
-    if kat.is_value_factory_type(arrow_type) or kas.is_struct_dict_encoded(arrow_type):
+    if isinstance(arrow_type, pa.ExtensionType):
         return convert_type(arrow_type.storage_type)
 
     # Struct
-    if isinstance(arrow_type, pa.StructType):
+    if pa.types.is_struct(arrow_type):
         dataspec_class = gateway().jvm.org.knime.core.table.schema.DataSpec
         children_spec = gateway().new_array(dataspec_class, arrow_type.num_fields)
         for i, f in enumerate(arrow_type):
@@ -116,7 +116,7 @@ def convert_type(arrow_type: pa.DataType):
         return gateway().jvm.org.knime.core.table.schema.StructDataSpec(children_spec)
 
     # List
-    if isinstance(arrow_type, pa.ListType):
+    if kat.is_list_type(arrow_type):
         child_spec = convert_type(arrow_type.value_type)
         return gateway().jvm.org.knime.core.table.schema.ListDataSpec(child_spec)
 

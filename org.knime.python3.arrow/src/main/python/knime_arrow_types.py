@@ -60,27 +60,33 @@ def to_extension_type(type_):
     # TODO consider more elaborate method for extension type matching e.g. based on value/structure not only type
     #  this would allow an extension type to claim a value for itself e.g. FSLocationValue could detect
     #  {'fs_category': 'foo', 'fs_specifier': 'bar', 'path': 'baz'}. Problem: What if multiple types match?
-    try:
-        factory_bundle = kt.get_value_factory_bundle_for_type(type_)
-        storage_type = _create_storage_type(factory_bundle)
+    factory_bundle = kt.get_value_factory_bundle_for_type(type_)
+    data_traits = json.loads(factory_bundle.data_traits)
+    data_spec = json.loads(factory_bundle.data_spec_json)
+    is_struct_dict_encoded_value_factory_type = 'dict_encoding' in data_traits and 'logical_type' in data_traits
+    storage_type = _add_dict_encoding(_data_spec_to_arrow(data_spec), data_traits,
+                                      skip_level=is_struct_dict_encoded_value_factory_type)
+    if is_struct_dict_encoded_value_factory_type:
+        key_type = _get_dict_key_type(data_traits)
+        if key_type is None:
+            raise ValueError(f"The data_traits {data_traits} contained the dict_encoding key but no key type.")
+        struct_dict_encoded_type = kas.StructDictEncodedType(inner_type=storage_type, key_type=key_type)
+        value_factory_type = ValueFactoryExtensionType(
+            factory_bundle.value_factory,
+            struct_dict_encoded_type.storage_type,
+            factory_bundle.java_value_factory
+        )
+        return StructDictEncodedValueFactoryExtensionType(value_factory_type=value_factory_type,
+                                                          struct_dict_encoded_type=struct_dict_encoded_type)
+    else:
         return ValueFactoryExtensionType(
             factory_bundle.value_factory,
             storage_type,
-            factory_bundle.java_value_factory,
+            factory_bundle.java_value_factory
         )
-    except KeyError:
-        raise ValueError(f"The type {type_} is unknown.")
 
 
-def _create_storage_type(factory_bundle):
-    arrow_type_without_dict_encoding = _data_spec_json_to_arrow(
-        factory_bundle.data_spec_json
-    )
-    data_traits = json.loads(factory_bundle.data_traits)
-    return _add_dict_encoding(arrow_type_without_dict_encoding, data_traits)
-
-
-def _add_dict_encoding(arrow_type, data_traits):
+def _add_dict_encoding(arrow_type, data_traits, skip_level=False):
     if pat.is_struct(arrow_type):
         inner = [
             (inner_field.name, _add_dict_encoding(inner_field.type, inner_traits))
@@ -97,10 +103,10 @@ def _add_dict_encoding(arrow_type, data_traits):
             raise ValueError(f"Unsupported list type '{arrow_type}' encountered.")
     else:
         key_type = _get_dict_key_type(data_traits)
-        if key_type is not None:
-            return kas.StructDictEncodedType(arrow_type, key_type)
-        else:
+        if key_type is None or skip_level:
             return arrow_type
+        else:
+            return kas.StructDictEncodedType(arrow_type, key_type)
 
 
 def _get_dict_key_type(data_traits):
@@ -135,7 +141,18 @@ def is_list_type(type_: pa.DataType):
 
 
 def _get_arrow_storage_to_ext_fn(type_):
-    if kas.is_struct_dict_encoded(type_):
+    if is_dict_encoded_value_factory_type(type_):
+        key_gen = kas.DictKeyGenerator()
+        storage_fn = _get_arrow_storage_to_ext_fn(type_.storage_type) or _identity
+
+        def wrap_and_struct_dict_encode(a):
+            unencoded_storage = storage_fn(a)
+            encoded_storage = kas.create_storage_for_struct_dict_encoded_array(unencoded_storage, key_gen,
+                                                                               value_type=type_.value_type,
+                                                                               key_type=type_.key_type)
+            return pa.ExtensionArray.from_storage(type_, encoded_storage)
+        return wrap_and_struct_dict_encode
+    elif kas.is_struct_dict_encoded(type_):
         key_gen = kas.DictKeyGenerator()
         return lambda a: kas.struct_dict_encode(a, key_gen, key_type=type_.key_type)
     elif is_value_factory_type(type_):
@@ -186,7 +203,10 @@ def _to_storage_array(array: pa.Array):
 
 
 def _get_to_storage_fn(type_: pa.DataType):
-    if is_value_factory_type(type_):
+    if is_dict_encoded_value_factory_type(type_):
+        storage_fn = _get_to_storage_fn(type_.value_type) or _identity
+        return lambda a: storage_fn(a.dictionary_decode())
+    elif is_value_factory_type(type_):
         storage_fn = _get_to_storage_fn(type_.storage_type) or _identity
         return lambda a: storage_fn(a.storage)
     elif kas.is_struct_dict_encoded(type_):
@@ -218,7 +238,7 @@ def _get_to_storage_fn(type_: pa.DataType):
 
 
 def contains_knime_extension_type(type_: pa.DataType):
-    if is_value_factory_type(type_) or kas.is_struct_dict_encoded(type_):
+    if is_value_factory_type(type_) or kas.is_struct_dict_encoded(type_) or is_dict_encoded_value_factory_type(type_):
         return True
     elif is_list_type(type_):
         return contains_knime_extension_type(type_.value_type)
@@ -230,9 +250,12 @@ def contains_knime_extension_type(type_: pa.DataType):
 
 def get_storage_type_and_fn(type_: pa.DataType):
     """
-    Finds the storage type and a function that converts a complex object in a pandas DataFrame into its storage
-    representation
+    Finds the storage type and a function that converts a complex Python object into its storage
+    representation that can be understood by pyarrow
     """
+    if is_dict_encoded_value_factory_type(type_):
+        storage_type, storage_fn = get_storage_type_and_fn(type_.value_type)
+        return storage_type, lambda a: type_.encode(a)
     if is_value_factory_type(type_):
         storage_type, storage_fn = get_storage_type_and_fn(type_.storage_type)
         return storage_type, lambda a: type_.encode(a)
@@ -308,6 +331,62 @@ class ValueFactoryExtensionType(pa.ExtensionType):
 
 # Register our extension type with
 pa.register_extension_type(ValueFactoryExtensionType(None, pa.null(), ""))
+
+
+class StructDictEncodedValueFactoryExtensionType(pa.ExtensionType):
+    def __init__(self, value_factory_type, struct_dict_encoded_type):
+        self.struct_dict_encoded_type = struct_dict_encoded_type
+        self.value_factory_type = value_factory_type
+        # is none in the instance used for registration with pyarrow
+        if value_factory_type is not None:
+            self.encode = value_factory_type.encode
+            self.decode = value_factory_type.decode
+        pa.ExtensionType.__init__(self, struct_dict_encoded_type.storage_type,
+                                  "knime.struct_dict_encoded_value_factory")
+
+    @property
+    def value_type(self):
+        return self.struct_dict_encoded_type.value_type
+
+    @property
+    def key_type(self):
+        return self.struct_dict_encoded_type.key_type
+
+    def __arrow_ext_serialize__(self):
+        # StructDictEncodedType doesn't have any meta data
+        return self.value_factory_type.__arrow_ext_serialize__()
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        struct_dict_encoded_type = kas.StructDictEncodedType.__arrow_ext_deserialize__(storage_type, b"")
+        value_factory_type = ValueFactoryExtensionType.__arrow_ext_deserialize__(storage_type, serialized)
+        return StructDictEncodedValueFactoryExtensionType(value_factory_type=value_factory_type,
+                                                          struct_dict_encoded_type=struct_dict_encoded_type)
+
+    def __arrow_ext_class__(self):
+        return StructDictEncodedValueFactoryArray
+
+
+pa.register_extension_type(StructDictEncodedValueFactoryExtensionType(ValueFactoryExtensionType(None, pa.null(), ""),
+                                                                      kas.StructDictEncodedType(pa.null())))
+
+
+class StructDictEncodedValueFactoryArray(kas.StructDictEncodedArray):
+    """
+    An array of logical values where the underlying data is struct-dict-encoded.
+    """
+
+    def _getitem(self, index):
+        storage = super()._getitem(index)
+        return KnimeExtensionScalar(self.type.value_factory_type, storage)
+
+
+def is_dict_encoded_value_factory_type(type_: pa.DataType):
+    return isinstance(type_, StructDictEncodedValueFactoryExtensionType)
+
+
+def create_struct_dict_encoded_value_factory_array(array, key_generator, java_value_factory, value_type, key_type):
+    storage = kas.create_storage_for_struct_dict_encoded_array(array, key_generator, value_type, key_type)
 
 
 def is_value_factory_type(type_: pa.DataType):

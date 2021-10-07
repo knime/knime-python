@@ -121,5 +121,4 @@ def arrow_table_to_pandas_df(table: pa.Table):
 def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
     for i in logical_columns:
         field = schema.field(i)
-        assert kat.is_value_factory_type(field.type), f"Only extension type columns need encoding, not {field.type}."
         df[field.name] = df[field.name].apply(field.type.decode)
