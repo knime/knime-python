@@ -110,9 +110,19 @@ def register_python_value_factory(python_module, python_value_factory_name, data
     _java_value_factory_to_bundle[java_value_factory] = value_factory_bundle
 
 
+_fallback_value_factory = PythonValueFactory(None)
+
+
 def get_value_factory(java_value_factory):
-    return _java_value_factory_to_bundle[java_value_factory].value_factory
+    try:
+        return _java_value_factory_to_bundle[java_value_factory].value_factory
+    except KeyError:
+        return _fallback_value_factory
 
 
 def get_value_factory_bundle_for_type(type_):
-    return _types_to_bundle[type_]
+    try:
+        return _types_to_bundle[type_]
+    except KeyError:
+        raise ValueError(f"The type {type_} is unknown.")
+
