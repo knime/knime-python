@@ -152,11 +152,10 @@ public final class RowKeyChecker implements AutoCloseable {
             }
         }
         m_threadPool.execute(this::checkNextBatchRunner);
+        m_serializationPhaser.register();
     }
 
     private void checkNextBatchRunner() {
-        m_serializationPhaser.register();
-
         // Init the reader if it is not yet initialized
         if (m_reader == null) {
             initReader();
@@ -213,12 +212,17 @@ public final class RowKeyChecker implements AutoCloseable {
         m_threadPool.shutdown();
 
         // Do the final duplicate checking
-        try {
-            m_duplicateChecker.checkForDuplicates();
-        } catch (final DuplicateKeyException | IOException e) {
-            m_invalidCause.set(e);
+        if (isValid()) {
+            try {
+                m_duplicateChecker.checkForDuplicates();
+                return true;
+            } catch (final DuplicateKeyException | IOException e) {
+                m_invalidCause.set(e);
+                return false;
+            }
+        } else {
+            return false;
         }
-        return isValid();
     }
 
     @Override
