@@ -120,9 +120,9 @@ def get_value_factory(java_value_factory):
         return _fallback_value_factory
 
 
-def get_value_factory_bundle_for_type(type_):
+def get_value_factory_bundle_for_type(dtype):
     try:
-        return _types_to_bundle[type_]
+        return _types_to_bundle[dtype]
     except KeyError:
-        raise ValueError(f"The type {type_} is unknown.")
+        raise ValueError(f"The type {dtype} is unknown.")
 

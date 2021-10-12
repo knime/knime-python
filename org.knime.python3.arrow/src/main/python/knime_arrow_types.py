@@ -56,11 +56,11 @@ import numpy as np
 import json
 
 
-def to_extension_type(type_):
+def to_extension_type(dtype):
     # TODO consider more elaborate method for extension type matching e.g. based on value/structure not only type
     #  this would allow an extension type to claim a value for itself e.g. FSLocationValue could detect
     #  {'fs_category': 'foo', 'fs_specifier': 'bar', 'path': 'baz'}. Problem: What if multiple types match?
-    factory_bundle = kt.get_value_factory_bundle_for_type(type_)
+    factory_bundle = kt.get_value_factory_bundle_for_type(dtype)
     data_traits = json.loads(factory_bundle.data_traits)
     data_spec = json.loads(factory_bundle.data_spec_json)
     is_struct_dict_encoded_value_factory_type = 'dict_encoding' in data_traits and 'logical_type' in data_traits
@@ -125,47 +125,47 @@ def _get_dict_key_type(data_traits):
         return None
 
 
-def _pretty_type_string(type_: pa.DataType):
-    if isinstance(type_, pa.ExtensionType):
-        return f"{str(type_)}[{_pretty_type_string(type_.storage_type)}]"
-    elif pat.is_struct(type_):
-        return f"{[_pretty_type_string(inner.type) for inner in type_]}"
-    elif is_list_type(type_):
-        return f"[{_pretty_type_string(type_.value_type)}]"
+def _pretty_type_string(dtype: pa.DataType):
+    if isinstance(dtype, pa.ExtensionType):
+        return f"{str(dtype)}[{_pretty_type_string(dtype.storage_type)}]"
+    elif pat.is_struct(dtype):
+        return f"{[_pretty_type_string(inner.type) for inner in dtype]}"
+    elif is_list_type(dtype):
+        return f"[{_pretty_type_string(dtype.value_type)}]"
     else:
-        return str(type_)
+        return str(dtype)
 
 
-def is_list_type(type_: pa.DataType):
-    return pat.is_large_list(type_) or pat.is_list(type_)
+def is_list_type(dtype: pa.DataType):
+    return pat.is_large_list(dtype) or pat.is_list(dtype)
 
 
-def _get_arrow_storage_to_ext_fn(type_):
-    if is_dict_encoded_value_factory_type(type_):
+def _get_arrow_storage_to_ext_fn(dtype):
+    if is_dict_encoded_value_factory_type(dtype):
         key_gen = kas.DictKeyGenerator()
-        storage_fn = _get_arrow_storage_to_ext_fn(type_.storage_type) or _identity
+        storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
 
         def wrap_and_struct_dict_encode(a):
             unencoded_storage = storage_fn(a)
             encoded_storage = kas.create_storage_for_struct_dict_encoded_array(unencoded_storage, key_gen,
-                                                                               value_type=type_.value_type,
-                                                                               key_type=type_.key_type)
-            return pa.ExtensionArray.from_storage(type_, encoded_storage)
+                                                                               value_type=dtype.value_type,
+                                                                               key_type=dtype.key_type)
+            return pa.ExtensionArray.from_storage(dtype, encoded_storage)
         return wrap_and_struct_dict_encode
-    elif kas.is_struct_dict_encoded(type_):
+    elif kas.is_struct_dict_encoded(dtype):
         key_gen = kas.DictKeyGenerator()
-        return lambda a: kas.struct_dict_encode(a, key_gen, key_type=type_.key_type)
-    elif is_value_factory_type(type_):
-        storage_fn = _get_arrow_storage_to_ext_fn(type_.storage_type) or _identity
-        return lambda a: pa.ExtensionArray.from_storage(type_, storage_fn(a))
-    elif is_list_type(type_):
-        value_fn = _get_arrow_storage_to_ext_fn(type_.value_type) or _identity
+        return lambda a: kas.struct_dict_encode(a, key_gen, key_type=dtype.key_type)
+    elif is_value_factory_type(dtype):
+        storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
+        return lambda a: pa.ExtensionArray.from_storage(dtype, storage_fn(a))
+    elif is_list_type(dtype):
+        value_fn = _get_arrow_storage_to_ext_fn(dtype.value_type) or _identity
         return lambda a: _create_list_array(a.offsets, value_fn(a.values))
-    elif pat.is_struct(type_):
-        inner_fns = [_get_arrow_storage_to_ext_fn(inner.type) for inner in type_]
+    elif pat.is_struct(dtype):
+        inner_fns = [_get_arrow_storage_to_ext_fn(inner.type) for inner in dtype]
         return lambda a: pa.StructArray.from_arrays(
             [fn(inner) for fn, inner in zip(inner_fns, a.flatten())],
-            names=[t.name for t in type_],
+            names=[t.name for t in dtype],
         )
     else:
         return _identity
@@ -195,32 +195,32 @@ def to_storage_table(table: pa.Table):
 
 
 def _to_storage_array(array: pa.Array):
-    compatibility_fn = _get_to_storage_fn(array.type)
+    compatibility_fn = _get_array_to_storage_fn(array.type)
     if compatibility_fn is None:
         return array
     else:
         return _apply_to_array(array, compatibility_fn)
 
 
-def _get_to_storage_fn(type_: pa.DataType):
-    if is_dict_encoded_value_factory_type(type_):
-        storage_fn = _get_to_storage_fn(type_.value_type) or _identity
+def _get_array_to_storage_fn(dtype: pa.DataType):
+    if is_dict_encoded_value_factory_type(dtype):
+        storage_fn = _get_array_to_storage_fn(dtype.value_type) or _identity
         return lambda a: storage_fn(a.dictionary_decode())
-    elif is_value_factory_type(type_):
-        storage_fn = _get_to_storage_fn(type_.storage_type) or _identity
+    elif is_value_factory_type(dtype):
+        storage_fn = _get_array_to_storage_fn(dtype.storage_type) or _identity
         return lambda a: storage_fn(a.storage)
-    elif kas.is_struct_dict_encoded(type_):
+    elif kas.is_struct_dict_encoded(dtype):
         return lambda a: a.dictionary_decode()
-    elif is_list_type(type_):
-        value_fn = _get_to_storage_fn(type_.value_type)
+    elif is_list_type(dtype):
+        value_fn = _get_array_to_storage_fn(dtype.value_type)
         if value_fn is None:
             return None
         else:
             return lambda a: _create_list_array(
                 a.offsets, _to_storage_array(a.values)
             )
-    elif pat.is_struct(type_):
-        inner_fns = [_get_to_storage_fn(inner.type) for inner in type_]
+    elif pat.is_struct(dtype):
+        inner_fns = [_get_array_to_storage_fn(inner.type) for inner in dtype]
         if all(i is None for i in inner_fns):
             return None
         else:
@@ -229,7 +229,7 @@ def _get_to_storage_fn(type_: pa.DataType):
             def _to_storage_struct(struct_array: pa.StructArray):
                 inner = [fn(struct_array.field(i)) for i, fn in enumerate(inner_fns)]
                 return pa.StructArray.from_arrays(
-                    inner, names=[field.name for field in type_]
+                    inner, names=[field.name for field in dtype]
                 )
 
             return _to_storage_struct
@@ -237,48 +237,60 @@ def _get_to_storage_fn(type_: pa.DataType):
         return None
 
 
-def contains_knime_extension_type(type_: pa.DataType):
-    if is_value_factory_type(type_) or kas.is_struct_dict_encoded(type_) or is_dict_encoded_value_factory_type(type_):
+def contains_knime_extension_type(dtype: pa.DataType):
+    if is_value_factory_type(dtype) or kas.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(dtype):
         return True
-    elif is_list_type(type_):
-        return contains_knime_extension_type(type_.value_type)
-    elif pat.is_struct(type_):
-        return any(contains_knime_extension_type(inner.type) for inner in type_)
+    elif is_list_type(dtype):
+        return contains_knime_extension_type(dtype.value_type)
+    elif pat.is_struct(dtype):
+        return any(contains_knime_extension_type(inner.type) for inner in dtype)
     else:
         return False
 
 
-def get_storage_type_and_fn(type_: pa.DataType):
+def get_object_to_storage_fn(dtype: pa.DataType):
     """
-    Finds the storage type and a function that converts a complex Python object into its storage
-    representation that can be understood by pyarrow
+    Constructs a function that can be used to turn a Python object that corresponds to the provided Arrow type into a
+    storage version of itself that Arrow can parse into an array.
     """
-    if is_dict_encoded_value_factory_type(type_):
-        storage_type, storage_fn = get_storage_type_and_fn(type_.value_type)
-        return storage_type, lambda a: type_.encode(a)
-    if is_value_factory_type(type_):
-        storage_type, storage_fn = get_storage_type_and_fn(type_.storage_type)
-        return storage_type, lambda a: type_.encode(a)
-    elif kas.is_struct_dict_encoded(type_):
-        return type_.value_type, _identity
-    elif is_list_type(type_):
-        inner_type, inner_fn = get_storage_type_and_fn(type_.value_type)
-        if pat.is_list(type_):
-            return pa.list_(inner_type), lambda l: [inner_fn(x) for x in l]
-        elif pat.is_large_list(type_):
-            return pa.large_list(inner_type), lambda l: [inner_fn(x) for x in l]
-    elif pat.is_struct(type_):
-        inner_types, inner_fns = zip(
-            *[get_storage_type_and_fn(inner.type) for inner in type_]
-        )
-        inner_fields = [
-            inner.with_type(new_type) for inner, new_type in zip(type_, inner_types)
-        ]
-        return pa.struct(inner_fields), lambda a: {
-            inner.key: fn(inner.value) for fn, inner in zip(inner_fns, a.items())
-        }
+    if is_dict_encoded_value_factory_type(dtype):
+        storage_fn = get_object_to_storage_fn(dtype.value_type)
+        return lambda a: storage_fn(dtype.encode(a))
+    elif is_value_factory_type(dtype):
+        storage_fn = get_object_to_storage_fn(dtype.storage_type)
+        return lambda a: storage_fn(dtype.encode(a))
+    elif kas.is_struct_dict_encoded(dtype):
+        return _identity
+    elif is_list_type(dtype):
+        inner_fn = get_object_to_storage_fn(dtype.value_type)
+        return lambda l: [inner_fn(x) for x in l]
+    elif pat.is_struct(dtype):
+        inner_fns = [get_object_to_storage_fn(field.type) for field in dtype]
+        return lambda d: {inner[0]: fn(inner[1]) for fn, inner in zip(inner_fns, d.items())}
     else:
-        return type_, _identity
+        return _identity
+
+
+def get_storage_type(dtype: pa.DataType):
+    """
+    Determines the storage type of a (complex) Arrow type potentially containing ExtensionTypes.
+    """
+    if is_dict_encoded_value_factory_type(dtype):
+        return get_storage_type(dtype.value_type)
+    elif is_value_factory_type(dtype):
+        return get_storage_type(dtype.storage_type)
+    elif kas.is_struct_dict_encoded(dtype):
+        return dtype.value_type
+    elif is_list_type(dtype):
+        inner_type = get_storage_type(dtype.value_type)
+        if pat.is_list(dtype):
+            return pa.list_(inner_type)
+        else:  # no need to check since is_list_type only returns true for lists and large_lists
+            return pa.large_list(inner_type)
+    elif pat.is_struct(dtype):
+        return pa.struct([field.with_type(get_storage_type(field.type)) for field in dtype])
+    else:
+        return dtype
 
 
 def storage_table_to_extension_table(table: pa.Table, schema_with_ext_types: pa.Schema):
@@ -381,16 +393,12 @@ class StructDictEncodedValueFactoryArray(kas.StructDictEncodedArray):
         return KnimeExtensionScalar(self.type.value_factory_type, storage)
 
 
-def is_dict_encoded_value_factory_type(type_: pa.DataType):
-    return isinstance(type_, StructDictEncodedValueFactoryExtensionType)
+def is_dict_encoded_value_factory_type(dtype: pa.DataType):
+    return isinstance(dtype, StructDictEncodedValueFactoryExtensionType)
 
 
-def create_struct_dict_encoded_value_factory_array(array, key_generator, java_value_factory, value_type, key_type):
-    storage = kas.create_storage_for_struct_dict_encoded_array(array, key_generator, value_type, key_type)
-
-
-def is_value_factory_type(type_: pa.DataType):
-    return isinstance(type_, ValueFactoryExtensionType)
+def is_value_factory_type(dtype: pa.DataType):
+    return isinstance(dtype, ValueFactoryExtensionType)
 
 
 def _data_spec_json_to_arrow(data_spec_json):
@@ -522,8 +530,9 @@ def knime_extension_scalar(value):
 
 
 def knime_extension_array(array):
-    type_ = to_extension_type(type(array[0]))
-    storage_type, storage_fn = get_storage_type_and_fn(type_)
+    dtype = to_extension_type(type(array[0]))
+    storage_type = get_storage_type(dtype)
+    storage_fn = get_object_to_storage_fn(dtype)
     py_list = [storage_fn(x) for x in array]
     storage_array = pa.array(py_list, type=storage_type)
-    return _get_arrow_storage_to_ext_fn(type_)(storage_array)
+    return _get_arrow_storage_to_ext_fn(dtype)(storage_array)

@@ -440,8 +440,8 @@ class StructDictEncodedType(pa.ExtensionType):
         return StructDictEncodedArray
 
 
-def is_struct_dict_encoded(type_: pa.DataType):
-    return isinstance(type_, StructDictEncodedType)
+def is_struct_dict_encoded(dtype: pa.DataType):
+    return isinstance(dtype, StructDictEncodedType)
 
 
 pa.register_extension_type(StructDictEncodedType(pa.null()))
