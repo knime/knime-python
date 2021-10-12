@@ -79,7 +79,7 @@ public final class RowKeyChecker implements AutoCloseable {
 
     private final ExecutorService m_threadPool;
 
-    private final Phaser m_serializationPhaser;
+    private final Phaser m_phaser;
 
     private AtomicBoolean m_stillRunning;
 
@@ -122,7 +122,7 @@ public final class RowKeyChecker implements AutoCloseable {
         m_invalidCause = new AtomicReference<>(null);
 
         m_threadPool = Executors.newFixedThreadPool(2);
-        m_serializationPhaser = new Phaser(1);
+        m_phaser = new Phaser(1);
         m_stillRunning = new AtomicBoolean(true);
     }
 
@@ -152,7 +152,7 @@ public final class RowKeyChecker implements AutoCloseable {
             }
         }
         m_threadPool.execute(this::checkNextBatchRunner);
-        m_serializationPhaser.register();
+        m_phaser.register();
     }
 
     private void checkNextBatchRunner() {
@@ -181,7 +181,7 @@ public final class RowKeyChecker implements AutoCloseable {
             if (readBatch != null) {
                 readBatch.release();
             }
-            m_serializationPhaser.arriveAndDeregister();
+            m_phaser.arriveAndDeregister();
         }
     }
 
@@ -202,10 +202,10 @@ public final class RowKeyChecker implements AutoCloseable {
      */
     public boolean allUnique() throws InterruptedException {
         // Wait until all threads are done
-        if (!m_serializationPhaser.isTerminated()) {
-            final var phase = m_serializationPhaser.getPhase();
-            m_serializationPhaser.arriveAndDeregister();
-            m_serializationPhaser.awaitAdvanceInterruptibly(phase);
+        if (!m_phaser.isTerminated()) {
+            final var phase = m_phaser.getPhase();
+            m_phaser.arriveAndDeregister();
+            m_phaser.awaitAdvanceInterruptibly(phase);
         }
 
         // Shutdown the thread pool
@@ -231,10 +231,10 @@ public final class RowKeyChecker implements AutoCloseable {
         m_stillRunning.set(false);
 
         // Wait until the threads are all done
-        if (!m_serializationPhaser.isTerminated()) {
-            final var phase = m_serializationPhaser.getPhase();
-            m_serializationPhaser.arriveAndDeregister();
-            m_serializationPhaser.awaitAdvance(phase);
+        if (!m_phaser.isTerminated()) {
+            final var phase = m_phaser.getPhase();
+            m_phaser.arriveAndDeregister();
+            m_phaser.awaitAdvance(phase);
         }
 
         // Shutdown the thread pool
