@@ -7,10 +7,10 @@ Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
-Require-Bundle: org.knime.python3;bundle-version="[4.4.0,5.0.0)",
- org.knime.core.table;bundle-version="[4.4.0,5.0.0)",
- org.knime.core.columnar;bundle-version="[4.4.0,5.0.0)",
- org.knime.core.columnar.arrow;bundle-version="[4.4.0,5.0.0)",
+Require-Bundle: org.knime.python3;bundle-version="[4.5.0,5.0.0)",
+ org.knime.core.table;bundle-version="[4.5.0,5.0.0)",
+ org.knime.core.columnar;bundle-version="[4.5.0,5.0.0)",
+ org.knime.core.columnar.arrow;bundle-version="[4.5.0,5.0.0)",
  org.slf4j.api;bundle-version="[1.7.2,2.0.0)",
  org.apache.commons.io;bundle-version="[2.6.0,3.0.0)",
  org.apache.arrow.memory-core;bundle-version="[6.0.0,7.0.0)",
