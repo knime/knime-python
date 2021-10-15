@@ -48,10 +48,12 @@
 
 import pyarrow as pa
 import knime_gateway as kg
+import itertools
 
 # TODO should this happen here or on java side?
 import knime_arrow_types as kat
 import knime_arrow_struct_dict_encoding as kas
+from typing import Optional
 from knime_arrow_utils import normalize_index
 
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
@@ -259,15 +261,33 @@ class ArrowDataSource:
 
     # API to get higher level access
 
-    def to_pandas(self):
+    def to_pandas(self) -> "pandas.DataFrame":
         import knime_arrow_pandas
 
         # TODO use arrow's build-in conversion whenever possible
         arrow_table = self.to_arrow_table()
         return knime_arrow_pandas.arrow_table_to_pandas_df(arrow_table)
 
-    def to_arrow_table(self):
-        table_without_names = pa.Table.from_batches(iter(self), self._reader.schema)
+    def to_arrow_table(self, num_rows: Optional[int] = None) -> pa.Table:
+        # TODO: num_rows could also be generalized by making the entire data source sliceable (at least in terms of
+        #  batches)
+        batches = []
+        if num_rows is not None:
+            if num_rows > 0:
+                first_batch = self[0]
+                num_batches = (
+                    num_rows + first_batch.num_rows - 1
+                ) // first_batch.num_rows  # Ceiling division
+                num_batches = min(num_batches, len(self))
+                batches = itertools.chain(
+                    [first_batch], (self[i] for i in range(1, num_batches))
+                )
+        else:
+            batches = iter(self)
+        table_without_names = pa.Table.from_batches(batches, self._reader.schema)
+        if num_rows is not None and table_without_names.num_rows != num_rows:
+            table_without_names = table_without_names.slice(0, num_rows)
+
         if self._column_names is None:
             return table_without_names
         else:

@@ -48,10 +48,24 @@
 
 import sys
 
+import knime_arrow_pandas
 import knime_gateway as kg
 
 
 class PythonKernel(kg.EntryPoint):
+    def __init__(self):
+        self._workspace = {}  # TODO: should we make this thread safe?
+
+    def putTableIntoWorkspace(
+        self, variable_name: str, java_table_data_source, num_rows: int
+    ) -> None:
+        with kg.data_source_mapper(java_table_data_source) as table_data_source:
+            table = table_data_source.to_arrow_table(num_rows)
+            data_frame = knime_arrow_pandas.arrow_table_to_pandas_df(table)
+            # The first column of a KNIME table is interpreted as its index (row keys).
+            data_frame.set_index(data_frame.columns[0], inplace=True)
+            self._workspace[variable_name] = data_frame
+
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]
 

@@ -48,6 +48,7 @@
  */
 package org.knime.python3for2;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -56,10 +57,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.knime.core.columnar.arrow.ArrowBatchReadStore;
+import org.knime.core.columnar.arrow.ArrowBatchStore;
+import org.knime.core.columnar.store.BatchReadStore;
+import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
+import org.knime.core.data.columnar.table.ColumnarContainerTable;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonCommand;
@@ -82,6 +90,8 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
+import org.knime.python3.arrow.PythonArrowDataSource;
+import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 
 /**
@@ -200,13 +210,51 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws PythonIOException, CanceledExecutionException {
-        throw new IllegalStateException("not yet implemented"); // TODO: NYI
+        putDataTable(name, table, (long)rowLimit);
     }
 
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        throw new IllegalStateException("not yet implemented"); // TODO: NYI
+        putDataTable(name, table, table.size());
+    }
+
+    private void putDataTable(final String name, final BufferedDataTable table, final long numRows)
+        throws PythonIOException {
+        final PythonArrowDataSource source = tableToSource(table);
+        m_proxy.putTableIntoWorkspace(name, source, numRows);
+    }
+
+    @SuppressWarnings("resource") // The store will be closed along with the table by the client using the kernel.
+    private static PythonArrowDataSource tableToSource(final BufferedDataTable table) throws PythonIOException {
+        // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table content
+        // to disk to make it available to Python.
+        //
+        // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported, defer
+        // flushing until actually needed (i.e. when Python pulls data).
+        BatchReadStore readStore = null;
+        final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
+        if (delegate instanceof ColumnarContainerTable) {
+            final ColumnarBatchReadStore columnarReadStore = ((ColumnarContainerTable)delegate).getStore();
+            if (columnarReadStore instanceof Flushable) {
+                try {
+                    ((Flushable)columnarReadStore).flush();
+                } catch (final IOException ex) {
+                    throw new PythonIOException(ex);
+                }
+            }
+            readStore = columnarReadStore.getDelegateBatchReadStore();
+        }
+        final String[] columnNames = table.getDataTableSpec().getColumnNames();
+        if (readStore instanceof ArrowBatchReadStore) {
+            return PythonArrowDataUtils.createSource((ArrowBatchReadStore)readStore, columnNames);
+        } else if (readStore instanceof ArrowBatchStore) {
+            final ArrowBatchStore store = (ArrowBatchStore)readStore;
+            return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
+        } else {
+            throw new IllegalStateException("The new Python kernel back end requires any input tables to be stored " +
+                "using the Columnar Table back end.");
+        }
     }
 
     @Override

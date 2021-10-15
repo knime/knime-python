@@ -143,6 +143,20 @@ public final class PythonArrowDataUtils {
     }
 
     /**
+     * Create a {@link PythonArrowDataSource} that provides the data from the given {@link ArrowBatchReadStore} and has
+     * the provided column names
+     *
+     * @param store the store which holds the data
+     * @param columnNames names of the columns in KNIME
+     * @return the {@link PythonArrowDataSource} that can be given to a {@link PythonEntryPoint} and will be wrapped
+     *         into a Python object for easy access to the data
+     */
+    public static PythonArrowDataSource createSource(final ArrowBatchReadStore store, final String[] columnNames) {
+        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(), null,
+            store.numBatches(), columnNames);
+    }
+
+    /**
      * Create an {@link PythonArrowDataSink} that writes an Arrow file to the given path.
      *
      * @param targetPath the path to write the Arrow file to

@@ -44,30 +44,13 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jul 22, 2021 (marcel): created
+ *   Oct 16, 2021 (marcel): created
  */
 package org.knime.python3for2;
 
-import org.knime.python3.PythonDataSource;
-import org.knime.python3.PythonEntryPoint;
+public interface PythonTestResult {
 
-/**
- * Proxy interface delegating to the Python implementation of the kernel back end.
- *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- */
-public interface Python3KernelBackendProxy extends PythonEntryPoint {
+    boolean wasSuccessful();
 
-    /**
-     * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
-     * and
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
-     *
-     * @param variableName The variable name of the table in Python.
-     * @param tableDataSource The source providing the table's data.
-     * @param numRows The number of rows starting at the beginning of the table that will be taken from
-     *            {@code tableDataSource} and made available to Python.
-     */
-    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows);
+    String getFailureReport();
 }
