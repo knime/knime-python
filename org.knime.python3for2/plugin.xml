@@ -7,7 +7,4 @@
             PythonKernelBackendFactory="org.knime.python3for2.Python3KernelBackendFactory">
       </PythonKernelBackend>
    </extension>
-   <extension
-         point="org.knime.python3.py4j.Py4jVisibleBundle">
-   </extension>
 </plugin>
