@@ -48,6 +48,7 @@
  */
 package org.knime.python3for2;
 
+import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 
@@ -70,4 +71,34 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      *            {@code tableDataSource} and made available to Python.
      */
     void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows);
+
+    /**
+     * Implements the functionality required by
+     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
+     * and
+     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
+     *
+     * @param variableName The variable name of the table in Python.
+     * @param tableDataSource The source providing the table's data.
+     * @param numRows The number of rows starting at the beginning of the table that will be taken from
+     *            {@code tableDataSource} and made available to Python.
+     * @param sentinelStrategy Either "min" (corresponds to {@link SentinelOption#MIN_VAL}) or "max"
+     *            ({@link SentinelOption#MAX_VAL}) sentinel strategy.
+     */
+    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows,
+        String sentinelStrategy);
+
+    /**
+     * Implements the functionality required by
+     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
+     * and
+     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
+     *
+     * @param variableName The variable name of the table in Python.
+     * @param tableDataSource The source providing the table's data.
+     * @param numRows The number of rows starting at the beginning of the table that will be taken from
+     *            {@code tableDataSource} and made available to Python.
+     * @param sentinelValue A fixed integer sentinel value (corresponds to {@link SentinelOption#CUSTOM}).
+     */
+    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows, int sentinelValue);
 }

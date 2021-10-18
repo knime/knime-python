@@ -48,6 +48,7 @@
 
 import math
 import unittest
+from typing import Optional, Union
 
 import knime_gateway as kg
 from knime_kernel import PythonKernel
@@ -75,17 +76,21 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
 
     def testPutTableIntoWorkspace(self):
         for num_rows in [60, 50]:
-            with self.subTest(num_rows=num_rows):
-                self._testPutTableIntoWorkspace(
-                    self._java_table_data_source,
-                    num_rows,
-                )
+            for sentinel in [None, "min", "max", 123]:
+                with self.subTest(num_rows=num_rows, sentinel=sentinel):
+                    self._testPutTableIntoWorkspace(
+                        self._java_table_data_source, num_rows, sentinel
+                    )
 
-    def _testPutTableIntoWorkspace(self, java_table_data_source, num_rows: int):
+    def _testPutTableIntoWorkspace(
+        self, java_table_data_source, num_rows: int, sentinel: Optional[Union[str, int]]
+    ):
         kernel = PythonKernel()
         variable_name = "my_test_table"
         assert variable_name not in kernel._workspace
-        kernel.putTableIntoWorkspace(variable_name, java_table_data_source, num_rows)
+        kernel.putTableIntoWorkspace(
+            variable_name, java_table_data_source, num_rows, sentinel
+        )
         assert variable_name in kernel._workspace
         table = kernel._workspace[variable_name]
         assert table is not None
@@ -104,10 +109,12 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
         self.assertEqual("My long col", my_long_col_name)
         self.assertEqual("My string col", my_string_col_name)
         self.assertEqual("float64", table[my_double_col_name].dtype)
-        # pandas auto-converts missing values in numeric columns to NaNs, which turns integer columns into float
-        # columns.
-        self.assertEqual("float64", table[my_int_col_name].dtype)
-        self.assertEqual("float64", table[my_long_col_name].dtype)
+        if sentinel is None:
+            self.assertEqual("float64", table[my_int_col_name].dtype)
+            self.assertEqual("float64", table[my_long_col_name].dtype)
+        else:
+            self.assertEqual("int32", table[my_int_col_name].dtype)
+            self.assertEqual("int64", table[my_long_col_name].dtype)
         self.assertEqual("object", table[my_string_col_name].dtype)
 
         self.assertEqual(num_rows, len(table))
@@ -120,8 +127,20 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
             expect_missings = i % 13 == 0
             if expect_missings:
                 self.assertIsNan(my_double)
-                self.assertIsNan(my_int)
-                self.assertIsNan(my_long)
+                if sentinel is None:
+                    self.assertIsNan(my_int)
+                    self.assertIsNan(my_long)
+                else:
+                    if sentinel == "min":
+                        int_sentinel = -(2 ** 31)
+                        long_sentinel = -(2 ** 63)
+                    elif sentinel == "max":
+                        int_sentinel = 2 ** 31 - 1
+                        long_sentinel = 2 ** 63 - 1
+                    else:
+                        int_sentinel = long_sentinel = int(sentinel)
+                    self.assertEqual(int_sentinel, my_int)
+                    self.assertEqual(long_sentinel, my_long)
                 self.assertEqual(None, my_string)
             else:
                 self.assertEqual(float(i), my_double)

@@ -72,6 +72,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.NodeContextManager;
 import org.knime.python2.kernel.PythonCancelable;
@@ -93,6 +94,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
+
 
 /**
  * New back end of {@link PythonKernel}. "New" means that this back end is part of Columnar Table Backend-enabled
@@ -222,7 +224,22 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private void putDataTable(final String name, final BufferedDataTable table, final long numRows)
         throws PythonIOException {
         final PythonArrowDataSource source = tableToSource(table);
-        m_proxy.putTableIntoWorkspace(name, source, numRows);
+        final SerializationOptions options = m_currentOptions.getSerializationOptions();
+        if (options.getConvertMissingToPython()) {
+            switch (options.getSentinelOption()) {
+                case MIN_VAL:
+                    m_proxy.putTableIntoWorkspace(name, source, numRows, "min");
+                    break;
+                case MAX_VAL:
+                    m_proxy.putTableIntoWorkspace(name, source, numRows, "max");
+                    break;
+                case CUSTOM:
+                    m_proxy.putTableIntoWorkspace(name, source, numRows, options.getSentinelValue());
+                    break;
+            }
+        } else {
+            m_proxy.putTableIntoWorkspace(name, source, numRows);
+        }
     }
 
     @SuppressWarnings("resource") // The store will be closed along with the table by the client using the kernel.
