@@ -55,6 +55,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
@@ -76,6 +79,8 @@ import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.NodeContextManager;
 import org.knime.python2.kernel.PythonCancelable;
+import org.knime.python2.kernel.PythonCanceledExecutionException;
+import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonInstallationTestException;
 import org.knime.python2.kernel.PythonKernel;
@@ -95,6 +100,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * New back end of {@link PythonKernel}. "New" means that this back end is part of Columnar Table Backend-enabled
@@ -115,6 +121,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private final PythonOutputListeners m_outputListeners;
 
     private final Python3KernelBackendProxy m_proxy;
+
+    /**
+     * Used to make kernel operations cancelable.
+     */
+    private final ExecutorService m_executorService =
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build());
 
     /**
      * Properly initialized by {@link #setOptions(PythonKernelOptions)}. Holds the node context that was active at the
@@ -212,66 +224,28 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws PythonIOException, CanceledExecutionException {
-        putDataTable(name, table, (long)rowLimit);
+        putDataTable(name, table, executionMonitor, (long)rowLimit);
     }
 
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        putDataTable(name, table, table.size());
+        putDataTable(name, table, executionMonitor, table.size());
     }
 
-    private void putDataTable(final String name, final BufferedDataTable table, final long numRows)
-        throws PythonIOException {
-        final PythonArrowDataSource source = tableToSource(table);
-        final SerializationOptions options = m_currentOptions.getSerializationOptions();
-        if (options.getConvertMissingToPython()) {
-            switch (options.getSentinelOption()) {
-                case MIN_VAL:
-                    m_proxy.putTableIntoWorkspace(name, source, numRows, "min");
-                    break;
-                case MAX_VAL:
-                    m_proxy.putTableIntoWorkspace(name, source, numRows, "max");
-                    break;
-                case CUSTOM:
-                    m_proxy.putTableIntoWorkspace(name, source, numRows, options.getSentinelValue());
-                    break;
-            }
-        } else {
-            m_proxy.putTableIntoWorkspace(name, source, numRows);
-        }
-    }
-
-    @SuppressWarnings("resource") // The store will be closed along with the table by the client using the kernel.
-    private static PythonArrowDataSource tableToSource(final BufferedDataTable table) throws PythonIOException {
-        // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table content
-        // to disk to make it available to Python.
-        //
-        // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported, defer
-        // flushing until actually needed (i.e. when Python pulls data).
-        BatchReadStore readStore = null;
-        final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
-        if (delegate instanceof ColumnarContainerTable) {
-            final ColumnarBatchReadStore columnarReadStore = ((ColumnarContainerTable)delegate).getStore();
-            if (columnarReadStore instanceof Flushable) {
-                try {
-                    ((Flushable)columnarReadStore).flush();
-                } catch (final IOException ex) {
-                    throw new PythonIOException(ex);
-                }
-            }
-            readStore = columnarReadStore.getDelegateBatchReadStore();
-        }
-        final String[] columnNames = table.getDataTableSpec().getColumnNames();
-        if (readStore instanceof ArrowBatchReadStore) {
-            return PythonArrowDataUtils.createSource((ArrowBatchReadStore)readStore, columnNames);
-        } else if (readStore instanceof ArrowBatchStore) {
-            final ArrowBatchStore store = (ArrowBatchStore)readStore;
-            return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
-        } else {
-            throw new IllegalStateException("The new Python kernel back end requires any input tables to be stored " +
-                "using the Columnar Table back end.");
-        }
+    /**
+     * Note that "cancellation" in the context of this method only means that we stop waiting for the task to complete
+     * and also interrupt its thread. Whether any underlying operations (such as the flushing of caches in the columnar
+     * table back end) respond to that interrupt is left to their discretion. We, in particular, also do not forcefully
+     * terminate any time-consuming operations on the Python side (e.g. the conversion of the Arrow table to pandas).
+     * Instead it is expected that clients terminate the entire kernel right after canceling one of its tasks, as stated
+     * in the documentation of {@link PythonKernel#putDataTable(String, BufferedDataTable, ExecutionMonitor)}.
+     */
+    private void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
+        final long numRows) throws PythonIOException, CanceledExecutionException {
+        performCancelable(
+            new PutDataTableTask(m_proxy, name, table, numRows, m_currentOptions.getSerializationOptions()),
+            executionMonitor);
     }
 
     @Override
@@ -341,13 +315,101 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
     }
 
+    private <T> T performCancelable(final Callable<T> task, final ExecutionMonitor executionMonitor)
+        throws PythonIOException, CanceledExecutionException {
+        try {
+            return PythonUtils.Misc.executeCancelable(task, m_executorService::submit,
+                new PythonExecutionMonitorCancelable(executionMonitor));
+        } catch (final PythonCanceledExecutionException ex) {
+            final var ex1 = new CanceledExecutionException(ex.getMessage());
+            ex1.initCause(ex);
+            throw ex1;
+        }
+    }
+
     @Override
     public void close() throws PythonKernelCleanupException {
         if (m_closed.compareAndSet(false, true)) {
             new Thread(() -> {
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
+                PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
             }).start();
+        }
+    }
+
+    private static final class PutDataTableTask implements Callable<Void> {
+
+        private final Python3KernelBackendProxy m_proxy;
+
+        private final String m_name;
+
+        private final BufferedDataTable m_table;
+
+        private final long m_numRows;
+
+        private final SerializationOptions m_options;
+
+        public PutDataTableTask(final Python3KernelBackendProxy proxy, final String name, final BufferedDataTable table,
+            final long numRows, final SerializationOptions options) {
+            m_proxy = proxy;
+            m_name = name;
+            m_table = table;
+            m_numRows = numRows;
+            m_options = options;
+        }
+
+        @Override
+        public Void call() throws Exception {
+            final PythonArrowDataSource source = tableToSource(m_table);
+            if (m_options.getConvertMissingToPython()) {
+                switch (m_options.getSentinelOption()) {
+                    case MIN_VAL:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
+                        break;
+                    case MAX_VAL:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
+                        break;
+                    case CUSTOM:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
+                        break;
+                }
+            } else {
+                m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
+            }
+            return null;
+        }
+
+        @SuppressWarnings("resource") // The store will be closed along with the table by the client using the kernel.
+        private static PythonArrowDataSource tableToSource(final BufferedDataTable table) throws PythonIOException {
+            // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table content
+            // to disk to make it available to Python.
+            //
+            // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported, defer
+            // flushing until actually needed (i.e. when Python pulls data).
+            BatchReadStore readStore = null;
+            final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
+            if (delegate instanceof ColumnarContainerTable) {
+                final ColumnarBatchReadStore columnarReadStore = ((ColumnarContainerTable)delegate).getStore();
+                if (columnarReadStore instanceof Flushable) {
+                    try {
+                        ((Flushable)columnarReadStore).flush();
+                    } catch (final IOException ex) {
+                        throw new PythonIOException(ex);
+                    }
+                }
+                readStore = columnarReadStore.getDelegateBatchReadStore();
+            }
+            final String[] columnNames = table.getDataTableSpec().getColumnNames();
+            if (readStore instanceof ArrowBatchReadStore) {
+                return PythonArrowDataUtils.createSource((ArrowBatchReadStore)readStore, columnNames);
+            } else if (readStore instanceof ArrowBatchStore) {
+                final ArrowBatchStore store = (ArrowBatchStore)readStore;
+                return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
+            } else {
+                throw new IllegalStateException("The new Python kernel back end requires any input tables to be " +
+                    "stored using the Columnar Table back end.");
+            }
         }
     }
 }
