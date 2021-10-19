@@ -57,7 +57,8 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.FlowVariable.Type;
+import org.knime.core.node.workflow.VariableType;
+import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -164,42 +165,19 @@ public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends 
      * @param newVariables The flow variables to push
      */
     protected void addNewVariables(final Collection<FlowVariable> newVariables) {
-        final Map<String, FlowVariable> flowVariables = getAvailableFlowVariables();
+        final Map<String, FlowVariable> oldVariables =
+            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
         for (final FlowVariable variable : newVariables) {
-            // Only push if variable is new or has changed type or value
-            boolean push = true;
-            if (flowVariables.containsKey(variable.getName())) {
-                // Old variable with the name exists
-                final FlowVariable oldVariable = flowVariables.get(variable.getName());
-                if (oldVariable.getType().equals(variable.getType())) {
-                    // Old variable has the same type
-                    if (variable.getType().equals(Type.INTEGER)) {
-                        if (oldVariable.getIntValue() == variable.getIntValue()) {
-                            // Old variable has the same value
-                            push = false;
-                        }
-                    } else if (variable.getType().equals(Type.DOUBLE)) {
-                        if (new Double(oldVariable.getDoubleValue()).equals(new Double(variable.getDoubleValue()))) {
-                            // Old variable has the same value
-                            push = false;
-                        }
-                    } else if (variable.getType().equals(Type.STRING)) {
-                        if (Objects.equals(oldVariable.getStringValue(), variable.getStringValue())) {
-                            push = false;
-                        }
-                    }
-                }
-            }
-            if (push) {
-                if (variable.getType().equals(Type.INTEGER)) {
-                    pushFlowVariableInt(variable.getName(), variable.getIntValue());
-                } else if (variable.getType().equals(Type.DOUBLE)) {
-                    pushFlowVariableDouble(variable.getName(), variable.getDoubleValue());
-                } else if (variable.getType().equals(Type.STRING)) {
-                    pushFlowVariableString(variable.getName(), variable.getStringValue());
-                }
+            if (!Objects.equals(oldVariables.get(variable.getName()), variable)) {
+                pushNewFlowVariable(variable);
             }
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pushNewFlowVariable(final FlowVariable variable) {
+        pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
+            variable.getValue(variable.getVariableType()));
     }
 
     @Override

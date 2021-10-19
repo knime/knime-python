@@ -49,8 +49,10 @@
 
 import pyarrow as pa
 import sys
-from typing import List, Optional, Tuple, Union
 import pickle
+from typing import List, Optional, Tuple, Union
+from py4j.java_gateway import JavaClass
+
 
 import knime_arrow_table as kat
 import knime_gateway as kg
@@ -62,6 +64,25 @@ class PythonKernel(kg.EntryPoint):
 
     def putFlowVariablesIntoWorkspace(self, name: str, java_flow_variables) -> None:
         self._workspace[name] = dict(java_flow_variables)
+
+    def getFlowVariablesFromWorkspace(self, name: str) -> JavaClass:
+        flow_variables = self._workspace[name]
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in flow_variables.keys():
+            flow_variable = flow_variables[key]
+            try:
+                java_flow_variables[key] = flow_variable
+            except AttributeError as ex:
+                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
+                # fails to translate Python objects to Java objects.
+                raise TypeError(
+                    f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
+                    f"variable. Please remove the flow variable or change its type to something that can be translated."
+                ) from ex
+        return java_flow_variables
 
     def putTableIntoWorkspace(
         self,

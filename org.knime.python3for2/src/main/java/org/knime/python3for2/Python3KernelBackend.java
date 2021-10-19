@@ -52,12 +52,14 @@ import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -95,6 +97,7 @@ import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.FileUtil;
 import org.knime.core.node.workflow.VariableType;
+import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.Pair;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
@@ -291,7 +294,72 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public Collection<FlowVariable> getFlowVariables(final String name) throws PythonIOException {
-        throw new IllegalStateException("not yet implemented"); // TODO: NYI
+        final Map<String, Object> flowVariablesMap = m_proxy.getFlowVariablesFromWorkspace(name);
+        final VariableType<?>[] allVariableTypes = VariableTypeRegistry.getInstance().getAllTypes();
+        final Set<FlowVariable> flowVariables = new LinkedHashSet<>(flowVariablesMap.size());
+        for (final var entry : flowVariablesMap.entrySet()) {
+            final String variableName = entry.getKey();
+            Object value = entry.getValue();
+            if (value instanceof List) {
+                // py4j returns lists instead of arrays, convert them manually.
+                value = convertIntoArrayValue(variableName, (List<?>)value);
+                if (value == null) {
+                    continue;
+                }
+            }
+            if (value != null) {
+                final VariableType<?> matchingType = findMatchingVariableType(variableName, value, allVariableTypes);
+                if (matchingType != null
+                    // Reserved flow variables like "knime.workspace" are also passed through the node, filter them out.
+                    && isValidVariableName(variableName)) {
+                    @SuppressWarnings({"unchecked", "rawtypes"})
+                    final var variable = new FlowVariable(variableName, (VariableType)matchingType, value);
+                    flowVariables.add(variable);
+                }
+            } else {
+                LOGGER.warn("Flow variable '" + variableName + "' is empty. The variable will be ignored.");
+            }
+        }
+        return flowVariables;
+    }
+
+    private static Object convertIntoArrayValue(final String variableName, final List<?> listValue) {
+        if (!listValue.isEmpty()) {
+            try {
+                return listValue.toArray(size -> (Object[])Array.newInstance(listValue.get(0).getClass(), size));
+            } catch (final ArrayStoreException ex) {
+                LOGGER.warn(
+                    "Array-typed flow variable '" + variableName
+                        + "' contains elements of different types, which is not allowed. The variable will be ignored",
+                    ex);
+            }
+        } else {
+            LOGGER.warn("Array-typed flow variable '" + variableName + "' is empty and will be ignored.");
+        }
+        return null;
+    }
+
+    private static VariableType<?> findMatchingVariableType(final String variableName, final Object value,
+        final VariableType<?>[] variableTypes) {
+        VariableType<?> matchingType = null;
+        for (final var type : variableTypes) {
+            if (type.getSimpleType().isInstance(value)) {
+                matchingType = type;
+                break;
+            }
+        }
+        if (matchingType == null) {
+            LOGGER.warn("KNIME offers no flow variable types that match the type of flow variable '" + variableName
+                + "'. The variable will be ignored. Please change its type to something KNIME understands.");
+            LOGGER.debug(
+                "The Java type of flow variable '" + variableName + "' is '" + value.getClass().getTypeName() + "'.");
+        }
+        return matchingType;
+    }
+
+    private static boolean isValidVariableName(final String variableName) {
+        return !(variableName.startsWith(FlowVariable.Scope.Global.getPrefix())
+            || variableName.startsWith(FlowVariable.Scope.Local.getPrefix()));
     }
 
     @Override

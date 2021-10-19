@@ -73,6 +73,14 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
     void putFlowVariablesIntoWorkspace(String variableName, Map<String, Object> flowVariablesMap);
 
     /**
+     * Implements the functionality required by {@link Python3KernelBackend#getFlowVariables(String)}.
+     *
+     * @param name The variable name of the dictionary containing the flow variables in Python.
+     * @return The flow variables dictionary.
+     */
+    Map<String, Object> getFlowVariablesFromWorkspace(String name);
+
+    /**
      * Implements the functionality required by
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
      * and
