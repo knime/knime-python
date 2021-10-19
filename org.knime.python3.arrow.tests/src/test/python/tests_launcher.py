@@ -47,12 +47,12 @@
 """
 
 import datetime
-
 import numpy as np
 import pyarrow as pa
 
-import knime_gateway as kg
 import knime_arrow as ka
+import knime_arrow_struct_dict_encoding as kas
+import knime_gateway as kg
 
 FLOAT_COMPARISON_EPSILON = 1e-5
 DOUBLE_COMPARISON_EPSILON = 1e-12
@@ -193,8 +193,8 @@ TEST_ARRAY_TYPES = {
     "localtime": pa.Time64Array,
     "period": pa.StructArray,
     "zoneddatetime": pa.StructArray,
-    "dictstring": ka.StructDictEncodedArray,
-    "dictvarbinary": ka.StructDictEncodedArray,
+    "dictstring": kas.StructDictEncodedArray,
+    "dictvarbinary": kas.StructDictEncodedArray,
 }
 
 TEST_VALUE_TYPES = {
@@ -314,11 +314,11 @@ class EntryPoint(kg.EntryPoint):
             # TODO(typeextensions) this should happen automatically
             if data_type == "dictstring":
                 array = pa.ExtensionArray.from_storage(
-                    ka.StructDictEncodedType(pa.string()), array
+                    kas.StructDictEncodedType(pa.string()), array
                 )
             elif data_type == "dictvarbinary":
                 array = pa.ExtensionArray.from_storage(
-                    ka.StructDictEncodedType(pa.large_binary()), array
+                    kas.StructDictEncodedType(pa.large_binary()), array
                 )
 
             # Check length
@@ -353,7 +353,7 @@ class EntryPoint(kg.EntryPoint):
 
             dict_encoded = data_type in ["dictstring", "dictvarbinary"]
             if dict_encoded:
-                key_gen = ka.DictKeyGenerator()
+                key_gen = kas.DictKeyGenerator()
 
             # Loop over batches
             for b in range(NUM_BATCHES):
@@ -367,7 +367,7 @@ class EntryPoint(kg.EntryPoint):
 
                 # Dictionary encode if necessary
                 if dict_encoded:
-                    data = ka.struct_dict_encode(data, key_gen)
+                    data = kas.struct_dict_encode(data, key_gen)
 
                 # Write to the sink
                 record_batch = pa.record_batch([data], ["0"])
