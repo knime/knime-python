@@ -15,6 +15,7 @@ dependencies:         # List of packages that should be installed
 - pillow=5.3          # Image inputs/outputs
 - matplotlib=2.2      # Plotting
 - IPython=5.8         # Notebook support
+- decorator=4.4.2     # IPython dependency this is the last version compatible with 2.7
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
 - jpype1=0.6.3        # Databases
