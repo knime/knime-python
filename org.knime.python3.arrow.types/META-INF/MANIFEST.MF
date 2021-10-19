@@ -15,5 +15,4 @@ Require-Bundle: org.knime.filehandling.core;bundle-version="[4.5.0,5.0.0)",
  org.knime.ext.py4j;bundle-version="[0.10.9,1.0.0)"
 Export-Package: org.knime.python3.arrow.types.utf8string
 Automatic-Module-Name: org.knime.python3.arrow.types
-Eclipse-ExtensibleAPI: true
 Eclipse-RegisterBuddy: org.knime.ext.py4j
