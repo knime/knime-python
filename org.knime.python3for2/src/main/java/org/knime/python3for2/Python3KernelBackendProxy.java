@@ -50,6 +50,8 @@ package org.knime.python3for2;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionMonitor;
+import java.util.Map;
+
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -60,6 +62,15 @@ import org.knime.python3.PythonEntryPoint;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public interface Python3KernelBackendProxy extends PythonEntryPoint {
+
+    /**
+     * Implements the functionality required by
+     * {@link Python3KernelBackend#putFlowVariables(String, java.util.Collection)}.
+     *
+     * @param variableName The variable name of the dictionary containing the flow variables in Python.
+     * @param flowVariablesMap The flow variables dictionary.
+     */
+    void putFlowVariablesIntoWorkspace(String variableName, Map<String, Object> flowVariablesMap);
 
     /**
      * Implements the functionality required by

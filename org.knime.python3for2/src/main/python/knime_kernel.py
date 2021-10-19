@@ -60,6 +60,9 @@ class PythonKernel(kg.EntryPoint):
     def __init__(self):
         self._workspace = {}  # TODO: should we make this thread safe?
 
+    def putFlowVariablesIntoWorkspace(self, name: str, java_flow_variables) -> None:
+        self._workspace[name] = dict(java_flow_variables)
+
     def putTableIntoWorkspace(
         self,
         variable_name: str,
