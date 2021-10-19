@@ -50,6 +50,7 @@ package org.knime.python3for2;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionMonitor;
+import java.util.List;
 import java.util.Map;
 
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
@@ -163,4 +164,11 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      */
     void loadPickledObjectIntoWorkspace(final String objectName, final String path);
 
+    /*
+     * Implements the functionality required by {@link Python3KernelBackend#listVariables()}.
+     *
+     * @return The list of variables. Each variable is represented as a dictionary containing the fields "name", "type",
+     *         and "value".
+     */
+    List<Map<String, String>> listVariablesInWorkspace();
 }

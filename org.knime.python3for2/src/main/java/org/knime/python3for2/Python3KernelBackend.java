@@ -443,7 +443,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public List<Map<String, String>> listVariables() throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return m_proxy.listVariablesInWorkspace();
     }
 
     @Override

@@ -50,7 +50,8 @@
 import pyarrow as pa
 import sys
 import pickle
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
+from py4j.java_collections import ListConverter
 from py4j.java_gateway import JavaClass
 
 
@@ -127,6 +128,44 @@ class PythonKernel(kg.EntryPoint):
     def loadPickledObjectIntoWorkspace(self, object_name: str, path: str):
         with open(path, "rb") as file:
             self._workspace[object_name] = pickle.load(file)
+
+    def listVariablesInWorkspace(self) -> List[Dict[str, str]]:
+        def object_to_string(obj):
+            try:
+                string = str(obj)
+                return (string[:996] + "\n...") if len(string) > 1000 else string
+            except Exception:
+                return ""
+
+        modules = []
+        classes = []
+        functions = []
+        variables = []
+        for key, value in self._workspace.items():
+            var_type = type(value).__name__
+            var_value = ""
+            if var_type == "module":
+                category = modules
+            elif var_type == "type":
+                category = classes
+            elif var_type == "function":
+                category = functions
+            else:
+                category = variables
+                var_value = object_to_string(value)
+            if not (key.startswith("__") and key.endswith("__")):  # Hide magic objects.
+                category.append({"name": key, "type": var_type, "value": var_value})
+
+        def sort(unsorted):
+            return sorted(unsorted, key=lambda e: e["name"])
+
+        all_variables = []
+        all_variables.extend(sort(modules))
+        all_variables.extend(sort(classes))
+        all_variables.extend(sort(functions))
+        all_variables.extend(sort(variables))
+        # TODO: py4j's auto-conversion does not work for some reason. It should be enabled...
+        return ListConverter().convert(all_variables, kg.client_server._gateway_client)
 
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]
