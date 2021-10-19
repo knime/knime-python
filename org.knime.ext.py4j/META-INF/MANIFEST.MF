@@ -12,3 +12,4 @@ Export-Package: py4j
 Automatic-Module-Name: org.knime.ext.py4j
 Bundle-Activator: org.knime.ext.py4j.Activator
 Require-Bundle: org.eclipse.osgi;bundle-version="[3.16.200,4.0.0)"
+Eclipse-BuddyPolicy: registered

@@ -15,3 +15,4 @@ Require-Bundle: org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)",
 Export-Package: org.knime.python3,
  org.knime.python3.data
 Automatic-Module-Name: org.knime.python3
+Eclipse-RegisterBuddy: org.knime.ext.py4j
