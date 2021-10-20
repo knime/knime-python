@@ -67,17 +67,17 @@ import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.DataTypeRegistry;
+import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
-import org.knime.core.data.v2.DataCellSerializerFactory;
+import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
+import org.knime.core.data.v2.DefaultValueFactories;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
-import org.knime.core.data.v2.ValueSchema;
-import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
+import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
@@ -250,32 +250,27 @@ public final class PythonArrowDataUtils {
         final var names = ArrowSchemaUtils.extractColumnNames(schema);
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
-        factories.add(new DefaultRowKeyValueFactory());
+        factories.add(ValueFactoryUtils.loadRowKeyValueFactory(columnarSchema.getTraits(0)));
+        // FIXME just a workaround! Needs to be provided by Node/ExecutionContext
+        final var dataRepository = NotInWorkflowDataRepository.newInstance();
         for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
             var traits = columnarSchema.getTraits(i);
-            var valueFactory = getValueFactory(
-                DataTraits.getTrait(traits, LogicalTypeTrait.class).map(LogicalTypeTrait::getLogicalType).orElse(null),
-                columnarSchema.getSpec(i));
+            var valueFactory = getValueFactory(traits, columnarSchema.getSpec(i), dataRepository);
             factories.add(valueFactory);
-            var dataType = DataTypeRegistry.getInstance().getDataTypeForValueFactory(valueFactory);
+            var dataType = ValueFactoryUtils.getDataTypeForValueFactory(valueFactory);
             specs.add(new DataColumnSpecCreator(names[i], dataType).createSpec());
         }
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
-        // TODO shouldn't be necessary once we store the serializer alongside the data (AP-17501)
-        var cellSerializerFactory = new DataCellSerializerFactory();
         return ColumnarValueSchemaUtils
-            .create(ValueSchema.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new), cellSerializerFactory));
+            .create(ValueSchemaUtils.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new)));
     }
 
-    private static ValueFactory<?, ?> getValueFactory(final String valueFactoryClassName, final DataSpec dataSpec) {
-        if (valueFactoryClassName != null) {
-            // TODO special handling for collections (and DataCellValueFactories?)
-            return ValueFactoryUtils.createValueFactoryForClassName(valueFactoryClassName)//
-                .orElseThrow(() -> new IllegalStateException(
-                    String.format("No value factory with the name '%s' is known. Are you missing an extension?",
-                        valueFactoryClassName)));
+    private static ValueFactory<?, ?> getValueFactory(final DataTraits traits, final DataSpec dataSpec,
+        final IDataRepository dataRepo) {
+        if (traits.hasTrait(LogicalTypeTrait.class)) {
+            return ValueFactoryUtils.loadValueFactory(traits, dataRepo);
         } else {
-            return ValueFactoryUtils.getDefaultValueFactory(dataSpec)//
+            return DefaultValueFactories.getDefaultValueFactory(dataSpec)//
                 .orElseThrow(
                     () -> new IllegalArgumentException(String.format("There was no value factory provided from python "
                         + "and there also doesn't exist a default value factory for '%s'.", dataSpec)));
