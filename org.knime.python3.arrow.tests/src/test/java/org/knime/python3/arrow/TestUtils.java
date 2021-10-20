@@ -185,5 +185,14 @@ public final class TestUtils {
          *             duplicate keys
          */
         void testRowKeyChecking(String duplicates, PythonDataSink dataSink) throws PythonException;
+
+        /**
+         * Write several batches of values into the sink such that we can check that the domain is calculated
+         * appropriately.
+         *
+         * @param scenario The test case scenario, one of "double", "int", "string"
+         * @param sink to write to
+         */
+        void testDomainCalculation(String scenario, PythonDataSink sink);
     }
 }

@@ -49,11 +49,6 @@
 package org.knime.python3.arrow;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
@@ -71,23 +66,13 @@ import org.knime.core.util.DuplicateKeyException;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class RowKeyChecker implements AutoCloseable {
-
-    private final Supplier<SequentialBatchReadable> m_batchReadableSupplier;
+public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
 
     private final DuplicateChecker m_duplicateChecker;
 
-    private final ExecutorService m_threadPool;
+    private static final int NUM_THREADS = 2;
 
-    private final Phaser m_phaser;
-
-    private AtomicBoolean m_stillRunning;
-
-    private final AtomicReference<Exception> m_invalidCause;
-
-    private SequentialBatchReadable m_readable;
-
-    private SequentialBatchReader m_reader;
+    private static final int ROW_KEY_COL_IDX = 0;
 
     /**
      * Create a new {@link RowKeyChecker} that will get the batches from the {@link SequentialBatchReadable} supplied by
@@ -116,57 +101,20 @@ public final class RowKeyChecker implements AutoCloseable {
     }
 
     private RowKeyChecker(final Supplier<SequentialBatchReadable> batchReadableSupplier) {
-        m_batchReadableSupplier = batchReadableSupplier;
+        super(batchReadableSupplier, NUM_THREADS);
         m_duplicateChecker = new DuplicateChecker();
-
-        m_invalidCause = new AtomicReference<>(null);
-
-        m_threadPool = Executors.newFixedThreadPool(2);
-        m_phaser = new Phaser(1);
-        m_stillRunning = new AtomicBoolean(true);
     }
 
-    private synchronized void initReader() {
-        if (m_reader == null) {
-            m_readable = m_batchReadableSupplier.get();
-            m_reader =
-                m_readable.createSequentialReader(new FilteredColumnSelection(m_readable.getSchema().numColumns(), 0));
-        }
+    @Override
+    protected SequentialBatchReader initReaderFromReadable(final SequentialBatchReadable readable) {
+        return readable.createSequentialReader(new FilteredColumnSelection(readable.getSchema().numColumns(), ROW_KEY_COL_IDX));
     }
 
-    /**
-     * Check for duplicate keys in the next batch. This starts the check asynchronously. The result can be accessed via
-     * {@link #isValid()} and {@link #allUnique()}.
-     *
-     * @throws DuplicateKeyException if this {@link RowKeyChecker} already encountered duplicate keys
-     * @throws IOException if checking the batch failed
-     */
-    public void checkNextBatch() throws DuplicateKeyException, IOException {
-        final Exception invalidCause = m_invalidCause.get();
-        if (invalidCause != null) {
-            // Already invalid we do not need to check anymore
-            if (invalidCause instanceof DuplicateKeyException) {
-                throw (DuplicateKeyException)invalidCause;
-            } else {
-                throw (IOException)invalidCause;
-            }
-        }
-        m_threadPool.execute(this::checkNextBatchRunner);
-        m_phaser.register();
-    }
+    @Override
+    protected void processNextBatchImpl(final ReadBatch batch) throws IOException {
+        final StringReadData rowKeys = (StringReadData)batch.get(0);
 
-    private void checkNextBatchRunner() {
-        // Init the reader if it is not yet initialized
-        if (m_reader == null) {
-            initReader();
-        }
-
-        ReadBatch readBatch = null;
         try {
-            // Read the next batch
-            readBatch = m_reader.forward();
-            final StringReadData rowKeys = (StringReadData)readBatch.get(0);
-
             // Loop over rows and add them to the duplicate checker
             for (int i = 0; // NOSONAR
                     i < rowKeys.length() //
@@ -175,13 +123,8 @@ public final class RowKeyChecker implements AutoCloseable {
                     ; i++) {
                 m_duplicateChecker.addKey(rowKeys.getString(i));
             }
-        } catch (final DuplicateKeyException | IOException e) {
-            m_invalidCause.set(e);
-        } finally {
-            if (readBatch != null) {
-                readBatch.release();
-            }
-            m_phaser.arriveAndDeregister();
+        } catch (DuplicateKeyException e) {
+            throw new IOException(e);
         }
     }
 
@@ -201,49 +144,22 @@ public final class RowKeyChecker implements AutoCloseable {
      * @throws InterruptedException if checking the keys got interrupted
      */
     public boolean allUnique() throws InterruptedException {
-        // Wait until all threads are done
-        if (!m_phaser.isTerminated()) {
-            final var phase = m_phaser.getPhase();
-            m_phaser.arriveAndDeregister();
-            m_phaser.awaitAdvanceInterruptibly(phase);
-        }
-
-        // Shutdown the thread pool
-        m_threadPool.shutdown();
+        waitForTermination();
 
         // Do the final duplicate checking
         if (isValid()) {
             try {
                 m_duplicateChecker.checkForDuplicates();
                 return true;
-            } catch (final DuplicateKeyException | IOException e) {
+            } catch (final IOException e) {
                 m_invalidCause.set(e);
+                return false;
+            } catch (final DuplicateKeyException e) {
+                m_invalidCause.set(new IOException(e));
                 return false;
             }
         } else {
             return false;
-        }
-    }
-
-    @Override
-    public void close() throws Exception {
-        // Stop threads
-        m_stillRunning.set(false);
-
-        // Wait until the threads are all done
-        if (!m_phaser.isTerminated()) {
-            final var phase = m_phaser.getPhase();
-            m_phaser.arriveAndDeregister();
-            m_phaser.awaitAdvance(phase);
-        }
-
-        // Shutdown the thread pool
-        m_threadPool.shutdown();
-
-        // Close the reader and readable
-        if (m_reader != null) {
-            m_reader.close();
-            m_readable.close();
         }
     }
 }

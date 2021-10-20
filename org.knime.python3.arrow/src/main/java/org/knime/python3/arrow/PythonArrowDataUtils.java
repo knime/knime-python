@@ -54,6 +54,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
@@ -67,6 +68,7 @@ import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTypeRegistry;
+import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
@@ -163,12 +165,37 @@ public final class PythonArrowDataUtils {
         final var rowKeyChecker = RowKeyChecker.fromRandomAccessReadable(() -> createReadable(dataSink, storeFactory));
         dataSink.registerBatchListener(() -> {
             try {
-                rowKeyChecker.checkNextBatch();
-            } catch (final DuplicateKeyException | IOException e) {
+                rowKeyChecker.processNextBatch();
+            } catch (IOException e) {
                 throw new PythonException(e.getMessage(), e);
             }
         });
         return rowKeyChecker;
+    }
+
+    /**
+     * Create a {@link DomainCalculator} that computes the domain of each batch asynchronously when they are provided
+     * from Python
+     *
+     * @param sink the {@link PythonArrowDataSink} that data is written to
+     * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
+     * @param configSupplier A {@link Supplier} for the configuration for the {@link DomainCalculator}
+     * @return A {@link DomainCalculator}. After all batches have been written to the {@link PythonArrowDataSink}
+     *         {@link DomainCalculator#getDomain(int)} and {@link DomainCalculator#getMetadata(int)} can be called to
+     *         obtain domain and metadata per column.
+     */
+    public static DomainCalculator createDomainCalculator(final DefaultPythonArrowDataSink sink,
+        final ArrowColumnStoreFactory storeFactory, final Supplier<DomainWritableConfig> configSupplier) {
+        final var domainCalculator =
+            DomainCalculator.fromRandomAccessReadable(() -> createReadable(sink, storeFactory), configSupplier);
+        sink.registerBatchListener(() -> {
+            try {
+                domainCalculator.processNextBatch();
+            } catch (final DuplicateKeyException | IOException e) {
+                throw new PythonException(e.getMessage(), e);
+            }
+        });
+        return domainCalculator;
     }
 
     /**
@@ -202,15 +229,22 @@ public final class PythonArrowDataUtils {
         var path = dataSink.getPath();
         var schema = createColumnarValueSchema(dataSink);
         var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(schema, path)) //
-                .enableDictEncoding(true) //
-                .build();
+            .enableDictEncoding(true) //
+            .build();
         // nothing to flush as of now
         Flushable flushable = () -> {
         };
         return UnsavedColumnarContainerTable.create(path, tableId, storeFactory, schema, readStore, flushable, size);
     }
 
-    private static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink) {
+    /**
+     * Create a {@link ColumnarValueSchema} representing the data coming from the {@link DefaultPythonArrowDataSink}.
+     * Must only be called after the sink has received the first.
+     *
+     * @param dataSink The Python data sink that has already received the first batch
+     * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
+     */
+    public static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink) {
         final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
         final var names = ArrowSchemaUtils.extractColumnNames(schema);

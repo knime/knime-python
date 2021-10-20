@@ -458,6 +458,39 @@ class EntryPoint(kg.EntryPoint):
                 batch = pa.record_batch([keys, data], ["0", "1"])
                 sink.write(batch)
 
+    def testDomainCalculation(self, scenario, data_sink):
+        num_batches = 5
+        num_rows = 100
+
+        if scenario == "double":
+            dtype = np.dtype("float64")
+            min_value = 0
+            max_value = 1
+            full_data = np.linspace(min_value, max_value, num=(num_rows * num_batches))
+
+        with kg.data_sink_mapper(data_sink) as sink:
+            for batch_idx in range(num_batches):
+                batch_start = batch_idx * num_rows
+                batch_end = batch_start + num_rows
+                keys = [f"Row_{i}" for i in range(batch_start, batch_end)]
+                pa_keys = pa.array(keys, type=pa.string())
+
+                if scenario == "double":
+                    data = list(full_data[batch_start:batch_end])
+                    dtype = pa.float64()
+                elif scenario == "int":
+                    data = list(range(batch_start, batch_end))
+                    dtype = pa.int32()
+                elif scenario == "string":
+                    data = keys
+                    dtype = pa.string()
+                elif scenario == "categorical":
+                    data = [f"str{batch_idx}"] * num_rows
+                    dtype = pa.string()
+                pa_data = pa.array(data, type=dtype)
+                batch = pa.record_batch([pa_keys, pa_data], ["0", "1"])
+                sink.write(batch)
+
     class Java:
         implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]
 
