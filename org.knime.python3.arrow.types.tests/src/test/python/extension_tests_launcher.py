@@ -176,7 +176,7 @@ def test_list_of_ext_type_in_df():
     df['column'] = [[utf8_string.Utf8EncodedString('foobar')]]
     arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
-    assert isinstance(field.type.value_type, kat.ValueFactoryExtensionType)
+    assert isinstance(field.type.value_type, kat.LogicalTypeExtensionType)
     assert field.name == 'column'
     pylist = arrow_table[0].to_pylist()
     assert pylist[0][0].value == 'foobar'
@@ -188,5 +188,5 @@ def test_ext_type_in_df():
     df['column'] = [utf8_string.Utf8EncodedString('barfoo')]
     arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
-    assert isinstance(field.type, kat.ValueFactoryExtensionType)
+    assert isinstance(field.type, kat.LogicalTypeExtensionType)
     assert arrow_table[0].to_pylist()[0].value == 'barfoo'

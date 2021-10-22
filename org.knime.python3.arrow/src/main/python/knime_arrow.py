@@ -156,7 +156,7 @@ def extract_logical_types(schema: pa.Schema):
 
 
 def extract_logical_type(arrow_type: pa.DataType):
-    if isinstance(arrow_type, kat.ValueFactoryExtensionType):
+    if isinstance(arrow_type, kat.LogicalTypeExtensionType):
         return str(arrow_type.java_value_factory)
     else:
         return None

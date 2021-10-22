@@ -71,15 +71,15 @@ def to_extension_type(dtype):
         if key_type is None:
             raise ValueError(f"The data_traits {data_traits} contained the dict_encoding key but no key type.")
         struct_dict_encoded_type = kas.StructDictEncodedType(inner_type=storage_type, key_type=key_type)
-        value_factory_type = ValueFactoryExtensionType(
+        value_factory_type = LogicalTypeExtensionType(
             factory_bundle.value_factory,
             struct_dict_encoded_type.storage_type,
             factory_bundle.java_value_factory
         )
-        return StructDictEncodedValueFactoryExtensionType(value_factory_type=value_factory_type,
+        return StructDictEncodedLogicalTypeExtensionType(value_factory_type=value_factory_type,
                                                           struct_dict_encoded_type=struct_dict_encoded_type)
     else:
-        return ValueFactoryExtensionType(
+        return LogicalTypeExtensionType(
             factory_bundle.value_factory,
             storage_type,
             factory_bundle.java_value_factory
@@ -310,11 +310,11 @@ def _apply_to_array(array, func):
         return func(array)
 
 
-class ValueFactoryExtensionType(pa.ExtensionType):
+class LogicalTypeExtensionType(pa.ExtensionType):
     def __init__(self, value_factory, storage_type, java_value_factory):
         self._value_factory = value_factory
         self._java_value_factory = java_value_factory
-        pa.ExtensionType.__init__(self, storage_type, "knime.value_factory")
+        pa.ExtensionType.__init__(self, storage_type, "knime.logical_type")
 
     def __arrow_ext_serialize__(self):
         return self._java_value_factory.encode()
@@ -323,7 +323,7 @@ class ValueFactoryExtensionType(pa.ExtensionType):
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
         java_value_factory = serialized.decode()
         value_factory = kt.get_value_factory(java_value_factory)
-        return ValueFactoryExtensionType(
+        return LogicalTypeExtensionType(
             value_factory, storage_type, java_value_factory
         )
 
@@ -342,10 +342,10 @@ class ValueFactoryExtensionType(pa.ExtensionType):
 
 
 # Register our extension type with
-pa.register_extension_type(ValueFactoryExtensionType(None, pa.null(), ""))
+pa.register_extension_type(LogicalTypeExtensionType(None, pa.null(), ""))
 
 
-class StructDictEncodedValueFactoryExtensionType(pa.ExtensionType):
+class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
     def __init__(self, value_factory_type, struct_dict_encoded_type):
         self.struct_dict_encoded_type = struct_dict_encoded_type
         self.value_factory_type = value_factory_type
@@ -354,7 +354,7 @@ class StructDictEncodedValueFactoryExtensionType(pa.ExtensionType):
             self.encode = value_factory_type.encode
             self.decode = value_factory_type.decode
         pa.ExtensionType.__init__(self, struct_dict_encoded_type.storage_type,
-                                  "knime.struct_dict_encoded_value_factory")
+                                  "knime.struct_dict_encoded_logical_type")
 
     @property
     def value_type(self):
@@ -371,19 +371,19 @@ class StructDictEncodedValueFactoryExtensionType(pa.ExtensionType):
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
         struct_dict_encoded_type = kas.StructDictEncodedType.__arrow_ext_deserialize__(storage_type, b"")
-        value_factory_type = ValueFactoryExtensionType.__arrow_ext_deserialize__(storage_type, serialized)
-        return StructDictEncodedValueFactoryExtensionType(value_factory_type=value_factory_type,
+        value_factory_type = LogicalTypeExtensionType.__arrow_ext_deserialize__(storage_type, serialized)
+        return StructDictEncodedLogicalTypeExtensionType(value_factory_type=value_factory_type,
                                                           struct_dict_encoded_type=struct_dict_encoded_type)
 
     def __arrow_ext_class__(self):
-        return StructDictEncodedValueFactoryArray
+        return StructDictEncodedLogicalTypeArray
 
 
-pa.register_extension_type(StructDictEncodedValueFactoryExtensionType(ValueFactoryExtensionType(None, pa.null(), ""),
+pa.register_extension_type(StructDictEncodedLogicalTypeExtensionType(LogicalTypeExtensionType(None, pa.null(), ""),
                                                                       kas.StructDictEncodedType(pa.null())))
 
 
-class StructDictEncodedValueFactoryArray(kas.StructDictEncodedArray):
+class StructDictEncodedLogicalTypeArray(kas.StructDictEncodedArray):
     """
     An array of logical values where the underlying data is struct-dict-encoded.
     """
@@ -394,11 +394,11 @@ class StructDictEncodedValueFactoryArray(kas.StructDictEncodedArray):
 
 
 def is_dict_encoded_value_factory_type(dtype: pa.DataType):
-    return isinstance(dtype, StructDictEncodedValueFactoryExtensionType)
+    return isinstance(dtype, StructDictEncodedLogicalTypeExtensionType)
 
 
 def is_value_factory_type(dtype: pa.DataType):
-    return isinstance(dtype, ValueFactoryExtensionType)
+    return isinstance(dtype, LogicalTypeExtensionType)
 
 
 def _data_spec_json_to_arrow(data_spec_json):
@@ -466,7 +466,7 @@ class KnimeExtensionScalar:
     TODO Replace with an ExtensionScalar once pyarrow has proper support (AP-17422)
     """
 
-    def __init__(self, ext_type: ValueFactoryExtensionType, storage_scalar: pa.Scalar):
+    def __init__(self, ext_type: LogicalTypeExtensionType, storage_scalar: pa.Scalar):
         self.ext_type = ext_type
         self.storage_scalar = storage_scalar
 
@@ -487,7 +487,7 @@ class KnimeExtensionScalar:
         """
         if target_type == self.ext_type:
             return self
-        elif isinstance(target_type, ValueFactoryExtensionType):
+        elif isinstance(target_type, LogicalTypeExtensionType):
             raise ValueError(
                 "Casting to different KnimeArrowExtensionTypes is not supported"
             )
