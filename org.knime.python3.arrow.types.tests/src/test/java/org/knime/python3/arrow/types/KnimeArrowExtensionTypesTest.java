@@ -119,12 +119,8 @@ import org.knime.core.data.v2.RowWrite;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.WriteValue;
 import org.knime.core.data.v2.value.BooleanValueFactory;
-import org.knime.core.data.v2.value.BooleanValueFactory.BooleanWriteValue;
-import org.knime.core.data.v2.value.DoubleValueFactory.DoubleWriteValue;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.data.v2.value.IntListValueFactory;
-import org.knime.core.data.v2.value.IntListValueFactory.IntListReadValue;
-import org.knime.core.data.v2.value.IntListValueFactory.IntListWriteValue;
 import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.IntValueFactory;
@@ -163,10 +159,14 @@ import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
-import org.knime.core.data.v2.value.IntValueFactory.IntWriteValue;
-import org.knime.core.data.v2.value.LongValueFactory.LongWriteValue;
-import org.knime.core.data.v2.value.StringValueFactory.StringWriteValue;
 import org.knime.core.data.v2.value.LongValueFactory;
+import org.knime.core.data.v2.value.ValueInterfaces.BooleanWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.DoubleWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntListReadValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntListWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.LongWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
 
 /**
  *
