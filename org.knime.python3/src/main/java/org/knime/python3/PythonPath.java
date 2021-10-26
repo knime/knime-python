@@ -93,7 +93,7 @@ public final class PythonPath {
 
     /**
      * Convenience method to create a builder for PythonPaths.
-     * 
+     *
      * @return a builder for PythonPath objects
      */
     public static PythonPathBuilder builder() {
@@ -127,7 +127,7 @@ public final class PythonPath {
          * @return the builder
          */
         public PythonPathBuilder add(final Path path) {
-            m_paths.add(path.toString());
+            m_paths.add(path.toAbsolutePath().toString());
             return this;
         }
 
