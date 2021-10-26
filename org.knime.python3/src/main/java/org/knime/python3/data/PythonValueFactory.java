@@ -49,6 +49,7 @@
 package org.knime.python3.data;
 
 import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.virtual.serialization.DataSpecSerializer;
 import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
@@ -79,13 +80,6 @@ public final class PythonValueFactory {
     }
 
     /**
-     * @return the fully qualified name of the Java ValueFactory
-     */
-    public String getJavaValueFactoryName() {
-        return m_valueFactory.getClass().getName();
-    }
-
-    /**
      * @return JSON representation of the underlying DataSpec
      */
     public String getDataSpecRepresentation() {
@@ -97,7 +91,8 @@ public final class PythonValueFactory {
      * @return JSON representation of the {@link DataTraits}
      */
     public String getDataTraitsJson() {
-        var json = new DataTraitsSerializer(JsonNodeFactory.instance).save(m_valueFactory.getTraits());
+        final var traits = ValueFactoryUtils.getTraits(m_valueFactory);
+        var json = new DataTraitsSerializer(JsonNodeFactory.instance).save(traits);
         return json.toString();
     }
 

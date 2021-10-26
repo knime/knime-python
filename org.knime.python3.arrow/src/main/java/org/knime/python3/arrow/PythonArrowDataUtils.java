@@ -75,9 +75,11 @@ import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchRe
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.core.data.v2.DefaultValueFactories;
+import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
+import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
@@ -250,7 +252,7 @@ public final class PythonArrowDataUtils {
         final var names = ArrowSchemaUtils.extractColumnNames(schema);
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
-        factories.add(ValueFactoryUtils.loadRowKeyValueFactory(columnarSchema.getTraits(0)));
+        factories.add(extractRowKeyValueFactory(columnarSchema));
         // FIXME just a workaround! Needs to be provided by Node/ExecutionContext
         final var dataRepository = NotInWorkflowDataRepository.newInstance();
         for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
@@ -263,6 +265,15 @@ public final class PythonArrowDataUtils {
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
         return ColumnarValueSchemaUtils
             .create(ValueSchemaUtils.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new)));
+    }
+
+    private static RowKeyValueFactory<?, ?> extractRowKeyValueFactory(final ColumnarSchema schema) {
+        final var rowKeyTraits = schema.getTraits(0);
+        if (rowKeyTraits.hasTrait(LogicalTypeTrait.class)) {
+            return ValueFactoryUtils.loadRowKeyValueFactory(rowKeyTraits);
+        } else {
+            return DefaultRowKeyValueFactory.INSTANCE;
+        }
     }
 
     private static ValueFactory<?, ?> getValueFactory(final DataTraits traits, final DataSpec dataSpec,

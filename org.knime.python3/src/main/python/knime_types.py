@@ -49,6 +49,7 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 """
 
 import importlib
+import json
 
 
 class PythonValueFactory:
@@ -69,9 +70,9 @@ class PythonValueFactory:
 class PythonValueFactoryBundle:
     def __init__(self, java_value_factory, data_spec_json, value_factory, data_traits):
         self._java_value_factory = java_value_factory
-        self._data_spec_json = data_spec_json
+        self._data_spec_json = json.loads(data_spec_json)
         self._value_factory = value_factory
-        self._data_traits = data_traits
+        self._data_traits = json.loads(data_traits)
 
     @property
     def java_value_factory(self):
@@ -90,8 +91,6 @@ class PythonValueFactoryBundle:
         return self._data_traits
 
 
-_value_factory_to_data_spec_json = {}
-
 _java_value_factory_to_bundle = {}
 
 _types_to_bundle = {}
@@ -101,25 +100,26 @@ def register_python_value_factory(
     python_module,
     python_value_factory_name,
     data_spec_json,
-    java_value_factory,
     data_traits,
 ):
     module = importlib.import_module(python_module)
     value_factory_class = getattr(module, python_value_factory_name)
     value_factory = value_factory_class()
+    unpacked_data_traits = json.loads(data_traits)['traits']
+    logical_type = unpacked_data_traits['logical_type']
     value_factory_bundle = PythonValueFactoryBundle(
-        java_value_factory, data_spec_json, value_factory, data_traits
+        logical_type, data_spec_json, value_factory, data_traits
     )
     _types_to_bundle[value_factory.compatible_type] = value_factory_bundle
-    _java_value_factory_to_bundle[java_value_factory] = value_factory_bundle
+    _java_value_factory_to_bundle[logical_type] = value_factory_bundle
 
 
 _fallback_value_factory = PythonValueFactory(None)
 
 
-def get_value_factory(java_value_factory):
+def get_converter(logical_type):
     try:
-        return _java_value_factory_to_bundle[java_value_factory].value_factory
+        return _java_value_factory_to_bundle[logical_type].value_factory
     except KeyError:
         return _fallback_value_factory
 

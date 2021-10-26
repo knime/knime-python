@@ -61,8 +61,8 @@ def to_extension_type(dtype):
     #  this would allow an extension type to claim a value for itself e.g. FSLocationValue could detect
     #  {'fs_category': 'foo', 'fs_specifier': 'bar', 'path': 'baz'}. Problem: What if multiple types match?
     factory_bundle = kt.get_value_factory_bundle_for_type(dtype)
-    data_traits = json.loads(factory_bundle.data_traits)
-    data_spec = json.loads(factory_bundle.data_spec_json)
+    data_traits = factory_bundle.data_traits
+    data_spec = factory_bundle.data_spec_json
     is_struct_dict_encoded_value_factory_type = (
         "dict_encoding" in data_traits and "logical_type" in data_traits
     )
@@ -90,6 +90,7 @@ def to_extension_type(dtype):
             struct_dict_encoded_type=struct_dict_encoded_type,
         )
     else:
+        print(factory_bundle.java_value_factory)
         return LogicalTypeExtensionType(
             factory_bundle.value_factory,
             storage_type,
@@ -334,32 +335,32 @@ def _apply_to_array(array, func):
 
 
 class LogicalTypeExtensionType(pa.ExtensionType):
-    def __init__(self, value_factory, storage_type, java_value_factory):
-        self._value_factory = value_factory
-        self._java_value_factory = java_value_factory
+    def __init__(self, converter, storage_type, java_value_factory):
+        self._converter = converter
+        self._logical_type = java_value_factory
         pa.ExtensionType.__init__(self, storage_type, "knime.logical_type")
 
     def __arrow_ext_serialize__(self):
-        return self._java_value_factory.encode()
+        return self._logical_type.encode()
 
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
-        java_value_factory = serialized.decode()
-        value_factory = kt.get_value_factory(java_value_factory)
-        return LogicalTypeExtensionType(value_factory, storage_type, java_value_factory)
+        logical_type = serialized.decode()
+        converter = kt.get_converter(logical_type)
+        return LogicalTypeExtensionType(converter, storage_type, logical_type)
 
     def __arrow_ext_class__(self):
         return KnimeExtensionArray
 
     def decode(self, storage):
-        return self._value_factory.decode(storage)
+        return self._converter.decode(storage)
 
     def encode(self, value):
-        return self._value_factory.encode(value)
+        return self._converter.encode(value)
 
     @property
-    def java_value_factory(self):
-        return self._java_value_factory
+    def logical_type(self):
+        return self._logical_type
 
 
 # Register our extension type with

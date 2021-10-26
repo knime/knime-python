@@ -52,7 +52,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
@@ -117,6 +116,7 @@ import org.knime.core.data.v2.RowValueRead;
 import org.knime.core.data.v2.RowValueWrite;
 import org.knime.core.data.v2.RowWrite;
 import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.WriteValue;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
@@ -129,8 +129,6 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.traits.DataTraitUtils;
-import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.LogicalTypeTrait;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
@@ -174,7 +172,6 @@ import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
  */
 public class KnimeArrowExtensionTypesTest {
 
-	@SuppressWarnings("deprecation")
 	private static final TypeAndFactory<StringValue, StringWriteValue> STRING_TF = TypeAndFactory
 			.create(StringCell.TYPE, new DictEncodedStringValueFactory(), StringWriteValue.class);
 
@@ -196,16 +193,6 @@ public class KnimeArrowExtensionTypesTest {
 	 * cleaned up properly.
 	 */
 	private static final int TABLE_ID = -1;
-
-	private static final String FS_LOCATION_VALUE_FACTORY = FSLocationValueFactory.class.getName();
-
-	private static final String[] FS_LOCATION_LOGICAL_TYPE = { FS_LOCATION_VALUE_FACTORY };
-
-	private static final String[] UTF8_ENCODED_STRING_LOGICAL_TYPE = { Utf8StringValueFactory.class.getName() };
-
-	private static final String INT_LIST_VALUE_FACTORY = IntListValueFactory.class.getName();
-
-	private static final String[] INT_LIST_LOGICAL_TYPE = { INT_LIST_VALUE_FACTORY };
 
 	private ArrowColumnStoreFactory m_storeFactory;
 
@@ -235,7 +222,8 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	private static DataSpecWithTraits createFsLocationSpec() {
-		return DataSpecs.STRUCT(new LogicalTypeTrait(FS_LOCATION_VALUE_FACTORY)).of(STRING, STRING, STRING);
+		var traits = ValueFactoryUtils.getTraits(new FSLocationValueFactory());
+		return DataSpecs.STRUCT(traits.get(LogicalTypeTrait.class)).of(STRING, STRING, STRING);
 	}
 
 	private static void prepareIntListData(final BatchWriter writer, final int... ints) throws IOException {
@@ -255,7 +243,8 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	private static DataSpecWithTraits createIntListSpec() {
-		return DataSpecs.LIST(new LogicalTypeTrait(INT_LIST_VALUE_FACTORY)).of(INT);
+		var valueFactory = IntListValueFactory.INSTANCE;
+		return new DataSpecWithTraits(valueFactory.getSpec(), ValueFactoryUtils.getTraits(valueFactory));
 	}
 
 	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester() throws IOException {
@@ -272,8 +261,7 @@ public class KnimeArrowExtensionTypesTest {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
 				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-						factory.getDataSpecRepresentation(), factory.getJavaValueFactoryName(),
-						factory.getDataTraitsJson());
+						factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
 			}
 		}
 	}
@@ -288,7 +276,8 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	private static ColumnarSchema createUtf8EncodedSchema() {
-		return ColumnarSchema.of(DataSpecs.VARBINARY(new LogicalTypeTrait(Utf8StringValueFactory.class.getName())));
+		var vf = new Utf8StringValueFactory();
+		return ColumnarSchema.of(new DataSpecWithTraits(vf.getSpec(), ValueFactoryUtils.getTraits(vf)));
 	}
 
 	@Test
@@ -296,7 +285,6 @@ public class KnimeArrowExtensionTypesTest {
 		try (var tester = createTester()) {
 			tester.runJavaToPythonTest(//
 					createFsLocationSchema(), //
-					FS_LOCATION_LOGICAL_TYPE, //
 					w -> prepareFsLocationData(w, "Python", "Value", "Factory"), //
 					(e, s) -> e.assertFsLocationEquals(s, "Python", "Value", "Factory")//
 			);
@@ -308,7 +296,6 @@ public class KnimeArrowExtensionTypesTest {
 		try (var tester = createTester()) {
 			tester.runJavaToPythonTest(//
 					createUtf8EncodedSchema(), //
-					UTF8_ENCODED_STRING_LOGICAL_TYPE, //
 					w -> prepareUtf8EncodedStringData(w, "barfoo"), //
 					(e, s) -> e.assertUtf8EncodedStringEquals(s, "barfoo")//
 			);
@@ -329,7 +316,6 @@ public class KnimeArrowExtensionTypesTest {
 		try (var tester = createTester()) {
 			tester.runJavaToPythonTest(//
 					createIntListSchema(), //
-					INT_LIST_LOGICAL_TYPE, //
 					w -> prepareIntListData(w, 1, 2, 3, 4, 5), //
 					(e, s) -> e.assertIntListEquals(s, 1, 2, 3, 4, 5)//
 			);
@@ -657,7 +643,7 @@ public class KnimeArrowExtensionTypesTest {
 	public interface KnimeArrowExtensionTypeEntryPoint extends PythonEntryPoint {
 
 		void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-				final String dataSpec, final String javaValueFactory, final String dataTraits);
+				final String dataSpec, final String dataTraits);
 
 		void assertIntListEquals(PythonArrowDataSource dataSource, int a, int b, int c, int d, int e);
 
@@ -708,7 +694,7 @@ public class KnimeArrowExtensionTypesTest {
 			m_gateway.close();
 		}
 
-		void runJavaToPythonTest(final ColumnarSchema schema, final String[] logicalTypes, final DataPreparer preparer,
+		void runJavaToPythonTest(final ColumnarSchema schema, final DataPreparer preparer,
 				final DataTester<E> tester) throws IOException {
 			final var writePath = createTmpKNIMEArrowPath();
 			try (final var store = m_storeFactory.createStore(schema, writePath)) {
@@ -777,18 +763,10 @@ public class KnimeArrowExtensionTypesTest {
 	private static ColumnarSchema buildSchemaWithLogicalTypeTraits(List<ValueFactory<?, ?>> valueFactories) {
 		var builder = DefaultColumnarSchema.builder();
 		// row key doesn't have any special traits (at least not right now)
-		builder.addColumn(valueFactories.get(0).getSpec());
-		valueFactories.stream().skip(1).forEach(f -> builder.addColumn(f.getSpec(), getTraitsWithLogicalType(f)));
+		var rowKeyValueFactory = valueFactories.get(0);
+		builder.addColumn(rowKeyValueFactory.getSpec(), ValueFactoryUtils.getTraits(rowKeyValueFactory));
+		valueFactories.stream().skip(1).forEach(f -> builder.addColumn(f.getSpec(), ValueFactoryUtils.getTraits(f)));
 		return builder.build();
-	}
-
-	private static DataTraits getTraitsWithLogicalType(final ValueFactory<?, ?> valueFactory) {
-		var traits = valueFactory.getTraits();
-		if (LogicalTypeTrait.hasLogicalType(traits)) {
-			return traits;
-		} else {
-			return DataTraitUtils.withTrait(traits, new LogicalTypeTrait(valueFactory.getClass().getName()));
-		}
 	}
 
 	private static final class SimpleColumnDataIndex implements ColumnDataIndex {

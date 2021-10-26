@@ -60,15 +60,13 @@ class EntryPoint(kg.EntryPoint):
         python_module,
         python_value_factory_name,
         data_spec,
-        java_value_factory,
         data_traits,
     ):
         kt.register_python_value_factory(
             python_module,
             python_value_factory_name,
             data_spec,
-            java_value_factory,
-            data_traits,
+            data_traits
         )
 
     def assertFsLocationEquals(self, data_source, category, specifier, path):
