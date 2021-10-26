@@ -63,26 +63,37 @@ def to_extension_type(dtype):
     factory_bundle = kt.get_value_factory_bundle_for_type(dtype)
     data_traits = json.loads(factory_bundle.data_traits)
     data_spec = json.loads(factory_bundle.data_spec_json)
-    is_struct_dict_encoded_value_factory_type = 'dict_encoding' in data_traits and 'logical_type' in data_traits
-    storage_type = _add_dict_encoding(_data_spec_to_arrow(data_spec), data_traits,
-                                      skip_level=is_struct_dict_encoded_value_factory_type)
+    is_struct_dict_encoded_value_factory_type = (
+        "dict_encoding" in data_traits and "logical_type" in data_traits
+    )
+    storage_type = _add_dict_encoding(
+        _data_spec_to_arrow(data_spec),
+        data_traits,
+        skip_level=is_struct_dict_encoded_value_factory_type,
+    )
     if is_struct_dict_encoded_value_factory_type:
         key_type = _get_dict_key_type(data_traits)
         if key_type is None:
-            raise ValueError(f"The data_traits {data_traits} contained the dict_encoding key but no key type.")
-        struct_dict_encoded_type = kas.StructDictEncodedType(inner_type=storage_type, key_type=key_type)
+            raise ValueError(
+                f"The data_traits {data_traits} contained the dict_encoding key but no key type."
+            )
+        struct_dict_encoded_type = kas.StructDictEncodedType(
+            inner_type=storage_type, key_type=key_type
+        )
         value_factory_type = LogicalTypeExtensionType(
             factory_bundle.value_factory,
             struct_dict_encoded_type.storage_type,
-            factory_bundle.java_value_factory
+            factory_bundle.java_value_factory,
         )
-        return StructDictEncodedLogicalTypeExtensionType(value_factory_type=value_factory_type,
-                                                          struct_dict_encoded_type=struct_dict_encoded_type)
+        return StructDictEncodedLogicalTypeExtensionType(
+            value_factory_type=value_factory_type,
+            struct_dict_encoded_type=struct_dict_encoded_type,
+        )
     else:
         return LogicalTypeExtensionType(
             factory_bundle.value_factory,
             storage_type,
-            factory_bundle.java_value_factory
+            factory_bundle.java_value_factory,
         )
 
 
@@ -147,10 +158,14 @@ def _get_arrow_storage_to_ext_fn(dtype):
 
         def wrap_and_struct_dict_encode(a):
             unencoded_storage = storage_fn(a)
-            encoded_storage = kas.create_storage_for_struct_dict_encoded_array(unencoded_storage, key_gen,
-                                                                               value_type=dtype.value_type,
-                                                                               key_type=dtype.key_type)
+            encoded_storage = kas.create_storage_for_struct_dict_encoded_array(
+                unencoded_storage,
+                key_gen,
+                value_type=dtype.value_type,
+                key_type=dtype.key_type,
+            )
             return pa.ExtensionArray.from_storage(dtype, encoded_storage)
+
         return wrap_and_struct_dict_encode
     elif kas.is_struct_dict_encoded(dtype):
         key_gen = kas.DictKeyGenerator()
@@ -216,9 +231,7 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
         if value_fn is None:
             return None
         else:
-            return lambda a: _create_list_array(
-                a.offsets, _to_storage_array(a.values)
-            )
+            return lambda a: _create_list_array(a.offsets, _to_storage_array(a.values))
     elif pat.is_struct(dtype):
         inner_fns = [_get_array_to_storage_fn(inner.type) for inner in dtype]
         if all(i is None for i in inner_fns):
@@ -238,7 +251,11 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
 
 
 def contains_knime_extension_type(dtype: pa.DataType):
-    if is_value_factory_type(dtype) or kas.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(dtype):
+    if (
+        is_value_factory_type(dtype)
+        or kas.is_struct_dict_encoded(dtype)
+        or is_dict_encoded_value_factory_type(dtype)
+    ):
         return True
     elif is_list_type(dtype):
         return contains_knime_extension_type(dtype.value_type)
@@ -266,7 +283,9 @@ def get_object_to_storage_fn(dtype: pa.DataType):
         return lambda l: [inner_fn(x) for x in l]
     elif pat.is_struct(dtype):
         inner_fns = [get_object_to_storage_fn(field.type) for field in dtype]
-        return lambda d: {inner[0]: fn(inner[1]) for fn, inner in zip(inner_fns, d.items())}
+        return lambda d: {
+            inner[0]: fn(inner[1]) for fn, inner in zip(inner_fns, d.items())
+        }
     else:
         return _identity
 
@@ -288,7 +307,9 @@ def get_storage_type(dtype: pa.DataType):
         else:  # no need to check since is_list_type only returns true for lists and large_lists
             return pa.large_list(inner_type)
     elif pat.is_struct(dtype):
-        return pa.struct([field.with_type(get_storage_type(field.type)) for field in dtype])
+        return pa.struct(
+            [field.with_type(get_storage_type(field.type)) for field in dtype]
+        )
     else:
         return dtype
 
@@ -298,7 +319,9 @@ def storage_table_to_extension_table(table: pa.Table, schema_with_ext_types: pa.
         potential_ext_type = schema_with_ext_types.types[i]
         if table.schema.types[i] != potential_ext_type:
             assert potential_ext_type is not None
-            ext_array = _apply_to_array(table.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type))
+            ext_array = _apply_to_array(
+                table.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
+            )
             table = table.set_column(i, schema_with_ext_types.field(i), ext_array)
     return table
 
@@ -323,9 +346,7 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
         java_value_factory = serialized.decode()
         value_factory = kt.get_value_factory(java_value_factory)
-        return LogicalTypeExtensionType(
-            value_factory, storage_type, java_value_factory
-        )
+        return LogicalTypeExtensionType(value_factory, storage_type, java_value_factory)
 
     def __arrow_ext_class__(self):
         return KnimeExtensionArray
@@ -353,8 +374,11 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         if value_factory_type is not None:
             self.encode = value_factory_type.encode
             self.decode = value_factory_type.decode
-        pa.ExtensionType.__init__(self, struct_dict_encoded_type.storage_type,
-                                  "knime.struct_dict_encoded_logical_type")
+        pa.ExtensionType.__init__(
+            self,
+            struct_dict_encoded_type.storage_type,
+            "knime.struct_dict_encoded_logical_type",
+        )
 
     @property
     def value_type(self):
@@ -370,17 +394,27 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
-        struct_dict_encoded_type = kas.StructDictEncodedType.__arrow_ext_deserialize__(storage_type, b"")
-        value_factory_type = LogicalTypeExtensionType.__arrow_ext_deserialize__(storage_type, serialized)
-        return StructDictEncodedLogicalTypeExtensionType(value_factory_type=value_factory_type,
-                                                          struct_dict_encoded_type=struct_dict_encoded_type)
+        struct_dict_encoded_type = kas.StructDictEncodedType.__arrow_ext_deserialize__(
+            storage_type, b""
+        )
+        value_factory_type = LogicalTypeExtensionType.__arrow_ext_deserialize__(
+            storage_type, serialized
+        )
+        return StructDictEncodedLogicalTypeExtensionType(
+            value_factory_type=value_factory_type,
+            struct_dict_encoded_type=struct_dict_encoded_type,
+        )
 
     def __arrow_ext_class__(self):
         return StructDictEncodedLogicalTypeArray
 
 
-pa.register_extension_type(StructDictEncodedLogicalTypeExtensionType(LogicalTypeExtensionType(None, pa.null(), ""),
-                                                                      kas.StructDictEncodedType(pa.null())))
+pa.register_extension_type(
+    StructDictEncodedLogicalTypeExtensionType(
+        LogicalTypeExtensionType(None, pa.null(), ""),
+        kas.StructDictEncodedType(pa.null()),
+    )
+)
 
 
 class StructDictEncodedLogicalTypeArray(kas.StructDictEncodedArray):

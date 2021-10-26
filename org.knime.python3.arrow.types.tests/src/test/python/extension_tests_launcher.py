@@ -55,11 +55,21 @@ import numpy as np
 
 
 class EntryPoint(kg.EntryPoint):
-
-    def registerPythonValueFactory(self, python_module, python_value_factory_name, data_spec, java_value_factory,
-                                   data_traits):
-        kt.register_python_value_factory(python_module, python_value_factory_name, data_spec, java_value_factory,
-                                         data_traits)
+    def registerPythonValueFactory(
+        self,
+        python_module,
+        python_value_factory_name,
+        data_spec,
+        java_value_factory,
+        data_traits,
+    ):
+        kt.register_python_value_factory(
+            python_module,
+            python_value_factory_name,
+            data_spec,
+            java_value_factory,
+            data_traits,
+        )
 
     def assertFsLocationEquals(self, data_source, category, specifier, path):
         with kg.data_source_mapper(data_source) as source:
@@ -68,9 +78,17 @@ class EntryPoint(kg.EntryPoint):
             # assert type(array) == flv.FSLocationArray, 'Wrong array type: ' + str(type(array))
             # support for ExtensionType Scalars was only recently and is not fully available even now
             v = array[0].as_py()
-            expected = {'fs_category': category, 'fs_specifier': specifier, 'path': path}
-            assert v.to_dict() == expected, 'Wrong location dictionary. Expected ' + str(expected) + ' got ' + str(
-                v.to_dict())
+            expected = {
+                "fs_category": category,
+                "fs_specifier": specifier,
+                "path": path,
+            }
+            assert v.to_dict() == expected, (
+                "Wrong location dictionary. Expected "
+                + str(expected)
+                + " got "
+                + str(v.to_dict())
+            )
 
     def assertIntListEquals(self, data_source, a, b, c, d, e):
         with kg.data_source_mapper(data_source) as source:
@@ -78,13 +96,23 @@ class EntryPoint(kg.EntryPoint):
             array = batch.column(0)
             pd_array = array.to_pandas()
             py_array = array.to_pylist()
-            values = [[a,b,c,d,e]]
+            values = [[a, b, c, d, e]]
 
-            assert py_array == values, f"Wrong list of ints, expected '{values}' got '{py_array}'"
-            assert pd_array.shape == (1,), f"Wrong shape returned from pandas, expected '(1,)', got '{pd_array.shape}'"
-            assert type(pd_array[0]) == np.ndarray, f"Wrong type returned from pandas, expected 'numpy.ndarray' got '{type(pd_array[0])}'"
-            assert len(pd_array[0]) == 5, f"Wrong length of list returned from pandas, expected '5', got '{len(pd_array[0])}'"
-            assert np.all(pd_array[0] == values[0]), f"Wrong list of ints returned from pandas, expected '{values}' got '{pd_array[0]}'"
+            assert (
+                py_array == values
+            ), f"Wrong list of ints, expected '{values}' got '{py_array}'"
+            assert pd_array.shape == (
+                1,
+            ), f"Wrong shape returned from pandas, expected '(1,)', got '{pd_array.shape}'"
+            assert (
+                type(pd_array[0]) == np.ndarray
+            ), f"Wrong type returned from pandas, expected 'numpy.ndarray' got '{type(pd_array[0])}'"
+            assert (
+                len(pd_array[0]) == 5
+            ), f"Wrong length of list returned from pandas, expected '5', got '{len(pd_array[0])}'"
+            assert np.all(
+                pd_array[0] == values[0]
+            ), f"Wrong list of ints returned from pandas, expected '{values}' got '{pd_array[0]}'"
 
     def assertUtf8EncodedStringEquals(self, data_source, value):
         with kg.data_source_mapper(data_source) as source:
@@ -93,41 +121,58 @@ class EntryPoint(kg.EntryPoint):
             pd_array = array.to_pandas()
             py_array = array.to_pylist()
             v = pd_array[0]
-            assert v.value == value, "Wrong UTF8EncodedString: Expected '" + str(value) + "' got '" + str(v.value) + "'"
+            assert v.value == value, (
+                "Wrong UTF8EncodedString: Expected '"
+                + str(value)
+                + "' got '"
+                + str(v.value)
+                + "'"
+            )
             py_value = py_array[0].value
-            assert py_value == value, "Wrong UTF8EncodedString returned by to_pylist. Expected '" + str(
-                value) + "' got '" + str(py_value) + "'"
+            assert py_value == value, (
+                "Wrong UTF8EncodedString returned by to_pylist. Expected '"
+                + str(value)
+                + "' got '"
+                + str(py_value)
+                + "'"
+            )
 
     def writeUtf8EncodedStringViaPandas(self, data_sink, value):
         with kg.data_sink_mapper(data_sink) as sink:
             import utf8_string
+
             utf8_string = utf8_string.Utf8EncodedString(value)
             df = pd.DataFrame()
-            df['utf8_encoded_string'] = [utf8_string]
+            df["utf8_encoded_string"] = [utf8_string]
             table = kap.pandas_df_to_arrow_table(df)
             sink.write(table)
 
     def writeUtf8EncodedStringViaPyList(self, data_sink, value):
         with kg.data_sink_mapper(data_sink) as sink:
             import utf8_string
-            extension_array = kat.knime_extension_array([utf8_string.Utf8EncodedString(value)])
-            sink.write(pa.table([extension_array], ['utf8_encoded_string']))
+
+            extension_array = kat.knime_extension_array(
+                [utf8_string.Utf8EncodedString(value)]
+            )
+            sink.write(pa.table([extension_array], ["utf8_encoded_string"]))
 
     def writeFsLocationViaPandas(self, data_sink, category, specifier, path):
         with kg.data_sink_mapper(data_sink) as sink:
             import extension_types as et
+
             fs_location = et.FsLocationValue(category, specifier, path)
             df = pd.DataFrame()
-            df['fs_location'] = [fs_location]
+            df["fs_location"] = [fs_location]
             table = kap.pandas_df_to_arrow_table(df)
             sink.write(table)
 
     def writeFsLocationViaPyList(self, data_sink, category, specifier, path):
         with kg.data_sink_mapper(data_sink) as sink:
             import extension_types as et
+
             fs_location = et.FsLocationValue(category, specifier, path)
             extension_array = kat.knime_extension_array([fs_location])
-            sink.write(pa.table([extension_array], ['fs_location']))
+            sink.write(pa.table([extension_array], ["fs_location"]))
 
     def launchPythonTests(self):
         test_primitive_in_df()
@@ -149,7 +194,9 @@ class EntryPoint(kg.EntryPoint):
                 sink.write(arrow_table)
 
     class Java:
-        implements = ["org.knime.python3.arrow.type.KnimeArrowExtensionTypesTest.KnimeArrowExtensionTypeEntryPoint"]
+        implements = [
+            "org.knime.python3.arrow.type.KnimeArrowExtensionTypesTest.KnimeArrowExtensionTypeEntryPoint"
+        ]
 
 
 kg.connect_to_knime(EntryPoint())
@@ -157,36 +204,38 @@ kg.connect_to_knime(EntryPoint())
 
 def test_primitive_in_df():
     df = pd.DataFrame()
-    df['column'] = [1]
+    df["column"] = [1]
     arrow_table = kap.pandas_df_to_arrow_table(df)
 
 
 def test_primitive_list_in_df():
     df = pd.DataFrame()
-    df['column'] = [[1]]
+    df["column"] = [[1]]
     arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert field.type == pa.list_(pa.int32())
-    assert field.name == 'column'
+    assert field.name == "column"
 
 
 def test_list_of_ext_type_in_df():
     import utf8_string
+
     df = pd.DataFrame()
-    df['column'] = [[utf8_string.Utf8EncodedString('foobar')]]
+    df["column"] = [[utf8_string.Utf8EncodedString("foobar")]]
     arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert isinstance(field.type.value_type, kat.LogicalTypeExtensionType)
-    assert field.name == 'column'
+    assert field.name == "column"
     pylist = arrow_table[0].to_pylist()
-    assert pylist[0][0].value == 'foobar'
+    assert pylist[0][0].value == "foobar"
 
 
 def test_ext_type_in_df():
     import utf8_string
+
     df = pd.DataFrame()
-    df['column'] = [utf8_string.Utf8EncodedString('barfoo')]
+    df["column"] = [utf8_string.Utf8EncodedString("barfoo")]
     arrow_table = kap.pandas_df_to_arrow_table(df)
     field = arrow_table.schema.field(0)
     assert isinstance(field.type, kat.LogicalTypeExtensionType)
-    assert arrow_table[0].to_pylist()[0].value == 'barfoo'
+    assert arrow_table[0].to_pylist()[0].value == "barfoo"

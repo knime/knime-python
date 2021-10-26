@@ -75,7 +75,7 @@ _pd_to_arrow_type_map = {
     np.float32: pa.float32(),
     np.float64: pa.float64(),
     str: pa.string(),
-    np.bool_: pa.bool_()
+    np.bool_: pa.bool_(),
 }
 
 
@@ -111,7 +111,9 @@ def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
 
 def arrow_table_to_pandas_df(table: pa.Table):
     logical_columns = [
-        i for i, field in enumerate(table.schema) if kat.contains_knime_extension_type(field.type)
+        i
+        for i, field in enumerate(table.schema)
+        if kat.contains_knime_extension_type(field.type)
     ]
     storage_table = kat.to_storage_table(table)
     storage_df = storage_table.to_pandas()
