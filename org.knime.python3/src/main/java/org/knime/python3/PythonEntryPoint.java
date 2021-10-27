@@ -69,6 +69,25 @@ public interface PythonEntryPoint {
     int getPid();
 
     /**
+     * Equivalent to calling {@code enableDebugging(true, true, false, 5678)}. Note that 5678 is {@code pydevd}'s
+     * default port.
+     */
+    void enableDebugging();
+
+    /**
+     * Enables {@code pydevd}-based debugging in Python. The debugging capabilities can be accessed either via a
+     * convenience module {@code debug_util} that features a function {@code breakpoint} to set breakpoints and a
+     * function {@code debug} to write debug messages, or by using {@code pydevd} directly.
+     *
+     * @param enableBreakpoints Whether setting breakpoints is enabled in {@code debug_util}.
+     * @param enableDebugLog Whether writing debug messages is enabled in {@code debug_util}.
+     * @param debugLogToStderr Whether debug messages should be redirected to {@code stderr}. By default, they are
+     *            written to {@code stdout}.
+     * @param port The port to which {@code pydevd} connects.
+     */
+    void enableDebugging(boolean enableBreakpoints, boolean enableDebugLog, boolean debugLogToStderr, int port);
+
+    /**
      * Registers a list of extensions to the Python integration. Each extension is imported using
      * <code>importlib.import_module(ext)</code>. During the import extensions can register themselves at appropriate
      * endpoints.

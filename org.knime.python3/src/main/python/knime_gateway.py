@@ -72,6 +72,19 @@ class EntryPoint:
         """Get the process identifier of this Python process."""
         return os.getpid()
 
+    def enableDebugging(
+        self,
+        enable_breakpoints: bool = True,
+        enable_debug_log: bool = True,
+        debug_log_to_stderr: bool = False,
+        port: int = 5678,
+    ):
+        import debug_util
+
+        debug_util.init_debug(
+            enable_breakpoints, enable_debug_log, debug_log_to_stderr, port
+        )
+
     def registerExtensions(  # NOSONAR: Method name defined in Java interface
         self, extensions
     ):

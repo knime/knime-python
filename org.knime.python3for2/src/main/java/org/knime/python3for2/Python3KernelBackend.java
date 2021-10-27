@@ -158,6 +158,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         m_outputListeners.startListening();
 
         m_proxy = m_gateway.getEntryPoint();
+
+        // TODO: Allow users to enable debugging via VM argument? We want devs to be able to debug their Python code
+        // outside of eclipse using only KNIME + their favorite Python editor.
+        // TODO: Also figure out how we can support debugpy in addition to pydev.
+        // m_proxy.enableDebugging();
     }
 
     @Override
