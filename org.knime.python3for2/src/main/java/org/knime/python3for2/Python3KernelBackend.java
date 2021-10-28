@@ -51,10 +51,13 @@ package org.knime.python3for2;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,9 +65,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
-import org.knime.core.columnar.store.BatchReadStore;
+import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
 import org.knime.core.data.columnar.table.ColumnarContainerTable;
+import org.knime.core.data.columnar.table.ColumnarRowReadTable;
+import org.knime.core.data.columnar.table.ColumnarRowWriteTable;
+import org.knime.core.data.columnar.table.ColumnarRowWriteTableSettings;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
+import org.knime.core.data.v2.RowCursor;
+import org.knime.core.data.v2.RowKeyType;
+import org.knime.core.data.v2.RowWriteCursor;
+import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -73,6 +87,9 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.NativeNodeContainer;
+import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.util.Pair;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
@@ -133,6 +150,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      * time when that method was called (if any).
      */
     private final NodeContextManager m_nodeContextManager = new NodeContextManager();
+
+    /**
+     * Holds {@link NotInWorkflowWriteFileStoreHandler temporary} file store handlers that have to be created when
+     * converting legacy and virtual tables into Arrow-backed tables while no in-workflow file store handler is
+     * available (i.e. in the node dialog). They can only be cleared upon closing of the kernel since we do not know for
+     * how long the Python side references their respective file stores.
+     */
+    private final Set<IFileStoreHandler> m_temporaryFsHandlers = new HashSet<>(1);
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
@@ -207,6 +232,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void setOptions(final PythonKernelOptions options) throws PythonIOException {
         m_currentOptions = options;
+        m_nodeContextManager.setNodeContext(NodeContext.getContext());
         throw new IllegalStateException("not yet implemented"); // TODO: NYI
     }
 
@@ -243,8 +269,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      */
     private void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final long numRows) throws PythonIOException, CanceledExecutionException {
-        performCancelable(
-            new PutDataTableTask(m_proxy, name, table, numRows, m_currentOptions.getSerializationOptions()),
+        performCancelable(new PutDataTableTask(name, table, numRows, m_currentOptions.getSerializationOptions()),
             executionMonitor);
     }
 
@@ -334,13 +359,15 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
+                synchronized (m_temporaryFsHandlers) {
+                    PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
+                        m_temporaryFsHandlers);
+                }
             }).start();
         }
     }
 
-    private static final class PutDataTableTask implements Callable<Void> {
-
-        private final Python3KernelBackendProxy m_proxy;
+    private final class PutDataTableTask implements Callable<Void> {
 
         private final String m_name;
 
@@ -350,65 +377,135 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
         private final SerializationOptions m_options;
 
-        public PutDataTableTask(final Python3KernelBackendProxy proxy, final String name, final BufferedDataTable table,
-            final long numRows, final SerializationOptions options) {
-            m_proxy = proxy;
+        public PutDataTableTask(final String name, final BufferedDataTable table, final long numRows,
+            final SerializationOptions options) {
             m_name = name;
             m_table = table;
             m_numRows = numRows;
             m_options = options;
         }
 
+        // Store will be closed along with table. If it is a copy, it will have already been closed.
+        @SuppressWarnings("resource")
         @Override
         public Void call() throws Exception {
-            final PythonArrowDataSource source = tableToSource(m_table);
-            if (m_options.getConvertMissingToPython()) {
-                switch (m_options.getSentinelOption()) {
-                    case MIN_VAL:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
-                        break;
-                    case MAX_VAL:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
-                        break;
-                    case CUSTOM:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
-                        break;
+            final Pair<ColumnarBatchReadStore, Boolean> p = extractStoreCopyTableIfNecessary(m_table);
+            final ColumnarBatchReadStore columnarStore = p.getFirst();
+            final boolean storeIsCopy = p.getSecond();
+            try {
+                final PythonArrowDataSource source =
+                    convertStoreIntoSource(columnarStore, m_table.getDataTableSpec().getColumnNames());
+                if (m_options.getConvertMissingToPython()) {
+                    switch (m_options.getSentinelOption()) {
+                        case MIN_VAL:
+                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
+                            break;
+                        case MAX_VAL:
+                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
+                            break;
+                        case CUSTOM:
+                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
+                            break;
+                    }
+                } else {
+                    m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
                 }
-            } else {
-                m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
+            } finally {
+                if (storeIsCopy) {
+                    Files.deleteIfExists(columnarStore.getPath());
+                }
             }
             return null;
         }
 
-        @SuppressWarnings("resource") // The store will be closed along with the table by the client using the kernel.
-        private static PythonArrowDataSource tableToSource(final BufferedDataTable table) throws PythonIOException {
-            // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table content
-            // to disk to make it available to Python.
-            //
-            // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported, defer
-            // flushing until actually needed (i.e. when Python pulls data).
-            BatchReadStore readStore = null;
+        // Store will be closed along with table. If it is a copy, it will have already been closed.
+        @SuppressWarnings("resource")
+        private Pair<ColumnarBatchReadStore, Boolean> extractStoreCopyTableIfNecessary(final BufferedDataTable table)
+            throws IOException {
             final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
             if (delegate instanceof ColumnarContainerTable) {
-                final ColumnarBatchReadStore columnarReadStore = ((ColumnarContainerTable)delegate).getStore();
-                if (columnarReadStore instanceof Flushable) {
-                    try {
-                        ((Flushable)columnarReadStore).flush();
-                    } catch (final IOException ex) {
-                        throw new PythonIOException(ex);
+                var columnarTable = (ColumnarContainerTable)delegate;
+                final var baseStore = columnarTable.getStore().getDelegateBatchReadStore();
+                final boolean isLegacyArrow;
+                if (baseStore instanceof ArrowBatchReadStore) {
+                    isLegacyArrow = ((ArrowBatchReadStore)baseStore).isUseLZ4BlockCompression()
+                        || ColumnarValueSchemaUtils.storesDataCellSerializersSeparately(columnarTable.getSchema());
+                } else if (baseStore instanceof ArrowBatchStore) {
+                    // Write stores shouldn't be using the old compression format or the old ValueSchema anymore
+                    isLegacyArrow = false;
+                } else {
+                    // Not Arrow at all (= a new storage back end), treat like legacy, i.e. copy.
+                    isLegacyArrow = true;
+                }
+                if (!isLegacyArrow) {
+                    final ColumnarBatchReadStore columnarStore = ((ColumnarContainerTable)delegate).getStore();
+                    return new Pair<>(columnarStore, false);
+                }
+            }
+            // Fallback for legacy and virtual tables.
+            final ColumnarBatchReadStore columnarStore = copyTableToArrowStore(table);
+            return new Pair<>(columnarStore, true);
+        }
+
+        private ColumnarBatchReadStore copyTableToArrowStore(final BufferedDataTable table) throws IOException {
+            IWriteFileStoreHandler fsHandler =
+                (IWriteFileStoreHandler)((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer())
+                    .getNode().getFileStoreHandler();
+            if (fsHandler == null) {
+                synchronized (m_temporaryFsHandlers) {
+                    if (!m_closed.get()) {
+                        fsHandler = NotInWorkflowWriteFileStoreHandler.create();
+                        // Since "putDataTable" and "execute" are independent from one another, we do not know for how
+                        // long the temporary file stores are going to be used. That is why we need to keep their
+                        // handler alive for the entire lifetime of the kernel.
+                        // If the kernel is already (being) closed, we will not allocate a new handler. Any errors in
+                        // the conversion resulting from this need to be handled by the client who (willingly) called
+                        // "putDataTable" and closed the kernel concurrently.
+                        m_temporaryFsHandlers.add(fsHandler);
                     }
                 }
-                readStore = columnarReadStore.getDelegateBatchReadStore();
             }
-            final String[] columnNames = table.getDataTableSpec().getColumnNames();
-            if (readStore instanceof ArrowBatchReadStore) {
-                return PythonArrowDataUtils.createSource((ArrowBatchReadStore)readStore, columnNames);
-            } else if (readStore instanceof ArrowBatchStore) {
-                final ArrowBatchStore store = (ArrowBatchStore)readStore;
+            final var schema =
+                ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, fsHandler));
+            ColumnarRowReadTable tableCopy;
+            try (final var columnarTable = new ColumnarRowWriteTable(schema, new ArrowColumnStoreFactory(),
+                new ColumnarRowWriteTableSettings(true, false, -1, false, false, false))) {
+                try (final RowCursor inCursor = table.cursor();
+                        final RowWriteCursor outCursor = columnarTable.createCursor()) {
+                    while (inCursor.canForward()) {
+                        outCursor.forward().setFrom(inCursor.forward());
+                    }
+                    tableCopy = columnarTable.finish();
+                }
+            }
+            try (tableCopy) {
+                return tableCopy.getStore();
+            }
+        }
+
+        // Store will be closed along with table. If it is a copy, it will have already been closed.
+        @SuppressWarnings("resource")
+        private PythonArrowDataSource convertStoreIntoSource(final ColumnarBatchReadStore columnarStore,
+            final String[] columnNames) throws IOException {
+            // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table
+            // content to disk to make it available to Python.
+            //
+            // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported,
+            // defer flushing until actually needed (i.e. when Python pulls data).
+            if (columnarStore instanceof Flushable) {
+                ((Flushable)columnarStore).flush();
+            }
+            final var baseStore = columnarStore.getDelegateBatchReadStore();
+            if (baseStore instanceof ArrowBatchReadStore) {
+                final ArrowBatchReadStore store = (ArrowBatchReadStore)baseStore;
+                return PythonArrowDataUtils.createSource(store, columnNames);
+            } else if (baseStore instanceof ArrowBatchStore) {
+                final ArrowBatchStore store = (ArrowBatchStore)baseStore;
                 return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
             } else {
-                throw new IllegalStateException("The new Python kernel back end requires any input tables to be " +
-                    "stored using the Columnar Table back end.");
+                // Any non-Arrow store should already have been copied into an Arrow store further above.
+                throw new IllegalStateException("Unrecognized store type: " + baseStore.getClass().getName() +
+                    ". This is an implementation error.");
             }
         }
     }
