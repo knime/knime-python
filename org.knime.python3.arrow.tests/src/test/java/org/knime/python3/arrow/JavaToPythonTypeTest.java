@@ -469,7 +469,7 @@ public class JavaToPythonTypeTest {
 
             // Test using a read store -> footer written
             try (@SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
-            final var store = new ColumnarBatchReadStoreBuilder(m_storeFactory.createReadStore(schema, readPath))
+            final var store = new ColumnarBatchReadStoreBuilder(m_storeFactory.createReadStore(readPath))
                 .enableDictEncoding(true).build()) {
 
                 // Define a Python data source for the data of the store

@@ -211,8 +211,7 @@ public final class PythonArrowDataUtils {
     public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
         final ArrowColumnStoreFactory storeFactory) {
         // TODO Do not require DefaultPythonArrowDataSink but an interface
-        return storeFactory.createPartialFileReadable(dataSink.getSchema(), dataSink.getPath(),
-            getOffsetProvider(dataSink));
+        return storeFactory.createPartialFileReadable(dataSink.getPath(), getOffsetProvider(dataSink));
     }
 
     /**
@@ -229,13 +228,13 @@ public final class PythonArrowDataUtils {
         final ArrowColumnStoreFactory storeFactory, final int tableId) {
         var size = dataSink.getSize();
         var path = dataSink.getPath();
-        var schema = createColumnarValueSchema(dataSink);
-        var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(schema, path)) //
+        var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(path)) //
             .enableDictEncoding(true) //
             .build();
         // nothing to flush as of now
         Flushable flushable = () -> {
         };
+        var schema = createColumnarValueSchema(dataSink);
         return UnsavedColumnarContainerTable.create(path, tableId, storeFactory, schema, readStore, flushable, size);
     }
 
@@ -243,13 +242,16 @@ public final class PythonArrowDataUtils {
      * Create a {@link ColumnarValueSchema} representing the data coming from the {@link DefaultPythonArrowDataSink}.
      * Must only be called after the sink has received the first.
      *
+     * TODO: provide a load context and replace by
+     * {@link ValueSchemaUtils#load(ColumnarSchema, org.knime.core.data.v2.schema.ValueSchemaLoadContext)}?
+     *
      * @param dataSink The Python data sink that has already received the first batch
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
     public static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink) {
         final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
-        final var names = ArrowSchemaUtils.extractColumnNames(schema);
+        final var columnNames = ArrowSchemaUtils.extractColumnNames(schema);
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
         factories.add(extractRowKeyValueFactory(columnarSchema));
@@ -260,7 +262,7 @@ public final class PythonArrowDataUtils {
             var valueFactory = getValueFactory(traits, columnarSchema.getSpec(i), dataRepository);
             factories.add(valueFactory);
             var dataType = ValueFactoryUtils.getDataTypeForValueFactory(valueFactory);
-            specs.add(new DataColumnSpecCreator(names[i], dataType).createSpec());
+            specs.add(new DataColumnSpecCreator(columnNames[i], dataType).createSpec());
         }
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
         return ColumnarValueSchemaUtils

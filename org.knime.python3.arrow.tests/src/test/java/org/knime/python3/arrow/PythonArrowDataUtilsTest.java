@@ -75,7 +75,6 @@ import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
-import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.batch.WriteBatch;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
@@ -202,17 +201,15 @@ public class PythonArrowDataUtilsTest {
     }
 
     private ArrowBatchReadStore createReadStore(final int idx) throws IOException {
-        final ColumnarSchema schema;
         final var path = TestUtils.createTmpKNIMEArrowPath();
         try (final var writeStore = createWriteStore()) {
             try (final var writer = writeStore.getWriter()) {
                 writeData(writer, idx);
             }
-            schema = writeStore.getSchema();
             Files.copy(writeStore.getPath(), path, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        return m_storeFactory.createReadStore(schema, path);
+        return m_storeFactory.createReadStore(path);
     }
 
     private void checkReadable(final DefaultPythonArrowDataSink dataSink, final int idx) throws IOException {
@@ -230,7 +227,7 @@ public class PythonArrowDataUtilsTest {
     private static void writeData(final BatchWriter writer, final int idx) throws IOException {
         final WriteBatch batch = writer.create(1);
         ((IntWriteData)batch.get(0)).setInt(0, idx);
-        final ReadBatch readBatch = batch.close(1);
+        final var readBatch = batch.close(1);
         writer.write(readBatch);
         readBatch.release();
     }
