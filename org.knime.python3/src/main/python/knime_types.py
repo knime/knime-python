@@ -66,6 +66,18 @@ class PythonValueFactory:
     def encode(self, value):
         return value
 
+    def needs_conversion(self):
+        return True
+
+
+class FallbackPythonValueFactory(PythonValueFactory):
+
+    def __init__(self):
+        super().__init__(None)
+
+    def needs_conversion(self):
+        return False
+
 
 class PythonValueFactoryBundle:
     def __init__(self, java_value_factory, data_spec_json, value_factory, data_traits):
@@ -114,7 +126,7 @@ def register_python_value_factory(
     _java_value_factory_to_bundle[logical_type] = value_factory_bundle
 
 
-_fallback_value_factory = PythonValueFactory(None)
+_fallback_value_factory = FallbackPythonValueFactory()
 
 
 def get_converter(logical_type):

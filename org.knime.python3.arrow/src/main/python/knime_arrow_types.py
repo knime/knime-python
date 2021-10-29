@@ -358,6 +358,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     def encode(self, value):
         return self._converter.encode(value)
 
+    def needs_conversion(self):
+        return self._converter.needs_conversion()
+
     @property
     def logical_type(self):
         return self._logical_type
