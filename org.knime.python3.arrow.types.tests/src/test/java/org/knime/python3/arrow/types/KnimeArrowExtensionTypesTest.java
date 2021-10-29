@@ -102,6 +102,7 @@ import org.knime.core.data.IntValue;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.RowKeyValue;
 import org.knime.core.data.collection.ListCell;
+import org.knime.core.data.columnar.table.ColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.StringValue;
@@ -735,8 +736,11 @@ public class KnimeArrowExtensionTypesTest {
 					.toArray(WriteValue[]::new);
 			var schema = buildSchemaWithLogicalTypeTraits(valueFactoriesWithRowKey);
 			var rowWrite = new ArrayRowWrite(writeValues, writeAccesses);
-			try (final var inputStore = m_storeFactory.createStore(schema, inputPath)) {
-				try (var writer = inputStore.getWriter()) {
+			try (final var arrowStore = m_storeFactory.createStore(schema, inputPath);
+					var columnarStore = new ColumnarBatchStoreBuilder(arrowStore)//
+							.enableDictEncoding(true)//
+							.build()) {
+				try (var writer = columnarStore.getWriter()) {
 					int numRows = rowFiller.getNumRows();
 					final var batch = writer.create(numRows);
 					IntStream.range(0, writeAccesses.length).forEach(i -> writeAccesses[i].setData(batch.get(i)));
@@ -748,7 +752,7 @@ public class KnimeArrowExtensionTypesTest {
 					writer.write(readBatch);
 					readBatch.release();
 				}
-				final var dataSource = PythonArrowDataUtils.createSource(inputStore, 1,
+				final var dataSource = PythonArrowDataUtils.createSource(arrowStore, 1,
 						columnNames.toArray(String[]::new));
 				final var dataSink = PythonArrowDataUtils.createSink(outputPath);
 				entryPointSelector.accept(getEntryPoint(), dataSource, dataSink);
