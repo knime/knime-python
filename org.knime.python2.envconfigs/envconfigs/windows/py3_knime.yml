@@ -5,7 +5,7 @@ channels:             # Repositories to search for packages
 - conda-forge
 dependencies:         # List of packages that should be installed
 - python-dateutil=2.7 # Date and Time utilities
-- pyarrow=4.0.1       # Arrow serialization
+- pyarrow=6.0.0       # Arrow serialization
 - pkgs/main::re2      # Dependency of pyarrow
 - matplotlib=3.0      # Plotting
 - ipython=7.1         # Notebook support
