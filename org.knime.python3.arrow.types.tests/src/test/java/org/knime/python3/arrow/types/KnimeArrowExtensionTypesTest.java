@@ -103,7 +103,7 @@ import org.knime.core.data.LongValue;
 import org.knime.core.data.RowKeyValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.data.collection.ListCell;
-import org.knime.core.data.columnar.table.ColumnarBatchStore.ColumnarBatchStoreBuilder;
+import org.knime.core.data.columnar.table.DefaultColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;

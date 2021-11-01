@@ -48,7 +48,6 @@
  */
 package org.knime.python3.arrow;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -71,7 +70,7 @@ import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
-import org.knime.core.data.columnar.table.DefaultColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
+import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.core.data.v2.RowKeyValueFactory;
@@ -239,16 +238,12 @@ public final class PythonArrowDataUtils {
     @SuppressWarnings("resource") // the readStore will be closed when the table is cleared
     public static UnsavedColumnarContainerTable createTable(final DefaultPythonArrowDataSink dataSink,
         final ArrowColumnStoreFactory storeFactory, final int tableId) {
-        var size = dataSink.getSize();
-        var path = dataSink.getPath();
-        var readStore = new ColumnarBatchReadStoreBuilder(storeFactory.createReadStore(path)) //
-            .enableDictEncoding(true) //
-            .build();
-        // nothing to flush as of now
-        Flushable flushable = () -> {
-        };
-        var schema = createColumnarValueSchema(dataSink);
-        return UnsavedColumnarContainerTable.create(path, tableId, storeFactory, schema, readStore, flushable, size);
+        final var size = dataSink.getSize();
+        final var path = dataSink.getPath();
+        final var schema = createColumnarValueSchema(dataSink);
+        final var readStore = storeFactory.createReadStore(path);
+        return UnsavedColumnarContainerTable.create(tableId,
+            new ColumnarRowReadTable(schema, storeFactory, readStore, size));
     }
 
     /**
