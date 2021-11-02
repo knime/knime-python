@@ -448,10 +448,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
 
         private ColumnarBatchReadStore copyTableToArrowStore(final BufferedDataTable table) throws IOException {
-            IWriteFileStoreHandler fsHandler =
-                (IWriteFileStoreHandler)((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer())
-                    .getNode().getFileStoreHandler();
-            if (fsHandler == null) {
+            final IFileStoreHandler nodeFsHandler =
+                ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
+                    .getFileStoreHandler();
+            IWriteFileStoreHandler fsHandler = null;
+            if (nodeFsHandler instanceof IWriteFileStoreHandler) {
+                fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
+            } else {
+                // The node's file store handler will be null or an EmptyFileStoreHandler if we are in the dialog.
                 synchronized (m_temporaryFsHandlers) {
                     if (!m_closed.get()) {
                         fsHandler = NotInWorkflowWriteFileStoreHandler.create();
