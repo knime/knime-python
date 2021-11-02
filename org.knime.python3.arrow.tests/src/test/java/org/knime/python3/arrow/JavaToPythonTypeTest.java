@@ -85,6 +85,8 @@ import org.apache.arrow.memory.RootAllocator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.knime.core.columnar.arrow.ArrowBatchReadStore;
+import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
@@ -108,8 +110,10 @@ import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
 import org.knime.core.columnar.data.VoidData.VoidWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
-import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedStringWriteData;
-import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedVarBinaryWriteData;
+import org.knime.core.columnar.data.dictencoding.DictDecodedStringData.DictDecodedStringWriteData;
+import org.knime.core.columnar.data.dictencoding.DictDecodedVarBinaryData.DictDecodedVarBinaryWriteData;
+import org.knime.core.data.columnar.table.DefaultColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
+import org.knime.core.data.columnar.table.DefaultColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -231,8 +235,7 @@ public class JavaToPythonTypeTest {
      */
     @Test
     public void testVoid() throws Exception {
-        final ValueSetter<VoidWriteData> valueSetter = (data, b, r) -> {
-        };
+        final ValueSetter<VoidWriteData> valueSetter = (data, b, r) -> {};
         test("void", ColumnarSchema.of(VOID), valueSetter);
     }
 
@@ -396,7 +399,7 @@ public class JavaToPythonTypeTest {
     public void testDictEncodedString() throws Exception {
         final List<String> dict = List.of("foo", "bar", "car", "aaa");
 
-        final ValueSetter<DictEncodedStringWriteData<Long>> valueSetter = (data, b, r) -> {
+        final ValueSetter<DictDecodedStringWriteData<Long>> valueSetter = (data, b, r) -> {
             if (b == 0) {
                 data.setString(r, dict.get(r % (dict.size() - 1)));
             } else {
@@ -422,7 +425,7 @@ public class JavaToPythonTypeTest {
             dict.add(v);
         }
 
-        final ValueSetter<DictEncodedVarBinaryWriteData<Long>> valueSetter = (data, b, r) -> {
+        final ValueSetter<DictDecodedVarBinaryWriteData<Long>> valueSetter = (data, b, r) -> {
             if (b == 0) {
                 data.setBytes(r, dict.get(r % (dict.size() - 1)));
             } else {
@@ -443,13 +446,18 @@ public class JavaToPythonTypeTest {
             final var entryPoint = pythonGateway.getEntryPoint();
 
             // Test using a write store -> footer not yet written
-            try (final var store = m_storeFactory.createStore(schema, writePath)) {
+            // We need to wrap the store in a columnar store to enable dictionary encoding.
+            try (@SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
+            final var store = new ColumnarBatchStoreBuilder(m_storeFactory.createStore(schema, writePath))
+                .enableDictEncoding(true).build()) {
                 // Write some batches
                 try (final BatchWriter writer = store.getWriter()) {
                     writeBatches(valueSetter, writer);
 
                     // Define a Python data source for the data of the store
-                    final var dataSource = PythonArrowDataUtils.createSource(store, NUM_BATCHES);
+                    @SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
+                    final var dataSource = PythonArrowDataUtils
+                        .createSource((ArrowBatchStore)store.getDelegateBatchReadStore(), NUM_BATCHES);
 
                     // Call Python (footer not written)
                     entryPoint.testTypeToPython(type, dataSource);
@@ -460,10 +468,14 @@ public class JavaToPythonTypeTest {
             }
 
             // Test using a read store -> footer written
-            try (final var store = m_storeFactory.createReadStore(schema, readPath)) {
+            try (@SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
+            final var store = new ColumnarBatchReadStoreBuilder(m_storeFactory.createReadStore(schema, readPath))
+                .enableDictEncoding(true).build()) {
 
                 // Define a Python data source for the data of the store
-                final var dataSource = PythonArrowDataUtils.createSource(store);
+                @SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
+                final var dataSource =
+                    PythonArrowDataUtils.createSource((ArrowBatchReadStore)store.getDelegateBatchReadStore());
 
                 // Call Python (footer written)
                 entryPoint.testTypeToPython(type, dataSource);
