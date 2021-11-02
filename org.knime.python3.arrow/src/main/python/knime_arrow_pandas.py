@@ -43,6 +43,8 @@
 # ------------------------------------------------------------------------
 
 import pyarrow as pa
+import knime_gateway as kg
+import knime_types as kt
 import knime_arrow_types as kat
 import pandas as pd
 import numpy as np
@@ -60,8 +62,8 @@ def pandas_df_to_arrow_table(data_frame):
 def _extract_schema(data_frame: pd.DataFrame):
     dtypes = data_frame.dtypes
     columns = [
-        (column, _to_arrow_type(data_frame[column][0]))
-        for (column, dtype) in dtypes.items()
+        (column, _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),)
+        for (idx, (column, dtype)) in enumerate(dtypes.items())
     ]
     return pa.schema(columns)
 
@@ -78,10 +80,68 @@ _pd_to_arrow_type_map = {
     np.bool_: pa.bool_(),
 }
 
+_pd_to_extension_type_map = {
+    np.int32: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.int32(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.IntValueFactory"}',
+    ),
+    int: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.int32(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.IntValueFactory"}',
+    ),
+    np.int64: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.int64(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.LongValueFactory"}',
+    ),
+    np.uint32: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.uint32(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.LongValueFactory"}',
+    ),
+    np.int8: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.int8(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.ByteValueFactory"}',
+    ),
+    np.float32: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.float32(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.DoubleValueFactory"}',
+    ),
+    np.float64: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.float64(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.DoubleValueFactory"}',
+    ),
+    str: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.string(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.StringValueFactory"}',
+    ),
+    np.bool_: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.bool_(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.BooleanValueFactory"}',
+    ),
+}
 
-def _to_arrow_type(first_value):
+
+def _to_arrow_type(first_value, is_row_key_column: bool = False):
+    # converter = kg.gateway().org.knime.core.data.v2.DefaultValueFactories
+    # TODO: use logic from DefaultValueFactories in Java
     t = type(first_value)
-    if t == list or t == np.ndarray:
+    if is_row_key_column and t == str:
+        return kat.LogicalTypeExtensionType(
+            kt.FallbackPythonValueFactory(),
+            pa.string(),
+            '{"value_factory_class":"org.knime.core.data.v2.value.DefaultRowKeyValueFactory"}',
+        )
+    elif t in _pd_to_extension_type_map:
+        return _pd_to_extension_type_map[t]
+    elif t == list or t == np.ndarray:
         inner = _to_arrow_type(first_value[0])
         return pa.list_(inner)
     elif t in _pd_to_arrow_type_map:
