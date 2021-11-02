@@ -378,6 +378,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         if value_factory_type is not None:
             self.encode = value_factory_type.encode
             self.decode = value_factory_type.decode
+            self.needs_conversion = value_factory_type.needs_conversion
         pa.ExtensionType.__init__(
             self,
             struct_dict_encoded_type.storage_type,
