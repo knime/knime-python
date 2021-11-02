@@ -56,6 +56,10 @@ from knime_arrow_utils import normalize_index
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
 
+STRUCT_TYPE_VERSION = 0  # must match the version in ArrowStructDataFactory
+LIST_TYPE_VERSION = 0  # must match the version in ArrowListDataFactory
+DEFAULT_VERSION = 0  # placeholder for all other primitive types. TODO: needs to be updated if new versions are introduced
+
 
 def gateway():
     if kg.client_server is None:
@@ -76,21 +80,29 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
 
 
 def factory_version_for(arrow_type: pa.DataType):
+
     # TODO synchronize with the versions on the Java side
     if kat.is_value_factory_type(arrow_type):
-        return factory_version_for(arrow_type.storage_type)
+        return (
+            f"{arrow_type.version()}[{factory_version_for(arrow_type.storage_type)};]"
+        )
 
-    if kas.is_struct_dict_encoded(arrow_type) or kat.is_dict_encoded_value_factory_type(arrow_type):
-        version = f"0[{factory_version_for(arrow_type.storage_type)};]"
-        return version
+    if kas.is_struct_dict_encoded(arrow_type) or kat.is_dict_encoded_value_factory_type(
+        arrow_type
+    ):
+        return f"{kat.LogicalTypeExtensionType.version()}[{arrow_type.version()}[{factory_version_for(arrow_type.storage_type)};];]"
 
     if isinstance(arrow_type, pa.StructType):
-        return "0[{}]".format(
-            "".join([factory_version_for(f.type) + ";" for f in arrow_type])
+        return "{}[{}]".format(
+            STRUCT_TYPE_VERSION,
+            "".join([factory_version_for(f.type) + ";" for f in arrow_type]),
         )
     if isinstance(arrow_type, pa.ListType):
-        return "0[{};]".format(factory_version_for(arrow_type.value_type))
-    return "0"
+        return "{}[{};]".format(
+            LIST_TYPE_VERSION, factory_version_for(arrow_type.value_type)
+        )
+
+    return f"{DEFAULT_VERSION}"
 
 
 def convert_schema(schema: pa.Schema):

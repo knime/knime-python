@@ -365,6 +365,11 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     def logical_type(self):
         return self._logical_type
 
+    @staticmethod
+    def version():
+        """ The version is stored in the Arrow field's metadata and must match the Java version of the extension type """
+        return 0
+
 
 # Register our extension type with
 pa.register_extension_type(LogicalTypeExtensionType(None, pa.null(), ""))
@@ -392,6 +397,10 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
     @property
     def key_type(self):
         return self.struct_dict_encoded_type.key_type
+
+    @staticmethod
+    def version():
+        return kas.StructDictEncodedType.version()
 
     def __arrow_ext_serialize__(self):
         # StructDictEncodedType doesn't have any meta data

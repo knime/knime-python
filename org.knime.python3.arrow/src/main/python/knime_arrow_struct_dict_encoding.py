@@ -426,6 +426,11 @@ class StructDictEncodedType(pa.ExtensionType):
     def key_type(self):
         return self._key_type
 
+    @staticmethod
+    def version():
+        """ The version is stored in the Arrow field's metadata and must match the Java version of the extension type """
+        return 0
+
     def __arrow_ext_serialize__(self):
         return b""
 
