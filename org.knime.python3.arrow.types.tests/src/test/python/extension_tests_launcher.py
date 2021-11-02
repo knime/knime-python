@@ -56,17 +56,10 @@ import numpy as np
 
 class EntryPoint(kg.EntryPoint):
     def registerPythonValueFactory(
-        self,
-        python_module,
-        python_value_factory_name,
-        data_spec,
-        data_traits,
+        self, python_module, python_value_factory_name, data_spec, data_traits,
     ):
         kt.register_python_value_factory(
-            python_module,
-            python_value_factory_name,
-            data_spec,
-            data_traits
+            python_module, python_value_factory_name, data_spec, data_traits
         )
 
     def assertFsLocationEquals(self, data_source, category, specifier, path):

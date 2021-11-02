@@ -101,13 +101,13 @@ import org.knime.core.data.DoubleValue;
 import org.knime.core.data.IntValue;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.RowKeyValue;
+import org.knime.core.data.StringValue;
 import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.columnar.table.ColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.StringValue;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;
+import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
 import org.knime.core.data.v2.RowCursor;
@@ -121,10 +121,18 @@ import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.WriteValue;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
-import org.knime.core.data.v2.value.IntListValueFactory;
 import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
+import org.knime.core.data.v2.value.IntListValueFactory;
 import org.knime.core.data.v2.value.IntValueFactory;
+import org.knime.core.data.v2.value.LongValueFactory;
+import org.knime.core.data.v2.value.ValueInterfaces.BooleanWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.DoubleWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntListReadValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntListWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.IntWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.LongWriteValue;
+import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
@@ -158,14 +166,6 @@ import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
-import org.knime.core.data.v2.value.LongValueFactory;
-import org.knime.core.data.v2.value.ValueInterfaces.BooleanWriteValue;
-import org.knime.core.data.v2.value.ValueInterfaces.DoubleWriteValue;
-import org.knime.core.data.v2.value.ValueInterfaces.IntListReadValue;
-import org.knime.core.data.v2.value.ValueInterfaces.IntListWriteValue;
-import org.knime.core.data.v2.value.ValueInterfaces.IntWriteValue;
-import org.knime.core.data.v2.value.ValueInterfaces.LongWriteValue;
-import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
 
 /**
  *
@@ -421,7 +421,8 @@ public class KnimeArrowExtensionTypesTest {
 	@Test
 	public void testCopyingMissingIntCell() throws Exception {
 		// TODO support pandas rountrip
-		// Problem: Missing ints are represented as float NaN in pandas (as are missing floats and missing longs)
+		// Problem: Missing ints are represented as float NaN in pandas (as are missing
+		// floats and missing longs)
 		testCopySingleMissingCell(INT_TF, EnumSet.of(CopyPathway.JAVA_PYTHON_JAVA));
 	}
 
@@ -434,7 +435,8 @@ public class KnimeArrowExtensionTypesTest {
 	@Test
 	public void testCopyingMissingBooleanCell() throws Exception {
 		// TODO support copying through pandas
-		// Problem: Missing boolean in pandas is just None, which is the same as a missing string and many other objects
+		// Problem: Missing boolean in pandas is just None, which is the same as a
+		// missing string and many other objects
 		testCopySingleMissingCell(BOOLEAN_TF, EnumSet.of(CopyPathway.JAVA_PYTHON_JAVA));
 	}
 
@@ -453,7 +455,8 @@ public class KnimeArrowExtensionTypesTest {
 	@Test
 	public void testCopyingMissingLongCell() throws Exception {
 		// TODO support copying through pandas
-		// Problem: A missing long in pandas is represented as float (as are floats and ints)
+		// Problem: A missing long in pandas is represented as float (as are floats and
+		// ints)
 		testCopySingleMissingCell(LONG_TF, EnumSet.of(CopyPathway.JAVA_PYTHON_JAVA));
 	}
 
@@ -477,7 +480,8 @@ public class KnimeArrowExtensionTypesTest {
 	@Test
 	public void testCopyingMissingStringCell() throws Exception {
 		// TODO enable transfer of single string cell via pandas
-		// Problem: A missing string in pandas is just None, as is a missing boolean or most other objects as well
+		// Problem: A missing string in pandas is just None, as is a missing boolean or
+		// most other objects as well
 		testCopySingleMissingCell(STRING_TF, EnumSet.of(CopyPathway.JAVA_PYTHON_JAVA));
 	}
 
@@ -516,7 +520,6 @@ public class KnimeArrowExtensionTypesTest {
 		}
 
 		private final TriConsumer<KnimeArrowExtensionTypeEntryPoint, PythonDataSource, PythonDataSink> entryPointSelector;
-
 	}
 
 	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleCell(TypeAndFactory<D, W> typeAndFactory,
@@ -695,8 +698,8 @@ public class KnimeArrowExtensionTypesTest {
 			m_gateway.close();
 		}
 
-		void runJavaToPythonTest(final ColumnarSchema schema, final DataPreparer preparer,
-				final DataTester<E> tester) throws IOException {
+		void runJavaToPythonTest(final ColumnarSchema schema, final DataPreparer preparer, final DataTester<E> tester)
+				throws IOException {
 			final var writePath = createTmpKNIMEArrowPath();
 			try (final var store = m_storeFactory.createStore(schema, writePath)) {
 				try (final BatchWriter writer = store.getWriter()) {

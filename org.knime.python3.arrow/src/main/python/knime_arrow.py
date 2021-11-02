@@ -48,6 +48,7 @@
 
 import pyarrow as pa
 import knime_gateway as kg
+
 # TODO should this happen here or on java side?
 import knime_arrow_types as kat
 import knime_arrow_struct_dict_encoding as kas
@@ -218,9 +219,12 @@ class ArrowDataSource:
         if java_data_source.hasColumnNames():
             schema_without_names = self._reader.schema
             names = [name for name in java_data_source.getColumnNames()]
-            names = ['<Row ID>'] + names
+            names = ["<Row ID>"] + names
             self._column_names = names
-            fields_with_name = [field.with_name(name) for field, name in zip(schema_without_names, names)]
+            fields_with_name = [
+                field.with_name(name)
+                for field, name in zip(schema_without_names, names)
+            ]
             self._schema = pa.schema(fields_with_name)
         else:
             self._column_names = None
@@ -257,6 +261,7 @@ class ArrowDataSource:
 
     def to_pandas(self):
         import knime_arrow_pandas
+
         # TODO use arrow's build-in conversion whenever possible
         arrow_table = self.to_arrow_table()
         return knime_arrow_pandas.arrow_table_to_pandas_df(arrow_table)

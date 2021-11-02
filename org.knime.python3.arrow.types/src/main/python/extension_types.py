@@ -51,25 +51,27 @@ import numpy as np
 
 
 class FsLocationValue:
-
     def __init__(self, fs_category, fs_specifier, path):
         self.fs_category = fs_category
         self.fs_specifier = fs_specifier
         self.path = path
 
     def to_dict(self):
-        return {'fs_category': self.fs_category, 'fs_specifier': self.fs_specifier, 'path': self.path}
+        return {
+            "fs_category": self.fs_category,
+            "fs_specifier": self.fs_specifier,
+            "path": self.path,
+        }
 
 
 class FsLocationValueFactory(kt.PythonValueFactory):
-
     def __init__(self):
         kt.PythonValueFactory.__init__(self, FsLocationValue)
 
     def decode(self, storage):
         # TODO we could change the keys of storage to integers (or use a list) which would be more compliant with
         #  the behavior in java
-        return FsLocationValue(storage['0'], storage['1'], storage['2'])
+        return FsLocationValue(storage["0"], storage["1"], storage["2"])
 
     def encode(self, value):
-        return {'0': value.fs_category, '1': value.fs_specifier, '2': value.path}
+        return {"0": value.fs_category, "1": value.fs_specifier, "2": value.path}

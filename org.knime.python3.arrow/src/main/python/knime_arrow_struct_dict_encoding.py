@@ -303,7 +303,10 @@ class DictKeyGenerator:
 
 # TODO benchmark and make this faster
 def struct_dict_encode(
-    array, key_generator: Callable[[Any], int], value_type: pa.DataType = None, key_type: pa.DataType = None
+    array,
+    key_generator: Callable[[Any], int],
+    value_type: pa.DataType = None,
+    key_type: pa.DataType = None,
 ):
     """Create a struct based dictionary encoded array from the given data.
 
@@ -318,14 +321,22 @@ def struct_dict_encode(
     Returns:
         Dictionary encoded (StructDictEncodedArray)
     """
-    storage = create_storage_for_struct_dict_encoded_array(array, key_generator, value_type, key_type)
+    storage = create_storage_for_struct_dict_encoded_array(
+        array, key_generator, value_type, key_type
+    )
     key_type = storage.field(0).type
     value_type = storage.field(1).type
-    return pa.ExtensionArray.from_storage(StructDictEncodedType(value_type, key_type=key_type), storage)
+    return pa.ExtensionArray.from_storage(
+        StructDictEncodedType(value_type, key_type=key_type), storage
+    )
 
 
-def create_storage_for_struct_dict_encoded_array(array, key_generator: Callable[[Any], int],
-                                                 value_type: pa.DataType = None, key_type: pa.DataType = None):
+def create_storage_for_struct_dict_encoded_array(
+    array,
+    key_generator: Callable[[Any], int],
+    value_type: pa.DataType = None,
+    key_type: pa.DataType = None,
+):
     # Encode
     entry_to_key = {}
 
@@ -416,7 +427,9 @@ class StructDictEncodedType(pa.ExtensionType):
             key_type = pa.uint64()
         self._key_type = key_type
         self._inner_type = inner_type
-        pa.ExtensionType.__init__(self, knime_struct_type(key_type, inner_type), "knime.struct_dict_encoded")
+        pa.ExtensionType.__init__(
+            self, knime_struct_type(key_type, inner_type), "knime.struct_dict_encoded"
+        )
 
     @property
     def value_type(self):

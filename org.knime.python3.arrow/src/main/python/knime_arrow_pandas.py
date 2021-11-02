@@ -116,7 +116,6 @@ def arrow_table_to_pandas_df(table: pa.Table):
         if kat.contains_knime_extension_type(field.type)
     ]
     storage_table = kat.to_storage_table(table)
-    print(storage_table.schema)
     storage_df = storage_table.to_pandas()
     _encode_df(storage_df, logical_columns, table.schema)
     return storage_df
