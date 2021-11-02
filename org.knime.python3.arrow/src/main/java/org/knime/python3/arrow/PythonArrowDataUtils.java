@@ -74,7 +74,6 @@ import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
-import org.knime.core.data.v2.DefaultValueFactories;
 import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
