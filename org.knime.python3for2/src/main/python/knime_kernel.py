@@ -51,6 +51,7 @@ import pyarrow as pa
 import sys
 import pickle
 from typing import Dict, List, Optional, Tuple, Union
+import warnings
 from py4j.java_collections import ListConverter
 from py4j.java_gateway import JavaClass
 
@@ -167,6 +168,43 @@ class PythonKernel(kg.EntryPoint):
         # TODO: py4j's auto-conversion does not work for some reason. It should be enabled...
         return ListConverter().convert(all_variables, kg.client_server._gateway_client)
 
+    def autoComplete(
+        self, source_code: str, line: int, column: int
+    ) -> List[Dict[str, str]]:
+        try:
+            import jedi
+        except ImportError:
+            jedi = None
+        suggestions = []
+        if jedi is not None:
+            # Needed to make jedi thread-safe. Calls to this method are initiated asynchronously on the Java side.
+            jedi.settings.fast_parser = False
+            try:
+                #  Jedi's line numbering starts at 1.
+                line += 1
+                try:
+                    # Use jedi's 0.16.0+ API.
+                    completions = jedi.Script(source_code, path="").complete(
+                        line, column,
+                    )
+                except AttributeError:
+                    # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
+                    completions = jedi.Script(
+                        source_code, line, column, ""
+                    ).completions()
+                for completion in completions:
+                    suggestions.append(
+                        {
+                            "name": completion.name,
+                            "type": completion.type,
+                            "doc": completion.docstring(),
+                        }
+                    )
+            except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
+                warnings.warn("An error occurred while autocompleting.")
+        # TODO: py4j's auto-conversion does not work for some reason. It should be enabled...
+        return ListConverter().convert(suggestions, kg.client_server._gateway_client)
+
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]
 
@@ -174,8 +212,6 @@ class PythonKernel(kg.EntryPoint):
 if __name__ == "__main__":
     try:
         # Hook into warning delivery.
-        import warnings
-
         default_showwarning = warnings.showwarning
 
         def showwarning_hook(message, category, filename, lineno, file=None, line=None):

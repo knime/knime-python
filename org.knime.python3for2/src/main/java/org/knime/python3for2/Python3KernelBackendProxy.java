@@ -171,4 +171,15 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      *         and "value".
      */
     List<Map<String, String>> listVariablesInWorkspace();
+
+    /**
+     * Implements the functionality required by {@link Python3KernelBackend#autoComplete(String, int, int)}.
+     *
+     * @param sourceCode The source code.
+     * @param line The cursor position (line) at which to apply word completion.
+     * @param column The cursor position (cursor) at which to apply word completion.
+     * @return A list of completion suggestions. Each suggestion is represented as a dictionary containing the fields
+     *         "name", "type", and "doc".
+     */
+    List<Map<String, String>> autoComplete(String sourceCode, int line, int column);
 }

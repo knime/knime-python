@@ -449,7 +449,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public List<Map<String, String>> autoComplete(final String sourceCode, final int line, final int column)
         throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return m_proxy.autoComplete(sourceCode, line, column);
     }
 
     @Override
