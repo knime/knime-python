@@ -173,7 +173,7 @@ public class Python3KernelBackendProxyTest {
                 }
             }
         }
-        return m_storeFactory.createReadStore(COLUMN_SCHEMA, storePath);
+        return m_storeFactory.createReadStore(storePath);
     }
 
     private static void fillBatch(final int b, final WriteBatch batch) {
