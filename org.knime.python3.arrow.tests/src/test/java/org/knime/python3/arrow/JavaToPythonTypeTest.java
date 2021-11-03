@@ -112,8 +112,8 @@ import org.knime.core.columnar.data.VoidData.VoidWriteData;
 import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
 import org.knime.core.columnar.data.dictencoding.DictDecodedStringData.DictDecodedStringWriteData;
 import org.knime.core.columnar.data.dictencoding.DictDecodedVarBinaryData.DictDecodedVarBinaryWriteData;
-import org.knime.core.data.columnar.table.DefaultColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
-import org.knime.core.data.columnar.table.DefaultColumnarBatchStore.ColumnarBatchStoreBuilder;
+import org.knime.core.data.columnar.table.ColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
+import org.knime.core.data.columnar.table.ColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.table.schema.ColumnarSchema;
 
 /**
@@ -457,7 +457,7 @@ public class JavaToPythonTypeTest {
                     // Define a Python data source for the data of the store
                     @SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
                     final var dataSource = PythonArrowDataUtils
-                        .createSource((ArrowBatchStore)store.getDelegateBatchReadStore(), NUM_BATCHES);
+                        .createSource((ArrowBatchStore)store.getWriteDelegate(), NUM_BATCHES);
 
                     // Call Python (footer not written)
                     entryPoint.testTypeToPython(type, dataSource);
@@ -475,7 +475,7 @@ public class JavaToPythonTypeTest {
                 // Define a Python data source for the data of the store
                 @SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
                 final var dataSource =
-                    PythonArrowDataUtils.createSource((ArrowBatchReadStore)store.getDelegateBatchReadStore());
+                    PythonArrowDataUtils.createSource((ArrowBatchReadStore)store.getDelegate());
 
                 // Call Python (footer written)
                 entryPoint.testTypeToPython(type, dataSource);
