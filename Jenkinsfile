@@ -34,6 +34,8 @@ try {
                     'knime-js-base',
                     'knime-kerberos',
                     'knime-python',
+                    'knime-core-columnar',
+                    'knime-core-arrow',
                     'knime-testing-internal',
                     'knime-xml'
                 ],
