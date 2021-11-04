@@ -49,6 +49,7 @@
 import datetime
 import numpy as np
 import pyarrow as pa
+import pandas as pd  # just to load this at startup and don't count the time
 
 import knime_arrow as ka
 import knime_arrow_struct_dict_encoding as kas
@@ -490,6 +491,121 @@ class EntryPoint(kg.EntryPoint):
                 pa_data = pa.array(data, type=dtype)
                 batch = pa.record_batch([pa_keys, pa_data], ["0", "1"])
                 sink.write(batch)
+
+    # -------------------------------------------------------------------------
+    # def udf(read_table) -> WriteTable:
+    #     write_table = kta.WriteTable.create()
+
+    #     for read_batch in read_table.batches():
+    #         pandas_df = read_batch.to_pandas()
+    #         pandas_df["0"] = pandas_df["0"] * 2
+    #         pandas_df["1"] = pandas_df["1"] * 2
+    #         write_batch = kata.ArrowBatch.from_pandas(pandas_df)
+    #         write_table.append_batch(write_batch)
+
+    #     return write_table
+
+    # def exec(udf, data_source):
+    #     with kg.data_source_mapper(data_source) as source:
+    #         sink = udf(source)
+    #         sink.close()
+
+    # -------------------------------------------------------------------------
+    # def udf2(read_table: kta.ReadTable, write_table: kta.WriteTable):
+    #     for read_batch in read_table.batches():
+    #         pandas_df = read_batch.to_pandas()
+    #         pandas_df["0"] = pandas_df["0"] * 2
+    #         pandas_df["1"] = pandas_df["1"] * 2
+    #         write_batch = kta.Batch.from_pandas(pandas_df)
+    #         write_batch = kta.Batch.from_pyarrow(pyarrow_recordbatch)
+    #         write_table.append_batch(write_batch)
+    #         # syntactic sugar
+    #         write_table.append_batch(pandas_df, from_pandas_kw_args)
+    #         write_table.append_batch(pyarrow_recordbatch, from_pyarrow_kw_args)
+
+    #     p = read_table.to_pandas()
+    #     ...
+    #     write_table.from_pandas(p)
+
+    # def exec2(udf, data_source, data_sink):
+    #     with kg.data_source_mapper(data_source) as source:
+    #         with kg.data_sink_mapper(data_sink) as sink:
+    #             udf(source, sink)
+
+    # -------------------------------------------------------------------------
+
+    def testKnimeTable(self, data_source, data_sink, num_rows, num_columns, mode):
+        import knime_table as kta
+        import knime_arrow_table as kata
+
+        kta._backend = kata.ArrowBackend()
+
+        expected_shape = (num_rows, num_columns)
+
+        with kg.data_source_mapper(data_source) as source:
+            with kg.data_sink_mapper(data_sink) as sink:
+
+                read_table = kata.ArrowReadTable(source)
+                assert isinstance(read_table, kta.ReadTable)
+                assert isinstance(read_table, kta.Table)
+
+                assert num_rows == read_table.num_rows
+                assert num_columns == read_table.num_columns
+                assert expected_shape == read_table.shape
+
+                write_table = kata.ArrowWriteTable(sink)
+                assert isinstance(write_table, kta.WriteTable)
+                assert isinstance(write_table, kta.Table)
+
+                # import debugpy
+
+                # debugpy.listen(5678)
+                # print("Waiting for debugger attach")
+                # debugpy.wait_for_client()
+                # debugpy.breakpoint()
+
+                for read_batch in read_table.batches():
+                    assert num_rows >= read_batch.num_rows
+                    assert num_columns == read_batch.num_columns
+                    assert isinstance(read_batch, kata.ArrowBatch)
+                    assert isinstance(read_batch, kta.Batch)
+
+                    if mode == "arrow":
+                        arrow_batch = read_batch.to_pyarrow()
+                        arrays = []
+                        arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
+                        arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
+                        arrays.append(arrow_batch.column(2))
+                        new_batch = pa.RecordBatch.from_arrays(
+                            arrays, schema=arrow_batch.schema
+                        )
+                        write_batch = kta.Batch.from_pyarrow(new_batch)
+                    elif mode == "pandas":
+                        pandas_df = read_batch.to_pandas()
+                        pandas_df["0"] = pandas_df["0"] * 2
+                        pandas_df["1"] = pandas_df["1"] * 2
+                        write_batch = kta.Batch.from_pandas(pandas_df)
+                    elif mode == "dict":
+                        d = read_batch.to_pyarrow().to_pydict()
+                        d["0"] = [i * 2 for i in d["0"]]
+                        d["1"] = [i * 2 for i in d["1"]]
+                        write_batch = kta.Batch.from_pyarrow(
+                            # from_pydict requires pyarrow 6.0! Install via PIP
+                            pa.RecordBatch.from_pydict(d)
+                        )
+                    else:
+                        write_batch = read_batch
+
+                    assert isinstance(write_batch, kata.ArrowBatch)
+                    assert isinstance(write_batch, kta.Batch)
+                    assert read_batch.num_rows == write_batch.num_rows
+                    assert read_batch.num_columns == write_batch.num_columns
+                    write_table.append(write_batch)
+
+                assert num_rows == write_table.num_rows
+                assert num_columns == write_table.num_columns
+                assert read_table.num_batches == write_table.num_batches
+                assert expected_shape == write_table.shape
 
     class Java:
         implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]

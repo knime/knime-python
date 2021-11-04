@@ -178,5 +178,15 @@ public final class TestUtils {
          * @param sink to write to
          */
         void testDomainCalculation(String scenario, PythonDataSink sink);
+
+        /**
+         * Test the Python KNIME Table API
+         * @param source providing data to Python
+         * @param sink The sink where the data will been written to
+         * @param numRows number of rows in the input table
+         * @param numColumns number of columns in the input table
+         * @param mode Of copying data from source to sink, "arrow" or "pandas"
+         */
+        void testKnimeTable(PythonDataSource source, PythonDataSink sink, long numRows, long numColumns, String mode);
     }
 }

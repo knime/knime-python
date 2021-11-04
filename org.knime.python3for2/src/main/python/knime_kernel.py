@@ -50,7 +50,7 @@ import pyarrow as pa
 import sys
 from typing import Optional, Union
 
-import knime_arrow_pandas
+import knime_arrow_table as kat
 import knime_gateway as kg
 
 
@@ -66,27 +66,8 @@ class PythonKernel(kg.EntryPoint):
         sentinel: Optional[Union[str, int]] = None,
     ) -> None:
         with kg.data_source_mapper(java_table_data_source) as table_data_source:
-            table = table_data_source.to_arrow_table(num_rows)
-            if sentinel is not None:
-                for i, column in enumerate(table):
-                    if pa.types.is_integer(column.type) and column.null_count != 0:
-                        if sentinel == "min":
-                            sentinel_value = (
-                                -2147483648
-                                if pa.types.is_int32(column.type)
-                                else -9223372036854775808
-                            )
-                        elif sentinel == "max":
-                            sentinel_value = (
-                                2147483647
-                                if pa.types.is_int32(column.type)
-                                else 9223372036854775807
-                            )
-                        else:
-                            sentinel_value = int(sentinel)
-                        column = column.fill_null(sentinel_value)
-                        table = table.set_column(i, table.field(i), column)
-            data_frame = knime_arrow_pandas.arrow_table_to_pandas_df(table)
+            read_table = kat.ArrowReadTable(table_data_source)
+            data_frame = read_table.to_pandas(sentinel=sentinel)
             # The first column of a KNIME table is interpreted as its index (row keys).
             data_frame.set_index(data_frame.columns[0], inplace=True)
             self._workspace[variable_name] = data_frame

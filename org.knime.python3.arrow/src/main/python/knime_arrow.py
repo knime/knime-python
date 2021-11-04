@@ -53,7 +53,7 @@ import itertools
 # TODO should this happen here or on java side?
 import knime_arrow_types as kat
 import knime_arrow_struct_dict_encoding as kas
-from typing import Optional
+from typing import Optional, Union
 from knime_arrow_utils import normalize_index
 
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
@@ -265,7 +265,7 @@ class ArrowDataSource:
     def to_pandas(self) -> "pandas.DataFrame":
         import knime_arrow_pandas
 
-        # TODO use arrow's build-in conversion whenever possible
+        # TODO use arrow's built-in conversion whenever possible
         arrow_table = self.to_arrow_table()
         return knime_arrow_pandas.arrow_table_to_pandas_df(arrow_table)
 
@@ -299,6 +299,9 @@ class ArrowDataSource:
 class ArrowDataSink:
     """A class writing record batches to a file to be read by KNIME."""
 
+    # TODO: make this dependent on the size of the contained data
+    _MAX_NUM_ROWS_PER_BATCH = 10000
+
     def __init__(self, java_data_sink) -> None:
         self._java_data_sink = java_data_sink
 
@@ -313,7 +316,11 @@ class ArrowDataSink:
         self.close()
         return False
 
-    def write(self, b: pa.RecordBatch):
+    def write(self, b: Union[pa.RecordBatch, pa.Table]):
+        """
+        Writes the given batch or table to the sink. 
+        Tables are split into chunks if they are too large.
+        """
         if not hasattr(self, "_writer"):
             # Init the writer if this is the first batch
             # Also use the offset returned by the init method because the file position
@@ -323,7 +330,10 @@ class ArrowDataSink:
             # Remember the current file location
             offset = self._file.tell()
 
-        self._writer.write(b)
+        if isinstance(b, pa.RecordBatch):
+            self._writer.write_batch(b)
+        else:
+            self._writer.write_table(b, max_chunksize=self._MAX_NUM_ROWS_PER_BATCH)
         self._file.flush()
         self._java_data_sink.reportBatchWritten(offset)
         self._size += b.num_rows
@@ -343,5 +353,6 @@ class ArrowDataSink:
         return len(schema_buf) + 8
 
     def close(self):
-        self._writer.close()
+        if hasattr(self, "_writer"):
+            self._writer.close()
         self._java_data_sink.setFinalSize(self._size)

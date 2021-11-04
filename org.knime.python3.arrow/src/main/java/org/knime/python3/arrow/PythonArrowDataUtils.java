@@ -156,7 +156,7 @@ public final class PythonArrowDataUtils {
     }
 
     /**
-     * Create an {@link PythonArrowDataSink} that writes an Arrow file to the given path.
+     * Create a {@link PythonArrowDataSink} that writes an Arrow file to the given path.
      *
      * @param targetPath the path to write the Arrow file to
      * @return a {@link PythonArrowDataSink} that can be given to a {@link PythonEntryPoint} and will be wrapped into a

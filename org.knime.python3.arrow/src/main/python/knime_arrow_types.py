@@ -48,6 +48,7 @@ Arrow implementation of the knime_types.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+from typing import Optional, Union
 import knime_types as kt
 import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
@@ -206,7 +207,7 @@ def to_storage_table(table: pa.Table) -> pa.Table:
     return pa.table(arrays, schema=schema)
 
 
-def to_storage_batch(batch: pa.Batch) -> pa.Batch:
+def to_storage_batch(batch: pa.RecordBatch) -> pa.RecordBatch:
     arrays = []
     fields = []
     for i, field in enumerate(batch.schema):
@@ -351,7 +352,7 @@ def storage_table_to_extension_table(
 
 def storage_batch_to_extension_batch(
     batch: pa.RecordBatch, schema_with_ext_types: pa.Schema
-) -> pa.Batch:
+) -> pa.RecordBatch:
     arrays = []
     for i, name in enumerate(schema_with_ext_types.names):
         potential_ext_type = schema_with_ext_types.types[i]
@@ -363,9 +364,45 @@ def storage_batch_to_extension_batch(
             arrays.append(ext_array)
         else:
             arrays.append(batch.column(i))
-    return pa.RecordBatch.from_arrays(
-        arrays, schema_with_ext_types.names, schema_with_ext_types
-    )
+    return pa.RecordBatch.from_arrays(arrays, schema=schema_with_ext_types)
+
+
+def _replace_sentinels_in_table(table: pa.Table, sentinel: Union[str, int]) -> pa.Table:
+    for i, column in enumerate(table):
+        if pa.types.is_integer(column.type) and column.null_count != 0:
+            column = _replace_sentinels_in_int_array(column, sentinel)
+            table = table.set_column(i, table.field(i), column)
+    return table
+
+
+def _replace_sentinels_in_batch(
+    batch: pa.RecordBatch, sentinel: Union[str, int]
+) -> pa.RecordBatch:
+    arrays = []
+    for i, column in enumerate(batch):
+        if pa.types.is_integer(column.type) and column.null_count != 0:
+            column = _replace_sentinels_in_int_array(column, sentinel)
+        arrays.append(column)
+    return pa.RecordBatch.from_arrays(arrays, schema=batch.schema)
+
+
+def _replace_sentinels_in_int_array(
+    array: pa.Array, sentinel: Union[str, int]
+) -> pa.Array:
+    if not pa.types.is_integer(array.type) or array.null_count == 0:
+        return array
+
+    if sentinel == "min":
+        sentinel_value = (
+            -2147483648 if pa.types.is_int32(array.type) else -9223372036854775808
+        )
+    elif sentinel == "max":
+        sentinel_value = (
+            2147483647 if pa.types.is_int32(array.type) else 9223372036854775807
+        )
+    else:
+        sentinel_value = int(sentinel)
+    return array.fill_null(sentinel_value)
 
 
 def _apply_to_array(array, func):
