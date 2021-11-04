@@ -195,7 +195,7 @@ def _create_list_array(offsets, values):
         return pa.ListArray.from_arrays(offsets, values)
 
 
-def to_storage_table(table: pa.Table):
+def to_storage_table(table: pa.Table) -> pa.Table:
     arrays = []
     fields = []
     for i, field in enumerate(table.schema):
@@ -311,7 +311,9 @@ def get_storage_type(dtype: pa.DataType):
         return dtype
 
 
-def storage_table_to_extension_table(table: pa.Table, schema_with_ext_types: pa.Schema):
+def storage_table_to_extension_table(
+    table: pa.Table, schema_with_ext_types: pa.Schema
+) -> pa.Table:
     for i, name in enumerate(schema_with_ext_types.names):
         potential_ext_type = schema_with_ext_types.types[i]
         if table.schema.types[i] != potential_ext_type:

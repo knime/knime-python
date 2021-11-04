@@ -50,7 +50,7 @@ import pandas as pd
 import numpy as np
 
 
-def pandas_df_to_arrow_table(data_frame):
+def pandas_df_to_arrow_table(data_frame: pd.DataFrame) -> pa.Table:
     schema = _extract_schema(data_frame)
     # pyarrow doesn't allow to customize the conversion from pandas, so we convert the corresponding columns to storage
     # format in the pandas DataFrame
@@ -169,7 +169,7 @@ def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
         return series, arrow_type
 
 
-def arrow_table_to_pandas_df(table: pa.Table):
+def arrow_table_to_pandas_df(table: pa.Table) -> pd.DataFrame:
     logical_columns = [
         i
         for i, field in enumerate(table.schema)
