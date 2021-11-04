@@ -206,7 +206,18 @@ def to_storage_table(table: pa.Table) -> pa.Table:
     return pa.table(arrays, schema=schema)
 
 
-def _to_storage_array(array: pa.Array):
+def to_storage_batch(batch: pa.Batch) -> pa.Batch:
+    arrays = []
+    fields = []
+    for i, field in enumerate(batch.schema):
+        compatible_array = _to_storage_array(batch.column(i))
+        arrays.append(compatible_array)
+        fields.append(field.with_type(compatible_array.type))
+    schema = pa.schema(fields)
+    return pa.RecordBatch.from_arrays(arrays, schema=schema)
+
+
+def _to_storage_array(array: pa.Array) -> pa.Array:
     compatibility_fn = _get_array_to_storage_fn(array.type)
     if compatibility_fn is None:
         return array
@@ -323,6 +334,25 @@ def storage_table_to_extension_table(
             )
             table = table.set_column(i, schema_with_ext_types.field(i), ext_array)
     return table
+
+
+def storage_batch_to_extension_batch(
+    batch: pa.RecordBatch, schema_with_ext_types: pa.Schema
+) -> pa.Batch:
+    arrays = []
+    for i, name in enumerate(schema_with_ext_types.names):
+        potential_ext_type = schema_with_ext_types.types[i]
+        if batch.schema.types[i] != potential_ext_type:
+            assert potential_ext_type is not None
+            ext_array = _apply_to_array(
+                batch.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
+            )
+            arrays.append(ext_array)
+        else:
+            arrays.append(batch.column(i))
+    return pa.RecordBatch.from_arrays(
+        arrays, schema_with_ext_types.names, schema_with_ext_types
+    )
 
 
 def _apply_to_array(array, func):
