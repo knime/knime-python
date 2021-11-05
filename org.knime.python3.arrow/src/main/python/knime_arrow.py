@@ -160,8 +160,6 @@ def convert_type(arrow_type: pa.DataType):
         return gateway().jvm.org.knime.core.table.schema.DataSpec.voidSpec()
     if arrow_type == pa.string():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.stringSpec()
-    if arrow_type == pa.time64("ns"):
-        return gateway().jvm.org.knime.core.table.schema.DataSpec.localTimeSpec()
 
     raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
 

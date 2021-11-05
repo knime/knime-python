@@ -56,29 +56,16 @@ import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
 import static org.knime.core.table.schema.DataSpecs.BYTE;
 import static org.knime.core.table.schema.DataSpecs.DICT_ENCODING;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
-import static org.knime.core.table.schema.DataSpecs.DURATION;
 import static org.knime.core.table.schema.DataSpecs.FLOAT;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LIST;
-import static org.knime.core.table.schema.DataSpecs.LOCALDATE;
-import static org.knime.core.table.schema.DataSpecs.LOCALDATETIME;
-import static org.knime.core.table.schema.DataSpecs.LOCALTIME;
 import static org.knime.core.table.schema.DataSpecs.LONG;
-import static org.knime.core.table.schema.DataSpecs.PERIOD;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.schema.DataSpecs.STRUCT;
 import static org.knime.core.table.schema.DataSpecs.VARBINARY;
 import static org.knime.core.table.schema.DataSpecs.VOID;
-import static org.knime.core.table.schema.DataSpecs.ZONEDDATETIME;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,21 +81,15 @@ import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.data.BooleanData.BooleanReadData;
 import org.knime.core.columnar.data.ByteData.ByteReadData;
 import org.knime.core.columnar.data.DoubleData.DoubleReadData;
-import org.knime.core.columnar.data.DurationData.DurationReadData;
 import org.knime.core.columnar.data.FloatData.FloatReadData;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.ListData.ListReadData;
-import org.knime.core.columnar.data.LocalDateData.LocalDateReadData;
-import org.knime.core.columnar.data.LocalDateTimeData.LocalDateTimeReadData;
-import org.knime.core.columnar.data.LocalTimeData.LocalTimeReadData;
 import org.knime.core.columnar.data.LongData.LongReadData;
 import org.knime.core.columnar.data.NullableReadData;
-import org.knime.core.columnar.data.PeriodData.PeriodReadData;
 import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StructData.StructReadData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryReadData;
 import org.knime.core.columnar.data.VoidData.VoidReadData;
-import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeReadData;
 import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedStringReadData;
 import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedVarBinaryReadData;
 import org.knime.core.table.schema.ColumnarSchema;
@@ -318,97 +299,6 @@ public class PythonToJavaTypeTest {
         final ValueChecker<StringReadData> valueChecker =
             (data, b, r) -> assertEquals("Row: " + r + ", Batch: " + b, data.getString(r));
         test("string", STRING, valueChecker);
-    }
-
-    /**
-     * Test transfer of a duration column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testDuration() throws Exception {
-        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
-        final ValueChecker<DurationReadData> valueChecker =
-            (data, b, r) -> assertEquals(Duration.ofSeconds(r, b), data.getDuration(r));
-        test("duration", DURATION, valueChecker);
-    }
-
-    /**
-     * Test transfer of a local date column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testLocalDate() throws Exception {
-        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
-        final ValueChecker<LocalDateReadData> valueChecker =
-            (data, b, r) -> assertEquals(LocalDate.ofEpochDay(r + b * 100L), data.getLocalDate(r));
-        test("localdate", LOCALDATE, valueChecker);
-    }
-
-    /**
-     * Test transfer of a local date time column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testLocalDateTime() throws Exception {
-        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
-        final ValueChecker<LocalDateTimeReadData> valueChecker = (data, b, r) -> assertEquals(
-            LocalDateTime.of(LocalDate.ofEpochDay(r + b * 100L), LocalTime.ofNanoOfDay(r * 500L + b)),
-            data.getLocalDateTime(r));
-        test("localdatetime", LOCALDATETIME, valueChecker);
-    }
-
-    /**
-     * Test transfer of a local time column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testLocalTime() throws Exception {
-        final ValueChecker<LocalTimeReadData> valueChecker =
-            (data, b, r) -> assertEquals(LocalTime.ofNanoOfDay(r * 500L + b), data.getLocalTime(r));
-        test("localtime", LOCALTIME, valueChecker);
-    }
-
-    /**
-     * Test transfer of a period column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testPeriod() throws Exception {
-        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
-        final ValueChecker<PeriodReadData> valueChecker =
-            (data, b, r) -> assertEquals(Period.of(r, b % 12, (r + b) % 28), data.getPeriod(r));
-        test("period", PERIOD, valueChecker);
-    }
-
-    /**
-     * Test transfer of a zoned date time column from Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testZonedDateTime() throws Exception {
-        // TODO(extensiontypes) implement a way Python can tell java that the data is of this type
-        final List<String> availableZoneIds = new ArrayList<>(ZoneId.getAvailableZoneIds());
-
-        final ValueChecker<ZonedDateTimeReadData> valueChecker = (data, b, r) -> {
-            final ZoneId zoneId = ZoneId.of(availableZoneIds.get(b % 3));
-            final LocalDateTime localDateTime = LocalDateTime.of( //
-                LocalDate.ofEpochDay(r + b * 100L), //
-                LocalTime.ofNanoOfDay(r * 500L + b) //
-            );
-            assertEquals(ZonedDateTime.of(localDateTime, zoneId), data.getZonedDateTime(r));
-        };
-        test("zoneddatetime", ZONEDDATETIME, valueChecker);
     }
 
     /**

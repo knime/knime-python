@@ -52,31 +52,18 @@ import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
 import static org.knime.core.table.schema.DataSpecs.BYTE;
 import static org.knime.core.table.schema.DataSpecs.DICT_ENCODING;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
-import static org.knime.core.table.schema.DataSpecs.DURATION;
 import static org.knime.core.table.schema.DataSpecs.FLOAT;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LIST;
-import static org.knime.core.table.schema.DataSpecs.LOCALDATE;
-import static org.knime.core.table.schema.DataSpecs.LOCALDATETIME;
-import static org.knime.core.table.schema.DataSpecs.LOCALTIME;
 import static org.knime.core.table.schema.DataSpecs.LONG;
-import static org.knime.core.table.schema.DataSpecs.PERIOD;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 import static org.knime.core.table.schema.DataSpecs.STRUCT;
 import static org.knime.core.table.schema.DataSpecs.VARBINARY;
 import static org.knime.core.table.schema.DataSpecs.VOID;
-import static org.knime.core.table.schema.DataSpecs.ZONEDDATETIME;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,21 +81,15 @@ import org.knime.core.columnar.batch.WriteBatch;
 import org.knime.core.columnar.data.BooleanData.BooleanWriteData;
 import org.knime.core.columnar.data.ByteData.ByteWriteData;
 import org.knime.core.columnar.data.DoubleData.DoubleWriteData;
-import org.knime.core.columnar.data.DurationData.DurationWriteData;
 import org.knime.core.columnar.data.FloatData.FloatWriteData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.columnar.data.ListData.ListWriteData;
-import org.knime.core.columnar.data.LocalDateData.LocalDateWriteData;
-import org.knime.core.columnar.data.LocalDateTimeData.LocalDateTimeWriteData;
-import org.knime.core.columnar.data.LocalTimeData.LocalTimeWriteData;
 import org.knime.core.columnar.data.LongData.LongWriteData;
 import org.knime.core.columnar.data.NullableWriteData;
-import org.knime.core.columnar.data.PeriodData.PeriodWriteData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.columnar.data.StructData.StructWriteData;
 import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
 import org.knime.core.columnar.data.VoidData.VoidWriteData;
-import org.knime.core.columnar.data.ZonedDateTimeData.ZonedDateTimeWriteData;
 import org.knime.core.columnar.data.dictencoding.DictDecodedStringData.DictDecodedStringWriteData;
 import org.knime.core.columnar.data.dictencoding.DictDecodedVarBinaryData.DictDecodedVarBinaryWriteData;
 import org.knime.core.data.columnar.table.DefaultColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
@@ -309,85 +290,6 @@ public class JavaToPythonTypeTest {
         test("string", ColumnarSchema.of(STRING), valueSetter);
     }
 
-    /**
-     * Test transfer of a duration column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testDuration() throws Exception {
-        final ValueSetter<DurationWriteData> valueSetter =
-            (data, b, r) -> data.setDuration(r, Duration.ofSeconds(r, b));
-        test("duration", ColumnarSchema.of(DURATION), valueSetter);
-    }
-
-    /**
-     * Test transfer of a local date column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testLocalDate() throws Exception {
-        final ValueSetter<LocalDateWriteData> valueSetter =
-            (data, b, r) -> data.setLocalDate(r, LocalDate.ofEpochDay(r + b * 100L));
-        test("localdate", ColumnarSchema.of(LOCALDATE), valueSetter);
-    }
-
-    /**
-     * Test transfer of a local date time column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testLocalDateTime() throws Exception {
-        final ValueSetter<LocalDateTimeWriteData> valueSetter = (data, b, r) -> data.setLocalDateTime(r,
-            LocalDateTime.of(LocalDate.ofEpochDay(r + b * 100L), LocalTime.ofNanoOfDay(r * 500L + b)));
-        test("localdatetime", ColumnarSchema.of(LOCALDATETIME), valueSetter);
-    }
-
-    /**
-     * Test transfer of a local time column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testLocalTime() throws Exception {
-        final ValueSetter<LocalTimeWriteData> valueSetter =
-            (data, b, r) -> data.setLocalTime(r, LocalTime.ofNanoOfDay(r * 500L + b));
-        test("localtime", ColumnarSchema.of(LOCALTIME), valueSetter);
-    }
-
-    /**
-     * Test transfer of a period column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testPeriod() throws Exception {
-        final ValueSetter<PeriodWriteData> valueSetter =
-            (data, b, r) -> data.setPeriod(r, Period.of(r, b % 12, (r + b) % 28));
-        test("period", ColumnarSchema.of(PERIOD), valueSetter);
-    }
-
-    /**
-     * Test transfer of a zoned date time column to Python.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testZonedDateTime() throws Exception {
-        final List<String> availableZoneIds = List.of("Etc/Universal", "Asia/Hong_Kong", "America/Los_Angeles");
-
-        final ValueSetter<ZonedDateTimeWriteData> valueSetter = (data, b, r) -> {
-            final var zoneId = ZoneId.of(availableZoneIds.get(r % 3));
-            final var localDateTime = LocalDateTime.of( //
-                LocalDate.ofEpochDay(r + b * 100L), //
-                LocalTime.ofNanoOfDay(r * 1000L) //
-            );
-            data.setZonedDateTime(r, ZonedDateTime.of(localDateTime, zoneId));
-        };
-        test("zoneddatetime", ColumnarSchema.of(ZONEDDATETIME), valueSetter);
-    }
 
     /**
      * Test transfer of a dictionary encoded string column to Python.

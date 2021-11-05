@@ -67,20 +67,14 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.DurationDataSpec;
 import org.knime.core.table.schema.FloatDataSpec;
 import org.knime.core.table.schema.IntDataSpec;
 import org.knime.core.table.schema.ListDataSpec;
-import org.knime.core.table.schema.LocalDateDataSpec;
-import org.knime.core.table.schema.LocalDateTimeDataSpec;
-import org.knime.core.table.schema.LocalTimeDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.PeriodDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.schema.StructDataSpec;
 import org.knime.core.table.schema.VarBinaryDataSpec;
 import org.knime.core.table.schema.VoidDataSpec;
-import org.knime.core.table.schema.ZonedDateTimeDataSpec;
 
 /**
  * Provides default ValueFactories for common DataSpecs.
@@ -122,11 +116,6 @@ public final class DefaultValueFactories {
         }
 
         @Override
-        public Optional<ValueFactory<?, ?>> visit(final DurationDataSpec spec) {
-            return Optional.empty();
-        }
-
-        @Override
         public Optional<ValueFactory<?, ?>> visit(final FloatDataSpec spec) {
             return Optional.empty();
         }
@@ -137,28 +126,8 @@ public final class DefaultValueFactories {
         }
 
         @Override
-        public Optional<ValueFactory<?, ?>> visit(final LocalDateDataSpec spec) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<ValueFactory<?, ?>> visit(final LocalDateTimeDataSpec spec) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<ValueFactory<?, ?>> visit(final LocalTimeDataSpec spec) {
-            return Optional.empty();
-        }
-
-        @Override
         public Optional<ValueFactory<?, ?>> visit(final LongDataSpec spec) {
             return Optional.of(new LongValueFactory());
-        }
-
-        @Override
-        public Optional<ValueFactory<?, ?>> visit(final PeriodDataSpec spec) {
-            return Optional.empty();
         }
 
         @Override
@@ -208,11 +177,6 @@ public final class DefaultValueFactories {
             } else {
                 return null;
             }
-        }
-
-        @Override
-        public Optional<ValueFactory<?, ?>> visit(final ZonedDateTimeDataSpec spec) {
-            return Optional.empty();
         }
 
         @Override
