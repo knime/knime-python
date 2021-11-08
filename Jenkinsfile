@@ -25,6 +25,7 @@ try {
                 repositories: [
                     'knime-chemistry',
                     'knime-database',
+                    'knime-office365',
                     'knime-datageneration',
                     'knime-distance',
                     'knime-ensembles',
