@@ -9,6 +9,26 @@
                PythonClassName="FsLocationValueFactory"
                ValueFactory="org.knime.filehandling.core.data.location.FSLocationValueFactory">
          </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="ZonedDateTimeValueFactory2"
+               ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2">
+         </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="DurationValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.DurationValueFactory">
+         </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="LocalDateTimeValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory">
+         </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="LocalTimeValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.LocalTimeValueFactory">
+         </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="LocalDateValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.LocalDateValueFactory">
+         </PythonValueFactory>
       </Module>
    </extension>
 

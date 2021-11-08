@@ -48,10 +48,7 @@
  */
 package org.knime.python3.arrow.types;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
@@ -59,9 +56,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -110,6 +114,16 @@ import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.time.duration.DurationCellFactory;
+import org.knime.core.data.time.duration.DurationValue;
+import org.knime.core.data.time.localdate.LocalDateCellFactory;
+import org.knime.core.data.time.localdate.LocalDateValue;
+import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.localtime.LocalTimeCellFactory;
+import org.knime.core.data.time.localtime.LocalTimeValue;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.data.v2.RowCursor;
 import org.knime.core.data.v2.RowKeyWriteValue;
 import org.knime.core.data.v2.RowRead;
@@ -119,6 +133,16 @@ import org.knime.core.data.v2.RowWrite;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.WriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.DurationWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalDateTimeWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalDateWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalTimeWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.ZonedDateTimeWriteValue;
+import org.knime.core.data.v2.time.DurationValueFactory;
+import org.knime.core.data.v2.time.LocalDateTimeValueFactory;
+import org.knime.core.data.v2.time.LocalDateValueFactory;
+import org.knime.core.data.v2.time.LocalTimeValueFactory;
+import org.knime.core.data.v2.time.ZonedDateTimeValueFactory2;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
@@ -187,6 +211,21 @@ public class KnimeArrowExtensionTypesTest {
 
 	private static final TypeAndFactory<IntValue, IntWriteValue> INT_TF = TypeAndFactory.create(IntCell.TYPE,
 			new IntValueFactory(), IntWriteValue.class);
+
+	private static final TypeAndFactory<ZonedDateTimeValue, ZonedDateTimeWriteValue> ZONED_DT_TF = TypeAndFactory
+			.create(ZonedDateTimeCellFactory.TYPE, new ZonedDateTimeValueFactory2(), ZonedDateTimeWriteValue.class);
+
+	private static final TypeAndFactory<LocalDateTimeValue, LocalDateTimeWriteValue> LOCAL_DT_TF = TypeAndFactory
+			.create(LocalDateTimeCellFactory.TYPE, new LocalDateTimeValueFactory(), LocalDateTimeWriteValue.class);
+
+	private static final TypeAndFactory<LocalTimeValue, LocalTimeWriteValue> LOCAL_TIME_TF = TypeAndFactory
+			.create(LocalTimeCellFactory.TYPE, new LocalTimeValueFactory(), LocalTimeWriteValue.class);
+
+	private static final TypeAndFactory<DurationValue, DurationWriteValue> DURATION_TF = TypeAndFactory
+			.create(DurationCellFactory.TYPE, new DurationValueFactory(), DurationWriteValue.class);
+
+	private static final TypeAndFactory<LocalDateValue, LocalDateWriteValue> LOCAL_DATE_TF = TypeAndFactory
+			.create(LocalDateCellFactory.TYPE, new LocalDateValueFactory(), LocalDateWriteValue.class);
 
 	/**
 	 * Only OK in this test setting. When used in a workflow, the table id should be
@@ -483,6 +522,75 @@ public class KnimeArrowExtensionTypesTest {
 		// Problem: A missing string in pandas is just None, as is a missing boolean or
 		// most other objects as well
 		testCopySingleMissingCell(STRING_TF, EnumSet.of(CopyPathway.JAVA_PYTHON_JAVA));
+	}
+
+	@Test
+	public void testCopyingSingleZonedDateTimeValue() throws Exception {
+		final var zonedDt = ZonedDateTime.now();
+		// TODO Python's builtin datetime object doesn't support nanoseconds, so we only
+		// get microsecond precision
+		// TODO Pandas has its own Timestamp data type that seems to provide nanosecond
+		// precision
+		testCopySingleCell(//
+				ZONED_DT_TF, //
+				w -> w.setZonedDateTime(zonedDt), //
+//				r -> assertEquals(zonedDt, r.getZonedDateTime()), //
+				r -> assertEquals(0, ChronoUnit.MICROS.between(zonedDt, r.getZonedDateTime())), //
+				EnumSet.allOf(CopyPathway.class)//
+		);
+	}
+
+	@Test
+	public void testCopyingSingleLocalDateTimeValue() throws Exception {
+		final var localDt = LocalDateTime.now();
+		testCopySingleCell(//
+				LOCAL_DT_TF, //
+				w -> w.setLocalDateTime(localDt), //
+//				r -> assertEquals(localDt, r.getLocalDateTime()), //
+				r -> assertEquals(0, ChronoUnit.MICROS.between(localDt, r.getLocalDateTime())), //
+				EnumSet.allOf(CopyPathway.class)//
+		);
+	}
+
+	@Test
+	public void testCopyingSingleLocalTimeValue() throws Exception {
+		final var time = LocalTime.now();
+		testCopySingleCell(//
+				LOCAL_TIME_TF, //
+				w -> w.setLocalTime(time), //
+//				r -> assertEquals(time, r.getLocalTime()), //
+				r -> assertEquals(0, ChronoUnit.MICROS.between(time, r.getLocalTime())),
+				EnumSet.allOf(CopyPathway.class)//
+		);
+	}
+
+	@Test
+	public void testCopyingSingleDurationValue() throws Exception {
+		final var duration = Duration.ofNanos(new Random().nextLong());
+		testCopySingleCell(//
+				DURATION_TF, //
+				w -> w.setDuration(duration), //
+//				r -> assertEquals(duration, r.getDuration()), //
+				r -> assertTrue("Expected: " + duration + " Got: " + r.getDuration(),
+						isWithinMicrosecond(duration, r.getDuration())),
+				EnumSet.allOf(CopyPathway.class)//
+		);
+	}
+
+	private static boolean isWithinMicrosecond(Duration first, Duration second) {
+		var absDiff = first.minus(second).abs();
+		return absDiff.getSeconds() == 0L && absDiff.getNano() < 1000;
+	}
+
+	@Test
+	public void testCopyingSingleLocalDateValue() throws Exception {
+		final var date = LocalDate.now();
+		testCopySingleCell(//
+				LOCAL_DATE_TF, //
+				w -> w.setLocalDate(date), //
+				r -> assertEquals(date, r.getLocalDate()), //
+				EnumSet.allOf(CopyPathway.class)//
+		);
 	}
 
 	private static class TypeAndFactory<D extends DataValue, W extends WriteValue<D>> {
@@ -862,8 +970,8 @@ public class KnimeArrowExtensionTypesTest {
 		final String launcherPath = Paths.get(System.getProperty("user.dir"), "src/test/python", launcherModule)
 				.toString();
 		final PythonPathBuilder builder = PythonPath.builder()//
-			.add(Python3SourceDirectory.getPath()) //
-			.add(Python3ArrowSourceDirectory.getPath());
+				.add(Python3SourceDirectory.getPath()) //
+				.add(Python3ArrowSourceDirectory.getPath());
 		for (final PythonModule module : modules) {
 			builder.add(module.getParentDirectory());
 		}
@@ -871,7 +979,8 @@ public class KnimeArrowExtensionTypesTest {
 		final List<PythonExtension> pyExtensions = new ArrayList<>();
 		pyExtensions.add(PythonArrowExtension.INSTANCE);
 
-		return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions, pythonPath);
+		return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
+				pythonPath);
 	}
 
 	/** Create a Python command from the path in the env var PYTHON3_EXEC_PATH */
