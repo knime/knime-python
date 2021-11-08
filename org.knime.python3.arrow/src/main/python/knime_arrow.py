@@ -59,7 +59,7 @@ from knime_arrow_utils import normalize_index
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
 
-STRUCT_TYPE_VERSION = 0  # must match the version in ArrowStructDataFactory
+STRUCT_TYPE_VERSION = 1  # must match the version in ArrowStructDataFactory
 LIST_TYPE_VERSION = 0  # must match the version in ArrowListDataFactory
 DEFAULT_VERSION = 0  # placeholder for all other primitive types. TODO: needs to be updated if new versions are introduced
 
@@ -104,6 +104,9 @@ def factory_version_for(arrow_type: pa.DataType):
         return "{}[{};]".format(
             LIST_TYPE_VERSION, factory_version_for(arrow_type.value_type)
         )
+
+    if pa.types.is_large_binary(arrow_type) or pa.types.is_int64(arrow_type):
+        return "1"
 
     return f"{DEFAULT_VERSION}"
 
