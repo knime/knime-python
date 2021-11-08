@@ -69,6 +69,9 @@ class PythonValueFactory:
     def needs_conversion(self):
         return True
 
+    def can_convert(self, value):
+        return type(value) == self._compatible_type
+
 
 class FallbackPythonValueFactory(PythonValueFactory):
 
@@ -105,7 +108,7 @@ class PythonValueFactoryBundle:
 
 _java_value_factory_to_bundle = {}
 
-_types_to_bundle = {}
+_bundles = []
 
 
 def register_python_value_factory(
@@ -122,8 +125,8 @@ def register_python_value_factory(
     value_factory_bundle = PythonValueFactoryBundle(
         logical_type, data_spec_json, value_factory, data_traits
     )
-    _types_to_bundle[value_factory.compatible_type] = value_factory_bundle
     _java_value_factory_to_bundle[logical_type] = value_factory_bundle
+    _bundles.append(value_factory_bundle)
 
 
 _fallback_value_factory = FallbackPythonValueFactory()
@@ -136,8 +139,8 @@ def get_converter(logical_type):
         return _fallback_value_factory
 
 
-def get_value_factory_bundle_for_type(dtype):
-    try:
-        return _types_to_bundle[dtype]
-    except KeyError:
-        raise ValueError(f"The type {dtype} is unknown.")
+def get_value_factory_bundle_for_type(value):
+    for bundle in _bundles:
+        if bundle.value_factory.can_convert(value):
+            return bundle
+    raise ValueError(f"The value {value} is not compatible with any registered PythonValueFactory.")

@@ -56,11 +56,8 @@ import numpy as np
 import json
 
 
-def to_extension_type(dtype):
-    # TODO consider more elaborate method for extension type matching e.g. based on value/structure not only type
-    #  this would allow an extension type to claim a value for itself e.g. FSLocationValue could detect
-    #  {'fs_category': 'foo', 'fs_specifier': 'bar', 'path': 'baz'}. Problem: What if multiple types match?
-    factory_bundle = kt.get_value_factory_bundle_for_type(dtype)
+def to_extension_type(value):
+    factory_bundle = kt.get_value_factory_bundle_for_type(value)
     data_traits = factory_bundle.data_traits
     data_spec = factory_bundle.data_spec_json
     is_struct_dict_encoded_value_factory_type = (
@@ -90,7 +87,6 @@ def to_extension_type(dtype):
             struct_dict_encoded_type=struct_dict_encoded_type,
         )
     else:
-        print(factory_bundle.java_value_factory)
         return LogicalTypeExtensionType(
             factory_bundle.value_factory,
             storage_type,
@@ -464,7 +460,6 @@ _primitive_type_map = {
     "int": pa.int32(),
     "long": pa.int64(),
     "void": pa.null()
-    # TODO add date & time dataspecs (see DataSpecSerializer on Java side)
 }
 
 
@@ -578,7 +573,7 @@ def knime_extension_scalar(value):
 
 
 def knime_extension_array(array):
-    dtype = to_extension_type(type(array[0]))
+    dtype = to_extension_type(array[0])
     storage_type = get_storage_type(dtype)
     storage_fn = get_object_to_storage_fn(dtype)
     py_list = [storage_fn(x) for x in array]
