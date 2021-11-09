@@ -49,9 +49,11 @@
 package org.knime.python2.generic;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.util.List;
 
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang.StringUtils;
@@ -97,6 +99,7 @@ abstract class EditorPanel {
      */
     private CompletionProvider createCompletionProvider() {
         final DefaultCompletionProvider provider = new DefaultCompletionProvider() {
+
             @Override
             public List<Completion> getCompletions(final JTextComponent comp) {
                 final List<Completion> providedCompletions = super.getCompletions(comp);
@@ -111,8 +114,20 @@ abstract class EditorPanel {
                 final int line = StringUtils.countMatches(codeBeforeCaret, "\n");
                 // Column = how long is the last line of the code?
                 final int column = codeBeforeCaret.substring(codeBeforeCaret.lastIndexOf('\n') + 1).length();
-                // Add completions from getCompletionsFor()
-                providedCompletions.addAll(getCompletionsFor(this, sourceCode, line, column));
+                final var containingWindow = SwingUtilities.windowForComponent(m_editor);
+                final var normalWindowCursor = containingWindow.getCursor();
+                final var normalEditorCursor = m_editor.getCursor();
+                try {
+                    // Fetching autocomplete suggestions may take a while, so show a loading animation.
+                    final var waitCursor = Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR);
+                    containingWindow.setCursor(waitCursor);
+                    // The editor overrides the standard window cursor, we have to set it separately.
+                    m_editor.setCursor(waitCursor);
+                    providedCompletions.addAll(getCompletionsFor(this, sourceCode, line, column));
+                } finally {
+                    containingWindow.setCursor(normalWindowCursor);
+                    m_editor.setCursor(normalEditorCursor);
+                }
                 return providedCompletions;
             }
         };
