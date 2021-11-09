@@ -51,10 +51,16 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -416,47 +422,34 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     @Override
     protected List<Completion> getCompletionsFor(final CompletionProvider provider, final String sourceCode,
         final int line, final int column) {
-        // This list will be filled from another thread
-        final List<Completion> completions = new ArrayList<Completion>();
-        // If no kernel is running we will simply return the empty list of
-        // completions
         if (getKernelManager() != null) {
             m_lock.lock();
+            final var completionsCallable = new CompletionsCallable();
+            final FutureTask<List<Completion>> completionsFuture = new FutureTask<>(completionsCallable);
             try {
                 final PythonKernelManager kernelManager = getKernelManager();
                 if (kernelManager != null) {
                     kernelManager.autoComplete(sourceCode, line, column, (response, exception) -> {
-                        if (exception == null) {
-                            for (final Map<String, String> completion : response) {
-                                String name = completion.get("name");
-                                final String type = completion.get("type");
-                                String doc = completion.get("doc").trim();
-                                if (type.equals("function")) {
-                                    name += "()";
-                                }
-                                doc = "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
-                                completions.add(new BasicCompletion(provider, name, type, doc));
-                            }
-                        }
-                        synchronized (completions) {
-                            completions.notifyAll();
-                        }
+                        completionsCallable.m_provider = provider;
+                        completionsCallable.m_response = response;
+                        completionsCallable.m_exception = exception;
+                        completionsFuture.run();
                     });
                 }
             } finally {
                 m_lock.unlock();
             }
-            // We have to wait for the other thread to fill the list
-            synchronized (completions) {
-                try {
-                    // Since this is run in Swing's UI thread, we don't want to wait for too long.
-                    completions.wait(2000);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+            try {
+                return completionsFuture.get(5, TimeUnit.SECONDS);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } catch (final ExecutionException ex) {
+                LOGGER.debug(ex);
+            } catch (final TimeoutException ex) { // NOSONAR
+                // Ignore, timeout is to be expected.
             }
         }
-        return completions;
+        return Collections.emptyList();
     }
 
     @Override
@@ -681,6 +674,33 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
         PythonKernelManager getManager() {
             return m_manager;
+        }
+    }
+
+    private static final class CompletionsCallable implements Callable<List<Completion>> {
+
+        private CompletionProvider m_provider;
+
+        private List<Map<String, String>> m_response;
+
+        private Exception m_exception;
+
+        @Override
+        public List<Completion> call() throws Exception {
+            final List<Completion> completions = new ArrayList<>();
+            if (m_exception == null) {
+                for (final Map<String, String> completion : m_response) {
+                    String name = completion.get("name");
+                    final String type = completion.get("type");
+                    String doc = completion.get("doc").trim();
+                    if (type.equals("function")) {
+                        name += "()";
+                    }
+                    doc = "<html><body><pre>" + doc.replace("\n", "<br />") + "</pre></body></html>";
+                    completions.add(new BasicCompletion(m_provider, name, type, doc));
+                }
+            }
+            return completions;
         }
     }
 }
