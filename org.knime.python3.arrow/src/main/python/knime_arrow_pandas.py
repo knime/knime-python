@@ -169,13 +169,13 @@ def _to_storage_data_frame(df: pd.DataFrame, schema: pa.Schema):
 
 
 def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
-    if kat.contains_knime_extension_type(arrow_type):
-        storage_type = kat.get_storage_type(arrow_type)
+    storage_type = kat.get_storage_type(arrow_type)
+    if kat.needs_conversion(arrow_type):
         storage_fn = kat.get_object_to_storage_fn(arrow_type)
         storage_series = pd.Series([storage_fn(x) for x in series])
         return storage_series, storage_type
     else:
-        return series, arrow_type
+        return series, storage_type
 
 
 def arrow_table_to_pandas_df(table: pa.Table) -> pd.DataFrame:

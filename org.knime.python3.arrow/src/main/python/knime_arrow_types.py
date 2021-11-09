@@ -273,6 +273,19 @@ def contains_knime_extension_type(dtype: pa.DataType):
         return False
 
 
+def needs_conversion(dtype: pa.DataType):
+    if kas.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(dtype):
+        return True
+    elif is_value_factory_type(dtype):
+        return dtype.needs_conversion
+    elif is_list_type(dtype):
+        return needs_conversion(dtype.value_type)
+    elif pat.is_struct(dtype):
+        return any(needs_conversion(inner.type) for inner in dtype)
+    else:
+        return False
+
+
 def get_object_to_storage_fn(dtype: pa.DataType):
     """
     Constructs a function that can be used to turn a Python object that corresponds to the provided Arrow type into a
@@ -386,8 +399,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     def encode(self, value):
         return self._converter.encode(value)
 
+    @property
     def needs_conversion(self):
-        return self._converter.needs_conversion()
+        return False if self._converter is None else self._converter.needs_conversion()
 
     @property
     def logical_type(self):
