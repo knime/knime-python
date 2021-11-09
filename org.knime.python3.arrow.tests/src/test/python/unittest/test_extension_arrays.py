@@ -55,6 +55,7 @@ import pyarrow as pa
 
 import pythonpath
 import knime_arrow as ka
+import knime_arrow_struct_dict_encoding as kasde
 
 
 def _random_string_array(
@@ -76,8 +77,8 @@ def _random_string_array(
 
 
 def _struct_dict_encode(data):
-    key_generator = ka.DictKeyGenerator()
-    return ka.struct_dict_encode(pa.array(data), key_generator)
+    key_generator = kasde.DictKeyGenerator()
+    return kasde.struct_dict_encode(pa.array(data), key_generator)
 
 
 class AbstractArrayTest(abc.ABC):
@@ -125,8 +126,7 @@ class AbstractArrayTest(abc.ABC):
         array = self.data_to_array(data)
 
         self.assertListEqual(
-            [v is None for v in data],
-            [not v.is_valid for v in array],
+            [v is None for v in data], [not v.is_valid for v in array],
         )
 
     def test_is_null(self):
@@ -134,8 +134,7 @@ class AbstractArrayTest(abc.ABC):
         array = self.data_to_array(data)
 
         self.assertListEqual(
-            [v is None for v in data],
-            [v.as_py() for v in array.is_null()],
+            [v is None for v in data], [v.as_py() for v in array.is_null()],
         )
 
     def test_nullcount(self):
@@ -238,8 +237,7 @@ class AbstractArrayTest(abc.ABC):
         data = self.create_data(50, False)
         for array_slice, data_slice in self.create_slices(data):
             self.assertListEqual(
-                [v is None for v in data_slice],
-                [not v.is_valid for v in array_slice],
+                [v is None for v in data_slice], [not v.is_valid for v in array_slice],
             )
 
     def test_slice_is_null(self):
@@ -345,8 +343,7 @@ class AbstractArrayTest(abc.ABC):
         data = self.create_data(50, False)
         for array_take, data_take in self.create_takes(data):
             self.assertListEqual(
-                [v is None for v in data_take],
-                [not v.is_valid for v in array_take],
+                [v is None for v in data_take], [not v.is_valid for v in array_take],
             )
 
     def test_take_is_null(self):
@@ -400,35 +397,39 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         return _struct_dict_encode(data)
 
     def expected_type(self):
-        return ka.StructDictEncodedType(pa.string())
+        return kasde.StructDictEncodedType(pa.string())
 
     def test_create_from_list(self):
         self._create_and_check(
-            lambda a, k: ka.struct_dict_encode(a, k, value_type=pa.string())
+            lambda a, k: kasde.struct_dict_encode(a, k, value_type=pa.string())
         )
-        self._create_and_check(lambda a, k: ka.struct_dict_encode(a, k))
+        self._create_and_check(lambda a, k: kasde.struct_dict_encode(a, k))
 
     def test_create_from_numpy(self):
         self._create_and_check(
-            lambda a, k: ka.struct_dict_encode(np.array(a), k, value_type=pa.string())
+            lambda a, k: kasde.struct_dict_encode(
+                np.array(a), k, value_type=pa.string()
+            )
         )
-        self._create_and_check(lambda a, k: ka.struct_dict_encode(np.array(a), k))
+        self._create_and_check(lambda a, k: kasde.struct_dict_encode(np.array(a), k))
 
     def test_create_from_pyarrow(self):
-        self._create_and_check(lambda a, k: ka.struct_dict_encode(pa.array(a), k))
+        self._create_and_check(lambda a, k: kasde.struct_dict_encode(pa.array(a), k))
 
     def _create_and_check(self, create_fn):
-        key_generator = ka.DictKeyGenerator()
+        key_generator = kasde.DictKeyGenerator()
 
         # First array
         array = ["foo", "bar", "foo", "car", "foo", "bar", "foo"]
         dict_encoded = create_fn(array, key_generator)
 
         # General checks
-        self.assertIsInstance(dict_encoded, ka.StructDictEncodedArray)
+        self.assertIsInstance(dict_encoded, kasde.StructDictEncodedArray)
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
-        self.assertEqual(ka.knime_struct_type(pa.uint64(), pa.string()), storage.type)
+        self.assertEqual(
+            kasde.knime_struct_type(pa.uint64(), pa.string()), storage.type
+        )
 
         # Check that the keys are as expected
         keys = storage.flatten()[0].to_pylist()
@@ -443,10 +444,12 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         dict_encoded = create_fn(array, key_generator)
 
         # General checks
-        self.assertIsInstance(dict_encoded, ka.StructDictEncodedArray)
+        self.assertIsInstance(dict_encoded, kasde.StructDictEncodedArray)
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
-        self.assertEqual(ka.knime_struct_type(pa.uint64(), pa.string()), storage.type)
+        self.assertEqual(
+            kasde.knime_struct_type(pa.uint64(), pa.string()), storage.type
+        )
 
         # Check null values
         is_null = dict_encoded.is_null().to_pylist()
