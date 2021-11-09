@@ -50,11 +50,12 @@
 import pyarrow as pa
 import sys
 import pickle
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, TextIO
 import warnings
+from contextlib import redirect_stdout, redirect_stderr
+from io import StringIO
 from py4j.java_collections import ListConverter
 from py4j.java_gateway import JavaClass
-
 
 import knime_arrow_table as kat
 import knime_gateway as kg
@@ -202,11 +203,68 @@ class PythonKernel(kg.EntryPoint):
                     )
             except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
                 warnings.warn("An error occurred while autocompleting.")
-        # TODO: py4j's auto-conversion does not work for some reason. It should be enabled...
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
+
+    def executeOnCurrentThread(self, source_code: str) -> List[str]:
+        return self._execute(source_code)
+
+    def _execute(self, source_code: str) -> List[str]:
+        with redirect_stdout(_CopyingTextIO(sys.stdout)) as stdout, redirect_stderr(
+            _CopyingTextIO(sys.stderr)
+        ) as stderr:
+            exec(source_code, self._workspace)
+        return ListConverter().convert(
+            [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
+        )
 
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]
+
+
+class _CopyingTextIO:
+    """
+    Copies outputs intended for a wrapped output file while mimicking the file. All attribute look-ups except for the
+    ones that are relevant for copying are simply delegated to the original file. Look-ups of magic attributes cannot
+    be delegated. The only remotely relevant magic attributes should be the ones for entering/exiting the runtime
+    context (and even those will most likely not matter in practice).
+    """
+
+    def __init__(self, original: TextIO):
+        self._original = original
+        self._original_context = None
+        self._copy = StringIO()
+
+    def write(self, s):
+        self._get_original().write(s)
+        self._copy.write(s)
+
+    def writelines(self, lines):
+        self._get_original().writelines(lines)
+        self._copy.writelines(lines)
+
+    def flush(self):
+        self._get_original().flush()
+        self._copy.flush()
+
+    def get_copy(self) -> str:
+        return self._copy.getvalue()
+
+    def __enter__(self):
+        self._original_context = self._original.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        suppress = self._original_context.__exit__(exc_type, exc_val, exc_tb)
+        self._original_context = None
+        return suppress
+
+    def __getattr__(self, item):
+        return getattr(self._get_original(), item)
+
+    def _get_original(self):
+        return (
+            self._original if self._original_context is None else self._original_context
+        )
 
 
 if __name__ == "__main__":

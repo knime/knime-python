@@ -385,7 +385,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final long numRows) throws PythonIOException, CanceledExecutionException {
         performCancelable(new PutDataTableTask(name, table, numRows, m_currentOptions.getSerializationOptions()),
-            executionMonitor);
+            new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     @Override
@@ -465,20 +465,19 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new);
     }
 
     @Override
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return performCancelable(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new), cancelable);
     }
 
-    private <T> T performCancelable(final Callable<T> task, final ExecutionMonitor executionMonitor)
+    private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
         try {
-            return PythonUtils.Misc.executeCancelable(task, m_executorService::submit,
-                new PythonExecutionMonitorCancelable(executionMonitor));
+            return PythonUtils.Misc.executeCancelable(task, m_executorService::submit, cancelable);
         } catch (final PythonCanceledExecutionException ex) {
             final var ex1 = new CanceledExecutionException(ex.getMessage());
             ex1.initCause(ex);

@@ -48,10 +48,8 @@
  */
 package org.knime.python3;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Collection;
@@ -107,8 +105,6 @@ public class PythonGateway<T extends PythonEntryPoint> implements AutoCloseable 
         // Create the process
         final ProcessBuilder pb = pythonProcessBuilder;
         Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
-        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         // Set the PYTHONPATH variable to be able to import the Python modules
         pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
 
