@@ -454,13 +454,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new);
     }
 
     @Override
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return performCancelable(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new), cancelable);
     }
 
     @Override

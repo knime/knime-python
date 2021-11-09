@@ -47,15 +47,18 @@
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+import py4j.clientserver
 import pyarrow as pa
 import sys
 import pickle
-from typing import Dict, List, Optional, Tuple, Union, TextIO
+from typing import Any, Callable, Dict, List, Optional, Tuple, TextIO, Union
 import warnings
 from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from py4j.java_collections import ListConverter
 from py4j.java_gateway import JavaClass
+from queue import Full, Queue
+from threading import Event, Lock
 
 import knime_arrow_table as kat
 import knime_gateway as kg
@@ -63,7 +66,38 @@ import knime_gateway as kg
 
 class PythonKernel(kg.EntryPoint):
     def __init__(self):
-        self._workspace = {}  # TODO: should we make this thread safe?
+        self._workspace: Dict[str, Any] = {}  # TODO: should we make this thread safe?
+        self._main_loop_queue: Queue[Optional[_ExecuteTask]] = Queue()
+        self._main_loop_lock = Lock()
+        self._main_loop_stopped = False
+
+    def enter_main_loop(self) -> None:
+        queue = self._main_loop_queue
+        while True:
+            task = queue.get()
+            if task is not None:
+                task.run()
+                queue.task_done()
+            else:
+                # Poison pill, exit loop.
+                queue.task_done()
+                return
+
+    def exit_main_loop(self) -> None:
+        with self._main_loop_lock:
+            self._main_loop_stopped = True
+            queue = self._main_loop_queue
+            # Aggressively try to clear queue and insert poison pill.
+            while True:
+                with queue.all_tasks_done:
+                    queue.queue.clear()
+                    queue.unfinished_tasks = 0
+                try:
+                    queue.put_nowait(None)  # Poison pill
+                except Full:
+                    continue
+                else:
+                    break
 
     def putFlowVariablesIntoWorkspace(self, name: str, java_flow_variables) -> None:
         self._workspace[name] = dict(java_flow_variables)
@@ -205,6 +239,16 @@ class PythonKernel(kg.EntryPoint):
                 warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
+    def executeOnMainThread(self, source_code: str) -> List[str]:
+        with self._main_loop_lock:
+            if self._main_loop_stopped:
+                raise RuntimeError(
+                    "Cannot schedule executions on the main thread after the main loop stopped."
+                )
+            execute_task = _ExecuteTask(self._execute, source_code)
+            self._main_loop_queue.put(execute_task)
+            return execute_task.result()
+
     def executeOnCurrentThread(self, source_code: str) -> List[str]:
         return self._execute(source_code)
 
@@ -219,6 +263,34 @@ class PythonKernel(kg.EntryPoint):
 
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]
+
+
+class _ExecuteTask:
+    def __init__(self, execute_func: Callable[[str], List[str]], source_code: str):
+        self._execute_func = execute_func
+        self._source_code = source_code
+        self._execute_finished = Event()
+        self._result = None
+        self._exception = None
+
+    def run(self):
+        try:
+            self._result = self._execute_func(self._source_code)
+        except Exception as ex:
+            self._exception = ex
+        finally:
+            self._execute_finished.set()
+
+    def result(self) -> List[str]:
+        self._execute_finished.wait()
+        if self._exception is not None:
+            try:
+                raise self._exception
+            finally:
+                # Copied from concurrent.futures._base.Future:
+                # Break a reference cycle with the exception in self._exception
+                self = None
+        return self._result
 
 
 class _CopyingTextIO:
@@ -306,5 +378,13 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    kernel = PythonKernel()
-    kg.connect_to_knime(kernel)
+    try:
+        kernel = PythonKernel()
+        kg.connect_to_knime(kernel)
+        py4j.clientserver.server_connection_stopped.connect(
+            lambda *args, **kwargs: kernel.exit_main_loop()
+        )
+        kernel.enter_main_loop()
+    finally:
+        if kg.client_server is not None:
+            kg.client_server.shutdown()

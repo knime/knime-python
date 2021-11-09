@@ -184,6 +184,16 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
     List<Map<String, String>> autoComplete(String sourceCode, int line, int column);
 
     /**
+     * Implements the functionality required by {@link Python3KernelBackend#execute(String)} and
+     * {@link Python3KernelBackend#execute(String, org.knime.python2.kernel.PythonCancelable)}.
+     *
+     * @param sourceCode The Python code to execute.
+     * @return A list containing the output that the Python process has written to stdout (first element) and stderr
+     *         (second element) while executing the given code.
+     */
+    List<String> executeOnMainThread(String sourceCode);
+
+    /**
      * Implements the functionality required by {@link Python3KernelBackend#executeAsync(String)} and
      * {@link Python3KernelBackend#executeAsync(String, org.knime.python2.kernel.PythonCancelable)}.
      *
