@@ -87,13 +87,12 @@ public interface PythonKernelBackend extends AutoCloseable {
     PythonKernelOptions getOptions();
 
     /**
-     * (Re-)Configures this Python kernel instance according to the given options. Note that this method must be called
-     * at least once before this instance can be used. (When using the deprecated constructor
-     * {@link PythonKernel#PythonKernel(PythonKernelOptions)}, this does not need to be done.)
+     * Configures this Python kernel instance according to the given options. This method is ensured to be called
+     * exactly once by the Python kernel front end.
      * <P>
      * This method ignores the deprecated Python version and command entries of the given options.
      *
-     * @param options The {@link PythonKernelOptions} according to which this kernel instance is (re-)configured.
+     * @param options The {@link PythonKernelOptions} according to which this kernel instance is configured.
      * @throws PythonInstallationTestException If the Python environment represented by the {@link PythonCommand} that
      *             was used to construct this instance does not support the new configuration (e.g., because it lacks
      *             {@link PythonKernelOptions#getAdditionalRequiredModules() required modules}).

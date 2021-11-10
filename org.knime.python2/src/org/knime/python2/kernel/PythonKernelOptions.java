@@ -91,6 +91,7 @@ public class PythonKernelOptions {
     @Deprecated
     private final PythonCommand m_python3Command;
 
+    // @Deprecated in the new kernel back end.
     private final SerializationOptions m_serializationOptions;
 
     private final Set<PythonModuleSpec> m_additionalRequiredModules;
@@ -100,6 +101,8 @@ public class PythonKernelOptions {
     /**
      * Default constructor. Populates the newly constructed instance with default {@link SerializationOptions}, no
      * additional required modules, and an empty external custom path.
+     * <P>
+     * Note that the serialization options will be ignored if using the Python kernel's new back end.
      */
     public PythonKernelOptions() {
         m_pythonVersion = PythonPreferences.getPythonVersionPreference();
@@ -117,7 +120,8 @@ public class PythonKernelOptions {
      * @param python3Command The command to start Python 3. May be {@code null} in which case we resort to
      *            {@link PythonPreferences#getPython3CommandPreference()}.
      * @param serializationOptions Configures the data transfer between Java and a Python kernel configured by these
-     *            options.
+     *            options. Note that the serialization options will be ignored if using the Python kernel's new back
+     *            end.
      * @deprecated The {@link PythonCommand} to use has been separated from {@link PythonKernelOptions} and is now
      *             passed directly to the Python kernel via {@link PythonKernel#PythonKernel(PythonCommand)}. There is
      *             no need to specify the Python version and commands here anymore.
@@ -255,7 +259,8 @@ public class PythonKernelOptions {
     }
 
     /**
-     * @return The options that configure the data transfer between Java and the Python kernel.
+     * @return The options that configure the data transfer between Java and the Python kernel. Note that the
+     *         serialization options will be ignored if using the Python kernel's new back end.
      */
     public SerializationOptions getSerializationOptions() {
         return m_serializationOptions;
@@ -265,7 +270,8 @@ public class PythonKernelOptions {
      * Returns a copy of this instance for the given serialization options. This instance remains unaffected.
      *
      * @param serializationOptions Configures the data transfer between Java and a Python kernel configured by these
-     *            options.
+     *            options. Note that the serialization options will be ignored if using the Python kernel's new back
+     *            end.
      * @return A copy of this options instance with the given value set.
      */
     public PythonKernelOptions forSerializationOptions(final SerializationOptions serializationOptions) {

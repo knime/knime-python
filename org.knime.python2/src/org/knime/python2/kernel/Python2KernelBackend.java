@@ -91,7 +91,6 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.core.util.Pair;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python.typeextension.KnimeToPythonExtension;
@@ -183,6 +182,33 @@ public final class Python2KernelBackend implements PythonKernelBackend {
                 " ms.");
             return Integer.parseInt(defaultTimeout);
         }
+    }
+
+    /**
+     * Tries to locate the directory of the workflow associated with the given node context, for the sake of setting
+     * Python's current working directory.
+     *
+     * @param nodeContext Required to identify the containing workflow.
+     * @param logger Used to log a warning if retrieving the workflow directory failed.
+     * @return The workflow directory. Empty if retrieving the workflow directory failed.
+     */
+    public static Optional<String> getWorkflowDirectoryForSettingWorkingDirectory(final NodeContext nodeContext,
+        final NodeLogger logger) {
+        try {
+            if (nodeContext != null) {
+                final var workflowManager = nodeContext.getWorkflowManager();
+                if (workflowManager != null) {
+                    final ReferencedFile workflowDirRef = workflowManager.getNodeContainerDirectory();
+                    if (workflowDirRef != null) {
+                        return Optional.of(workflowDirRef.getFile().toString());
+                    }
+                }
+            }
+        } catch (final Exception ex) {
+            // Do not propagate exception since setting the CWD is merely for convenience.
+            logger.warn("Python's current working directory could not be set to the workflow directory.", ex);
+        }
+        return Optional.empty();
     }
 
     private final PythonCommand m_command;
@@ -569,24 +595,14 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     }
 
     private void setCurrentWorkingDirToWorkflowDir() {
-        try {
-            final NodeContext nodeContext = m_nodeContextManager.getNodeContext();
-            if (nodeContext != null) {
-                final WorkflowManager workflowManager = nodeContext.getWorkflowManager();
-                if (workflowManager != null) {
-                    final ReferencedFile workflowDirRef = workflowManager.getNodeContainerDirectory();
-                    if (workflowDirRef != null) {
-                        final String workflowDir = "r'" + workflowDirRef.getFile().toString() + "'";
-                        m_commands.execute("import os\n" + //
-                            "import sys\n" + //
-                            "os.chdir(" + workflowDir + ")\n" + //
-                            "sys.path.insert(0, " + workflowDir + ")").get();
-                    }
-                }
-            }
-        } catch (final Exception ex) {
-            // Do not propagate exception since setting the CWD is merely for convenience and not mission critical.
-            LOGGER.warn("Python's current working directory could not be set to the workflow directory.", ex);
+        final Optional<String> workflowDirOptional =
+            getWorkflowDirectoryForSettingWorkingDirectory(m_nodeContextManager.getNodeContext(), LOGGER);
+        if (workflowDirOptional.isPresent()) {
+            final String workflowDir = "r'" + workflowDirOptional.get() + "'";
+            m_commands.execute("import os\n" + //
+                "import sys\n" + //
+                "os.chdir(" + workflowDir + ")\n" + //
+                "sys.path.insert(0, " + workflowDir + ")");
         }
     }
 

@@ -98,6 +98,8 @@ public class PythonKernel implements AutoCloseable {
 
     private final PythonOutputLogger m_defaultStderrListener;
 
+    private boolean m_optionsInitialized = false;
+
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it.
      * <P>
@@ -145,7 +147,8 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
-     * Creates a new Python kernel by starting a Python process and connecting to it.
+     * Creates a new Python kernel by starting a Python process and connecting to it. The instantiated kernel uses the
+     * {@link Python2KernelBackend legacy kernel back end}.
      * <P>
      * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
      * in the background.
@@ -193,13 +196,14 @@ public class PythonKernel implements AutoCloseable {
     }
 
     /**
-     * (Re-)Configures this Python kernel instance according to the given options. Note that this method must be called
-     * at least once before this instance can be used. (When using the deprecated constructor
-     * {@link PythonKernel#PythonKernel(PythonKernelOptions)}, this does not need to be done.)
+     * Configures this Python kernel instance according to the given options. Note that this method must be called
+     * <em>exactly once</em> before this instance can be used. (If using the deprecated constructor
+     * {@link PythonKernel#PythonKernel(PythonKernelOptions)}, it must not be called at all.)
      * <P>
-     * This method ignores the deprecated Python version and command entries of the given options.
+     * This method ignores the deprecated Python version and command entries of the given options. If using the new
+     * kernel back end, it also ignores the serialization options entry.
      *
-     * @param options The {@link PythonKernelOptions} according to which this kernel instance is (re-)configured.
+     * @param options The {@link PythonKernelOptions} according to which this kernel instance is configured.
      * @throws PythonInstallationTestException If the Python environment represented by the {@link PythonCommand} that
      *             was used to construct this instance does not support the new configuration (e.g., because it lacks
      *             {@link PythonKernelOptions#getAdditionalRequiredModules() required modules}).
@@ -207,9 +211,15 @@ public class PythonKernel implements AutoCloseable {
      *             {@link PythonInstallationTestException} described above which subclasses {@link PythonIOException}.
      *             Other possible cases include: if configuring the kernel caused an exception on Python side, or if an
      *             error occurred while communicating with the Python side.
+     * @throws IllegalStateException If this method is called although options have already been set.
      */
     public final void setOptions(final PythonKernelOptions options) throws PythonIOException {
+        if (m_optionsInitialized) {
+            throw new IllegalStateException(
+                "Options have already been initialized. Calling this method again is an implementation error.");
+        }
         m_backend.setOptions(options);
+        m_optionsInitialized = true;
     }
 
     /**

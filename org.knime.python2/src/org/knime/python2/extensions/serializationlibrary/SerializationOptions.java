@@ -56,12 +56,15 @@ import org.knime.python2.prefs.PythonPreferences;
  * replaced by a sentinel value in order to avoid automatic conversion to double on Python side. The sentinel may be
  * replaced with missing values for data coming from Python.
  * <P>
+ * Note that the serialization options will be ignored if using the Python kernel's new back end.
+ * <P>
  * Implementation note: This class is intended to be immutable.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
+// @Deprecated in the new kernel back end.
 public class SerializationOptions {
 
     /**

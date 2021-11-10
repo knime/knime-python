@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
+import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 
@@ -63,6 +64,22 @@ import org.knime.python3.PythonEntryPoint;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public interface Python3KernelBackendProxy extends PythonEntryPoint {
+
+    /**
+     * Implements the functionality required by the part of {@link Python3KernelBackend#setOptions(PythonKernelOptions)}
+     * that deals with {@link PythonKernelOptions#getExternalCustomPath()}.
+     *
+     * @param externalCustomPath The additional path to include in Python's module path.
+     */
+    void initializeExternalCustomPath(String externalCustomPath);
+
+    /**
+     * Implements the functionality required by the part of {@link Python3KernelBackend#setOptions(PythonKernelOptions)}
+     * that is responsible for setting Python's working directory to the workflow directory.
+     *
+     * @param workingDirectoryPath
+     */
+    void initializeCurrentWorkingDirectory(String workingDirectoryPath);
 
     /**
      * Implements the functionality required by

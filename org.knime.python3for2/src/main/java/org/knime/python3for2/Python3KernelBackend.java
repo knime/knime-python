@@ -63,6 +63,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -104,6 +105,7 @@ import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.NodeContextManager;
+import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
@@ -127,6 +129,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -169,6 +172,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build());
 
     /**
+     * Initialized by {@link #setOptions(PythonKernelOptions)}.
+     */
+    private PythonKernelOptions m_currentOptions;
+
+    /**
      * Properly initialized by {@link #setOptions(PythonKernelOptions)}. Holds the node context that was active at the
      * time when that method was called (if any).
      */
@@ -183,8 +191,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private final Set<IFileStoreHandler> m_temporaryFsHandlers = new HashSet<>(1);
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
-
-    private PythonKernelOptions m_currentOptions;
 
     /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
@@ -254,9 +260,25 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public void setOptions(final PythonKernelOptions options) throws PythonIOException {
+        // TODO: in-kernel installation test
         m_currentOptions = options;
         m_nodeContextManager.setNodeContext(NodeContext.getContext());
-        throw new IllegalStateException("not yet implemented"); // TODO: NYI
+        initializeExternalCustomPath(options.getExternalCustomPath());
+        initializeCurrentWorkingDirToWorkflowDir();
+    }
+
+    private void initializeExternalCustomPath(final String externalCustomPath) {
+        if (!Strings.isNullOrEmpty(externalCustomPath)) {
+            m_proxy.initializeExternalCustomPath(externalCustomPath);
+        }
+    }
+
+    private void initializeCurrentWorkingDirToWorkflowDir() {
+        final Optional<String> workflowDir = Python2KernelBackend
+            .getWorkflowDirectoryForSettingWorkingDirectory(m_nodeContextManager.getNodeContext(), LOGGER);
+        if (workflowDir.isPresent()) {
+            m_proxy.initializeCurrentWorkingDirectory(workflowDir.get());
+        }
     }
 
     @Override

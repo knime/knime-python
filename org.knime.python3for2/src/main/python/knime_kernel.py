@@ -47,6 +47,7 @@
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+import os
 import py4j.clientserver
 import pyarrow as pa
 import sys
@@ -70,6 +71,26 @@ class PythonKernel(kg.EntryPoint):
         self._main_loop_queue: Queue[Optional[_ExecuteTask]] = Queue()
         self._main_loop_lock = Lock()
         self._main_loop_stopped = False
+        self._external_custom_path_initialized = False
+        self._working_dir_initialized = False
+
+    def initializeExternalCustomPath(self, external_custom_path: str) -> None:
+        if self._external_custom_path_initialized:
+            raise RuntimeError(
+                "External custom path has already been initialized. "
+                "Calling this method again is an implementation error."
+            )
+        sys.path.append(external_custom_path)
+        self._external_custom_path_initialized = True
+
+    def initializeCurrentWorkingDirectory(self, working_directory_path: str) -> None:
+        if self._working_dir_initialized:
+            raise RuntimeError(
+                "Working directory has already been initialized. Calling this method again is an implementation error."
+            )
+        os.chdir(working_directory_path)
+        sys.path.insert(0, working_directory_path)
+        self._working_dir_initialized = True
 
     def enter_main_loop(self) -> None:
         queue = self._main_loop_queue
