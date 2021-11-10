@@ -100,7 +100,9 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.Pair;
+import org.knime.core.util.Version;
 import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
@@ -143,6 +145,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public final class Python3KernelBackend implements PythonKernelBackend {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(Python3KernelBackend.class);
+
+    private static final List<PythonModuleSpec> REQUIRED_MODULES =
+        List.of(new PythonModuleSpec("py4j"), new PythonModuleSpec("pyarrow", new Version(5, 0, 0), true));
 
     private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
         Boolean.class, //
@@ -219,8 +224,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         try {
             m_command = command;
 
-            // TODO: perform an in-kernel installation test. We do not want to spawn an extra Python process just for
-            // testing. Instead, make testing part of launcher. Keep dependencies of launcher completely optional.
+            // TODO: perform installation testing in the running process. We do not want to spawn an extra Python
+            // process just for testing. Instead, make testing part of launching the process.
+            PythonKernel.testInstallation(command, REQUIRED_MODULES);
 
             final String launcherPath = Python3for2SourceDirectory.getPath().resolve("knime_kernel.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
@@ -276,7 +282,10 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public void setOptions(final PythonKernelOptions options) throws PythonIOException {
-        // TODO: in-kernel installation test
+        // TODO: perform installation testing in the running process. We do not want to spawn an extra Python process
+        // just for testing. At this point, we can even communicate the test requirements and test results via py4j.
+        PythonKernel.testInstallation(m_command, options.getAdditionalRequiredModules());
+
         m_currentOptions = options;
         m_nodeContextManager.setNodeContext(NodeContext.getContext());
         initializeExternalCustomPath(options.getExternalCustomPath());

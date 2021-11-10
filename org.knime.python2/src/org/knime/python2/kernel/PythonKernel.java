@@ -80,7 +80,16 @@ public class PythonKernel implements AutoCloseable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernel.class);
 
-    static void testInstallation(final PythonCommand command,
+    /**
+     * Tests if Python can be started using the given Python command and if all given required custom modules are
+     * implemented in the Python installation corresponding to the command.
+     *
+     * @param command The command to test.
+     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
+     *            for the caller to work properly, must not be {@code null} but may be empty.
+     * @throws PythonInstallationTestException The results of the installation test.
+     */
+    public static void testInstallation(final PythonCommand command,
         final Collection<PythonModuleSpec> additionalRequiredModules) throws PythonInstallationTestException {
         final PythonKernelTestResult testResult = command.getPythonVersion() == PythonVersion.PYTHON3
             ? PythonKernelTester.testPython3Installation(command, additionalRequiredModules, false)
