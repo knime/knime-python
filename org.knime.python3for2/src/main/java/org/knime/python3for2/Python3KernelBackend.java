@@ -163,7 +163,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final PythonOutputListeners m_outputListeners;
 
-    private final Python3KernelBackendProxy m_proxy;
+    /**
+     * Set to {@code null} in {@link #close()} just to make sure that any Java instances that have been referenced by
+     * the Python side (and therefore by py4j on the Java side) can be garbage collected in a timely manner.
+     */
+    private /* final */ Python3KernelBackendProxy m_proxy;
 
     /**
      * Used to make kernel operations cancelable.
@@ -212,38 +216,47 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             throw new IllegalArgumentException("The new Python kernel back end does not support Python 2 anymore. If " +
                 "you still want to use Python 2, please change your settings to use the legacy kernel back end.");
         }
-        m_command = command;
+        try {
+            m_command = command;
 
-        // TODO: perform an in-kernel installation test. We do not want to spawn an extra Python process just for
-        // testing. Instead, make testing part of launcher. Keep dependencies of launcher completely optional.
+            // TODO: perform an in-kernel installation test. We do not want to spawn an extra Python process just for
+            // testing. Instead, make testing part of launcher. Keep dependencies of launcher completely optional.
 
-        final String launcherPath = Python3for2SourceDirectory.getPath().resolve("knime_kernel.py").toString();
-        final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
-        final PythonPath pythonPath = new PythonPathBuilder() //
-            .add(Python3SourceDirectory.getPath()) //
-            .add(Python3ArrowSourceDirectory.getPath()) //
-            .add(Python3for2SourceDirectory.getPath()) //
-            .build();
+            final String launcherPath = Python3for2SourceDirectory.getPath().resolve("knime_kernel.py").toString();
+            final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
+            final PythonPath pythonPath = new PythonPathBuilder() //
+                .add(Python3SourceDirectory.getPath()) //
+                .add(Python3ArrowSourceDirectory.getPath()) //
+                .add(Python3for2SourceDirectory.getPath()) //
+                .build();
 
-        m_gateway = new PythonGateway<>(command.createProcessBuilder(), launcherPath, Python3KernelBackendProxy.class,
-            extensions, pythonPath);
+            m_gateway = new PythonGateway<>(command.createProcessBuilder(), launcherPath,
+                Python3KernelBackendProxy.class, extensions, pythonPath);
 
-        @SuppressWarnings("resource") // Will be closed along with gateway.
-        final InputStream stdoutStream = m_gateway.getStandardOutputStream();
-        @SuppressWarnings("resource") // Will be closed along with gateway.
-        final InputStream stderrStream = m_gateway.getStandardErrorStream();
-        m_outputListeners = new PythonOutputListeners(stdoutStream, stderrStream, m_nodeContextManager);
-        m_outputListeners.startListening();
+            @SuppressWarnings("resource") // Will be closed along with gateway.
+            final InputStream stdoutStream = m_gateway.getStandardOutputStream();
+            @SuppressWarnings("resource") // Will be closed along with gateway.
+            final InputStream stderrStream = m_gateway.getStandardErrorStream();
+            m_outputListeners = new PythonOutputListeners(stdoutStream, stderrStream, m_nodeContextManager);
+            m_outputListeners.startListening();
 
-        m_proxy = m_gateway.getEntryPoint();
-        final Python3KernelBackendProxy.Callback callback =
-            knimeUrl -> Python2KernelBackend.resolveKnimeUrl(knimeUrl, m_nodeContextManager);
-        m_proxy.initializeJavaCallback(callback);
+            m_proxy = m_gateway.getEntryPoint();
+            final Python3KernelBackendProxy.Callback callback =
+                knimeUrl -> Python2KernelBackend.resolveKnimeUrl(knimeUrl, m_nodeContextManager);
+            m_proxy.initializeJavaCallback(callback);
 
-        // TODO: Allow users to enable debugging via VM argument? We want devs to be able to debug their Python code
-        // outside of eclipse using only KNIME + their favorite Python editor.
-        // TODO: Also figure out how we can support debugpy in addition to pydev.
-        // m_proxy.enableDebugging();
+            // TODO: Allow users to enable debugging via VM argument? We want devs to be able to debug their Python code
+            // outside of eclipse using only KNIME + their favorite Python editor.
+            // TODO: Also figure out how we can support debugpy in addition to pydev.
+            // m_proxy.enableDebugging();
+        } catch (final Throwable th) { // NOSONAR We cannot risk leaking the Python process or any other held resources.
+            close();
+            if (th instanceof Error || th instanceof IOException) {
+                throw th;
+            } else {
+                throw new IOException(th);
+            }
+        }
     }
 
     @Override
@@ -530,6 +543,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             new Thread(() -> {
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
+                m_proxy = null;
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
                 synchronized (m_temporaryFsHandlers) {
                     PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
