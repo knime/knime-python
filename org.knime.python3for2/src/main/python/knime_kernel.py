@@ -44,6 +44,7 @@
 
 """
 @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+@author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
 import pyarrow as pa
@@ -71,6 +72,15 @@ class PythonKernel(kg.EntryPoint):
             # The first column of a KNIME table is interpreted as its index (row keys).
             data_frame.set_index(data_frame.columns[0], inplace=True)
             self._workspace[variable_name] = data_frame
+
+    def writeImageToPath(
+        self,
+        image_name: str,
+        path: str,
+    ) -> None:
+        image = self._workspace[image_name]
+        with open(path, "wb") as file:
+            file.write(image)
 
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]

@@ -48,7 +48,9 @@
 
 import math
 import unittest
+import pandas as pd
 from typing import Optional, Union
+from io import BytesIO
 
 import knime_gateway as kg
 from knime_kernel import PythonKernel
@@ -67,6 +69,18 @@ class Python3KernelBackendProxyTestRunner(kg.EntryPoint):
         )
         # TextTestRunner returns test results of type TextTestResult.
         return PythonTestResult(unittest.TextTestRunner(verbosity=0).run(suite))
+
+    def testWriteImageToPath(self, img_type: str, path: str) -> None:
+        data = range(0, 100)
+        df = pd.DataFrame({"x": data, "y": data})
+        buffer = BytesIO()
+        # Create plot and write it into the buffer
+        df.plot().get_figure().savefig(buffer, format=img_type)
+        # The output is the content of the buffer
+        img_data = buffer.getvalue()
+        kernel = PythonKernel()
+        kernel._workspace["img"] = img_data
+        kernel.writeImageToPath("img", path)
 
 
 class PutTableIntoWorkspaceTest(unittest.TestCase):
@@ -156,11 +170,6 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
             pass
         if not is_nan:
             self.fail(f"{obj} is not {math.nan}")
-
-    class Java:
-        implements = [
-            "org.knime.python3for2.Python3KernelBackendProxyTest.Python3KernelBackendProxyTestRunner"
-        ]
 
 
 kg.connect_to_knime(Python3KernelBackendProxyTestRunner())

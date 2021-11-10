@@ -46,12 +46,14 @@
 
 package org.knime.python3for2;
 
+import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LONG;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -74,6 +76,8 @@ import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.columnar.data.LongData.LongWriteData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.util.FileUtil;
+import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSource;
@@ -126,14 +130,33 @@ public class Python3KernelBackendProxyTest {
 
     @Test
     public void testPutTableIntoWorkspace() throws IOException {
-        try (final PythonGateway<Python3KernelBackendProxyTestRunner> gateway = openPythonGateway()) {
-            try (final ArrowBatchReadStore store = createTestStore()) {
-                final PythonArrowDataSource dataSource = PythonArrowDataUtils.createSource(store, COLUMN_NAMES);
-                final PythonTestResult testResult = gateway.getEntryPoint().testPutTableIntoWorkspace(dataSource);
-                if (!testResult.wasSuccessful()) {
-                    throw new AssertionError(testResult.getFailureReport());
-                }
+        try (final PythonGateway<Python3KernelBackendProxyTestRunner> gateway = openPythonGateway();
+                final ArrowBatchReadStore store = createTestStore()) {
+            final PythonArrowDataSource dataSource = PythonArrowDataUtils.createSource(store, COLUMN_NAMES);
+            final PythonTestResult testResult = gateway.getEntryPoint().testPutTableIntoWorkspace(dataSource);
+            if (!testResult.wasSuccessful()) {
+                throw new AssertionError(testResult.getFailureReport());
             }
+        }
+    }
+
+    @Test
+    public void testGetImageFromWorkspace() throws IOException {
+        testGetImageFromWorkspace("png");
+        testGetImageFromWorkspace("svg");
+    }
+
+    public void testGetImageFromWorkspace(final String type) throws IOException {
+        try (final PythonGateway<Python3KernelBackendProxyTestRunner> gateway = openPythonGateway()) {
+            var tempDir = FileUtil.createTempDir("images");
+            var imgPath = tempDir.toPath().resolve("image");
+            gateway.getEntryPoint().testWriteImageToPath(type, imgPath.toAbsolutePath().toString());
+            var imgContainer = PythonKernelBackendUtils.createImage(() -> Files.newInputStream(imgPath));
+            if (type.equals("svg")) {
+                assertTrue(imgContainer.hasSvgDocument());
+            }
+            var img = imgContainer.getBufferedImage();
+            assertTrue(img.getHeight() > 0);
         }
     }
 
@@ -202,5 +225,7 @@ public class Python3KernelBackendProxyTest {
     public interface Python3KernelBackendProxyTestRunner extends PythonEntryPoint {
 
         PythonTestResult testPutTableIntoWorkspace(PythonDataSource tableDataSource);
+
+        PythonTestResult testWriteImageToPath(final String imgType, final String path);
     }
 }

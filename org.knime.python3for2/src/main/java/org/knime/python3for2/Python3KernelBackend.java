@@ -48,6 +48,7 @@
  */
 package org.knime.python3for2;
 
+import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,6 +90,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
@@ -102,6 +104,7 @@ import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonInstallationTestException;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelBackend;
+import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListeners;
@@ -298,13 +301,25 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public ImageContainer getImage(final String name) throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        File tempDir = null;
+        try {
+            tempDir = FileUtil.createTempDir("images");
+            var imgPath = tempDir.toPath().resolve("image");
+            m_proxy.writeImageFromWorkspaceToPath(name, imgPath.toAbsolutePath().toString());
+            return PythonKernelBackendUtils.createImage(() -> Files.newInputStream(imgPath));
+        } catch (IOException ex) {
+            throw new PythonIOException(ex);
+        } finally {
+            if (tempDir != null) {
+                FileUtil.deleteRecursively(tempDir);
+            }
+        }
     }
 
     @Override
     public ImageContainer getImage(final String name, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return performCancelable(() -> getImage(name), executionMonitor);
     }
 
     @Override
@@ -513,4 +528,5 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             }
         }
     }
+
 }

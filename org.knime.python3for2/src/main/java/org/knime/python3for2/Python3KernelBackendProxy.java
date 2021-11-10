@@ -101,4 +101,12 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param sentinelValue A fixed integer sentinel value (corresponds to {@link SentinelOption#CUSTOM}).
      */
     void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows, int sentinelValue);
+
+    /**
+     * Writes the image with the provided name to the provided path.
+     *
+     * @param imageName name of the variable that holds the image
+     * @param path to write the image to
+     */
+    void writeImageFromWorkspaceToPath(String imageName, String path);
 }
