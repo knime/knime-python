@@ -299,8 +299,9 @@ class ArrowDataSource:
 class ArrowDataSink:
     """A class writing record batches to a file to be read by KNIME."""
 
-    # TODO: make this dependent on the size of the contained data
-    _MAX_NUM_ROWS_PER_BATCH = 10000
+    _MAX_NUM_BYTES_PER_BATCH = (
+        1 << 64
+    )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor
 
     def __init__(self, java_data_sink) -> None:
         self._java_data_sink = java_data_sink
@@ -316,27 +317,39 @@ class ArrowDataSink:
         self.close()
         return False
 
-    def write(self, b: Union[pa.RecordBatch, pa.Table]):
+    def write(self, data: Union[pa.RecordBatch, pa.Table]):
         """
         Writes the given batch or table to the sink. 
         Tables are split into chunks if they are too large.
+        Empty batches or tables are ignored.
         """
+
+        if len(data) == 0:
+            return
+
         if not hasattr(self, "_writer"):
             # Init the writer if this is the first batch
             # Also use the offset returned by the init method because the file position
             # is not updated yet
-            offset = self._init_writer(schema_with_knime_metadata(b.schema, len(b)))
+            offset = self._init_writer(
+                schema_with_knime_metadata(data.schema, len(data))
+            )
         else:
-            # Remember the current file location
             offset = self._file.tell()
 
-        if isinstance(b, pa.RecordBatch):
-            self._writer.write_batch(b)
+        if isinstance(data, pa.RecordBatch):
+            batches = [data]
         else:
-            self._writer.write_table(b, max_chunksize=self._MAX_NUM_ROWS_PER_BATCH)
-        self._file.flush()
-        self._java_data_sink.reportBatchWritten(offset)
-        self._size += b.num_rows
+            desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
+            num_rows_per_batch = int(len(data) // desired_num_batches)
+            batches = data.to_batches(max_chunksize=num_rows_per_batch)
+
+        for i, batch in enumerate(batches):
+            self._writer.write_batch(batch)
+            self._file.flush()
+            self._java_data_sink.reportBatchWritten(offset)
+            self._size += batch.num_rows
+            offset = self._file.tell()
 
     def _init_writer(self, schema: pa.Schema):
         # Create the writer
