@@ -51,7 +51,6 @@ package org.knime.python2.kernel;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -77,10 +76,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.imageio.ImageIO;
-
-import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
-import org.apache.batik.util.XMLResourceDescriptor;
 import org.apache.commons.lang.SystemUtils;
 import org.knime.core.data.container.CloseableRowIterator;
 import org.knime.core.internal.ReferencedFile;
@@ -133,7 +128,6 @@ import org.knime.python2.kernel.messaging.Message;
 import org.knime.python2.kernel.messaging.TaskHandler;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.util.PythonUtils;
-import org.w3c.dom.svg.SVGDocument;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -1063,12 +1057,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         try {
             final byte[] bytes = m_commands.getImage(name).get();
             if (bytes != null) {
-                final String string = new String(bytes, "UTF-8");
-                if (string.startsWith("<?xml")) {
-                    return new ImageContainer(stringToSVG(string));
-                } else {
-                    return new ImageContainer(ImageIO.read(new ByteArrayInputStream(bytes)));
-                }
+                return PythonKernelBackendUtils.createImage(() -> new ByteArrayInputStream(bytes));
             } else {
                 return null;
             }
@@ -1087,21 +1076,6 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
-        }
-    }
-
-    /**
-     * Convert a string containing the XML content of a svg image to a {@link SVGDocument}.
-     *
-     * @param svgString a string containing the XML content of a svg image
-     * @return a {@link SVGDocument}
-     * @throws PythonIOException if the svg file cannot be created or written
-     */
-    private static SVGDocument stringToSVG(final String svgString) throws IOException {
-        try (final StringReader reader = new StringReader(svgString);) {
-            final String parser = XMLResourceDescriptor.getXMLParserClassName();
-            final SAXSVGDocumentFactory f = new SAXSVGDocumentFactory(parser);
-            return f.createSVGDocument("file:/file.svg", reader);
         }
     }
 
