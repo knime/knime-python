@@ -267,7 +267,7 @@ class ArrowDataSource:
 
         # TODO use arrow's built-in conversion whenever possible
         arrow_table = self.to_arrow_table()
-        return knime_arrow_pandas.arrow_table_to_pandas_df(arrow_table)
+        return knime_arrow_pandas.arrow_data_to_pandas_df(arrow_table)
 
     def to_arrow_table(self, num_rows: Optional[int] = None) -> pa.Table:
         # TODO: num_rows could also be generalized by making the entire data source sliceable (at least in terms of

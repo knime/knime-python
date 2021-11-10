@@ -42,6 +42,7 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
+from typing import Union
 import pyarrow as pa
 import knime_gateway as kg
 import knime_types as kt
@@ -50,22 +51,18 @@ import pandas as pd
 import numpy as np
 
 
-def pandas_df_to_arrow_table(data_frame: pd.DataFrame) -> pa.Table:
+def pandas_df_to_arrow(
+    data_frame: pd.DataFrame, to_batch=False
+) -> Union[pa.Table, pa.RecordBatch]:
     schema = _extract_schema(data_frame)
     # pyarrow doesn't allow to customize the conversion from pandas, so we convert the corresponding columns to storage
     # format in the pandas DataFrame
     storage_df, storage_schema = _to_storage_data_frame(data_frame, schema)
-    arrow_table = pa.table(storage_df, schema=storage_schema)
-    return kat.storage_table_to_extension_table(arrow_table, schema)
-
-
-def pandas_df_to_arrow_batch(data_frame: pd.DataFrame) -> pa.RecordBatch:
-    schema = _extract_schema(data_frame)
-    # pyarrow doesn't allow to customize the conversion from pandas, so we convert the corresponding columns to storage
-    # format in the pandas DataFrame
-    storage_df, storage_schema = _to_storage_data_frame(data_frame, schema)
-    arrow_batch = pa.RecordBatch.from_pandas(storage_df, schema=storage_schema)
-    return kat.storage_batch_to_extension_batch(arrow_batch, schema)
+    if to_batch:
+        arrow_data = pa.RecordBatch.from_pandas(storage_df, schema=storage_schema)
+    else:
+        arrow_data = pa.table(storage_df, schema=storage_schema)
+    return kat.storage_to_extension(arrow_data, schema)
 
 
 def _extract_schema(data_frame: pd.DataFrame):
@@ -178,27 +175,15 @@ def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
         return series, storage_type
 
 
-def arrow_table_to_pandas_df(table: pa.Table) -> pd.DataFrame:
+def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:
     logical_columns = [
         i
-        for i, field in enumerate(table.schema)
+        for i, field in enumerate(data.schema)
         if kat.contains_knime_extension_type(field.type)
     ]
-    storage_table = kat.to_storage_table(table)
-    storage_df = storage_table.to_pandas()
-    _encode_df(storage_df, logical_columns, table.schema)
-    return storage_df
-
-
-def arrow_batch_to_pandas_df(batch: pa.RecordBatch) -> pd.DataFrame:
-    logical_columns = [
-        i
-        for i, field in enumerate(batch.schema)
-        if kat.contains_knime_extension_type(field.type)
-    ]
-    storage_batch = kat.to_storage_batch(batch)
-    storage_df = storage_batch.to_pandas()
-    _encode_df(storage_df, logical_columns, batch.schema)
+    storage_data = kat.to_storage_data(data)
+    storage_df = storage_data.to_pandas()
+    _encode_df(storage_df, logical_columns, data.schema)
     return storage_df
 
 
@@ -206,5 +191,5 @@ def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
     for i in logical_columns:
         field = schema.field(i)
         t = field.type
-        if t.needs_conversion():
+        if t.needs_conversion:
             df[field.name] = df[field.name].apply(t.decode)

@@ -70,7 +70,7 @@ class ArrowBatch(kta.Batch):
             import knime_arrow_pandas as kap
 
             self._pandas_df = df
-            self._batch = kap.pandas_df_to_arrow_batch(df)
+            self._batch = kap.pandas_df_to_arrow(df, to_batch=True)
         elif "record_batch" in kwargs:
             self._batch = kwargs["record_batch"]
         else:
@@ -89,7 +89,7 @@ class ArrowBatch(kta.Batch):
     def to_pandas(self, *args, **kwargs) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_batch_to_pandas_df(self.to_pyarrow(*args, **kwargs))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(*args, **kwargs))
 
     def to_pyarrow(
         self,
@@ -135,7 +135,7 @@ class ArrowReadTable(kta.ReadTable):
     def to_pandas(self, *args, **kwargs) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_table_to_pandas_df(self.to_pyarrow(*args, **kwargs))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(*args, **kwargs))
 
     def to_pyarrow(
         self,

@@ -49,6 +49,8 @@ Arrow implementation of the knime_types.
 """
 
 from typing import Optional, Union
+
+from pandas.core.algorithms import isin
 import knime_types as kt
 import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
@@ -196,26 +198,24 @@ def _create_list_array(offsets, values):
         return pa.ListArray.from_arrays(offsets, values)
 
 
-def to_storage_table(table: pa.Table) -> pa.Table:
+def to_storage_data(
+    data: Union[pa.Table, pa.RecordBatch]
+) -> Union[pa.Table, pa.RecordBatch]:
+    if not isinstance(data, pa.Table) and not isinstance(data, pa.RecordBatch):
+        raise ValueError(
+            "Can only convert pyarrow Tables and RecordBatches to storage types"
+        )
     arrays = []
     fields = []
-    for i, field in enumerate(table.schema):
-        compatible_array = _to_storage_array(table.column(i))
+    for i, field in enumerate(data.schema):
+        compatible_array = _to_storage_array(data.column(i))
         arrays.append(compatible_array)
         fields.append(field.with_type(compatible_array.type))
     schema = pa.schema(fields)
-    return pa.table(arrays, schema=schema)
-
-
-def to_storage_batch(batch: pa.RecordBatch) -> pa.RecordBatch:
-    arrays = []
-    fields = []
-    for i, field in enumerate(batch.schema):
-        compatible_array = _to_storage_array(batch.column(i))
-        arrays.append(compatible_array)
-        fields.append(field.with_type(compatible_array.type))
-    schema = pa.schema(fields)
-    return pa.RecordBatch.from_arrays(arrays, schema=schema)
+    if isinstance(data, pa.Table):
+        return pa.table(arrays, schema=schema)
+    else:
+        return pa.RecordBatch.from_arrays(arrays, schema=schema)
 
 
 def _to_storage_array(array: pa.Array) -> pa.Array:
@@ -336,35 +336,24 @@ def get_storage_type(dtype: pa.DataType):
         return dtype
 
 
-def storage_table_to_extension_table(
-    table: pa.Table, schema_with_ext_types: pa.Schema
-) -> pa.Table:
-    for i, name in enumerate(schema_with_ext_types.names):
-        potential_ext_type = schema_with_ext_types.types[i]
-        if table.schema.types[i] != potential_ext_type:
-            assert potential_ext_type is not None
-            ext_array = _apply_to_array(
-                table.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
-            )
-            table = table.set_column(i, schema_with_ext_types.field(i), ext_array)
-    return table
-
-
-def storage_batch_to_extension_batch(
-    batch: pa.RecordBatch, schema_with_ext_types: pa.Schema
-) -> pa.RecordBatch:
+def storage_to_extension(
+    data: Union[pa.Table, pa.RecordBatch], schema_with_ext_types: pa.Schema
+) -> Union[pa.Table, pa.RecordBatch]:
     arrays = []
     for i, name in enumerate(schema_with_ext_types.names):
         potential_ext_type = schema_with_ext_types.types[i]
-        if batch.schema.types[i] != potential_ext_type:
+        if data.schema.types[i] != potential_ext_type:
             assert potential_ext_type is not None
             ext_array = _apply_to_array(
-                batch.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
+                data.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
             )
             arrays.append(ext_array)
         else:
-            arrays.append(batch.column(i))
-    return pa.RecordBatch.from_arrays(arrays, schema=schema_with_ext_types)
+            arrays.append(data.column(i))
+    if isinstance(data, pa.Table):
+        return pa.Table.from_arrays(arrays, schema=schema_with_ext_types)
+    else:
+        return pa.RecordBatch.from_arrays(arrays, schema=schema_with_ext_types)
 
 
 def _replace_sentinels_in_table(table: pa.Table, sentinel: Union[str, int]) -> pa.Table:
@@ -542,7 +531,7 @@ _primitive_type_map = {
     "float": pa.float32(),
     "int": pa.int32(),
     "long": pa.int64(),
-    "void": pa.null()
+    "void": pa.null(),
 }
 
 
