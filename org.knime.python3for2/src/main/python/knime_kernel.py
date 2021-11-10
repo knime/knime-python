@@ -73,6 +73,22 @@ class PythonKernel(kg.EntryPoint):
         self._main_loop_stopped = False
         self._external_custom_path_initialized = False
         self._working_dir_initialized = False
+        self._java_callback = None
+
+    def initializeJavaCallback(self, java_callback) -> None:
+        if self._java_callback is not None:
+            raise RuntimeError(
+                "Java callback has already been initialized. Calling this method again is an implementation error."
+            )
+        self._java_callback = java_callback
+
+    @property
+    def java_callback(self):
+        """
+        Provides access to functionality on the Java side. Used by e.g. knime_jupyter to resolve KNIME URLs.
+        :return: The callback on the Java side of Java type org.knime.python3for2.Python3KernelBackendProxy.Callback.
+        """
+        return self._java_callback
 
     def initializeExternalCustomPath(self, external_custom_path: str) -> None:
         if self._external_custom_path_initialized:

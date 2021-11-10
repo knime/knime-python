@@ -66,6 +66,14 @@ import org.knime.python3.PythonEntryPoint;
 public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
+     * Initializes the Python kernel's Java callback that provides it with Java-backed functionality (e.g. resolving
+     * KNIME URLs to local file paths).
+     *
+     * @param callback The kernel's Java callback.
+     */
+    void initializeJavaCallback(Callback callback);
+
+    /**
      * Implements the functionality required by the part of {@link Python3KernelBackend#setOptions(PythonKernelOptions)}
      * that deals with {@link PythonKernelOptions#getExternalCustomPath()}.
      *
@@ -219,4 +227,23 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      *         (second element) while executing the given code.
      */
     List<String> executeOnCurrentThread(String sourceCode);
+
+    /**
+     * Provides Java-backed functionality to the Python side.
+     * <P>
+     * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
+     * conventions. Sonar issues caused by this are suppressed.
+     */
+    public interface Callback {
+
+        /**
+         * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local
+         * temporary file.
+         *
+         * @param knimeUrl The {@code knime://} URL to resolve to a local path.
+         * @return The resolved local path.
+         * @throws IllegalStateException If resolving the URL failed. Wrapped in a {@code Py4JJavaError} on Python side.
+         */
+        String resolve_knime_url(String knimeUrl); // NOSONAR
+    }
 }

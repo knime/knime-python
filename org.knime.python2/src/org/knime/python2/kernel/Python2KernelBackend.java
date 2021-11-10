@@ -211,6 +211,39 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         return Optional.empty();
     }
 
+    /**
+     * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local temporary
+     * file.
+     *
+     * @param knimeUrl The {@code knime://} URL to resolve to a local path.
+     * @param nodeContextManager Provides the node context that may be required to resolve the URL.
+     * @return The resolved local path.
+     * @throws IllegalStateException If resolving the URL failed.
+     */
+    public static String resolveKnimeUrl(final String knimeUrl, final NodeContextManager nodeContextManager) {
+        try (final var ncm = nodeContextManager.pushNodeContext()) {
+            final var knimeUri = new URI(fixWindowsUrl(knimeUrl));
+            return ResolverUtil.resolveURItoLocalOrTempFile(knimeUri).getAbsolutePath();
+        } catch (final InvalidSettingsException | URISyntaxException | IOException | SecurityException ex) {
+            throw new IllegalStateException(
+                "Failed to resolve KNIME URL '" + knimeUrl + "'. Details: " + ex.getMessage(), ex);
+        }
+    }
+
+    private static String fixWindowsUrl(String knimeUrl) throws InvalidSettingsException {
+        try {
+            CheckUtils.checkSourceFile(knimeUrl);
+        } catch (final InvalidSettingsException ex) {
+            if (SystemUtils.IS_OS_WINDOWS && knimeUrl != null) {
+                knimeUrl = knimeUrl.replace("\\", "/");
+                CheckUtils.checkSourceFile(knimeUrl);
+            } else {
+                throw ex;
+            }
+        }
+        return knimeUrl;
+    }
+
     private final PythonCommand m_command;
 
     private final Process m_process;
@@ -452,38 +485,18 @@ public final class Python2KernelBackend implements PythonKernelBackend {
 
             @Override
             protected Message respond(final Message request, final int responseMessageId) {
-                String uriString = new PayloadDecoder(request.getPayload()).getNextString();
-                // Node context may be required to resolve KNIME URL.
-                try (NodeContextManager m = m_nodeContextManager.pushNodeContext()) {
-                    uriString = fixWindowsUri(uriString);
-                    final URI uri = new URI(uriString);
-                    final File file = ResolverUtil.resolveURItoLocalOrTempFile(uri);
-                    final String path = file.getAbsolutePath();
-                    final byte[] responsePayload = new PayloadEncoder().putString(path).get();
+                final var knimeUrl = new PayloadDecoder(request.getPayload()).getNextString();
+                try {
+                    final String resolvedUrl = resolveKnimeUrl(knimeUrl, m_nodeContextManager);
+                    final byte[] responsePayload = new PayloadEncoder().putString(resolvedUrl).get();
                     return createResponse(request, responseMessageId, true, responsePayload, null);
-                } catch (InvalidSettingsException | URISyntaxException | IOException | SecurityException ex) {
-                    final String errorMessage =
-                        "Failed to resolve KNIME URL '" + uriString + "'. Details: " + ex.getMessage();
-                    LOGGER.debug(errorMessage, ex);
-                    final byte[] errorPayload = new PayloadEncoder().putString(errorMessage).get();
+                } catch (final IllegalStateException ex) {
+                    LOGGER.debug(ex);
+                    final byte[] errorPayload = new PayloadEncoder().putString(ex.getMessage()).get();
                     return createResponse(request, responseMessageId, false, errorPayload, null);
                 }
             }
         });
-    }
-
-    private static String fixWindowsUri(String uriString) throws InvalidSettingsException {
-        try {
-            CheckUtils.checkSourceFile(uriString);
-        } catch (InvalidSettingsException ex) {
-            if (SystemUtils.IS_OS_WINDOWS && uriString != null) {
-                uriString = uriString.replace("\\", "/");
-                CheckUtils.checkSourceFile(uriString);
-            } else {
-                throw ex;
-            }
-        }
-        return uriString;
     }
 
     private boolean checkHasAutoComplete() {
