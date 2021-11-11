@@ -98,9 +98,9 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.util.FileUtil;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
 import org.knime.core.util.Version;
 import org.knime.python2.PythonCommand;
@@ -453,13 +453,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        performVoidCancelable(() -> putObject(name, object), executionMonitor);
+        performVoidCancelable(() -> putObject(name, object), new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     @Override
     public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> getObject(name, file), executionMonitor);
+        return performCancelable(() -> getObject(name, file), new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     private PickledObjectFile getObject(final String name, final File file) throws PythonIOException, CanceledExecutionException {
@@ -489,7 +489,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public ImageContainer getImage(final String name, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> getImage(name), executionMonitor);
+        return performCancelable(() -> getImage(name), new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     @Override
@@ -546,14 +546,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     }
 
-    private void performVoidCancelable(final Task task, final ExecutionMonitor executionMonitor)
+    private void performVoidCancelable(final Task task, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
         performCancelable(() -> {
             task.run();
             return null;
-        }, executionMonitor);
+        }, cancelable);
     }
-    
+
     private static <T> T beautifyPythonTraceback(final Supplier<T> task) throws PythonIOException {
         try {
             return task.get();
