@@ -92,6 +92,7 @@ import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.WorkflowManager;
+import org.knime.core.util.Pair;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python.typeextension.KnimeToPythonExtension;
 import org.knime.python.typeextension.KnimeToPythonExtensions;
@@ -126,7 +127,6 @@ import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadEncoder;
 import org.knime.python2.kernel.messaging.Message;
 import org.knime.python2.kernel.messaging.TaskHandler;
-import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.util.PythonUtils;
 
@@ -951,7 +951,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
         try {
-            m_commands.putObject(name, object.getPickledObject()).get();
+            m_commands.putObject(name, object.getFile().getAbsolutePath()).get();
         } catch (InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
@@ -977,18 +977,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         throws PythonIOException, CanceledExecutionException {
         final PythonCancelable cancelable = new PythonExecutionMonitorCancelable(executionMonitor);
         try {
-            final byte[] bytes = PythonUtils.Misc.executeCancelable(() -> m_commands.getObject(name).get(),
-                m_executorService::submit, cancelable);
-            final TableSpec spec = m_serializer.tableSpecFromBytes(bytes, cancelable);
-            final KeyValueTableCreator tableCreator = new KeyValueTableCreator(spec);
-            m_serializer.bytesIntoTable(tableCreator, bytes, m_kernelOptions.getSerializationOptions(), cancelable);
-            final Row row = tableCreator.getTable();
-            final int bytesIndex = spec.findColumn("bytes");
-            final int typeIndex = spec.findColumn("type");
-            final int representationIndex = spec.findColumn("representation");
-            final byte[] objectBytes = row.getCell(bytesIndex).getBytesValue();
-            return new PickledObject(objectBytes, row.getCell(typeIndex).getStringValue(),
-                row.getCell(representationIndex).getStringValue());
+            Pair<String, String> typeAndRepresentation = PythonUtils.Misc.executeCancelable(
+                () -> m_commands.getObject(name, file.getAbsolutePath()).get(), m_executorService::submit, cancelable);
+            return new PickledObjectFile(file, typeAndRepresentation.getFirst(), typeAndRepresentation.getSecond());
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {

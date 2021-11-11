@@ -49,6 +49,7 @@ package org.knime.python2.port;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -141,21 +142,49 @@ public class PickledObject {
     }
 
     PickledObjectFile toPickledObjectFile() throws IOException {
-        final var tmpFile = FileUtil.createTempFile("", "pickle");
-        try (var outputStream = new FileOutputStream(tmpFile)) {
-            outputStream.write(m_pickledObject);
-        }
-        return new PickledObjectFile(tmpFile, m_type, m_stringRepresentation);
+        final var tmpFile = FileUtil.createTempFile("pickle", "object");
+        return toPickledObjectFile(tmpFile);
     }
 
-    private static PickledObject fromPickledObjectFile(final PickledObjectFile pickledObjectFile) throws IOException {
+    /**
+     * Writes the object held by this instance into the provided file and returns a {@link PickledObjectFile} representing it.
+     *
+     * @param file to write to
+     * @return the {@link PickledObjectFile}
+     * @throws IOException if writing to the provided file fails
+     */
+    public PickledObjectFile toPickledObjectFile(final File file) throws IOException {
+        try (var outputStream = new FileOutputStream(file)) {
+            outputStream.write(m_pickledObject);
+        }
+        return new PickledObjectFile(file, m_type, m_stringRepresentation);
+    }
+
+    /**
+     * Creates a {@link PickledObject} from the provided {@link PickledObjectFile}.
+     *
+     * @param pickledObjectFile to create a {@link PickledObject} from
+     * @return the {@link PickledObject}
+     * @throws IOException if reading the pickledObjectFile fails
+     */
+    public static PickledObject fromPickledObjectFile(final PickledObjectFile pickledObjectFile) throws IOException {
         byte[] pickledObject = FileUtils.readFileToByteArray(pickledObjectFile.getFile());
         return new PickledObject(pickledObject, pickledObjectFile.getType(), pickledObjectFile.getRepresentation());
     }
 
+    /**
+     * Utility function for deprecated nodes that need to create a PickledObject with the new PythonKernel API.
+     *
+     * @param name of the object in the workspace
+     * @param kernel to use for retrieval
+     * @param exec for cancellation and progress reporting
+     * @return the {@link PickledObject} with the provided name
+     * @throws IOException if no temporary file could be created or reading the pickled object failed
+     * @throws CanceledExecutionException if the user cancels the execution
+     */
     public static PickledObject getObject(final String name, final PythonKernel kernel, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        final var tmpFile = FileUtil.createTempFile("", "pickle");
+        final var tmpFile = FileUtil.createTempFile("pickle", "object");
         var pickledObjectFile = kernel.getObject(name, tmpFile, exec);
         return fromPickledObjectFile(pickledObjectFile);
     }

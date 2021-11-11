@@ -224,28 +224,31 @@ class GetTableChunkRequestHandler(AbstractRequestHandler):
 class PutObjectRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
         payload_decoder = PayloadDecoder(request.payload)
-        data_bytes = payload_decoder.get_next_bytes()
+        # data_bytes = payload_decoder.get_next_bytes()
+        path = payload_decoder.get_next_string()
         name = request.get_header_field(_PAYLOAD_NAME)
-
-        data_object = pickle.loads(data_bytes)
-        workspace.put_variable(name, data_object)
+        with open(path, "rb") as file:
+            data_object = pickle.load(file)
+            workspace.put_variable(name, data_object)
 
         return AbstractRequestHandler._create_response(request, response_message_id)
 
 
 class GetObjectRequestHandler(AbstractRequestHandler):
     def _respond(self, request, response_message_id, workspace):
-        name = PayloadDecoder(request.payload).get_next_string()
+        payload_decoder = PayloadDecoder(request.payload)
+        name = payload_decoder.get_next_string()
+        path = payload_decoder.get_next_string()
 
         data_object = workspace.get_variable(name)
-        o_bytes = bytearray(pickle.dumps(data_object))
         o_type = type(data_object).__name__
         o_representation = PythonUtils.object_to_string(data_object)
-        data_frame = pandas.DataFrame([{'bytes': o_bytes, 'type': o_type, 'representation': o_representation}])
-        data_bytes = workspace.serializer.data_frame_to_bytes(data_frame)
+        with open(path, "wb") as file:
+            pickle.dump(obj=data_object, file=file)
+        payload = PayloadEncoder().put_string(o_type).put_string(o_representation).payload
 
         return AbstractRequestHandler._create_response(request, response_message_id,
-                                                       response_payload=_create_byte_array_payload(data_bytes))
+                                                       response_payload=payload)
 
 
 class PutSqlRequestHandler(AbstractRequestHandler):

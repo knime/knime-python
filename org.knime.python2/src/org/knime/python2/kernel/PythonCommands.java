@@ -47,12 +47,14 @@ package org.knime.python2.kernel;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RunnableFuture;
 
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.Pair;
 import org.knime.python2.kernel.messaging.AbstractTaskHandler;
 import org.knime.python2.kernel.messaging.DefaultMessage;
 import org.knime.python2.kernel.messaging.DefaultMessage.PayloadDecoder;
@@ -226,29 +228,39 @@ public final class PythonCommands implements AutoCloseable {
     }
 
     /**
-     * Creates a runnable future that puts a Python object into the Python workspace. The object consists of a pickled
-     * representation, a type and a string representation.
+     * Creates a runnable future that puts a Python object stored at the provided path into the Python workspace.
      *
      * @param name the variable name of the object in the Python workspace
-     * @param object the serialized Python object
-     * @return a runnable future that puts the serialized Python object in the Python workspace
+     * @param pathToObject the path at which the pickled object is stored
+     * @return a runnable future that loads a pickled Python object into the Python workspace
      */
-    public synchronized RunnableFuture<Void> putObject(final String name, final byte[] object) {
-        final byte[] payload = new PayloadEncoder().putBytes(object).get();
+    public synchronized RunnableFuture<Void> putObject(final String name, final String pathToObject) {
+        final byte[] payload = new PayloadEncoder().putString(pathToObject).get();
         return createTask(new VoidReturningTaskHandler(), new DefaultMessage(m_messaging.createNextMessageId(),
-            "putObject", payload, ImmutableMap.of(PAYLOAD_NAME, name)));
+            "putObject", payload, Map.of(PAYLOAD_NAME, name)));
     }
 
+
     /**
-     * Creates a runnable future that gets a Python object from the Python workspace. The object consists of a pickled
-     * representation, a type and a string representation.
+     * Creates a runnable future that writes a Python object from the Python workspace to the provided path and returns
+     * its type and representation.
      *
      * @param name the variable name of the object in the Python workspace
+     * @param path to write to
      * @return a runnable future that returns the serialized Python object
      */
-    public synchronized RunnableFuture<byte[]> getObject(final String name) {
-        final byte[] payload = new PayloadEncoder().putString(name).get();
-        return createTask(new ByteArrayReturningTaskHandler(),
+    public synchronized RunnableFuture<Pair<String, String>> getObject(final String name, final String path) {
+        final byte[] payload = new PayloadEncoder()//
+                .putString(name)//
+                .putString(path)//
+                .get();
+        return createTask(new AbstractTaskHandler<Pair<String, String>>() {
+            @Override
+            protected Pair<String, String> handleSuccessMessage(final Message message) throws Exception {
+                var decoder = new PayloadDecoder(message.getPayload());
+                return new Pair<>(decoder.getNextString(), decoder.getNextString());
+            }
+        },
             new DefaultMessage(m_messaging.createNextMessageId(), "getObject", payload, null));
     }
 
