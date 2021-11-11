@@ -356,42 +356,62 @@ def storage_to_extension(
         return pa.RecordBatch.from_arrays(arrays, schema=schema_with_ext_types)
 
 
-def _replace_sentinels_in_table(table: pa.Table, sentinel: Union[str, int]) -> pa.Table:
-    for i, column in enumerate(table):
-        if pa.types.is_integer(column.type) and column.null_count != 0:
-            column = _replace_sentinels_in_int_array(column, sentinel)
-            table = table.set_column(i, table.field(i), column)
-    return table
-
-
-def _replace_sentinels_in_batch(
-    batch: pa.RecordBatch, sentinel: Union[str, int]
-) -> pa.RecordBatch:
+def insert_sentinel_for_missing_values(
+    data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
+) -> Union[pa.RecordBatch, pa.Table]:
     arrays = []
-    for i, column in enumerate(batch):
+    for i, column in enumerate(data):
         if pa.types.is_integer(column.type) and column.null_count != 0:
-            column = _replace_sentinels_in_int_array(column, sentinel)
+            column = _insert_sentinels_for_missing_values_in_int_array(column, sentinel)
         arrays.append(column)
-    return pa.RecordBatch.from_arrays(arrays, schema=batch.schema)
+    if isinstance(data, pa.RecordBatch):
+        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
+    else:
+        return pa.Table.from_arrays(arrays, schema=data.schema)
 
 
-def _replace_sentinels_in_int_array(
+def _sentinel_value(dtype: pa.DataType, sentinel: Union[str, int]) -> int:
+    if sentinel == "min":
+        return -2147483648 if pa.types.is_int32(dtype) else -9223372036854775808
+    elif sentinel == "max":
+        return 2147483647 if pa.types.is_int32(dtype) else 9223372036854775807
+    else:
+        return int(sentinel)
+
+
+def _insert_sentinels_for_missing_values_in_int_array(
     array: pa.Array, sentinel: Union[str, int]
 ) -> pa.Array:
     if not pa.types.is_integer(array.type) or array.null_count == 0:
         return array
 
-    if sentinel == "min":
-        sentinel_value = (
-            -2147483648 if pa.types.is_int32(array.type) else -9223372036854775808
-        )
-    elif sentinel == "max":
-        sentinel_value = (
-            2147483647 if pa.types.is_int32(array.type) else 9223372036854775807
-        )
-    else:
-        sentinel_value = int(sentinel)
+    sentinel_value = _sentinel_value(array.type, sentinel)
     return array.fill_null(sentinel_value)
+
+
+def sentinel_to_missing_value(
+    data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
+) -> Union[pa.RecordBatch, pa.Table]:
+    arrays = []
+    for i, column in enumerate(data):
+        if pa.types.is_integer(column.type):
+            column = _sentinel_to_missing_value_in_int_array(column, sentinel)
+        arrays.append(column)
+    if isinstance(data, pa.RecordBatch):
+        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
+    else:
+        return pa.Table.from_arrays(arrays, schema=data.schema)
+
+
+def _sentinel_to_missing_value_in_int_array(
+    array: pa.Array, sentinel: Union[str, int]
+) -> pa.Array:
+    if not pa.types.is_integer(array.type):
+        return array
+
+    sentinel_value = _sentinel_value(array.type, sentinel)
+    mask = pa.compute.equal(array, sentinel_value)
+    return pa.compute.if_else(mask, None, array)
 
 
 def _apply_to_array(array, func):

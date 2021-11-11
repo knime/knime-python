@@ -98,14 +98,15 @@ class ArrowBatch(kta.Batch):
         sentinel: Optional[Union[str, int]] = None,
     ) -> "pyarrow.RecordBatch":
         batch = self._batch
-        if sentinel is not None:
-            batch = kat._replace_sentinels_in_batch(batch, sentinel)
 
         if columns is not None:
             batch = _select_columns(batch, columns)
 
         if rows is not None:
             batch = _select_rows(batch, rows)
+
+        if sentinel is not None:
+            batch = kat.insert_sentinel_for_missing_values(batch, sentinel)
 
         return batch
 
@@ -144,14 +145,15 @@ class ArrowReadTable(kta.ReadTable):
         sentinel: Optional[Union[str, int]] = None,
     ) -> "pyarrow.Table":
         table = self._source.to_arrow_table()
-        if sentinel is not None:
-            table = kat._replace_sentinels_in_table(table, sentinel)
 
         if columns is not None:
             table = _select_columns(table, columns)
 
         if rows is not None:
             table = _select_rows(table, rows)
+
+        if sentinel is not None:
+            table = kat.insert_sentinel_for_missing_values(table, sentinel)
 
         return table
 

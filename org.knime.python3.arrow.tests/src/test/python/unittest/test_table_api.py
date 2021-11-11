@@ -145,26 +145,52 @@ class SentinelReplacementTest(unittest.TestCase):
     def test_batch_replacement(self):
         d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
-        out = katy._replace_sentinels_in_batch(rb, 42)
-        self.assertTrue(out["0"][0].is_valid)
-        self.assertEqual(42, out["0"][0].as_py())
-        self.assertFalse(out["1"][2].is_valid)
+
+        for s in ["min", "max", 42]:
+            expected = s
+            if s == "min":
+                expected = -9223372036854775808
+            elif s == "max":
+                expected = 9223372036854775807
+
+            out = katy.insert_sentinel_for_missing_values(rb, s)
+            self.assertTrue(out["0"][0].is_valid)
+            self.assertEqual(expected, out["0"][0].as_py())
+            self.assertFalse(out["1"][2].is_valid)
+            roundtrip = katy.sentinel_to_missing_value(out, s)
+            self.assertEqual(
+                rb,
+                roundtrip,
+                f"\nBatches not equal after roundtrip with sentinel {s}: \n\t{rb.to_pydict()}\n\t{roundtrip.to_pydict()}",
+            )
 
     def test_batch_replacement_api(self):
         kt._backend = kat.ArrowBackend()
         d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
         b = kt.Batch.from_pyarrow(rb)
-        out = b.to_pyarrow(sentinel=42)
-        self.assertTrue(out["0"][0].is_valid)
-        self.assertEqual(42, out["0"][0].as_py())
-        self.assertFalse(out["1"][2].is_valid)
+
+        for s in ["min", "max", 42]:
+            out = b.to_pyarrow(sentinel=s)
+            expected = s
+            if s == "min":
+                expected = -9223372036854775808
+            elif s == "max":
+                expected = 9223372036854775807
+
+            self.assertTrue(out["0"][0].is_valid)
+            self.assertEqual(expected, out["0"][0].as_py())
+            self.assertFalse(out["1"][2].is_valid)
+
+            roundtrip_batch = kt.batch(out, sentinel=s)
+            roundtrip_dict = roundtrip_batch.to_pyarrow().to_pydict()
+            self.assertEqual(d, roundtrip_dict)
 
     def test_table_replacement(self):
         d = {"0": [1, 2, None, 4], "1": [1.0, 2.0, 3.0, 4.0]}
         rb = pa.Table.from_pydict(d)
         self.assertFalse(rb["0"][2].is_valid)
-        out = katy._replace_sentinels_in_table(rb, 42)
+        out = katy.insert_sentinel_for_missing_values(rb, 42)
         self.assertTrue(out["0"][2].is_valid)
         self.assertEqual(42, out["0"][2].as_py())
 
