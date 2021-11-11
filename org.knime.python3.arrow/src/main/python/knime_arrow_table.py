@@ -159,8 +159,7 @@ class ArrowReadTable(kta.ReadTable):
 
     @property
     def num_rows(self) -> int:
-        # ToDo: wait if we're still reading
-        return self.to_pyarrow().num_rows
+        return self._source.num_rows
 
     @property
     def num_columns(self) -> int:
@@ -168,7 +167,6 @@ class ArrowReadTable(kta.ReadTable):
 
     @property
     def num_batches(self) -> int:
-        # ToDo: wait if we're still reading?
         return len(self._source)
 
     @property

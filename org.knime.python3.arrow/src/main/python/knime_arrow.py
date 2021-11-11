@@ -294,6 +294,12 @@ class ArrowDataSource:
         else:
             return table_without_names.rename_columns(self._column_names)
 
+    @property
+    def num_rows(self) -> int:
+        if not hasattr(self, "_num_rows"):
+            self._num_rows = sum(len(self[i]) for i in range(len(self)))
+        return self._num_rows
+
 
 @kg.data_sink("org.knime.python3.arrow")
 class ArrowDataSink:
