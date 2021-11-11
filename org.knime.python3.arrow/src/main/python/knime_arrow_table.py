@@ -56,47 +56,54 @@ import pyarrow as pa
 
 
 class ArrowBatch(kta.Batch):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        data: Union[pa.RecordBatch, "pandas.DataFrame"],
+        sentinel: Optional[Union[str, int]] = None,
+    ):
         """
-        Create an arrow batch from given data. Either "data_frame" or "record_batch" must be present.
+        Create an arrow batch from the given data either in pyarrow.RecordBatch or
+        pandas.DataFrame format.
 
         Arguments:
-            data_frame: A pandas.DataFrame to use as data for this batch.
-            record_batch: A pyarrow.RecordBatch containing the data for this batch
+            data: 
+                A pyarrow.RecordBatch or a pandas.DataFrame
+            sentinel:
+                None, "min", "max" or an int. If not None, values in integral columns that match the sentinel 
+                will be interpreted as missing values.
         """
 
-        if "data_frame" in kwargs:
-            df = kwargs["data_frame"]
-            import knime_arrow_pandas as kap
-
-            self._pandas_df = df
-            self._batch = kap.pandas_df_to_arrow(df, to_batch=True)
-        elif "record_batch" in kwargs:
-            self._batch = kwargs["record_batch"]
+        if isinstance(data, pa.RecordBatch):
+            self._batch = data
         else:
-            raise ValueError("Can only create an ArrowBatch with data")
+            import pandas as pd
 
-    @staticmethod
-    def from_pandas(data_frame: "pandas.DataFrame", *args, **kwargs) -> "ArrowBatch":
-        return ArrowBatch(args, data_frame=data_frame, **kwargs)
+            if isinstance(data, pd.DataFrame):
+                import knime_arrow_pandas as kap
 
-    @staticmethod
-    def from_pyarrow(
-        record_batch: "pyarrow.RecordBatch", *args, **kwargs
-    ) -> "ArrowBatch":
-        return ArrowBatch(*args, record_batch=record_batch, **kwargs)
+                self._batch = kap.pandas_df_to_arrow(data, to_batch=True)
+            else:
+                raise ValueError("Can only create an ArrowBatch with data")
 
-    def to_pandas(self, *args, **kwargs) -> "pandas.DataFrame":
+        if sentinel is not None:
+            self._batch = kat.sentinel_to_missing_value(self._batch, sentinel=sentinel)
+
+    def to_pandas(
+        self,
+        rows: Optional[Union[int, Tuple[int, int]]] = None,
+        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_data_to_pandas_df(self.to_pyarrow(*args, **kwargs))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(rows, columns, sentinel))
 
     def to_pyarrow(
         self,
         rows: Optional[Union[int, Tuple[int, int]]] = None,
         columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
-    ) -> "pyarrow.RecordBatch":
+    ) -> pa.RecordBatch:
         batch = self._batch
 
         if columns is not None:
@@ -133,17 +140,22 @@ class ArrowReadTable(kta.ReadTable):
     def __init__(self, source: ka.ArrowDataSource):
         self._source = source
 
-    def to_pandas(self, *args, **kwargs) -> "pandas.DataFrame":
+    def to_pandas(
+        self,
+        rows: Optional[Union[int, Tuple[int, int]]] = None,
+        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_data_to_pandas_df(self.to_pyarrow(*args, **kwargs))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(rows, columns, sentinel))
 
     def to_pyarrow(
         self,
         rows: Optional[Union[int, Tuple[int, int]]] = None,
         columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
-    ) -> "pyarrow.Table":
+    ) -> pa.Table:
         table = self._source.to_arrow_table()
 
         if columns is not None:
@@ -176,7 +188,7 @@ class ArrowReadTable(kta.ReadTable):
     def batches(self) -> Iterator[ArrowBatch]:
         batch_idx = 0
         while batch_idx < len(self._source):
-            yield ArrowBatch(df=None, record_batch=self._source[batch_idx])
+            yield ArrowBatch(self._source[batch_idx])
             batch_idx += 1
 
     def __str__(self) -> str:
@@ -187,6 +199,11 @@ class ArrowReadTable(kta.ReadTable):
 
 
 class ArrowWriteTable(kta.WriteTable):
+
+    _MAX_NUM_BYTES_PER_BATCH = (
+        1 << 64
+    )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor
+
     def __init__(self, sink):
         """
         Remember to close the sink, the ArrowWriteTable does not do this for you.
@@ -195,11 +212,32 @@ class ArrowWriteTable(kta.WriteTable):
         self._last_batch = None
         self._num_batches = 0
 
-    def from_pandas(self, data: "pandas.DataFrame"):
-        self._sink.write(data)
+    def _put_table(
+        self,
+        data: Union[pa.Table, "pandas.DataFrame"],
+        sentinel: Optional[Union[str, int]] = None,
+    ):
+        if not isinstance(data, pa.Table):
+            import knime_arrow_pandas as kap
+            import pandas as pd
 
-    def from_pyarrow(self, data: "pyarrow.Table"):
-        self._sink.write(data)
+            if not isinstance(data, pd.DataFrame):
+                raise ValueError(
+                    "Can only fill WriteTable from pandas.DataFrame or pyarrow.Table"
+                )
+            data = kap.pandas_df_to_arrow(data)
+
+        batches = self._split_table(data)
+        self._num_batches += len(batches)
+        for b in batches:
+            if sentinel is not None:
+                b = kat.sentinel_to_missing_value(b, sentinel)
+            self._sink.write(b)
+
+    def _split_table(self, data: pa.Table):
+        desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
+        num_rows_per_batch = int(len(data) // desired_num_batches)
+        return data.to_batches(max_chunksize=num_rows_per_batch)
 
     @property
     def _schema(self):
@@ -231,24 +269,26 @@ class ArrowWriteTable(kta.WriteTable):
     def column_names(self) -> List[str]:
         return self._schema.names
 
-    def __str__(self) -> str:
-        if self._last_batch is None:
-            return "ArrowWriteTable[empty]"
-
-        return str(self._last_batch)
-
     def __repr__(self) -> str:
         schema = self._last_batch.schema if self._last_batch is not None else "Empty"
-        return f"{__class__}(schema={schema}, data={str(self)})"
+        return f"{__class__}(schema={schema}, num_batches={self.num_batches})"
 
 
 class ArrowBackend(kta._Backend):
     def create_batch_from_pandas(self, *args, **kwargs) -> ArrowBatch:
         return ArrowBatch.from_pandas(*args, **kwargs)
 
-    def create_batch_from_pyarrow(self, *args, **kwargs) -> ArrowBatch:
-        """Create a batch with pyarrow data Hands arguments to the backend"""
-        return ArrowBatch.from_pyarrow(*args, **kwargs)
+    def write_table(
+        self,
+        data: Optional[Union["pandas.DataFrame", pa.Table]] = None,
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> ArrowWriteTable:
+        if data is None:
+            return self._create_write_table()
+
+        write_table = self._create_write_table()
+        write_table._put_table(data, sentinel)
+        return write_table
 
 
 def _select_rows(

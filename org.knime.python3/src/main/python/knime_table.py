@@ -59,12 +59,17 @@ class _Backend(ABC):
     """
 
     @abstractmethod
-    def create_batch_from_pandas(self, *args, **kwargs) -> "Batch":
-        """Create a batch with arrow data. Hands arguments to the backend"""
+    def batch(
+        data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> "Batch":
         pass
 
-    def create_batch_from_pyarrow(self, *args, **kwargs) -> "Batch":
-        """Create a batch with pyarrow data Hands arguments to the backend"""
+    @abstractmethod
+    def write_table(
+        data: Optional[Union["pandas.DataFrame", "pyarrow.Table"]] = None,
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> "WriteTable":
         pass
 
 
@@ -183,18 +188,40 @@ class Batch(ABC):
         pass
 
     @staticmethod
-    def from_pandas(data: "pandas.DataFrame") -> "Batch":
+    def from_pandas(
+        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
+    ) -> "Batch":
         """
         Create a Batch from a pandas.DataFrame.
+
+        Arguments:
+            data:
+                A pandas.DataFrame.
+            sentinel: 
+                Interpret the following values in integral columns as missing value:
+                    - "min" min int32 or min int64 depending on the type of the column
+                    - "max" max int32 or max int64 depending on the type of the column
+                    - a special integer value that should be interpreted as missing value
         """
-        return _backend.create_batch_from_pandas(data)
+        return _backend.batch(data, sentinel)
 
     @staticmethod
-    def from_pyarrow(data: "pyarrow.RecordBatch") -> "Batch":
+    def from_pyarrow(
+        data: "pyarrow.RecordBatch", sentinel: Optional[Union[str, int]] = None
+    ) -> "Batch":
         """
         Create a Batch from a pyarrow.RecordBatch.
+
+        Arguments:
+            data:
+                A pyarrow.RecordBatch.
+            sentinel: 
+                Interpret the following values in integral columns as missing value:
+                    - "min" min int32 or min int64 depending on the type of the column
+                    - "max" max int32 or max int64 depending on the type of the column
+                    - a special integer value that should be interpreted as missing value
         """
-        return _backend.create_batch_from_pyarrow(data)
+        return _backend.batch(data, sentinel)
 
 
 class Table(ABC):
@@ -359,15 +386,46 @@ class WriteTable(Table):
     to disk batch by batch. Individual batches will be available to KNIME as soon as they are written.
     """
 
-    @abstractmethod
-    def from_pandas(self, data: "pandas.DataFrame"):
-        """Fill the table with a pandas DataFrame"""
-        pass
+    @staticmethod
+    def create() -> "WriteTable":
+        """Create an empty WriteTable"""
+        return _backend.write_table()
 
-    @abstractmethod
-    def from_pyarrow(self, data: "pyarrow.Table"):
-        """Fill the table with a pyarrow.Table"""
-        pass
+    @staticmethod
+    def from_pandas(
+        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
+    ) -> "WriteTable":
+        """
+        Create and fill the table with a pandas DataFrame
+
+        Arguments:
+        data:
+            A pandas.DataFrame
+        sentinel: 
+            Interpret the following values in integral columns as missing value:
+                - "min" min int32 or min int64 depending on the type of the column
+                - "max" max int32 or max int64 depending on the type of the column
+                - a special integer value that should be interpreted as missing value
+        """
+        return _backend.write_table(data, sentinel)
+
+    @staticmethod
+    def from_pyarrow(
+        data: "pyarrow.Table", sentinel: Optional[Union[str, int]] = None
+    ) -> "WriteTable":
+        """
+        Create and fill the table with a pyarrow.Table
+        
+        Arguments:
+        data:
+            A pyarrow.RecordBatch
+        sentinel: 
+            Interpret the following values in integral columns as missing value:
+                - "min" min int32 or min int64 depending on the type of the column
+                - "max" max int32 or max int64 depending on the type of the column
+                - a special integer value that should be interpreted as missing value
+        """
+        return _backend.write_table(data, sentinel)
 
     @abstractmethod
     def append(self, batch: Batch):
@@ -381,3 +439,43 @@ class WriteTable(Table):
                 WriteTable.      
         """
         pass
+
+
+def batch(
+    data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
+    sentinel: Optional[Union[str, int]] = None,
+) -> Batch:
+    """
+    Factory method to create a Batch given a pandas.DataFrame or a pyarrow.RecordBatch.
+    Internally uses its from_pandas or from_pyarrow methods.
+
+    Arguments:
+        data:
+            A pandas.DataFrame or a pyarrow.RecordBatch
+        sentinel: 
+            Interpret the following values in integral columns as missing value:
+                - "min" min int32 or min int64 depending on the type of the column
+                - "max" max int32 or max int64 depending on the type of the column
+                - a special integer value that should be interpreted as missing value
+    """
+    return _backend.batch(data, sentinel)
+
+
+def write_table(
+    data: Optional[Union["pandas.DataFrame", "pyarrow.Table"]] = None,
+    sentinel: Optional[Union[str, int]] = None,
+) -> WriteTable:
+    """
+    Factory method to create a WriteTable given no data, a pandas.DataFrame, or a pyarrow.Table.
+    Internally creates a WriteTable using its create, from_pandas or from_pyarrow methods respectively.
+
+    Arguments:
+        data:
+            None, a pandas.DataFrame or a pyarrow.RecordBatch
+        sentinel: 
+            Interpret the following values in integral columns as missing value:
+                - "min" min int32 or min int64 depending on the type of the column
+                - "max" max int32 or max int64 depending on the type of the column
+                - a special integer value that should be interpreted as missing value
+    """
+    return _backend.table(data, sentinel)

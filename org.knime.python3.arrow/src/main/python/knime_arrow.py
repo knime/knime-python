@@ -305,10 +305,6 @@ class ArrowDataSource:
 class ArrowDataSink:
     """A class writing record batches to a file to be read by KNIME."""
 
-    _MAX_NUM_BYTES_PER_BATCH = (
-        1 << 64
-    )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor
-
     def __init__(self, java_data_sink) -> None:
         self._java_data_sink = java_data_sink
 
@@ -325,11 +321,9 @@ class ArrowDataSink:
 
     def write(self, data: Union[pa.RecordBatch, pa.Table]):
         """
-        Writes the given batch or table to the sink. 
-        Tables are split into chunks if they are too large.
+        Writes the full given batch or table to the sink, tables are NOT split into batches. 
         Empty batches or tables are ignored.
         """
-
         if len(data) == 0:
             return
 
@@ -343,19 +337,10 @@ class ArrowDataSink:
         else:
             offset = self._file.tell()
 
-        if isinstance(data, pa.RecordBatch):
-            batches = [data]
-        else:
-            desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
-            num_rows_per_batch = int(len(data) // desired_num_batches)
-            batches = data.to_batches(max_chunksize=num_rows_per_batch)
-
-        for i, batch in enumerate(batches):
-            self._writer.write_batch(batch)
-            self._file.flush()
-            self._java_data_sink.reportBatchWritten(offset)
-            self._size += batch.num_rows
-            offset = self._file.tell()
+        self._writer.write(data)
+        self._file.flush()
+        self._java_data_sink.reportBatchWritten(offset)
+        self._size += data.num_rows
 
     def _init_writer(self, schema: pa.Schema):
         # Create the writer
