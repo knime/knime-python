@@ -244,6 +244,30 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         return knimeUrl;
     }
 
+    /**
+     * Strips the lines of the trace back that do not refer to user code but kernel code.
+     *
+     * @param pythonTraceback The trace back to beautify.
+     * @return The beautified trace back. Is identical to the argument if the argument's format is not understood.
+     */
+    public static String beautifyPythonTraceback(final String pythonTraceback) {
+        String beautifiedPythonTraceback = null;
+        // Keep first line which is the trace back heading.
+        final int headingEndIndex = pythonTraceback.indexOf('\n');
+        if (headingEndIndex != -1) {
+            final String heading = pythonTraceback.substring(0, headingEndIndex);
+            final int userCodeBeginIndex = pythonTraceback.indexOf("  File \"<string>\"");
+            if (userCodeBeginIndex != -1) {
+                beautifiedPythonTraceback = heading + "\n" + pythonTraceback.substring(userCodeBeginIndex);
+            }
+        }
+        if (beautifiedPythonTraceback == null) {
+            // Fall through.
+            beautifiedPythonTraceback = pythonTraceback;
+        }
+        return beautifiedPythonTraceback;
+    }
+
     private final PythonCommand m_command;
 
     private final Process m_process;
@@ -1205,22 +1229,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             final Optional<String> formattedPythonTracebackOptional = exception.getFormattedPythonTraceback();
             if (formattedPythonTracebackOptional.isPresent()) {
                 final String formattedPythonTraceback = formattedPythonTracebackOptional.get();
-                // Strip the lines of the trace back that do not refer to user code but kernel code.
-                String beautifiedPythonTraceback = null;
-                // Keep first line which is the trace back heading.
-                final int headingEndIndex = formattedPythonTraceback.indexOf('\n');
-                if (headingEndIndex != -1) {
-                    final String heading = formattedPythonTraceback.substring(0, headingEndIndex);
-                    final int userCodeBeginIndex = formattedPythonTraceback.indexOf("File \"<string>\"");
-                    if (userCodeBeginIndex != -1) {
-                        beautifiedPythonTraceback =
-                            heading + "\n" + formattedPythonTraceback.substring(userCodeBeginIndex);
-                    }
-                }
-                if (beautifiedPythonTraceback == null) {
-                    // Fall trough
-                    beautifiedPythonTraceback = formattedPythonTraceback;
-                }
+                final String beautifiedPythonTraceback = beautifyPythonTraceback(formattedPythonTraceback);
                 throw new PythonIOException(exception.getMessage() + "\n" + beautifiedPythonTraceback,
                     exception.getMessage(), formattedPythonTraceback, exception.getPythonTraceback().orElse(null));
             } else {

@@ -306,6 +306,8 @@ public final class PythonUtils {
             } else if (ex instanceof CanceledExecutionException || ex instanceof CancellationException) {
                 // May happen if the executed task checks for cancellation itself.
                 throw new PythonCanceledExecutionException(ex.getMessage());
+            } else if (ex instanceof PythonIOException) {
+                throw (PythonIOException)ex;
             } else {
                 throw new PythonIOException( //
                     ex.getMessage(), // NOSONAR Guaranteed to be non-null.

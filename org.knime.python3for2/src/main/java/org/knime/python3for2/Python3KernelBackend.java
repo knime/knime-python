@@ -69,7 +69,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
+import org.apache.commons.lang3.StringUtils;
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
@@ -133,6 +135,8 @@ import org.knime.python3.arrow.PythonArrowExtension;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import py4j.Py4JException;
 
 /**
  * New back end of {@link PythonKernel}. "New" means that this back end is part of Columnar Table Backend-enabled
@@ -501,24 +505,28 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
-        return m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new);
+        return beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new), cancelable);
+        return performCancelable(
+            () -> beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new)),
+            cancelable);
     }
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
-        return m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new);
+        return beautifyPythonTraceback(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new), cancelable);
+        return performCancelable(
+            () -> beautifyPythonTraceback(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new)),
+            cancelable);
     }
 
     private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
@@ -544,6 +552,26 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             task.run();
             return null;
         }, executionMonitor);
+    }
+    
+    private static <T> T beautifyPythonTraceback(final Supplier<T> task) throws PythonIOException {
+        try {
+            return task.get();
+        } catch (final Py4JException ex) {
+            // First strip py4j's standard prefix for such kinds of errors.
+            final var pythonTraceback = StringUtils.removeStart(ex.getMessage(),
+                "An exception was raised by the Python Proxy. Return Message: ");
+            // Then strip the parts of the trace back that refer to kernel code rather than user code.
+            final String beautifiedTraceback = Python2KernelBackend.beautifyPythonTraceback(pythonTraceback);
+            final var errorMessage = "Executing the Python script failed: " + beautifiedTraceback;
+            // Discard the original exception if the trace back is formatted as expected (i.e. the error really
+            // originated in user code and not in kernel code). This keeps logging more concise.
+            if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
+                throw new PythonIOException(errorMessage);
+            } else {
+                throw new PythonIOException(errorMessage, ex);
+            }
+        }
     }
 
     @Override
