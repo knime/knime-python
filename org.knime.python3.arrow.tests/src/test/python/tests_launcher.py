@@ -583,6 +583,16 @@ class EntryPoint(kg.EntryPoint):
                         arrays, schema=arrow_batch.schema
                     )
                     write_batch = kta.Batch.from_pyarrow(new_batch)
+                elif mode == "arrow-sentinel":
+                    arrow_batch = read_batch.to_pyarrow(sentinel=0)
+                    arrays = []
+                    arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
+                    arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
+                    arrays.append(arrow_batch.column(2))
+                    new_batch = pa.RecordBatch.from_arrays(
+                        arrays, schema=arrow_batch.schema
+                    )
+                    write_batch = kta.Batch.from_pyarrow(new_batch, sentinel=0)
                 elif mode == "pandas":
                     pandas_df = read_batch.to_pandas()
                     pandas_df["0"] = pandas_df["0"] * 2

@@ -49,6 +49,7 @@
 package org.knime.python3.arrow;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.LONG;
 import static org.knime.core.table.schema.DataSpecs.STRING;
@@ -107,7 +108,7 @@ public class KnimeTableTest {
 
         final var numBatches = 50;
         final var numRowsPerBatch = 200_000;
-        final var modes = new String[] {"arrow", "pandas", "dict"};
+        final var modes = new String[] {"arrow-sentinel", "arrow", "pandas", "dict"};
 
         for (final var mode : modes) {
             final var sourcePath = TestUtils.createTmpKNIMEArrowPath();
@@ -131,7 +132,7 @@ public class KnimeTableTest {
                     // Write some batches
                     try (final BatchWriter writer = store.getWriter()) {
                         for (int b = 0; b < numBatches; b++) { // NOSONAR
-                            writeBatch(schema, b, numRowsPerBatch, writer);
+                            writeBatch(schema, b, numRowsPerBatch, writer, mode.equals("arrow-sentinel"));
                             // TODO: call Python here and make sure it blocks until all batches are written?!
                         }
                     } // <- Footer is written here
@@ -151,7 +152,7 @@ public class KnimeTableTest {
                         assertEquals(schema, readable.getSchema());
 
                         for (int b = 0; b < numBatches; b++) { // NOSONAR
-                            checkBatch(schema, b, numRowsPerBatch, reader);
+                            checkBatch(schema, b, numRowsPerBatch, reader, mode.equals("arrow-sentinel"));
                         }
                     }
                 }
@@ -163,14 +164,14 @@ public class KnimeTableTest {
     }
 
     private static void writeBatch(final ColumnarSchema schema, final int batchIdx, final int numRows,
-        final BatchWriter writer) throws IOException {
+        final BatchWriter writer, final boolean missingLongs) throws IOException {
         final var batch = writer.create(numRows);
 
         for (int col = 0; col < schema.numColumns(); col++) { // NOSONAR
             final var data = batch.get(col);
 
             if (schema.getSpec(col) == LongDataSpec.INSTANCE) {
-                fillLongData((LongWriteData)data, batchIdx, numRows);
+                fillLongData((LongWriteData)data, batchIdx, numRows, missingLongs);
             } else if (schema.getSpec(col) == DoubleDataSpec.INSTANCE) {
                 fillDoubleData((DoubleWriteData)data, batchIdx, numRows);
             } else if (schema.getSpec(col) == StringDataSpec.INSTANCE) {
@@ -184,9 +185,13 @@ public class KnimeTableTest {
         readBatch.release();
     }
 
-    private static void fillLongData(final LongWriteData data, final int batchIdx, final int numRows) {
+    private static void fillLongData(final LongWriteData data, final int batchIdx, final int numRows, final boolean missingLongs) {
         for (int r = 0; r < numRows; r++) { // NOSONAR
-            data.setLong(r, batchIdx * numRows + r);
+            if (missingLongs && (batchIdx * numRows + r) % 13 == 0) {
+                data.setMissing(r);
+            } else {
+                data.setLong(r, batchIdx * numRows + r);
+            }
         }
     }
 
@@ -203,14 +208,14 @@ public class KnimeTableTest {
     }
 
     private static void checkBatch(final ColumnarSchema schema, final int batchIdx, final int numRows,
-        final RandomAccessBatchReader reader) throws IOException {
+        final RandomAccessBatchReader reader, final boolean missingLongs) throws IOException {
         final var batch = reader.readRetained(batchIdx);
 
         for (int col = 0; col < schema.numColumns(); col++) { // NOSONAR
             final var data = batch.get(col);
 
             if (schema.getSpec(col) == LongDataSpec.INSTANCE) {
-                checkLongData((LongReadData)data, batchIdx, numRows);
+                checkLongData((LongReadData)data, batchIdx, numRows, missingLongs);
             } else if (schema.getSpec(col) == DoubleDataSpec.INSTANCE) {
                 checkDoubleData((DoubleReadData)data, batchIdx, numRows);
             } else if (schema.getSpec(col) == StringDataSpec.INSTANCE) {
@@ -221,9 +226,14 @@ public class KnimeTableTest {
         batch.release();
     }
 
-    private static void checkLongData(final LongReadData data, final int batchIdx, final int numRows) {
+    private static void checkLongData(final LongReadData data, final int batchIdx, final int numRows, final boolean missingLongs) {
         for (int r = 0; r < numRows; r++) { // NOSONAR
-            assertEquals(2 * (batchIdx * numRows + r), data.getLong(r));
+            if (missingLongs && (batchIdx * numRows + r) % 13 == 0) {
+                assertTrue(data.isMissing(r));
+            } else {
+                assertEquals(2 * (batchIdx * numRows + r), data.getLong(r));
+            }
+
         }
     }
 
