@@ -77,11 +77,11 @@ import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 
 /**
- * Tests sending data to a KNIME DataFrame and receiving data from it.
+ * Tests sending data to a KNIME Table and receiving data from it.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public class KnimeDataFrameTest {
+public class KnimeTableTest {
     private ArrowColumnStoreFactory m_storeFactory;
 
     private BufferAllocator m_allocator; // NOSONAR
