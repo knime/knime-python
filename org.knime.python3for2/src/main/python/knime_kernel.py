@@ -61,6 +61,7 @@ from py4j.java_gateway import JavaClass
 from queue import Full, Queue
 from threading import Event, Lock
 
+import knime_table as kt
 import knime_arrow_table as kat
 import knime_gateway as kg
 
@@ -172,6 +173,20 @@ class PythonKernel(kg.EntryPoint):
             data_frame.set_index(data_frame.columns[0], inplace=True)
             self._workspace[variable_name] = data_frame
 
+    def getTableFromWorkspace(
+        self,
+        variable_name: str,
+    ) -> None:
+        # Get the java sink for this write table
+        write_table = self._workspace[variable_name]
+        if (not hasattr(write_table, "_sink")) or (
+            not hasattr(write_table._sink, "_java_data_sink")
+        ):
+            raise RuntimeError(
+                "Write table was not created with the Arrow backend. "
+                + "This is an implementation error."
+            )
+        return write_table._sink._java_data_sink
 
     def writeImageToPath(
         self,
@@ -257,7 +272,8 @@ class PythonKernel(kg.EntryPoint):
                 try:
                     # Use jedi's 0.16.0+ API.
                     completions = jedi.Script(source_code, path="").complete(
-                        line, column,
+                        line,
+                        column,
                     )
                 except AttributeError:
                     # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
@@ -276,24 +292,31 @@ class PythonKernel(kg.EntryPoint):
                 warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
-    def executeOnMainThread(self, source_code: str) -> List[str]:
+    def executeOnMainThread(self, source_code: str, sink_creator) -> List[str]:
         with self._main_loop_lock:
             if self._main_loop_stopped:
                 raise RuntimeError(
                     "Cannot schedule executions on the main thread after the main loop stopped."
                 )
-            execute_task = _ExecuteTask(self._execute, source_code)
+            execute_task = _ExecuteTask(self._execute, source_code, sink_creator)
             self._main_loop_queue.put(execute_task)
             return execute_task.result()
 
-    def executeOnCurrentThread(self, source_code: str) -> List[str]:
-        return self._execute(source_code)
+    def executeOnCurrentThread(self, source_code: str, sink_creator) -> List[str]:
+        return self._execute(source_code, sink_creator)
 
-    def _execute(self, source_code: str) -> List[str]:
+    def _execute(self, source_code: str, sink_creator) -> List[str]:
+        def create_python_sink():
+            java_sink = sink_creator.createSink()
+            return kg.data_sink_mapper(java_sink)
+
         with redirect_stdout(_CopyingTextIO(sys.stdout)) as stdout, redirect_stderr(
             _CopyingTextIO(sys.stderr)
         ) as stderr:
+            kt._backend = kat.ArrowBackend(create_python_sink)
             exec(source_code, self._workspace)
+            kt._backend.close()
+            kt._backend = None
         return ListConverter().convert(
             [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
         )
@@ -303,16 +326,16 @@ class PythonKernel(kg.EntryPoint):
 
 
 class _ExecuteTask:
-    def __init__(self, execute_func: Callable[[str], List[str]], source_code: str):
+    def __init__(self, execute_func: Callable[[str], List[str]], *args):
         self._execute_func = execute_func
-        self._source_code = source_code
+        self._args = args
         self._execute_finished = Event()
         self._result = None
         self._exception = None
 
     def run(self):
         try:
-            self._result = self._execute_func(self._source_code)
+            self._result = self._execute_func(*self._args)
         except Exception as ex:
             self._exception = ex
         finally:

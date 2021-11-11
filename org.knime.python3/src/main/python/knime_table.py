@@ -478,4 +478,4 @@ def write_table(
                 - "max" max int32 or max int64 depending on the type of the column
                 - a special integer value that should be interpreted as missing value
     """
-    return _backend.table(data, sentinel)
+    return _backend.write_table(data, sentinel)

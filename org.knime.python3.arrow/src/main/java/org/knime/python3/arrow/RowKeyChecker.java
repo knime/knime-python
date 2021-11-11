@@ -107,7 +107,8 @@ public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
 
     @Override
     protected SequentialBatchReader initReaderFromReadable(final SequentialBatchReadable readable) {
-        return readable.createSequentialReader(new FilteredColumnSelection(readable.getSchema().numColumns(), ROW_KEY_COL_IDX));
+        return readable
+            .createSequentialReader(new FilteredColumnSelection(readable.getSchema().numColumns(), ROW_KEY_COL_IDX));
     }
 
     @Override
@@ -161,5 +162,17 @@ public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
         } else {
             return false;
         }
+    }
+
+    /**
+     * @return a message describing why the row keys are invalid ({@code ""} if the row keys are not invalid or not
+     *         invalid yet).
+     */
+    public String getInvalidCause() {
+        final IOException invalidCause = m_invalidCause.get();
+        if (invalidCause != null) {
+            return invalidCause.getMessage();
+        }
+        return "";
     }
 }

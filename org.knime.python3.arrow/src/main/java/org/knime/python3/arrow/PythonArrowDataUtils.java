@@ -63,16 +63,19 @@ import org.knime.core.columnar.arrow.ArrowReaderWriterUtils;
 import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
 import org.knime.core.columnar.arrow.ArrowSchemaUtils;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
+import org.knime.core.data.DataColumnDomain;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.IDataRepository;
+import org.knime.core.data.columnar.domain.DefaultDomainWritableConfig;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
+import org.knime.core.data.meta.DataColumnMetaData;
 import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
@@ -199,9 +202,18 @@ public final class PythonArrowDataUtils {
      *         obtain domain and metadata per column.
      */
     public static DomainCalculator createDomainCalculator(final DefaultPythonArrowDataSink sink,
-        final ArrowColumnStoreFactory storeFactory, final Supplier<DomainWritableConfig> configSupplier) {
-        final var domainCalculator =
-            DomainCalculator.fromRandomAccessReadable(() -> createReadable(sink, storeFactory), configSupplier);
+        final ArrowColumnStoreFactory storeFactory, final int maxPossibleNominalDomainValues) {
+        // Create the domain calculator
+        final Supplier<RandomAccessBatchReadable> batchReadableSupplier = () -> createReadable(sink, storeFactory);
+        final Supplier<DomainWritableConfig> configSupplier = () -> {
+            // NB: The schema will be known when this method is called
+            final ColumnarValueSchema schema = PythonArrowDataUtils.createColumnarValueSchema(sink,
+                TableDomainAndMetadata.empty(), NotInWorkflowDataRepository.newInstance());
+            return new DefaultDomainWritableConfig(schema, maxPossibleNominalDomainValues, false);
+        };
+        final var domainCalculator = DomainCalculator.fromRandomAccessReadable(batchReadableSupplier, configSupplier);
+
+        // Register a listener that processes a batch as soon as available
         sink.registerBatchListener(() -> {
             try {
                 domainCalculator.processNextBatch();
@@ -231,16 +243,19 @@ public final class PythonArrowDataUtils {
      * dataSink}.
      *
      * @param dataSink filled by Python
+     * @param domainAndMetadata the domain and metadata for the table
      * @param storeFactory for creation Arrow stores in Java
-     * @param tableId for the newly created table (needed by KNIME for tracking)
+     * @param dataRepository the {@link IDataRepository} to use for this table
      * @return the table with the content written into dataSink
      */
     @SuppressWarnings("resource") // the readStore will be closed when the table is cleared
     public static UnsavedColumnarContainerTable createTable(final DefaultPythonArrowDataSink dataSink,
-        final ArrowColumnStoreFactory storeFactory, final int tableId) {
+        final TableDomainAndMetadata domainAndMetadata, final ArrowColumnStoreFactory storeFactory,
+        final IDataRepository dataRepository) {
+        final int tableId = dataRepository.generateNewID();
         final var size = dataSink.getSize();
         final var path = dataSink.getPath();
-        final var schema = createColumnarValueSchema(dataSink);
+        final var schema = createColumnarValueSchema(dataSink, domainAndMetadata, dataRepository);
         final var readStore = storeFactory.createReadStore(path);
         return UnsavedColumnarContainerTable.create(tableId,
             new ColumnarRowReadTable(schema, storeFactory, readStore, size));
@@ -250,27 +265,39 @@ public final class PythonArrowDataUtils {
      * Create a {@link ColumnarValueSchema} representing the data coming from the {@link DefaultPythonArrowDataSink}.
      * Must only be called after the sink has received the first.
      *
-     * TODO: provide a load context and replace by
-     * {@link ValueSchemaUtils#load(ColumnarSchema, org.knime.core.data.v2.schema.ValueSchemaLoadContext)}?
-     *
      * @param dataSink The Python data sink that has already received the first batch
+     * @param domainAndMetadata the domain and metadata for the table
+     * @param dataRepository the {@link IDataRepository} to use for this table
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
-    public static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink) {
+    public static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink,
+        final TableDomainAndMetadata domainAndMetadata, final IDataRepository dataRepository) {
         final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
         final var columnNames = ArrowSchemaUtils.extractColumnNames(schema);
+
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
+
+        // Add factory for the row keys
         factories.add(extractRowKeyValueFactory(columnarSchema));
-        // FIXME just a workaround! Needs to be provided by Node/ExecutionContext
-        final var dataRepository = NotInWorkflowDataRepository.newInstance();
+
+        // Loop and get factory and spec for each column
         for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
-            var traits = columnarSchema.getTraits(i);
-            var valueFactory = getValueFactory(traits, columnarSchema.getSpec(i), dataRepository);
+
+            // Get the value factory for this column
+            final var valueFactory =
+                getValueFactory(columnarSchema.getTraits(i), columnarSchema.getSpec(i), dataRepository);
             factories.add(valueFactory);
-            var dataType = ValueFactoryUtils.getDataTypeForValueFactory(valueFactory);
-            specs.add(new DataColumnSpecCreator(columnNames[i], dataType).createSpec());
+
+            // Get the DataColumnSpec for this column
+            final var dataType = ValueFactoryUtils.getDataTypeForValueFactory(valueFactory);
+            final var specCreator = new DataColumnSpecCreator(columnNames[i], dataType);
+            specCreator.setDomain(domainAndMetadata.getDomain(i));
+            for (final DataColumnMetaData m : domainAndMetadata.getMetadata(i)) {
+                specCreator.addMetaData(m, false); // TODO overwrite or merge?
+            }
+            specs.add(specCreator.createSpec());
         }
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
         return ColumnarValueSchemaUtils
@@ -295,6 +322,39 @@ public final class PythonArrowDataUtils {
                 .orElseThrow(
                     () -> new IllegalArgumentException(String.format("There was no value factory provided from python "
                         + "and there also doesn't exist a default value factory for '%s'.", dataSpec)));
+        }
+    }
+
+    /** Interface for an object holding a domain and an array of metadata for each column of a table. */
+    public interface TableDomainAndMetadata {
+
+        /**
+         * @param colIndex the index of the column
+         * @return the domain at this column
+         */
+        DataColumnDomain getDomain(int colIndex);
+
+        /**
+         * @param colIndex the index of the column
+         * @return the metadata at this column
+         */
+        DataColumnMetaData[] getMetadata(int colIndex);
+
+        /**
+         * @return {@link TableDomainAndMetadata} where each column has {@code null} domain and empty metadata.
+         */
+        public static TableDomainAndMetadata empty() {
+            return new TableDomainAndMetadata() {
+                @Override
+                public DataColumnDomain getDomain(final int colIndex) {
+                    return null;
+                }
+
+                @Override
+                public DataColumnMetaData[] getMetadata(final int colIndex) {
+                    return new DataColumnMetaData[0];
+                }
+            };
         }
     }
 

@@ -60,6 +60,7 @@ import org.knime.core.data.DataColumnDomain;
 import org.knime.core.data.columnar.domain.ColumnarDomainCalculator;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.meta.DataColumnMetaData;
+import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 
 /**
  * Perform batch-wise domain calculation on a {@link RandomAccessBatchReadable} or {@link SequentialBatchReadable}.
@@ -128,8 +129,7 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
     @SuppressWarnings("unchecked")
     @Override
     protected void processNextBatchImpl(final ReadBatch batch) {
-        Stream.concat(m_domainCalculators.entrySet().stream(), m_metadataCalculators.entrySet().stream())
-        .forEach(e -> {
+        Stream.concat(m_domainCalculators.entrySet().stream(), m_metadataCalculators.entrySet().stream()).forEach(e -> {
             if (!m_stillRunning.get() || m_invalidCause.get() != null) {
                 return; // stopped by close or encountered error before, so don't compute further domains
             }
@@ -149,14 +149,7 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
      */
     public final DataColumnDomain getDomain(final int colIndex) throws InterruptedException {
         waitForTermination();
-
-        if (m_domainCalculators != null) {
-            final ColumnarDomainCalculator<?, DataColumnDomain> calculator = m_domainCalculators.get(colIndex);
-            if (calculator != null) {
-                return calculator.createDomain();
-            }
-        }
-        return null;
+        return getDomainDontWait(colIndex);
     }
 
     /**
@@ -168,7 +161,42 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
      */
     public final DataColumnMetaData[] getMetadata(final int colIndex) throws InterruptedException {
         waitForTermination();
+        return getMetadataDontWait(colIndex);
+    }
 
+    /**
+     * Get the combined results as a {@link TableDomainAndMetadata} object.
+     *
+     * @return the resulting domain and metadata for the complete table
+     * @throws InterruptedException
+     */
+    public final TableDomainAndMetadata getTableDomainAndMetadata() throws InterruptedException {
+        waitForTermination();
+        return new TableDomainAndMetadata() {
+
+            @Override
+            public DataColumnDomain getDomain(final int colIndex) {
+                return getDomainDontWait(colIndex);
+            }
+
+            @Override
+            public DataColumnMetaData[] getMetadata(final int colIndex) {
+                return getMetadataDontWait(colIndex);
+            }
+        };
+    }
+
+    private DataColumnDomain getDomainDontWait(final int colIndex) {
+        if (m_domainCalculators != null) {
+            final ColumnarDomainCalculator<?, DataColumnDomain> calculator = m_domainCalculators.get(colIndex);
+            if (calculator != null) {
+                return calculator.createDomain();
+            }
+        }
+        return null;
+    }
+
+    private DataColumnMetaData[] getMetadataDontWait(final int colIndex) {
         if (m_metadataCalculators != null) {
             final ColumnarDomainCalculator<?, DataColumnMetaData[]> calculator = m_metadataCalculators.get(colIndex);
             if (calculator != null) {

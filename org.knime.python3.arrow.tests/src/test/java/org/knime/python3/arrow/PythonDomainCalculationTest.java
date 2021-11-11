@@ -53,7 +53,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.arrow.memory.BufferAllocator;
@@ -63,8 +62,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
-import org.knime.core.data.columnar.domain.DefaultDomainWritableConfig;
-import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
@@ -110,13 +107,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            final Supplier<DomainWritableConfig> configSupplier = () -> {
-                final var schema = PythonArrowDataUtils.createColumnarValueSchema(sink);
-                return new DefaultDomainWritableConfig(schema, 10, false);
-            };
-
             try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, configSupplier)) {
+                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
                 entryPoint.testDomainCalculation("double", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertTrue(domain.hasBounds());
@@ -139,13 +131,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            final Supplier<DomainWritableConfig> configSupplier = () -> {
-                final var schema = PythonArrowDataUtils.createColumnarValueSchema(sink);
-                return new DefaultDomainWritableConfig(schema, 10, false);
-            };
-
             try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, configSupplier)) {
+                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
                 entryPoint.testDomainCalculation("int", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertTrue(domain.hasBounds());
@@ -168,13 +155,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            final Supplier<DomainWritableConfig> configSupplier = () -> {
-                final var schema = PythonArrowDataUtils.createColumnarValueSchema(sink);
-                return new DefaultDomainWritableConfig(schema, 10, false);
-            };
-
             try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, configSupplier)) {
+                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
                 entryPoint.testDomainCalculation("string", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertFalse(domain.hasBounds());
@@ -196,13 +178,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            final Supplier<DomainWritableConfig> configSupplier = () -> {
-                final var schema = PythonArrowDataUtils.createColumnarValueSchema(sink);
-                return new DefaultDomainWritableConfig(schema, 10, false);
-            };
-
             try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, configSupplier)) {
+                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
                 entryPoint.testDomainCalculation("categorical", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertFalse(domain.hasBounds());

@@ -48,15 +48,17 @@
  */
 package org.knime.python3for2;
 
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ExecutionMonitor;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
+import org.knime.python3.arrow.PythonArrowDataSink;
 
 /**
  * Proxy interface delegating to the Python implementation of the kernel back end.
@@ -89,6 +91,20 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      */
     void initializeCurrentWorkingDirectory(String workingDirectoryPath);
 
+    /*
+     * A supplier of {@link PythonArrowDataSink}. {@link #createSink()} will be called by Python but Java must handle
+     * the sink creation.
+     */
+    @FunctionalInterface
+    public interface SinkCreator {
+
+        /**
+         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
+         * @throws IOException if the temporary file for the sink could not be created
+         */
+        PythonArrowDataSink createSink() throws IOException;
+    }
+
     /**
      * Implements the functionality required by
      * {@link Python3KernelBackend#putFlowVariables(String, java.util.Collection)}.
@@ -108,8 +124,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
-     * and
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
@@ -121,8 +136,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
-     * and
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
@@ -137,8 +151,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
-     * and
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
@@ -148,6 +161,15 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param sentinelValue A fixed integer sentinel value (corresponds to {@link SentinelOption#CUSTOM}).
      */
     void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows, int sentinelValue);
+
+    /**
+     * Implements the functionality required by
+     * {@link Python3KernelBackend#getDataTable(String, org.knime.core.node.ExecutionContext, org.knime.core.node.ExecutionMonitor)}.
+     *
+     * @param variableName The varaible name of the table in Python.
+     * @return The {@link PythonArrowDataSink} that this table was written to.
+     */
+    PythonArrowDataSink getTableFromWorkspace(String variableName);
 
     /**
      * Writes the image with the provided name to the provided path.
@@ -189,7 +211,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      */
     void loadPickledObjectIntoWorkspace(final String objectName, final String path);
 
-    /*
+    /**
      * Implements the functionality required by {@link Python3KernelBackend#listVariables()}.
      *
      * @return The list of variables. Each variable is represented as a dictionary containing the fields "name", "type",
@@ -213,20 +235,22 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * {@link Python3KernelBackend#execute(String, org.knime.python2.kernel.PythonCancelable)}.
      *
      * @param sourceCode The Python code to execute.
+     * @param sinkCreator
      * @return A list containing the output that the Python process has written to stdout (first element) and stderr
      *         (second element) while executing the given code.
      */
-    List<String> executeOnMainThread(String sourceCode);
+    List<String> executeOnMainThread(String sourceCode, SinkCreator sinkCreator);
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#executeAsync(String)} and
      * {@link Python3KernelBackend#executeAsync(String, org.knime.python2.kernel.PythonCancelable)}.
      *
      * @param sourceCode The Python code to execute.
+     * @param sinkCreator
      * @return A list containing the output that the Python process has written to stdout (first element) and stderr
      *         (second element) while executing the given code.
      */
-    List<String> executeOnCurrentThread(String sourceCode);
+    List<String> executeOnCurrentThread(String sourceCode, SinkCreator sinkCreator);
 
     /**
      * Provides Java-backed functionality to the Python side.

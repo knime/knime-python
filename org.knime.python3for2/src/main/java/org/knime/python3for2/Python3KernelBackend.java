@@ -54,9 +54,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -75,12 +77,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
 import org.knime.core.data.columnar.table.ColumnarContainerTable;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTableSettings;
+import org.knime.core.data.container.DataContainer;
+import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
@@ -128,10 +133,15 @@ import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
+import org.knime.python3.arrow.DefaultPythonArrowDataSink;
+import org.knime.python3.arrow.DomainCalculator;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
+import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
+import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
+import org.knime.python3.arrow.RowKeyChecker;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -165,6 +175,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         String.class, //
         String[].class //
     );
+
+    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private final PythonCommand m_command;
 
@@ -205,6 +217,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
+    private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
+
+    private final Set<DefaultPythonArrowDataSink> m_usedSinks = new HashSet<>();
+
+    private final Map<DefaultPythonArrowDataSink, RowKeyChecker> m_rowKeyCheckers = new HashMap<>();
+
+    private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
+
     /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
      * <P>
@@ -222,8 +242,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      */
     public Python3KernelBackend(final PythonCommand command) throws IOException {
         if (command.getPythonVersion() == PythonVersion.PYTHON2) {
-            throw new IllegalArgumentException("The new Python kernel back end does not support Python 2 anymore. If " +
-                "you still want to use Python 2, please change your settings to use the legacy kernel back end.");
+            throw new IllegalArgumentException("The new Python kernel back end does not support Python 2 anymore. If "
+                + "you still want to use Python 2, please change your settings to use the legacy kernel back end.");
         }
         try {
             m_command = command;
@@ -442,7 +462,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
         final ExecutionMonitor executionMonitor) throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return performCancelable(new GetDataTableTask(name, exec),
+            new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     @Override
@@ -462,7 +483,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         return performCancelable(() -> getObject(name, file), new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
-    private PickledObjectFile getObject(final String name, final File file) throws PythonIOException, CanceledExecutionException {
+    private PickledObjectFile getObject(final String name, final File file)
+        throws PythonIOException, CanceledExecutionException {
         final var type = m_proxy.getObjectType(name);
         final var representation = m_proxy.getObjectStringRepresentation(name);
         m_proxy.pickleObjectToFile(name, file.getAbsolutePath());
@@ -505,28 +527,46 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
-        return beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
+        return beautifyPythonTraceback(
+            () -> m_proxy.executeOnMainThread(sourceCode, this::createSink).toArray(String[]::new));
     }
 
     @Override
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(
-            () -> beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new)),
-            cancelable);
+        return performCancelable(() -> beautifyPythonTraceback(
+            () -> m_proxy.executeOnMainThread(sourceCode, this::createSink).toArray(String[]::new)), cancelable);
+    }
+
+    @SuppressWarnings("resource") // The resources are remembered and closed in #close
+    private synchronized PythonArrowDataSink createSink() throws IOException {
+        final var path = DataContainer.createTempFile(".knable").toPath();
+        final var sink = PythonArrowDataUtils.createSink(path);
+
+        // Check row keys and compute the domain as soon as anything is written to the sink
+        final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
+        final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
+            DataContainerSettings.getDefault().getMaxDomainValues());
+
+        // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
+        m_sinks.add(sink);
+        m_rowKeyCheckers.put(sink, rowKeyChecker);
+        m_domainCalculators.put(sink, domainCalculator);
+
+        return sink;
     }
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
-        return beautifyPythonTraceback(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new));
+        return beautifyPythonTraceback(
+            () -> m_proxy.executeOnCurrentThread(sourceCode, this::createSink).toArray(String[]::new));
     }
 
     @Override
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(
-            () -> beautifyPythonTraceback(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new)),
-            cancelable);
+        return performCancelable(() -> beautifyPythonTraceback(
+            () -> m_proxy.executeOnCurrentThread(sourceCode, this::createSink).toArray(String[]::new)), cancelable);
     }
 
     private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
@@ -586,8 +626,23 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
                         m_temporaryFsHandlers);
                 }
+                deleteUnusedSinkFiles();
+                PythonUtils.Misc.closeSafely(LOGGER::debug, m_rowKeyCheckers.values());
+                PythonUtils.Misc.closeSafely(LOGGER::debug, m_domainCalculators.values());
             }).start();
         }
+    }
+
+    /** Deletes the temporary files of all sinks that have not been used */
+    private void deleteUnusedSinkFiles() {
+        m_sinks.removeAll(m_usedSinks);
+        PythonUtils.Misc.invokeSafely(LOGGER::debug, s -> {
+            try {
+                Files.deleteIfExists(Path.of(s.getAbsolutePath()));
+            } catch (IOException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }, m_sinks);
     }
 
     private final class PutDataTableTask implements Callable<Void> {
@@ -695,7 +750,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             final var schema =
                 ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, fsHandler));
             ColumnarRowReadTable tableCopy;
-            try (final var columnarTable = new ColumnarRowWriteTable(schema, new ArrowColumnStoreFactory(),
+            try (final var columnarTable = new ColumnarRowWriteTable(schema, ARROW_STORE_FACTORY,
                 new ColumnarRowWriteTableSettings(true, false, -1, false, false, false))) {
                 try (final RowCursor inCursor = table.cursor();
                         final RowWriteCursor outCursor = columnarTable.createCursor()) {
@@ -731,10 +786,54 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
             } else {
                 // Any non-Arrow store should already have been copied into an Arrow store further above.
-                throw new IllegalStateException("Unrecognized store type: " + baseStore.getClass().getName() +
-                    ". This is an implementation error.");
+                throw new IllegalStateException("Unrecognized store type: " + baseStore.getClass().getName()
+                    + ". This is an implementation error.");
             }
         }
     }
 
+    private final class GetDataTableTask implements Callable<BufferedDataTable> {
+
+        private final String m_name;
+
+        private final ExecutionContext m_exec;
+
+        public GetDataTableTask(final String name, final ExecutionContext exec) {
+            m_name = name;
+            m_exec = exec;
+        }
+
+        @Override
+        public BufferedDataTable call() throws Exception {
+            final PythonArrowDataSink pythonSink = m_proxy.getTableFromWorkspace(m_name);
+            assert m_sinks.contains(
+                pythonSink) : "Sink was not created by Python3KernelBackend#createSink. This is a coding issue.";
+            // Must be a DefaultPythonarrowDataSink because it was created by #createSink
+            final DefaultPythonArrowDataSink sink = (DefaultPythonArrowDataSink)pythonSink;
+
+            checkRowKeys(sink);
+            final var domainAndMetadata = getDomain(sink);
+            final IDataRepository dataRepository = Node.invokeGetDataRepository(m_exec);
+            @SuppressWarnings("resource") // Closed by the framework when the table is not needed anymore
+            final BufferedDataTable table = PythonArrowDataUtils
+                .createTable(sink, domainAndMetadata, ARROW_STORE_FACTORY, dataRepository).create(m_exec);
+
+            m_usedSinks.add(sink);
+            return table;
+        }
+
+        @SuppressWarnings("resource") // All rowKeyCheckers are closed at #close
+        private void checkRowKeys(final PythonArrowDataSink sink) throws InterruptedException, PythonIOException {
+            final var rowKeyChecker = m_rowKeyCheckers.get(sink);
+            if (!rowKeyChecker.allUnique()) {
+                throw new PythonIOException(rowKeyChecker.getInvalidCause());
+            }
+        }
+
+        @SuppressWarnings("resource") // All domainCalculators are closed at #close
+        private TableDomainAndMetadata getDomain(final PythonArrowDataSink sink) throws InterruptedException {
+            final var domainCalc = m_domainCalculators.get(sink);
+            return domainCalc.getTableDomainAndMetadata();
+        }
+    }
 }

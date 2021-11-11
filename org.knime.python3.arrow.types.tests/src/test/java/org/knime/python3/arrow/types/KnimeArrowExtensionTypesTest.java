@@ -48,7 +48,10 @@
  */
 package org.knime.python3.arrow.types;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
@@ -114,6 +117,7 @@ import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.core.data.time.duration.DurationCellFactory;
 import org.knime.core.data.time.duration.DurationValue;
 import org.knime.core.data.time.localdate.LocalDateCellFactory;
@@ -183,6 +187,7 @@ import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
+import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
@@ -227,14 +232,7 @@ public class KnimeArrowExtensionTypesTest {
 	private static final TypeAndFactory<LocalDateValue, LocalDateWriteValue> LOCAL_DATE_TF = TypeAndFactory
 			.create(LocalDateCellFactory.TYPE, new LocalDateValueFactory(), LocalDateWriteValue.class);
 
-	/**
-	 * Only OK in this test setting. When used in a workflow, the table id should be
-	 * provided by the framework (WorkflowDataRepository) so that the table can get
-	 * cleaned up properly.
-	 */
-	private static final int TABLE_ID = -1;
-
-	private ArrowColumnStoreFactory m_storeFactory;
+		private ArrowColumnStoreFactory m_storeFactory;
 
 	private BufferAllocator m_allocator;
 
@@ -868,7 +866,8 @@ public class KnimeArrowExtensionTypesTest {
 				final var dataSink = PythonArrowDataUtils.createSink(outputPath);
 				entryPointSelector.accept(getEntryPoint(), dataSource, dataSink);
 
-				try (var table = PythonArrowDataUtils.createTable(dataSink, m_storeFactory, TABLE_ID)) {
+				try (var table = PythonArrowDataUtils.createTable(dataSink, TableDomainAndMetadata.empty(),
+						m_storeFactory, NotInWorkflowDataRepository.newInstance())) {
 					javaResultTester.accept(table);
 				}
 			}
