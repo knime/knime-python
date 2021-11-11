@@ -46,12 +46,9 @@
 
 package org.knime.python3for2;
 
-<<<<<<< HEAD
-import static org.junit.Assert.assertTrue;
-=======
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
->>>>>>> b8efe509 (AP-17283: Implement pickled object transfer for new Python kernel)
+import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LONG;
@@ -282,13 +279,11 @@ public class Python3KernelBackendProxyTest {
 
         PythonTestResult testPutTableIntoWorkspace(PythonDataSource tableDataSource);
 
-<<<<<<< HEAD
         PythonTestResult testWriteImageToPath(final String imgType, final String path);
-=======
+
         Python3KernelBackendProxy getKernel();
 
         void putStringIntoWorkspace(final String name, final String testString);
 
->>>>>>> b8efe509 (AP-17283: Implement pickled object transfer for new Python kernel)
     }
 }
