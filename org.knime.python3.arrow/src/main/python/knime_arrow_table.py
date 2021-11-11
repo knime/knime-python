@@ -48,6 +48,7 @@ Provides the implementation of the KNIME Table using the Apache Arrow backend
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
 
+from types import LambdaType
 from typing import Iterator, List, Optional, Tuple, Union
 import knime_table as kta
 import knime_arrow as ka
@@ -275,8 +276,26 @@ class ArrowWriteTable(kta.WriteTable):
 
 
 class ArrowBackend(kta._Backend):
-    def create_batch_from_pandas(self, *args, **kwargs) -> ArrowBatch:
-        return ArrowBatch.from_pandas(*args, **kwargs)
+    def __init__(self, sink_creator: LambdaType):
+        """
+        Create the Apache Arrow backend for KNIME Python tables.
+        Automatically creates Java-backed sinks for WriteTables.
+        
+        Remember to call close() on this object to close all created sinks.
+
+        Args:
+            sink_creator: A lambda function without args that creates 
+                          a Python data sink when called
+        """
+        self._sink_creator = sink_creator
+        self._sinks = []
+
+    def batch(
+        self,
+        data: Union["pandas.DataFrame", pa.RecordBatch],
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> ArrowBatch:
+        return ArrowBatch(data, sentinel)
 
     def write_table(
         self,
@@ -289,6 +308,16 @@ class ArrowBackend(kta._Backend):
         write_table = self._create_write_table()
         write_table._put_table(data, sentinel)
         return write_table
+
+    def _create_write_table(self) -> ArrowWriteTable:
+        new_sink = self._sink_creator()
+        self._sinks.append(new_sink)
+        return ArrowWriteTable(new_sink)
+
+    def close(self):
+        """Closes all sinks that were opened in this session"""
+        for s in self._sinks:
+            s.close()
 
 
 def _select_rows(

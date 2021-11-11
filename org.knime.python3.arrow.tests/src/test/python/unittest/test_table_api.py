@@ -8,7 +8,7 @@ import pyarrow as pa
 
 class BatchTest(unittest.TestCase):
     def setUp(self):
-        kt._backend = kat.ArrowBackend()
+        kt._backend = kat.ArrowBackend(None)
 
     def test_from_pandas(self):
         df = pd.DataFrame()
@@ -165,7 +165,7 @@ class SentinelReplacementTest(unittest.TestCase):
             )
 
     def test_batch_replacement_api(self):
-        kt._backend = kat.ArrowBackend()
+        kt._backend = kat.ArrowBackend(None)
         d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
         b = kt.Batch.from_pyarrow(rb)

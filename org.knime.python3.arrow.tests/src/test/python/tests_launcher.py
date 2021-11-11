@@ -534,78 +534,84 @@ class EntryPoint(kg.EntryPoint):
 
     # -------------------------------------------------------------------------
 
-    def testKnimeTable(self, data_source, data_sink, num_rows, num_columns, mode):
+    def testKnimeTable(self, data_source, sink_creator, num_rows, num_columns, mode):
         import knime_table as kta
         import knime_arrow_table as kata
 
-        kta._backend = kata.ArrowBackend()
+        def create_python_sink():
+            java_sink = sink_creator.createSink()
+            return ka.ArrowDataSink(java_sink)
+
+        kta._backend = kata.ArrowBackend(sink_creator=create_python_sink)
 
         expected_shape = (num_rows, num_columns)
 
         with kg.data_source_mapper(data_source) as source:
-            with kg.data_sink_mapper(data_sink) as sink:
+            read_table = kata.ArrowReadTable(source)
+            assert isinstance(read_table, kta.ReadTable)
+            assert isinstance(read_table, kta.Table)
 
-                read_table = kata.ArrowReadTable(source)
-                assert isinstance(read_table, kta.ReadTable)
-                assert isinstance(read_table, kta.Table)
+            assert num_rows == read_table.num_rows
+            assert num_columns == read_table.num_columns
+            assert expected_shape == read_table.shape
 
-                assert num_rows == read_table.num_rows
-                assert num_columns == read_table.num_columns
-                assert expected_shape == read_table.shape
+            write_table = kta.WriteTable.create()
+            assert isinstance(write_table, kata.ArrowWriteTable)
+            assert isinstance(write_table, kta.WriteTable)
+            assert isinstance(write_table, kta.Table)
 
-                write_table = kata.ArrowWriteTable(sink)
-                assert isinstance(write_table, kta.WriteTable)
-                assert isinstance(write_table, kta.Table)
+            # import debugpy
 
-                # import debugpy
+            # debugpy.listen(5678)
+            # print("Waiting for debugger attach")
+            # debugpy.wait_for_client()
+            # debugpy.breakpoint()
 
-                # debugpy.listen(5678)
-                # print("Waiting for debugger attach")
-                # debugpy.wait_for_client()
-                # debugpy.breakpoint()
+            for read_batch in read_table.batches():
+                assert num_rows >= read_batch.num_rows
+                assert num_columns == read_batch.num_columns
+                assert isinstance(read_batch, kata.ArrowBatch)
+                assert isinstance(read_batch, kta.Batch)
 
-                for read_batch in read_table.batches():
-                    assert num_rows >= read_batch.num_rows
-                    assert num_columns == read_batch.num_columns
-                    assert isinstance(read_batch, kata.ArrowBatch)
-                    assert isinstance(read_batch, kta.Batch)
+                if mode == "arrow":
+                    arrow_batch = read_batch.to_pyarrow()
+                    arrays = []
+                    arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
+                    arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
+                    arrays.append(arrow_batch.column(2))
+                    new_batch = pa.RecordBatch.from_arrays(
+                        arrays, schema=arrow_batch.schema
+                    )
+                    write_batch = kta.Batch.from_pyarrow(new_batch)
+                elif mode == "pandas":
+                    pandas_df = read_batch.to_pandas()
+                    pandas_df["0"] = pandas_df["0"] * 2
+                    pandas_df["1"] = pandas_df["1"] * 2
+                    write_batch = kta.Batch.from_pandas(pandas_df)
+                elif mode == "dict":
+                    d = read_batch.to_pyarrow().to_pydict()
+                    d["0"] = [i * 2 for i in d["0"]]
+                    d["1"] = [i * 2 for i in d["1"]]
+                    write_batch = kta.Batch.from_pyarrow(
+                        # from_pydict requires pyarrow 6.0! Install via PIP
+                        pa.RecordBatch.from_pydict(d)
+                    )
+                else:
+                    write_batch = read_batch
 
-                    if mode == "arrow":
-                        arrow_batch = read_batch.to_pyarrow()
-                        arrays = []
-                        arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
-                        arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
-                        arrays.append(arrow_batch.column(2))
-                        new_batch = pa.RecordBatch.from_arrays(
-                            arrays, schema=arrow_batch.schema
-                        )
-                        write_batch = kta.Batch.from_pyarrow(new_batch)
-                    elif mode == "pandas":
-                        pandas_df = read_batch.to_pandas()
-                        pandas_df["0"] = pandas_df["0"] * 2
-                        pandas_df["1"] = pandas_df["1"] * 2
-                        write_batch = kta.Batch.from_pandas(pandas_df)
-                    elif mode == "dict":
-                        d = read_batch.to_pyarrow().to_pydict()
-                        d["0"] = [i * 2 for i in d["0"]]
-                        d["1"] = [i * 2 for i in d["1"]]
-                        write_batch = kta.Batch.from_pyarrow(
-                            # from_pydict requires pyarrow 6.0! Install via PIP
-                            pa.RecordBatch.from_pydict(d)
-                        )
-                    else:
-                        write_batch = read_batch
+                assert isinstance(write_batch, kata.ArrowBatch)
+                assert isinstance(write_batch, kta.Batch)
+                assert read_batch.num_rows == write_batch.num_rows
+                assert read_batch.num_columns == write_batch.num_columns
+                write_table.append(write_batch)
 
-                    assert isinstance(write_batch, kata.ArrowBatch)
-                    assert isinstance(write_batch, kta.Batch)
-                    assert read_batch.num_rows == write_batch.num_rows
-                    assert read_batch.num_columns == write_batch.num_columns
-                    write_table.append(write_batch)
+            assert num_rows == write_table.num_rows
+            assert num_columns == write_table.num_columns
+            assert read_table.num_batches == write_table.num_batches
+            assert expected_shape == write_table.shape
 
-                assert num_rows == write_table.num_rows
-                assert num_columns == write_table.num_columns
-                assert read_table.num_batches == write_table.num_batches
-                assert expected_shape == write_table.shape
+        kta._backend.close()
+        return write_table._sink._java_data_sink
 
     class Java:
         implements = ["org.knime.python3.arrow.TestUtils.ArrowTestEntryPoint"]

@@ -75,6 +75,7 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
+import org.knime.python3.arrow.TestUtils.SinkCreator;
 
 /**
  * Tests sending data to a KNIME Table and receiving data from it.
@@ -106,11 +107,14 @@ public class KnimeTableTest {
 
         final var numBatches = 50;
         final var numRowsPerBatch = 200_000;
-        final String[] modes = new String[] {"arrow", "pandas", "dict"};
+        final var modes = new String[] {"arrow", "pandas", "dict"};
 
         for (final var mode : modes) {
             final var sourcePath = TestUtils.createTmpKNIMEArrowPath();
             final var sinkPath = TestUtils.createTmpKNIMEArrowPath();
+
+            final SinkCreator sinkCreator = () -> PythonArrowDataUtils.createSink(sinkPath);
+
             // Open connection to Python
             try (final var pythonGateway = TestUtils.openPythonGateway()) {
                 final var entryPoint = pythonGateway.getEntryPoint();
@@ -123,20 +127,18 @@ public class KnimeTableTest {
                             .build()) {
 
                     final var dataSource = PythonArrowDataUtils.createSource(arrowStore, numBatches);
-                    final var dataSink = PythonArrowDataUtils.createSink(sinkPath);
 
                     // Write some batches
                     try (final BatchWriter writer = store.getWriter()) {
                         for (int b = 0; b < numBatches; b++) { // NOSONAR
                             writeBatch(schema, b, numRowsPerBatch, writer);
-
                             // TODO: call Python here and make sure it blocks until all batches are written?!
                         }
                     } // <- Footer is written here
 
                     long startTime = System.nanoTime();
 
-                    entryPoint.testKnimeTable(dataSource, dataSink, (long)numBatches * numRowsPerBatch,
+                    final var dataSink = (DefaultPythonArrowDataSink)entryPoint.testKnimeTable(dataSource, sinkCreator, (long)numBatches * numRowsPerBatch,
                         schema.numColumns(), mode);
 
                     long endTime = System.nanoTime();

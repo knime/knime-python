@@ -122,6 +122,16 @@ public final class TestUtils {
     }
 
     /**
+     * Interface for a {@link SinkCreator} that can create new {@link PythonDataSink}s
+     */
+    public interface SinkCreator {
+        /**
+         * @return a new data sink
+         * **/
+        PythonDataSink createSink();
+    }
+
+    /**
      * {@link PythonEntryPoint} for the tests. This interface is implemented on Python and calling a method will execute
      * Python code.
      */
@@ -182,11 +192,11 @@ public final class TestUtils {
         /**
          * Test the Python KNIME Table API
          * @param source providing data to Python
-         * @param sink The sink where the data will been written to
+         * @param sinkCreator A sink supplier that is called whenever a new data sink is created on the python side
          * @param numRows number of rows in the input table
          * @param numColumns number of columns in the input table
          * @param mode Of copying data from source to sink, "arrow" or "pandas"
          */
-        void testKnimeTable(PythonDataSource source, PythonDataSink sink, long numRows, long numColumns, String mode);
+        PythonDataSink testKnimeTable(PythonDataSource source, SinkCreator sinkCreator, long numRows, long numColumns, String mode);
     }
 }
