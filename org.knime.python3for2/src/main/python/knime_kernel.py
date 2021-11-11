@@ -49,7 +49,8 @@
 
 import pyarrow as pa
 import sys
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
+import pickle
 
 import knime_arrow_table as kat
 import knime_gateway as kg
@@ -73,6 +74,7 @@ class PythonKernel(kg.EntryPoint):
             data_frame.set_index(data_frame.columns[0], inplace=True)
             self._workspace[variable_name] = data_frame
 
+
     def writeImageToPath(
         self,
         image_name: str,
@@ -81,6 +83,26 @@ class PythonKernel(kg.EntryPoint):
         image = self._workspace[image_name]
         with open(path, "wb") as file:
             file.write(image)
+
+    def pickleObjectToFile(self, object_name: str, path: str):
+        obj = self._workspace[object_name]
+        with open(path, "wb") as file:
+            pickle.dump(obj=obj, file=file)
+
+    def getObjectType(self, object_name: str) -> str:
+        return type(self._workspace[object_name]).__name__
+
+    def getObjectStringRepresentation(self, object_name: str) -> str:
+        object_as_string = str(self._workspace[object_name])
+        return (
+            (object_as_string[:996] + "\n...")
+            if len(object_as_string) > 1000
+            else object_as_string
+        )
+
+    def loadPickledObjectIntoWorkspace(self, object_name: str, path: str):
+        with open(path, "rb") as file:
+            self._workspace[object_name] = pickle.load(file)
 
     class Java:
         implements = ["org.knime.python3for2.Python3KernelBackendProxy"]

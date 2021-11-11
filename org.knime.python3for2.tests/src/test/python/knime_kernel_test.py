@@ -58,6 +58,17 @@ from knime_testing import PythonTestResult
 
 
 class Python3KernelBackendProxyTestRunner(kg.EntryPoint):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._kernel = PythonKernel()
+
+    def getKernel(self):
+        return self._kernel
+
+    def putStringIntoWorkspace(self, name:str, test_string:str):
+        self._kernel._workspace[name] = test_string
+
     def testPutTableIntoWorkspace(self, java_table_data_source):
         suite = unittest.TestSuite(
             [
@@ -81,6 +92,11 @@ class Python3KernelBackendProxyTestRunner(kg.EntryPoint):
         kernel = PythonKernel()
         kernel._workspace["img"] = img_data
         kernel.writeImageToPath("img", path)
+
+    class Java:
+        implements = [
+            "org.knime.python3for2.Python3KernelBackendProxyTest.Python3KernelBackendProxyTestRunner"
+        ]
 
 
 class PutTableIntoWorkspaceTest(unittest.TestCase):

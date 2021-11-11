@@ -48,6 +48,8 @@
  */
 package org.knime.python3for2;
 
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -61,9 +63,9 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
      * and
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
      * @param tableDataSource The source providing the table's data.
@@ -74,9 +76,9 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
      * and
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
      * @param tableDataSource The source providing the table's data.
@@ -90,9 +92,9 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor)}
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)}
      * and
-     * {@link Python3KernelBackend#putDataTable(String, org.knime.core.node.BufferedDataTable, org.knime.core.node.ExecutionMonitor, int)}.
+     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
      * @param variableName The variable name of the table in Python.
      * @param tableDataSource The source providing the table's data.
@@ -109,4 +111,37 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param path to write the image to
      */
     void writeImageFromWorkspaceToPath(String imageName, String path);
+
+    /**
+     * Pickles the object with the provided name into the file at the provided path
+     *
+     * @param objectName name of the object in the workspace
+     * @param path to pickle the object to
+     */
+    void pickleObjectToFile(final String objectName, final String path);
+
+    /**
+     * Returns the type of the object with the provided name.
+     *
+     * @param objectName name of the object in the workspace
+     * @return the type of the object with the provided name
+     */
+    String getObjectType(final String objectName);
+
+    /**
+     * Returns a string representation of the object with the provided name.
+     *
+     * @param objectName name of the object in the workspace
+     * @return the string representation of the object with the provided name
+     */
+    String getObjectStringRepresentation(final String objectName);
+
+    /**
+     * Unpickles the object stored at path into the workflow under the provided name.
+     *
+     * @param objectName name the object should have in the workspace
+     * @param path to unpickle from
+     */
+    void loadPickledObjectIntoWorkspace(final String objectName, final String path);
+
 }

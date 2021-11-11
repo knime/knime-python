@@ -284,19 +284,26 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        m_proxy.loadPickledObjectIntoWorkspace(name, object.getFile().getAbsolutePath());
     }
 
     @Override
     public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        performVoidCancelable(() -> putObject(name, object), executionMonitor);
     }
 
     @Override
     public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        throw new UnsupportedOperationException("not yet implemented"); // TODO: NYI
+        return performCancelable(() -> getObject(name, file), executionMonitor);
+    }
+
+    private PickledObjectFile getObject(final String name, final File file) throws PythonIOException, CanceledExecutionException {
+        final var type = m_proxy.getObjectType(name);
+        final var representation = m_proxy.getObjectStringRepresentation(name);
+        m_proxy.pickleObjectToFile(name, file.getAbsolutePath());
+        return new PickledObjectFile(file, type, representation);
     }
 
     @Override
@@ -365,6 +372,20 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             ex1.initCause(ex);
             throw ex1;
         }
+    }
+
+    private interface Task {
+
+        void run() throws Exception;//NOSONAR
+
+    }
+
+    private void performVoidCancelable(final Task task, final ExecutionMonitor executionMonitor)
+        throws PythonIOException, CanceledExecutionException {
+        performCancelable(() -> {
+            task.run();
+            return null;
+        }, executionMonitor);
     }
 
     @Override

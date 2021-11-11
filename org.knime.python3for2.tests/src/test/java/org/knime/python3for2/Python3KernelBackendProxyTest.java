@@ -46,7 +46,12 @@
 
 package org.knime.python3for2;
 
+<<<<<<< HEAD
 import static org.junit.Assert.assertTrue;
+=======
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+>>>>>>> b8efe509 (AP-17283: Implement pickled object transfer for new Python kernel)
 import static org.knime.core.table.schema.DataSpecs.DOUBLE;
 import static org.knime.core.table.schema.DataSpecs.INT;
 import static org.knime.core.table.schema.DataSpecs.LONG;
@@ -58,6 +63,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -84,7 +92,6 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
@@ -160,18 +167,67 @@ public class Python3KernelBackendProxyTest {
         }
     }
 
-    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException {
-        final PythonCommand command = getPythonCommand();
-        final String launcherPath =
+    @Test
+    public void testGetObjectType() throws Exception {
+        performEntryPointTest(e -> {
+            e.putStringIntoWorkspace("string_var", "foobar");
+            var kernelProxy = e.getKernel();
+            assertEquals("str", kernelProxy.getObjectType("string_var"));
+        });
+    }
+
+    @Test
+    public void testGetObjectRepresentation() throws Exception {
+        performEntryPointTest(e -> {
+            e.putStringIntoWorkspace("string_var", "foobar");
+            var kernelProxy = e.getKernel();
+            assertEquals("foobar", kernelProxy.getObjectStringRepresentation("string_var"));
+            var veryLongString = Stream.generate(() -> "foobar").limit(500).collect(Collectors.joining());
+            e.putStringIntoWorkspace("long_string", veryLongString);
+            var expected = veryLongString.subSequence(0, 996) + "\n...";
+            assertEquals(expected, kernelProxy.getObjectStringRepresentation("long_string"));
+        });
+    }
+
+    @Test
+    public void testPutAndGetObject() throws Exception {
+        final var file = Files.createTempFile("pickled", "object");
+        final var path = file.toAbsolutePath().toString();
+        performEntryPointTest(e -> {
+            e.putStringIntoWorkspace("string_var", "foobar");
+            e.getKernel().pickleObjectToFile("string_var", path);
+        });
+        assertNotEquals(0, Files.size(file));
+        performEntryPointTest(e -> {
+            var kernel = e.getKernel();
+            kernel.loadPickledObjectIntoWorkspace("my_var", path);
+            assertEquals("foobar", kernel.getObjectStringRepresentation("my_var"));
+        });
+    }
+
+    private static void performEntryPointTest(final Consumer<Python3KernelBackendProxyTestRunner> test) throws IOException {
+        try (var gateway = openPythonGateway()) {
+            test.accept(gateway.getEntryPoint());
+        }
+    }
+
+    private static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass)
+        throws IOException {
+        final var command = getPythonCommand();
+        final var launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "knime_kernel_test.py").toString();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
-        final PythonPath pythonPath = (new PythonPathBuilder()) //
+        final var pythonPath = (new PythonPathBuilder()) //
             .add(Python3SourceDirectory.getPath()) //
             .add(Python3ArrowSourceDirectory.getPath()) //
             .add(Python3for2SourceDirectory.getPath()) //
             .build();
-        return new PythonGateway<>(command.createProcessBuilder(), launcherPath,
-            Python3KernelBackendProxyTestRunner.class, extensions, pythonPath);
+        return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
+            pythonPath);
+    }
+
+    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException {
+        return openPythonGateway(Python3KernelBackendProxyTestRunner.class);
     }
 
     private static PythonCommand getPythonCommand() throws IOException {
@@ -226,6 +282,13 @@ public class Python3KernelBackendProxyTest {
 
         PythonTestResult testPutTableIntoWorkspace(PythonDataSource tableDataSource);
 
+<<<<<<< HEAD
         PythonTestResult testWriteImageToPath(final String imgType, final String path);
+=======
+        Python3KernelBackendProxy getKernel();
+
+        void putStringIntoWorkspace(final String name, final String testString);
+
+>>>>>>> b8efe509 (AP-17283: Implement pickled object transfer for new Python kernel)
     }
 }
