@@ -631,7 +631,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         }
     }
 
-    private void setCurrentWorkingDirToWorkflowDir() {
+    private void setCurrentWorkingDirToWorkflowDir() throws InterruptedException, ExecutionException {
         final Optional<String> workflowDirOptional =
             getWorkflowDirectoryForSettingWorkingDirectory(m_nodeContextManager.getNodeContext(), LOGGER);
         if (workflowDirOptional.isPresent()) {
@@ -639,7 +639,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             m_commands.execute("import os\n" + //
                 "import sys\n" + //
                 "os.chdir(" + workflowDir + ")\n" + //
-                "sys.path.insert(0, " + workflowDir + ")");
+                "sys.path.insert(0, " + workflowDir + ")").get();
         }
     }
 
