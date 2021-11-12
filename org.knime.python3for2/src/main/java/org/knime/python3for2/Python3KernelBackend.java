@@ -217,13 +217,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
-    private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
-
-    private final Set<DefaultPythonArrowDataSink> m_usedSinks = new HashSet<>();
-
-    private final Map<DefaultPythonArrowDataSink, RowKeyChecker> m_rowKeyCheckers = new HashMap<>();
-
-    private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
+    private final SinkManager m_sinkManager = new SinkManager();
 
     /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
@@ -528,45 +522,31 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
         return beautifyPythonTraceback(
-            () -> m_proxy.executeOnMainThread(sourceCode, this::createSink).toArray(String[]::new));
+            () -> m_proxy.executeOnMainThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new));
     }
 
     @Override
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> beautifyPythonTraceback(
-            () -> m_proxy.executeOnMainThread(sourceCode, this::createSink).toArray(String[]::new)), cancelable);
-    }
-
-    @SuppressWarnings("resource") // The resources are remembered and closed in #close
-    private synchronized PythonArrowDataSink createSink() throws IOException {
-        final var path = DataContainer.createTempFile(".knable").toPath();
-        final var sink = PythonArrowDataUtils.createSink(path);
-
-        // Check row keys and compute the domain as soon as anything is written to the sink
-        final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
-        final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
-            DataContainerSettings.getDefault().getMaxDomainValues());
-
-        // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
-        m_sinks.add(sink);
-        m_rowKeyCheckers.put(sink, rowKeyChecker);
-        m_domainCalculators.put(sink, domainCalculator);
-
-        return sink;
+        return performCancelable(
+            () -> beautifyPythonTraceback(
+                () -> m_proxy.executeOnMainThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new)),
+            cancelable);
     }
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
         return beautifyPythonTraceback(
-            () -> m_proxy.executeOnCurrentThread(sourceCode, this::createSink).toArray(String[]::new));
+            () -> m_proxy.executeOnCurrentThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new));
     }
 
     @Override
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> beautifyPythonTraceback(
-            () -> m_proxy.executeOnCurrentThread(sourceCode, this::createSink).toArray(String[]::new)), cancelable);
+        return performCancelable(
+            () -> beautifyPythonTraceback(
+                () -> m_proxy.executeOnCurrentThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new)),
+            cancelable);
     }
 
     private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
@@ -626,23 +606,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
                         m_temporaryFsHandlers);
                 }
-                deleteUnusedSinkFiles();
-                PythonUtils.Misc.closeSafely(LOGGER::debug, m_rowKeyCheckers.values());
-                PythonUtils.Misc.closeSafely(LOGGER::debug, m_domainCalculators.values());
+                PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
             }).start();
         }
-    }
-
-    /** Deletes the temporary files of all sinks that have not been used */
-    private void deleteUnusedSinkFiles() {
-        m_sinks.removeAll(m_usedSinks);
-        PythonUtils.Misc.invokeSafely(LOGGER::debug, s -> {
-            try {
-                Files.deleteIfExists(Path.of(s.getAbsolutePath()));
-            } catch (IOException ex) {
-                throw new IllegalStateException(ex);
-            }
-        }, m_sinks);
     }
 
     private final class PutDataTableTask implements Callable<Void> {
@@ -806,7 +772,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         @Override
         public BufferedDataTable call() throws Exception {
             final PythonArrowDataSink pythonSink = m_proxy.getTableFromWorkspace(m_name);
-            assert m_sinks.contains(
+            assert m_sinkManager.contains(
                 pythonSink) : "Sink was not created by Python3KernelBackend#createSink. This is a coding issue.";
             // Must be a DefaultPythonarrowDataSink because it was created by #createSink
             final DefaultPythonArrowDataSink sink = (DefaultPythonArrowDataSink)pythonSink;
@@ -818,22 +784,88 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             final BufferedDataTable table = PythonArrowDataUtils
                 .createTable(sink, domainAndMetadata, ARROW_STORE_FACTORY, dataRepository).create(m_exec);
 
-            m_usedSinks.add(sink);
+            m_sinkManager.markUsed(sink);
             return table;
         }
 
         @SuppressWarnings("resource") // All rowKeyCheckers are closed at #close
-        private void checkRowKeys(final PythonArrowDataSink sink) throws InterruptedException, PythonIOException {
-            final var rowKeyChecker = m_rowKeyCheckers.get(sink);
+        private void checkRowKeys(final DefaultPythonArrowDataSink sink)
+            throws InterruptedException, PythonIOException {
+            final var rowKeyChecker = m_sinkManager.getRowKeyChecker(sink);
             if (!rowKeyChecker.allUnique()) {
                 throw new PythonIOException(rowKeyChecker.getInvalidCause());
             }
         }
 
         @SuppressWarnings("resource") // All domainCalculators are closed at #close
-        private TableDomainAndMetadata getDomain(final PythonArrowDataSink sink) throws InterruptedException {
-            final var domainCalc = m_domainCalculators.get(sink);
+        private TableDomainAndMetadata getDomain(final DefaultPythonArrowDataSink sink) throws InterruptedException {
+            final var domainCalc = m_sinkManager.getDomainCalculator(sink);
             return domainCalc.getTableDomainAndMetadata();
+        }
+    }
+
+    /** A class for managing a set of sinks with rowKeyCheckers and domainCalculators */
+    private static final class SinkManager implements AutoCloseable {
+
+        private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
+
+        private final Set<DefaultPythonArrowDataSink> m_usedSinks = new HashSet<>();
+
+        private final Map<DefaultPythonArrowDataSink, RowKeyChecker> m_rowKeyCheckers = new HashMap<>();
+
+        private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
+
+        @SuppressWarnings("resource") // The resources are remembered and closed in #close
+        private synchronized PythonArrowDataSink createSink() throws IOException {
+            final var path = DataContainer.createTempFile(".knable").toPath();
+            final var sink = PythonArrowDataUtils.createSink(path);
+
+            // Check row keys and compute the domain as soon as anything is written to the sink
+            final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
+            final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
+                DataContainerSettings.getDefault().getMaxDomainValues());
+
+            // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
+            m_sinks.add(sink);
+            m_rowKeyCheckers.put(sink, rowKeyChecker);
+            m_domainCalculators.put(sink, domainCalculator);
+
+            return sink;
+        }
+
+        public boolean contains(final Object sink) {
+            return m_sinks.contains(sink);
+        }
+
+        public RowKeyChecker getRowKeyChecker(final DefaultPythonArrowDataSink sink) {
+            return m_rowKeyCheckers.get(sink);
+        }
+
+        public DomainCalculator getDomainCalculator(final DefaultPythonArrowDataSink sink) {
+            return m_domainCalculators.get(sink);
+        }
+
+        public void markUsed(final DefaultPythonArrowDataSink sink) {
+            m_usedSinks.add(sink);
+        }
+
+        @Override
+        public void close() throws Exception {
+            deleteUnusedSinkFiles();
+            PythonUtils.Misc.closeSafely(LOGGER::debug, m_rowKeyCheckers.values());
+            PythonUtils.Misc.closeSafely(LOGGER::debug, m_domainCalculators.values());
+        }
+
+        /** Deletes the temporary files of all sinks that have not been used */
+        private void deleteUnusedSinkFiles() {
+            m_sinks.removeAll(m_usedSinks);
+            PythonUtils.Misc.invokeSafely(LOGGER::debug, s -> {
+                try {
+                    Files.deleteIfExists(Path.of(s.getAbsolutePath()));
+                } catch (IOException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }, m_sinks);
         }
     }
 }
