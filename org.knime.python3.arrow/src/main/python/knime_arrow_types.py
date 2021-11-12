@@ -358,15 +358,19 @@ def storage_to_extension(
 def insert_sentinel_for_missing_values(
     data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
+    storage_data = to_storage_data(data)
     arrays = []
-    for i, column in enumerate(data):
+    for i, column in enumerate(storage_data):
+        # TODO: list/struct of integral data
         if pa.types.is_integer(column.type) and column.null_count != 0:
             column = _insert_sentinels_for_missing_values_in_int_array(column, sentinel)
         arrays.append(column)
+
     if isinstance(data, pa.RecordBatch):
-        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
+        result = pa.RecordBatch.from_arrays(arrays, schema=storage_data.schema)
     else:
-        return pa.Table.from_arrays(arrays, schema=data.schema)
+        result = pa.Table.from_arrays(arrays, schema=storage_data.schema)
+    return storage_to_extension(result, data.schema)
 
 
 def _sentinel_value(dtype: pa.DataType, sentinel: Union[str, int]) -> int:
@@ -381,9 +385,6 @@ def _sentinel_value(dtype: pa.DataType, sentinel: Union[str, int]) -> int:
 def _insert_sentinels_for_missing_values_in_int_array(
     array: pa.Array, sentinel: Union[str, int]
 ) -> pa.Array:
-    if not pa.types.is_integer(array.type) or array.null_count == 0:
-        return array
-
     sentinel_value = _sentinel_value(array.type, sentinel)
     return array.fill_null(sentinel_value)
 
@@ -391,23 +392,23 @@ def _insert_sentinels_for_missing_values_in_int_array(
 def sentinel_to_missing_value(
     data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
+    storage_data = to_storage_data(data)
     arrays = []
-    for i, column in enumerate(data):
+    for i, column in enumerate(storage_data):
+        # TODO: list/struct of integral data
         if pa.types.is_integer(column.type):
             column = _sentinel_to_missing_value_in_int_array(column, sentinel)
         arrays.append(column)
     if isinstance(data, pa.RecordBatch):
-        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
+        result = pa.RecordBatch.from_arrays(arrays, schema=storage_data.schema)
     else:
-        return pa.Table.from_arrays(arrays, schema=data.schema)
+        result = pa.Table.from_arrays(arrays, schema=storage_data.schema)
+    return storage_to_extension(result, data.schema)
 
 
 def _sentinel_to_missing_value_in_int_array(
     array: pa.Array, sentinel: Union[str, int]
 ) -> pa.Array:
-    if not pa.types.is_integer(array.type):
-        return array
-
     sentinel_value = _sentinel_value(array.type, sentinel)
     mask = pa.compute.equal(array, sentinel_value)
     return pa.compute.if_else(mask, None, array)

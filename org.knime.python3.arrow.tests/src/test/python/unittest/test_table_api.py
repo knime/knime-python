@@ -4,6 +4,7 @@ import knime_arrow_table as kat
 import knime_arrow_types as katy
 import pandas as pd
 import pyarrow as pa
+import numpy as np
 
 
 class BatchTest(unittest.TestCase):
@@ -189,6 +190,7 @@ class SentinelReplacementTest(unittest.TestCase):
         kt._backend = kat.ArrowBackend(None)
         d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
+        self.assertEqual(pa.int64(), rb.schema[0].type)
         b = kt.Batch.from_pyarrow(rb)
 
         for s in ["min", "max", 42]:
@@ -204,7 +206,39 @@ class SentinelReplacementTest(unittest.TestCase):
             self.assertFalse(out["1"][2].is_valid)
 
             roundtrip_batch = kt.batch(out, sentinel=s)
-            roundtrip_dict = roundtrip_batch.to_pyarrow().to_pydict()
+            roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
+            self.assertEqual(pa.int64(), roundtrip_batch_pa.schema[0].type)
+            roundtrip_dict = roundtrip_batch_pa.to_pydict()
+            self.assertEqual(d, roundtrip_dict)
+
+    def test_batch_replacement_api_pandas(self):
+        df = pd.DataFrame()
+        df["0"] = [1, 2, 3, 4]
+        df["1"] = [1.0, 2.0, np.nan, 4.0]
+        b = kt.Batch.from_pandas(df, sentinel=1)
+        p = b.to_pyarrow()
+        d = p.to_pydict()
+        self.assertEqual(pa.int64(), p.schema[1].type.storage_type)
+        self.assertFalse(p["0"][0].is_valid)
+
+        for s in ["min", "max", 42]:
+            out = b.to_pandas(sentinel=s)
+            expected = s
+            if s == "min":
+                expected = -9223372036854775808
+            elif s == "max":
+                expected = 9223372036854775807
+
+            self.assertTrue(np.isfinite(out["0"][0]), f"sentinel={s}")
+            self.assertEqual(expected, out["0"][0], f"sentinel={s}")
+            self.assertFalse(np.isfinite(out["1"][2]), f"sentinel={s}")
+
+            roundtrip_batch = kt.batch(out, sentinel=s)
+            roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
+            roundtrip_dict = roundtrip_batch_pa.to_pydict()
+            self.assertEqual(
+                pa.int64(), roundtrip_batch_pa.schema[1].type.storage_type
+            )  # is a logical type because from_pandas wraps known types
             self.assertEqual(d, roundtrip_dict)
 
     def test_table_replacement(self):
