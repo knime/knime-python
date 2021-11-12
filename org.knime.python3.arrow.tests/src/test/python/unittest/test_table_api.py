@@ -15,9 +15,30 @@ class BatchTest(unittest.TestCase):
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, 3.0, 4.0]
         b = kt.Batch.from_pandas(df)
-        self.assertEqual(len(df.columns), b.num_columns)
+        self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key is added
         self.assertEqual(len(df), b.num_rows)
-        self.assertEqual((len(df), len(df.columns)), b.shape)
+        self.assertEqual((len(df), len(df.columns) + 1), b.shape)
+
+    def test_pandas_rowkey_coversion(self):
+        # create batch from pyarrow
+        d = {
+            "<Row Key>": ["r0", "r1", "r2", "r3"],
+            "0": [1, 2, 3, 4],
+            "1": [1.0, 2.0, 3.0, 4.0],
+        }
+        rb = pa.RecordBatch.from_pydict(d)
+        b = kt.Batch.from_pyarrow(rb)
+
+        # convert to pandas
+        df = b.to_pandas()
+        self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key column vanishes
+        self.assertEqual(len(df), b.num_rows)
+
+        b2 = kt.Batch.from_pandas(df)
+        self.assertEqual(b.num_columns, b2.num_columns)  # row key column is added back
+        self.assertEqual(b.num_rows, b2.num_rows)
+        self.assertEqual(b.shape, b2.shape)
+        self.assertEqual(b.to_pyarrow().to_pydict(), b2.to_pyarrow().to_pydict())
 
     def test_from_pyarrow(self):
         d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
