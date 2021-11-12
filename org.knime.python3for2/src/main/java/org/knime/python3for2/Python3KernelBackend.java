@@ -143,6 +143,7 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.RowKeyChecker;
+import org.knime.python3for2.Python3KernelBackendProxy.Callback;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -266,8 +267,18 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             m_outputListeners.startListening();
 
             m_proxy = m_gateway.getEntryPoint();
-            final Python3KernelBackendProxy.Callback callback =
-                knimeUrl -> Python2KernelBackend.resolveKnimeUrl(knimeUrl, m_nodeContextManager);
+            final Python3KernelBackendProxy.Callback callback = new Callback() {
+
+                @Override
+                public String resolve_knime_url(final String knimeUrl) {
+                    return Python2KernelBackend.resolveKnimeUrl(knimeUrl, m_nodeContextManager);
+                }
+
+                @Override
+                public PythonArrowDataSink create_sink() throws IOException {
+                    return m_sinkManager.create_sink();
+                }
+            };
             m_proxy.initializeJavaCallback(callback);
 
             // TODO: Allow users to enable debugging via VM argument? We want devs to be able to debug their Python code
@@ -523,7 +534,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
         return beautifyPythonTraceback(
-            () -> m_proxy.executeOnMainThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new));
+            () -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
@@ -531,14 +542,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         throws PythonIOException, CanceledExecutionException {
         return performCancelable(
             () -> beautifyPythonTraceback(
-                () -> m_proxy.executeOnMainThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new)),
+                () -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new)),
             cancelable);
     }
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
         return beautifyPythonTraceback(
-            () -> m_proxy.executeOnCurrentThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new));
+            () -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
@@ -546,7 +557,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         throws PythonIOException, CanceledExecutionException {
         return performCancelable(
             () -> beautifyPythonTraceback(
-                () -> m_proxy.executeOnCurrentThread(sourceCode, m_sinkManager::createSink).toArray(String[]::new)),
+                () -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new)),
             cancelable);
     }
 
@@ -820,7 +831,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
 
         @SuppressWarnings("resource") // The resources are remembered and closed in #close
-        private synchronized PythonArrowDataSink createSink() throws IOException {
+        private synchronized PythonArrowDataSink create_sink() throws IOException {
             final var path = DataContainer.createTempFile(".knable").toPath();
             final var sink = PythonArrowDataUtils.createSink(path);
 

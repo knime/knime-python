@@ -91,20 +91,6 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      */
     void initializeCurrentWorkingDirectory(String workingDirectoryPath);
 
-    /*
-     * A supplier of {@link PythonArrowDataSink}. {@link #createSink()} will be called by Python but Java must handle
-     * the sink creation.
-     */
-    @FunctionalInterface
-    public interface SinkCreator {
-
-        /**
-         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
-         * @throws IOException if the temporary file for the sink could not be created
-         */
-        PythonArrowDataSink createSink() throws IOException;
-    }
-
     /**
      * Implements the functionality required by
      * {@link Python3KernelBackend#putFlowVariables(String, java.util.Collection)}.
@@ -239,7 +225,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @return A list containing the output that the Python process has written to stdout (first element) and stderr
      *         (second element) while executing the given code.
      */
-    List<String> executeOnMainThread(String sourceCode, SinkCreator sinkCreator);
+    List<String> executeOnMainThread(String sourceCode);
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#executeAsync(String)} and
@@ -250,7 +236,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @return A list containing the output that the Python process has written to stdout (first element) and stderr
      *         (second element) while executing the given code.
      */
-    List<String> executeOnCurrentThread(String sourceCode, SinkCreator sinkCreator);
+    List<String> executeOnCurrentThread(String sourceCode);
 
     /**
      * Provides Java-backed functionality to the Python side.
@@ -269,5 +255,11 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
          * @throws IllegalStateException If resolving the URL failed. Wrapped in a {@code Py4JJavaError} on Python side.
          */
         String resolve_knime_url(String knimeUrl); // NOSONAR
+
+        /**
+         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
+         * @throws IOException if the temporary file for the sink could not be created
+         */
+        PythonArrowDataSink create_sink() throws IOException; //NOSONAR
     }
 }
