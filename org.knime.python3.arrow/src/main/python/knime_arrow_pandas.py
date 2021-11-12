@@ -55,13 +55,11 @@ def pandas_df_to_arrow(
     data_frame: pd.DataFrame, to_batch=False
 ) -> Union[pa.Table, pa.RecordBatch]:
     # TODO pandas column names must not be strings. This causes errors
-
     # Convert the index to a str series and prepend to the data_frame
     row_keys = data_frame.index.to_series().astype(str)
     row_keys.name = "<Row Key>"  # TODO what is the right string?
     data_frame = pd.concat(
-        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)],
-        axis=1,
+        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)], axis=1,
     )
 
     schema = _extract_schema(data_frame)
@@ -78,10 +76,7 @@ def pandas_df_to_arrow(
 def _extract_schema(data_frame: pd.DataFrame):
     dtypes = data_frame.dtypes
     columns = [
-        (
-            column,
-            _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),
-        )
+        (column, _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),)
         for (idx, (column, dtype)) in enumerate(dtypes.items())
     ]
     return pa.schema(columns)
@@ -97,6 +92,7 @@ _pd_to_arrow_type_map = {
     np.float64: pa.float64(),
     str: pa.string(),
     np.bool_: pa.bool_(),
+    bool: pa.bool_(),
 }
 
 _pd_to_extension_type_map = {
@@ -141,6 +137,11 @@ _pd_to_extension_type_map = {
         '{"value_factory_class":"org.knime.core.data.v2.value.StringValueFactory"}',
     ),
     np.bool_: kat.LogicalTypeExtensionType(
+        kt.FallbackPythonValueFactory(),
+        pa.bool_(),
+        '{"value_factory_class":"org.knime.core.data.v2.value.BooleanValueFactory"}',
+    ),
+    bool: kat.LogicalTypeExtensionType(
         kt.FallbackPythonValueFactory(),
         pa.bool_(),
         '{"value_factory_class":"org.knime.core.data.v2.value.BooleanValueFactory"}',
