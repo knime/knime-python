@@ -65,6 +65,7 @@ import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.TestUtils.ArrowTestsEntryPoint;
@@ -107,8 +108,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
+            try (final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10,
+                NotInWorkflowDataRepository.newInstance())) {
                 entryPoint.testDomainCalculation("double", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertTrue(domain.hasBounds());
@@ -131,8 +132,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
+            try (final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10,
+                NotInWorkflowDataRepository.newInstance())) {
                 entryPoint.testDomainCalculation("int", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertTrue(domain.hasBounds());
@@ -155,8 +156,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
+            try (final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10,
+                NotInWorkflowDataRepository.newInstance())) {
                 entryPoint.testDomainCalculation("string", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertFalse(domain.hasBounds());
@@ -178,8 +179,8 @@ public class PythonDomainCalculationTest {
 
             final var sink = PythonArrowDataUtils.createSink(readPath);
 
-            try (final var domainCalculator =
-                PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10)) {
+            try (final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, m_storeFactory, 10,
+                NotInWorkflowDataRepository.newInstance())) {
                 entryPoint.testDomainCalculation("categorical", sink);
                 final var domain = domainCalculator.getDomain(1);
                 assertFalse(domain.hasBounds());

@@ -74,7 +74,6 @@ import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
-import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.core.data.meta.DataColumnMetaData;
 import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
@@ -196,19 +195,21 @@ public final class PythonArrowDataUtils {
      *
      * @param sink the {@link PythonArrowDataSink} that data is written to
      * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
-     * @param configSupplier A {@link Supplier} for the configuration for the {@link DomainCalculator}
+     * @param maxPossibleNominalDomainValues the maximum number of possible values for nominal domains
+     * @param dataRepository the {@link IDataRepository} to use for this table
      * @return A {@link DomainCalculator}. After all batches have been written to the {@link PythonArrowDataSink}
      *         {@link DomainCalculator#getDomain(int)} and {@link DomainCalculator#getMetadata(int)} can be called to
      *         obtain domain and metadata per column.
      */
     public static DomainCalculator createDomainCalculator(final DefaultPythonArrowDataSink sink,
-        final ArrowColumnStoreFactory storeFactory, final int maxPossibleNominalDomainValues) {
+        final ArrowColumnStoreFactory storeFactory, final int maxPossibleNominalDomainValues,
+        final IDataRepository dataRepository) {
         // Create the domain calculator
         final Supplier<RandomAccessBatchReadable> batchReadableSupplier = () -> createReadable(sink, storeFactory);
         final Supplier<DomainWritableConfig> configSupplier = () -> {
             // NB: The schema will be known when this method is called
-            final ColumnarValueSchema schema = PythonArrowDataUtils.createColumnarValueSchema(sink,
-                TableDomainAndMetadata.empty(), NotInWorkflowDataRepository.newInstance());
+            final ColumnarValueSchema schema =
+                PythonArrowDataUtils.createColumnarValueSchema(sink, TableDomainAndMetadata.empty(), dataRepository);
             return new DefaultDomainWritableConfig(schema, maxPossibleNominalDomainValues, false);
         };
         final var domainCalculator = DomainCalculator.fromRandomAccessReadable(batchReadableSupplier, configSupplier);

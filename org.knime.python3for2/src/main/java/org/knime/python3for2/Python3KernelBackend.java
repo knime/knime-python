@@ -560,6 +560,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
     }
 
+    private IFileStoreHandler getFileStoreHandler() {
+        return ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
+            .getFileStoreHandler();
+    }
+
     private interface Task {
 
         void run() throws Exception;//NOSONAR
@@ -692,9 +697,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
 
         private ColumnarBatchReadStore copyTableToArrowStore(final BufferedDataTable table) throws IOException {
-            final IFileStoreHandler nodeFsHandler =
-                ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
-                    .getFileStoreHandler();
+            final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
             IWriteFileStoreHandler fsHandler = null;
             if (nodeFsHandler instanceof IWriteFileStoreHandler) {
                 fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
@@ -805,7 +808,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     /** A class for managing a set of sinks with rowKeyCheckers and domainCalculators */
-    private static final class SinkManager implements AutoCloseable {
+    private final class SinkManager implements AutoCloseable {
 
         private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
 
@@ -820,10 +823,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             final var path = DataContainer.createTempFile(".knable").toPath();
             final var sink = PythonArrowDataUtils.createSink(path);
 
+            final IDataRepository dataRepository = getFileStoreHandler().getDataRepository();
+
             // Check row keys and compute the domain as soon as anything is written to the sink
             final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
             final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
-                DataContainerSettings.getDefault().getMaxDomainValues());
+                DataContainerSettings.getDefault().getMaxDomainValues(), dataRepository);
 
             // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
             m_sinks.add(sink);
