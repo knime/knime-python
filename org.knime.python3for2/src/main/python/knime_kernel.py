@@ -166,12 +166,11 @@ class PythonKernel(kg.EntryPoint):
         num_rows: int,
         sentinel: Optional[Union[str, int]] = None,
     ) -> None:
-        with kg.data_source_mapper(java_table_data_source) as table_data_source:
-            read_table = kat.ArrowReadTable(table_data_source)
-            data_frame = read_table.to_pandas(rows=num_rows, sentinel=sentinel)
-            # The first column of a KNIME table is interpreted as its index (row keys).
-            data_frame.set_index(data_frame.columns[0], inplace=True)
-            self._workspace[variable_name] = data_frame
+        # NB: We don't close the source.
+        # It must be available for the lifetime of the process
+        table_data_source = kg.data_source_mapper(java_table_data_source)
+        read_table = kat.ArrowReadTable(table_data_source)
+        self._workspace[variable_name] = read_table
 
     def getTableFromWorkspace(
         self,

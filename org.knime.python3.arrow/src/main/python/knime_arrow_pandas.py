@@ -195,9 +195,11 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
         if kat.contains_knime_extension_type(field.type)
     ]
     storage_data = kat.to_storage_data(data)
-    storage_df = storage_data.to_pandas()
-    _encode_df(storage_df, logical_columns, data.schema)
-    return storage_df
+    data_frame = storage_data.to_pandas()
+    _encode_df(data_frame, logical_columns, data.schema)
+    # The first column is interpreted as the index (row keys)
+    data_frame.set_index(data_frame.columns[0], inplace=True)
+    return data_frame
 
 
 def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
