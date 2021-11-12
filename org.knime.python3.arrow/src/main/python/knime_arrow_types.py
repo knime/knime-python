@@ -50,7 +50,6 @@ Arrow implementation of the knime_types.
 
 from typing import Optional, Union
 
-from pandas.core.algorithms import isin
 import knime_types as kt
 import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
