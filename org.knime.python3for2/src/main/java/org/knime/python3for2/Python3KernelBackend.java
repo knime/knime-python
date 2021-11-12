@@ -88,6 +88,7 @@ import org.knime.core.data.container.DataContainer;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.RowCursor;
 import org.knime.core.data.v2.RowKeyType;
@@ -823,7 +824,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             final var path = DataContainer.createTempFile(".knable").toPath();
             final var sink = PythonArrowDataUtils.createSink(path);
 
-            final IDataRepository dataRepository = getFileStoreHandler().getDataRepository();
+            final IFileStoreHandler fileStoreHandler = getFileStoreHandler();
+            final IDataRepository dataRepository;
+            if (fileStoreHandler != null) {
+                dataRepository = fileStoreHandler.getDataRepository();
+            } else {
+                dataRepository = NotInWorkflowDataRepository.newInstance();
+            }
 
             // Check row keys and compute the domain as soon as anything is written to the sink
             final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
