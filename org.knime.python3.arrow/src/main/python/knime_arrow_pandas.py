@@ -54,6 +54,16 @@ import numpy as np
 def pandas_df_to_arrow(
     data_frame: pd.DataFrame, to_batch=False
 ) -> Union[pa.Table, pa.RecordBatch]:
+    # TODO pandas column names must not be strings. This causes errors
+
+    # Convert the index to a str series and prepend to the data_frame
+    row_keys = data_frame.index.to_series().astype(str)
+    row_keys.name = "<Row Key>"  # TODO what is the right string?
+    data_frame = pd.concat(
+        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)],
+        axis=1,
+    )
+
     schema = _extract_schema(data_frame)
     # pyarrow doesn't allow to customize the conversion from pandas, so we convert the corresponding columns to storage
     # format in the pandas DataFrame
@@ -68,7 +78,10 @@ def pandas_df_to_arrow(
 def _extract_schema(data_frame: pd.DataFrame):
     dtypes = data_frame.dtypes
     columns = [
-        (column, _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),)
+        (
+            column,
+            _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),
+        )
         for (idx, (column, dtype)) in enumerate(dtypes.items())
     ]
     return pa.schema(columns)
