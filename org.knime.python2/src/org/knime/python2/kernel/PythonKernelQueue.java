@@ -48,6 +48,7 @@
  */
 package org.knime.python2.kernel;
 
+import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -60,6 +61,7 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.prefs.advanced.PythonAdvancedPreferences;
 import org.knime.python2.util.PythonUtils;
 
@@ -106,9 +108,10 @@ public final class PythonKernelQueue {
     private static PythonKernelQueue instance;
 
     /**
-     * Takes the next {@link PythonKernel} from the queue that was launched using the given {@link PythonCommand} and
-     * has the given modules preloaded. Configures it according to the given {@link PythonKernelOptions} and returns it.
-     * The caller is responsible for {@link PythonKernel#close() closing} the kernel.<br>
+     * Takes the next {@link PythonKernel} from the queue that was launched using the given {@link PythonCommand}, uses
+     * the old kernel back end, and has the given modules preloaded. Configures it according to the given
+     * {@link PythonKernelOptions} and returns it. The caller is responsible for {@link PythonKernel#close() closing}
+     * the kernel.<br>
      * This method blocks until a kernel is present in the queue.
      * <P>
      * Note that specifying additional modules should only be done if loading these modules is time-consuming since,
@@ -137,12 +140,50 @@ public final class PythonKernelQueue {
         final Set<PythonModuleSpec> requiredAdditionalModules, final Set<PythonModuleSpec> optionalAdditionalModules,
         final PythonKernelOptions options, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
+        return getNextKernel(command, PythonKernelBackendType.PYTHON2, requiredAdditionalModules,
+            optionalAdditionalModules, options, cancelable);
+    }
+
+    /**
+     * Takes the next {@link PythonKernel} from the queue that was launched using the given {@link PythonCommand}, uses
+     * the given kernel back end, and has the given modules preloaded. Configures it according to the given
+     * {@link PythonKernelOptions} and returns it. The caller is responsible for {@link PythonKernel#close() closing}
+     * the kernel.<br>
+     * This method blocks until a kernel is present in the queue.
+     * <P>
+     * Note that specifying additional modules should only be done if loading these modules is time-consuming since,
+     * internally, an own queue will be registered for each combination of Python command and modules. Having too many
+     * of these combinations could defeat the purpose of queuing since all these queues will compete for the limited
+     * number of available slots in the overall queue.
+     *
+     * @param command The {@link PythonCommand}.
+     * @param kernelBackendType The type of the {@link PythonKernelBackend kernel back end} to use.
+     * @param requiredAdditionalModules The modules that must already be loaded in the returned kernel. May not be
+     *            {@code null}, but empty.
+     * @param optionalAdditionalModules The modules that should already -- but do not need to -- be loaded in the
+     *            returned kernel. May not be {@code null}, but empty.
+     * @param options The {@link PythonKernelOptions} according to which the returned {@link PythonKernel} is
+     *            configured.
+     * @param cancelable The {@link PythonCancelable} that is used to check whether retrieving the kernel from the queue
+     *            (i.e., waiting until a kernel is present in the queue) should be canceled.
+     * @return The next appropriate {@link PythonKernel} in the queue, configured according to the given
+     *         {@link PythonKernelOptions}.
+     * @throws PythonCanceledExecutionException If retrieving the kernel has been canceled or
+     *             {@link InterruptedException interrupted}.
+     * @throws PythonIOException The exception that was thrown while originally constructing the kernel that is next in
+     *             the queue, if any. Such exceptions are preserved and rethrown by this method in order to make calling
+     *             this method equivalent to constructing the kernel directly, from an exception-delivery point of view.
+     */
+    public static synchronized PythonKernel getNextKernel(final PythonCommand command,
+        final PythonKernelBackendType kernelBackendType, final Set<PythonModuleSpec> requiredAdditionalModules,
+        final Set<PythonModuleSpec> optionalAdditionalModules, final PythonKernelOptions options,
+        final PythonCancelable cancelable) throws PythonCanceledExecutionException, PythonIOException {
         if (instance == null) {
             reconfigureKernelQueue(PythonAdvancedPreferences.getMaximumNumberOfIdlingProcesses(),
                 PythonAdvancedPreferences.getExpirationDurationInMinutes());
         }
-        return instance.getNextKernelInternal(command, requiredAdditionalModules, optionalAdditionalModules, options,
-            cancelable);
+        return instance.getNextKernelInternal(command, kernelBackendType, requiredAdditionalModules,
+            optionalAdditionalModules, options, cancelable);
     }
 
     /**
@@ -199,7 +240,7 @@ public final class PythonKernelQueue {
      * and returning items) is bridged by not pooling kernels directly but rather wrapping them in reusable containers,
      * extracting them upon borrowing, and returning and repopulating the containers.
      */
-    private final GenericKeyedObjectPool<PythonCommandAndModules, PythonKernelOrExceptionHolder> m_pool;
+    private final GenericKeyedObjectPool<PythonKernelSpec, PythonKernelOrExceptionHolder> m_pool;
 
     private PythonKernelQueue(final int maxNumberOfIdlingKernels, final int expirationDurationInMinutes) {
         final GenericKeyedObjectPoolConfig<PythonKernelOrExceptionHolder> config = new GenericKeyedObjectPoolConfig<>();
@@ -219,11 +260,12 @@ public final class PythonKernelQueue {
 
     @SuppressWarnings("resource") // Kernel is closed by the client.
     private PythonKernel getNextKernelInternal(final PythonCommand command,
-        final Set<PythonModuleSpec> requiredAdditionalModules, final Set<PythonModuleSpec> optionalAdditionalModules,
-        final PythonKernelOptions options, final PythonCancelable cancelable)
+        final PythonKernelBackendType kernelBackendType, final Set<PythonModuleSpec> requiredAdditionalModules,
+        final Set<PythonModuleSpec> optionalAdditionalModules, final PythonKernelOptions options,
+        final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
-        final PythonCommandAndModules key =
-            new PythonCommandAndModules(command, requiredAdditionalModules, optionalAdditionalModules);
+        final PythonKernelSpec key =
+            new PythonKernelSpec(command, kernelBackendType, requiredAdditionalModules, optionalAdditionalModules);
         if (m_pool.getMaxTotal() != 0) {
             final PythonKernelOrExceptionHolder holder = dequeueHolder(key, cancelable);
             PythonKernel kernel = extractKernelAndEnqueueNewOne(key, holder);
@@ -236,13 +278,13 @@ public final class PythonKernelQueue {
     }
 
     @SuppressWarnings("resource") // Holder was not taken from pool when this method throws.
-    private PythonKernelOrExceptionHolder dequeueHolder(final PythonCommandAndModules key,
+    private PythonKernelOrExceptionHolder dequeueHolder(final PythonKernelSpec key,
         final PythonCancelable cancelable) throws PythonCanceledExecutionException {
         PythonKernelOrExceptionHolder holder = null;
         do {
             try {
                 holder = m_pool.borrowObject(key);
-            } catch (final NoSuchElementException ex) {
+            } catch (final NoSuchElementException ex) { // NOSONAR Timeout is expected and part of control flow.
                 cancelable.checkCanceled();
             } catch (final InterruptedException ex) {
                 Thread.currentThread().interrupt();
@@ -256,7 +298,7 @@ public final class PythonKernelQueue {
         return holder;
     }
 
-    private PythonKernel extractKernelAndEnqueueNewOne(final PythonCommandAndModules key,
+    private PythonKernel extractKernelAndEnqueueNewOne(final PythonKernelSpec key,
         final PythonKernelOrExceptionHolder holder) throws PythonIOException {
         try {
             return holder.clearFieldsAndReturnKernelOrThrow();
@@ -272,7 +314,7 @@ public final class PythonKernelQueue {
      * our responsibility to close the kernel in any exceptional situation here since the client will not have a handle
      * to the kernel.
      */
-    private static PythonKernel configureOrRecreateKernel(final PythonCommandAndModules key, PythonKernel kernel,
+    private static PythonKernel configureOrRecreateKernel(final PythonKernelSpec key, PythonKernel kernel,
         final PythonKernelOptions options) throws PythonIOException {
         try {
             kernel.setOptions(options);
@@ -283,23 +325,23 @@ public final class PythonKernelQueue {
             PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
             try {
                 kernel = createKernelAndConfigure(key, options);
-            } catch (final Throwable t) {
+            } catch (final Throwable t) { // NOSONAR
                 t.addSuppressed(ex);
                 throw t;
             }
-        } catch (final Throwable t) {
+        } catch (final Throwable t) { // NOSONAR
             PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
             throw t;
         }
         return kernel;
     }
 
-    private static PythonKernel createKernelAndConfigure(final PythonCommandAndModules key,
+    private static PythonKernel createKernelAndConfigure(final PythonKernelSpec key,
         final PythonKernelOptions options) throws PythonIOException {
         final PythonKernel kernel = KeyedPooledPythonKernelFactory.createKernel(key);
         try {
             kernel.setOptions(options);
-        } catch (final Throwable t) {
+        } catch (final Throwable t) { // NOSONAR
             PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
             throw t;
         }
@@ -313,23 +355,23 @@ public final class PythonKernelQueue {
      * {@link PythonKernelQueue#getNextKernelInternal(PythonCommand, Set, Set, PythonKernelOptions, PythonCancelable)}
      * is called</li>
      * <li>repopulates holders when they are returned to the pool after extracting their kernel in
-     * {@link PythonKernelQueue#extractKernelAndEnqueueNewOne(PythonCommandAndModules, PythonKernelOrExceptionHolder)}</li>
+     * {@link PythonKernelQueue#extractKernelAndEnqueueNewOne(PythonKernelSpec, PythonKernelOrExceptionHolder)}</li>
      * <li>closes kernels if their holders are evicted</li
      * </ul>
      */
     private static final class KeyedPooledPythonKernelFactory
-        implements KeyedPooledObjectFactory<PythonCommandAndModules, PythonKernelOrExceptionHolder> {
+        implements KeyedPooledObjectFactory<PythonKernelSpec, PythonKernelOrExceptionHolder> {
 
         @Override
         @SuppressWarnings("resource") // No kernel is held yet.
-        public PooledObject<PythonKernelOrExceptionHolder> makeObject(final PythonCommandAndModules key) {
+        public PooledObject<PythonKernelOrExceptionHolder> makeObject(final PythonKernelSpec key) {
             final PythonKernelOrExceptionHolder holder = new PythonKernelOrExceptionHolder();
             populateHolder(key, holder);
             return new DefaultPooledObject<>(holder);
         }
 
         @Override
-        public void passivateObject(final PythonCommandAndModules key,
+        public void passivateObject(final PythonKernelSpec key,
             final PooledObject<PythonKernelOrExceptionHolder> p) {
             @SuppressWarnings("resource") // No kernel is held yet or any more.
             final PythonKernelOrExceptionHolder holder = p.getObject();
@@ -338,7 +380,7 @@ public final class PythonKernelQueue {
             }
         }
 
-        private static void populateHolder(final PythonCommandAndModules key,
+        private static void populateHolder(final PythonKernelSpec key,
             final PythonKernelOrExceptionHolder holder) {
             try {
                 holder.m_kernel = createKernel(key);
@@ -347,24 +389,34 @@ public final class PythonKernelQueue {
             }
         }
 
-        private static PythonKernel createKernel(final PythonCommandAndModules key) throws PythonIOException {
-            final PythonKernel kernel = new PythonKernel(key.m_command);
+        @SuppressWarnings("resource") // Back end will be closed along with kernel.
+        private static PythonKernel createKernel(final PythonKernelSpec key) throws PythonIOException {
+            PythonKernelBackend kernelBackend;
+            try {
+                kernelBackend =
+                    PythonKernelBackendRegistry.getBackend(key.m_kernelBackendType).createBackend(key.m_command);
+            } catch (final PythonIOException ex) {
+                throw ex;
+            } catch (final IOException ex) {
+                throw new PythonIOException(ex);
+            }
+            final PythonKernel kernel = new PythonKernel(kernelBackend);
             try {
                 loadAdditionalModules(key, kernel);
             } catch (final PythonIOException ex) {
                 PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
                 throw ex;
-            } catch (final Exception ex) {
+            } catch (final Exception ex) { // NOSONAR
                 PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
                 throw new PythonIOException(ex);
-            } catch (final Throwable t) {
+            } catch (final Throwable t) { // NOSONAR
                 PythonUtils.Misc.closeSafelyThrowErrors(null, kernel);
                 throw t;
             }
             return kernel;
         }
 
-        private static void loadAdditionalModules(final PythonCommandAndModules key, final PythonKernel kernel)
+        private static void loadAdditionalModules(final PythonKernelSpec key, final PythonKernel kernel)
             throws PythonIOException {
             final Set<PythonModuleSpec> requiredModules = key.m_requiredAdditionalModules;
             if (!requiredModules.isEmpty()) {
@@ -385,29 +437,32 @@ public final class PythonKernelQueue {
             }
         }
 
+        @SuppressWarnings("resource") // We are literally closing the object here.
         @Override
-        public void destroyObject(final PythonCommandAndModules key,
+        public void destroyObject(final PythonKernelSpec key,
             final PooledObject<PythonKernelOrExceptionHolder> p) {
             PythonUtils.Misc.closeSafelyThrowErrors(null, p.getObject());
         }
 
         @Override
-        public boolean validateObject(final PythonCommandAndModules key,
+        public boolean validateObject(final PythonKernelSpec key,
             final PooledObject<PythonKernelOrExceptionHolder> p) {
             // Nothing to do.
             return true;
         }
 
         @Override
-        public void activateObject(final PythonCommandAndModules key,
+        public void activateObject(final PythonKernelSpec key,
             final PooledObject<PythonKernelOrExceptionHolder> p) {
             // Nothing to do.
         }
     }
 
-    private static final class PythonCommandAndModules {
+    private static final class PythonKernelSpec {
 
         private final PythonCommand m_command;
+
+        private final PythonKernelBackendType m_kernelBackendType;
 
         private final Set<PythonModuleSpec> m_requiredAdditionalModules;
 
@@ -415,15 +470,16 @@ public final class PythonKernelQueue {
 
         private final int m_hashCode;
 
-        public PythonCommandAndModules(final PythonCommand command,
+        public PythonKernelSpec(final PythonCommand command, final PythonKernelBackendType kernelBackendType,
             final Set<PythonModuleSpec> requiredAdditionalModules,
             final Set<PythonModuleSpec> optionalAdditionalModules) {
             m_command = command;
+            m_kernelBackendType = kernelBackendType;
             // Make defensive copies since instances of this class are used as keys in the underlying pool. Preserve
             // order of modules if this matters when loading them.
             m_requiredAdditionalModules = new LinkedHashSet<>(requiredAdditionalModules);
             m_optionalAdditionalModules = new LinkedHashSet<>(optionalAdditionalModules);
-            m_hashCode = Objects.hash(command, requiredAdditionalModules, optionalAdditionalModules);
+            m_hashCode = Objects.hash(command, kernelBackendType, requiredAdditionalModules, optionalAdditionalModules);
         }
 
         @Override
@@ -433,11 +489,12 @@ public final class PythonKernelQueue {
 
         @Override
         public boolean equals(final Object obj) {
-            if (!(obj instanceof PythonCommandAndModules)) {
+            if (!(obj instanceof PythonKernelSpec)) {
                 return false;
             }
-            final PythonCommandAndModules other = (PythonCommandAndModules)obj;
+            final PythonKernelSpec other = (PythonKernelSpec)obj;
             return other.m_command.equals(m_command) //
+                && other.m_kernelBackendType == m_kernelBackendType //
                 && other.m_requiredAdditionalModules.equals(m_requiredAdditionalModules) //
                 && other.m_optionalAdditionalModules.equals(m_optionalAdditionalModules);
         }
