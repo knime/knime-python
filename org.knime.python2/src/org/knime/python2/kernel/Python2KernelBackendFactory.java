@@ -48,9 +48,8 @@
  */
 package org.knime.python2.kernel;
 
-import java.io.IOException;
-
 import org.knime.python2.PythonCommand;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -58,12 +57,12 @@ import org.knime.python2.PythonCommand;
 public final class Python2KernelBackendFactory implements PythonKernelBackendFactory {
 
     @Override
-    public String getIdentifier() {
-        return PythonKernelBackendRegistry.PYTHON2_BACKEND_ID;
+    public PythonKernelBackendType getBackendType() {
+        return PythonKernelBackendType.PYTHON2;
     }
 
     @Override
-    public PythonKernelBackend createBackend(final PythonCommand command) throws IOException {
+    public PythonKernelBackend createBackend(final PythonCommand command) throws PythonIOException {
         return new Python2KernelBackend(command);
     }
 }

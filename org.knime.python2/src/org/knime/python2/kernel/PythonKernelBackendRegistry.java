@@ -48,8 +48,9 @@
  */
 package org.knime.python2.kernel;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionPoint;
@@ -61,21 +62,12 @@ import org.knime.core.node.NodeLogger;
  * Not intended as a full-blown registry but rather as a way to make the new Python kernel back end from
  * org.knime.python3 known to org.knime.python2 without introducing a (circular) dependency to org.knime.python3. The
  * corresponding extension point is not intended to be extended by implementations other than
- * {@value #PYTHON2_BACKEND_ID} and {@value #PYTHON3_BACKEND_ID}.
+ * {@code org.knime.python2.kernel.Python2KernelBackendFactory} and
+ * {@code org.knime.python3for2.Python3KernelBackendFactory}.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonKernelBackendRegistry {
-
-    /**
-     * The (reserved) identifier of the legacy (org.knime.python2) Python kernel back end.
-     */
-    public static final String PYTHON2_BACKEND_ID = "org.knime.python2.kernel.Python2KernelBackendFactory";
-
-    /**
-     * The (reserved) identifier of the new (org.knime.python3) Python kernel back end.
-     */
-    public static final String PYTHON3_BACKEND_ID = "org.knime.python3.legacy.Python3KernelBackendFactory";
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelBackendRegistry.class);
 
@@ -86,19 +78,20 @@ public final class PythonKernelBackendRegistry {
     private static final PythonKernelBackendRegistry INSTANCE = new PythonKernelBackendRegistry();
 
     /**
-     * @param identifier The identifier of the back end.
-     * @return The back end that has the given identifier.
-     * @throws IllegalArgumentException If no back end exists that has the given identifier.
+     * @param type The type of the back end.
+     * @return The back end of the given type.
+     * @throws IllegalArgumentException If the back end of the given type is not registered.
      */
-    public static PythonKernelBackendFactory getBackend(final String identifier) {
-        final PythonKernelBackendFactory backend = INSTANCE.m_backends.get(identifier);
+    public static PythonKernelBackendFactory getBackend(final PythonKernelBackendType type) {
+        final PythonKernelBackendFactory backend = INSTANCE.m_backends.get(type);
         if (backend == null) {
-            throw new IllegalArgumentException("Python kernel back end does not exist: " + identifier);
+            throw new IllegalArgumentException("Python kernel back end does not exist: " + type);
         }
         return backend;
     }
 
-    private final Map<String, PythonKernelBackendFactory> m_backends = new HashMap<>(2);
+    private final Map<PythonKernelBackendType, PythonKernelBackendFactory> m_backends =
+        new EnumMap<>(PythonKernelBackendType.class);
 
     private PythonKernelBackendRegistry() {
         try {
@@ -122,12 +115,54 @@ public final class PythonKernelBackendRegistry {
         try {
             final PythonKernelBackendFactory backend =
                 (PythonKernelBackendFactory)elem.createExecutableExtension(EXT_POINT_ATTR_CLASS);
-            m_backends.put(backend.getIdentifier(), backend);
+            m_backends.put(backend.getBackendType(), backend);
         } catch (final Exception t) { // NOSONAR
             final String extension = elem.getDeclaringExtension().getUniqueIdentifier();
             LOGGER.error(
                 "An exception occurred while registering an extension at extension point '" + EXT_POINT_ID + "'.", t);
             LOGGER.error("Extension '" + extension + "' was ignored.", t);
+        }
+    }
+
+    /**
+     * Identifies a {@link PythonKernelBackend}.
+     */
+    public enum PythonKernelBackendType {
+            /**
+             * The (reserved) type of the legacy (org.knime.python2) Python kernel back end.
+             */
+            PYTHON2("org.knime.python2.kernel.Python2KernelBackendFactory"),
+
+            /**
+             * The (reserved) type of the new (org.knime.python3) Python kernel back end.
+             */
+            PYTHON3("org.knime.python3for2.Python3KernelBackendFactory");
+
+        /**
+         * @param identifier The identifier of the back end.
+         * @return The matching back end type, if any.
+         */
+        public static Optional<PythonKernelBackendType> fromIdentifier(final String identifier) {
+            PythonKernelBackendType kernelBackendType = null;
+            if (PYTHON2.getIdentifier().equals(identifier)) {
+                kernelBackendType = PYTHON2;
+            } else if (PYTHON3.getIdentifier().equals(identifier)) {
+                kernelBackendType = PYTHON3;
+            }
+            return Optional.ofNullable(kernelBackendType);
+        }
+
+        private final String m_identifier;
+
+        private PythonKernelBackendType(final String identifier) {
+            m_identifier = identifier;
+        }
+
+        /**
+         * @return The string identifier representing this kernel back end.
+         */
+        public String getIdentifier() {
+            return m_identifier;
         }
     }
 }

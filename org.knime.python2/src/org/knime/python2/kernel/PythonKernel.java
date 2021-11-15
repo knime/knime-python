@@ -148,8 +148,9 @@ public class PythonKernel implements AutoCloseable {
 
     private static PythonKernelBackend createOldBackend(final PythonCommand command) throws PythonIOException {
         try {
-            return PythonKernelBackendRegistry.getBackend(PythonKernelBackendRegistry.PYTHON2_BACKEND_ID)
-                .createBackend(command);
+            return PythonKernelBackendRegistry.getBackend(PythonKernelBackendType.PYTHON2).createBackend(command);
+        } catch (final PythonIOException ex) {
+            throw ex;
         } catch (final IOException ex) {
             throw new PythonIOException(ex);
         }

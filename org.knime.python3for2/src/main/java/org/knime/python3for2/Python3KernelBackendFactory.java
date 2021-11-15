@@ -53,7 +53,7 @@ import java.io.IOException;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.kernel.PythonKernelBackend;
 import org.knime.python2.kernel.PythonKernelBackendFactory;
-import org.knime.python2.kernel.PythonKernelBackendRegistry;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -61,8 +61,8 @@ import org.knime.python2.kernel.PythonKernelBackendRegistry;
 public final class Python3KernelBackendFactory implements PythonKernelBackendFactory {
 
     @Override
-    public String getIdentifier() {
-        return PythonKernelBackendRegistry.PYTHON3_BACKEND_ID;
+    public PythonKernelBackendType getBackendType() {
+        return PythonKernelBackendType.PYTHON3;
     }
 
     @Override

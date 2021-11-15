@@ -51,6 +51,7 @@ package org.knime.python2.kernel;
 import java.io.IOException;
 
 import org.knime.python2.PythonCommand;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -60,7 +61,7 @@ public interface PythonKernelBackendFactory {
     /**
      * @return The back end's identifier.
      */
-    String getIdentifier();
+    PythonKernelBackendType getBackendType();
 
     /**
      * Creates a new Python kernel back end wrapping a Python process created using the given command.
