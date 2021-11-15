@@ -150,6 +150,10 @@ public final class PythonFixedVersionExecutableSelectionPanel extends PythonExec
         return m_config.getCommand();
     }
 
+    boolean isControlledByFlowVariable() {
+        return m_flowVariableModel.isVariableReplacementEnabled();
+    }
+
     /**
      * @return The underlying configuration that is exposed to the user, and accordingly manipulated, by this instance.
      */

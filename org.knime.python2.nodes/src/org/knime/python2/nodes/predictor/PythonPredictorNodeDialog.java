@@ -86,7 +86,8 @@ final class PythonPredictorNodeDialog extends DataAwareNodeDialogPane {
         m_executableSelectionPanel = new PythonVersionAndExecutableSelectionPanel(this,
             new PythonVersionAndCommandConfig(PythonPreferences.getPythonVersionPreference(),
                 PythonPreferences::getCondaInstallationPath, PythonPreferences::getPython2CommandPreference,
-                PythonPreferences::getPython3CommandPreference));
+                PythonPreferences::getPython3CommandPreference),
+            m_sourceCodeOptionsPanel);
         m_sourceCodePanel = new PythonSourceCodePanel(this, PythonPredictorNodeConfig.getVariableNames(),
             m_sourceCodeOptionsPanel, m_executableSelectionPanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-predictor");

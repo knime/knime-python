@@ -388,7 +388,7 @@ public abstract class SourceCodePanel extends JPanel {
      */
     public void open() {
         ViewUtils.invokeAndWaitInEDT(() -> {
-            m_console.clear();
+            clearConsole();
             m_workspaceVars.clear();
             m_statusBar.getProgressBar().setValue(0);
         });
@@ -542,6 +542,13 @@ public abstract class SourceCodePanel extends JPanel {
         if (text != null && !text.trim().isEmpty()) {
             runInUiThread(() -> m_console.print(text, level));
         }
+    }
+
+    /**
+     * Clears the console.
+     */
+    protected void clearConsole() {
+        runInUiThread(() -> m_console.clear());
     }
 
     /**
