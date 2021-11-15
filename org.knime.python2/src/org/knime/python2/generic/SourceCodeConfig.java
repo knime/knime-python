@@ -64,7 +64,7 @@ public class SourceCodeConfig {
 
 
 
-    static final int DEFAULT_ROW_LIMIT = 1000;
+    public static final int DEFAULT_ROW_LIMIT = 1000;
 
     private static final String CFG_SOURCE_CODE = "sourceCode";
 

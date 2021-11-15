@@ -81,6 +81,7 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.generic.ConsolePanel.Level;
 
 /**
@@ -155,10 +156,10 @@ public abstract class SourceCodePanel extends JPanel {
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
      * @param variableNames An object managing all the known variable names in the workspace.
      * @param optionsPanel The options panel of the node dialog, if any. The constructed source code panel subscribes to
-     *            changes in its configured {@link SourceCodeOptionsPanel#getRowLimit() row limit}.
+     *            changes in its configured {@link PythonSourceCodeOptionsPanel#getRowLimit() row limit}.
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames,
-        final SourceCodeOptionsPanel<?> optionsPanel) {
+        final PythonSourceCodeOptionsPanel optionsPanel) {
         m_variableNames = variableNames;
         setLayout(new BorderLayout());
 
