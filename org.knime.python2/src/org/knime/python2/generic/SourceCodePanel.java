@@ -216,7 +216,7 @@ public abstract class SourceCodePanel extends JPanel {
         m_inputVarsFlowVarsSplit.setBottomComponent(flowVariablesPanel);
 
         m_inputVarsFlowVarsEditorSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        m_inputVarsFlowVarsEditorSplit.setResizeWeight(0.3);
+        m_inputVarsFlowVarsEditorSplit.setResizeWeight(0.2);
         m_inputVarsFlowVarsEditorSplit.setOneTouchExpandable(true);
         m_inputVarsFlowVarsEditorSplit.setDividerSize(8);
         m_inputVarsFlowVarsEditorSplit.setPreferredSize(new Dimension(0, 0));
@@ -257,7 +257,7 @@ public abstract class SourceCodePanel extends JPanel {
         m_workspaceVarsOutputVarsSplit.setBottomComponent(outputVarsPanel);
 
         m_editorWorkspaceVarsOutputVarsSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        m_editorWorkspaceVarsOutputVarsSplit.setResizeWeight(0.7);
+        m_editorWorkspaceVarsOutputVarsSplit.setResizeWeight(0.8);
         m_editorWorkspaceVarsOutputVarsSplit.setOneTouchExpandable(true);
         m_editorWorkspaceVarsOutputVarsSplit.setDividerSize(8);
 
@@ -271,7 +271,7 @@ public abstract class SourceCodePanel extends JPanel {
         // Console:
 
         final JSplitPane editorConsoleSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        editorConsoleSplit.setResizeWeight(0.7);
+        editorConsoleSplit.setResizeWeight(0.8);
         editorConsoleSplit.setOneTouchExpandable(true);
         editorConsoleSplit.setDividerSize(8);
 
@@ -283,7 +283,7 @@ public abstract class SourceCodePanel extends JPanel {
 
         add(editorConsoleSplit, BorderLayout.CENTER);
 
-        setPreferredSize(new Dimension(1000, 600));
+        setPreferredSize(new Dimension(1200, 850));
 
         if (optionsPanel != null) {
             m_rowLimit.set(optionsPanel.getRowLimit());
