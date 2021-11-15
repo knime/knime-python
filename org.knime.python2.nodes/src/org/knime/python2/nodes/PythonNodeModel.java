@@ -70,6 +70,7 @@ import org.knime.python2.kernel.PythonCancelable;
 import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.prefs.PythonPreferences;
@@ -150,11 +151,13 @@ public abstract class PythonNodeModel<C extends PythonSourceCodeConfig> extends 
         final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
         final PythonKernelOptions options = getKernelOptions();
-        final PythonCommand command = options.getUsePython3() //
+        final PythonKernelBackendType kernelBackendType = getConfig().getKernelBackendType();
+        final boolean usePython3 = kernelBackendType == PythonKernelBackendType.PYTHON3 || options.getUsePython3();
+        final PythonCommand command = usePython3 //
             ? options.getPython3Command() //
             : options.getPython2Command();
-        return PythonKernelQueue.getNextKernel(command, requiredAdditionalModules, optionalAdditionalModules, options,
-            cancelable);
+        return PythonKernelQueue.getNextKernel(command, kernelBackendType, requiredAdditionalModules,
+            optionalAdditionalModules, options, cancelable);
     }
 
     /**
