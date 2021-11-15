@@ -174,24 +174,24 @@ final class PythonKernelBackendSelectionPanel extends JPanel {
         m_backendInfoText.setText("<html><table width=800px><tr>"
             + "The default table API. Each input table is provided as pandas.DataFrame and each output table is "
             + "expected to be a pandas.DataFrame. This API supports many of KNIME's data types. It is however "
-            + "significantly slower than the new experimental API. It moreover requires that all input and output "
-            + "tables together fit into memory." //
+            + "significantly slower than the new experimental KNIME Table API. It moreover requires that all input and "
+            + "output tables together fit into memory." //
             + "</tr></table>");
     }
 
     private void showNewBackendInfoText() {
         m_backendInfoText.setText("<table width=800px><tr>"
-            + "<p>The new table API that brings significant performance improvements over the default and enables "
-            + "working with larger-than-memory data." //
+            + "<p>The KNIME Table API brings significant performance improvements over the pandas.DataFrame API and "
+            + "enables working with larger-than-memory data." //
             + "<br><br></p>" //
             + "<p><font color=\"FF0000\">The API is currently part of KNIME Labs. It is not yet advised to use "
             + "it in production. Please consider the following prerequisites and limitations before employing it:"
             + "</font></p>" //
             + "<ul>" //
+            + "<li>Python&nbsp;2 is not supported.</li>"
             + "<li>Additional packages, namely py4j and pyarrow, are required to be installed in your Python&nbsp;3 "
             + "environment. You can create a new environment that contains these packages via the "
-            + "<a href=\"knime://org.knime.python2.PythonPreferencePage\">Preferences</a>. Python&nbsp;2 is not "
-            + "supported.</li>" //
+            + "<a href=\"knime://org.knime.python2.PythonPreferencePage\">Preferences</a>.</li>" //
             + "<li><a href=\"https://www.knime.com/blog/improved-performance-with-new-table-backend\">Columnar "
             + "Storage</a> should be enabled for best performance.</li>" //
             + "<li>Extension data types such as images from KNIME Image Processing or molecules from RDKit Nodes for "

@@ -317,10 +317,10 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         m_missingsNewBackendInfoText.setText("<table width=800><tr>" //
             + "You can use" //
             + "<blockquote>" //
-            + "input_table_1 = input_table_1.to_pandas(sentinel=" + sentinelText + ")" //
+            + "input_table_1 = input_table_1.to_pandas(sentinel=" + sentinelText + "), or<br>" //
+            + "input_table_1 = input_table_1.to_pyarrow(sentinel=" + sentinelText + ")" //
             + "</blockquote>" //
-            + "in your script to set a sentinel. When using to_pyarrow, this is not needed as pyarrow supports missing "
-            + "values in integer and long columns." //
+            + "in your script to set a sentinel." //
             + "</tr></table>");
     }
 
