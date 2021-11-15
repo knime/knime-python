@@ -65,6 +65,7 @@ import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFile;
 
@@ -96,7 +97,7 @@ public class PythonKernel implements AutoCloseable {
             : PythonKernelTester.testPython2Installation(command, additionalRequiredModules, false);
         if (testResult.hasError()) {
             throw new PythonInstallationTestException(
-                "Could not start Python kernel. Error during Python installation test: " + testResult.getErrorLog(),
+                "Could not start Python. There are problems with your Python environment:\n" + testResult.getErrorLog(),
                 testResult);
         }
     }

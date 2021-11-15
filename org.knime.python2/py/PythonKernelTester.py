@@ -88,16 +88,17 @@ class PythonKernelTester(object):
 
         messages = []
         if installed_major_version != major_version:
-            message = 'Python is required to have a major version of ' + str(major_version)
+            message = 'Your installed Python version is ' + str(version) + '. '
+            message += 'The required Python major version is ' + str(major_version)
             message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
             message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
-            message += '.\nThe installed Python version is ' + str(version) + '.'
+            message += '.'
             messages.append(message)
         else:
             version_comparison = PythonKernelTester._compare_versions(version, min_version, min_inclusive,
                                                                       max_version, max_inclusive)
             if version_comparison != 0:
-                message = 'Installed Python version is ' + str(version)
+                message = 'Your installed Python version is ' + str(version)
                 message += PythonKernelTester._get_version_constraint_message(min_version, min_inclusive, "minimum")
                 message += PythonKernelTester._get_version_constraint_message(max_version, max_inclusive, "maximum")
                 message += '.'
