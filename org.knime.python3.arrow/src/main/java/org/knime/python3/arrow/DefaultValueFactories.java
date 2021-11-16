@@ -54,7 +54,6 @@ import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.value.BooleanListValueFactory;
 import org.knime.core.data.v2.value.BooleanValueFactory;
-import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
 import org.knime.core.data.v2.value.DoubleListValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.IntListValueFactory;
@@ -63,6 +62,7 @@ import org.knime.core.data.v2.value.ListValueFactory;
 import org.knime.core.data.v2.value.LongListValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
 import org.knime.core.data.v2.value.StringListValueFactory;
+import org.knime.core.data.v2.value.StringValueFactory;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
@@ -181,7 +181,7 @@ public final class DefaultValueFactories {
 
         @Override
         public Optional<ValueFactory<?, ?>> visit(final StringDataSpec spec) {
-            return Optional.of(new DictEncodedStringValueFactory());
+            return Optional.of(new StringValueFactory());
         }
 
     }

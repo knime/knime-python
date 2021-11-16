@@ -149,11 +149,11 @@ import org.knime.core.data.v2.time.LocalTimeValueFactory;
 import org.knime.core.data.v2.time.ZonedDateTimeValueFactory2;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
-import org.knime.core.data.v2.value.DictEncodedStringValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.IntListValueFactory;
 import org.knime.core.data.v2.value.IntValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
+import org.knime.core.data.v2.value.StringValueFactory;
 import org.knime.core.data.v2.value.ValueInterfaces.BooleanWriteValue;
 import org.knime.core.data.v2.value.ValueInterfaces.DoubleWriteValue;
 import org.knime.core.data.v2.value.ValueInterfaces.IntListReadValue;
@@ -203,7 +203,7 @@ import org.knime.python3.data.PythonValueFactoryRegistry;
 public class KnimeArrowExtensionTypesTest {
 
 	private static final TypeAndFactory<StringValue, StringWriteValue> STRING_TF = TypeAndFactory
-			.create(StringCell.TYPE, new DictEncodedStringValueFactory(), StringWriteValue.class);
+			.create(StringCell.TYPE, new StringValueFactory(), StringWriteValue.class);
 
 	private static final TypeAndFactory<DoubleValue, DoubleWriteValue> DOUBLE_TF = TypeAndFactory
 			.create(DoubleCell.TYPE, new DoubleValueFactory(), DoubleWriteValue.class);
@@ -232,7 +232,7 @@ public class KnimeArrowExtensionTypesTest {
 	private static final TypeAndFactory<LocalDateValue, LocalDateWriteValue> LOCAL_DATE_TF = TypeAndFactory
 			.create(LocalDateCellFactory.TYPE, new LocalDateValueFactory(), LocalDateWriteValue.class);
 
-		private ArrowColumnStoreFactory m_storeFactory;
+	private ArrowColumnStoreFactory m_storeFactory;
 
 	private BufferAllocator m_allocator;
 
