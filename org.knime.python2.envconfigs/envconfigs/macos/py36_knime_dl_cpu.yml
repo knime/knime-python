@@ -1,5 +1,5 @@
-name: py3_knime_tf2   # Name of the created environment
-channels:             # Repositories to search for packages
+name: py36_knime_dl_cpu # Name of the created environment
+channels:               # Repositories to search for packages
 - defaults
 - anaconda
 - conda-forge
@@ -19,7 +19,10 @@ dependencies:         # List of packages that should be installed
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
 - jpype1=0.6.3        # Databases
+- tensorflow-mkl=1.12.0
+- keras=2.2.4
+- h5py=2.8
 - pip
 - pip:
-  - tensorflow==2.2
-  - tensorflow-hub==0.8
+  - onnx==1.4.1
+  - onnx-tf==1.2.1

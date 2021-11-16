@@ -52,7 +52,13 @@ import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidge
 
 import javax.swing.event.ChangeEvent;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.SelectionEvent;
@@ -60,12 +66,12 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
@@ -74,11 +80,16 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.util.Version;
+import org.knime.python2.PythonVersion;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
 import org.knime.python2.config.CondaEnvironmentCreationDialog;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
+
+import com.google.common.base.Strings;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -101,6 +112,8 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
     private final Shell m_shell;
 
     private Text m_environmentNameTextBox;
+
+    private ComboViewer m_pythonVersionSelection;
 
     private Label m_statusLabel;
 
@@ -150,9 +163,9 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
             + "Python integration. Creating the Conda environment may take several minutes and requires an active "
             + "internet connection.");
         descriptionText.setFont(JFaceResources.getFontRegistry().getItalic(""));
-        GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        gridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
-        descriptionText.setLayoutData(gridData);
+        final GridData descriptionTextGridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        descriptionTextGridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
+        descriptionText.setLayoutData(descriptionTextGridData);
 
         final Label separator = new Label(m_shell, SWT.SEPARATOR | SWT.HORIZONTAL);
         separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -172,6 +185,31 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         m_environmentNameTextBox.setText(ENVIRONMENT_NAME_PLACEHOLDER);
         m_environmentNameTextBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
+        // Python version:
+
+        final var pythonVersionSelectionContainer = new Composite(m_shell, SWT.NONE);
+        pythonVersionSelectionContainer.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
+        pythonVersionSelectionContainer.setLayout(new GridLayout(2, false));
+        final var pythonVersionSelectionLabel = new Label(pythonVersionSelectionContainer, SWT.NONE);
+        pythonVersionSelectionLabel.setText("Python version");
+        pythonVersionSelectionLabel.setLayoutData(new GridData());
+
+        final var combo = new Combo(pythonVersionSelectionContainer, SWT.DROP_DOWN | SWT.READ_ONLY);
+        combo.setEnabled(false);
+        combo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        m_pythonVersionSelection = new ComboViewer(combo);
+        m_pythonVersionSelection.setContentProvider(ArrayContentProvider.getInstance());
+        m_pythonVersionSelection.setComparator(new ViewerComparator());
+        final String[] pythonVersions;
+        // Note: do not change labels without adapting parsing of the version further below.
+        if (m_environmentCreator.getPythonVersion() == PythonVersion.PYTHON3) {
+            pythonVersions = new String[]{"Python 3.6", "Python 3.7", "Python 3.8", "Python 3.9"};
+        } else {
+            pythonVersions = new String[]{"Python 2.7"};
+        }
+        m_pythonVersionSelection.setInput(pythonVersions);
+        m_pythonVersionSelection.setSelection(new StructuredSelection(pythonVersions[pythonVersions.length - 1]), true);
+
         // Progress monitoring widgets:
 
         final Composite installationMonitorContainer = new Composite(m_shell, SWT.NONE);
@@ -180,11 +218,12 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
         m_statusLabel = new Label(installationMonitorContainer, SWT.WRAP);
         m_statusLabel.setText("Please click '" + CREATE_BUTTON_TEXT
-            + "' to start. You can specify a custom environment name using the text field above before starting.");
-        gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        gridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
-        gridData.verticalIndent = 10;
-        m_statusLabel.setLayoutData(gridData);
+            + "' to start. You can specify a custom environment name"
+            + (pythonVersions.length > 1 ? " and select the environment's Python version" : "") + " before starting.");
+        final GridData statusLabelGridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        statusLabelGridData.widthHint = DESCRIPTION_LABEL_WIDTH_HINTS;
+        statusLabelGridData.verticalIndent = 10;
+        m_statusLabel.setLayoutData(statusLabelGridData);
 
         final Composite progressBarContainer = new Composite(installationMonitorContainer, SWT.NONE);
         progressBarContainer.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
@@ -195,15 +234,15 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         m_progressBarStackLayout.topControl = m_determinateProgressBar;
 
         m_errorTextBoxLabel = new Label(installationMonitorContainer, SWT.NONE);
-        m_errorTextBoxLabel.setText("Conda error log");
-        gridData = new GridData();
-        gridData.verticalIndent = 10;
-        m_errorTextBoxLabel.setLayoutData(gridData);
+        m_errorTextBoxLabel.setText("Error log");
+        final GridData errorTexBoxLabelGridData = new GridData();
+        errorTexBoxLabelGridData.verticalIndent = 10;
+        m_errorTextBoxLabel.setLayoutData(errorTexBoxLabelGridData);
 
         m_errorTextBoxContainer = new Composite(installationMonitorContainer, SWT.NONE);
-        gridData = new GridData(GridData.FILL, GridData.FILL, true, true);
-        gridData.heightHint = 80;
-        m_errorTextBoxContainer.setLayoutData(gridData);
+        final GridData errorTexBoxContainerGridData = new GridData(GridData.FILL, GridData.FILL, true, true);
+        errorTexBoxContainerGridData.heightHint = 80;
+        m_errorTextBoxContainer.setLayoutData(errorTexBoxContainerGridData);
         m_errorTextBoxContainer.setLayout(new FillLayout());
         m_errorTextBox =
             new Text(m_errorTextBoxContainer, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL | SWT.BORDER);
@@ -213,20 +252,15 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
 
         m_determinateProgressBar.setEnabled(false);
         m_errorTextBox.setEnabled(false);
-
-        // Hide error log initially.
-        m_errorTextBoxLabel.setVisible(false);
-        ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = true;
-        m_errorTextBoxContainer.setVisible(false);
-        ((GridData)m_errorTextBoxContainer.getLayoutData()).exclude = true;
+        updateErrorLog("", false);
 
         // --
 
         final Composite buttonContainer = new Composite(m_shell, SWT.NONE);
-        gridData = new GridData();
-        gridData.horizontalAlignment = SWT.RIGHT;
-        gridData.verticalIndent = 15;
-        buttonContainer.setLayoutData(gridData);
+        final GridData buttonContainerGridData = new GridData();
+        buttonContainerGridData.horizontalAlignment = SWT.RIGHT;
+        buttonContainerGridData.verticalIndent = 15;
+        buttonContainer.setLayoutData(buttonContainerGridData);
         buttonContainer.setLayout(new RowLayout());
         m_createOrRetryButton = new Button(buttonContainer, SWT.NONE);
         m_createOrRetryButton.setText(CREATE_BUTTON_TEXT);
@@ -324,6 +358,7 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
      */
     private void switchToDefaultEnvironmentNameAvailableState(final String defaultEnvironmentName) {
         performActionOnWidgetInUiThread(m_environmentNameTextBox, () -> {
+            m_pythonVersionSelection.getCombo().setEnabled(true);
             m_environmentNameTextBox.setText(defaultEnvironmentName);
             m_environmentNameTextBox.setEnabled(true);
             m_environmentNameTextBox.setFocus();
@@ -337,28 +372,47 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
      * May be followed by finished, canceled, or failed state.
      */
     private void switchToStartingOrRetryingState() {
-        // If retrying.
-        m_environmentCreationTerminated = false;
-        m_statusLabel.setForeground(null);
-        m_errorTextBox.setText("");
-        unregisterExternalHooks();
+        try {
+            // If retrying.
+            m_environmentCreationTerminated = false;
+            m_statusLabel.setForeground(null);
+            updateErrorLog("", false);
+            unregisterExternalHooks();
 
-        m_environmentNameTextBox.setEnabled(false);
-        m_determinateProgressBar.setEnabled(true);
-        m_progressBarStackLayout.topControl = m_indeterminateProgressBar;
-        m_errorTextBox.setEnabled(true);
-        m_createOrRetryButton.setEnabled(false);
-        String environmentName = m_environmentNameTextBox.getText();
-        if (environmentName.isEmpty() || environmentName.equals(ENVIRONMENT_NAME_PLACEHOLDER)) {
-            // While the creator can handle empty environments names, we should also sync the dialog to let the
-            // user know which name we chose to overrule their empty text field input.
-            environmentName = m_environmentCreator.getDefaultEnvironmentName();
-            m_environmentNameTextBox.setText(environmentName);
+            m_environmentNameTextBox.setEnabled(false);
+            m_pythonVersionSelection.getCombo().setEnabled(false);
+            m_determinateProgressBar.setEnabled(true);
+            m_indeterminateProgressBar.setEnabled(true);
+            m_progressBarStackLayout.topControl = m_indeterminateProgressBar;
+            m_errorTextBox.setEnabled(true);
+            m_createOrRetryButton.setEnabled(false);
+            String environmentName = m_environmentNameTextBox.getText();
+            if (environmentName.isEmpty() || environmentName.equals(ENVIRONMENT_NAME_PLACEHOLDER)) {
+                // While the creator can handle empty environments names, we should also sync the dialog to let the
+                // user know which name we chose to overrule their empty text field input.
+                environmentName = m_environmentCreator.getDefaultEnvironmentName();
+                m_environmentNameTextBox.setText(environmentName);
+            }
+            final var pythonVersionString =
+                (String)((IStructuredSelection)m_pythonVersionSelection.getSelection()).getFirstElement();
+            final String[] pythonVersionParts = StringUtils.removeStart(pythonVersionString, "Python ").split("\\.");
+            final var pythonVersion =
+                new Version(Integer.parseInt(pythonVersionParts[0]), Integer.parseInt(pythonVersionParts[1]), 0);
+            m_shell.layout(true, true);
+            m_status = new CondaEnvironmentCreationStatus();
+            registerExternalHooks();
+             m_environmentCreator.startEnvironmentCreation(environmentName, pythonVersion, m_status);
+        } catch (final Exception ex) { // NOSONAR Exception will be lost if not caught here.
+            NodeLogger.getLogger(CondaEnvironmentCreationPreferenceDialog.class).debug(ex);
+            performActionOnWidgetInUiThread(m_shell, () -> {
+                if (!m_statusLabel.isDisposed()) {
+                    m_statusLabel.setText("An error occurred while starting to create the environment.");
+                }
+                return null;
+            }, false);
+            updateErrorLog(ex.getMessage(), false);
+            switchToFailedState();
         }
-        m_shell.layout(true, true);
-        m_status = new CondaEnvironmentCreationStatus();
-        registerExternalHooks();
-        m_environmentCreator.startEnvironmentCreation(environmentName, m_status);
     }
 
     /**
@@ -383,6 +437,9 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
             // Prepare for retry.
             if (!m_environmentNameTextBox.isDisposed()) {
                 m_environmentNameTextBox.setEnabled(true);
+            }
+            if (!m_pythonVersionSelection.getCombo().isDisposed()) {
+                m_pythonVersionSelection.getCombo().setEnabled(true);
             }
             if (!m_createOrRetryButton.isDisposed()) {
                 m_createOrRetryButton.setText(RETRY_BUTTON_TEXT);
@@ -493,28 +550,36 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
     }
 
     private void updateErrorLog(@SuppressWarnings("unused") final ChangeEvent e) {
+        updateErrorLog(m_status.getErrorLog().getStringValue(), true);
+    }
+
+    private void updateErrorLog(final String error, final boolean updateAsync) {
         performActionOnWidgetInUiThread(m_shell, () -> {
             if (!m_errorTextBox.isDisposed()) {
-                m_errorTextBox.setText(m_status.getErrorLog().getStringValue());
+                m_errorTextBox.setText(error);
                 m_errorTextBox.requestLayout();
-                if (!m_errorTextBoxContainer.isDisposed() && !m_errorTextBoxContainer.getVisible()) {
-                    // Show error log if it is hidden (which is the initial state).
-                    if (!m_errorTextBoxLabel.isDisposed()) {
-                        m_errorTextBoxLabel.setVisible(true);
-                        ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = false;
+                if (!Strings.isNullOrEmpty(error)) {
+                    if (!m_errorTextBoxContainer.isDisposed() && !m_errorTextBoxContainer.getVisible()) {
+                        // Show error log if it is hidden (which is the initial state).
+                        if (!m_errorTextBoxLabel.isDisposed()) {
+                            ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = false;
+                            m_errorTextBoxLabel.setVisible(true);
+                        }
+                        final GridData errorTextBoxContainerGridData =
+                            (GridData)m_errorTextBoxContainer.getLayoutData();
+                        errorTextBoxContainerGridData.exclude = false;
+                        m_errorTextBoxContainer.setVisible(true);
                     }
-                    m_errorTextBoxContainer.setVisible(true);
-                    final GridData errorTextBoxContainerGridData = (GridData)m_errorTextBoxContainer.getLayoutData();
-                    errorTextBoxContainerGridData.exclude = false;
-                    m_shell.layout(true, true);
-                    // Manually resize shell to show error log as if it wasn't hidden in the first place.
-                    final Point oldSize = m_shell.getSize();
-                    final Point newSize =
-                        m_shell.computeSize(oldSize.x, oldSize.y + errorTextBoxContainerGridData.heightHint, true);
-                    m_shell.setSize(newSize);
+                } else if (!m_errorTextBoxContainer.isDisposed() && m_errorTextBoxContainer.getVisible()) {
+                    if (!m_errorTextBoxLabel.isDisposed()) {
+                        ((GridData)m_errorTextBoxLabel.getLayoutData()).exclude = true;
+                        m_errorTextBoxLabel.setVisible(false);
+                    }
+                    ((GridData)m_errorTextBoxContainer.getLayoutData()).exclude = true;
+                    m_errorTextBoxContainer.setVisible(false);
                 }
             }
             return null;
-        }, true);
+        }, updateAsync);
     }
 }
