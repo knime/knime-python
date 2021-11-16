@@ -4,6 +4,7 @@ channels:             # Repositories to search for packages
 - anaconda
 - conda-forge
 dependencies:         # List of packages that should be installed
+- py4j                # Used for communication with KNIME
 - nbformat=4.4        # Notebook support
 - nomkl               # Prevents the use of Intel's MKL
 - jpype1=0.6.3        # Databases

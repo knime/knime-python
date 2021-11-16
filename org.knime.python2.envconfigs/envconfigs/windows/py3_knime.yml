@@ -4,6 +4,7 @@ channels:             # Repositories to search for packages
 - anaconda
 - conda-forge
 dependencies:         # List of packages that should be installed
+- py4j                # Used for communication with KNIME
 - python-dateutil=2.7 # Date and Time utilities
 - pyarrow>=5.0.0       # Arrow serialization
 - pkgs/main::re2      # Dependency of pyarrow
