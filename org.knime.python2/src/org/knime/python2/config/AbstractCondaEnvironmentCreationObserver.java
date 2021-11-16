@@ -48,13 +48,13 @@
  */
 package org.knime.python2.config;
 
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.core.util.Version;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.conda.Conda;
 import org.knime.python2.conda.CondaEnvironmentCreationMonitor;
@@ -145,18 +145,22 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
     }
 
     /**
-     * Initiates the a new Conda environment creation process. Only allowed if this instance is
+     * Initiates a new Conda environment creation process. Only allowed if this instance is
      * {@link #getIsEnvironmentCreationEnabled() enabled}.
      *
      * @param environmentName The name of the environment. Must not already exist in the local Conda installation. May
      *            be {@code null} or empty in which case a unique default name is used.
+     * @param pathToEnvFile The path to the environment definition file. If {@code null}, {@code pythonVersion} is
+     *            consulted to find a predefined environment definition.
+     * @param pythonVersion The Python version of the environment. Must match a version for which a predefined
+     *            environment file is available. Ignored if {@code pathToEnvFile} is not {@code null} (in which case
+     *            {@code null} can be passed here).
      * @param status The status object that is will be notified about changes in the state of the initiated creation
      *            process. Can also be used to {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancel}
      *            the creation process. A new status object must be used for each new creation process.
-     * @param pathToEnvFile path to the environment definition file. If not present the default environment is used.
      */
-    protected synchronized void startEnvironmentCreation(final String environmentName,
-        final CondaEnvironmentCreationStatus status, final Optional<String> pathToEnvFile) {
+    protected synchronized void startEnvironmentCreation(final String environmentName, final String pathToEnvFile,
+        final Version pythonVersion, final CondaEnvironmentCreationStatus status) {
         if (!m_environmentCreationEnabled.getBooleanValue()) {
             throw new IllegalStateException("Environment creation is not enabled.");
         }
@@ -170,18 +174,12 @@ public abstract class AbstractCondaEnvironmentCreationObserver {
                 onEnvironmentCreationStarting(status);
                 final Conda conda = new Conda(m_condaDirectoryPath.getStringValue());
                 final CondaEnvironmentIdentifier createdEnvironment;
-                if (pathToEnvFile.isPresent()) {
-                    createdEnvironment = conda.createEnvironmentFromFile(m_pythonVersion, pathToEnvFile.get(),
+                if (pathToEnvFile != null) {
+                    createdEnvironment = conda.createEnvironmentFromFile(m_pythonVersion, pathToEnvFile,
                         environmentName, m_currentCreationMonitor);
-                } else if (m_pythonVersion.equals(PythonVersion.PYTHON2)) {
-                    createdEnvironment =
-                        conda.createDefaultPython2Environment(environmentName, m_currentCreationMonitor);
-                } else if (m_pythonVersion.equals(PythonVersion.PYTHON3)) {
-                    createdEnvironment =
-                        conda.createDefaultPython3Environment(environmentName, m_currentCreationMonitor);
                 } else {
-                    throw new IllegalStateException("Python version '" + m_pythonVersion
-                        + "' is neither Python 2 nor Python " + "3. This is an implementation error.");
+                    createdEnvironment =
+                        conda.createDefaultPythonEnvironment(environmentName, pythonVersion, m_currentCreationMonitor);
                 }
                 onEnvironmentCreationFinished(status, createdEnvironment);
             } catch (final PythonCanceledExecutionException ex) {
