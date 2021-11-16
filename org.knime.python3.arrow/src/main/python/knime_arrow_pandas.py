@@ -207,5 +207,5 @@ def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
     for i in logical_columns:
         field = schema.field(i)
         t = field.type
-        if t.needs_conversion:
+        if hasattr(t, "needs_conversion") and t.needs_conversion:
             df[field.name] = df[field.name].apply(t.decode)

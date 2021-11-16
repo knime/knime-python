@@ -215,6 +215,7 @@ class SentinelReplacementTest(unittest.TestCase):
         df = pd.DataFrame()
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, np.nan, 4.0]
+        df["2"] = [[1, 2, 3], [0, 3, 2], [6, 5, 4], [4, 3, 2]]
         b = kt.Batch.from_pandas(df, sentinel=1)
         p = b.to_pyarrow()
         d = p.to_pydict()
@@ -248,6 +249,14 @@ class SentinelReplacementTest(unittest.TestCase):
         out = katy.insert_sentinel_for_missing_values(rb, 42)
         self.assertTrue(out["0"][2].is_valid)
         self.assertEqual(42, out["0"][2].as_py())
+
+    def test_special_list_type(self):
+        s = pd.Series([[1, 2, 3], [0, 3, 2], [6, 5, 4], [4, 3, 2]])
+        a = pa.Array.from_pandas(s)
+        t = katy.LogicalTypeExtensionType(
+            None, pa.list_(pa.int64()), "java_value_factory"
+        )
+        b = pa.ExtensionArray.from_storage(t, a)
 
 
 if __name__ == "__main__":
