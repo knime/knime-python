@@ -96,7 +96,7 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
     private final JSpinner m_rowLimit =
         new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0, Integer.MAX_VALUE, 100));
 
-    private final JTextComponent m_rowLimitNewBackendInfoText =
+    private final JTextComponent m_rowLimitPython3BackendInfoText =
         PythonKernelBackendSelectionPanel.createBackendInfoText("");
 
     private final JCheckBox m_convertMissingToPython =
@@ -117,13 +117,13 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
 
     private final JLabel m_invalidCustomSentinelWarningLabel = new JLabel("");
 
-    private final JTextComponent m_missingsNewBackendInfoText =
+    private final JTextComponent m_missingsPython3BackendInfoText =
         PythonKernelBackendSelectionPanel.createBackendInfoText("");
 
     private final JSpinner m_chunkSize =
         new JSpinner(new SpinnerNumberModel(SerializationOptions.DEFAULT_CHUNK_SIZE, 1, Integer.MAX_VALUE, 1));
 
-    private final JTextComponent m_chunkingNewBackendInfoText = PythonKernelBackendSelectionPanel
+    private final JTextComponent m_chunkingPython3BackendInfoText = PythonKernelBackendSelectionPanel
         .createBackendInfoText("Note: the new table API handles chunking automatically.");
 
     private final CopyOnWriteArrayList<IntConsumer> m_rowLimitListeners = new CopyOnWriteArrayList<>();
@@ -171,21 +171,21 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         gbc.weighty = 1;
         add(new JLabel(), gbc);
 
-        final List<JPanel> oldBackendPanels = List.of(rowLimitPanel, missingsPanel, chunkingPanel);
-        final List<JComponent> newBackendInfos =
-            List.of(m_rowLimitNewBackendInfoText, m_missingsNewBackendInfoText, m_chunkingNewBackendInfoText);
+        final List<JPanel> python2BackendPanels = List.of(rowLimitPanel, missingsPanel, chunkingPanel);
+        final List<JComponent> python3BackendInfos = List.of(m_rowLimitPython3BackendInfoText,
+            m_missingsPython3BackendInfoText, m_chunkingPython3BackendInfoText);
         m_backendSelection.addKernelBackendChangeListener(backendType -> { // NOSONAR
-            final boolean isOldBackend = backendType == PythonKernelBackendType.PYTHON2;
-            final boolean isNewBackend = !isOldBackend;
-            for (final JPanel panel : oldBackendPanels) {
-                setEnabledRecursively(panel, isOldBackend);
+            final boolean isPython2Backend = backendType == PythonKernelBackendType.PYTHON2;
+            final boolean isPython3Backend = !isPython2Backend;
+            for (final JPanel panel : python2BackendPanels) {
+                setEnabledRecursively(panel, isPython2Backend);
             }
-            if (isNewBackend) {
+            if (isPython3Backend) {
                 setNewBackendInfos();
             }
-            for (final JComponent info : newBackendInfos) {
-                info.setEnabled(isNewBackend);
-                info.setVisible(isNewBackend);
+            for (final JComponent info : python3BackendInfos) {
+                info.setEnabled(isPython3Backend);
+                info.setVisible(isPython3Backend);
             }
         });
     }
@@ -212,8 +212,8 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         gbc.gridx--;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        m_rowLimitNewBackendInfoText.setVisible(false);
-        panel.add(m_rowLimitNewBackendInfoText, gbc);
+        m_rowLimitPython3BackendInfoText.setVisible(false);
+        panel.add(m_rowLimitPython3BackendInfoText, gbc);
 
         m_rowLimit.addChangeListener(e -> onRowLimitChanged());
 
@@ -261,8 +261,8 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         m_invalidCustomSentinelWarningLabel.setVisible(false);
         panel.add(m_invalidCustomSentinelWarningLabel, gbc);
         gbc.gridy++;
-        m_missingsNewBackendInfoText.setVisible(false);
-        panel.add(m_missingsNewBackendInfoText, gbc);
+        m_missingsPython3BackendInfoText.setVisible(false);
+        panel.add(m_missingsPython3BackendInfoText, gbc);
 
         return panel;
     }
@@ -279,8 +279,8 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         gbc.gridx--;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        m_chunkingNewBackendInfoText.setVisible(false);
-        panel.add(m_chunkingNewBackendInfoText, gbc);
+        m_chunkingPython3BackendInfoText.setVisible(false);
+        panel.add(m_chunkingPython3BackendInfoText, gbc);
 
         return panel;
     }
@@ -295,7 +295,7 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
     }
 
     private void setNewBackendInfos() {
-        m_rowLimitNewBackendInfoText.setText("<table width=800><tr>" //
+        m_rowLimitPython3BackendInfoText.setText("<table width=800><tr>" //
             + "You can use" //
             + "<blockquote>" //
             + "input_table_1 = input_table_1.to_pandas(rows=" + getRowLimit() + "), or<br>"
@@ -314,7 +314,7 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         } else {
             sentinelText = Integer.toString(m_customSentinelValue);
         }
-        m_missingsNewBackendInfoText.setText("<table width=800><tr>" //
+        m_missingsPython3BackendInfoText.setText("<table width=800><tr>" //
             + "You can use" //
             + "<blockquote>" //
             + "input_table_1 = input_table_1.to_pandas(sentinel=" + sentinelText + "), or<br>" //

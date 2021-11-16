@@ -128,7 +128,7 @@ public class PythonKernel implements AutoCloseable {
 
     /**
      * Creates a new Python kernel by starting a Python process and connecting to it. The instantiated kernel uses the
-     * {@link Python2KernelBackend legacy kernel back end}.
+     * {@link Python2KernelBackend (legacy) Python 2 kernel back end}.
      * <P>
      * Important: Call the {@link #close()} method when this kernel is no longer needed to shut down the Python process
      * in the background.
@@ -144,10 +144,10 @@ public class PythonKernel implements AutoCloseable {
      */
     @SuppressWarnings("resource") // Created back end will be closed with this instance.
     public PythonKernel(final PythonCommand command) throws PythonIOException {
-        this(createOldBackend(command));
+        this(createPython2Backend(command));
     }
 
-    private static PythonKernelBackend createOldBackend(final PythonCommand command) throws PythonIOException {
+    private static PythonKernelBackend createPython2Backend(final PythonCommand command) throws PythonIOException {
         try {
             return PythonKernelBackendRegistry.getBackend(PythonKernelBackendType.PYTHON2).createBackend(command);
         } catch (final PythonIOException ex) {

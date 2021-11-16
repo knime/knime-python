@@ -109,9 +109,9 @@ public final class PythonKernelQueue {
 
     /**
      * Takes the next {@link PythonKernel} from the queue that was launched using the given {@link PythonCommand}, uses
-     * the old kernel back end, and has the given modules preloaded. Configures it according to the given
-     * {@link PythonKernelOptions} and returns it. The caller is responsible for {@link PythonKernel#close() closing}
-     * the kernel.<br>
+     * the {@link Python2KernelBackend Python 2 kernel back end}, and has the given modules preloaded. Configures it
+     * according to the given {@link PythonKernelOptions} and returns it. The caller is responsible for
+     * {@link PythonKernel#close() closing} the kernel.<br>
      * This method blocks until a kernel is present in the queue.
      * <P>
      * Note that specifying additional modules should only be done if loading these modules is time-consuming since,

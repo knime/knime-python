@@ -164,13 +164,13 @@ final class PythonKernelBackendSelectionPanel extends JPanel {
             listener.accept(backendType);
         }
         if (backendType == PythonKernelBackendType.PYTHON2) {
-            showOldBackendInfoText();
+            showPython2BackendInfoText();
         } else {
-            showNewBackendInfoText();
+            showPython3BackendInfoText();
         }
     }
 
-    private void showOldBackendInfoText() {
+    private void showPython2BackendInfoText() {
         m_backendInfoText.setText("<html><table width=800px><tr>"
             + "The default table API. Each input table is provided as pandas.DataFrame and each output table is "
             + "expected to be a pandas.DataFrame. This API supports many of KNIME's data types. It is however "
@@ -179,7 +179,7 @@ final class PythonKernelBackendSelectionPanel extends JPanel {
             + "</tr></table>");
     }
 
-    private void showNewBackendInfoText() {
+    private void showPython3BackendInfoText() {
         m_backendInfoText.setText("<table width=800px><tr>"
             + "<p>The KNIME Table API brings significant performance improvements over the pandas.DataFrame API and "
             + "enables working with larger-than-memory data." //
@@ -209,7 +209,7 @@ final class PythonKernelBackendSelectionPanel extends JPanel {
     }
 
     /**
-     * Makes sure that the hyperlinks contained in the info text (see {@link #showNewBackendInfoText()}) are opened
+     * Makes sure that the hyperlinks contained in the info text (see {@link #showPython3BackendInfoText()}) are opened
      * properly.
      */
     private void processHyperlinkEvent(final HyperlinkEvent event) {
