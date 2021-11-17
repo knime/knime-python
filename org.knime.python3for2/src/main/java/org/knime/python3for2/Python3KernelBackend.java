@@ -107,7 +107,6 @@ import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.Pair;
 import org.knime.core.util.Version;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
@@ -216,6 +215,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      * how long the Python side references their respective file stores.
      */
     private final Set<IFileStoreHandler> m_temporaryFsHandlers = new HashSet<>(1);
+
+    private final Set<ColumnarBatchReadStore> m_copiedStores = new HashSet<>(1);
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
@@ -623,8 +624,25 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
                         m_temporaryFsHandlers);
                 }
+                cleanupCopiedStores();
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
             }).start();
+        }
+    }
+
+    private void cleanupCopiedStores() {
+        synchronized (m_copiedStores) {
+            m_copiedStores.forEach(Python3KernelBackend::cleanupStore);
+        }
+    }
+
+    private static void cleanupStore(final ColumnarBatchReadStore store) {
+        var path = store.getPath();
+        PythonUtils.Misc.closeSafely(LOGGER::debug, store);
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ex) {
+            LOGGER.debug("Failed to delete the file storing a table copy.", ex);
         }
     }
 
@@ -650,38 +668,30 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         @SuppressWarnings("resource")
         @Override
         public Void call() throws Exception {
-            final Pair<ColumnarBatchReadStore, Boolean> p = extractStoreCopyTableIfNecessary(m_table);
-            final ColumnarBatchReadStore columnarStore = p.getFirst();
-            final boolean storeIsCopy = p.getSecond();
-            try {
-                final PythonArrowDataSource source =
-                    convertStoreIntoSource(columnarStore, m_table.getDataTableSpec().getColumnNames());
-                if (m_options.getConvertMissingToPython()) {
-                    switch (m_options.getSentinelOption()) {
-                        case MIN_VAL:
-                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
-                            break;
-                        case MAX_VAL:
-                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
-                            break;
-                        case CUSTOM:
-                            m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
-                            break;
-                    }
-                } else {
-                    m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
+            final var columnarStore = extractStoreCopyTableIfNecessary(m_table);
+            final PythonArrowDataSource source =
+                convertStoreIntoSource(columnarStore, m_table.getDataTableSpec().getColumnNames());
+            if (m_options.getConvertMissingToPython()) {
+                switch (m_options.getSentinelOption()) {
+                    case MIN_VAL:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
+                        break;
+                    case MAX_VAL:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
+                        break;
+                    case CUSTOM:
+                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
+                        break;
                 }
-            } finally {
-                if (storeIsCopy) {
-                    Files.deleteIfExists(columnarStore.getPath());
-                }
+            } else {
+                m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
             }
             return null;
         }
 
         // Store will be closed along with table. If it is a copy, it will have already been closed.
         @SuppressWarnings("resource")
-        private Pair<ColumnarBatchReadStore, Boolean> extractStoreCopyTableIfNecessary(final BufferedDataTable table)
+        private ColumnarBatchReadStore extractStoreCopyTableIfNecessary(final BufferedDataTable table)
             throws IOException {
             final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
             if (delegate instanceof ColumnarContainerTable) {
@@ -699,16 +709,45 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     isLegacyArrow = true;
                 }
                 if (!isLegacyArrow) {
-                    final ColumnarBatchReadStore columnarStore = ((ColumnarContainerTable)delegate).getStore();
-                    return new Pair<>(columnarStore, false);
+                    return ((ColumnarContainerTable)delegate).getStore();
                 }
             }
             // Fallback for legacy and virtual tables.
-            final ColumnarBatchReadStore columnarStore = copyTableToArrowStore(table);
-            return new Pair<>(columnarStore, true);
+            return copyTableToArrowStore(table);
         }
 
+        @SuppressWarnings("resource") // the store is closed when the kernel is closed
         private ColumnarBatchReadStore copyTableToArrowStore(final BufferedDataTable table) throws IOException {
+            synchronized (m_copiedStores) {
+                if (m_closed.get()) {
+                    throw new IllegalStateException("Attempting to copy a table after the kernel has been closed.");
+                } else {
+                    var copiedTable = copyTable(table);
+                    final var store = copiedTable.getStore();
+                    m_copiedStores.add(store);
+                    return store;
+                }
+            }
+        }
+
+        private ColumnarRowReadTable copyTable(final BufferedDataTable table)
+            throws IOException {
+            var fsHandler = getWriteFileStoreHandler();
+            final var schema =
+                ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, fsHandler));
+            try (final var columnarTable = new ColumnarRowWriteTable(schema, ARROW_STORE_FACTORY,
+                new ColumnarRowWriteTableSettings(true, false, -1, false, false, false))) {
+                try (final RowCursor inCursor = table.cursor();
+                        final RowWriteCursor outCursor = columnarTable.createCursor()) {
+                    while (inCursor.canForward()) {
+                        outCursor.forward().setFrom(inCursor.forward());
+                    }
+                    return columnarTable.finish();
+                }
+            }
+        }
+
+        private IWriteFileStoreHandler getWriteFileStoreHandler() {
             final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
             IWriteFileStoreHandler fsHandler = null;
             if (nodeFsHandler instanceof IWriteFileStoreHandler) {
@@ -728,22 +767,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     }
                 }
             }
-            final var schema =
-                ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, fsHandler));
-            ColumnarRowReadTable tableCopy;
-            try (final var columnarTable = new ColumnarRowWriteTable(schema, ARROW_STORE_FACTORY,
-                new ColumnarRowWriteTableSettings(true, false, -1, false, false, false))) {
-                try (final RowCursor inCursor = table.cursor();
-                        final RowWriteCursor outCursor = columnarTable.createCursor()) {
-                    while (inCursor.canForward()) {
-                        outCursor.forward().setFrom(inCursor.forward());
-                    }
-                    tableCopy = columnarTable.finish();
-                }
-            }
-            try (tableCopy) {
-                return tableCopy.getStore();
-            }
+            return fsHandler;
         }
 
         // Store will be closed along with table. If it is a copy, it will have already been closed.
@@ -831,7 +855,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
 
         @SuppressWarnings("resource") // The resources are remembered and closed in #close
-        private synchronized PythonArrowDataSink create_sink() throws IOException {
+        private synchronized PythonArrowDataSink create_sink() throws IOException {//NOSONAR used by Python
             final var path = DataContainer.createTempFile(".knable").toPath();
             final var sink = PythonArrowDataUtils.createSink(path);
 
