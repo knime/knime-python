@@ -26,7 +26,6 @@
 		<module>org.knime.features.ext.jython</module>
 		<module>org.knime.features.python</module>
 		<module>org.knime.features.python2</module>
-		<module>org.knime.features.python3</module>
 		<module>org.knime.python</module>
 		<module>org.knime.python2</module>
 		<module>org.knime.python2.envconfigs</module>
