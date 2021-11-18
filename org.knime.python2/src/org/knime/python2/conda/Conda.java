@@ -461,6 +461,24 @@ public final class Conda {
     }
 
     /**
+     * @return A default name for a Python 2 environment. It is ensured that the name does not already exist in this
+     *         Conda installation.
+     * @throws IOException If an error occurs during execution of the underlying Conda commands.
+     */
+    public String getDefaultPython2EnvironmentName() throws IOException {
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON2, "");
+    }
+
+    /**
+     * @return A default name for a Python 3 environment. It is ensured that the name does not already exist in this
+     *         Conda installation.
+     * @throws IOException If an error occurs during execution of the underlying Conda commands.
+     */
+    public String getDefaultPython3EnvironmentName() throws IOException {
+        return getDefaultPythonEnvironmentName(PythonVersion.PYTHON3, "");
+    }
+
+    /**
      * @param suffix a suffix for the environment name
      * @return A name for a Python 2 environment. It is ensured that the name does not already exist in this Conda
      *         installation.
@@ -496,15 +514,13 @@ public final class Conda {
     }
 
     /**
-     * Creates a new predefined Conda environment of the given Python version that contains all packages required by the
-     * KNIME Python integration.
+     * Creates a new Python 2 Conda environment that contains all packages required by the KNIME Python integration.
      *
-     * @param environmentName The name of the environment. Must not already exist in this Conda installation. May be
-     *            {@code null} or empty in which case a default name is used.
-     * @param pythonVersion The Python version of the environment. Must match a version for which a predefined
-     *            environment file is available.
      * @param monitor Receives progress of the creation process. Allows to cancel the environment creation from within
      *            another thread.
+     * @param environmentName The name of the environment. Must not already exist in this Conda installation. May be
+     *            {@code null} or empty in which case a {@link #getDefaultPython2EnvironmentName() default name} is
+     *            used.
      * @return A description of the created Conda environment.
      * @throws IOException If an error occurs during execution of the underlying Conda commands. This also includes
      *             cases where an environment of name {@code environmentName} is already present in this Conda
@@ -513,13 +529,31 @@ public final class Conda {
      * @throws UnsupportedOperationException If creating a default environment is not supported for the local operating
      *             system.
      */
-    public CondaEnvironmentIdentifier createDefaultPythonEnvironment(final String environmentName,
-        final Version pythonVersion, final CondaEnvironmentCreationMonitor monitor)
-        throws IOException, PythonCanceledExecutionException {
-        final PythonVersion pythonMajorVersion = pythonVersion.getMajor() == 3 //
-            ? PythonVersion.PYTHON3 //
-            : PythonVersion.PYTHON2;
-        return createEnvironmentFromFile(pythonMajorVersion, CondaEnvironments.getPathToCondaConfigFile(pythonVersion),
+    public CondaEnvironmentIdentifier createDefaultPython2Environment(final String environmentName,
+        final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
+        return createEnvironmentFromFile(PythonVersion.PYTHON2, CondaEnvironments.getPathToPython2CondaConfigFile(),
+            environmentName, monitor);
+    }
+
+    /**
+     * Creates a new Python 3 Conda environment that contains all packages required by the KNIME Python integration.
+     *
+     * @param monitor Receives progress of the creation process. Allows to cancel the environment creation from within
+     *            another thread.
+     * @param environmentName The name of the environment. Must not already exist in this Conda installation. May be
+     *            {@code null} or empty in which case a {@link #getDefaultPython3EnvironmentName() default name} is
+     *            used.
+     * @return A description of the created Conda environment.
+     * @throws IOException If an error occurs during execution of the underlying Conda commands. This also includes
+     *             cases where an environment of name {@code environmentName} is already present in this Conda
+     *             installation.
+     * @throws PythonCanceledExecutionException If environment creation was canceled via the given monitor.
+     * @throws UnsupportedOperationException If creating a default environment is not supported for the local operating
+     *             system.
+     */
+    public CondaEnvironmentIdentifier createDefaultPython3Environment(final String environmentName,
+        final CondaEnvironmentCreationMonitor monitor) throws IOException, PythonCanceledExecutionException {
+        return createEnvironmentFromFile(PythonVersion.PYTHON3, CondaEnvironments.getPathToPython3CondaConfigFile(),
             environmentName, monitor);
     }
 

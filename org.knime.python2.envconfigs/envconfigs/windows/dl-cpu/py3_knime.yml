@@ -1,5 +1,5 @@
-name: py36_knime_dl_cpu # Name of the created environment
-channels:               # Repositories to search for packages
+name: py3_knime_dl    # Name of the created environment
+channels:             # Repositories to search for packages
 - defaults
 - anaconda
 - conda-forge

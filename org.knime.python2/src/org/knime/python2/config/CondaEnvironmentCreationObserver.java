@@ -48,14 +48,16 @@
  */
 package org.knime.python2.config;
 
+import java.util.Optional;
+
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.core.util.Version;
 import org.knime.python2.PythonVersion;
 
 /**
- * Initiates, observes, and {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancels} Conda environment
- * creation processes for a specific Conda installation and Python version. Allows clients to subscribe to changes in
- * the status of such creation processes.
+ * {@link #startEnvironmentCreation(String, CondaEnvironmentCreationStatus) Initiates}, observes, and
+ * {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancels} Conda environment creation processes for a
+ * specific Conda installation and Python version. Allows clients to subscribe to changes in the status of such creation
+ * processes.
  * <P>
  * Note: The current implementation only allows one active creation process at a time.
  *
@@ -86,35 +88,17 @@ public final class CondaEnvironmentCreationObserver extends AbstractCondaEnviron
     }
 
     /**
-     * Initiates a new Conda environment creation process using a predefined environment definition. Only allowed if
-     * this instance is {@link #getIsEnvironmentCreationEnabled() enabled}.
+     * Initiates the a new Conda environment creation process. Only allowed if this instance is
+     * {@link #getIsEnvironmentCreationEnabled() enabled}.
      *
      * @param environmentName The name of the environment. Must not already exist in the local Conda installation. May
      *            be {@code null} or empty in which case a unique default name is used.
-     * @param pythonVersion The Python version of the environment. Must match a version for which a predefined
-     *            environment file is available.
      * @param status The status object that is will be notified about changes in the state of the initiated creation
      *            process. Can also be used to {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancel}
      *            the creation process. A new status object must be used for each new creation process.
      */
-    public void startEnvironmentCreation(final String environmentName, final Version pythonVersion,
+    public void startEnvironmentCreation(final String environmentName,
         final CondaEnvironmentCreationStatus status) {
-        startEnvironmentCreation(environmentName, null, pythonVersion, status);
-    }
-
-    /**
-     * Initiates a new Conda environment creation process using a given environment definition. Only allowed if this
-     * instance is {@link #getIsEnvironmentCreationEnabled() enabled}.
-     *
-     * @param environmentName The name of the environment. Must not already exist in the local Conda installation. May
-     *            be {@code null} or empty in which case a unique default name is used.
-     * @param pathToEnvFile The path to the environment definition file.
-     * @param status The status object that is will be notified about changes in the state of the initiated creation
-     *            process. Can also be used to {@link #cancelEnvironmentCreation(CondaEnvironmentCreationStatus) cancel}
-     *            the creation process. A new status object must be used for each new creation process.
-     */
-    public void startEnvironmentCreation(final String environmentName, final String pathToEnvFile,
-        final CondaEnvironmentCreationStatus status) {
-        startEnvironmentCreation(environmentName, pathToEnvFile, null, status);
+        startEnvironmentCreation(environmentName, status, Optional.empty());
     }
 }

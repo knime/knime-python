@@ -1,0 +1,23 @@
+name: py3_knime       # Name of the created environment
+channels:             # Repositories to search for packages
+- defaults
+- anaconda
+- conda-forge
+dependencies:         # List of packages that should be installed
+- py4j                # Used for communication with KNIME
+- python-dateutil=2.7 # Date and Time utilities
+- pyarrow>=5.0.0       # Arrow serialization
+- pkgs/main::re2      # Dependency of pyarrow
+- matplotlib=3.0      # Plotting
+- ipython=7.1         # Notebook support
+- python=3.6          # Python
+- scipy=1.1           # Notebook support
+- jedi=0.13           # Python script autocompletion
+- nbformat=4.4        # Notebook support
+- pandas=0.23         # Table data structures
+- pillow=5.3          # Image inputs/outputs
+- jpype1=0.6.3        # Databases
+- numpy=1.16.1        # N-dimensional arrays
+- cairo=1.14          # SVG support
+- libiconv=1.15       # MDF Reader node
+- asammdf=5.19.14     # MDF Reader node

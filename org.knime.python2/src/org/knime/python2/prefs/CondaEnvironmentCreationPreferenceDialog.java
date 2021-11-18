@@ -52,13 +52,7 @@ import static org.knime.python2.prefs.PythonPreferenceUtils.performActionOnWidge
 
 import javax.swing.event.ChangeEvent;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ComboViewer;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.SelectionEvent;
@@ -72,7 +66,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
@@ -81,8 +74,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.knime.core.util.Version;
-import org.knime.python2.PythonVersion;
 import org.knime.python2.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatus;
 import org.knime.python2.config.AbstractCondaEnvironmentCreationObserver.CondaEnvironmentCreationStatusListener;
@@ -110,8 +101,6 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
     private final Shell m_shell;
 
     private Text m_environmentNameTextBox;
-
-    private ComboViewer m_pythonVersionSelection;
 
     private Label m_statusLabel;
 
@@ -182,30 +171,6 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
         m_environmentNameTextBox.setEnabled(false);
         m_environmentNameTextBox.setText(ENVIRONMENT_NAME_PLACEHOLDER);
         m_environmentNameTextBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
-        // Python version:
-
-        final var pythonVersionSelectionContainer = new Composite(m_shell, SWT.NONE);
-        pythonVersionSelectionContainer.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
-        pythonVersionSelectionContainer.setLayout(new GridLayout(2, false));
-        final var pythonVersionSelectionLabel = new Label(pythonVersionSelectionContainer, SWT.NONE);
-        pythonVersionSelectionLabel.setText("Python version");
-        pythonVersionSelectionLabel.setLayoutData(new GridData());
-
-        final var combo = new Combo(pythonVersionSelectionContainer, SWT.DROP_DOWN | SWT.READ_ONLY);
-        combo.setLayoutData(gridData);
-        m_pythonVersionSelection = new ComboViewer(combo);
-        m_pythonVersionSelection.setContentProvider(ArrayContentProvider.getInstance());
-        m_pythonVersionSelection.setComparator(new ViewerComparator());
-        final String[] pythonVersions;
-        // Note: do not change labels without adapting parsing of the version further below.
-        if (m_environmentCreator.getPythonVersion() == PythonVersion.PYTHON3) {
-            pythonVersions = new String[]{"Python 3.6", "Python 3.7", "Python 3.8", "Python 3.9"};
-        } else {
-            pythonVersions = new String[]{"Python 2.7"};
-        }
-        m_pythonVersionSelection.setInput(pythonVersions);
-        m_pythonVersionSelection.setSelection(new StructuredSelection(pythonVersions[pythonVersions.length - 1]), true);
 
         // Progress monitoring widgets:
 
@@ -390,15 +355,10 @@ class CondaEnvironmentCreationPreferenceDialog extends Dialog implements CondaEn
             environmentName = m_environmentCreator.getDefaultEnvironmentName();
             m_environmentNameTextBox.setText(environmentName);
         }
-        final var pythonVersionString =
-            (String)((IStructuredSelection)m_pythonVersionSelection.getSelection()).getFirstElement();
-        final String[] pythonVersionParts = StringUtils.removeStart(pythonVersionString, "Python ").split("\\.");
-        final var pythonVersion =
-            new Version(Integer.parseInt(pythonVersionParts[0]), Integer.parseInt(pythonVersionParts[1]), 0);
         m_shell.layout(true, true);
         m_status = new CondaEnvironmentCreationStatus();
         registerExternalHooks();
-        m_environmentCreator.startEnvironmentCreation(environmentName, pythonVersion, m_status);
+        m_environmentCreator.startEnvironmentCreation(environmentName, m_status);
     }
 
     /**

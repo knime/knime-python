@@ -57,7 +57,6 @@ import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.Version;
 import org.osgi.framework.Bundle;
 
 /**
@@ -73,52 +72,65 @@ public final class CondaEnvironments {
 
     private static final String CONDA_CONFIGS_DIRECTORY = "envconfigs";
 
-    private static final String YAML_FILE_EXTENSION = ".yml";
+    private static final String PYTHON2_CONFIG_FILE = "py2_knime.yml";
+
+    private static final String PYTHON3_CONFIG_FILE = "py3_knime.yml";
 
     private CondaEnvironments() {
         // Utility class.
     }
 
     /**
-     * Returns the default environment definition file for the given Python version.
-     *
-     * @param pythonVersion The Python version of the environment. Must match a version for which a predefined
-     *            environment file is available.
-     * @return The path to the configuration file that can be used to create Conda environments of the given Python
-     *         version that contain all packages required by the KNIME Python integration.<br>
+     * @return The path to the configuration file that can be used to create Python 2 Conda environments that contain
+     *         all packages required by the KNIME Python integration.<br>
      *         The returned path may differ between different operating systems.
      */
-    public static String getPathToCondaConfigFile(final Version pythonVersion) {
-        return getPathToCondaConfigFile(getFileStemForVersion(pythonVersion) + YAML_FILE_EXTENSION);
+    public static String getPathToPython2CondaConfigFile() {
+        return getPathToCondaConfigFile(PYTHON2_CONFIG_FILE);
     }
 
     /**
-     * Returns a specific environment definition file for the given Python version. Use
-     * {@link #getPathToCondaConfigFile(Version)} for the default configuration.
-     *
-     * @param pythonVersion The Python version of the environment. Must match a version for which a predefined
-     *            environment file is available.
-     * @param tag The application specific "tag" of the configuration file.
-     * @return The path to the configuration file that can be used to create Conda environments of the given Python
-     *         version.<br>
+     * @return The path to the configuration file that can be used to create Python 3 Conda environments that contain
+     *         all packages required by the KNIME Python integration.<br>
      *         The returned path may differ between different operating systems.
      */
-    public static String getPathToCondaConfigFile(final Version pythonVersion, final String tag) {
-        return getPathToCondaConfigFile(getFileStemForVersion(pythonVersion) + "_" + tag + YAML_FILE_EXTENSION);
+    public static String getPathToPython3CondaConfigFile() {
+        return getPathToCondaConfigFile(PYTHON3_CONFIG_FILE);
     }
 
-    private static String getFileStemForVersion(final Version pythonVersion) {
-        return "py" //
-            + Integer.toString(pythonVersion.getMajor()) //
-            + (pythonVersion.getMinor() != 0 ? Integer.toString(pythonVersion.getMinor()) : "") //
-            + (pythonVersion.getRevision() != 0 ? Integer.toString(pythonVersion.getRevision()) : "") //
-            + "_knime";
+    /**
+     * Returns a specific Python 2 Conda configuration file. Use {@link #getPathToPython2CondaConfigFile()} for the
+     * default configuration.
+     *
+     * @param subDirectory the sub directory of this configuration.
+     * @return The path to the configuration file that can be used to create Python 2 Conda environments
+     */
+    public static String getPathToPython2CondaConfigFile(final String subDirectory) {
+        return getPathToCondaConfigFile(PYTHON2_CONFIG_FILE, subDirectory);
+    }
+
+    /**
+     * Returns a specific Python 3 Conda configuration file. Use {@link #getPathToPython3CondaConfigFile()} for the
+     * default configuration.
+     *
+     * @param subDirectory the sub directory of this configuration.
+     * @return The path to the configuration file that can be used to create Python 3 Conda environments
+     */
+    public static String getPathToPython3CondaConfigFile(final String subDirectory) {
+        return getPathToCondaConfigFile(PYTHON3_CONFIG_FILE, subDirectory);
     }
 
     private static String getPathToCondaConfigFile(final String configFile) {
         final String osSubDirectory = getConfigSubDirectoryForOS();
         final String relativePathToDescriptionFile =
             Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, configFile).toString();
+        return getFile(relativePathToDescriptionFile).getAbsolutePath();
+    }
+
+    private static String getPathToCondaConfigFile(final String configFile, final String subDirectory) {
+        final String osSubDirectory = getConfigSubDirectoryForOS();
+        final String relativePathToDescriptionFile =
+            Paths.get(CONDA_CONFIGS_DIRECTORY, osSubDirectory, subDirectory, configFile).toString();
         return getFile(relativePathToDescriptionFile).getAbsolutePath();
     }
 
