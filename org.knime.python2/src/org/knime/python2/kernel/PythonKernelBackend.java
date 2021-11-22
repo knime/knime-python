@@ -132,7 +132,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      * The table will be available as a pandas.DataFrame.
      *
      * @param name The name of the table
-     * @param table The table
+     * @param table The table. May be {@code null} in which case the corresponding table on Python side will be
+     *            {@code None}.
      * @param executionMonitor The monitor that will be updated about progress
      * @param rowLimit The amount of rows that will be transfered
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
@@ -150,7 +151,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      * The table will be available as a pandas.DataFrame.
      *
      * @param name The name of the table
-     * @param table The table
+     * @param table The table. May be {@code null} in which case the corresponding table on Python side will be
+     *            {@code None}.
      * @param executionMonitor The monitor that will be updated about progress
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
      *             task
@@ -159,6 +161,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      */
     void putDataTable(String name, BufferedDataTable table, ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException;
+
+    void setExpectedOutputTables(String[] outputTableNames);
 
     /**
      * Get a {@link BufferedDataTable} from the workspace while still checking whether the execution has been canceled.
@@ -180,7 +184,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      * Puts a pickled object into the Python workspace.
      *
      * @param name The name of the variable in the Python workspace to which to assign the unpickled object
-     * @param object contains the file the object is pickled to as well as some meta data
+     * @param object contains the file the object is pickled to as well as some meta data. May be {@code null} in which
+     *            case the corresponding object on Python side will be {@code None}.
      * @throws PythonIOException If an error occurred in Python or while communicating with Python
      */
     void putObject(String name, PickledObjectFile object) throws PythonIOException;
@@ -189,7 +194,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      * Puts a pickled object into the Python workspace while still checking whether the execution has been canceled.
      *
      * @param name The name of the variable in the Python workspace to which to assign the unpickled object
-     * @param pickledObjectFile contains the file that holds the object as well as some meta information
+     * @param pickledObjectFile contains the file that holds the object as well as some meta information. May be
+     *            {@code null} in which case the corresponding object on Python side will be {@code None}.
      * @param executionMonitor The {@link ExecutionMonitor} of the calling node
      * @throws PythonIOException If an error occurred in Python or while communicating with Python
      * @throws CanceledExecutionException If canceled. This instance must not be used after a cancellation occurred and
@@ -197,6 +203,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      */
     void putObject(String name, PickledObjectFile pickledObjectFile, ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException;
+
+    void setExpectedOutputImages(String[] outputImageNames);
 
     /**
      * Gets a pickled object from the Python workspace while still checking whether the execution has been canceled.
@@ -212,6 +220,8 @@ public interface PythonKernelBackend extends AutoCloseable {
      */
     PickledObjectFile getObject(String name, File file, ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException;
+
+    void setExpectedOutputObjects(String[] outputObjectNames);
 
     /**
      * Get an image from the workspace.

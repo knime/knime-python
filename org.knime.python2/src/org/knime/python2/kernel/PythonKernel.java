@@ -267,7 +267,8 @@ public class PythonKernel implements AutoCloseable {
      * The table will be available as a pandas.DataFrame.
      *
      * @param name The name of the table
-     * @param table The table
+     * @param table The table. May be {@code null} in which case the respective table on Python side will be
+     *            {@code None}.
      * @param executionMonitor The monitor that will be updated about progress
      * @param rowLimit The amount of rows that will be transfered
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
@@ -287,7 +288,8 @@ public class PythonKernel implements AutoCloseable {
      * The table will be available as a pandas.DataFrame.
      *
      * @param name The name of the table
-     * @param table The table
+     * @param table The table. May be {@code null} in which case the respective table on Python side will be
+     *            {@code None}.
      * @param executionMonitor The monitor that will be updated about progress
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
      *             task
@@ -297,6 +299,10 @@ public class PythonKernel implements AutoCloseable {
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         m_backend.putDataTable(name, table, executionMonitor);
+    }
+
+    public void setExpectedOutputTables(final String[] outputTableNames) {
+        m_backend.setExpectedOutputTables(outputTableNames);
     }
 
     /**
@@ -321,7 +327,8 @@ public class PythonKernel implements AutoCloseable {
      * Put a {@link PickledObject} into the python workspace.
      *
      * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
+     * @param object the {@link PickledObject}. May be {@code null} in which case the respective object on Python side
+     *            will be {@code None}.
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
      *             task
      */
@@ -334,7 +341,8 @@ public class PythonKernel implements AutoCloseable {
      * canceled.
      *
      * @param name the name of the variable in the python workspace
-     * @param object the {@link PickledObject}
+     * @param object the {@link PickledObject}. May be {@code null} in which case the respective object on Python side
+     *            will be {@code None}.
      * @param executionMonitor the {@link ExecutionMonitor} of the calling node
      * @throws PythonIOException If an error occurred while communicating with the python kernel or while executing the
      *             task
@@ -344,6 +352,10 @@ public class PythonKernel implements AutoCloseable {
     public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         m_backend.putObject(name, object, executionMonitor);
+    }
+
+    public void setExpectedOutputImages(final String[] outputImageNames) {
+        m_backend.setExpectedOutputImages(outputImageNames);
     }
 
     /**
@@ -362,6 +374,10 @@ public class PythonKernel implements AutoCloseable {
     public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         return m_backend.getObject(name, file, executionMonitor);
+    }
+
+    public void setExpectedOutputObjects(final String[] outputObjectNames) {
+        m_backend.setExpectedOutputObjects(outputObjectNames);
     }
 
     /**

@@ -62,7 +62,7 @@ import org.knime.python2.kernel.PythonKernel;
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public interface InputPort {
+public interface InputPort extends Port {
 
     String getVariableName();
 

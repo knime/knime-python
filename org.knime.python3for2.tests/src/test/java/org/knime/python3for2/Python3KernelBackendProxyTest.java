@@ -167,22 +167,22 @@ public class Python3KernelBackendProxyTest {
     @Test
     public void testGetObjectType() throws Exception {
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace("string_var", "foobar");
+            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
             var kernelProxy = e.getKernel();
-            assertEquals("str", kernelProxy.getObjectType("string_var"));
+            assertEquals("str", kernelProxy.getOutputObjectType(0));
         });
     }
 
     @Test
     public void testGetObjectRepresentation() throws Exception {
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace("string_var", "foobar");
+            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
             var kernelProxy = e.getKernel();
-            assertEquals("foobar", kernelProxy.getObjectStringRepresentation("string_var"));
+            assertEquals("foobar", kernelProxy.getOutputObjectStringRepresentation(0));
             var veryLongString = Stream.generate(() -> "foobar").limit(500).collect(Collectors.joining());
-            e.putStringIntoWorkspace("long_string", veryLongString);
+            e.putStringIntoWorkspace(1, veryLongString); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
             var expected = veryLongString.subSequence(0, 996) + "\n...";
-            assertEquals(expected, kernelProxy.getObjectStringRepresentation("long_string"));
+            assertEquals(expected, kernelProxy.getOutputObjectStringRepresentation(1));
         });
     }
 
@@ -191,14 +191,14 @@ public class Python3KernelBackendProxyTest {
         final var file = Files.createTempFile("pickled", "object");
         final var path = file.toAbsolutePath().toString();
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace("string_var", "foobar");
-            e.getKernel().pickleObjectToFile("string_var", path);
+            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
+            e.getKernel().getOutputObject(0, path);
         });
         assertNotEquals(0, Files.size(file));
         performEntryPointTest(e -> {
             var kernel = e.getKernel();
-            kernel.loadPickledObjectIntoWorkspace("my_var", path);
-            assertEquals("foobar", kernel.getObjectStringRepresentation("my_var"));
+            kernel.setInputObject(1, path);
+            assertEquals("foobar", kernel.getOutputObjectStringRepresentation(1));
         });
     }
 
@@ -283,7 +283,7 @@ public class Python3KernelBackendProxyTest {
 
         Python3KernelBackendProxy getKernel();
 
-        void putStringIntoWorkspace(final String name, final String testString);
+        void putStringIntoWorkspace(final int index, final String testString);
 
     }
 }

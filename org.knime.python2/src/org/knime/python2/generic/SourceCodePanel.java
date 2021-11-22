@@ -696,6 +696,15 @@ public abstract class SourceCodePanel extends JPanel {
     }
 
     /**
+     * @param show Whether to show the input variables panel.
+     */
+    public void showInputAndFlowVariablesPanels(final boolean show) {
+        m_inputVars.getPanel().setVisible(show);
+        m_flowVars.getPanel().setVisible(show);
+        m_inputVarsFlowVarsEditorSplit.getLeftComponent().setVisible(show);
+    }
+
+    /**
      * Sets the workspacePanel to the visibility given value
      *
      * @param show whether to show the interactive components
@@ -703,6 +712,13 @@ public abstract class SourceCodePanel extends JPanel {
     public void showWorkspacePanel(final boolean show) {
         m_workspaceVars.getPanel().setVisible(show);
         m_workspaceButtons.setVisible(show);
+    }
+
+    /**
+     * @param show Whether to show the output variables panel.
+     */
+    public void showOutputVariablesPanel(final boolean show) {
+        m_outputVars.getPanel().setVisible(show);
     }
 
     /**

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Working with batches (pandas.DataFrame).xml">
+    <entry key="category" type="xstring" value="Basics"/>
+    <entry key="title" type="xstring" value="Working with batches (pandas.DataFrame)"/>
+    <entry key="description" type="xstring" value="Shows how to work with a larger-than-memory table by means of data batching, using the new scripting API. Each batch is a pandas.DataFrame."/>
+    <entry key="sourcecode" type="xstring" value="import knime_io as knio%%00010%%00010# We first have to create a table to which we can write the output batches that we create in the following.%%00010output_table = knio.batch_write_table()%%00010%%00010# Turn the first input table of the node into batches (use knio.input_tables[1] to batch the second one, etc.).%%00010# Then process the batches one by one.%%00010for batch in knio.input_tables[0].batches():%%00010    input_batch = batch.to_pandas()%%00010%%00010    # TODO: work with the input batch (which is a pandas.DataFrame) here...%%00010    output_batch = input_batch%%00010%%00010    # Write the produced output batch.%%00010    output_table.append(output_batch)%%00010%%00010# Populate the first output table of the node (use knio.output_tables[1] to populate the second one, etc.).%%00010knio.output_tables[0] = output_table%%00010"/>
+</config>

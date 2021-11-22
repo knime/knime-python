@@ -64,6 +64,8 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.generic.ImageContainer;
+import org.knime.python2.generic.VariableNames;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFile;
@@ -75,33 +77,44 @@ import org.knime.python2.port.PickledObjectFile;
  */
 public class PythonKernelManager implements AutoCloseable {
 
-    private ThreadPool m_threadPool;
+    private ThreadPool m_threadPool = new ThreadPool(8);
 
     private final PythonKernel m_kernel;
 
-    private final List<PythonOutputListener> m_stdoutListeners;
+    private final List<PythonOutputListener> m_stdoutListeners = new ArrayList<>();
 
-    private final List<PythonOutputListener> m_stderrListeners;
+    private final List<PythonOutputListener> m_stderrListeners = new ArrayList<>();
 
     private final Object m_listVariablesLock = new Object();
 
     /**
-     * Creates a manager that will start a new python kernel.
+     * Creates a manager that will start a new Python kernel using the {@link PythonKernelBackendType#PYTHON2} back end
+     * and the given options.
      *
      * @param kernelOptions all configurable options
      *
-     * @throws IOException
+     * @throws IOException If an exception occurred while starting the kernel.
      */
     public PythonKernelManager(final PythonKernelOptions kernelOptions) throws IOException {
-        m_stdoutListeners = new ArrayList<PythonOutputListener>();
-        m_stderrListeners = new ArrayList<PythonOutputListener>();
-        m_threadPool = new ThreadPool(8);
+        this(PythonKernelBackendType.PYTHON2, kernelOptions);
+    }
+
+    /**
+     * Creates a manager that will start a new Python kernel using the given back end and options.
+     *
+     * @param kernelBackendType the identifier of the kernel back end to use
+     * @param kernelOptions all configurable options
+     *
+     * @throws IOException If an exception occurred while starting the kernel.
+     */
+    public PythonKernelManager(final PythonKernelBackendType kernelBackendType, final PythonKernelOptions kernelOptions)
+        throws IOException {
         final PythonCommand command = kernelOptions.getUsePython3() //
             ? kernelOptions.getPython3Command() //
             : kernelOptions.getPython2Command();
         try {
-            m_kernel = PythonKernelQueue.getNextKernel(command, Collections.emptySet(), Collections.emptySet(),
-                kernelOptions, PythonCancelable.NOT_CANCELABLE);
+            m_kernel = PythonKernelQueue.getNextKernel(command, kernelBackendType, Collections.emptySet(),
+                Collections.emptySet(), kernelOptions, PythonCancelable.NOT_CANCELABLE);
         } catch (final PythonCanceledExecutionException ex) {
             // Cannot happen. We pass a non-cancelable above.
             throw new IllegalStateException("Implementation error.", ex);
@@ -228,23 +241,21 @@ public class PythonKernelManager implements AutoCloseable {
     /**
      * Put the given data into the python workspace.
      *
-     * @param tableNames the variable names in the python workspace for the tables to put
+     * @param variableNames the variable names in the Python workspace for the data to put
+     * @param flowVariables the flow variables to put
      * @param tables the tables to put
-     * @param variablesName the variable name in the python workspace for the flow variable dict
-     * @param variables the flow variables to put
-     * @param objectNames the variable names in the python workspace for the objects to put
      * @param objects the objects to put
-     * @param responseHandler Handler called after execution (response object is always null)
+     * @param responseHandler handler called after execution (response object is always null)
      * @param executionMonitor an execution monitor for reporting progress
      * @param rowLimit the maximum number of rows to put into a single table chunk
      */
-    public synchronized void putData(final String[] tableNames, final BufferedDataTable[] tables,
-        final String variablesName, final Collection<FlowVariable> variables, final String[] objectNames,
-        final PickledObjectFile[] objects, final PythonKernelResponseHandler<Void> responseHandler,
-        final ExecutionMonitor executionMonitor, final int rowLimit) {
+    public synchronized void putData(final VariableNames variableNames, final List<FlowVariable> flowVariables,
+        final BufferedDataTable[] tables, final PickledObjectFile[] objects,
+        final PythonKernelResponseHandler<Void> responseHandler, final ExecutionMonitor executionMonitor,
+        final int rowLimit) {
         final PythonKernel kernel = m_kernel;
-        runInThread(new PutDataRunnable(kernel, tableNames, tables, variablesName, variables, objectNames, objects,
-            responseHandler, executionMonitor, rowLimit));
+        runInThread(new PutDataRunnable(kernel, variableNames, flowVariables, tables, objects, responseHandler,
+            executionMonitor, rowLimit));
     }
 
     /**
@@ -417,17 +428,13 @@ public class PythonKernelManager implements AutoCloseable {
 
         private final PythonKernel m_localKernel;
 
-        private final String[] m_tableNames;
+        private final VariableNames m_variableNames;
+
+        private final Collection<FlowVariable> m_flowVariables;
 
         private final BufferedDataTable[] m_tables;
 
-        private final String m_variablesName;
-
-        private final Collection<FlowVariable> m_variables;
-
         private final PickledObjectFile[] m_objects;
-
-        private final String[] m_objectNames;
 
         private final PythonKernelResponseHandler<Void> m_responseHandler;
 
@@ -435,47 +442,39 @@ public class PythonKernelManager implements AutoCloseable {
 
         private final int m_rowLimit;
 
-        private PutDataRunnable(final PythonKernel kernel, final String[] tableNames, final BufferedDataTable[] tables,
-            final String variablesName, final Collection<FlowVariable> variables, final String[] objectNames,
+        private PutDataRunnable(final PythonKernel kernel, final VariableNames variableNames,
+            final Collection<FlowVariable> flowVariables, final BufferedDataTable[] tables,
             final PickledObjectFile[] objects, final PythonKernelResponseHandler<Void> responseHandler,
             final ExecutionMonitor executionMonitor, final int rowLimit) {
             m_localKernel = kernel;
-            m_responseHandler = responseHandler;
-            m_variables = variables;
+            m_variableNames = variableNames;
+            m_flowVariables = flowVariables;
             m_tables = tables;
-            m_tableNames = tableNames;
-            m_variablesName = variablesName;
-            m_rowLimit = rowLimit;
-            m_objectNames = objectNames;
             m_objects = objects;
+            m_responseHandler = responseHandler;
             m_executionMonitor = executionMonitor;
+            m_rowLimit = rowLimit;
         }
 
         @Override
         public void run() {
             Exception exception = null;
             try {
-                m_localKernel.putFlowVariables(m_variablesName, m_variables);
+                m_localKernel.putFlowVariables(m_variableNames.getFlowVariables(), m_flowVariables);
+                final String[] inputObjectNames = m_variableNames.getInputObjects();
                 for (int i = 0; i < m_objects.length; i++) {
-                    final String name = m_objectNames[i];
                     final PickledObjectFile object = m_objects[i];
-                    if (object != null) {
-                        m_localKernel.putObject(name, object);
-                    } else {
-                        m_localKernel.execute("workspace.put_variable('" + name + "', None)");
-                    }
+                    m_localKernel.putObject(inputObjectNames[i], object);
                 }
+                final String[] inputTableNames = m_variableNames.getInputTables();
                 for (int i = 0; i < m_tables.length; i++) {
-                    final String name = m_tableNames[i];
                     final BufferedDataTable table = m_tables[i];
-                    if (table != null) {
-                        final ExecutionMonitor monitor =
-                            m_executionMonitor.createSubProgress(1 / (double)m_tables.length);
-                        m_localKernel.putDataTable(name, table, monitor, m_rowLimit);
-                    } else {
-                        m_localKernel.execute("workspace.put_variable('" + name + "', None)");
-                    }
+                    final ExecutionMonitor monitor = m_executionMonitor.createSubProgress(1 / (double)m_tables.length);
+                    m_localKernel.putDataTable(inputTableNames[i], table, monitor, m_rowLimit);
                 }
+                m_localKernel.setExpectedOutputTables(m_variableNames.getOutputTables());
+                m_localKernel.setExpectedOutputImages(m_variableNames.getOutputImages());
+                m_localKernel.setExpectedOutputObjects(m_variableNames.getOutputObjects());
             } catch (final Exception e) {
                 exception = e;
             }

@@ -50,6 +50,7 @@ package org.knime.python2.ports;
 
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.PortType;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
@@ -62,6 +63,11 @@ public final class PickledObjectOutputPort implements OutputPort {
 
     public PickledObjectOutputPort(final String variableName) {
         m_variableName = variableName;
+    }
+
+    @Override
+    public PortType getPortType() {
+        return PickledObjectFileStorePortObject.TYPE;
     }
 
     @Override

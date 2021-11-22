@@ -48,14 +48,17 @@
  */
 package org.knime.python3for2;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.kernel.PythonKernelOptions;
+import org.knime.python2.port.PickledObjectFile;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -92,110 +95,88 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
     void initializeCurrentWorkingDirectory(String workingDirectoryPath);
 
     /**
-     * Implements the functionality required by
-     * {@link Python3KernelBackend#putFlowVariables(String, java.util.Collection)}.
+     * Implements the functionality required by {@link Python3KernelBackend#putFlowVariables(String, Collection)}.
      *
-     * @param variableName The variable name of the dictionary containing the flow variables in Python.
-     * @param flowVariablesMap The flow variables dictionary.
+     * @param flowVariables The flow variables dictionary.
      */
-    void putFlowVariablesIntoWorkspace(String variableName, Map<String, Object> flowVariablesMap);
+    void setFlowVariables(Map<String, Object> flowVariables);
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#getFlowVariables(String)}.
      *
-     * @param name The variable name of the dictionary containing the flow variables in Python.
      * @return The flow variables dictionary.
      */
-    Map<String, Object> getFlowVariablesFromWorkspace(String name);
+    Map<String, Object> getFlowVariables();
 
     /**
      * Implements the functionality required by
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
      * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
      *
-     * @param variableName The variable name of the table in Python.
-     * @param tableDataSource The source providing the table's data.
-     * @param numRows The number of rows starting at the beginning of the table that will be taken from
-     *            {@code tableDataSource} and made available to Python.
+     * @param tableIndex The index of the table in the "input tables" group.
+     * @param tableDataSource The source providing the table's data. May be {@code null} in which case the corresponding
+     *            table on Python side will be {@code None}.
      */
-    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows);
+    void setInputTable(int tableIndex, PythonDataSource tableDataSource);
+
+    void setNumExpectedOutputTables(int numOutputTables);
 
     /**
      * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
+     * {@link Python3KernelBackend#getDataTable(String, ExecutionContext, ExecutionMonitor)}.
      *
-     * @param variableName The variable name of the table in Python.
-     * @param tableDataSource The source providing the table's data.
-     * @param numRows The number of rows starting at the beginning of the table that will be taken from
-     *            {@code tableDataSource} and made available to Python.
-     * @param sentinelStrategy Either "min" (corresponds to {@link SentinelOption#MIN_VAL}) or "max"
-     *            ({@link SentinelOption#MAX_VAL}) sentinel strategy.
-     */
-    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows,
-        String sentinelStrategy);
-
-    /**
-     * Implements the functionality required by
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor)} and
-     * {@link Python3KernelBackend#putDataTable(String, BufferedDataTable, ExecutionMonitor, int)}.
-     *
-     * @param variableName The variable name of the table in Python.
-     * @param tableDataSource The source providing the table's data.
-     * @param numRows The number of rows starting at the beginning of the table that will be taken from
-     *            {@code tableDataSource} and made available to Python.
-     * @param sentinelValue A fixed integer sentinel value (corresponds to {@link SentinelOption#CUSTOM}).
-     */
-    void putTableIntoWorkspace(String variableName, PythonDataSource tableDataSource, long numRows, int sentinelValue);
-
-    /**
-     * Implements the functionality required by
-     * {@link Python3KernelBackend#getDataTable(String, org.knime.core.node.ExecutionContext, org.knime.core.node.ExecutionMonitor)}.
-     *
-     * @param variableName The varaible name of the table in Python.
+     * @param tableIndex The index of the table in the "output tables" group.
      * @return The {@link PythonArrowDataSink} that this table was written to.
      */
-    PythonArrowDataSink getTableFromWorkspace(String variableName);
+    PythonArrowDataSink getOutputTable(int tableIndex);
 
     /**
-     * Writes the image with the provided name to the provided path.
+     * Implements the functionality required by {@link Python3KernelBackend#putObject(String, PickledObjectFile)}.
      *
-     * @param imageName name of the variable that holds the image
-     * @param path to write the image to
+     * @param objectIndex The index of the object in the "input objects" group.
+     * @param path The path from which to unpickle the object. May be {@code null} in which case the corresponding
+     *            object on Python side will be {@code None}.
      */
-    void writeImageFromWorkspaceToPath(String imageName, String path);
+    void setInputObject(int objectIndex, String path);
+
+    void setNumExpectedOutputObjects(int numOutputObjects);
 
     /**
-     * Pickles the object with the provided name into the file at the provided path
+     * Implements parts of the functionality required by
+     * {@link Python3KernelBackend#getObject(String, File, ExecutionMonitor)}.
      *
-     * @param objectName name of the object in the workspace
-     * @param path to pickle the object to
+     * @param objectIndex The index of the object in the "output objects" group.
+     * @param path The path to which to pickle the object.
      */
-    void pickleObjectToFile(final String objectName, final String path);
+    void getOutputObject(int objectIndex, String path);
 
     /**
-     * Returns the type of the object with the provided name.
+     * Implements parts of the functionality required by
+     * {@link Python3KernelBackend#getObject(String, File, ExecutionMonitor)}.
      *
-     * @param objectName name of the object in the workspace
-     * @return the type of the object with the provided name
+     * @param objectIndex The index of the object in the "output objects" group.
+     * @return The type of the object.
      */
-    String getObjectType(final String objectName);
+    String getOutputObjectType(int objectIndex);
 
     /**
-     * Returns a string representation of the object with the provided name.
+     * Implements parts of the functionality required by
+     * {@link Python3KernelBackend#getObject(String, File, ExecutionMonitor)}.
      *
-     * @param objectName name of the object in the workspace
-     * @return the string representation of the object with the provided name
+     * @param objectIndex The index of the object in the "output objects" group.
+     * @return The string representation of the object.
      */
-    String getObjectStringRepresentation(final String objectName);
+    String getOutputObjectStringRepresentation(int objectIndex);
+
+    void setNumExpectedOutputImages(int numOutputImages);
 
     /**
-     * Unpickles the object stored at path into the workflow under the provided name.
+     * Implements the functionality required by {@link Python3KernelBackend#getImage(String)}.
      *
-     * @param objectName name the object should have in the workspace
-     * @param path to unpickle from
+     * @param imageIndex The index of the image in the "output images" group.
+     * @param path The path to which to write the image.
      */
-    void loadPickledObjectIntoWorkspace(final String objectName, final String path);
+    void getOutputImage(int imageIndex, String path);
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#listVariables()}.
@@ -203,7 +184,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @return The list of variables. Each variable is represented as a dictionary containing the fields "name", "type",
      *         and "value".
      */
-    List<Map<String, String>> listVariablesInWorkspace();
+    List<Map<String, String>> getVariablesInWorkspace();
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#autoComplete(String, int, int)}.

@@ -89,6 +89,7 @@ import org.knime.python2.generic.VariableNames;
 import org.knime.python2.kernel.PythonException;
 import org.knime.python2.kernel.PythonInstallationTestException;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.kernel.PythonKernelManager;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListener;
@@ -110,13 +111,14 @@ public class PythonSourceCodePanel extends SourceCodePanel {
 
     private final NodeDialogPane m_parent; // NOSONAR Not intended for serialization.
 
+    private final PythonKernelBackendType m_kernelBackendType;
+
     private final PythonSourceCodeOptionsPanel m_optionsPanel;
 
     private final PythonExecutableSelectionPanel m_executablePanel;
 
     private final ConcurrentLinkedDeque<PythonKernelManagerWrapper> m_kernelManagerQueue =
         new ConcurrentLinkedDeque<>();
-
 
     private BufferedDataTable[] m_inputData = new BufferedDataTable[0]; // NOSONAR Not intended for serialization.
 
@@ -150,8 +152,22 @@ public class PythonSourceCodePanel extends SourceCodePanel {
      */
     public PythonSourceCodePanel(final NodeDialogPane parent, final VariableNames variableNames,
         final PythonSourceCodeOptionsPanel optionsPanel, final PythonExecutableSelectionPanel executablePanel) {
+        this(parent, PythonKernelBackendType.PYTHON2, variableNames, optionsPanel, executablePanel);
+    }
+
+    /**
+     * @param parent parent the enclosing node dialog
+     * @param kernelBackendType the identifier of the kernel back end to use
+     * @param variableNames an object managing the known variable names in the Python workspace (the "magic variables")
+     * @param optionsPanel the options panel of the dialog
+     * @param executablePanel the executable selection panel of the dialog
+     */
+    public PythonSourceCodePanel(final NodeDialogPane parent, final PythonKernelBackendType kernelBackendType,
+        final VariableNames variableNames, final PythonSourceCodeOptionsPanel optionsPanel,
+        final PythonExecutableSelectionPanel executablePanel) {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames, optionsPanel);
         m_parent = parent;
+        m_kernelBackendType = kernelBackendType;
         m_optionsPanel = optionsPanel;
         m_executablePanel = executablePanel;
         optionsPanel.addSerializationOptionsChangeListener(this::setSerializationOptions);
@@ -160,7 +176,8 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     }
 
     @Override
-    public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs) throws NotConfigurableException {
+    public void loadSettingsFrom(final SourceCodeConfig config, final PortObjectSpec[] specs)
+        throws NotConfigurableException {
         super.loadSettingsFrom(config, specs);
         setSerializationOptions(m_optionsPanel.getSerializationOptions());
         setPythonCommand(m_executablePanel.getPythonVersion(), m_executablePanel.getPythonCommand());
@@ -350,9 +367,13 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     private ImageContainer getImageFromKernel(final String name, final PythonKernelManager kernelManager)
         throws IOException {
         if (kernelManager != null && m_variables != null) {
-            for (final Variable v : m_variables) {
-                if (v.getName().contentEquals(name)) {
-                    return kernelManager.getImage(name);
+            if (m_kernelBackendType == PythonKernelBackendType.PYTHON3) {
+                return kernelManager.getImage(name);
+            } else {
+                for (final Variable v : m_variables) {
+                    if (v.getName().contentEquals(name)) {
+                        return kernelManager.getImage(name);
+                    }
                 }
             }
         }
@@ -503,7 +524,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
             m_kernelRestarts++;
             PythonKernelManager manager = null;
             try { // NOSONAR We do not want to close the manager here.
-                manager = new PythonKernelManager(m_kernelOptionsAtStartTime);
+                manager = new PythonKernelManager(m_kernelBackendType, m_kernelOptionsAtStartTime);
             } catch (final Exception ex) { // NOSONAR Exception will otherwise be lost at the end of the thread.
                 String error;
                 if (ex instanceof PythonException) {
@@ -564,10 +585,9 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                 if (m_resetInProgress.get()) {
                     return;
                 }
-                kernelManager.putData(getVariableNames().getInputTables(), m_inputData,
-                    getVariableNames().getFlowVariables(), getFlowVariables(), getVariableNames().getInputObjects(),
-                    m_pythonInputObjects, new PutDataResponseHandler(kernelRestartsBeforeLock),
-                    new ExecutionMonitor(m_progressMonitor), getRowLimit());
+                kernelManager.putData(getVariableNames(), getFlowVariables(), m_inputData, m_pythonInputObjects,
+                    new PutDataResponseHandler(kernelRestartsBeforeLock), new ExecutionMonitor(m_progressMonitor),
+                    getRowLimit());
                 for (final WorkspacePreparer workspacePreparer : m_workspacePreparers) {
                     @SuppressWarnings("resource") // Kernel will be closed by manager.
                     final PythonKernel kernel = kernelManager.getKernel();

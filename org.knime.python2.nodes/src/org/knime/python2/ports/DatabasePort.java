@@ -61,6 +61,8 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.database.DatabaseConnectionPortObject;
 import org.knime.core.node.port.database.DatabasePortObject;
 import org.knime.core.node.port.database.DatabasePortObjectSpec;
 import org.knime.core.node.port.database.DatabaseQueryConnectionSettings;
@@ -93,6 +95,11 @@ public final class DatabasePort implements InputPort, OutputPort {
     }
 
     // Input port & output port:
+
+    @Override
+    public PortType getPortType() {
+        return DatabaseConnectionPortObject.TYPE;
+    }
 
     @Override
     public String getVariableName() {

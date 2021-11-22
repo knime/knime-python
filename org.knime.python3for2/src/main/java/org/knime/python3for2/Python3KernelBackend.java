@@ -111,7 +111,6 @@ import org.knime.core.util.Version;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.ImageContainer;
 import org.knime.python2.kernel.NodeContextManager;
 import org.knime.python2.kernel.Python2KernelBackend;
@@ -337,6 +336,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
     }
 
+    /**
+     * @param name Ignored by this back end.
+     */
     @Override
     public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables)
         throws PythonIOException {
@@ -367,12 +369,15 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             }
             flowVariablesMap.put(variable.getName(), value);
         }
-        m_proxy.putFlowVariablesIntoWorkspace(name, flowVariablesMap);
+        m_proxy.setFlowVariables(flowVariablesMap);
     }
 
+    /**
+     * @param name Ignored by this back end.
+     */
     @Override
     public Collection<FlowVariable> getFlowVariables(final String name) throws PythonIOException {
-        final Map<String, Object> flowVariablesMap = m_proxy.getFlowVariablesFromWorkspace(name);
+        final Map<String, Object> flowVariablesMap = m_proxy.getFlowVariables();
         final VariableType<?>[] allVariableTypes = VariableTypeRegistry.getInstance().getAllTypes();
         final Set<FlowVariable> flowVariables = new LinkedHashSet<>(flowVariablesMap.size());
         for (final var entry : flowVariablesMap.entrySet()) {
@@ -440,16 +445,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             || variableName.startsWith(FlowVariable.Scope.Local.getPrefix()));
     }
 
+    /**
+     * @param rowLimit Ignored by this back end.
+     */
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
         final int rowLimit) throws PythonIOException, CanceledExecutionException {
-        putDataTable(name, table, executionMonitor, (long)rowLimit);
-    }
-
-    @Override
-    public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
-        throws PythonIOException, CanceledExecutionException {
-        putDataTable(name, table, executionMonitor, table.size());
+        putDataTable(name, table, executionMonitor);
     }
 
     /**
@@ -459,52 +461,85 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      * terminate any time-consuming operations on the Python side (e.g. the conversion of the Arrow table to pandas).
      * Instead it is expected that clients terminate the entire kernel right after canceling one of its tasks, as stated
      * in the documentation of {@link PythonKernel#putDataTable(String, BufferedDataTable, ExecutionMonitor)}.
+     *
+     * @param name Must be parsable as an integer.
      */
-    private void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor,
-        final long numRows) throws PythonIOException, CanceledExecutionException {
-        performCancelable(new PutDataTableTask(name, table, numRows, m_currentOptions.getSerializationOptions()),
+    @Override
+    public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
+        throws PythonIOException, CanceledExecutionException {
+        performCancelable(new PutDataTableTask(Integer.parseInt(name), table),
             new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
+    @Override
+    public void setExpectedOutputTables(final String[] outputTableNames) {
+        m_proxy.setNumExpectedOutputTables(outputTableNames.length);
+    }
+
+    /**
+     * @param name Must be parsable as an integer.
+     */
     @Override
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
         final ExecutionMonitor executionMonitor) throws PythonIOException, CanceledExecutionException {
-        return performCancelable(new GetDataTableTask(name, exec),
+        return performCancelable(new GetDataTableTask(Integer.parseInt(name), exec),
             new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
+    /**
+     * @param name Must be parsable as an integer.
+     */
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
-        m_proxy.loadPickledObjectIntoWorkspace(name, object.getFile().getAbsolutePath());
+        m_proxy.setInputObject(Integer.parseInt(name), object != null ? object.getFile().getAbsolutePath() : null);
     }
 
     @Override
     public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        performVoidCancelable(() -> putObject(name, object), new PythonExecutionMonitorCancelable(executionMonitor));
+        performCancelable(() -> {
+            putObject(name, object);
+            return null;
+        }, new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     @Override
-    public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
-        throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> getObject(name, file), new PythonExecutionMonitorCancelable(executionMonitor));
+    public void setExpectedOutputObjects(final String[] outputObjectNames) {
+        m_proxy.setNumExpectedOutputObjects(outputObjectNames.length);
     }
 
-    private PickledObjectFile getObject(final String name, final File file)
+    /**
+     * @param name Must be parsable as an integer.
+     */
+    @Override
+    public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        final var type = m_proxy.getObjectType(name);
-        final var representation = m_proxy.getObjectStringRepresentation(name);
-        m_proxy.pickleObjectToFile(name, file.getAbsolutePath());
+        return performCancelable(() -> getObject(Integer.parseInt(name), file),
+            new PythonExecutionMonitorCancelable(executionMonitor));
+    }
+
+    private PickledObjectFile getObject(final int objectIndex, final File file) {
+        final var type = m_proxy.getOutputObjectType(objectIndex);
+        final var representation = m_proxy.getOutputObjectStringRepresentation(objectIndex);
+        m_proxy.getOutputObject(objectIndex, file.getAbsolutePath());
         return new PickledObjectFile(file, type, representation);
     }
 
+    @Override
+    public void setExpectedOutputImages(final String[] outputImageNames) {
+        m_proxy.setNumExpectedOutputImages(outputImageNames.length);
+    }
+
+    /**
+     * @param name Must be parsable as an integer.
+     */
     @Override
     public ImageContainer getImage(final String name) throws PythonIOException {
         File tempDir = null;
         try {
             tempDir = FileUtil.createTempDir("images");
             var imgPath = tempDir.toPath().resolve("image");
-            m_proxy.writeImageFromWorkspaceToPath(name, imgPath.toAbsolutePath().toString());
+            m_proxy.getOutputImage(Integer.parseInt(name), imgPath.toAbsolutePath().toString());
             return PythonKernelBackendUtils.createImage(() -> Files.newInputStream(imgPath));
         } catch (IOException ex) {
             throw new PythonIOException(ex);
@@ -523,7 +558,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public List<Map<String, String>> listVariables() throws PythonIOException {
-        return m_proxy.listVariablesInWorkspace();
+        return m_proxy.getVariablesInWorkspace();
     }
 
     @Override
@@ -534,32 +569,24 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public String[] execute(final String sourceCode) throws PythonIOException {
-        return beautifyPythonTraceback(
-            () -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
+        return beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(
-            () -> beautifyPythonTraceback(
-                () -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new)),
-            cancelable);
+        return performCancelable(() -> execute(sourceCode), cancelable);
     }
 
     @Override
     public String[] executeAsync(final String sourceCode) throws PythonIOException {
-        return beautifyPythonTraceback(
-            () -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new));
+        return beautifyPythonTraceback(() -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new));
     }
 
     @Override
     public String[] executeAsync(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(
-            () -> beautifyPythonTraceback(
-                () -> m_proxy.executeOnCurrentThread(sourceCode).toArray(String[]::new)),
-            cancelable);
+        return performCancelable(() -> executeAsync(sourceCode), cancelable);
     }
 
     private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
@@ -576,20 +603,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private IFileStoreHandler getFileStoreHandler() {
         return ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
             .getFileStoreHandler();
-    }
-
-    private interface Task {
-
-        void run() throws Exception;//NOSONAR
-
-    }
-
-    private void performVoidCancelable(final Task task, final PythonCancelable cancelable)
-        throws PythonIOException, CanceledExecutionException {
-        performCancelable(() -> {
-            task.run();
-            return null;
-        }, cancelable);
     }
 
     private static <T> T beautifyPythonTraceback(final Supplier<T> task) throws PythonIOException {
@@ -648,44 +661,27 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final class PutDataTableTask implements Callable<Void> {
 
-        private final String m_name;
+        private final int m_tableIndex;
 
         private final BufferedDataTable m_table;
 
-        private final long m_numRows;
-
-        private final SerializationOptions m_options;
-
-        public PutDataTableTask(final String name, final BufferedDataTable table, final long numRows,
-            final SerializationOptions options) {
-            m_name = name;
+        public PutDataTableTask(final int tableIndex, final BufferedDataTable table) {
+            m_tableIndex = tableIndex;
             m_table = table;
-            m_numRows = numRows;
-            m_options = options;
         }
 
         // Store will be closed along with table. If it is a copy, it will have already been closed.
         @SuppressWarnings("resource")
         @Override
         public Void call() throws Exception {
-            final var columnarStore = extractStoreCopyTableIfNecessary(m_table);
-            final PythonArrowDataSource source =
-                convertStoreIntoSource(columnarStore, m_table.getDataTableSpec().getColumnNames());
-            if (m_options.getConvertMissingToPython()) {
-                switch (m_options.getSentinelOption()) {
-                    case MIN_VAL:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "min");
-                        break;
-                    case MAX_VAL:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, "max");
-                        break;
-                    case CUSTOM:
-                        m_proxy.putTableIntoWorkspace(m_name, source, m_numRows, m_options.getSentinelValue());
-                        break;
-                }
+            final PythonArrowDataSource source;
+            if (m_table != null) {
+                final var columnarStore = extractStoreCopyTableIfNecessary(m_table);
+                source = convertStoreIntoSource(columnarStore, m_table.getDataTableSpec().getColumnNames());
             } else {
-                m_proxy.putTableIntoWorkspace(m_name, source, m_numRows);
+                source = null;
             }
+            m_proxy.setInputTable(m_tableIndex, source);
             return null;
         }
 
@@ -730,8 +726,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             }
         }
 
-        private ColumnarRowReadTable copyTable(final BufferedDataTable table)
-            throws IOException {
+        private ColumnarRowReadTable copyTable(final BufferedDataTable table) throws IOException {
             var fsHandler = getWriteFileStoreHandler();
             final var schema =
                 ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, fsHandler));
@@ -799,18 +794,18 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final class GetDataTableTask implements Callable<BufferedDataTable> {
 
-        private final String m_name;
+        private final int m_tableIndex;
 
         private final ExecutionContext m_exec;
 
-        public GetDataTableTask(final String name, final ExecutionContext exec) {
-            m_name = name;
+        public GetDataTableTask(final int tableIndex, final ExecutionContext exec) {
+            m_tableIndex = tableIndex;
             m_exec = exec;
         }
 
         @Override
         public BufferedDataTable call() throws Exception {
-            final PythonArrowDataSink pythonSink = m_proxy.getTableFromWorkspace(m_name);
+            final PythonArrowDataSink pythonSink = m_proxy.getOutputTable(m_tableIndex);
             assert m_sinkManager.contains(
                 pythonSink) : "Sink was not created by Python3KernelBackend#createSink. This is a coding issue.";
             // Must be a DefaultPythonarrowDataSink because it was created by #createSink

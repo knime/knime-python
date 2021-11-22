@@ -48,11 +48,9 @@
 """
 
 import os
-import py4j.clientserver
-import pyarrow as pa
-import sys
 import pickle
-from typing import Any, Callable, Dict, List, Optional, Tuple, TextIO, Union
+import py4j.clientserver
+import sys
 import warnings
 from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
@@ -60,10 +58,12 @@ from py4j.java_collections import ListConverter
 from py4j.java_gateway import JavaClass
 from queue import Full, Queue
 from threading import Event, Lock
+from typing import Any, Callable, Dict, List, Optional, TextIO
 
-import knime_table as kt
 import knime_arrow_table as kat
 import knime_gateway as kg
+import knime_io as kio
+import knime_table as kt
 
 
 class PythonKernel(kg.EntryPoint):
@@ -76,7 +76,7 @@ class PythonKernel(kg.EntryPoint):
         self._working_dir_initialized = False
         self._java_callback = None
 
-    def initializeJavaCallback(self, java_callback) -> None:
+    def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         if self._java_callback is not None:
             raise RuntimeError(
                 "Java callback has already been initialized. Calling this method again is an implementation error."
@@ -137,17 +137,17 @@ class PythonKernel(kg.EntryPoint):
                 else:
                     break
 
-    def putFlowVariablesIntoWorkspace(self, name: str, java_flow_variables) -> None:
-        self._workspace[name] = dict(java_flow_variables)
+    def setFlowVariables(self, flow_variables: Dict[str, Any]) -> None:
+        kio.flow_variables.clear()
+        kio.flow_variables.update(flow_variables)
 
-    def getFlowVariablesFromWorkspace(self, name: str) -> JavaClass:
-        flow_variables = self._workspace[name]
+    def getFlowVariables(self) -> JavaClass:
         LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
             "java.util.LinkedHashMap", kg.client_server._gateway_client
         )
         java_flow_variables = LinkedHashMap()
-        for key in flow_variables.keys():
-            flow_variable = flow_variables[key]
+        for key in kio.flow_variables.keys():
+            flow_variable = kio.flow_variables[key]
             try:
                 java_flow_variables[key] = flow_variable
             except AttributeError as ex:
@@ -159,25 +159,30 @@ class PythonKernel(kg.EntryPoint):
                 ) from ex
         return java_flow_variables
 
-    def putTableIntoWorkspace(
-        self,
-        variable_name: str,
-        java_table_data_source,
-        num_rows: int,
-        sentinel: Optional[Union[str, int]] = None,
+    # TODO: at some point in the future, we should change this method such that it accepts all input tables at once
+    #  instead of setting the tables one by one. The same applies to the way back to Java as well as to the
+    #  corresponding methods dealing with pickled objects and images.
+    def setInputTable(
+        self, table_index: int, java_table_data_source: Optional[JavaClass]
     ) -> None:
-        # NB: We don't close the source.
-        # It must be available for the lifetime of the process
-        table_data_source = kg.data_source_mapper(java_table_data_source)
-        read_table = kat.ArrowReadTable(table_data_source)
-        self._workspace[variable_name] = read_table
+        if java_table_data_source is not None:
+            # NB: We don't close the source. It must be available for the lifetime of the process.
+            table_data_source = kg.data_source_mapper(java_table_data_source)
+            read_table = kat.ArrowReadTable(table_data_source)
+        else:
+            read_table = None
+        kio._pad_up_to_length(kio._input_tables, table_index + 1)
+        kio._input_tables[table_index] = read_table
 
-    def getTableFromWorkspace(
+    def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
+        kio._pad_up_to_length(kio._output_tables, num_output_tables)
+
+    def getOutputTable(
         self,
-        variable_name: str,
-    ) -> None:
+        table_index: int,
+    ) -> Optional[JavaClass]:
         # Get the java sink for this write table
-        write_table = self._workspace[variable_name]
+        write_table = kio.output_tables[table_index]
         if (not hasattr(write_table, "_sink")) or (
             not hasattr(write_table._sink, "_java_data_sink")
         ):
@@ -187,36 +192,47 @@ class PythonKernel(kg.EntryPoint):
             )
         return write_table._sink._java_data_sink
 
-    def writeImageToPath(
-        self,
-        image_name: str,
-        path: str,
-    ) -> None:
-        image = self._workspace[image_name]
-        with open(path, "wb") as file:
-            file.write(image)
+    def setInputObject(self, object_index: int, path: Optional[str]) -> None:
+        if path is not None:
+            with open(path, "rb") as file:
+                obj = pickle.load(file)
+        else:
+            obj = None
+        kio._pad_up_to_length(kio._input_objects, object_index + 1)
+        kio._input_objects[object_index] = obj
 
-    def pickleObjectToFile(self, object_name: str, path: str):
-        obj = self._workspace[object_name]
+    def setNumExpectedOutputObjects(self, num_output_objects: int) -> None:
+        kio._pad_up_to_length(kio._output_objects, num_output_objects)
+
+    def getOutputObject(self, object_index: int, path: str) -> None:
+        obj = kio.output_objects[object_index]
         with open(path, "wb") as file:
             pickle.dump(obj=obj, file=file)
 
-    def getObjectType(self, object_name: str) -> str:
-        return type(self._workspace[object_name]).__name__
+    def getOutputObjectType(self, object_index: int) -> str:
+        return type(kio.output_objects[object_index]).__name__
 
-    def getObjectStringRepresentation(self, object_name: str) -> str:
-        object_as_string = str(self._workspace[object_name])
+    def getOutputObjectStringRepresentation(self, object_index: int) -> str:
+        object_as_string = str(kio.output_objects[object_index])
         return (
             (object_as_string[:996] + "\n...")
             if len(object_as_string) > 1000
             else object_as_string
         )
 
-    def loadPickledObjectIntoWorkspace(self, object_name: str, path: str):
-        with open(path, "rb") as file:
-            self._workspace[object_name] = pickle.load(file)
+    def setNumExpectedOutputImages(self, num_output_images: int) -> None:
+        kio._pad_up_to_length(kio._output_images, num_output_images)
 
-    def listVariablesInWorkspace(self) -> List[Dict[str, str]]:
+    def getOutputImage(
+        self,
+        image_index: int,
+        path: str,
+    ) -> None:
+        image = kio.output_images[image_index]
+        with open(path, "wb") as file:
+            file.write(image)
+
+    def getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         def object_to_string(obj):
             try:
                 string = str(obj)

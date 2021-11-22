@@ -71,6 +71,9 @@ class _FixedSizeListView:
     def __setitem__(self, idx, value):
         self._data[idx] = value
 
+    def __iter__(self):
+        return iter(self._data)
+
     def __len__(self):
         return len(self._data)
 
@@ -101,7 +104,9 @@ class _Backend(ABC):
         pass
 
 
-_backend: _Backend = None  # The globally instanciated backend for creating tables and batches
+_backend: _Backend = (
+    None  # The globally instanciated backend for creating tables and batches
+)
 
 
 class _Tabular(ABC):
@@ -111,10 +116,10 @@ class _Tabular(ABC):
 
     @property
     def shape(self) -> Tuple[int, int]:
-        """ 
+        """
         Returns a tuple in the form (numRows, numColumns) representing the shape of this Table.
 
-        If the Table is not completely available yet because Batches are still appended to it, 
+        If the Table is not completely available yet because Batches are still appended to it,
         querying the shape blocks until all data is available
         """
         return (self.num_rows, self.num_columns)
@@ -123,9 +128,9 @@ class _Tabular(ABC):
     @abstractmethod
     def num_rows(self) -> int:
         """
-        Return the number of rows in the Table. 
-        
-        If the Table is not completely available yet because Batches are still appended to it, 
+        Return the number of rows in the Table.
+
+        If the Table is not completely available yet because Batches are still appended to it,
         querying the number of rows blocks until all data is available.
         """
         pass
@@ -182,9 +187,9 @@ class _SlicedTabular(_Tabular):
     @property
     def num_rows(self) -> int:
         """
-        Return the number of rows in the Table. 
-        
-        If the Table is not completely available yet because Batches are still appended to it, 
+        Return the number of rows in the Table.
+
+        If the Table is not completely available yet because Batches are still appended to it,
         querying the number of rows blocks until all data is available.
         """
         return self._num_rows
@@ -211,7 +216,8 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         """
         Access the tabular data as a pandas.DataFrame.
@@ -229,11 +235,12 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         """
         Access this tabular data as a pyarrow.RecordBatch or pyarrow.Table. The returned
-        type depends on the type of the underlying object. When called on a ReadTable, 
+        type depends on the type of the underlying object. When called on a ReadTable,
         returns a pyarrow.Table.
 
         ### Arguments:
@@ -258,12 +265,14 @@ class SlicedDataView(_SlicedTabular, _ReadData):
         super().__init__(delegate, row_slice, column_slice)
 
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         return self._delegate.to_pandas(sentinel, self._row_slice, self._column_slice)
 
     def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         return self._delegate.to_pyarrow(sentinel, self._row_slice, self._column_slice)
 
@@ -310,7 +319,7 @@ class Batch(_Tabular, _ReadData):
 
 class _Table(_Tabular):
     """
-    A KNIME Table provides the general functionality to access KNIME tabular data which might be larger than the 
+    A KNIME Table provides the general functionality to access KNIME tabular data which might be larger than the
     system's memory and/or not yet completely written to disk.
 
     The underlying data is available in batches of rows. At least one Batch of this Table is available, providing
@@ -323,7 +332,7 @@ class _Table(_Tabular):
         """
         Return the number of Batches in this Table.
 
-        If the Table is not completely available yet because Batches are still appended to it, 
+        If the Table is not completely available yet because Batches are still appended to it,
         querying the number of batches blocks until all data is available.
         """
         pass
@@ -335,14 +344,14 @@ class _Table(_Tabular):
 
 class ReadTable(_Table, _ReadData):
     """
-    A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory) 
+    A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory)
     or split into row-wise Batches.
     """
 
     @abstractmethod
     def batches(self) -> Iterator[Batch]:
         """
-        Return an iterator over the Batches in this Table. If the iterator is advanced to a Batch 
+        Return an iterator over the Batches in this Table. If the iterator is advanced to a Batch
         that is not available yet, it will block until the data is present.
         """
         pass
@@ -401,8 +410,8 @@ class BatchWriteTable(_Table):
 
         ### Arguments:
         - data: A Batch, a pandas.DataFrame or a pyarrow.RecordBatch
-        - sentinel: 
-          Only if data is a pandas.DataFrame or pyarrow.RecordBatch. 
+        - sentinel:
+          Only if data is a pandas.DataFrame or pyarrow.RecordBatch.
           Interpret the following values in integral columns as missing value:
             - "min" min int32 or min int64 depending on the type of the column
             - "max" max int32 or max int64 depending on the type of the column
@@ -410,7 +419,7 @@ class BatchWriteTable(_Table):
 
         ### Raise:
         - ValueError:
-          If the new batch does not have the same columns as previous batches in this WriteTable.      
+          If the new batch does not have the same columns as previous batches in this WriteTable.
         """
         pass
 
@@ -434,7 +443,7 @@ def write_table(
 
     ### Arguments:
     - data: A ReadTable, pandas.DataFrame or a pyarrow.Table
-    - sentinel: 
+    - sentinel:
       Interpret the following values in integral columns as missing value:
         - "min" min int32 or min int64 depending on the type of the column
         - "max" max int32 or max int64 depending on the type of the column
@@ -459,7 +468,7 @@ def batch(
 
     ### Arguments:
     - data: A pandas.DataFrame or a pyarrow.RecordBatch
-    - sentinel: 
+    - sentinel:
       Interpret the following values in integral columns as missing value:
         - "min" min int32 or min int64 depending on the type of the column
         - "max" max int32 or max int64 depending on the type of the column

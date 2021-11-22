@@ -160,9 +160,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             final String timeout = System.getProperty(CONNECT_TIMEOUT_VM_OPT, defaultTimeout);
             return Integer.parseInt(timeout);
         } catch (final NumberFormatException ex) {
-            LOGGER.warn("The VM option -D" + CONNECT_TIMEOUT_VM_OPT +
-                " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout +
-                " ms.");
+            LOGGER.warn("The VM option -D" + CONNECT_TIMEOUT_VM_OPT
+                + " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout
+                + " ms.");
             return Integer.parseInt(defaultTimeout);
         }
     }
@@ -177,9 +177,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             final String timeout = System.getProperty(CLEANUP_TIMEOUT_VM_OPT, defaultTimeout);
             return Integer.parseInt(timeout);
         } catch (final NumberFormatException ex) {
-            LOGGER.warn("The VM option -D" + CLEANUP_TIMEOUT_VM_OPT +
-                " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout +
-                " ms.");
+            LOGGER.warn("The VM option -D" + CLEANUP_TIMEOUT_VM_OPT
+                + " was set to a non-integer value. This is invalid. It therefore defaults to " + defaultTimeout
+                + " ms.");
             return Integer.parseInt(defaultTimeout);
         }
     }
@@ -351,15 +351,15 @@ public final class Python2KernelBackend implements PythonKernelBackend {
                     // connection which causes the attempt to time out. We should not misinterpret that as a real time out.
                     if (!isPythonProcessAlive()) {
                         throw new PythonIOException(
-                            "The external Python process crashed for unknown reasons while KNIME " +
-                                "set up the Python environment. See log for details.",
+                            "The external Python process crashed for unknown reasons while KNIME "
+                                + "set up the Python environment. See log for details.",
                             e);
                     } else {
                         throw new PythonIOException(
-                            "The connection attempt timed out. Please consider increasing the socket " +
-                                "timeout using the VM option '-D" + CONNECT_TIMEOUT_VM_OPT + "=<value-in-ms>'.\n" +
-                                "Also make sure that the communication between KNIME and Python is not blocked by a " +
-                                "firewall and that your hosts configuration is correct.",
+                            "The connection attempt timed out. Please consider increasing the socket "
+                                + "timeout using the VM option '-D" + CONNECT_TIMEOUT_VM_OPT + "=<value-in-ms>'.\n"
+                                + "Also make sure that the communication between KNIME and Python is not blocked by a "
+                                + "firewall and that your hosts configuration is correct.",
                             e);
                     }
                 } else {
@@ -528,9 +528,8 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             // Check if Python kernel supports auto-completion (this depends on the optional module Jedi).
             return m_commands.hasAutoComplete().get();
         } catch (final Exception ex) {
-            LOGGER
-                .debug("An exception occurred while checking the auto-completion capabilities of the Python kernel. " +
-                    "Auto-completion will not be available.");
+            LOGGER.debug("An exception occurred while checking the auto-completion capabilities of the Python kernel. "
+                + "Auto-completion will not be available.");
             return false;
         }
     }
@@ -593,9 +592,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
                 message =
                     "No serialization library was found. Please make sure to install at least one plugin containing one.";
             } else {
-                message = "The selected serialization library with id " + serializerId + " was not found. " +
-                    "Please make sure to install the correspondent plugin or select a different serialization " +
-                    "library in the Python preference page.";
+                message = "The selected serialization library with id " + serializerId + " was not found. "
+                    + "Please make sure to install the correspondent plugin or select a different serialization "
+                    + "library in the Python preference page.";
             }
             throw new PythonIOException(message);
         }
@@ -801,8 +800,8 @@ public final class Python2KernelBackend implements PythonKernelBackend {
      * @return valid
      */
     private static boolean isValidFlowVariableName(final String name) {
-        return !(name.startsWith(FlowVariable.Scope.Global.getPrefix()) ||
-            name.startsWith(FlowVariable.Scope.Local.getPrefix()));
+        return !(name.startsWith(FlowVariable.Scope.Global.getPrefix())
+            || name.startsWith(FlowVariable.Scope.Local.getPrefix()));
     }
 
     @Override
@@ -922,6 +921,14 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         }
     }
 
+    /**
+     * Ignored by this back end.
+     */
+    @Override
+    public void setExpectedOutputTables(final String[] outputTableNames) {
+        // Ignored
+    }
+
     @Override
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
         final ExecutionMonitor executionMonitor) throws PythonIOException, CanceledExecutionException {
@@ -1004,7 +1011,11 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
         try {
-            m_commands.putObject(name, object.getFile().getAbsolutePath()).get();
+            if (object != null) {
+                m_commands.putObject(name, object.getFile().getAbsolutePath()).get();
+            } else {
+                execute("workspace.put_variable('" + name + "', None)");
+            }
         } catch (InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
@@ -1014,15 +1025,28 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     public void putObject(final String name, final PickledObjectFile object, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         try {
-            PythonUtils.Misc.executeCancelable(() -> {
-                putObject(name, object);
-                return null;
-            }, m_executorService::submit, new PythonExecutionMonitorCancelable(executionMonitor));
+            if (object != null) {
+                PythonUtils.Misc.executeCancelable(() -> {
+                    putObject(name, object);
+                    return null;
+                }, m_executorService::submit, new PythonExecutionMonitorCancelable(executionMonitor));
+            } else {
+                execute("workspace.put_variable('" + name + "', None)",
+                    new PythonExecutionMonitorCancelable(executionMonitor));
+            }
         } catch (final PythonCanceledExecutionException ex) {
             throw new CanceledExecutionException(ex.getMessage());
         } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
+    }
+
+    /**
+     * Ignored by this back end.
+     */
+    @Override
+    public void setExpectedOutputObjects(final String[] outputObjectNames) {
+        // Ignored
     }
 
     @Override
@@ -1095,6 +1119,14 @@ public final class Python2KernelBackend implements PythonKernelBackend {
         } catch (final Exception ex) {
             throw getMostSpecificPythonKernelException(ex);
         }
+    }
+
+    /**
+     * Ignored by this back end.
+     */
+    @Override
+    public void setExpectedOutputImages(final String[] outputImageNames) {
+        // Ignored
     }
 
     @Override
@@ -1260,9 +1292,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
                     m_commands.cleanUp().get(getCleanupTimeoutInMillis(), TimeUnit.MILLISECONDS);
                 }
             } catch (TimeoutException ex) {
-                cleanupException = new PythonKernelCleanupException("An attempt to clean up Python timed out. " +
-                    "Please consider increasing the cleanup timeout using the VM option '-D" + CLEANUP_TIMEOUT_VM_OPT +
-                    "=<value-in-ms>'.", ex);
+                cleanupException = new PythonKernelCleanupException("An attempt to clean up Python timed out. "
+                    + "Please consider increasing the cleanup timeout using the VM option '-D" + CLEANUP_TIMEOUT_VM_OPT
+                    + "=<value-in-ms>'.", ex);
             } catch (Throwable t) {
                 t = PythonUtils.Misc.unwrapExecutionException(t).orElse(t);
                 cleanupException =
@@ -1336,9 +1368,9 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             // flatbuffers with exit code 0.
             if (exitCode == 139) {
                 return new PythonIOException(
-                    "Python process ended unexpectedly with a SEGFAULT. This might be caused by" +
-                        " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in" +
-                        " the 'Options' tab of the configuration dialog.");
+                    "Python process ended unexpectedly with a SEGFAULT. This might be caused by"
+                        + " an oversized buffer allocation. Please consider lowering the 'Rows per chunk' parameter in"
+                        + " the 'Options' tab of the configuration dialog.");
             }
         }
         return new PythonIOException(exc);

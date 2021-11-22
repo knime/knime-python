@@ -44,85 +44,20 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 29, 2020 (marcel): created
+ *   Nov 18, 2021 (marcel): created
  */
-package org.knime.python2.ports;
+package org.knime.python3.scripting.nodes.script;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
-import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.config.WorkspacePreparer;
-import org.knime.python2.kernel.PythonKernel;
-import org.knime.python2.port.PickledObjectFile;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.OutputPort;
+import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeDialog;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public final class PickledObjectInputPort implements InputPort {
+final class PythonScriptNodeDialog extends AbstractPythonScriptingNodeDialog {
 
-    private final String m_variableName;
-
-    public PickledObjectInputPort(final String variableName) {
-        m_variableName = variableName;
-    }
-
-    @Override
-    public PortType getPortType() {
-        return PickledObjectFileStorePortObject.TYPE;
-    }
-
-    @Override
-    public String getVariableName() {
-        return m_variableName;
-    }
-
-    @Override
-    public double getExecuteProgressWeight() {
-        return 0.1;
-    }
-
-    @Override
-    public Collection<PythonModuleSpec> getRequiredModules() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void configure(final PortObjectSpec inSpec) throws InvalidSettingsException {
-        // Nothing to configure.
-    }
-
-    @Override
-    public WorkspacePreparer prepareInDialog(final PortObjectSpec inSpec) throws NotConfigurableException {
-        // Nothing to prepare.
-        return null;
-    }
-
-    @Override
-    public WorkspacePreparer prepareInDialog(final PortObject inObject) throws NotConfigurableException {
-        // Nothing to prepare.
-        return null;
-    }
-
-    @Override
-    public void execute(final PortObject inObject, final PythonKernel kernel, final ExecutionMonitor monitor)
-        throws Exception {
-        kernel.putObject(m_variableName, extractWorkspaceObject(inObject), monitor);
-    }
-
-    public static PickledObjectFile extractWorkspaceObject(final PortObject inObject) throws IOException {
-        try {
-            return ((PickledObjectFileStorePortObject)inObject).getPickledObjectFile();
-        } catch (final IOException ex) {
-            throw new IOException("Failed to load pickled object.", ex);
-        }
+    public PythonScriptNodeDialog(final InputPort[] inPorts, final OutputPort[] outPorts) {
+        super(inPorts, PythonScriptNodeModel.getVariableNames(inPorts, outPorts, false), "python3-script");
     }
 }

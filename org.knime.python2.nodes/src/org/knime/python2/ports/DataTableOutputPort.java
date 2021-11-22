@@ -48,8 +48,10 @@
  */
 package org.knime.python2.ports;
 
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortType;
 import org.knime.python2.kernel.PythonKernel;
 
 /**
@@ -61,6 +63,11 @@ public final class DataTableOutputPort implements OutputPort {
 
     public DataTableOutputPort(final String variableName) {
         m_variableName = variableName;
+    }
+
+    @Override
+    public PortType getPortType() {
+        return BufferedDataTable.TYPE;
     }
 
     @Override

@@ -59,6 +59,7 @@ import org.knime.base.data.xml.SvgImageContent;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.port.inactive.InactiveBranchPortObject;
@@ -74,6 +75,11 @@ public final class ImageOutputPort implements OutputPort {
 
     public ImageOutputPort(final String variableName) {
         m_variableName = variableName;
+    }
+
+    @Override
+    public PortType getPortType() {
+        return ImagePortObject.TYPE;
     }
 
     @Override

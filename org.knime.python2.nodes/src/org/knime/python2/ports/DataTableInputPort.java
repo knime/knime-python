@@ -57,6 +57,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.config.WorkspacePreparer;
 import org.knime.python2.kernel.PythonKernel;
@@ -70,6 +71,11 @@ public final class DataTableInputPort implements InputPort {
 
     public DataTableInputPort(final String variableName) {
         m_variableName = variableName;
+    }
+
+    @Override
+    public PortType getPortType() {
+        return BufferedDataTable.TYPE;
     }
 
     @Override
