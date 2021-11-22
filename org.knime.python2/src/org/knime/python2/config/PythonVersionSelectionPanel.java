@@ -48,6 +48,7 @@
  */
 package org.knime.python2.config;
 
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -59,14 +60,12 @@ import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.text.JTextComponent;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -76,71 +75,45 @@ public final class PythonVersionSelectionPanel extends JPanel {
 
     private final PythonVersionNodeConfig m_config; // NOSONAR Not intended for serialization.
 
-    private final JRadioButton m_python2Button = new JRadioButton("Python 2");
+    private final JRadioButton m_python2Button;
 
-    private final JRadioButton m_python3Button = new JRadioButton("Python 3");
-
-    private final JTextComponent m_versionNewBackendInfo =
-        PythonKernelBackendSelectionPanel.createBackendInfoText("The new table API only supports Python 3.");
+    private final JRadioButton m_python3Button;
 
     // Sonar: Not intended for serialization.
     private final List<Consumer<PythonVersion>> m_listeners = new CopyOnWriteArrayList<>(); // NOSONAR
 
     /**
      * @param config The configuration exposed to the user, and accordingly manipulated, by this instance.
-     * @param optionsPanel The dialog's options panel to whose back end change events the Python version selection in
-     *            this panel subscribes. (The new back end does not support Python 2.)
      */
-    public PythonVersionSelectionPanel(final PythonVersionNodeConfig config,
-        final PythonSourceCodeOptionsPanel optionsPanel) {
+    public PythonVersionSelectionPanel(final PythonVersionNodeConfig config) {
         super(new GridBagLayout());
 
         m_config = config;
 
-        final GridBagConstraints gbc = createDefaultGbc();
-        final JPanel versionPanel = createVersionPanel();
+        final GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.BOTH;
+
+        final JPanel versionPanel = new JPanel(new FlowLayout());
+        versionPanel.setBorder(BorderFactory.createTitledBorder("Use Python version"));
+        final ButtonGroup pythonVersionButtonGroup = new ButtonGroup();
+        m_python2Button = new JRadioButton("Python 2");
+        pythonVersionButtonGroup.add(m_python2Button);
+        versionPanel.add(m_python2Button);
+        m_python3Button = new JRadioButton("Python 3");
+        pythonVersionButtonGroup.add(m_python3Button);
+        versionPanel.add(m_python3Button);
         add(versionPanel, gbc);
 
         updateView();
 
         m_python2Button.addActionListener(e -> updateConfigAndNotifyListeners(PythonVersion.PYTHON2));
         m_python3Button.addActionListener(e -> updateConfigAndNotifyListeners(PythonVersion.PYTHON3));
-
-        optionsPanel.addKernelBackendChangeListener(backendType -> {
-            final boolean isOldBackend = backendType == PythonKernelBackendType.PYTHON2;
-            PythonSourceCodeOptionsPanel.setEnabledRecursively(versionPanel, isOldBackend);
-            m_versionNewBackendInfo.setEnabled(!isOldBackend);
-            m_versionNewBackendInfo.setVisible(!isOldBackend);
-        });
-    }
-
-    private static GridBagConstraints createDefaultGbc() {
-        final var gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.fill = GridBagConstraints.BOTH;
-        return gbc;
-    }
-
-    private JPanel createVersionPanel() {
-        final var panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Use Python version"));
-        final var gbc = createDefaultGbc();
-
-        final var pythonVersionButtonGroup = new ButtonGroup();
-        pythonVersionButtonGroup.add(m_python2Button);
-        panel.add(m_python2Button, gbc);
-        pythonVersionButtonGroup.add(m_python3Button);
-        gbc.gridx++;
-        panel.add(m_python3Button, gbc);
-        m_versionNewBackendInfo.setVisible(false);
-        gbc.gridx--;
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        panel.add(m_versionNewBackendInfo, gbc);
-        return panel;
     }
 
     /**

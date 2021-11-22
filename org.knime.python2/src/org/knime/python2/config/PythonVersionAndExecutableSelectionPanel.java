@@ -89,11 +89,9 @@ public final class PythonVersionAndExecutableSelectionPanel extends PythonExecut
      * @param dialog The hosting node dialog. Needed to create flow variable models for the Python-command configs
      *            exposed to the user by this instance.
      * @param config The configuration exposed to the user, and accordingly manipulated, by this instance.
-     * @param optionsPanel The dialog's options panel to whose back end change events the Python version selection in
-     *            this panel subscribes. (The new back end does not support Python 2.)
      */
     public PythonVersionAndExecutableSelectionPanel(final NodeDialogPane dialog,
-        final PythonVersionAndCommandConfig config, final PythonSourceCodeOptionsPanel optionsPanel) {
+        final PythonVersionAndCommandConfig config) {
         setLayout(new GridBagLayout());
 
         m_config = config;
@@ -107,8 +105,7 @@ public final class PythonVersionAndExecutableSelectionPanel extends PythonExecut
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.BOTH;
 
-        m_pythonVersionSelectionPanel =
-            new PythonVersionSelectionPanel(m_config.getPythonVersionConfig(), optionsPanel);
+        m_pythonVersionSelectionPanel = new PythonVersionSelectionPanel(m_config.getPythonVersionConfig());
         add(m_pythonVersionSelectionPanel, gbc);
 
         m_pythonEnvironmentSelectionsWrapper = new JPanel(new CardLayout());
@@ -153,10 +150,6 @@ public final class PythonVersionAndExecutableSelectionPanel extends PythonExecut
      */
     public PythonVersionAndCommandConfig getConfig() {
         return m_config;
-    }
-
-    PythonFixedVersionExecutableSelectionPanel getPython3ExecutableSelection() {
-        return m_python2ExecutableSelectionPanel;
     }
 
     @Override

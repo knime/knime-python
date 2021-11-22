@@ -59,11 +59,11 @@ import org.knime.core.data.DataTable;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadPool;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.generic.ImageContainer;
-import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.kernel.messaging.PythonKernelResponseHandler;
 import org.knime.python2.port.PickledObject;
 import org.knime.python2.port.PickledObjectFile;
@@ -88,24 +88,20 @@ public class PythonKernelManager implements AutoCloseable {
     /**
      * Creates a manager that will start a new python kernel.
      *
-     * @param kernelBackendType type of the kernel back end to use
      * @param kernelOptions all configurable options
      *
      * @throws IOException
      */
-    public PythonKernelManager(final PythonKernelBackendType kernelBackendType, final PythonKernelOptions kernelOptions)
-        throws IOException {
+    public PythonKernelManager(final PythonKernelOptions kernelOptions) throws IOException {
         m_stdoutListeners = new ArrayList<PythonOutputListener>();
         m_stderrListeners = new ArrayList<PythonOutputListener>();
         m_threadPool = new ThreadPool(8);
-        final boolean usePython3 =
-            kernelBackendType == PythonKernelBackendType.PYTHON3 || kernelOptions.getUsePython3();
-        final PythonCommand command = usePython3 //
+        final PythonCommand command = kernelOptions.getUsePython3() //
             ? kernelOptions.getPython3Command() //
             : kernelOptions.getPython2Command();
         try {
-            m_kernel = PythonKernelQueue.getNextKernel(command, kernelBackendType, Collections.emptySet(),
-                Collections.emptySet(), kernelOptions, PythonCancelable.NOT_CANCELABLE);
+            m_kernel = PythonKernelQueue.getNextKernel(command, Collections.emptySet(), Collections.emptySet(),
+                kernelOptions, PythonCancelable.NOT_CANCELABLE);
         } catch (final PythonCanceledExecutionException ex) {
             // Cannot happen. We pass a non-cancelable above.
             throw new IllegalStateException("Implementation error.", ex);
@@ -350,6 +346,7 @@ public class PythonKernelManager implements AutoCloseable {
         try {
             m_kernel.close();
         } catch (PythonKernelCleanupException ex) {
+            NodeLogger.getLogger(PythonKernelManager.class).error(ex.getMessage(), ex);
             throw new IllegalStateException(ex.getMessage(), ex);
         }
     }

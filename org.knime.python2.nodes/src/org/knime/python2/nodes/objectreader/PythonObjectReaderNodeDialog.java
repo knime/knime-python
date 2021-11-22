@@ -81,8 +81,7 @@ final class PythonObjectReaderNodeDialog extends NodeDialogPane {
         m_executableSelectionPanel = new PythonVersionAndExecutableSelectionPanel(this,
             new PythonVersionAndCommandConfig(PythonPreferences.getPythonVersionPreference(),
                 PythonPreferences::getCondaInstallationPath, PythonPreferences::getPython2CommandPreference,
-                PythonPreferences::getPython3CommandPreference),
-            m_sourceCodeOptionsPanel);
+                PythonPreferences::getPython3CommandPreference));
         m_sourceCodePanel = new PythonSourceCodePanel(this, PythonObjectReaderNodeConfig.getVariableNames(),
             m_sourceCodeOptionsPanel, m_executableSelectionPanel);
         m_templatesPanel = new SourceCodeTemplatesPanel(m_sourceCodePanel, "python-objectreader");

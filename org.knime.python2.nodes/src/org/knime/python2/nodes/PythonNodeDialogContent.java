@@ -115,8 +115,7 @@ public final class PythonNodeDialogContent {
             new PythonVersionAndExecutableSelectionPanel(dialog,
                 new PythonVersionAndCommandConfig(PythonPreferences.getPythonVersionPreference(),
                     PythonPreferences::getCondaInstallationPath, PythonPreferences::getPython2CommandPreference,
-                    PythonPreferences::getPython3CommandPreference),
-                optionsPanel);
+                    PythonPreferences::getPython3CommandPreference));
         final PythonSourceCodePanel scriptPanel =
             new PythonSourceCodePanel(dialog, variableNames, optionsPanel, executablePanel);
         return new PythonNodeDialogContent(dialog, inPorts, config, scriptPanel, optionsPanel, executablePanel,
