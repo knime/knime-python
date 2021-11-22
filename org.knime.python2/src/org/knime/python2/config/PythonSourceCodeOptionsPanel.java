@@ -45,23 +45,20 @@
 
 package org.knime.python2.config;
 
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -70,13 +67,10 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.JTextComponent;
 
-import org.knime.python2.PythonCommand;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
-import org.knime.python2.generic.SourceCodeConfig;
-import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
+import org.knime.python2.generic.SourceCodeOptionsPanel;
 import org.knime.python2.kernel.PythonKernelOptions;
 
 /**
@@ -86,316 +80,110 @@ import org.knime.python2.kernel.PythonKernelOptions;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("serial") // Not intended for serialization.
-public class PythonSourceCodeOptionsPanel extends JPanel {
+public class PythonSourceCodeOptionsPanel extends SourceCodeOptionsPanel<PythonSourceCodeConfig> {
 
     /** May be {@code null}, in which case the serializer to use is determined by {@link PythonKernelOptions}. */
     private final String m_serializerId;
 
-    private final PythonKernelBackendSelectionPanel m_backendSelection = new PythonKernelBackendSelectionPanel();
+    private JCheckBox m_convertMissingToPython;
 
-    private final JSpinner m_rowLimit =
-        new JSpinner(new SpinnerNumberModel(SourceCodeConfig.DEFAULT_ROW_LIMIT, 0, Integer.MAX_VALUE, 100));
+    private JCheckBox m_convertMissingFromPython;
 
-    private final JTextComponent m_rowLimitNewBackendInfoText =
-        PythonKernelBackendSelectionPanel.createBackendInfoText("");
+    private JRadioButton m_useMinSentinelValueButton;
 
-    private final JCheckBox m_convertMissingToPython =
-        new JCheckBox("Convert missing values to sentinel value (to Python)");
+    private JRadioButton m_useMaxSentinelValueButton;
 
-    private final JCheckBox m_convertMissingFromPython =
-        new JCheckBox("Convert sentinel values to missing value (from Python)");
+    private JRadioButton m_useCustomSentinelValueButton;
 
-    private final JRadioButton m_useMinSentinelValueButton = new JRadioButton("MIN_VAL");
+    private JTextField m_customSentinelValueInput;
 
-    private final JRadioButton m_useMaxSentinelValueButton = new JRadioButton("MAX_VAL");
+    private JLabel m_invalidCustomSentinelWarningLabel;
 
-    private final JRadioButton m_useCustomSentinelValueButton = new JRadioButton("");
+    private int m_customSentinelValue;
 
-    private int m_customSentinelValue = 0;
-
-    private final JTextField m_customSentinelValueInput = new JTextField(Integer.toString(m_customSentinelValue));
-
-    private final JLabel m_invalidCustomSentinelWarningLabel = new JLabel("");
-
-    private final JTextComponent m_missingsNewBackendInfoText =
-        PythonKernelBackendSelectionPanel.createBackendInfoText("");
-
-    private final JSpinner m_chunkSize =
-        new JSpinner(new SpinnerNumberModel(SerializationOptions.DEFAULT_CHUNK_SIZE, 1, Integer.MAX_VALUE, 1));
-
-    private final JTextComponent m_chunkingNewBackendInfoText = PythonKernelBackendSelectionPanel
-        .createBackendInfoText("Note: the new table API handles chunking automatically.");
-
-    private final CopyOnWriteArrayList<IntConsumer> m_rowLimitListeners = new CopyOnWriteArrayList<>();
+    private JSpinner m_chunkSize;
 
     // Not intended for serialization.
-    private final CopyOnWriteArrayList<Consumer<SerializationOptions>> m_serializationOptionsChangeListeners =
-        new CopyOnWriteArrayList<>(); // NOSONAR
+    private final CopyOnWriteArrayList<Consumer<SerializationOptions>> m_listeners = new CopyOnWriteArrayList<>(); // NOSONAR
 
-    /**
-     * Creates a new options panel without a fixed serializer configuration. The serializer to use is derived from the
-     * Preferences.
-     */
     public PythonSourceCodeOptionsPanel() {
-        this(null, true);
+        this(null);
     }
 
-    /**
-     * @param serializerId The id of the serializer to use in the node.
-     * @param showBackendSelection Whether to allow users to select the Python kernel back end via this panel. (E.g.
-     *            KNIME Deep Learning does not support the new back end yet.)
-     */
-    public PythonSourceCodeOptionsPanel(final String serializerId, final boolean showBackendSelection) {
-        super(new GridBagLayout());
+    public PythonSourceCodeOptionsPanel(final String serializerId) {
         m_serializerId = serializerId;
-
-        final GridBagConstraints gbc = createDefaultGbc();
-
-        if (showBackendSelection) {
-            add(m_backendSelection, gbc);
-            gbc.gridy++;
-        }
-
-        final JPanel rowLimitPanel = createRowLimitPanel();
-        add(rowLimitPanel, gbc);
-        gbc.gridy++;
-
-        final JPanel missingsPanel = createMissingsPanel();
-        add(missingsPanel, gbc);
-        gbc.gridy++;
-
-        final JPanel chunkingPanel = createChunkingPanel();
-        add(chunkingPanel, gbc);
-        gbc.gridy++;
-
-        gbc.weighty = 1;
-        add(new JLabel(), gbc);
-
-        final List<JPanel> oldBackendPanels = List.of(rowLimitPanel, missingsPanel, chunkingPanel);
-        final List<JComponent> newBackendInfos =
-            List.of(m_rowLimitNewBackendInfoText, m_missingsNewBackendInfoText, m_chunkingNewBackendInfoText);
-        m_backendSelection.addKernelBackendChangeListener(backendType -> { // NOSONAR
-            final boolean isOldBackend = backendType == PythonKernelBackendType.PYTHON2;
-            final boolean isNewBackend = !isOldBackend;
-            for (final JPanel panel : oldBackendPanels) {
-                setEnabledRecursively(panel, isOldBackend);
-            }
-            if (isNewBackend) {
-                setNewBackendInfos();
-            }
-            for (final JComponent info : newBackendInfos) {
-                info.setEnabled(isNewBackend);
-                info.setVisible(isNewBackend);
-            }
-        });
-    }
-
-    private static GridBagConstraints createDefaultGbc() {
-        final var gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.fill = GridBagConstraints.BOTH;
-        return gbc;
-    }
-
-    private JPanel createRowLimitPanel() {
-        final var panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Row limit (dialog)"));
-        final var gbc = createDefaultGbc();
-
-        panel.add(new JLabel("Number of rows"), gbc);
-        gbc.gridx++;
-        gbc.weightx = 1;
-        panel.add(m_rowLimit, gbc);
-        gbc.gridx--;
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        m_rowLimitNewBackendInfoText.setVisible(false);
-        panel.add(m_rowLimitNewBackendInfoText, gbc);
-
-        m_rowLimit.addChangeListener(e -> onRowLimitChanged());
-
-        return panel;
-    }
-
-    private JPanel createMissingsPanel() {
-        final var changeListener = new OptionsChangeListener();
-        final var panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Missing values (Integer, Long)"));
-        final var gbc = createDefaultGbc();
-
-        m_convertMissingToPython.addActionListener(changeListener);
-        gbc.gridwidth = 5;
-        panel.add(m_convertMissingToPython, gbc);
-        gbc.gridy++;
-        m_convertMissingFromPython.addActionListener(changeListener);
-        panel.add(m_convertMissingFromPython, gbc);
-        gbc.gridy++;
-        gbc.gridwidth = 1;
-
-        final var sentinelValueButtonGroup = new ButtonGroup();
-        panel.add(new JLabel("Sentinel value"), gbc);
-        gbc.gridx++;
-        m_useMinSentinelValueButton.addActionListener(changeListener);
-        sentinelValueButtonGroup.add(m_useMinSentinelValueButton);
-        panel.add(m_useMinSentinelValueButton, gbc);
-        gbc.gridx++;
-        m_useMaxSentinelValueButton.addActionListener(changeListener);
-        sentinelValueButtonGroup.add(m_useMaxSentinelValueButton);
-        panel.add(m_useMaxSentinelValueButton, gbc);
-        gbc.gridx++;
-        m_useCustomSentinelValueButton.addActionListener(changeListener);
-        sentinelValueButtonGroup.add(m_useCustomSentinelValueButton);
-        panel.add(m_useCustomSentinelValueButton, gbc);
-        gbc.gridx++;
-        m_customSentinelValueInput
-            .setPreferredSize(new Dimension(70, m_customSentinelValueInput.getPreferredSize().height));
-        m_customSentinelValueInput.getDocument().addDocumentListener(new SentinelInputListener());
-        panel.add(m_customSentinelValueInput, gbc);
-        gbc.gridx = 0;
-        gbc.gridy++;
-        gbc.gridwidth = 5;
-        m_useMinSentinelValueButton.setSelected(true);
-        m_invalidCustomSentinelWarningLabel.setVisible(false);
-        panel.add(m_invalidCustomSentinelWarningLabel, gbc);
-        gbc.gridy++;
-        m_missingsNewBackendInfoText.setVisible(false);
-        panel.add(m_missingsNewBackendInfoText, gbc);
-
-        return panel;
-    }
-
-    private JPanel createChunkingPanel() {
-        final var panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Chunking"));
-        final GridBagConstraints gbc = createDefaultGbc();
-
-        panel.add(new JLabel("Rows per chunk"), gbc);
-        gbc.gridx++;
-        gbc.weightx = 1;
-        panel.add(m_chunkSize, gbc);
-        gbc.gridx--;
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        m_chunkingNewBackendInfoText.setVisible(false);
-        panel.add(m_chunkingNewBackendInfoText, gbc);
-
-        return panel;
-    }
-
-    static void setEnabledRecursively(final Component component, final boolean enabled) {
-        component.setEnabled(enabled);
-        if (component instanceof Container) {
-            for (final Component child : ((Container)component).getComponents()) {
-                setEnabledRecursively(child, enabled);
-            }
-        }
-    }
-
-    private void setNewBackendInfos() {
-        m_rowLimitNewBackendInfoText.setText("<table width=800><tr>" //
-            + "You can use" //
-            + "<blockquote>" //
-            + "input_table_1 = input_table_1.to_pandas(rows=" + getRowLimit() + "), or<br>"
-            + "input_table_1 = input_table_1.to_pyarrow(rows=" + getRowLimit() + ")" //
-            + "</blockquote>" //
-            + "in your script to set a row limit. Note that, unlike before, the limit does not only apply to the "
-            + "dialog but also to the actual node execution." //
-            + "</tr></table>");
-
-        final var sentinel = getSentinelOption();
-        final String sentinelText;
-        if (sentinel == SentinelOption.MIN_VAL) {
-            sentinelText = "\"min\"";
-        } else if (sentinel == SentinelOption.MAX_VAL) {
-            sentinelText = "\"max\"";
-        } else {
-            sentinelText = Integer.toString(m_customSentinelValue);
-        }
-        m_missingsNewBackendInfoText.setText("<table width=800><tr>" //
-            + "You can use" //
-            + "<blockquote>" //
-            + "input_table_1 = input_table_1.to_pandas(sentinel=" + sentinelText + ")" //
-            + "</blockquote>" //
-            + "in your script to set a sentinel. When using to_pyarrow, this is not needed as pyarrow supports missing "
-            + "values in integer and long columns." //
-            + "</tr></table>");
     }
 
     @Override
-    public final void add(final Component comp, final Object constraints) {
-        super.add(comp, constraints);
+    protected JPanel getAdditionalOptionsPanel() {
+        final OptionsChangeListener changeListener = new OptionsChangeListener();
+
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+
+        final JPanel missingPanel = new JPanel(new GridLayout(0, 1));
+        missingPanel.setBorder(BorderFactory.createTitledBorder("Missing values (Integer, Long)"));
+        m_convertMissingToPython = new JCheckBox("Convert missing values to sentinel value (to Python)");
+        m_convertMissingToPython.addActionListener(changeListener);
+        missingPanel.add(m_convertMissingToPython);
+        m_convertMissingFromPython = new JCheckBox("Convert sentinel values to missing value (from Python)");
+        m_convertMissingFromPython.addActionListener(changeListener);
+        missingPanel.add(m_convertMissingFromPython);
+
+        final JPanel sentinelPanel = new JPanel(new FlowLayout());
+        final ButtonGroup sentinelValueButtonGroup = new ButtonGroup();
+
+        sentinelPanel.add(new JLabel("Sentinel value"));
+        m_useMinSentinelValueButton = new JRadioButton("MIN_VAL");
+        m_useMinSentinelValueButton.addActionListener(changeListener);
+        sentinelValueButtonGroup.add(m_useMinSentinelValueButton);
+        sentinelPanel.add(m_useMinSentinelValueButton);
+        m_useMaxSentinelValueButton = new JRadioButton("MAX_VAL");
+        m_useMaxSentinelValueButton.addActionListener(changeListener);
+        sentinelValueButtonGroup.add(m_useMaxSentinelValueButton);
+        sentinelPanel.add(m_useMaxSentinelValueButton);
+        m_useCustomSentinelValueButton = new JRadioButton("");
+        m_useCustomSentinelValueButton.addActionListener(changeListener);
+        sentinelValueButtonGroup.add(m_useCustomSentinelValueButton);
+        sentinelPanel.add(m_useCustomSentinelValueButton);
+        m_customSentinelValue = 0;
+        // TODO: Enable only if radio button is enabled.
+        m_customSentinelValueInput = new JTextField(Integer.toString(m_customSentinelValue));
+        m_customSentinelValueInput
+            .setPreferredSize(new Dimension(70, m_customSentinelValueInput.getPreferredSize().height));
+        m_customSentinelValueInput.getDocument().addDocumentListener(new SentinelInputListener());
+        sentinelPanel.add(m_customSentinelValueInput);
+        m_useMinSentinelValueButton.setSelected(true);
+
+        missingPanel.add(sentinelPanel);
+
+        m_invalidCustomSentinelWarningLabel = new JLabel("");
+        missingPanel.add(m_invalidCustomSentinelWarningLabel);
+
+        panel.add(missingPanel, gbc);
+
+        final JPanel chunkingPanel = new JPanel(new FlowLayout());
+        chunkingPanel.setBorder(BorderFactory.createTitledBorder("Chunking"));
+        chunkingPanel.add(new JLabel("Rows per chunk"));
+        m_chunkSize =
+            new JSpinner(new SpinnerNumberModel(SerializationOptions.DEFAULT_CHUNK_SIZE, 1, Integer.MAX_VALUE, 1));
+        chunkingPanel.add(m_chunkSize);
+        gbc.gridx = 0;
+        gbc.gridy++;
+        panel.add(chunkingPanel, gbc);
+
+        return panel;
     }
 
-    /**
-     * @return The type of the configured {@code link PythonKernelBackend}.
-     */
-    public PythonKernelBackendType getKernelBackendType() {
-        return m_backendSelection.getKernelBackendType();
-    }
-
-    /**
-     * @param listener The listener to add. The value passed to the listener is the type of the back end that has been
-     *            selected.
-     */
-    public void addKernelBackendChangeListener(final Consumer<PythonKernelBackendType> listener) {
-        m_backendSelection.addKernelBackendChangeListener(listener);
-    }
-
-    /**
-     * @param listener The listener to remove.
-     */
-    public void removeKernelBackendChangeListener(final Consumer<PythonKernelBackendType> listener) {
-        m_backendSelection.removeKernelBackendChangeListener(listener);
-    }
-
-    /**
-     * @param listener The listener to add. The value passed to the listener is the new preferred command.
-     */
-    public void addCommandPreferenceChangeListener(final Consumer<PythonCommand> listener) {
-        m_backendSelection.addCommandPreferenceChangeListener(listener);
-    }
-
-    /**
-     * @param listener The listener to remove.
-     */
-    public void removeCommandPreferenceChangeListener(final Consumer<PythonCommand> listener) {
-        m_backendSelection.removeCommandPreferenceChangeListener(listener);
-    }
-
-    /**
-     * @return The configured row limit.
-     */
-    public int getRowLimit() {
-        return (int)m_rowLimit.getValue();
-    }
-
-    /**
-     * @param listener The listener to add. Accepts the newly configured row limit
-     */
-    public void addRowLimitChangeListener(final IntConsumer listener) {
-        m_rowLimitListeners.add(listener); // NOSONAR Small collection, not performance critical.
-    }
-
-    /**
-     * @param listener The listener to remove.
-     */
-    public void removeRowLimitChangeListener(final IntConsumer listener) {
-        m_rowLimitListeners.remove(listener); // NOSONAR Small collection, not performance critical.
-    }
-
-    private void onRowLimitChanged() {
-        final int rowLimit = getRowLimit();
-        for (IntConsumer listener : m_rowLimitListeners) {
-            listener.accept(rowLimit);
-        }
-    }
-
-    /**
-     * @return The configured serialization options.
-     */
     public SerializationOptions getSerializationOptions() {
         final int chunkSize = getChunkSize();
         final boolean convertMissingToPython = m_convertMissingToPython.isSelected();
@@ -405,34 +193,27 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
             m_customSentinelValue).forSerializerId(m_serializerId);
     }
 
-    /**
-     * @param listener The listener to add. Accepts the newly configured serialization options.
-     */
     public void addSerializationOptionsChangeListener(final Consumer<SerializationOptions> listener) {
-        m_serializationOptionsChangeListeners.add(listener); // NOSONAR Small collection, not performance critical.
+        m_listeners.add(listener); // NOSONAR Small collection, not performance critical.
     }
 
-    /**
-     * @param listener The listener to remove.
-     */
     public void removeSerializationOptionsChangeListener(final Consumer<SerializationOptions> listener) {
-        m_serializationOptionsChangeListeners.remove(listener); // NOSONAR Small collection, not performance critical.
+        m_listeners.remove(listener); // NOSONAR Small collection, not performance critical.
     }
 
     private void onSerializationOptionsChanged() {
         final SerializationOptions serializationOptions = getSerializationOptions();
-        for (final Consumer<SerializationOptions> listener : m_serializationOptionsChangeListeners) {
+        for (final Consumer<SerializationOptions> listener : m_listeners) {
             listener.accept(serializationOptions);
         }
     }
 
-    /**
-     * @param config The configuration from which to load the options of this panel.
-     */
+    @Override
     public void loadSettingsFrom(final PythonSourceCodeConfig config) {
-        m_backendSelection.loadSettingsFrom(config);
-        m_rowLimit.setValue(config.getRowLimit());
+        super.loadSettingsFrom(config);
+
         // TODO: check if each of these trigger an on-options-changed event; consolidate
+
         m_convertMissingToPython.setSelected(config.isConvertingMissingToPython());
         m_convertMissingFromPython.setSelected(config.isConvertingMissingFromPython());
         setSentinelOption(config.getSentinelOption());
@@ -453,12 +234,10 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         }
     }
 
-    /**
-     * @param config The configuration to which to save the options of this panel.
-     */
+    @Override
     public void saveSettingsTo(final PythonSourceCodeConfig config) {
-        m_backendSelection.saveSettingsTo(config);
-        config.setRowLimit(getRowLimit());
+        super.saveSettingsTo(config);
+
         config.setConvertMissingToPython(m_convertMissingToPython.isSelected());
         config.setConvertMissingFromPython(m_convertMissingFromPython.isSelected());
         config.setSentinelOption(getSentinelOption());
@@ -496,12 +275,11 @@ public class PythonSourceCodeOptionsPanel extends JPanel {
         public void removeUpdate(final DocumentEvent e) {
             try {
                 m_customSentinelValue = Integer.parseInt(m_customSentinelValueInput.getText());
-                m_invalidCustomSentinelWarningLabel.setVisible(false);
+                m_invalidCustomSentinelWarningLabel.setText("");
             } catch (final NumberFormatException ex) {
                 m_customSentinelValue = 0;
                 m_invalidCustomSentinelWarningLabel.setText("<html><font color=\"red\"><b>Sentinel value cannot be "
-                    + "parsed. Default value " + m_customSentinelValue + " is used instead.</b></font></html>");
-                m_invalidCustomSentinelWarningLabel.setVisible(true);
+                    + "parsed.<br/>Default value " + m_customSentinelValue + " is used instead.</b></font></html>");
             }
             onSerializationOptionsChanged();
         }
