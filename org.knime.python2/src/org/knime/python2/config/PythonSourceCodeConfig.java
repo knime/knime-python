@@ -51,8 +51,6 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.python2.extensions.serializationlibrary.SentinelOption;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.generic.SourceCodeConfig;
-import org.knime.python2.kernel.PythonKernelBackend;
-import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 
 /**
  * A basic config for nodes concerned with Python scripting.
@@ -62,13 +60,6 @@ import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendT
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz, Germany
  */
 public class PythonSourceCodeConfig extends SourceCodeConfig {
-
-    /**
-     * The type of the {@link PythonKernelBackend} that is configured by default.
-     */
-    public static final PythonKernelBackendType DEFAULT_KERNEL_BACKEND_TYPE = PythonKernelBackendType.PYTHON2;
-
-    private static final String CFG_KERNEL_BACKEND = "tableApi";
 
     private static final String CFG_CHUNK_SIZE = "chunkSize";
 
@@ -80,8 +71,6 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
 
     private static final String CFG_SENTINEL_VALUE = "sentinelValue";
 
-    private PythonKernelBackendType m_kernelBackend = DEFAULT_KERNEL_BACKEND_TYPE;
-
     private int m_chunkSize = SerializationOptions.DEFAULT_CHUNK_SIZE;
 
     private boolean m_convertMissingToPython = SerializationOptions.DEFAULT_CONVERT_MISSING_TO_PYTHON;
@@ -91,20 +80,6 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     private SentinelOption m_sentinelOption = SerializationOptions.DEFAULT_SENTINEL_OPTION;
 
     private int m_sentinelValue = SerializationOptions.DEFAULT_SENTINEL_VALUE;
-
-    /**
-     * @return The type of the configured {@link PythonKernelBackend}.
-     */
-    public PythonKernelBackendType getKernelBackendType() {
-        return m_kernelBackend;
-    }
-
-    /**
-     * @param kernelBackend The type of the configured {@link PythonKernelBackend}.
-     */
-    public void setKernelBackendType(final PythonKernelBackendType kernelBackend) {
-        m_kernelBackend = kernelBackend;
-    }
 
     /**
      *
@@ -189,7 +164,6 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     @Override
     public void saveTo(final NodeSettingsWO settings) {
         super.saveTo(settings);
-        settings.addString(CFG_KERNEL_BACKEND, getKernelBackendType().getIdentifier());
         settings.addBoolean(CFG_CONVERT_MISSING_TO_PYTHON, isConvertingMissingToPython());
         settings.addBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, isConvertingMissingFromPython());
         settings.addString(CFG_SENTINEL_OPTION, getSentinelOption().name());
@@ -210,10 +184,6 @@ public class PythonSourceCodeConfig extends SourceCodeConfig {
     }
 
     private void loadFromSettings(final NodeSettingsRO settings) {
-        final PythonKernelBackendType kernelBackendType = PythonKernelBackendType
-            .fromIdentifier(settings.getString(CFG_KERNEL_BACKEND, getKernelBackendType().getIdentifier()))
-            .orElse(getKernelBackendType());
-        setKernelBackendType(kernelBackendType);
         setConvertMissingToPython(settings.getBoolean(CFG_CONVERT_MISSING_TO_PYTHON, isConvertingMissingToPython()));
         setConvertMissingFromPython(
             settings.getBoolean(CFG_CONVERT_MISSING_FROM_PYTHON, isConvertingMissingFromPython()));
