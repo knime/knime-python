@@ -80,7 +80,7 @@ public final class PythonVersionSelectionPanel extends JPanel {
 
     private final JRadioButton m_python3Button = new JRadioButton("Python 3");
 
-    private final JTextComponent m_python3BackendInfoText =
+    private final JTextComponent m_versionNewBackendInfo =
         PythonKernelBackendSelectionPanel.createBackendInfoText("The new table API only supports Python 3.");
 
     // Sonar: Not intended for serialization.
@@ -107,10 +107,10 @@ public final class PythonVersionSelectionPanel extends JPanel {
         m_python3Button.addActionListener(e -> updateConfigAndNotifyListeners(PythonVersion.PYTHON3));
 
         optionsPanel.addKernelBackendChangeListener(backendType -> {
-            final boolean isPython2Backend = backendType == PythonKernelBackendType.PYTHON2;
-            PythonSourceCodeOptionsPanel.setEnabledRecursively(versionPanel, isPython2Backend);
-            m_python3BackendInfoText.setEnabled(!isPython2Backend);
-            m_python3BackendInfoText.setVisible(!isPython2Backend);
+            final boolean isOldBackend = backendType == PythonKernelBackendType.PYTHON2;
+            PythonSourceCodeOptionsPanel.setEnabledRecursively(versionPanel, isOldBackend);
+            m_versionNewBackendInfo.setEnabled(!isOldBackend);
+            m_versionNewBackendInfo.setVisible(!isOldBackend);
         });
     }
 
@@ -135,11 +135,11 @@ public final class PythonVersionSelectionPanel extends JPanel {
         pythonVersionButtonGroup.add(m_python3Button);
         gbc.gridx++;
         panel.add(m_python3Button, gbc);
-        m_python3BackendInfoText.setVisible(false);
+        m_versionNewBackendInfo.setVisible(false);
         gbc.gridx--;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        panel.add(m_python3BackendInfoText, gbc);
+        panel.add(m_versionNewBackendInfo, gbc);
         return panel;
     }
 
