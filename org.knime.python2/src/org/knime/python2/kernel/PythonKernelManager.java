@@ -113,17 +113,6 @@ public class PythonKernelManager implements AutoCloseable {
     }
 
     /**
-     * Creates a manager that will start a new python kernel using the {@link PythonKernelBackendType#PYTHON2}.
-     *
-     * @param kernelOptions all configurable options
-     *
-     * @throws IOException
-     */
-    public PythonKernelManager(final PythonKernelOptions kernelOptions) throws IOException {
-        this(PythonKernelBackendType.PYTHON2, kernelOptions);
-    }
-
-    /**
      * Returns the image with the given name.
      *
      * @param name Name of the image
