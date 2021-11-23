@@ -386,5 +386,22 @@ class SentinelReplacementTest(unittest.TestCase):
         b = pa.ExtensionArray.from_storage(t, a)
 
 
+class FixedSizeListTest(unittest.TestCase):
+    def test_fixed_size_list(self):
+        l = [0, 1, 2]
+        fsl = kt._FixedSizeListView(l)
+
+        self.assertEqual(len(l), len(fsl))
+
+        for i, v in enumerate(fsl):
+            self.assertEqual(v, l[i])
+
+        with self.assertRaises(AttributeError):
+            fsl.append(3)
+
+        l.append(3)
+        self.assertEqual(len(l), len(fsl))
+
+
 if __name__ == "__main__":
     unittest.main()

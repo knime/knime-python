@@ -53,6 +53,28 @@ from abc import abstractmethod, ABC
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
 
+class _FixedSizeListView:
+    """
+    A list view that allows element access but no deletion or append.
+
+    Attention: if the underlying list grows, more values will also be available in this view!
+    """
+
+    def __init__(self, data):
+        if not isinstance(data, list):
+            raise TypeError("Can only convert a list into a FixedSizeList")
+        self._data = data
+
+    def __getitem__(self, idx):
+        return self._data[idx]
+
+    def __setitem__(self, idx, value):
+        self._data[idx] = value
+
+    def __len__(self):
+        return len(self._data)
+
+
 class _Backend(ABC):
     """
     The backend instanciates the appropriate types of Tables and Batches.
