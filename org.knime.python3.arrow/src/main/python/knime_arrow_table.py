@@ -330,9 +330,11 @@ class ArrowBackend(kta._Backend):
 
     def write_table(
         self,
-        data: Union["pandas.DataFrame", pa.Table],
+        data: Union[ArrowReadTable, "pandas.DataFrame", pa.Table],
         sentinel: Optional[Union[str, int]] = None,
     ) -> ArrowWriteTable:
+        if isinstance(data, ArrowReadTable):
+            data = data.to_pyarrow()
         return ArrowWriteTable(self._create_sink(), data, sentinel)
 
     def batch(

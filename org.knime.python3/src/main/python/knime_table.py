@@ -89,7 +89,7 @@ class _Backend(ABC):
 
     @abstractmethod
     def write_table(
-        data: Union["pandas.DataFrame", "pyarrow.Table"],
+        data: Union["ReadTable", "pandas.DataFrame", "pyarrow.Table"],
         sentinel: Optional[Union[str, int]] = None,
     ) -> "WriteTable":
         pass
@@ -489,7 +489,7 @@ class WriteTable(_Table):
 
 
 def write_table(
-    data: Union["pandas.DataFrame", "pyarrow.Table"],
+    data: Union[ReadTable, "pandas.DataFrame", "pyarrow.Table"],
     sentinel: Optional[Union[str, int]] = None,
 ) -> WriteTable:
     """
@@ -497,7 +497,7 @@ def write_table(
     Internally creates a WriteTable using its create, from_pandas or from_pyarrow methods respectively.
 
     ### Arguments:
-    - data: A pandas.DataFrame or a pyarrow.Table
+    - data: A ReadTable, pandas.DataFrame or a pyarrow.Table
     - sentinel: 
       Interpret the following values in integral columns as missing value:
         - "min" min int32 or min int64 depending on the type of the column
