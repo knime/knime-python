@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="org.knime.features.python2"
-      label="KNIME Python Integration"
+      id="org.knime.features.python3.scripting"
+      label="KNIME Python Integration (Labs)"
       version="4.5.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
-      This plugin contains nodes that integrate Python (version 2 or 3) into KNIME. The library to use for transferring data between KNIME and Python can be chosen in the preferences. The scripts require a local Python installation (not included).
+      This experimental integration contains a node that allows to execute Python 3 scripts in KNIME. It brings
+significant performance improvements over the stable KNIME Python Integration and enables working with
+larger-than-memory data. It is however not yet advised to use the integration in production. Its node requires a local
+Python installation in order to work (not included).
    </description>
 
    <copyright>
@@ -726,49 +729,54 @@ interoperation with KNIME.  The owner of a Node may freely choose the
 license terms applicable to such Node, including when such Node is
 propagated with or for interoperation with KNIME.
    </license>
-
    <plugin
-         id="org.knime.python2"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.knime.python.typeextensions"
+         id="org.knime.ext.py4j"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="org.knime.python2.envconfigs"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.knime.python2.nodes"
+         id="org.knime.python3"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="org.knime.python2.serde.csv"
+         id="org.knime.python3.arrow"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="false"/>
 
    <plugin
-         id="org.knime.python2.serde.flatbuffers"
+         id="org.knime.python3.arrow.types"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="false"/>
 
    <plugin
-         id="org.knime.python2.serde.arrow"
+         id="org.knime.python3.py4j.dependencies"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="org.knime.python3.scripting"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.knime.python3.scripting.nodes"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
 
 </feature>

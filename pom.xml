@@ -26,7 +26,10 @@
 		<module>org.knime.features.ext.jython</module>
 		<module>org.knime.features.python</module>
 		<module>org.knime.features.python2</module>
+		<module>org.knime.features.python3.scripting</module>
 		<module>org.knime.python</module>
+		<module>org.knime.python.nodes</module>
+		<module>org.knime.python.typeextensions</module>
 		<module>org.knime.python2</module>
 		<module>org.knime.python2.envconfigs</module>
 		<module>org.knime.python2.nodes</module>
@@ -39,11 +42,11 @@
 		<module>org.knime.python2.serde.flatbuffers.tests</module>
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.arrow</module>
-		<module>org.knime.python3.py4j.dependencies</module>
+		<module>org.knime.python3.arrow.tests</module>
 		<module>org.knime.python3.arrow.types</module>
-		<module>org.knime.python3for2</module>
-		<module>org.knime.python.nodes</module>
-		<module>org.knime.python.typeextensions</module>
+		<module>org.knime.python3.py4j.dependencies</module>
+		<module>org.knime.python3.scripting</module>
+		<module>org.knime.python3.scripting.nodes</module>
 		<module>org.knime.update.python</module>
 	</modules>
 
