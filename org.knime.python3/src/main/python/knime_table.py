@@ -421,39 +421,7 @@ class WriteTable(_Table):
     to disk batch by batch. Individual batches will be available to KNIME as soon as they are written.
     """
 
-    @staticmethod
-    def from_pandas(
-        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
-    ) -> "WriteTable":
-        """
-        Create and fill the table with a pandas DataFrame
-
-        ### Arguments:
-        - data: A pandas.DataFrame
-        - sentinel: 
-          Interpret the following values in integral columns as missing value:
-            - "min" min int32 or min int64 depending on the type of the column
-            - "max" max int32 or max int64 depending on the type of the column
-            - a special integer value that should be interpreted as missing value
-        """
-        return _backend.write_table(data, sentinel)
-
-    @staticmethod
-    def from_pyarrow(
-        data: "pyarrow.Table", sentinel: Optional[Union[str, int]] = None
-    ) -> "WriteTable":
-        """
-        Create and fill the table with a pyarrow.Table
-        
-        ### Arguments:
-        - data: A pyarrow.RecordBatch
-        - sentinel: 
-          Interpret the following values in integral columns as missing value:
-            - "min" min int32 or min int64 depending on the type of the column
-            - "max" max int32 or max int64 depending on the type of the column
-            - a special integer value that should be interpreted as missing value
-        """
-        return _backend.write_table(data, sentinel)
+    pass
 
 
 def write_table(
