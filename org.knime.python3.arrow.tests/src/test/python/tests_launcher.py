@@ -516,8 +516,8 @@ class EntryPoint(kg.EntryPoint):
     #         pandas_df = read_batch.to_pandas()
     #         pandas_df["0"] = pandas_df["0"] * 2
     #         pandas_df["1"] = pandas_df["1"] * 2
-    #         write_batch = kta.Batch.from_pandas(pandas_df)
-    #         write_batch = kta.Batch.from_pyarrow(pyarrow_recordbatch)
+    #         write_batch = kta.batch(pandas_df)
+    #         write_batch = kta.batch(pyarrow_recordbatch)
     #         write_table.append_batch(write_batch)
     #         # syntactic sugar
     #         write_table.append_batch(pandas_df, from_pandas_kw_args)
@@ -549,16 +549,16 @@ class EntryPoint(kg.EntryPoint):
         with kg.data_source_mapper(data_source) as source:
             read_table = kata.ArrowReadTable(source)
             assert isinstance(read_table, kta.ReadTable)
-            assert isinstance(read_table, kta.Table)
+            assert isinstance(read_table, kta._Table)
 
             assert num_rows == read_table.num_rows
             assert num_columns == read_table.num_columns
             assert expected_shape == read_table.shape
 
-            write_table = kta.WriteTable.create()
-            assert isinstance(write_table, kata.ArrowWriteTable)
+            write_table = kta.batch_write_table()
+            assert isinstance(write_table, kata.ArrowBatchWriteTable)
             assert isinstance(write_table, kta.WriteTable)
-            assert isinstance(write_table, kta.Table)
+            assert isinstance(write_table, kta._Table)
 
             # import debugpy
 
@@ -582,7 +582,7 @@ class EntryPoint(kg.EntryPoint):
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
-                    write_batch = kta.Batch.from_pyarrow(new_batch)
+                    write_batch = kta.batch(new_batch)
                 elif mode == "arrow-sentinel":
                     arrow_batch = read_batch.to_pyarrow(sentinel=0)
                     arrays = []
@@ -592,17 +592,17 @@ class EntryPoint(kg.EntryPoint):
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
-                    write_batch = kta.Batch.from_pyarrow(new_batch, sentinel=0)
+                    write_batch = kta.batch(new_batch, sentinel=0)
                 elif mode == "pandas":
                     pandas_df = read_batch.to_pandas()
                     pandas_df["0"] = pandas_df["0"] * 2
                     pandas_df["1"] = pandas_df["1"] * 2
-                    write_batch = kta.Batch.from_pandas(pandas_df)
+                    write_batch = kta.batch(pandas_df)
                 elif mode == "dict":
                     d = read_batch.to_pyarrow().to_pydict()
                     d["0"] = [i * 2 for i in d["0"]]
                     d["1"] = [i * 2 for i in d["1"]]
-                    write_batch = kta.Batch.from_pyarrow(
+                    write_batch = kta.batch(
                         # from_pydict requires pyarrow 6.0! Install via PIP
                         pa.RecordBatch.from_pydict(d)
                     )

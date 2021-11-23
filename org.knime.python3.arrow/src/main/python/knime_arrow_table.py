@@ -289,13 +289,13 @@ class ArrowWriteTable(_ArrowWriteTableImpl):
         data: Union["pandas.DataFrame", pa.Table],
         sentinel: Optional[Union[str, int]] = None,
     ):
-        super.__init__(sink)
+        super().__init__(sink)
         self._put_table(data, sentinel)
 
 
 class ArrowBatchWriteTable(_ArrowWriteTableImpl):
     def __init__(self, sink):
-        super.__init__(sink)
+        super().__init__(sink)
 
     def append(
         self,
