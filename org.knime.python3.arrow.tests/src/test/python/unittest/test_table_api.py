@@ -15,7 +15,7 @@ class BatchTest(unittest.TestCase):
         df = pd.DataFrame()
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, 3.0, 4.0]
-        b = kt.Batch.from_pandas(df)
+        b = kt.batch(df)
         self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key is added
         self.assertEqual(len(df), b.num_rows)
         self.assertEqual((len(df), len(df.columns) + 1), b.shape)
@@ -28,14 +28,14 @@ class BatchTest(unittest.TestCase):
             "1": [1.0, 2.0, 3.0, 4.0],
         }
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.Batch.from_pyarrow(rb)
+        b = kt.batch(rb)
 
         # convert to pandas
         df = b.to_pandas()
         self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key column vanishes
         self.assertEqual(len(df), b.num_rows)
 
-        b2 = kt.Batch.from_pandas(df)
+        b2 = kt.batch(df)
         self.assertEqual(b.num_columns, b2.num_columns)  # row key column is added back
         self.assertEqual(b.num_rows, b2.num_rows)
         self.assertEqual(b.shape, b2.shape)
@@ -44,7 +44,7 @@ class BatchTest(unittest.TestCase):
     def test_from_pyarrow(self):
         d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.Batch.from_pyarrow(rb)
+        b = kt.batch(rb)
         self.assertEqual(len(d), b.num_columns)
         self.assertEqual(len(d["0"]), b.num_rows)
         self.assertEqual((len(d["0"]), len(d)), b.shape)
@@ -52,52 +52,47 @@ class BatchTest(unittest.TestCase):
     def test_row_selection(self):
         d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.Batch.from_pyarrow(rb)
+        b = kt.batch(rb)
+
+        self.assertTrue(isinstance(b[:], kt.RowSlicedDataView))
 
         # test max row selection
-        out = b.to_pyarrow(rows=2)
+        out = b[:2].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(1, out["0"][0].as_py())
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection
-        out = b.to_pyarrow(rows=(1, 3))
+        out = b[1:3].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(2, out["0"][0].as_py())
         self.assertEqual(3, out["0"][1].as_py())
 
-        # test range row selection with None as start
-        out = b.to_pyarrow(rows=(None, 2))
-        self.assertEqual(2, len(out.columns))
-        self.assertEqual(2, len(out))
-        self.assertEqual(1, out["0"][0].as_py())
-        self.assertEqual(2, out["0"][1].as_py())
-
         # test range row selection with None as end
-        out = b.to_pyarrow(rows=(2, None))
+        out = b[2:].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(3, out["0"][0].as_py())
         self.assertEqual(4, out["0"][1].as_py())
 
         # test range row selection with None,None
-        out = b.to_pyarrow(rows=(None, None))
+        out = b[:].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
 
         # test invalid row selection raises
-        with self.assertRaises(IndexError):
-            b.to_pyarrow(rows="foo")
+        with self.assertRaises(TypeError):
+            b["foo"].to_pyarrow()
 
     def test_column_selection(self):
         d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0], "2": ["a", "b", "c", "d"]}
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.Batch.from_pyarrow(rb)
+        b = kt.batch(rb)
 
         # test individual column selection
-        out = b.to_pyarrow(columns=[1])
+        out = b[:][[1]].to_pyarrow()
         self.assertEqual(1, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -105,7 +100,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(1.0, out["1"][0].as_py())
 
         # test list column selection
-        out = b.to_pyarrow(columns=[2, 0])
+        out = b[:][[2, 0]].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         self.assertEqual(["2", "0"], out.schema.names)
@@ -114,7 +109,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(1, out["0"][0].as_py())
 
         # test range column selection
-        out = b.to_pyarrow(columns=(0, 1))
+        out = b[:][0:1].to_pyarrow()
         self.assertEqual(1, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -123,7 +118,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection with None as start
-        out = b.to_pyarrow(columns=(None, 2))
+        out = b[:][:2].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -132,7 +127,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection with None as end
-        out = b.to_pyarrow(columns=(1, None))
+        out = b[:][1:].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -140,27 +135,159 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(1.0, out[0][0].as_py())
 
         # test range column selection with None,None
-        out = b.to_pyarrow(columns=(None, None))
+        out = b[:][:].to_pyarrow()
         self.assertEqual(3, len(out.columns))
         self.assertEqual(4, len(out))
 
         # test selection by name
-        out = b.to_pyarrow(columns=["0", "2"])
+        out = b[:][["0", "2"]].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
             print(out["1"])
         self.assertEqual("2", out.schema.names[1])
 
+        # test invalid column selection raises
+        with self.assertRaises(TypeError):
+            b[:]["foo"].to_pyarrow()
+
+        with self.assertRaises(IndexError):
+            b[:][["foo"]].to_pyarrow()
+
+
+class MockSingleBatchDataSource:
+    def __init__(self, data_dict):
+        self._table = pa.Table.from_pydict(data_dict)
+        self._batch = pa.RecordBatch.from_pydict(data_dict)
+
+    @property
+    def schema(self):
+        return self._table.schema
+
+    def close(self):
+        pass
+
+    @property
+    def num_rows(self):
+        return len(self._table)
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        if idx != 0:
+            raise KeyError()
+        return self._batch
+
+    def to_arrow_table(self):
+        return self._table
+
+
+class TableTest(unittest.TestCase):
+    def test_row_selection(self):
+        d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
+        b = kat.ArrowReadTable(MockSingleBatchDataSource(d))
+
+        self.assertTrue(isinstance(b[:], kt.RowSlicedDataView))
+
+        # test max row selection
+        out = b[:2].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(2, len(out))
+        self.assertEqual(1, out["0"][0].as_py())
+        self.assertEqual(2, out["0"][1].as_py())
+
+        # test range row selection
+        out = b[1:3].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(2, len(out))
+        self.assertEqual(2, out["0"][0].as_py())
+        self.assertEqual(3, out["0"][1].as_py())
+
+        # test range row selection with None as end
+        out = b[2:].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(2, len(out))
+        self.assertEqual(3, out["0"][0].as_py())
+        self.assertEqual(4, out["0"][1].as_py())
+
+        # test range row selection with None,None
+        out = b[:].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(4, len(out))
+
         # test invalid row selection raises
-        with self.assertRaises(IndexError):
-            b.to_pyarrow(columns="foo")
+        with self.assertRaises(TypeError):
+            b["foo"].to_pyarrow()
+
+    def test_column_selection(self):
+        d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0], "2": ["a", "b", "c", "d"]}
+        b = kat.ArrowReadTable(MockSingleBatchDataSource(d))
+
+        self.assertTrue(isinstance(b[:][:], kt.SlicedDataView))
+
+        # test individual column selection
+        out = b[:][[1]].to_pyarrow()
+        self.assertEqual(1, len(out.columns))
+        self.assertEqual(4, len(out))
+        with self.assertRaises(KeyError):
+            print(out["0"])
+        self.assertEqual(1.0, out["1"][0].as_py())
+
+        # test list column selection
+        out = b[:][[2, 0]].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(4, len(out))
+        self.assertEqual(["2", "0"], out.schema.names)
+        with self.assertRaises(KeyError):
+            print(out["1"])
+        self.assertEqual(1, out["0"][0].as_py())
+
+        # test range column selection
+        out = b[:][0:1].to_pyarrow()
+        self.assertEqual(1, len(out.columns))
+        self.assertEqual(4, len(out))
+        with self.assertRaises(KeyError):
+            print(out["2"])
+        self.assertEqual(1, out["0"][0].as_py())
+        self.assertEqual(2, out["0"][1].as_py())
+
+        # test range row selection with None as start
+        out = b[:][:2].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(4, len(out))
+        with self.assertRaises(KeyError):
+            print(out["2"])
+        self.assertEqual(1, out["0"][0].as_py())
+        self.assertEqual(2, out["0"][1].as_py())
+
+        # test range row selection with None as end
+        out = b[:][1:].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(4, len(out))
+        with self.assertRaises(KeyError):
+            print(out["0"])
+        self.assertEqual(1.0, out[0][0].as_py())
+
+        # test range column selection with None,None
+        out = b[:][:].to_pyarrow()
+        self.assertEqual(3, len(out.columns))
+        self.assertEqual(4, len(out))
+
+        # test selection by name
+        out = b[:][["0", "2"]].to_pyarrow()
+        self.assertEqual(2, len(out.columns))
+        self.assertEqual(4, len(out))
+        with self.assertRaises(KeyError):
+            print(out["1"])
+        self.assertEqual("2", out.schema.names[1])
+
+        # test invalid column selection raises
+        with self.assertRaises(TypeError):
+            b[:]["foo"].to_pyarrow()
 
         with self.assertRaises(IndexError):
-            b.to_pyarrow(columns=["foo"])
-
-
-# TODO: test table by mocking data sink
+            b[:][["foo"]].to_pyarrow()
 
 
 class SentinelReplacementTest(unittest.TestCase):
@@ -191,7 +318,7 @@ class SentinelReplacementTest(unittest.TestCase):
         d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
         rb = pa.RecordBatch.from_pydict(d)
         self.assertEqual(pa.int64(), rb.schema[0].type)
-        b = kt.Batch.from_pyarrow(rb)
+        b = kt.batch(rb)
 
         for s in ["min", "max", 42]:
             out = b.to_pyarrow(sentinel=s)
@@ -216,7 +343,7 @@ class SentinelReplacementTest(unittest.TestCase):
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, np.nan, 4.0]
         df["2"] = [[1, 2, 3], [0, 3, 2], [6, 5, 4], [4, 3, 2]]
-        b = kt.Batch.from_pandas(df, sentinel=1)
+        b = kt.batch(df, sentinel=1)
         p = b.to_pyarrow()
         d = p.to_pydict()
         self.assertEqual(pa.int64(), p.schema[1].type)

@@ -93,19 +93,19 @@ class ArrowBatch(kta.Batch):
 
     def to_pandas(
         self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
+        rows: Optional[slice] = None,
+        columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_data_to_pandas_df(self.to_pyarrow(rows, columns, sentinel))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel, rows, columns))
 
     def to_pyarrow(
         self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
+        rows: Optional[slice] = None,
+        columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> pa.RecordBatch:
         batch = self._batch
 
@@ -147,19 +147,19 @@ class ArrowReadTable(kta.ReadTable):
 
     def to_pandas(
         self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
+        rows: Optional[slice] = None,
+        columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
-        return kap.arrow_data_to_pandas_df(self.to_pyarrow(rows, columns, sentinel))
+        return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel, rows, columns))
 
     def to_pyarrow(
         self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
         sentinel: Optional[Union[str, int]] = None,
+        rows: Optional[slice] = None,
+        columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> pa.Table:
         table = self._source.to_arrow_table()
 
@@ -205,7 +205,7 @@ class ArrowReadTable(kta.ReadTable):
         return f"{__class__}(schema={self._source.schema}, data={str(self)})"
 
 
-class ArrowWriteTable(kta.WriteTable):
+class _ArrowWriteTableImpl(kta.WriteTable):
 
     _MAX_NUM_BYTES_PER_BATCH = (
         1 << 64
@@ -256,7 +256,7 @@ class ArrowWriteTable(kta.WriteTable):
 
         return self._last_batch.schema
 
-    def append(self, batch: ArrowBatch):
+    def _append(self, batch: ArrowBatch):
         self._last_batch = batch._batch
         self._num_batches += 1
         self._sink.write(batch._batch)
@@ -282,6 +282,34 @@ class ArrowWriteTable(kta.WriteTable):
         return f"{__class__}(schema={schema}, num_batches={self.num_batches})"
 
 
+class ArrowWriteTable(_ArrowWriteTableImpl):
+    def __init__(
+        self,
+        sink,
+        data: Union["pandas.DataFrame", pa.Table],
+        sentinel: Optional[Union[str, int]] = None,
+    ):
+        super.__init__(sink)
+        self._put_table(data, sentinel)
+
+
+class ArrowBatchWriteTable(_ArrowWriteTableImpl):
+    def __init__(self, sink):
+        super.__init__(sink)
+
+    def append(
+        self,
+        data: Union[ArrowBatch, "pandas.DataFrame", pa.RecordBatch],
+        sentinel: Optional[Union[str, int]] = None,
+    ):
+        if isinstance(data, ArrowBatch):
+            batch = data
+        else:
+            batch = ArrowBatch(data, sentinel)
+
+        _ArrowWriteTableImpl._append(self, batch)
+
+
 class ArrowBackend(kta._Backend):
     def __init__(self, sink_creator: LambdaType):
         """
@@ -297,6 +325,16 @@ class ArrowBackend(kta._Backend):
         self._sink_creator = sink_creator
         self._sinks = []
 
+    def batch_write_table(self) -> ArrowBatchWriteTable:
+        return ArrowBatchWriteTable(self._create_sink())
+
+    def write_table(
+        self,
+        data: Union["pandas.DataFrame", pa.Table],
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> ArrowWriteTable:
+        return ArrowWriteTable(self._create_sink(), data, sentinel)
+
     def batch(
         self,
         data: Union["pandas.DataFrame", pa.RecordBatch],
@@ -304,22 +342,10 @@ class ArrowBackend(kta._Backend):
     ) -> ArrowBatch:
         return ArrowBatch(data, sentinel)
 
-    def write_table(
-        self,
-        data: Optional[Union["pandas.DataFrame", pa.Table]] = None,
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> ArrowWriteTable:
-        if data is None:
-            return self._create_write_table()
-
-        write_table = self._create_write_table()
-        write_table._put_table(data, sentinel)
-        return write_table
-
-    def _create_write_table(self) -> ArrowWriteTable:
+    def _create_sink(self):
         new_sink = self._sink_creator()
         self._sinks.append(new_sink)
-        return ArrowWriteTable(new_sink)
+        return new_sink
 
     def close(self):
         """Closes all sinks that were opened in this session"""
@@ -330,31 +356,26 @@ class ArrowBackend(kta._Backend):
 def _select_rows(
     data: Union[pa.RecordBatch, pa.Table], selection
 ) -> Union[pa.RecordBatch, pa.Table]:
-    if isinstance(selection, int):
-        return data.slice(offset=0, length=selection)
-    elif isinstance(selection, tuple) and len(selection) == 2:
-        start = 0 if selection[0] is None else selection[0]
-        end = len(data) if selection[1] is None else selection[1]
-        return data.slice(offset=start, length=end - start)
+    if not isinstance(selection, slice):
+        raise IndexError(
+            f"Invalid row selection '{selection}' for '{data}', must be a slice object"
+        )
+
+    start, stop, stride = selection.indices(len(data))
+
+    if stride == 1:
+        return data.slice(offset=start, length=stop - start)
     else:
-        raise IndexError(f"Invalid row selection '{selection}' for '{data}'")
+        return data.take(list(range(start, stop, stride)))
 
 
 def _select_columns(
     data: Union[pa.RecordBatch, pa.Table], selection
 ) -> Union[pa.RecordBatch, pa.Table]:
     columns = []
-    if isinstance(selection, tuple) and len(selection) == 2:
-        start = 0 if selection[0] is None else selection[0]
-        end = len(data.schema.names) if selection[1] is None else selection[1]
+    if isinstance(selection, slice):
+        columns = list(range(*selection.indices(len(data.schema.names))))
 
-        if not 0 <= start < len(data.schema.names):
-            raise IndexError(f"Column index {start} out of bounds")
-
-        if not 0 <= end <= len(data.schema.names):
-            raise IndexError(f"Column index {end} out of bounds")
-
-        columns = list(range(start, end))
     elif isinstance(selection, list):
         schema = data.schema
         for col in selection:

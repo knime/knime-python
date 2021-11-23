@@ -67,170 +67,24 @@ class _Backend(ABC):
 
     @abstractmethod
     def write_table(
-        data: Optional[Union["pandas.DataFrame", "pyarrow.Table"]] = None,
+        data: Union["pandas.DataFrame", "pyarrow.Table"],
         sentinel: Optional[Union[str, int]] = None,
     ) -> "WriteTable":
+        pass
+
+    @abstractmethod
+    def batch_write_table(
+        sentinel: Optional[Union[str, int]] = None,
+    ) -> "BatchWriteTable":
         pass
 
 
 _backend: _Backend = None  # The globally instanciated backend for creating tables and batches
 
 
-class Batch(ABC):
+class _Tabular(ABC):
     """
-    A Batch is a part of a table containing data. A Batch should always fit into the system memory,
-    thus all methods accessing the data will be processed immediately and synchronously.
-    """
-
-    @property
-    def shape(self) -> Tuple[int, int]:
-        """ 
-        Returns a tuple in the form (numRows, numColumns) representing the shape of this Batch.
-        """
-        return (self.num_rows, self.num_columns)
-
-    @property
-    @abstractmethod
-    def num_rows(self) -> int:
-        """Return the number of rows in the Batch."""
-        pass
-
-    @property
-    @abstractmethod
-    def num_columns(self) -> int:
-        """Return the number of columns in the Batch."""
-        pass
-
-    @property
-    @abstractmethod
-    def column_names(self) -> List[str]:
-        """
-        Return the list of column names
-        """
-        pass
-
-    @abstractmethod
-    def to_pandas(
-        self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> "pandas.DataFrame":
-        """
-        Access this Batch as a pandas.DataFrame.
-
-        Example:
-
-        >>> for batch in readTable.batches():
-        ...     df = batch.to_pandas(rows=(0,20), columns=(2,6))
-        ...     assert df.shape == (20, 4)
-
-        Arguments:
-            rows: 
-                Specify one of the following to restrict which rows are returned:
-                    - An integer describing the number of rows to use, starting at the beginning.
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of rows that will be returned. 
-                      Pass None as start or end to leave it at the default.
-            columns: 
-                Specify one of the following to restrict which columns are returned:
-                    - A list of column indices
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of columns that will be returned. 
-                      Pass None as start or end to leave it at the default.
-                    - A list of column names
-            sentinel: 
-                Replace missing values in integral columns by the given value, one of:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - An integer value that should be inserted for each missing value
-
-        Raises:
-            IndexError: If rows or columns were requested outside of the available shape
-        """
-        pass
-
-    @abstractmethod
-    def to_pyarrow(
-        self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> "pyarrow.RecordBatch":
-        """
-        Access this Batch as a pyarrow.RecordBatch.
-
-        Example:
-
-        >>> for batch in readTable.batches():
-        ...     arrow_batch = batch.to_pyarrow(rows=(0,20), columns=(2,6))
-        ...     assert len(arrow_batch) == 20
-
-        Arguments:
-            rows: 
-                Specify one of the following to restrict which rows are returned:
-                    - An integer describing the number of rows to use, starting at the beginning.
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of rows that will be returned. 
-                      Pass None as start or end to leave it at the default.
-            columns: 
-                Specify one of the following to restrict which columns are returned:
-                    - A list of column indices
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of columns that will be returned. 
-                      Pass None as start or end to leave it at the default.
-                    - A list of column names
-            sentinel: 
-                Replace missing values in integral columns by the given value, one of:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - An integer value that should be inserted for each missing value
-
-        Raises:
-            IndexError: If rows or columns were requested outside of the available shape
-        """
-        pass
-
-    @staticmethod
-    def from_pandas(
-        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
-    ) -> "Batch":
-        """
-        Create a Batch from a pandas.DataFrame.
-
-        Arguments:
-            data:
-                A pandas.DataFrame.
-            sentinel: 
-                Interpret the following values in integral columns as missing value:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - a special integer value that should be interpreted as missing value
-        """
-        return _backend.batch(data, sentinel)
-
-    @staticmethod
-    def from_pyarrow(
-        data: "pyarrow.RecordBatch", sentinel: Optional[Union[str, int]] = None
-    ) -> "Batch":
-        """
-        Create a Batch from a pyarrow.RecordBatch.
-
-        Arguments:
-            data:
-                A pyarrow.RecordBatch.
-            sentinel: 
-                Interpret the following values in integral columns as missing value:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - a special integer value that should be interpreted as missing value
-        """
-        return _backend.batch(data, sentinel)
-
-
-class Table(ABC):
-    """
-    A KNIME Table provides the general functionality to access KNIME tabular data which might be larger than the 
-    system's memory and/or not yet completely written to disk.
-
-    The underlying data is available in batches of rows. At least one Batch of this Table is available, providing
-    immediate access to the number of columns and the column names.
+    Baseclass for tabular shaped data.
     """
 
     @property
@@ -264,11 +118,219 @@ class Table(ABC):
 
     @property
     @abstractmethod
-    def column_names(self) -> List[str]:
+    def column_names(self) -> Tuple[str, ...]:
         """
         Return the list of column names
         """
         pass
+
+
+class _SlicedTabular(_Tabular):
+    """
+    An instance of sliced data that can not be sliced any further.
+    """
+
+    def __init__(
+        self,
+        delegate: _Tabular,
+        row_slice: slice,
+        column_slice: Union[slice, List[int], List[str]],
+    ):
+        if not isinstance(row_slice, slice):
+            raise TypeError(
+                f"Rows can only be sliced by slice objects but got {type(slice)}"
+            )
+        self._row_slice = row_slice
+        self._column_slice = column_slice
+        if isinstance(column_slice, slice):
+            self._column_names = delegate.column_names[column_slice]
+        elif isinstance(column_slice, list) or isinstance(column_slice, tuple):
+            if len(column_slice) == 0:
+                raise IndexError("Empty column selection is invalid")
+            elif isinstance(column_slice[0], int):
+                self._column_names = [delegate.column_names[i] for i in column_slice]
+            elif isinstance(column_slice[0], str):
+                self._column_names = column_slice
+        else:
+            raise TypeError(f"Columns cannot be sliced by {type(column_slice)}")
+
+        self._num_rows = len(range(*row_slice.indices(delegate.num_rows)))
+        self._delegate = delegate
+
+    @property
+    def num_rows(self) -> int:
+        """
+        Return the number of rows in the Table. 
+        
+        If the Table is not completely available yet because Batches are still appended to it, 
+        querying the number of rows blocks until all data is available.
+        """
+        return self._num_rows
+
+    @property
+    def num_columns(self) -> int:
+        """
+        Return the number of columns in the Table.
+        """
+        return len(self._column_names)
+
+    @property
+    def column_names(self) -> Tuple[str, ...]:
+        """
+        Return the list of column names
+        """
+        return self._column_names
+
+
+class _ReadData(ABC):
+    """
+    Baseclass of data that can be converted to Pandas or PyArrow
+    """
+
+    @abstractmethod
+    def to_pandas(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> "pandas.DataFrame":
+        """
+        Access the tabular data as a pandas.DataFrame.
+
+        ### Arguments:
+        - sentinel:  Replace missing values in integral columns by the given value, one of:
+                - "min" min int32 or min int64 depending on the type of the column
+                - "max" max int32 or max int64 depending on the type of the column
+                - An integer value that should be inserted for each missing value
+
+        ### Raises:
+        - IndexError: If rows or columns were requested outside of the available shape
+        """
+        pass
+
+    @abstractmethod
+    def to_pyarrow(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
+        """
+        Access this tabular data as a pyarrow.RecordBatch or pyarrow.Table. The returned
+        type depends on the type of the underlying object. When called on a ReadTable, 
+        returns a pyarrow.Table.
+
+        ### Arguments:
+        - sentinel: Replace missing values in integral columns by the given value, one of:
+            - "min" min int32 or min int64 depending on the type of the column
+            - "max" max int32 or max int64 depending on the type of the column
+            - An integer value that should be inserted for each missing value
+
+        ### Raises:
+        - IndexError: If rows or columns were requested outside of the available shape
+        """
+        pass
+
+
+class SlicedDataView(_SlicedTabular, _ReadData):
+    """
+    A sliced view of tabular data. The data can be converted to pandas.DataFrame or to pyarrow,
+    but not be sliced any further.
+    """
+
+    def __init__(self, delegate, row_slice, column_slice):
+        super().__init__(delegate, row_slice, column_slice)
+
+    def to_pandas(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> "pandas.DataFrame":
+        return self._delegate.to_pandas(sentinel, self._row_slice, self._column_slice)
+
+    def to_pyarrow(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
+        return self._delegate.to_pyarrow(sentinel, self._row_slice, self._column_slice)
+
+
+class RowSlicedDataView(_SlicedTabular, _ReadData):
+    """
+    A sliced view of tabular data. The data can be converted to pandas.DataFrame or to pyarrow,
+    and be sliced in the column direction.
+    """
+
+    def __init__(self, delegate, row_slice):
+        super().__init__(delegate, row_slice, slice(None))
+
+    def to_pandas(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> "pandas.DataFrame":
+        return self._delegate.to_pandas(sentinel, self._row_slice)
+
+    def to_pyarrow(
+        self, sentinel: Optional[Union[str, int]] = None,
+    ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
+        return self._delegate.to_pyarrow(sentinel, self._row_slice)
+
+    def __getitem__(
+        self, column_slice: Union[slice, List[int], List[str]]
+    ) -> SlicedDataView:
+        """
+        Create a row and column sliced view of this Batch, with slicing syntax similar to that of numpy arrays,
+        but columns can also be addressed as index lists or via a list of column names.
+
+        ### Arguments:
+        - column_slice: a slice object, a list of column indices, or a list of column names
+
+        ### Returns:
+        - a SlicedDataView that can be converted to pandas or pyarrow.
+
+        ### Examples:
+
+        Get the first 100 rows of columns 1,2,3,4:
+        >>> sliced_batch = batch[:100][1:5]
+
+        Get all rows of the columns "name" and "age":
+        >>> sliced_batch = batch[:][["name", "age"]]
+
+        The returned `sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
+        """
+        return SlicedDataView(self._delegate, self._row_slice, column_slice)
+
+
+class Batch(_Tabular, _ReadData):
+    """
+    A Batch is a part of a table containing data. A Batch should always fit into system memory,
+    thus all methods accessing the data will be processed immediately and synchronously.
+
+    It can be sliced before the data is accessed as pandas DataFrame or pyarrow.RecordBatch.
+    """
+
+    def __getitem__(self, row_slice: slice) -> RowSlicedDataView:
+        """
+        Create a row-sliced view of this Batch.
+
+        ### Arguments:
+        - row_slice: A slice object describing which row indices to use
+
+        ### Returns:
+        - a RowSlicedDataView that can be sliced along the column axis
+
+        ### Examples:
+
+        Get the first 100 rows of the batch
+        >>> sliced_batch = batch[:100]
+
+        Get every second row but skip the last ten
+        >>> sliced_batch = batch[:-10:2]
+
+        The returned `sliced_batches` can then be sliced in the column direction or they can be 
+        converted to pandas or pyarrow.
+        """
+        return RowSlicedDataView(self, row_slice)
+
+
+class _Table(_Tabular):
+    """
+    A KNIME Table provides the general functionality to access KNIME tabular data which might be larger than the 
+    system's memory and/or not yet completely written to disk.
+
+    The underlying data is available in batches of rows. At least one Batch of this Table is available, providing
+    immediate access to the number of columns and the column names.
+    """
 
     @property
     @abstractmethod
@@ -286,90 +348,11 @@ class Table(ABC):
         return self.num_batches
 
 
-class ReadTable(Table):
+class ReadTable(_Table, _ReadData):
     """
     A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory) 
     or split into row-wise Batches.
     """
-
-    @abstractmethod
-    def to_pandas(
-        self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> "pandas.DataFrame":
-        """
-        Convert the full table to a pandas.DataFrame. 
-
-        If the Table is not completely available yet because Batches are still appended to it, 
-        this method blocks until all data is available.
-
-        Attention: if the size of the table exceeds the system memory 
-
-        Example:
-
-        >>> df = batch.to_pandas(rows=(0,20), columns=(2,6))
-        ... df.shape == (20, 4)
-
-        Arguments:
-            rows: 
-                Specify one of the following to restrict which rows are returned:
-                    - An integer describing the number of rows to use, starting at the beginning.
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of rows that will be returned. 
-                      Pass None as start or end to leave it at the default.
-            columns: 
-                Specify one of the following to restrict which columns are returned:
-                    - A list of column indices
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of columns that will be returned. 
-                      Pass None as start or end to leave it at the default.
-                    - A list of column names
-            sentinel: 
-                Replace missing values in integral columns by the given value, one of:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - An integer value that should be inserted for each missing value
-
-        Raises:
-            IndexError: If rows or columns were requested outside of the available shape
-        """
-        pass
-
-    @abstractmethod
-    def to_pyarrow(
-        self,
-        rows: Optional[Union[int, Tuple[int, int]]] = None,
-        columns: Optional[Union[List[int], Tuple[int, int], List[str]]] = None,
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> "pyarrow.Table":
-        """
-        Access to the full Table as pyarrow.Table.
-
-        If the Table is not completely available yet because Batches are still appended to it, 
-        this method blocks until all data is available.
-
-        Arguments:
-            rows: 
-                Specify one of the following to restrict which rows are returned:
-                    - An integer describing the number of rows to use, starting at the beginning.
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of rows that will be returned. 
-                      Pass None as start or end to leave it at the default.
-            columns: 
-                Specify one of the following to restrict which columns are returned:
-                    - A list of column indices
-                    - A tuple describing start (inclusive) and end (exclusive) of the range of columns that will be returned. 
-                      Pass None as start or end to leave it at the default.
-                    - A list of column names
-            sentinel: 
-                Replace missing values in integral columns by the given value, one of:
-                    - "min" min int32 or min int64 depending on the type of the column
-                    - "max" max int32 or max int64 depending on the type of the column
-                    - An integer value that should be inserted for each missing value
-
-        Raises:
-            IndexError: If rows or columns were requested outside of the available shape
-        """
-        pass
 
     @abstractmethod
     def batches(self) -> Iterator[Batch]:
@@ -379,17 +362,74 @@ class ReadTable(Table):
         """
         pass
 
+    def __getitem__(self, row_slice: slice) -> RowSlicedDataView:
+        """
+        Create a row-sliced view of this ReadTable, using slicing syntax similar to that of numpy arrays.
 
-class WriteTable(Table):
+         ### Arguments:
+        - row_slice: A slice object describing which row indices to use
+
+        ### Returns:
+        - a RowSlicedDataView that can be sliced along the column axis
+
+        ### Examples:
+
+        Get the first 100 rows of the table
+        >>> sliced_table = table[:100]
+
+        Get every second row but skip the last ten
+        >>> sliced_table = table[:-10:2]
+
+        Get the first 100 rows of the table and then select column 1 and 3
+        >>> sliced_table = table[:100][[1,3]]
+
+        The returned `sliced_table` can then be sliced in the column direction or it can be 
+        converted to pandas or pyarrow.
+        """
+        return RowSlicedDataView(self, row_slice)
+
+
+class BatchWriteTable(_Table):
+    """
+    A table that can be filled batch by batch.
+    """
+
+    @staticmethod
+    def create() -> "BatchWriteTable":
+        """Create an empty BatchWriteTable"""
+        return _backend.batch_write_table()
+
+    @abstractmethod
+    def append(
+        self,
+        data: Union[Batch, "pandas.DataFrame", "pyarrow.RecordBatch"],
+        sentinel: Optional[Union[str, int]] = None,
+    ):
+        """
+        Appends a batch with the given data to the end of this Table. The number of columns, as well as their
+        data types, must match that of the previous batches in this Table.
+
+        ### Arguments:
+        - data: A Batch, a pandas.DataFrame or a pyarrow.RecordBatch
+        - sentinel: 
+          Only if data is a pandas.DataFrame or pyarrow.RecordBatch. 
+          Interpret the following values in integral columns as missing value:
+            - "min" min int32 or min int64 depending on the type of the column
+            - "max" max int32 or max int64 depending on the type of the column
+            - a special integer value that should be interpreted as missing value
+
+        ### Raise:
+        - ValueError:
+          If the new batch does not have the same columns as previous batches in this WriteTable.      
+        """
+        pass
+
+
+class WriteTable(_Table):
     """
     A Table that can be filled as a whole, or by appending individual batches. The data is serialized
     to disk batch by batch. Individual batches will be available to KNIME as soon as they are written.
     """
-
-    @staticmethod
-    def create() -> "WriteTable":
-        """Create an empty WriteTable"""
-        return _backend.write_table()
 
     @staticmethod
     def from_pandas(
@@ -398,14 +438,13 @@ class WriteTable(Table):
         """
         Create and fill the table with a pandas DataFrame
 
-        Arguments:
-        data:
-            A pandas.DataFrame
-        sentinel: 
-            Interpret the following values in integral columns as missing value:
-                - "min" min int32 or min int64 depending on the type of the column
-                - "max" max int32 or max int64 depending on the type of the column
-                - a special integer value that should be interpreted as missing value
+        ### Arguments:
+        - data: A pandas.DataFrame
+        - sentinel: 
+          Interpret the following values in integral columns as missing value:
+            - "min" min int32 or min int64 depending on the type of the column
+            - "max" max int32 or max int64 depending on the type of the column
+            - a special integer value that should be interpreted as missing value
         """
         return _backend.write_table(data, sentinel)
 
@@ -416,66 +455,56 @@ class WriteTable(Table):
         """
         Create and fill the table with a pyarrow.Table
         
-        Arguments:
-        data:
-            A pyarrow.RecordBatch
-        sentinel: 
-            Interpret the following values in integral columns as missing value:
-                - "min" min int32 or min int64 depending on the type of the column
-                - "max" max int32 or max int64 depending on the type of the column
-                - a special integer value that should be interpreted as missing value
+        ### Arguments:
+        - data: A pyarrow.RecordBatch
+        - sentinel: 
+          Interpret the following values in integral columns as missing value:
+            - "min" min int32 or min int64 depending on the type of the column
+            - "max" max int32 or max int64 depending on the type of the column
+            - a special integer value that should be interpreted as missing value
         """
         return _backend.write_table(data, sentinel)
 
-    @abstractmethod
-    def append(self, batch: Batch):
-        """
-        Appends the given batch to the end of this Table. The number of columns as well as their
-        data types must match that of the previous batches in this Table.
-
-        Raise:
-            ValueError:
-                If the new batch does not have the same columns as previous batches in this 
-                WriteTable.      
-        """
-        pass
-
-
-def batch(
-    data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
-    sentinel: Optional[Union[str, int]] = None,
-) -> Batch:
-    """
-    Factory method to create a Batch given a pandas.DataFrame or a pyarrow.RecordBatch.
-    Internally uses its from_pandas or from_pyarrow methods.
-
-    Arguments:
-        data:
-            A pandas.DataFrame or a pyarrow.RecordBatch
-        sentinel: 
-            Interpret the following values in integral columns as missing value:
-                - "min" min int32 or min int64 depending on the type of the column
-                - "max" max int32 or max int64 depending on the type of the column
-                - a special integer value that should be interpreted as missing value
-    """
-    return _backend.batch(data, sentinel)
-
 
 def write_table(
-    data: Optional[Union["pandas.DataFrame", "pyarrow.Table"]] = None,
+    data: Union["pandas.DataFrame", "pyarrow.Table"],
     sentinel: Optional[Union[str, int]] = None,
 ) -> WriteTable:
     """
-    Factory method to create a WriteTable given no data, a pandas.DataFrame, or a pyarrow.Table.
+    Factory method to create a WriteTable given a pandas.DataFrame or a pyarrow.Table.
     Internally creates a WriteTable using its create, from_pandas or from_pyarrow methods respectively.
 
-    Arguments:
-        data:
-            None, a pandas.DataFrame or a pyarrow.RecordBatch
-        sentinel: 
-            Interpret the following values in integral columns as missing value:
-                - "min" min int32 or min int64 depending on the type of the column
-                - "max" max int32 or max int64 depending on the type of the column
-                - a special integer value that should be interpreted as missing value
+    ### Arguments:
+    - data: A pandas.DataFrame or a pyarrow.Table
+    - sentinel: 
+      Interpret the following values in integral columns as missing value:
+        - "min" min int32 or min int64 depending on the type of the column
+        - "max" max int32 or max int64 depending on the type of the column
+        - a special integer value that should be interpreted as missing value
     """
     return _backend.write_table(data, sentinel)
+
+
+def batch_write_table() -> BatchWriteTable:
+    """
+    Factory method to create an empty BatchWriteTable that can be filled batch by batch.
+    """
+    return _backend.batch_write_table()
+
+
+def batch(
+    data: Union["pandas.DataFrame", "pyarrow.Table"],
+    sentinel: Optional[Union[str, int]] = None,
+) -> Batch:
+    """
+    Create a Batch from the given data.
+
+    ### Arguments:
+    - data: A pandas.DataFrame or a pyarrow.RecordBatch
+    - sentinel: 
+      Interpret the following values in integral columns as missing value:
+        - "min" min int32 or min int64 depending on the type of the column
+        - "max" max int32 or max int64 depending on the type of the column
+        - a special integer value that should be interpreted as missing value
+    """
+    return _backend.batch(data, sentinel)
