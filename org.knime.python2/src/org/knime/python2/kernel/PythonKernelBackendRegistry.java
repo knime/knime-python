@@ -63,7 +63,7 @@ import org.knime.core.node.NodeLogger;
  * org.knime.python3 known to org.knime.python2 without introducing a (circular) dependency to org.knime.python3. The
  * corresponding extension point is not intended to be extended by implementations other than
  * {@code org.knime.python2.kernel.Python2KernelBackendFactory} and
- * {@code org.knime.python3for2.Python3KernelBackendFactory}.
+ * {@code org.knime.python3.scripting.Python3KernelBackendFactory}.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
@@ -136,7 +136,7 @@ public final class PythonKernelBackendRegistry {
             /**
              * The (reserved) type of the new (org.knime.python3) Python kernel back end.
              */
-            PYTHON3("org.knime.python3for2.Python3KernelBackendFactory");
+            PYTHON3("org.knime.python3.scripting.Python3KernelBackendFactory");
 
         /**
          * @param identifier The identifier of the back end.
