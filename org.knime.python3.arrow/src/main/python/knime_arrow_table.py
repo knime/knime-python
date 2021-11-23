@@ -89,6 +89,8 @@ class ArrowBatch(kta.Batch):
         if sentinel is not None:
             self._batch = kat.sentinel_to_missing_value(self._batch, sentinel=sentinel)
 
+        self._batch = kat.wrap_primitive_arrays(self._batch)
+
     def to_pandas(
         self,
         rows: Optional[Union[int, Tuple[int, int]]] = None,
@@ -112,6 +114,8 @@ class ArrowBatch(kta.Batch):
 
         if rows is not None:
             batch = _select_rows(batch, rows)
+
+        batch = kat.unwrap_primitive_arrays(batch)
 
         if sentinel is not None:
             batch = kat.insert_sentinel_for_missing_values(batch, sentinel)
@@ -164,6 +168,8 @@ class ArrowReadTable(kta.ReadTable):
 
         if rows is not None:
             table = _select_rows(table, rows)
+
+        table = kat.unwrap_primitive_arrays(table)
 
         if sentinel is not None:
             table = kat.insert_sentinel_for_missing_values(table, sentinel)
@@ -233,6 +239,7 @@ class ArrowWriteTable(kta.WriteTable):
         for b in batches:
             if sentinel is not None:
                 b = kat.sentinel_to_missing_value(b, sentinel)
+            b = kat.wrap_primitive_arrays(b)
             self._sink.write(b)
 
     def _split_table(self, data: pa.Table):

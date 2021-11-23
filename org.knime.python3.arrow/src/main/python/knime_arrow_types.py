@@ -358,19 +358,17 @@ def storage_to_extension(
 def insert_sentinel_for_missing_values(
     data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
-    storage_data = to_storage_data(data)
     arrays = []
-    for i, column in enumerate(storage_data):
+    for column in data:
         # TODO: list/struct of integral data
         if pa.types.is_integer(column.type) and column.null_count != 0:
             column = _insert_sentinels_for_missing_values_in_int_array(column, sentinel)
         arrays.append(column)
 
     if isinstance(data, pa.RecordBatch):
-        result = pa.RecordBatch.from_arrays(arrays, schema=storage_data.schema)
+        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
     else:
-        result = pa.Table.from_arrays(arrays, schema=storage_data.schema)
-    return storage_to_extension(result, data.schema)
+        return pa.Table.from_arrays(arrays, schema=data.schema)
 
 
 def _sentinel_value(dtype: pa.DataType, sentinel: Union[str, int]) -> int:
@@ -392,18 +390,16 @@ def _insert_sentinels_for_missing_values_in_int_array(
 def sentinel_to_missing_value(
     data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
-    storage_data = to_storage_data(data)
     arrays = []
-    for i, column in enumerate(storage_data):
+    for column in data:
         # TODO: list/struct of integral data
         if pa.types.is_integer(column.type):
             column = _sentinel_to_missing_value_in_int_array(column, sentinel)
         arrays.append(column)
     if isinstance(data, pa.RecordBatch):
-        result = pa.RecordBatch.from_arrays(arrays, schema=storage_data.schema)
+        return pa.RecordBatch.from_arrays(arrays, schema=data.schema)
     else:
-        result = pa.Table.from_arrays(arrays, schema=storage_data.schema)
-    return storage_to_extension(result, data.schema)
+        return pa.Table.from_arrays(arrays, schema=data.schema)
 
 
 def _sentinel_to_missing_value_in_int_array(
@@ -455,7 +451,7 @@ class LogicalTypeExtensionType(pa.ExtensionType):
 
     @staticmethod
     def version():
-        """ The version is stored in the Arrow field's metadata and must match the Java version of the extension type """
+        """The version is stored in the Arrow field's metadata and must match the Java version of the extension type"""
         return 0
 
 
@@ -671,3 +667,86 @@ def knime_extension_array(array):
     py_list = [storage_fn(x) for x in array]
     storage_array = pa.array(py_list, type=storage_type)
     return _get_arrow_storage_to_ext_fn(dtype)(storage_array)
+
+
+def _knime_primitive_type(name):
+    return '{"value_factory_class":"org.knime.core.data.v2.value.' + name + '"}'
+
+
+_arrow_to_knime_primitive_types = {
+    pa.int32(): _knime_primitive_type("IntValueFactory"),
+    pa.int64(): _knime_primitive_type("LongValueFactory"),
+    pa.string(): _knime_primitive_type("StringValueFactory"),
+    pa.bool_(): _knime_primitive_type("BooleanValueFactory"),
+    pa.float64(): _knime_primitive_type("DoubleValueFactory"),
+}
+
+_row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
+
+
+def _is_primitive_type(dtype):
+    return is_value_factory_type(dtype) and (
+        dtype.logical_type is _row_key_type
+        or dtype.logical_type in _arrow_to_knime_primitive_types.values()
+    )
+
+
+def _unwrap_primitive_knime_extension_array(
+    array: Union[pa.Array, pa.ChunkedArray]
+) -> Union[pa.Array, pa.ChunkedArray]:
+    """
+    Unpacks array if it holds primitive types (int, double, string and so on). Otherwise returns the unchanged array.
+
+    Args:
+        array: Can be either a pa.Array or a pa.ChunkedArray
+    """
+    if _is_primitive_type(array.type):
+        return _apply_to_array(array, lambda a: a.storage)
+    else:
+        return array
+
+
+def unwrap_primitive_arrays(
+    table: Union[pa.Table, pa.RecordBatch]
+) -> Union[pa.Table, pa.RecordBatch]:
+    arrays = [
+        _unwrap_primitive_knime_extension_array(column) for column in table.columns
+    ]
+    if isinstance(table, pa.Table):
+        return pa.Table.from_arrays(arrays, names=table.column_names)
+    else:
+        return pa.RecordBatch.from_arrays(arrays, names=table.schema.names)
+
+
+def _get_wrapped_type(dtype, is_row_key):
+    if is_row_key and dtype is pa.string():
+        return LogicalTypeExtensionType(
+            kt.get_converter(_row_key_type), dtype, _row_key_type
+        )
+    elif not isinstance(dtype, pa.ExtensionType) and dtype in _arrow_to_knime_primitive_types:
+        logical_type = _arrow_to_knime_primitive_types[dtype]
+        return LogicalTypeExtensionType(
+            kt.get_converter(logical_type), dtype, logical_type
+        )
+    else:
+        return None
+
+
+def _wrap_primitive_array(
+    array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool
+) -> Union[pa.Array, pa.ChunkedArray]:
+    wrapped_type = _get_wrapped_type(array.type, is_row_key)
+    if wrapped_type is None:
+        return array
+    else:
+        return pa.ExtensionArray.from_storage(wrapped_type, array)
+
+
+def wrap_primitive_arrays(
+    table: Union[pa.Table, pa.RecordBatch]
+) -> Union[pa.Table, pa.RecordBatch]:
+    arrays = [_wrap_primitive_array(column, i == 0) for i, column in enumerate(table)]
+    if isinstance(table, pa.Table):
+        return pa.Table.from_arrays(arrays, names=table.column_names)
+    else:
+        return pa.RecordBatch.from_arrays(arrays, names=table.schema.names)

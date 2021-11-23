@@ -219,7 +219,7 @@ class SentinelReplacementTest(unittest.TestCase):
         b = kt.Batch.from_pandas(df, sentinel=1)
         p = b.to_pyarrow()
         d = p.to_pydict()
-        self.assertEqual(pa.int64(), p.schema[1].type.storage_type)
+        self.assertEqual(pa.int64(), p.schema[1].type)
         self.assertFalse(p["0"][0].is_valid)
 
         for s in ["min", "max", 42]:
@@ -238,7 +238,7 @@ class SentinelReplacementTest(unittest.TestCase):
             roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
             roundtrip_dict = roundtrip_batch_pa.to_pydict()
             self.assertEqual(
-                pa.int64(), roundtrip_batch_pa.schema[1].type.storage_type
+                pa.int64(), roundtrip_batch_pa.schema[1].type
             )  # is a logical type because from_pandas wraps known types
             self.assertEqual(d, roundtrip_dict)
 

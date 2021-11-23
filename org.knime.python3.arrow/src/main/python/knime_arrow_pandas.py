@@ -95,59 +95,6 @@ _pd_to_arrow_type_map = {
     bool: pa.bool_(),
 }
 
-_pd_to_extension_type_map = {
-    np.int32: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.int32(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.IntValueFactory"}',
-    ),
-    int: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.int32(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.IntValueFactory"}',
-    ),
-    np.int64: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.int64(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.LongValueFactory"}',
-    ),
-    np.uint32: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.uint32(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.LongValueFactory"}',
-    ),
-    np.int8: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.int8(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.ByteValueFactory"}',
-    ),
-    np.float32: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.float32(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.DoubleValueFactory"}',
-    ),
-    np.float64: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.float64(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.DoubleValueFactory"}',
-    ),
-    str: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.string(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.StringValueFactory"}',
-    ),
-    np.bool_: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.bool_(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.BooleanValueFactory"}',
-    ),
-    bool: kat.LogicalTypeExtensionType(
-        kt.FallbackPythonValueFactory(),
-        pa.bool_(),
-        '{"value_factory_class":"org.knime.core.data.v2.value.BooleanValueFactory"}',
-    ),
-}
-
 
 def _to_arrow_type(first_value, is_row_key_column: bool = False):
     # converter = kg.gateway().org.knime.core.data.v2.DefaultValueFactories
@@ -159,8 +106,6 @@ def _to_arrow_type(first_value, is_row_key_column: bool = False):
             pa.string(),
             '{"value_factory_class":"org.knime.core.data.v2.value.DefaultRowKeyValueFactory"}',
         )
-    elif t in _pd_to_extension_type_map:
-        return _pd_to_extension_type_map[t]
     elif t == list or t == np.ndarray:
         inner = _to_arrow_type(first_value[0])
         return pa.list_(inner)
