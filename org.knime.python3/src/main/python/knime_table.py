@@ -268,51 +268,6 @@ class SlicedDataView(_SlicedTabular, _ReadData):
         return self._delegate.to_pyarrow(sentinel, self._row_slice, self._column_slice)
 
 
-class RowSlicedDataView(_SlicedTabular, _ReadData):
-    """
-    A sliced view of tabular data. The data can be converted to pandas.DataFrame or to pyarrow,
-    and be sliced in the column direction.
-    """
-
-    def __init__(self, delegate, row_slice):
-        super().__init__(delegate, row_slice, slice(None))
-
-    def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
-    ) -> "pandas.DataFrame":
-        return self._delegate.to_pandas(sentinel, self._row_slice)
-
-    def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None,
-    ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
-        return self._delegate.to_pyarrow(sentinel, self._row_slice)
-
-    def __getitem__(
-        self, column_slice: Union[slice, List[int], List[str]]
-    ) -> SlicedDataView:
-        """
-        Create a row and column sliced view of this Batch, with slicing syntax similar to that of numpy arrays,
-        but columns can also be addressed as index lists or via a list of column names.
-
-        ### Arguments:
-        - column_slice: a slice object, a list of column indices, or a list of column names
-
-        ### Returns:
-        - a SlicedDataView that can be converted to pandas or pyarrow.
-
-        ### Examples:
-
-        Get the first 100 rows of columns 1,2,3,4:
-        >>> sliced_batch = batch[:100][1:5]
-
-        Get all rows of the columns "name" and "age":
-        >>> sliced_batch = batch[:][["name", "age"]]
-
-        The returned `sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
-        """
-        return SlicedDataView(self._delegate, self._row_slice, column_slice)
-
-
 class Batch(_Tabular, _ReadData):
     """
     A Batch is a part of a table containing data. A Batch should always fit into system memory,
@@ -321,28 +276,36 @@ class Batch(_Tabular, _ReadData):
     It can be sliced before the data is accessed as pandas DataFrame or pyarrow.RecordBatch.
     """
 
-    def __getitem__(self, row_slice: slice) -> RowSlicedDataView:
+    def __getitem__(
+        self, slicing: Union[slice, Tuple[slice, Union[slice, List[int], List[str]]]]
+    ) -> SlicedDataView:
         """
-        Create a row-sliced view of this Batch.
+        Create a row and column sliced view of this Batch, with slicing syntax similar to that of numpy arrays,
+        but columns can also be addressed as index lists or via a list of column names.
 
         ### Arguments:
-        - row_slice: A slice object describing which row indices to use
+        - row_slice: a slice object describing which rows to use
+        - column_slice: Optional. A slice object, a list of column indices, or a list of column names
 
         ### Returns:
-        - a RowSlicedDataView that can be sliced along the column axis
+        - a SlicedDataView that can be converted to pandas or pyarrow.
 
         ### Examples:
 
-        Get the first 100 rows of the batch
-        >>> sliced_batch = batch[:100]
+        Get the first 100 rows of columns 1,2,3,4:
+        >>> sliced_batch = batch[:100, 1:5]
 
-        Get every second row but skip the last ten
-        >>> sliced_batch = batch[:-10:2]
+        Get all rows of the columns "name" and "age":
+        >>> sliced_batch = batch[:, ["name", "age"]]
 
-        The returned `sliced_batches` can then be sliced in the column direction or they can be 
-        converted to pandas or pyarrow.
+        The returned `sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
         """
-        return RowSlicedDataView(self, row_slice)
+        if isinstance(slicing, Tuple):
+            if not 0 < len(slicing) <= 2:
+                raise TypeError("Invalid slicing of 2-dimensional batch")
+            return SlicedDataView(self, slicing[0], slicing[1])
+        else:
+            return SlicedDataView(self, slicing, slice(None))
 
 
 class _Table(_Tabular):
@@ -384,31 +347,36 @@ class ReadTable(_Table, _ReadData):
         """
         pass
 
-    def __getitem__(self, row_slice: slice) -> RowSlicedDataView:
+    def __getitem__(
+        self, slicing: Union[slice, Tuple[slice, Union[slice, List[int], List[str]]]]
+    ) -> SlicedDataView:
         """
-        Create a row-sliced view of this ReadTable, using slicing syntax similar to that of numpy arrays.
+        Create a row and column sliced view of this ReadTable, with slicing syntax similar to that of numpy arrays,
+        but columns can also be addressed as index lists or via a list of column names.
 
-         ### Arguments:
-        - row_slice: A slice object describing which row indices to use
+        ### Arguments:
+        - row_slice: a slice object describing which rows to use
+        - column_slice: Optional. A slice object, a list of column indices, or a list of column names
 
         ### Returns:
-        - a RowSlicedDataView that can be sliced along the column axis
+        - a SlicedDataView that can be converted to pandas or pyarrow.
 
         ### Examples:
 
-        Get the first 100 rows of the table
-        >>> sliced_table = table[:100]
+        Get the first 100 rows of columns 1,2,3,4:
+        >>> sliced_table = table[:100, 1:5]
 
-        Get every second row but skip the last ten
-        >>> sliced_table = table[:-10:2]
+        Get all rows of the columns "name" and "age":
+        >>> sliced_table = table[:, ["name", "age"]]
 
-        Get the first 100 rows of the table and then select column 1 and 3
-        >>> sliced_table = table[:100][[1,3]]
-
-        The returned `sliced_table` can then be sliced in the column direction or it can be 
-        converted to pandas or pyarrow.
+        The returned `sliced_tables` cannot be sliced further. But they can be converted to pandas or pyarrow.
         """
-        return RowSlicedDataView(self, row_slice)
+        if isinstance(slicing, Tuple):
+            if not 0 < len(slicing) <= 2:
+                raise TypeError("Invalid slicing of 2-dimensional table")
+            return SlicedDataView(self, slicing[0], slicing[1])
+        else:
+            return SlicedDataView(self, slicing, slice(None))
 
 
 class BatchWriteTable(_Table):
