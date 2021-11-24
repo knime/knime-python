@@ -45,7 +45,7 @@
 """
 @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 """
-from typing import Any, Dict, T
+from typing import Any, Dict, List
 
 # Do not remove, meant to be reexported.
 from knime_table import write_table, batch_write_table, WriteTable, ReadTable, Batch
@@ -56,16 +56,33 @@ flow_variables: Dict[str, Any] = {}
 _input_objects = []
 _input_tables = []
 
-input_objects = _FixedSizeListView(_input_objects)
-input_tables = _FixedSizeListView(_input_tables)
+input_objects: List = _FixedSizeListView(_input_objects)
+"""A list of input objects of this script node using zero-based indices."""
+
+input_tables: List[ReadTable] = _FixedSizeListView(_input_tables)
+"""
+The input tables of this script node. Use zero-based indexing, 
+tables are available in the same order as the ports connectors are displayed on the node.
+"""
 
 _output_tables = []
 _output_images = []
 _output_objects = []
 
-output_tables = _FixedSizeListView(_output_tables)
-output_images = _FixedSizeListView(_output_images)
-output_objects = _FixedSizeListView(_output_objects)
+output_tables: List[WriteTable] = _FixedSizeListView(_output_tables)
+"""
+The output tables of this script node. You should assign a WriteTable
+or BatchWriteTable to each output port of this node.
+
+Example:
+>>> knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)
+"""
+
+output_images: List = _FixedSizeListView(_output_images)
+"""The output images of this script node"""
+
+output_objects: List = _FixedSizeListView(_output_objects)
+"""The output objects of this script node"""
 
 
 def _pad_up_to_length(lst: list, length: int) -> None:
