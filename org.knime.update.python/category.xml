@@ -6,6 +6,8 @@
    <feature id="org.knime.features.python.source" version="0.0.0"/>
    <feature id="org.knime.features.python2" version="0.0.0"/>
    <feature id="org.knime.features.python2.source" version="0.0.0"/>
+   <feature id="org.knime.features.python3.scripting" version="0.0.0"/>
+   <feature id="org.knime.features.python3.scripting.source" version="0.0.0"/>
    <bundle id="org.knime.python2.tests" version="0.0.0"/>
    <category-def name="knime-python" label="Build artifacts from knime-python">
        <description>Build artifacts from knime-python</description>
