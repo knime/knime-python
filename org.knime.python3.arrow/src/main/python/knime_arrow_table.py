@@ -56,6 +56,27 @@ import knime_arrow_types as kat
 import pyarrow as pa
 
 
+def _pretty_print_schema(schema) -> str:
+    from knime_arrow_types import _pretty_type_string
+
+    if len(schema) < 4:
+        line_break = ""
+        indent = ""
+    else:
+        line_break = "\n"
+        indent = "\t"
+
+    out = line_break + "[" + line_break
+
+    for i, f in enumerate(schema):
+        type_str = _pretty_type_string(f.type)
+
+        out += f"{indent}{i}. {f.name}: {type_str}{line_break}"
+
+    out += "]"
+    return out
+
+
 class ArrowBatch(kta.Batch):
     def __init__(
         self,
@@ -135,10 +156,7 @@ class ArrowBatch(kta.Batch):
         return self._batch.schema.names
 
     def __str__(self) -> str:
-        return str(self.to_arrow())
-
-    def __repr__(self) -> str:
-        return f"{__class__}(shape={self.shape}, schema={self._batch.schema}, data={str(self)})"
+        return f"ArrowBatch(shape={self.shape}, schema={_pretty_print_schema(self.to_pyarrow().schema)})"
 
 
 class ArrowReadTable(kta.ReadTable):
@@ -199,10 +217,14 @@ class ArrowReadTable(kta.ReadTable):
             batch_idx += 1
 
     def __str__(self) -> str:
-        return str(self._source.to_arrow_table())
+        if self.num_batches == 0:
+            return f"ArrowReadTable(empty)"
 
-    def __repr__(self) -> str:
-        return f"{__class__}(schema={self._source.schema}, data={str(self)})"
+        first_batch = ArrowBatch(self._source[0])
+        return (
+            f"ArrowReadTable(shape={self.shape}, num_batches={self.num_batches}, "
+            + f"schema={_pretty_print_schema(first_batch.to_pyarrow().schema)})"
+        )
 
 
 class _ArrowWriteTableImpl(kta.WriteTable):
@@ -216,7 +238,7 @@ class _ArrowWriteTableImpl(kta.WriteTable):
         Remember to close the sink, the ArrowWriteTable does not do this for you.
         """
         self._sink = sink
-        self._last_batch = None
+        self._last_batch_schema = None
         self._num_batches = 0
 
     def _put_table(
@@ -237,6 +259,7 @@ class _ArrowWriteTableImpl(kta.WriteTable):
         batches = self._split_table(data)
         self._num_batches += len(batches)
         for b in batches:
+            self._last_batch_schema = b.schema
             if sentinel is not None:
                 b = kat.sentinel_to_missing_value(b, sentinel)
             b = kat.wrap_primitive_arrays(b)
@@ -244,20 +267,22 @@ class _ArrowWriteTableImpl(kta.WriteTable):
 
     def _split_table(self, data: pa.Table):
         desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
+        if desired_num_batches < 1:
+            return data.to_batches()
         num_rows_per_batch = int(len(data) // desired_num_batches)
         return data.to_batches(max_chunksize=num_rows_per_batch)
 
     @property
     def _schema(self):
-        if self._last_batch is None:
+        if self._last_batch_schema is None:
             raise RuntimeError(
                 "No batch has been written yet to the Table, cannot access schema"
             )
 
-        return self._last_batch.schema
+        return self._last_batch_schema
 
     def _append(self, batch: ArrowBatch):
-        self._last_batch = batch._batch
+        self._last_batch_schema = batch._batch.schema
         self._num_batches += 1
         self._sink.write(batch._batch)
 
@@ -277,9 +302,16 @@ class _ArrowWriteTableImpl(kta.WriteTable):
     def column_names(self) -> List[str]:
         return self._schema.names
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __repr__(self) -> str:
-        schema = self._last_batch.schema if self._last_batch is not None else "Empty"
-        return f"{__class__}(schema={schema}, num_batches={self.num_batches})"
+        schema_str = (
+            _pretty_print_schema(self._last_batch_schema)
+            if self._last_batch_schema is not None
+            else "Empty"
+        )
+        return f"ArrowWriteTable(shape={self.shape}, num_batches={self.num_batches}, schema={schema_str})"
 
 
 class ArrowWriteTable(_ArrowWriteTableImpl):
@@ -293,6 +325,9 @@ class ArrowWriteTable(_ArrowWriteTableImpl):
             raise ValueError("Data cannot be 'None' when creating write table")
         super().__init__(sink)
         self._put_table(data, sentinel)
+
+    def __str__(self) -> str:
+        return super().__str__()
 
 
 class ArrowBatchWriteTable(_ArrowWriteTableImpl):
@@ -310,6 +345,9 @@ class ArrowBatchWriteTable(_ArrowWriteTableImpl):
             batch = ArrowBatch(data, sentinel)
 
         _ArrowWriteTableImpl._append(self, batch)
+
+    def __str__(self) -> str:
+        return super().__str__()
 
 
 class ArrowBackend(kta._Backend):

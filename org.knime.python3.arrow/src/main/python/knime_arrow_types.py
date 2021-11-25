@@ -136,12 +136,21 @@ def _get_dict_key_type(data_traits):
 
 
 def _pretty_type_string(dtype: pa.DataType):
-    if isinstance(dtype, pa.ExtensionType):
+    if is_dict_encoded_value_factory_type(dtype):
+        return f"StructDictEncoded<key={dtype.key_type}>[{_pretty_type_string(dtype.value_type)}]"
+    elif is_value_factory_type(dtype):
+        # return f"LogicalType<{dtype.logical_type}>[{_pretty_type_string(dtype.storage_type)}]"
+        return f"LogicalType[{_pretty_type_string(dtype.storage_type)}]"
+    elif kas.is_struct_dict_encoded(dtype):
+        return f"StructDictEncoded<key={dtype.key_type}>[{_pretty_type_string(dtype.value_type)}]"
+    elif isinstance(dtype, pa.ExtensionType):
         return f"{str(dtype)}[{_pretty_type_string(dtype.storage_type)}]"
     elif pat.is_struct(dtype):
-        return f"{[_pretty_type_string(inner.type) for inner in dtype]}"
+        return (
+            f"struct[{', '.join([_pretty_type_string(inner.type) for inner in dtype])}]"
+        )
     elif is_list_type(dtype):
-        return f"[{_pretty_type_string(dtype.value_type)}]"
+        return f"list[{_pretty_type_string(dtype.value_type)}]"
     else:
         return str(dtype)
 
@@ -723,7 +732,10 @@ def _get_wrapped_type(dtype, is_row_key):
         return LogicalTypeExtensionType(
             kt.get_converter(_row_key_type), dtype, _row_key_type
         )
-    elif not isinstance(dtype, pa.ExtensionType) and dtype in _arrow_to_knime_primitive_types:
+    elif (
+        not isinstance(dtype, pa.ExtensionType)
+        and dtype in _arrow_to_knime_primitive_types
+    ):
         logical_type = _arrow_to_knime_primitive_types[dtype]
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype, logical_type
