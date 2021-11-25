@@ -74,7 +74,6 @@ class PythonValueFactory:
 
 
 class FallbackPythonValueFactory(PythonValueFactory):
-
     def __init__(self):
         super().__init__(None)
 
@@ -112,16 +111,13 @@ _bundles = []
 
 
 def register_python_value_factory(
-    python_module,
-    python_value_factory_name,
-    data_spec_json,
-    data_traits,
+    python_module, python_value_factory_name, data_spec_json, data_traits,
 ):
     module = importlib.import_module(python_module)
     value_factory_class = getattr(module, python_value_factory_name)
     value_factory = value_factory_class()
-    unpacked_data_traits = json.loads(data_traits)['traits']
-    logical_type = unpacked_data_traits['logical_type']
+    unpacked_data_traits = json.loads(data_traits)["traits"]
+    logical_type = unpacked_data_traits["logical_type"]
     value_factory_bundle = PythonValueFactoryBundle(
         logical_type, data_spec_json, value_factory, data_traits
     )
@@ -143,4 +139,7 @@ def get_value_factory_bundle_for_type(value):
     for bundle in _bundles:
         if bundle.value_factory.can_convert(value):
             return bundle
-    raise ValueError(f"The value {value} is not compatible with any registered PythonValueFactory.")
+
+    raise ValueError(
+        f"The value {value} is not compatible with any registered PythonValueFactory."
+    )

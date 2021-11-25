@@ -187,18 +187,14 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
         kio._pad_up_to_length(kio._output_tables, num_output_tables)
 
-    def getOutputTable(
-        self,
-        table_index: int,
-    ) -> Optional[JavaClass]:
+    def getOutputTable(self, table_index: int,) -> Optional[JavaClass]:
         # Get the java sink for this write table
         write_table = kio.output_tables[table_index]
         if (not hasattr(write_table, "_sink")) or (
             not hasattr(write_table._sink, "_java_data_sink")
         ):
             raise RuntimeError(
-                "Write table was not created with the Arrow backend. "
-                + "This is an implementation error."
+                f"Output table '{table_index}' is no valid knime_io.WriteTable."
             )
         return write_table._sink._java_data_sink
 
@@ -233,11 +229,7 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputImages(self, num_output_images: int) -> None:
         kio._pad_up_to_length(kio._output_images, num_output_images)
 
-    def getOutputImage(
-        self,
-        image_index: int,
-        path: str,
-    ) -> None:
+    def getOutputImage(self, image_index: int, path: str,) -> None:
         image = kio.output_images[image_index]
         with open(path, "wb") as file:
             file.write(image)
@@ -297,8 +289,7 @@ class PythonKernel(kg.EntryPoint):
                 try:
                     # Use jedi's 0.16.0+ API.
                     completions = jedi.Script(source_code, path="").complete(
-                        line,
-                        column,
+                        line, column,
                     )
                 except AttributeError:
                     # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
