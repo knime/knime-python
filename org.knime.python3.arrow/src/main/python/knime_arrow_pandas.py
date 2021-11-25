@@ -75,10 +75,18 @@ def pandas_df_to_arrow(
 
 def _extract_schema(data_frame: pd.DataFrame):
     dtypes = data_frame.dtypes
-    columns = [
-        (column, _to_arrow_type(data_frame[column][0], is_row_key_column=(idx == 0)),)
-        for (idx, (column, dtype)) in enumerate(dtypes.items())
-    ]
+    columns = []
+
+    for (idx, (column, dtype)) in enumerate(dtypes.items()):
+        try:
+            column_type = _to_arrow_type(
+                data_frame[column][0], is_row_key_column=(idx == 0)
+            )
+            columns.append((column, column_type,))
+        except ValueError as e:
+            raise ValueError(
+                f"Could not understand the data type in column {idx}:{column}={data_frame[column][0]}"
+            )
     return pa.schema(columns)
 
 
@@ -142,6 +150,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     ]
     storage_data = kat.to_storage_data(data)
     data_frame = storage_data.to_pandas()
+
     _encode_df(data_frame, logical_columns, data.schema)
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
