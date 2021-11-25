@@ -54,6 +54,12 @@ import numpy as np
 def pandas_df_to_arrow(
     data_frame: pd.DataFrame, to_batch=False
 ) -> Union[pa.Table, pa.RecordBatch]:
+    if data_frame.shape == (0, 0,):
+        if to_batch:
+            return pa.RecordBatch.from_arrays([])
+        else:
+            return pa.table([])
+
     # TODO pandas column names must not be strings. This causes errors
     # Convert the index to a str series and prepend to the data_frame
     row_keys = data_frame.index.to_series().astype(str)

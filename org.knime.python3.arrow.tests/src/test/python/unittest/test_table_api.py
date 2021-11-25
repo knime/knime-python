@@ -389,7 +389,7 @@ class SentinelReplacementTest(unittest.TestCase):
 class FixedSizeListTest(unittest.TestCase):
     def test_fixed_size_list(self):
         l = [0, 1, 2]
-        fsl = kt._FixedSizeListView(l)
+        fsl = kt._FixedSizeListView(l, "test")
 
         self.assertEqual(len(l), len(fsl))
 
@@ -401,6 +401,16 @@ class FixedSizeListTest(unittest.TestCase):
 
         l.append(3)
         self.assertEqual(len(l), len(fsl))
+
+
+class EmptyTableCreationTest(unittest.TestCase):
+    def test_create_empty_table(self):
+        with self.assertRaises(ValueError):
+            t = kat.ArrowWriteTable(None, None)
+
+    def test_create_table_from_empty_df(self):
+        df = pd.DataFrame()
+        t = kat.ArrowWriteTable(None, df)
 
 
 if __name__ == "__main__":

@@ -289,6 +289,8 @@ class ArrowWriteTable(_ArrowWriteTableImpl):
         data: Union["pandas.DataFrame", pa.Table],
         sentinel: Optional[Union[str, int]] = None,
     ):
+        if data is None:
+            raise ValueError("Data cannot be 'None' when creating write table")
         super().__init__(sink)
         self._put_table(data, sentinel)
 
