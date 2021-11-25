@@ -56,7 +56,6 @@ import static org.knime.core.table.schema.DataSpecs.STRING;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -237,7 +236,7 @@ public class Python3KernelBackendProxyTest {
     }
 
     private ArrowBatchReadStore createTestStore() throws IOException {
-        final Path storePath = TestUtils.createTmpKNIMEArrowPath();
+        final var storePath = TestUtils.createTmpKNIMEArrowFileHandle();
         try (final ArrowBatchStore store = m_storeFactory.createStore(COLUMN_SCHEMA, storePath)) {
             try (final BatchWriter writer = store.getWriter()) {
                 for (int b = 0; b < NUM_BATCHES; b++) {
@@ -249,7 +248,7 @@ public class Python3KernelBackendProxyTest {
                 }
             }
         }
-        return m_storeFactory.createReadStore(storePath);
+        return m_storeFactory.createReadStore(storePath.asPath());
     }
 
     private static void fillBatch(final int b, final WriteBatch batch) {

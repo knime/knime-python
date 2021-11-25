@@ -259,7 +259,7 @@ public final class PythonArrowDataUtils {
         final var schema = createColumnarValueSchema(dataSink, domainAndMetadata, dataRepository);
         final var readStore = storeFactory.createReadStore(path);
         return UnsavedColumnarContainerTable.create(tableId,
-            new ColumnarRowReadTable(schema, storeFactory, readStore, size));
+            new ColumnarRowReadTable(schema, storeFactory, readStore, size), () -> {/*Table was written by Python*/});
     }
 
     /**

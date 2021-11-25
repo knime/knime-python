@@ -674,13 +674,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     private static void cleanupStore(final ColumnarBatchReadStore store) {
-        var path = store.getPath();
+        var path = store.getFileHandle();
         PythonUtils.Misc.closeSafely(LOGGER::debug, store);
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ex) {
-            LOGGER.debug("Failed to delete the file storing a table copy.", ex);
-        }
+        path.delete();
     }
 
     private final class PutDataTableTask implements Callable<Void> {
