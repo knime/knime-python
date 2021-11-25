@@ -56,10 +56,10 @@ flow_variables: Dict[str, Any] = {}
 _input_objects = []
 _input_tables = []
 
-input_objects: List = _FixedSizeListView(_input_objects)
+input_objects: List = _FixedSizeListView(_input_objects, "input_object")
 """A list of input objects of this script node using zero-based indices."""
 
-input_tables: List[ReadTable] = _FixedSizeListView(_input_tables)
+input_tables: List[ReadTable] = _FixedSizeListView(_input_tables, "input_table")
 """
 The input tables of this script node. Use zero-based indexing, 
 tables are available in the same order as the ports connectors are displayed on the node.
@@ -69,7 +69,7 @@ _output_tables = []
 _output_images = []
 _output_objects = []
 
-output_tables: List[WriteTable] = _FixedSizeListView(_output_tables)
+output_tables: List[WriteTable] = _FixedSizeListView(_output_tables, "output_table")
 """
 The output tables of this script node. You should assign a WriteTable
 or BatchWriteTable to each output port of this node.
@@ -78,10 +78,10 @@ Example:
 >>> knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)
 """
 
-output_images: List = _FixedSizeListView(_output_images)
+output_images: List = _FixedSizeListView(_output_images, "output_image")
 """The output images of this script node"""
 
-output_objects: List = _FixedSizeListView(_output_objects)
+output_objects: List = _FixedSizeListView(_output_objects, "output_object")
 """The output objects of this script node"""
 
 

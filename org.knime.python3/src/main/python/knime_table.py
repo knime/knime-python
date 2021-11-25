@@ -60,15 +60,24 @@ class _FixedSizeListView:
     Attention: if the underlying list grows, more values will also be available in this view!
     """
 
-    def __init__(self, data):
+    def __init__(self, data, name):
         if not isinstance(data, list):
             raise TypeError("Can only convert a list into a FixedSizeList")
         self._data = data
+        self._name = name
 
     def __getitem__(self, idx):
+        if not 0 <= idx < len(self._data):
+            raise KeyError(
+                f"Invalid port index {idx}, only {len(self._data)} {self._name}s are available"
+            )
         return self._data[idx]
 
     def __setitem__(self, idx, value):
+        if not 0 <= idx < len(self._data):
+            raise KeyError(
+                f"Invalid port index {idx}, only {len(self._data)} {self._name}s are available"
+            )
         self._data[idx] = value
 
     def __iter__(self):
@@ -76,6 +85,9 @@ class _FixedSizeListView:
 
     def __len__(self):
         return len(self._data)
+
+    def __str__(self):
+        return f"{len(self._data)} {self._name}s: [{', '.join([str(v) for v in self._data])}]"
 
 
 class _Backend(ABC):
