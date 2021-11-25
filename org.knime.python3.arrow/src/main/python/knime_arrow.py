@@ -247,15 +247,20 @@ class ArrowDataSource:
     def __len__(self) -> int:
         return self._reader.num_record_batches
 
-    def __getitem__(self, index: int) -> pa.RecordBatch:
+    def _get_batch(self, index: int) -> pa.RecordBatch:
         # The type of index must be int
         if not isinstance(index, int):
             raise TypeError(
                 "index must be an integer, not {}".format(type(index).__name__)
             )
-
-        # TODO do we need to map columns somehow (in Java we have the factory versions)
         return self._reader.get_batch(normalize_index(index, len(self)))
+
+    def __getitem__(self, index: int) -> pa.RecordBatch:
+        """Get a batch from the source and apply the column names"""
+        batch_without_names = self._get_batch(index)
+        return pa.RecordBatch.from_arrays(
+            batch_without_names.columns, names=self._column_names
+        )
 
     def close(self):
         self._file.close()
@@ -275,16 +280,16 @@ class ArrowDataSource:
         batches = []
         if num_rows is not None:
             if num_rows > 0:
-                first_batch = self[0]
+                first_batch = self._get_batch(0)
                 num_batches = (
                     num_rows + first_batch.num_rows - 1
                 ) // first_batch.num_rows  # Ceiling division
                 num_batches = min(num_batches, len(self))
                 batches = itertools.chain(
-                    [first_batch], (self[i] for i in range(1, num_batches))
+                    [first_batch], (self._get_batch(i) for i in range(1, num_batches))
                 )
         else:
-            batches = iter(self)
+            batches = (self._get_batch(i) for i in range(0, len(self)))
         table_without_names = pa.Table.from_batches(batches, self._reader.schema)
         if num_rows is not None and table_without_names.num_rows != num_rows:
             table_without_names = table_without_names.slice(0, num_rows)
