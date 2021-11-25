@@ -275,9 +275,7 @@ class _ArrowWriteTableImpl(kta.WriteTable):
     @property
     def _schema(self):
         if self._last_batch_schema is None:
-            raise RuntimeError(
-                "No batch has been written yet to the Table, cannot access schema"
-            )
+            raise RuntimeError("Write table contains no data, cannot access schema")
 
         return self._last_batch_schema
 
