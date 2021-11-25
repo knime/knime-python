@@ -18,7 +18,8 @@ Require-Bundle: com.google.guava;bundle-version="[19.0.0,20.0.0)",
  org.knime.ext.py4j;bundle-version="[0.10.9,1.0.0)",
  org.knime.python2;bundle-version="[4.5.0,5.0.0)",
  org.knime.python3;bundle-version="[4.5.0,5.0.0)",
- org.knime.python3.arrow;bundle-version="[4.5.0,5.0.0)"
+ org.knime.python3.arrow;bundle-version="[4.5.0,5.0.0)",
+ org.knime.python3.arrow.types;bundle-version="[4.5.0,5.0.0)"
 Export-Package: org.knime.python3.scripting
 Automatic-Module-Name: org.knime.python3.scripting
 Eclipse-RegisterBuddy: org.knime.ext.py4j

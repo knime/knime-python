@@ -139,9 +139,12 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
-import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.RowKeyChecker;
+import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
+import org.knime.python3.data.PythonValueFactoryModule;
+import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -253,6 +256,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             final PythonPath pythonPath = new PythonPathBuilder() //
                 .add(Python3SourceDirectory.getPath()) //
                 .add(Python3ArrowSourceDirectory.getPath()) //
+                .add(Python3ArrowTypesSourceDirectory.getPath()) //
                 .add(Python3ScriptingSourceDirectory.getPath()) //
                 .build();
 
@@ -320,6 +324,22 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         m_nodeContextManager.setNodeContext(NodeContext.getContext());
         initializeExternalCustomPath(options.getExternalCustomPath());
         initializeCurrentWorkingDirToWorkflowDir();
+        registerPythonValueFactories();
+    }
+
+    private void registerPythonValueFactories() throws PythonIOException {
+        try {
+            final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
+            for (final var module : modules) {
+                final var pythonModule = module.getModuleName();
+                for (final var factory : module) {
+                    m_proxy.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
+                            factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
+                }
+            }
+        } catch (Py4JException ex) {
+            throw beautifyPythonTraceback(ex);
+        }
     }
 
     private void initializeExternalCustomPath(final String externalCustomPath) {
@@ -609,19 +629,23 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         try {
             return task.get();
         } catch (final Py4JException ex) {
-            // First strip py4j's standard prefix for such kinds of errors.
-            final var pythonTraceback = StringUtils.removeStart(ex.getMessage(),
-                "An exception was raised by the Python Proxy. Return Message: ");
-            // Then strip the parts of the trace back that refer to kernel code rather than user code.
-            final String beautifiedTraceback = Python2KernelBackend.beautifyPythonTraceback(pythonTraceback);
-            final var errorMessage = "Executing the Python script failed: " + beautifiedTraceback;
-            // Discard the original exception if the trace back is formatted as expected (i.e. the error really
-            // originated in user code and not in kernel code). This keeps logging more concise.
-            if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
-                throw new PythonIOException(errorMessage);
-            } else {
-                throw new PythonIOException(errorMessage, ex);
-            }
+            throw beautifyPythonTraceback(ex);
+        }
+    }
+
+    private static PythonIOException beautifyPythonTraceback(final Py4JException ex) {
+        // First strip py4j's standard prefix for such kinds of errors.
+        final var pythonTraceback = StringUtils.removeStart(ex.getMessage(),
+            "An exception was raised by the Python Proxy. Return Message: ");
+        // Then strip the parts of the trace back that refer to kernel code rather than user code.
+        final String beautifiedTraceback = Python2KernelBackend.beautifyPythonTraceback(pythonTraceback);
+        final var errorMessage = "Executing the Python script failed: " + beautifiedTraceback;
+        // Discard the original exception if the trace back is formatted as expected (i.e. the error really
+        // originated in user code and not in kernel code). This keeps logging more concise.
+        if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
+            return new PythonIOException(errorMessage);
+        } else {
+            return new PythonIOException(errorMessage, ex);
         }
     }
 

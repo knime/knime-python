@@ -54,9 +54,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python3.PythonDataSource;
@@ -218,6 +221,17 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      *         (second element) while executing the given code.
      */
     List<String> executeOnCurrentThread(String sourceCode);
+
+    /**
+     * Register a combination of a ValueFactory of KNIME with its equivalent PythonValueFactory.
+     *
+     * @param pythonModule The module in which the PythonValueFactory is defined
+     * @param pythonValueFactoryName The name of the PythonValueFactory
+     * @param dataSpec String representation of the {@link DataSpec} created by the {@link ValueFactory}
+     * @param dataTraits String representation of the {@link DataTraits} created by the {@link ValueFactory}
+     */
+    void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
+        final String dataSpec, final String dataTraits);
 
     /**
      * Provides Java-backed functionality to the Python side.
