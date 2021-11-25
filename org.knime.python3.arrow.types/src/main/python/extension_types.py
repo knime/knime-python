@@ -191,3 +191,28 @@ class FsLocationValueFactory(kt.PythonValueFactory):
 
     def encode(self, value):
         return {"0": value.fs_category, "1": value.fs_specifier, "2": value.path}
+
+
+class BooleanSetValue:
+    def __init__(self, has_true, has_false, has_missing):
+        self.has_true = has_true
+        self.has_false = has_false
+        self.has_missing = has_missing
+
+    def to_dict(self):
+        return {
+            "has_true": self.has_true,
+            "has_false": self.has_false,
+            "has_missing": self.has_missing,
+        }
+
+
+class BooleanSetValueFactory(kt.PythonValueFactory):
+    def __init__(self) -> None:
+        kt.PythonValueFactory.__init__(self, BooleanSetValue)
+
+    def decode(self, storage):
+        return BooleanSetValue(storage["0"], storage["1"], storage["2"])
+
+    def encode(self, value):
+        return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}

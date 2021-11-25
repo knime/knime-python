@@ -29,6 +29,10 @@
                PythonClassName="LocalDateValueFactory"
                ValueFactory="org.knime.core.data.v2.time.LocalDateValueFactory">
          </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="BooleanSetValueFactory"
+               ValueFactory="org.knime.core.data.v2.value.BooleanSetValueFactory">
+         </PythonValueFactory>
       </Module>
    </extension>
 
