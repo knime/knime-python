@@ -48,7 +48,6 @@
  */
 package org.knime.python3.arrow;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +56,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.knime.core.columnar.store.FileHandle;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
@@ -103,38 +101,6 @@ public final class TestUtils {
         final Path path = Files.createTempFile("KNIME-" + UUID.randomUUID().toString(), ".knarrow");
         path.toFile().deleteOnExit();
         return path;
-    }
-
-    /**
-     * Create FileHandle that is backed by a temporary file which is deleted on exit.
-     *
-     * @return the FileHandle
-     * @throws IOException if the temporary file could not be created
-     */
-    public static FileHandle createTmpKNIMEArrowFileHandle() throws IOException {
-        final var path = createTmpKNIMEArrowPath();
-        return new FileHandle() {
-
-            @Override
-            public void delete() {
-                try {
-                    Files.deleteIfExists(path);
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-
-            @Override
-            public Path asPath() {
-                return path;
-            }
-
-            @Override
-            public File asFile() {
-                return path.toFile();
-            }
-
-        };
     }
 
     /**

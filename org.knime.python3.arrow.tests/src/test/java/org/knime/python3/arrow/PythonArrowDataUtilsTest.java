@@ -196,7 +196,7 @@ public class PythonArrowDataUtilsTest {
 
     private ArrowBatchStore createWriteStore() throws IOException {
         final var schema = ColumnarSchema.of(INT);
-        final var path = TestUtils.createTmpKNIMEArrowFileHandle();
+        final var path = TestUtils.createTmpKNIMEArrowPath();
         return m_storeFactory.createStore(schema, path);
     }
 
@@ -206,7 +206,7 @@ public class PythonArrowDataUtilsTest {
             try (final var writer = writeStore.getWriter()) {
                 writeData(writer, idx);
             }
-            Files.copy(writeStore.getFileHandle().asPath(), path, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(writeStore.getPath(), path, StandardCopyOption.REPLACE_EXISTING);
         }
 
         return m_storeFactory.createReadStore(path);
