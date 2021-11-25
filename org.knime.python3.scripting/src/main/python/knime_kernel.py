@@ -297,6 +297,9 @@ class PythonKernel(kg.EntryPoint):
                         source_code, line, column, ""
                     ).completions()
                 for completion in completions:
+                    if completion.name.startswith("_"):
+                        # skip all private members
+                        break
                     suggestions.append(
                         {
                             "name": completion.name,
