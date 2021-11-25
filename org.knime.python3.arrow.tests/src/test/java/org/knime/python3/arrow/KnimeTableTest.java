@@ -111,10 +111,10 @@ public class KnimeTableTest {
         final var modes = new String[] {"arrow-sentinel", "arrow", "pandas", "dict"};
 
         for (final var mode : modes) {
-            final var sourcePath = TestUtils.createTmpKNIMEArrowPath();
-            final var sinkPath = TestUtils.createTmpKNIMEArrowPath();
+            final var sourcePath = TestUtils.createTmpKNIMEArrowFileHandle();
+            final var sinkPath = TestUtils.createTmpKNIMEArrowFileHandle();
 
-            final SinkCreator sinkCreator = () -> PythonArrowDataUtils.createSink(sinkPath);
+            final SinkCreator sinkCreator = () -> PythonArrowDataUtils.createSink(sinkPath.asPath());
 
             // Open connection to Python
             try (final var pythonGateway = TestUtils.openPythonGateway()) {
@@ -157,8 +157,8 @@ public class KnimeTableTest {
                     }
                 }
             } finally {
-                Files.deleteIfExists(sourcePath);
-                Files.deleteIfExists(sinkPath);
+                Files.deleteIfExists(sourcePath.asPath());
+                Files.deleteIfExists(sinkPath.asPath());
             }
         }
     }

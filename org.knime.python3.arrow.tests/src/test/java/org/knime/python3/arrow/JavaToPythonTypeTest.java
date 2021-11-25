@@ -339,8 +339,8 @@ public class JavaToPythonTypeTest {
     /** Test sending data to Python for the given type using the values from the valueSetter */
     private <T extends NullableWriteData> void test(final String type, final ColumnarSchema schema,
         final ValueSetter<T> valueSetter) throws Exception {
-        final var writePath = TestUtils.createTmpKNIMEArrowPath();
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var writePath = TestUtils.createTmpKNIMEArrowFileHandle();
+        final var readPath = TestUtils.createTmpKNIMEArrowFileHandle();
 
         // Open connection to Python
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
@@ -364,12 +364,12 @@ public class JavaToPythonTypeTest {
                 } // <- Footer is written here
 
                 // Move the file to the read store location
-                Files.copy(writePath, readPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(writePath.asPath(), readPath.asPath(), StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Test using a read store -> footer written
             try (@SuppressWarnings("resource") // Arrow store will be closed along with columnar store.
-            final var store = new ColumnarBatchReadStoreBuilder(m_storeFactory.createReadStore(readPath))
+            final var store = new ColumnarBatchReadStoreBuilder(m_storeFactory.createReadStore(readPath.asPath()))
                 .enableDictEncoding(true).build()) {
 
                 // Define a Python data source for the data of the store

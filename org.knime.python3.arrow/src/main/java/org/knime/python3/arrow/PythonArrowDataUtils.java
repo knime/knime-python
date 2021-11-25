@@ -110,7 +110,7 @@ public final class PythonArrowDataUtils {
      *         into a Python object for easy access to the data
      */
     public static PythonArrowDataSource createSource(final ArrowBatchStore store, final int numBatches) {
-        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(),
+        return new PythonArrowBatchStoreDataSource(store.getFileHandle().asPath().toAbsolutePath().toString(),
             store.getOffsetProvider(), numBatches, null);
     }
 
@@ -127,7 +127,7 @@ public final class PythonArrowDataUtils {
      */
     public static PythonArrowDataSource createSource(final ArrowBatchStore store, final int numBatches,
         final String[] columnNames) {
-        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(),
+        return new PythonArrowBatchStoreDataSource(store.getFileHandle().asPath().toAbsolutePath().toString(),
             store.getOffsetProvider(), numBatches, columnNames);
     }
 
@@ -139,7 +139,7 @@ public final class PythonArrowDataUtils {
      *         into a Python object for easy access to the data
      */
     public static PythonArrowDataSource createSource(final ArrowBatchReadStore store) {
-        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(), null,
+        return new PythonArrowBatchStoreDataSource(store.getFileHandle().asPath().toAbsolutePath().toString(), null,
             store.numBatches(), null);
     }
 
@@ -153,7 +153,7 @@ public final class PythonArrowDataUtils {
      *         into a Python object for easy access to the data
      */
     public static PythonArrowDataSource createSource(final ArrowBatchReadStore store, final String[] columnNames) {
-        return new PythonArrowBatchStoreDataSource(store.getPath().toAbsolutePath().toString(), null,
+        return new PythonArrowBatchStoreDataSource(store.getFileHandle().asPath().toAbsolutePath().toString(), null,
             store.numBatches(), columnNames);
     }
 

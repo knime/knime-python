@@ -53,6 +53,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.STRING;
+import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowFileHandle;
+import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowPath;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -189,6 +191,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
+import org.knime.python3.arrow.TestUtils;
 import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
@@ -806,7 +809,7 @@ public class KnimeArrowExtensionTypesTest {
 
 		void runJavaToPythonTest(final ColumnarSchema schema, final DataPreparer preparer, final DataTester<E> tester)
 				throws IOException {
-			final var writePath = createTmpKNIMEArrowPath();
+			final var writePath = TestUtils.createTmpKNIMEArrowFileHandle();
 			try (final var store = m_storeFactory.createStore(schema, writePath)) {
 				try (final BatchWriter writer = store.getWriter()) {
 					preparer.writeBatch(writer);
@@ -830,7 +833,7 @@ public class KnimeArrowExtensionTypesTest {
 		void runJavaToPythonToJavaTest(TriConsumer<E, PythonDataSource, PythonDataSink> entryPointSelector,
 				RowFiller rowFiller, Consumer<UnsavedColumnarContainerTable> javaResultTester, List<String> columnNames,
 				List<ValueFactory<?, ?>> valueFactories) throws Exception {
-			final var inputPath = createTmpKNIMEArrowPath();
+			final var inputPath = createTmpKNIMEArrowFileHandle();
 			final var outputPath = createTmpKNIMEArrowPath();
 			var valueFactoriesWithRowKey = new ArrayList<>(valueFactories);
 			valueFactoriesWithRowKey.add(0, new DefaultRowKeyValueFactory());
@@ -953,12 +956,6 @@ public class KnimeArrowExtensionTypesTest {
 	@FunctionalInterface
 	interface TriConsumer<A, B, C> {
 		void accept(A a, B b, C c);
-	}
-
-	static Path createTmpKNIMEArrowPath() throws IOException {
-		final Path path = Files.createTempFile("KNIME-" + UUID.randomUUID().toString(), ".knarrow");
-		path.toFile().deleteOnExit();
-		return path;
 	}
 
 	private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
