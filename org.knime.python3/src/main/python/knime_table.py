@@ -66,17 +66,24 @@ class _FixedSizeListView:
         self._data = data
         self._name = name
 
+    @property
+    def _name_for_len(self):
+        if len(self._data) == 1:
+            return self._name
+        else:
+            return self._name + "s"
+
     def __getitem__(self, idx):
         if not 0 <= idx < len(self._data):
             raise KeyError(
-                f"Invalid port index {idx}, only {len(self._data)} {self._name}s are available"
+                f"Invalid port index {idx}, only {len(self._data)} {self._name_for_len} are available"
             )
         return self._data[idx]
 
     def __setitem__(self, idx, value):
         if not 0 <= idx < len(self._data):
             raise KeyError(
-                f"Invalid port index {idx}, only {len(self._data)} {self._name}s are available"
+                f"Invalid port index {idx}, only {len(self._data)} {self._name_for_len} are available"
             )
         self._data[idx] = value
 
@@ -87,7 +94,7 @@ class _FixedSizeListView:
         return len(self._data)
 
     def __str__(self):
-        return f"{len(self._data)} {self._name}s: [{', '.join([str(v) for v in self._data])}]"
+        return f"{len(self._data)} {self._name_for_len}: [{', '.join([str(v) for v in self._data])}]"
 
 
 class _Backend(ABC):

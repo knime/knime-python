@@ -402,6 +402,19 @@ class FixedSizeListTest(unittest.TestCase):
         l.append(3)
         self.assertEqual(len(l), len(fsl))
 
+    def test_string_repr(self):
+        l = []
+        fsl = kt._FixedSizeListView(l, "test")
+        self.assertEqual("0 tests: []", str(fsl))
+
+        l.append(0)
+        self.assertEqual("1 test: [0]", str(fsl))
+
+        l.append(1)
+        l.append(2)
+        l.append(3)
+        self.assertEqual("4 tests: [0, 1, 2, 3]", str(fsl))
+
 
 class EmptyTableCreationTest(unittest.TestCase):
     def test_create_empty_table(self):
