@@ -105,7 +105,7 @@ class ArrowBatch(kta.Batch):
 
                 self._batch = kap.pandas_df_to_arrow(data, to_batch=True)
             else:
-                raise ValueError("Can only create an Batch with data")
+                raise ValueError("Can only create a Batch with data")
 
         if sentinel is not None:
             self._batch = kat.sentinel_to_missing_value(self._batch, sentinel=sentinel)
