@@ -88,10 +88,10 @@ class ArrowBatch(kta.Batch):
         pandas.DataFrame format.
 
         Arguments:
-            data: 
+            data:
                 A pyarrow.RecordBatch or a pandas.DataFrame
             sentinel:
-                None, "min", "max" or an int. If not None, values in integral columns that match the sentinel 
+                None, "min", "max" or an int. If not None, values in integral columns that match the sentinel
                 will be interpreted as missing values.
         """
 
@@ -105,7 +105,7 @@ class ArrowBatch(kta.Batch):
 
                 self._batch = kap.pandas_df_to_arrow(data, to_batch=True)
             else:
-                raise ValueError("Can only create an ArrowBatch with data")
+                raise ValueError("Can only create an Batch with data")
 
         if sentinel is not None:
             self._batch = kat.sentinel_to_missing_value(self._batch, sentinel=sentinel)
@@ -156,7 +156,7 @@ class ArrowBatch(kta.Batch):
         return self._batch.schema.names
 
     def __str__(self) -> str:
-        return f"ArrowBatch(shape={self.shape}, schema={_pretty_print_schema(self.to_pyarrow().schema)})"
+        return f"Batch(shape={self.shape}, schema={_pretty_print_schema(self.to_pyarrow().schema)})"
 
 
 class ArrowReadTable(kta.ReadTable):
@@ -218,11 +218,11 @@ class ArrowReadTable(kta.ReadTable):
 
     def __str__(self) -> str:
         if self.num_batches == 0:
-            return f"ArrowReadTable(empty)"
+            return f"ReadTable(empty)"
 
         first_batch = ArrowBatch(self._source[0])
         return (
-            f"ArrowReadTable(shape={self.shape}, num_batches={self.num_batches}, "
+            f"ReadTable(shape={self.shape}, num_batches={self.num_batches}, "
             + f"schema={_pretty_print_schema(first_batch.to_pyarrow().schema)})"
         )
 
@@ -304,15 +304,12 @@ class _ArrowWriteTableImpl(kta.WriteTable):
         return self._schema.names
 
     def __str__(self) -> str:
-        return self.__repr__()
-
-    def __repr__(self) -> str:
         schema_str = (
             _pretty_print_schema(self._last_batch_schema)
             if self._last_batch_schema is not None
             else "Empty"
         )
-        return f"ArrowWriteTable(shape={self.shape}, num_batches={self.num_batches}, schema={schema_str})"
+        return f"WriteTable(shape={self.shape}, num_batches={self.num_batches}, schema={schema_str})"
 
 
 class ArrowWriteTable(_ArrowWriteTableImpl):
@@ -356,11 +353,11 @@ class ArrowBackend(kta._Backend):
         """
         Create the Apache Arrow backend for KNIME Python tables.
         Automatically creates Java-backed sinks for WriteTables.
-        
+
         Remember to call close() on this object to close all created sinks.
 
         Args:
-            sink_creator: A lambda function without args that creates 
+            sink_creator: A lambda function without args that creates
                           a Python data sink when called
         """
         self._sink_creator = sink_creator
