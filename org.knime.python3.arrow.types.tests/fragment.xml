@@ -12,15 +12,5 @@
          </serializer>
       </DataType>
    </extension>
-   <extension
-         point="org.knime.python3.PythonValueFactory">
-      <Module
-            modulePath="src/test/python/utf8_string.py">
-         <PythonValueFactory
-               PythonClassName="Utf8EncodedStringFactory"
-               ValueFactory="org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory">
-         </PythonValueFactory>
-      </Module>
-   </extension>
 
 </fragment>

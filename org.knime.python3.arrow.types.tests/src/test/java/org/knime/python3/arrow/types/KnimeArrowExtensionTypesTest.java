@@ -165,10 +165,14 @@ import org.knime.core.data.v2.value.ValueInterfaces.LongWriteValue;
 import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
+import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.LogicalTypeTrait;
+import org.knime.core.table.virtual.serialization.DataSpecSerializer;
+import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.data.location.FSLocationValue;
@@ -196,8 +200,11 @@ import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
+import org.knime.python3.data.PythonValueFactory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
+
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 /**
  *
@@ -305,6 +312,21 @@ public class KnimeArrowExtensionTypesTest {
 						factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
 			}
 		}
+
+		registerUtf8ValueFactory(entryPoint);
+	}
+
+	private static void registerUtf8ValueFactory(final KnimeArrowExtensionTypeEntryPoint entryPoint) {
+		// Added here for testing purposes. Not registered at the extension point or it
+		// will also be loaded in the Python Script (Labs) node when running KNIME from Eclipse.
+		var vf = new Utf8StringValueFactory();
+		var dataSpecJson = new DataSpecSerializer().save(vf.getSpec(), JsonNodeFactory.instance);
+
+		final var traits = ValueFactoryUtils.getTraits(vf);
+		var dataTraitJson = new DataTraitsSerializer(JsonNodeFactory.instance).save(traits);
+
+		entryPoint.registerPythonValueFactory("utf8_string", "Utf8EncodedStringFactory",
+				dataSpecJson.toString(), dataTraitJson.toString());
 	}
 
 	private static void prepareUtf8EncodedStringData(final BatchWriter writer, final String value) throws IOException {
@@ -814,7 +836,9 @@ public class KnimeArrowExtensionTypesTest {
 				try (final BatchWriter writer = store.getWriter()) {
 					preparer.writeBatch(writer);
 				}
-				final var dataSource = PythonArrowDataUtils.createSource(store, 1);
+				// HACK for tests: skip the first real column spec because Python will prepend <RowKey> to the list of names
+				var columnNames = schema.specStream().skip(1).map(DataSpec::toString).toArray(String[]::new);
+				final var dataSource = PythonArrowDataUtils.createSource(store, 1, columnNames);
 				tester.test(m_gateway.getEntryPoint(), dataSource);
 			}
 		}
@@ -827,7 +851,6 @@ public class KnimeArrowExtensionTypesTest {
 			try (var store = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory)) {
 				storeTester.accept(store);
 			}
-
 		}
 
 		void runJavaToPythonToJavaTest(TriConsumer<E, PythonDataSource, PythonDataSink> entryPointSelector,
