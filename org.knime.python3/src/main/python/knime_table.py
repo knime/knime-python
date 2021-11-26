@@ -171,7 +171,7 @@ class _Tabular(ABC):
         pass
 
 
-class _SlicedTabular(_Tabular):
+class _SlicedView(_Tabular):
     """
     An instance of sliced data that can not be sliced any further.
     """
@@ -227,6 +227,9 @@ class _SlicedTabular(_Tabular):
         """
         return self._column_names
 
+    def __str__(self) -> str:
+        return f"SlicedView(shape={self.shape}, rows={self._row_slice}, columns={self._column_slice})[referenced_data={self._delegate}]"
+
 
 class _ReadData(ABC):
     """
@@ -274,7 +277,7 @@ class _ReadData(ABC):
         pass
 
 
-class SlicedDataView(_SlicedTabular, _ReadData):
+class SlicedDataView(_SlicedView, _ReadData):
     """
     A sliced view of tabular data. The data can be converted to pandas.DataFrame or to pyarrow,
     but not be sliced any further.
