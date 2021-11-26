@@ -290,7 +290,10 @@ class _ArrowWriteTableImpl(kta.WriteTable):
 
     @property
     def num_columns(self) -> int:
-        return len(self._schema)
+        try:
+            return len(self._schema)
+        except RuntimeError:
+            return 0
 
     @property
     def num_batches(self) -> int:
