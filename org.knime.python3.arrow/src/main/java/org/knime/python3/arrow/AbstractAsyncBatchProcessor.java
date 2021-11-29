@@ -138,13 +138,13 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
     }
 
     private void asyncProcessNextBatch() {
-        // Lazy reader initialization
-        if (m_reader == null) {
-            initReader();
-        }
-
         ReadBatch readBatch = null;
         try {
+            // Lazy reader initialization
+            if (m_reader == null) {
+                initReader();
+            }
+
             // Read the next batch in a synchronized block, otherwise two threads might actually do that at the
             // same time and both receive the same batch.
             synchronized (m_reader) {
@@ -153,6 +153,8 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
             processNextBatchImpl(readBatch);
         } catch (IOException ex) {
             m_invalidCause.set(ex);
+        } catch (Exception ex) {
+            m_invalidCause.set(new IOException("Error when processing batch", ex));
         } finally {
             if (readBatch != null) {
                 readBatch.release();
