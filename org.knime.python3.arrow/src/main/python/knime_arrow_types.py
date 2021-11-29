@@ -695,7 +695,7 @@ _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
 
 def _is_primitive_type(dtype):
     return is_value_factory_type(dtype) and (
-        dtype.logical_type is _row_key_type
+        dtype.logical_type == _row_key_type
         or dtype.logical_type in _arrow_to_knime_primitive_types.values()
     )
 
@@ -728,7 +728,7 @@ def unwrap_primitive_arrays(
 
 
 def _get_wrapped_type(dtype, is_row_key):
-    if is_row_key and dtype is pa.string():
+    if is_row_key and dtype == pa.string():
         return LogicalTypeExtensionType(
             kt.get_converter(_row_key_type), dtype, _row_key_type
         )
