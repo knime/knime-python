@@ -42,7 +42,10 @@
 		<module>org.knime.python2.serde.flatbuffers.tests</module>
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.arrow</module>
-		<module>org.knime.python3.arrow.tests</module>
+		<!-- 
+			Excluded because the tests currently do not work on Jenkins
+			<module>org.knime.python3.arrow.tests</module> 
+		-->
 		<module>org.knime.python3.arrow.types</module>
 		<module>org.knime.python3.py4j.dependencies</module>
 		<module>org.knime.python3.scripting</module>
