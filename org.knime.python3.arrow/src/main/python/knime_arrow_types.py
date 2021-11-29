@@ -182,9 +182,18 @@ def _get_arrow_storage_to_ext_fn(dtype):
         storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
         return lambda a: pa.ExtensionArray.from_storage(dtype, storage_fn(a))
     elif is_list_type(dtype):
+        if not contains_knime_extension_type(dtype):
+            return _identity
+
         value_fn = _get_arrow_storage_to_ext_fn(dtype.value_type) or _identity
-        return lambda a: _create_list_array(a.offsets, value_fn(a.values))
+        # We have to cast the returned list to the expected type because
+        # otherwise some internal field will have a different name (item != $data$)
+        # and make PyArrow's type conversion state that the types differ...
+        return lambda a: _create_list_array(a.offsets, value_fn(a.values)).cast(dtype)
     elif pat.is_struct(dtype):
+        if not contains_knime_extension_type(dtype):
+            return _identity
+
         inner_fns = [_get_arrow_storage_to_ext_fn(inner.type) for inner in dtype]
         return lambda a: pa.StructArray.from_arrays(
             [fn(inner) for fn, inner in zip(inner_fns, a.flatten())],
@@ -344,20 +353,23 @@ def get_storage_type(dtype: pa.DataType):
         return dtype
 
 
+def _to_extension_array(data, target_type):
+    if data.type != target_type:
+        assert target_type is not None
+        return _apply_to_array(data, _get_arrow_storage_to_ext_fn(target_type))
+    else:
+        return data
+
+
 def storage_to_extension(
     data: Union[pa.Table, pa.RecordBatch], schema_with_ext_types: pa.Schema
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = []
     for i, name in enumerate(schema_with_ext_types.names):
         potential_ext_type = schema_with_ext_types.types[i]
-        if data.schema.types[i] != potential_ext_type:
-            assert potential_ext_type is not None
-            ext_array = _apply_to_array(
-                data.column(i), _get_arrow_storage_to_ext_fn(potential_ext_type)
-            )
-            arrays.append(ext_array)
-        else:
-            arrays.append(data.column(i))
+        arrays.append(
+            _to_extension_array(data.column(i), target_type=potential_ext_type)
+        )
     if isinstance(data, pa.Table):
         return pa.Table.from_arrays(arrays, schema=schema_with_ext_types)
     else:
@@ -462,6 +474,13 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     def version():
         """The version is stored in the Arrow field's metadata and must match the Java version of the extension type"""
         return 0
+
+    def to_pandas_dtype(self):
+        from knime_arrow_pandas import PandasLogicalTypeExtensionType
+
+        return PandasLogicalTypeExtensionType(
+            self.storage_type, self._logical_type, self._converter
+        )
 
 
 # Register our extension type with
@@ -688,6 +707,11 @@ _arrow_to_knime_primitive_types = {
     pa.string(): _knime_primitive_type("StringValueFactory"),
     pa.bool_(): _knime_primitive_type("BooleanValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleValueFactory"),
+    pa.list_(pa.int32()): _knime_primitive_type("IntListValueFactory"),
+    pa.list_(pa.int64()): _knime_primitive_type("LongListValueFactory"),
+    pa.list_(pa.string()): _knime_primitive_type("StringListValueFactory"),
+    pa.list_(pa.bool_()): _knime_primitive_type("BooleanListValueFactory"),
+    pa.list_(pa.float64()): _knime_primitive_type("DoubleListValueFactory"),
 }
 
 _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
