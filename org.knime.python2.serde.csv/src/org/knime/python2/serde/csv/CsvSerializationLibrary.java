@@ -63,6 +63,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.util.FileUtil;
+import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Cell;
@@ -93,8 +94,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class CsvSerializationLibrary implements SerializationLibrary {
 
     /** Used to make (de-)serialization cancelable. */
-    private final ExecutorService m_executorService =
-        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-csv-serde-%d").build());
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
+        Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-csv-serde-%d").build()));
 
     /**
      * The root directory in which the temporary files used for data transfer are stored. Will be populated during the

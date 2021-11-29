@@ -54,6 +54,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.knime.core.util.ThreadUtils;
 import org.knime.python2.extensions.serializationlibrary.SerializationException;
 import org.knime.python2.extensions.serializationlibrary.SerializationOptions;
 import org.knime.python2.extensions.serializationlibrary.interfaces.Row;
@@ -135,8 +136,8 @@ import com.google.flatbuffers.FlatBufferBuilder;
 public class Flatbuffers implements SerializationLibrary {
 
     /** Used to make (de-)serialization cancelable. */
-    private final ExecutorService m_executorService = Executors
-        .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-flatbuffers-serde-%d").build());
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(Executors
+        .newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("python-flatbuffers-serde-%d").build()));
 
     @Override
     public byte[] tableToBytes(final TableIterator tableIterator, final SerializationOptions serializationOptions,
