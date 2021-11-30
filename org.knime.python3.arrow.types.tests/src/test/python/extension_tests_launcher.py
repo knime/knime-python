@@ -56,7 +56,11 @@ import numpy as np
 
 class EntryPoint(kg.EntryPoint):
     def registerPythonValueFactory(
-        self, python_module, python_value_factory_name, data_spec, data_traits,
+        self,
+        python_module,
+        python_value_factory_name,
+        data_spec,
+        data_traits,
     ):
         kt.register_python_value_factory(
             python_module, python_value_factory_name, data_spec, data_traits
@@ -142,9 +146,7 @@ class EntryPoint(kg.EntryPoint):
         with kg.data_sink_mapper(data_sink) as sink:
             import utf8_string
 
-            extension_array = kat.knime_extension_array(
-                [utf8_string.Utf8EncodedString(value)]
-            )
+            extension_array = [utf8_string.Utf8EncodedString(value)]
             sink.write(pa.table([extension_array], ["utf8_encoded_string"]))
 
     def writeFsLocationViaPandas(self, data_sink, category, specifier, path):
@@ -162,8 +164,7 @@ class EntryPoint(kg.EntryPoint):
             import extension_types as et
 
             fs_location = et.FsLocationValue(category, specifier, path)
-            extension_array = kat.knime_extension_array([fs_location])
-            sink.write(pa.table([extension_array], ["fs_location"]))
+            sink.write(pa.table([fs_location], ["fs_location"]))
 
     def launchPythonTests(self):
         test_primitive_in_df()

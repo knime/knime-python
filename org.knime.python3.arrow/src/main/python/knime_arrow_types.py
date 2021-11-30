@@ -58,83 +58,6 @@ import numpy as np
 import json
 
 
-def to_extension_type(value):
-    factory_bundle = kt.get_value_factory_bundle_for_type(value)
-    data_traits = factory_bundle.data_traits
-    data_spec = factory_bundle.data_spec_json
-    is_struct_dict_encoded_value_factory_type = (
-        "dict_encoding" in data_traits and "logical_type" in data_traits
-    )
-    storage_type = _add_dict_encoding(
-        _data_spec_to_arrow(data_spec),
-        data_traits,
-        skip_level=is_struct_dict_encoded_value_factory_type,
-    )
-    if is_struct_dict_encoded_value_factory_type:
-        key_type = _get_dict_key_type(data_traits)
-        if key_type is None:
-            raise ValueError(
-                f"The data_traits {data_traits} contained the dict_encoding key but no key type."
-            )
-        struct_dict_encoded_type = kas.StructDictEncodedType(
-            inner_type=storage_type, key_type=key_type
-        )
-        value_factory_type = LogicalTypeExtensionType(
-            factory_bundle.value_factory,
-            struct_dict_encoded_type.storage_type,
-            factory_bundle.java_value_factory,
-        )
-        return StructDictEncodedLogicalTypeExtensionType(
-            value_factory_type=value_factory_type,
-            struct_dict_encoded_type=struct_dict_encoded_type,
-        )
-    else:
-        return LogicalTypeExtensionType(
-            factory_bundle.value_factory,
-            storage_type,
-            factory_bundle.java_value_factory,
-        )
-
-
-def _add_dict_encoding(arrow_type, data_traits, skip_level=False):
-    if pat.is_struct(arrow_type):
-        inner = [
-            (inner_field.name, _add_dict_encoding(inner_field.type, inner_traits))
-            for inner_field, inner_traits in zip(arrow_type, data_traits["inner"])
-        ]
-        return pa.struct(inner)
-    elif is_list_type(arrow_type):
-        value_type = _add_dict_encoding(arrow_type.value_type, data_traits["inner"])
-        if pat.is_list(arrow_type):
-            return pa.list_(value_type)
-        elif pat.is_large_list(arrow_type):
-            return pa.large_list(value_type)
-        else:
-            raise ValueError(f"Unsupported list type '{arrow_type}' encountered.")
-    else:
-        key_type = _get_dict_key_type(data_traits)
-        if key_type is None or skip_level:
-            return arrow_type
-        else:
-            return kas.StructDictEncodedType(arrow_type, key_type)
-
-
-def _get_dict_key_type(data_traits):
-    traits = data_traits["traits"]
-    if "dict_encoding" in traits:
-        key_type = traits["dict_encoding"]
-        if key_type == "BYTE_KEY":
-            return pa.uint8()
-        elif key_type == "INT_KEY":
-            return pa.uint32()
-        elif key_type == "LONG_KEY":
-            return pa.uint64()
-        else:
-            raise ValueError(f"Unsupported key type {key_type} encountered.")
-    else:
-        return None
-
-
 def _pretty_type_string(dtype: pa.DataType):
     if is_dict_encoded_value_factory_type(dtype):
         return f"StructDictEncoded<key={dtype.key_type}>[{_pretty_type_string(dtype.value_type)}]"
@@ -213,26 +136,6 @@ def _create_list_array(offsets, values):
         return pa.LargeListArray.from_arrays(offsets, values)
     elif pat.is_int32(offset_type):
         return pa.ListArray.from_arrays(offsets, values)
-
-
-def to_storage_data(
-    data: Union[pa.Table, pa.RecordBatch]
-) -> Union[pa.Table, pa.RecordBatch]:
-    if not isinstance(data, pa.Table) and not isinstance(data, pa.RecordBatch):
-        raise ValueError(
-            "Can only convert pyarrow Tables and RecordBatches to storage types"
-        )
-    arrays = []
-    fields = []
-    for i, field in enumerate(data.schema):
-        compatible_array = _to_storage_array(data.column(i))
-        arrays.append(compatible_array)
-        fields.append(field.with_type(compatible_array.type))
-    schema = pa.schema(fields)
-    if isinstance(data, pa.Table):
-        return pa.table(arrays, schema=schema)
-    else:
-        return pa.RecordBatch.from_arrays(arrays, schema=schema)
 
 
 def _to_storage_array(array: pa.Array) -> pa.Array:
@@ -329,51 +232,12 @@ def get_object_to_storage_fn(dtype: pa.DataType):
         return _identity
 
 
-def get_storage_type(dtype: pa.DataType):
-    """
-    Determines the storage type of a (complex) Arrow type potentially containing ExtensionTypes.
-    """
-    if is_dict_encoded_value_factory_type(dtype):
-        return get_storage_type(dtype.value_type)
-    elif is_value_factory_type(dtype):
-        return get_storage_type(dtype.storage_type)
-    elif kas.is_struct_dict_encoded(dtype):
-        return dtype.value_type
-    elif is_list_type(dtype):
-        inner_type = get_storage_type(dtype.value_type)
-        if pat.is_list(dtype):
-            return pa.list_(inner_type)
-        else:  # no need to check since is_list_type only returns true for lists and large_lists
-            return pa.large_list(inner_type)
-    elif pat.is_struct(dtype):
-        return pa.struct(
-            [field.with_type(get_storage_type(field.type)) for field in dtype]
-        )
-    else:
-        return dtype
-
-
 def _to_extension_array(data, target_type):
     if data.type != target_type:
         assert target_type is not None
         return _apply_to_array(data, _get_arrow_storage_to_ext_fn(target_type))
     else:
         return data
-
-
-def storage_to_extension(
-    data: Union[pa.Table, pa.RecordBatch], schema_with_ext_types: pa.Schema
-) -> Union[pa.Table, pa.RecordBatch]:
-    arrays = []
-    for i, name in enumerate(schema_with_ext_types.names):
-        potential_ext_type = schema_with_ext_types.types[i]
-        arrays.append(
-            _to_extension_array(data.column(i), target_type=potential_ext_type)
-        )
-    if isinstance(data, pa.Table):
-        return pa.Table.from_arrays(arrays, schema=schema_with_ext_types)
-    else:
-        return pa.RecordBatch.from_arrays(arrays, schema=schema_with_ext_types)
 
 
 def insert_sentinel_for_missing_values(
@@ -679,22 +543,6 @@ class KnimeExtensionScalar:
 
 def unpickle_knime_extension_scalar(ext_type, storage_scalar):
     return KnimeExtensionScalar(ext_type, storage_scalar)
-
-
-def knime_extension_scalar(value):
-    ext_type = to_extension_type(type(value))
-    py_storage = ext_type.encode(value)
-    arrow_scalar = pa.scalar(py_storage)
-    return KnimeExtensionScalar(ext_type, arrow_scalar)
-
-
-def knime_extension_array(array):
-    dtype = to_extension_type(array[0])
-    storage_type = get_storage_type(dtype)
-    storage_fn = get_object_to_storage_fn(dtype)
-    py_list = [storage_fn(x) for x in array]
-    storage_array = pa.array(py_list, type=storage_type)
-    return _get_arrow_storage_to_ext_fn(dtype)(storage_array)
 
 
 def _knime_primitive_type(name):

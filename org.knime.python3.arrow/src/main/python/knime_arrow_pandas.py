@@ -85,93 +85,11 @@ def pandas_df_to_arrow(
         return pa.Table.from_pandas(data_frame)
 
 
-def _extract_schema(data_frame: pd.DataFrame):
-    dtypes = data_frame.dtypes
-    columns = []
-
-    for (idx, (column, dtype)) in enumerate(dtypes.items()):
-        try:
-            column_type = _to_arrow_type(
-                data_frame[column][0], is_row_key_column=(idx == 0)
-            )
-            columns.append(
-                (
-                    column,
-                    column_type,
-                )
-            )
-        except ValueError as e:
-            raise ValueError(
-                f"Could not understand the data type in column {idx}:{column}={data_frame[column][0]}"
-            )
-    return pa.schema(columns)
-
-
-_pd_to_arrow_type_map = {
-    np.int32: pa.int32(),
-    int: pa.int32(),
-    np.int64: pa.int64(),
-    np.uint32: pa.uint32(),
-    np.int8: pa.int8(),
-    np.float32: pa.float32(),
-    np.float64: pa.float64(),
-    str: pa.string(),
-    np.bool_: pa.bool_(),
-    bool: pa.bool_(),
-}
-
-
-def _to_arrow_type(first_value, is_row_key_column: bool = False):
-    # converter = kg.gateway().org.knime.core.data.v2.DefaultValueFactories
-    # TODO: use logic from DefaultValueFactories in Java
-    t = type(first_value)
-    if is_row_key_column and t == str:
-        return kat.LogicalTypeExtensionType(
-            kt.FallbackPythonValueFactory(),
-            pa.string(),
-            '{"value_factory_class":"org.knime.core.data.v2.value.DefaultRowKeyValueFactory"}',
-        )
-    elif t == list or t == np.ndarray:
-        inner = _to_arrow_type(first_value[0])
-        return pa.list_(inner)
-    elif t in _pd_to_arrow_type_map:
-        return _pd_to_arrow_type_map[t]
-    else:
-        return kat.to_extension_type(first_value)
-
-
-def _to_storage_data_frame(df: pd.DataFrame, schema: pa.Schema):
-    storage_schema = []
-    for name, arrow_type in zip(schema.names, schema.types):
-        storage_series, storage_type = _series_to_storage(df[name], arrow_type)
-        storage_schema.append((name, storage_type))
-        df[name] = storage_series
-    return df, pa.schema(storage_schema)
-
-
-def _series_to_storage(series: pd.Series, arrow_type: pa.DataType):
-    storage_type = kat.get_storage_type(arrow_type)
-    if kat.needs_conversion(arrow_type):
-        storage_fn = kat.get_object_to_storage_fn(arrow_type)
-        storage_series = pd.Series([storage_fn(x) for x in series])
-        return storage_series, storage_type
-    else:
-        return series, storage_type
-
-
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:
     data_frame = data.to_pandas()
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
     return data_frame
-
-
-def _encode_df(df: pd.DataFrame, logical_columns, schema: pa.Schema):
-    for i in logical_columns:
-        field = schema.field(i)
-        t = field.type
-        if hasattr(t, "needs_conversion") and t.needs_conversion:
-            df[field.name] = df[field.name].apply(t.decode)
 
 
 @register_extension_dtype
@@ -337,16 +255,6 @@ class KnimePandasExensionArray(pdext.ExtensionArray):
             logical_type=self._logical_type,
             converter=self._converter,
         )
-
-    def _as_pandas_value(self, arrow_scalar: kat.KnimeExtensionScalar):
-        # needed for pandas ExtensionArray API
-        if isinstance(arrow_scalar, kat.KnimeExtensionScalar):
-            # return bytes? or how should that work?
-            raise NotImplementedError(
-                "Cannot convert kat.KnimeExtensionScalar to a Pandas Value"
-            )
-        else:
-            return pd.NA
 
     def copy(self):
         # needed for pandas ExtensionArray API
