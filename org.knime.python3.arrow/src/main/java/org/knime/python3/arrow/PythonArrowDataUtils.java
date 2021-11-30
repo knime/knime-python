@@ -49,6 +49,7 @@
 package org.knime.python3.arrow;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +63,7 @@ import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.ArrowReaderWriterUtils;
 import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
 import org.knime.core.columnar.arrow.ArrowSchemaUtils;
+import org.knime.core.columnar.arrow.PathBackedFileHandle;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.data.DataColumnDomain;
 import org.knime.core.data.DataColumnSpec;
@@ -73,6 +75,8 @@ import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
+import org.knime.core.data.columnar.table.ColumnarRowWriteTable;
+import org.knime.core.data.columnar.table.ColumnarRowWriteTableSettings;
 import org.knime.core.data.columnar.table.UnsavedColumnarContainerTable;
 import org.knime.core.data.meta.DataColumnMetaData;
 import org.knime.core.data.v2.RowKeyValueFactory;
@@ -80,6 +84,7 @@ import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
+import org.knime.core.data.v2.value.VoidRowKeyFactory;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
@@ -97,6 +102,12 @@ import org.knime.python3.PythonException;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonArrowDataUtils {
+
+    private static final ColumnarRowWriteTableSettings EMPTY_TABLE_SETTINGS =
+        new ColumnarRowWriteTableSettings(false, 0, false, false);
+
+    private static final ColumnarValueSchema EMPTY_SCHEMA = ColumnarValueSchemaUtils
+        .create(ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE}));
 
     private PythonArrowDataUtils() {
     }
@@ -256,11 +267,34 @@ public final class PythonArrowDataUtils {
         final int tableId = dataRepository.generateNewID();
         final var size = dataSink.getSize();
         final var path = dataSink.getPath();
+        if (isEmpty(path)) {
+            return createEmptyTable(path, tableId, storeFactory);
+        }
         final var schema = createColumnarValueSchema(dataSink, domainAndMetadata, dataRepository);
         final var readStore = storeFactory.createReadStore(path);
         return UnsavedColumnarContainerTable.create(tableId,
             new ColumnarRowReadTable(schema, storeFactory, readStore, size), () -> {
                 /*Python already wrote everything to disk.*/});
+    }
+
+    private static boolean isEmpty(final Path path) {
+        try {
+            return Files.size(path) == 0;
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to obtain file size.", ex);
+        }
+    }
+
+    @SuppressWarnings("resource") // table is henceforth managed by the returned UnsavedColumnarContainerTable
+    private static UnsavedColumnarContainerTable createEmptyTable(final Path path, final int tableId,
+        final ArrowColumnStoreFactory storeFactory) {
+        try (var store = storeFactory.createStore(EMPTY_SCHEMA, new PathBackedFileHandle(path));
+                var writeTable = new ColumnarRowWriteTable(EMPTY_SCHEMA, storeFactory, EMPTY_TABLE_SETTINGS)) {
+            var table = writeTable.finish();
+            return UnsavedColumnarContainerTable.create(tableId, table, writeTable.getStoreFlusher());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to create empty table.", ex);
+        }
     }
 
     /**
