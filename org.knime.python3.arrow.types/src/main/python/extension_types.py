@@ -64,6 +64,8 @@ class ZonedDateTimeValueFactory2(
         self._local_dt_factory = LocalDateTimeValueFactory()
 
     def decode(self, storage):
+        if storage is None:
+            return None
         zone_offset = storage["2"]
         zone_id = storage["3"]
         time_zone = tz.tzoffset(zone_id, zone_offset)
@@ -91,6 +93,8 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, dt.datetime)
 
     def decode(self, storage):
+        if storage is None:
+            return None
         day_of_epoch = storage["0"]
         nano_of_day = storage["1"]
         micro_of_day = nano_of_day // 1000  # here we lose precision
@@ -119,6 +123,9 @@ class DurationValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, dt.timedelta)
 
     def decode(self, storage):
+        if storage is None:
+            return None
+
         seconds = storage["0"]
         nanos = storage["1"]
         return dt.timedelta(seconds=seconds, microseconds=nanos // 1000)
@@ -137,6 +144,9 @@ class LocalDateValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, dt.date)
 
     def decode(self, day_of_epoch):
+        if day_of_epoch is None:
+            return None
+
         return _start_of_epoch.date() + dt.timedelta(days=day_of_epoch)
 
     def encode(self, date):
@@ -148,6 +158,9 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, dt.time)
 
     def decode(self, nano_of_day):
+        if nano_of_day is None:
+            return None
+
         micro_of_day = nano_of_day // 1000  # here we lose precision
         local_dt = dt.datetime.min + dt.timedelta(microseconds=micro_of_day)
         return local_dt.time()
@@ -185,6 +198,8 @@ class FsLocationValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, FsLocationValue)
 
     def decode(self, storage):
+        if storage is None:
+            return None
         # TODO we could change the keys of storage to integers (or use a list) which would be more compliant with
         #  the behavior in java
         return FsLocationValue(storage["0"], storage["1"], storage["2"])
@@ -212,6 +227,8 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, BooleanSetValue)
 
     def decode(self, storage):
+        if storage is None:
+            return None
         return BooleanSetValue(storage["0"], storage["1"], storage["2"])
 
     def encode(self, value):
