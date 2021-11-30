@@ -555,11 +555,14 @@ _arrow_to_knime_primitive_types = {
     pa.string(): _knime_primitive_type("StringValueFactory"),
     pa.bool_(): _knime_primitive_type("BooleanValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleValueFactory"),
-    pa.list_(pa.int32()): _knime_primitive_type("IntListValueFactory"),
-    pa.list_(pa.int64()): _knime_primitive_type("LongListValueFactory"),
-    pa.list_(pa.string()): _knime_primitive_type("StringListValueFactory"),
-    pa.list_(pa.bool_()): _knime_primitive_type("BooleanListValueFactory"),
-    pa.list_(pa.float64()): _knime_primitive_type("DoubleListValueFactory"),
+}
+
+_arrow_to_knime_primitive_list_types = {
+    pa.int32(): _knime_primitive_type("IntListValueFactory"),
+    pa.int64(): _knime_primitive_type("LongListValueFactory"),
+    pa.string(): _knime_primitive_type("StringListValueFactory"),
+    pa.bool_(): _knime_primitive_type("BooleanListValueFactory"),
+    pa.float64(): _knime_primitive_type("DoubleListValueFactory"),
 }
 
 _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
@@ -569,6 +572,7 @@ def _is_primitive_type(dtype):
     return is_value_factory_type(dtype) and (
         dtype.logical_type == _row_key_type
         or dtype.logical_type in _arrow_to_knime_primitive_types.values()
+        or dtype.logical_type in _arrow_to_knime_primitive_list_types.values()
     )
 
 
@@ -609,6 +613,17 @@ def _get_wrapped_type(dtype, is_row_key):
         and dtype in _arrow_to_knime_primitive_types
     ):
         logical_type = _arrow_to_knime_primitive_types[dtype]
+        return LogicalTypeExtensionType(
+            kt.get_converter(logical_type), dtype, logical_type
+        )
+    elif (
+        not isinstance(dtype, pa.ExtensionType)
+        and is_list_type(dtype)
+        and dtype.value_type in _arrow_to_knime_primitive_list_types
+    ):
+        # We have to treat lists differently here because arrow's comparison of list types is
+        # extremely strict and fails due to a mismatch in field names (which we have no control over).
+        logical_type = _arrow_to_knime_primitive_list_types[dtype.value_type]
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype, logical_type
         )
