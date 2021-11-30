@@ -77,7 +77,11 @@ class PythonKernel(kg.EntryPoint):
         self._java_callback = None
 
     def registerPythonValueFactory(
-        self, python_module, python_value_factory_name, data_spec, data_traits,
+        self,
+        python_module,
+        python_value_factory_name,
+        data_spec,
+        data_traits,
     ):
         import knime_types
 
@@ -151,7 +155,7 @@ class PythonKernel(kg.EntryPoint):
         kio.flow_variables.clear()
         kio.flow_variables.update(flow_variables)
 
-    def getFlowVariables(self) -> JavaClass:
+    def _check_flow_variables(self):
         LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
             "java.util.LinkedHashMap", kg.client_server._gateway_client
         )
@@ -166,7 +170,18 @@ class PythonKernel(kg.EntryPoint):
                 raise TypeError(
                     f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
                     f"variable. Please remove the flow variable or change its type to something that can be translated."
-                ) from ex
+                )
+
+    def getFlowVariables(self) -> JavaClass:
+        self._check_flow_variables()
+
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in kio.flow_variables.keys():
+            flow_variable = kio.flow_variables[key]
+            java_flow_variables[key] = flow_variable
         return java_flow_variables
 
     # TODO: at some point in the future, we should change this method such that it accepts all input tables at once
@@ -187,7 +202,10 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
         kio._pad_up_to_length(kio._output_tables, num_output_tables)
 
-    def getOutputTable(self, table_index: int,) -> Optional[JavaClass]:
+    def getOutputTable(
+        self,
+        table_index: int,
+    ) -> Optional[JavaClass]:
         # Get the java sink for this write table
         write_table = kio.output_tables[table_index]
         if (not hasattr(write_table, "_sink")) or (
@@ -229,7 +247,11 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputImages(self, num_output_images: int) -> None:
         kio._pad_up_to_length(kio._output_images, num_output_images)
 
-    def getOutputImage(self, image_index: int, path: str,) -> None:
+    def getOutputImage(
+        self,
+        image_index: int,
+        path: str,
+    ) -> None:
         image = kio.output_images[image_index]
         with open(path, "wb") as file:
             file.write(image)
@@ -289,7 +311,8 @@ class PythonKernel(kg.EntryPoint):
                 try:
                     # Use jedi's 0.16.0+ API.
                     completions = jedi.Script(source_code, path="").complete(
-                        line, column,
+                        line,
+                        column,
                     )
                 except AttributeError:
                     # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
@@ -324,6 +347,26 @@ class PythonKernel(kg.EntryPoint):
     def executeOnCurrentThread(self, source_code: str) -> List[str]:
         return self._execute(source_code)
 
+    def _check_outputs(self):
+        for i, o in enumerate(kio._output_tables):
+            if o is None or not isinstance(o, kat._ArrowWriteTableImpl):
+                raise ValueError(
+                    f"Expected a WriteTable in output_tables[{i}], got {type(o)}"
+                )
+
+        for i, o in enumerate(kio._output_objects):
+            if o is None:
+                raise ValueError(
+                    f"Expected an object in output_objects[{i}], got {type(o)}"
+                )
+
+        for i, o in enumerate(kio._output_images):
+            if o is None:
+                raise ValueError(
+                    f"Expected an image in output_images[{i}], got {type(o)}"
+                )
+        self._check_flow_variables()
+
     def _execute(self, source_code: str) -> List[str]:
         def create_python_sink():
             java_sink = self._java_callback.create_sink()
@@ -334,6 +377,7 @@ class PythonKernel(kg.EntryPoint):
         ) as stderr:
             kt._backend = kat.ArrowBackend(create_python_sink)
             exec(source_code, self._workspace)
+            self._check_outputs()
             kt._backend.close()
             kt._backend = None
         return ListConverter().convert(
