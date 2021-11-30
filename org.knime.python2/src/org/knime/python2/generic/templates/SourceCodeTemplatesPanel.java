@@ -127,7 +127,9 @@ public class SourceCodeTemplatesPanel extends JPanel {
     public SourceCodeTemplatesPanel(final SourceCodePanel sourceCodePanel, final String repositoryId) {
         m_sourceCodePanel = sourceCodePanel;
         m_repository = new SourceCodeTemplateRepository(repositoryId);
-        m_editor = SourceCodePanel.createEditor(m_sourceCodePanel.getEditor().getSyntaxEditingStyle());
+        final RSyntaxTextArea sourceCodePanelEditor = m_sourceCodePanel.getEditor();
+        m_editor = SourceCodePanel.createEditor(sourceCodePanelEditor.getSyntaxEditingStyle(),
+            sourceCodePanelEditor.getTabsEmulated());
         m_editor.setEditable(false);
         m_create = new JButton("Create from editor...");
         m_apply = new JButton("Apply selected");
@@ -192,7 +194,7 @@ public class SourceCodeTemplatesPanel extends JPanel {
         m_apply.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
-                m_sourceCodePanel.getEditor().setText(m_template.getSelectedValue().getSourceCode());
+                sourceCodePanelEditor.setText(m_template.getSelectedValue().getSourceCode());
             }
         });
         m_remove.addActionListener(new ActionListener() {

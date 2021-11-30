@@ -146,7 +146,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param variableNames An object managing all the known variable names in the workspace.
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
-        this(syntaxStyle, variableNames, null);
+        this(syntaxStyle, variableNames, false, null);
     }
 
     /**
@@ -154,10 +154,11 @@ public abstract class SourceCodePanel extends JPanel {
      *
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
      * @param variableNames An object managing all the known variable names in the workspace.
+     * @param forceSpaces Whether or not tabs should be emulated with spaces.
      * @param optionsPanel The options panel of the node dialog, if any. The constructed source code panel subscribes to
      *            changes in its configured {@link SourceCodeOptionsPanel#getRowLimit() row limit}.
      */
-    public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames,
+    public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames, final boolean forceSpaces,
         final SourceCodeOptionsPanel<?> optionsPanel) {
         m_variableNames = variableNames;
         setLayout(new BorderLayout());
@@ -172,7 +173,7 @@ public abstract class SourceCodePanel extends JPanel {
 
         // Editor:
 
-        m_editor = new EditorPanel(syntaxStyle) {
+        m_editor = new EditorPanel(syntaxStyle, forceSpaces) {
 
             @Override
             protected List<Completion> getCompletionsFor(final CompletionProvider provider, final String sourceCode,
@@ -678,9 +679,10 @@ public abstract class SourceCodePanel extends JPanel {
      * Create a preconfigured editor widget component.
      *
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}
+     * @param forceSpaces Whether or not tabs should be emulated with spaces
      * @return a preconfigured editor widget component
      */
-    public static RSyntaxTextArea createEditor(final String syntaxStyle) {
+    public static RSyntaxTextArea createEditor(final String syntaxStyle, final boolean forceSpaces) {
         final RSyntaxTextArea editor = new PythonTextArea();
         editor.setSyntaxEditingStyle(syntaxStyle);
         editor.setCodeFoldingEnabled(true);
@@ -691,6 +693,7 @@ public abstract class SourceCodePanel extends JPanel {
         editor.setLineWrap(false);
         editor.setRoundedSelectionEdges(true);
         editor.setBorder(new EtchedBorder());
+        editor.setTabsEmulated(forceSpaces);
         editor.setTabSize(4);
         return editor;
     }

@@ -78,8 +78,8 @@ abstract class EditorPanel {
 
     private AutoCompletion m_autoCompletion;
 
-    public EditorPanel(final String syntaxStyle) {
-        m_editor = SourceCodePanel.createEditor(syntaxStyle);
+    public EditorPanel(final String syntaxStyle, final boolean forceSpaces) {
+        m_editor = SourceCodePanel.createEditor(syntaxStyle, forceSpaces);
         final RTextScrollPane editorScrollPane = new RTextScrollPane(m_editor);
         editorScrollPane.setFoldIndicatorEnabled(true);
         m_panel.add(editorScrollPane, BorderLayout.CENTER);
