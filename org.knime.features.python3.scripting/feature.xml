@@ -729,6 +729,11 @@ interoperation with KNIME.  The owner of a Node may freely choose the
 license terms applicable to such Node, including when such Node is
 propagated with or for interoperation with KNIME.
    </license>
+
+   <requires>
+      <import feature="org.knime.features.python2" version="0.0.0"/>
+   </requires>
+
    <plugin
          id="org.knime.ext.py4j"
          download-size="0"
