@@ -60,6 +60,8 @@ import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.batch.SequentialBatchReader;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 /**
  * Abstract baseclass that can process batches asynhronously as they come in.
  *
@@ -84,10 +86,11 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
     private Object m_terminationLock = new Object();
 
     protected AbstractAsyncBatchProcessor(final Supplier<SequentialBatchReadable> batchReadableSupplier,
-        final int numThreads) {
+        final int numThreads, final String threadPrefix) {
         m_batchReadableSupplier = batchReadableSupplier;
         m_invalidCause = new AtomicReference<>(null);
-        m_threadPool = Executors.newFixedThreadPool(numThreads);
+        m_threadPool = Executors.newFixedThreadPool(numThreads,
+            new ThreadFactoryBuilder().setNameFormat(threadPrefix + "-%d").build());
         m_phaser = new Phaser(1);
         m_stillRunning = new AtomicBoolean(true);
     }

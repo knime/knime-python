@@ -115,7 +115,7 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
 
     private DomainCalculator(final Supplier<SequentialBatchReadable> batchReadableSupplier,
         final Supplier<DomainWritableConfig> configSupplier) {
-        super(batchReadableSupplier, NUM_THREADS);
+        super(batchReadableSupplier, NUM_THREADS, "python-domain-batch-processor");
         m_configSupplier = configSupplier;
     }
 

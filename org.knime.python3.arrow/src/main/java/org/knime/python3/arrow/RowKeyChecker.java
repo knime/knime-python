@@ -101,7 +101,7 @@ public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
     }
 
     private RowKeyChecker(final Supplier<SequentialBatchReadable> batchReadableSupplier) {
-        super(batchReadableSupplier, NUM_THREADS);
+        super(batchReadableSupplier, NUM_THREADS, "python-row-key-batch-processor");
         m_duplicateChecker = new DuplicateChecker();
     }
 
