@@ -274,7 +274,7 @@ def table_to_bytes(table):
                                 else:
                                     base64_set.add(None)
                             data_frame.at[index, names[i]] = base64_set
-            data_frame.to_csv(out_buffer, na_rep='MissingCell', float_format="%.17g")
+            data_frame.to_csv(out_buffer, na_rep='MissingCell', float_format="%.17g", line_terminator="\n")
             out_file.write(out_buffer.getvalue().encode('utf-8'))
         return bytearray(path, 'utf-8')
     except BaseException:
