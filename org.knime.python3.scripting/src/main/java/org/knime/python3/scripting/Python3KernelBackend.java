@@ -107,6 +107,7 @@ import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.FileUtil;
+import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.Version;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
@@ -196,8 +197,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     /**
      * Used to make kernel operations cancelable.
      */
-    private final ExecutorService m_executorService =
-        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build());
+    private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-worker-%d").build()));
 
     /**
      * Initialized by {@link #setOptions(PythonKernelOptions)}.
