@@ -41,14 +41,22 @@
 		</intro>
 		<tab name="Script">
 			<option name="Editor">
-				The script in the editor panel will later be executed to generate this node's outputs.<br/>
-				<i>Execute script</i> executes the full script while <i>Execute selected lines</i> executes only the
-				currently selected part of the script.<br/>
-				The editor optionally provides autocomplete (CTRL + Space) if the Python module <tt>jedi</tt> is
-				installed in the Python environment used by the node.<br/>
-				In the script, import and use the <tt>knime_io</tt> module to access the node's input data and populate
-				its output data as described in the <i>Ports</i> section below. Use the <tt>knime_io.flow_variables</tt>
-				dictionary to access input flow variables by name and add new output flow variables by name. 
+				The editor allows to configure the Python script that will later be run when this node is executed.
+				In the script, use the <tt>knime_io</tt> module (imported as <tt>knio</tt> by default) to access the
+				node's input data and populate its output data as described in the <i>Ports</i> section below. Use the
+				<tt>knio.flow_variables</tt> dictionary to access input flow variables by name and to add new output
+				flow variables by name.<br/>
+				<br/>
+				<i>Execute script</i> and <i>Execute selected lines</i> allow to execute the script, or selected parts
+				of it, right in the dialog without having to execute the entire node. The outputs of an execution can be
+				inspected via the workspace on the right side of the editor. Please note that all executions in the
+				dialog share and reuse the same workspace. That is, outputs of previous executions are kept in the
+				workspace where they are visible to later executions. You can use <i>Reset workspace</i> to clear the
+				workspace before an execution if you want to make it independent of all previous executions. Executions
+				of the entire node, outside of the dialog, are always independent of one another.<br/>
+				<br/>
+				The editor optionally provides autocomplete (by pressing Ctrl + Space) if the Python module
+				<tt>jedi</tt> is installed in the Python environment used by the node.
 			</option>
 			<option name="Workspace">
 				The pane on the right side of the editor panel is the workspace and lists the currently defined
