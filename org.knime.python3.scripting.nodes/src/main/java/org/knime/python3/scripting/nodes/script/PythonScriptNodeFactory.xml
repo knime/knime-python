@@ -12,9 +12,9 @@
 			the following prerequisites and limitations before employing it:</b>
 			<ul>
 			<li>Python 2 is not supported.</li>
-			<li>Additional packages, namely py4j and pyarrow, are required to be installed in your Python 3
-			environment. You can create a new Conda environment that contains these packages via File → Preferences →
-			KNIME → Python.</li>
+			<li>Additional packages, namely <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
+			3 environment in specific versions. We recommend to create a new Conda environment that contains these
+			packages via File → Preferences → KNIME → Python.</li>
 			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
 			should be enabled for best performance.</li>
 			<li>Extension data types such as images from <i>KNIME Image Processing</i> or molecules from <i>RDKit Nodes
@@ -26,15 +26,16 @@
 			and enables working with larger-than-memory data. More details on how to transition to the node's new
 			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
 			There are also example workflows that further illustrate its use
-			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a>.<br/>
+			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> as well as
+			example templates on the <i>Templates</i> tab of the node.<br/>
 			<br/>
 			The node allows executing a Python script in a local Python 3 environment. The environment has to be
 			configured under <i>File → Preferences → KNIME → Python</i> or via flow variable, as described in the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a>.<br/>
 			Multiple input and output ports of various types can dynamically be added to the node and used in the
-			script. See section <i>Ports</i> below for a description of all available inputs and outputs, and how they
-			can be accessed in the Python script.<br/>Furthermore, the node allows to import Jupyter notebooks as
-			Python modules via the
+			script. See sections <i>Ports</i> and <i>Editor</i> below for a description of all available inputs and
+			outputs, and how they can be accessed in the Python script.<br/>
+			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
 			knime_jupyter</a> module that can be imported in the script.
 		</intro>
@@ -99,34 +100,34 @@
 	<ports>
 		<dynInPort name="Pickled object" group-identifier="Input object (pickled)" insert-before="0">
 			An input object. Input objects are automatically unpickled for you. You can access them via
-			<tt>knime_io.input_objects</tt>. For example, the first input object can be accessed like this:
-			<tt>knime_io.input_objects[0]</tt>.
+			<tt>knio.input_objects</tt>. For example, the first input object can be accessed like this:
+			<tt>knio.input_objects[0]</tt>.
 		</dynInPort>
 		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
-			An input table. You can access input tables via <tt>knime_io.input_tables</tt>. For example, the first input
-			table can be accessed like this: <tt>knime_io.input_tables[0]</tt>. Each table is an instance of type
+			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
+			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
 			<tt>knime_table.ReadTable</tt>. Before being able to work with the table, you have to convert it into, for
 			example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
-			learn how to do this.
+			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
 		</dynInPort>
 		<dynOutPort name="Table" group-identifier="Output table" insert-before="0">
-			An output table. The table has to be populated via <tt>knime_io.output_tables</tt> in your script. For
-			example, to populate the first output table, assign it a value like this: <tt>knime_io.ouput_tables[0] =
+			An output table. The table has to be populated via <tt>knio.output_tables</tt> in your script. For example,
+			to populate the first output table, assign it a value like this: <tt>knio.ouput_tables[0] =
 			&lt;value&gt;</tt>. The assigned value must be an instance of type <tt>knime_table.WriteTable</tt> which can
 			be created from, for example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
-			learn how to do this.
+			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
 		</dynOutPort>
 		<dynOutPort name="Image" group-identifier="Output image" insert-before="0">
-			An output image. The image has to be populated via <tt>knime_io.output_images</tt> in your script. For
-			example, to populate the first output image, assign it a value like this <tt>knime_io.output_images[0] =
+			An output image. The image has to be populated via <tt>knio.output_images</tt> in your script. For example,
+			to populate the first output image, assign it a value like this <tt>knio.output_images[0] =
 			&lt;value&gt;</tt>. The assigned value must be either a string describing an SVG image or a byte array
 			encoding a PNG image.
 		</dynOutPort>
 		<dynOutPort name="Pickled object" group-identifier="Output object (pickled)" insert-before="0">
-			An output object. The object has to be populated via <tt>knime_io.output_objects</tt>. For example, to
-			populate the first output object, assign it a value like this: <tt>knime_io.output_objects[0] =
+			An output object. The object has to be populated via <tt>knio.output_objects</tt>. For example, to
+			populate the first output object, assign it a value like this: <tt>knio.output_objects[0] =
 			&lt;value&gt;</tt>. The assigned value can be of any type that can be pickled. It will automatically be
 			pickled for you.
 		</dynOutPort>
