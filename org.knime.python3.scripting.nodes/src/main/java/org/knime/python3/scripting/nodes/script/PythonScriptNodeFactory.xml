@@ -15,7 +15,7 @@
 			<li>Additional packages, namely py4j and pyarrow, are required to be installed in your Python 3
 			environment. You can create a new Conda environment that contains these packages via File → Preferences →
 			KNIME → Python.</li>
-			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Storage</a>
+			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
 			should be enabled for best performance.</li>
 			<li>Extension data types such as images from <i>KNIME Image Processing</i> or molecules from <i>RDKit Nodes
 			for KNIME</i> are not supported yet.</li>
