@@ -1,4 +1,4 @@
-name: py37_knime            # Name of the created environment
+name: py37_knime_dl_cpu     # Name of the created environment
 channels:                   # Repositories to search for packages
 - defaults
 - anaconda

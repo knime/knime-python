@@ -25,9 +25,5 @@ dependencies:            # List of packages that should be installed
 - asammdf=5.19.14        # MDF Reader node
 - pip
 - pip:
-  - onnx
-  - onnx-tf
-  - tensorflow==2.5
-  - tensorflow-hub
   - JPype1 # Databases
 

@@ -1,4 +1,4 @@
-name: py38_knime         # Name of the created environment
+name: py38_knime_tf2_cpu # Name of the created environment
 channels:                # Repositories to search for packages
 - defaults
 - anaconda
@@ -24,4 +24,10 @@ dependencies:            # List of packages that should be installed
 - protobuf>3.12
 - libiconv               # MDF Reader node
 - asammdf=5.19.14        # MDF Reader node
+- pip
+- pip:
+  - onnx
+  - onnx-tf
+  - tensorflow==2.5
+  - tensorflow-hub
 
