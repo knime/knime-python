@@ -102,7 +102,7 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
         # used by pandas to query all attributes of this ExtensionType
         self._metadata = ("_storage_type", "_logical_type", "_converter")
 
-    na_value = pd.NA
+    na_value = None
     type = bytes  # We just say that this is raw data?! No need to be interpreted :)
 
     @property
