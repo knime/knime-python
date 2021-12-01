@@ -81,6 +81,8 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
 
     private SequentialBatchReader m_reader;
 
+    private Object m_terminationLock = new Object();
+
     protected AbstractAsyncBatchProcessor(final Supplier<SequentialBatchReadable> batchReadableSupplier,
         final int numThreads) {
         m_batchReadableSupplier = batchReadableSupplier;
@@ -163,37 +165,41 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
         }
     }
 
-    protected final synchronized void waitForTermination() throws InterruptedException {
-        // Wait until all threads are done
-        if (!m_phaser.isTerminated()) {
-            final var phase = m_phaser.getPhase();
-            m_phaser.arriveAndDeregister();
-            m_phaser.awaitAdvanceInterruptibly(phase);
-        }
+    protected final void waitForTermination() throws InterruptedException {
+        synchronized (m_terminationLock) {
+            // Wait until all threads are done
+            if (!m_phaser.isTerminated()) {
+                final var phase = m_phaser.getPhase();
+                m_phaser.arriveAndDeregister();
+                m_phaser.awaitAdvanceInterruptibly(phase);
+            }
 
-        // Shutdown the thread pool
-        m_threadPool.shutdown();
+            // Shutdown the thread pool
+            m_threadPool.shutdown();
+        }
     }
 
     @Override
-    public final synchronized void close() throws IOException {
+    public final void close() throws IOException {
         // Stop threads
         m_stillRunning.set(false);
 
-        // Wait until the threads are all done -> uninterruptible!
-        if (!m_phaser.isTerminated()) {
-            final var phase = m_phaser.getPhase();
-            m_phaser.arriveAndDeregister();
-            m_phaser.awaitAdvance(phase);
-        }
+        synchronized (m_terminationLock) {
+            // Wait until the threads are all done -> uninterruptible!
+            if (!m_phaser.isTerminated()) {
+                final var phase = m_phaser.getPhase();
+                m_phaser.arriveAndDeregister();
+                m_phaser.awaitAdvance(phase);
+            }
 
-        // Shutdown the thread pool
-        m_threadPool.shutdown();
+            // Shutdown the thread pool
+            m_threadPool.shutdown();
 
-        // Close the reader and readable
-        if (m_reader != null) {
-            m_reader.close();
-            m_readable.close();
+            // Close the reader and readable
+            if (m_reader != null) {
+                m_reader.close();
+                m_readable.close();
+            }
         }
     }
 }
