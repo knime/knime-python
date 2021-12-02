@@ -365,3 +365,4 @@ class ArrowDataSink:
         if hasattr(self, "_writer"):
             self._writer.close()
         self._java_data_sink.setFinalSize(self._size)
+        self._file.close()
