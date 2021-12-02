@@ -199,6 +199,10 @@ class PythonKernel(kg.EntryPoint):
         kio._pad_up_to_length(kio._input_tables, table_index + 1)
         kio._input_tables[table_index] = read_table
 
+    def releaseInputTables(self):
+        for table in kio.input_tables:
+            table._source.close()
+
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
         kio._pad_up_to_length(kio._output_tables, num_output_tables)
 
