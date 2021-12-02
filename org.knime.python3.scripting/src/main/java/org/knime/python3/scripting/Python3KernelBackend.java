@@ -653,6 +653,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void close() throws PythonKernelCleanupException {
         if (m_closed.compareAndSet(false, true)) {
+            PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
             new Thread(() -> {
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
@@ -663,7 +664,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                         m_temporaryFsHandlers);
                 }
                 cleanupCopiedStores();
-                PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
             }).start();
         }
     }
