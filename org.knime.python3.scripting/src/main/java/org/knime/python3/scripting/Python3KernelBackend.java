@@ -654,7 +654,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     public void close() throws PythonKernelCleanupException {
         if (m_closed.compareAndSet(false, true)) {
             PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
-            m_proxy.releaseInputTables();
+            PythonUtils.Misc.invokeSafely(LOGGER::debug, Python3KernelBackendProxy::releaseInputTables, m_proxy);
             new Thread(() -> {
                 PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
                 PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
