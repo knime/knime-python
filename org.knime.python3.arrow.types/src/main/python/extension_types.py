@@ -73,6 +73,8 @@ class ZonedDateTimeValueFactory2(
         return local_datetime.replace(tzinfo=time_zone)
 
     def encode(self, value):
+        if value is None:
+            return None
         local_dt_dict = self._local_dt_factory.encode(value)
         tz_info = value.tzinfo
         tz_offset = tz_info.utcoffset(value).seconds
@@ -103,6 +105,8 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
         )
 
     def encode(self, datetime):
+        if datetime is None:
+            return None
         delta = datetime.replace(tzinfo=None) - _start_of_epoch
         day_of_epoch = delta.days
         micro_of_day = (
@@ -131,6 +135,8 @@ class DurationValueFactory(kt.PythonValueFactory):
         return dt.timedelta(seconds=seconds, microseconds=nanos // 1000)
 
     def encode(self, value):
+        if value is None:
+            return None
         seconds = value // _second_delta
         nanos = value.microseconds * 1000
         return {"0": seconds, "1": nanos}
@@ -150,6 +156,8 @@ class LocalDateValueFactory(kt.PythonValueFactory):
         return _start_of_epoch.date() + dt.timedelta(days=day_of_epoch)
 
     def encode(self, date):
+        if date is None:
+            return None
         return (date - _start_of_epoch.date()).days
 
 
@@ -166,6 +174,9 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
         return local_dt.time()
 
     def encode(self, time):
+        if time is None:
+            return None
+
         time_on_first_day = dt.datetime.min.replace(
             hour=time.hour,
             minute=time.minute,
@@ -205,6 +216,8 @@ class FsLocationValueFactory(kt.PythonValueFactory):
         return FsLocationValue(storage["0"], storage["1"], storage["2"])
 
     def encode(self, value):
+        if value is None:
+            return None
         return {"0": value.fs_category, "1": value.fs_specifier, "2": value.path}
 
 
@@ -232,4 +245,6 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         return BooleanSetValue(storage["0"], storage["1"], storage["2"])
 
     def encode(self, value):
+        if value is None:
+            return None
         return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}
