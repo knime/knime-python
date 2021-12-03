@@ -169,13 +169,21 @@ class KnimePandasExensionArray(pdext.ExtensionArray):
                 scalars,
             )
 
-        # needed for pandas ExtensionArray API
-        arrow_type = kat.LogicalTypeExtensionType(converter, storage_type, logical_type)
+        if isinstance(dtype, PandasLogicalTypeExtensionType):
+            # in this case we can extract storage, logical_type and converter
+            storage_type = dtype._storage_type
+            logical_type = dtype._logical_type
+            converter = dtype._converter
+            if converter is not None and converter.needs_conversion():
+                scalars = [converter.encode(s) for s in scalars]
 
         if storage_type is None:
             raise ValueError(
                 "Can only create KnimePandasExtensionArray from a sequence if the storage type is given."
             )
+
+        # needed for pandas ExtensionArray API
+        arrow_type = kat.LogicalTypeExtensionType(converter, storage_type, logical_type)
 
         a = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
