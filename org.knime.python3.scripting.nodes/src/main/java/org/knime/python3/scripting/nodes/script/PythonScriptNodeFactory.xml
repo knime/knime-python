@@ -56,7 +56,7 @@
 				of the entire node, outside of the dialog, are always independent of one another.<br/>
 				<br/>
 				The editor optionally provides autocomplete (by pressing Ctrl + Space) if the Python module
-				<tt>jedi</tt> is installed in the Python environment used by the node.
+				<tt>jedi</tt> is installed in the Python environment used by the node (default if Python environment is created through KNIME).
 			</option>
 			<option name="Workspace">
 				The pane on the right side of the editor panel is the workspace and lists the currently defined
