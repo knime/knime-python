@@ -8,6 +8,9 @@
 */*.jar
 **/CHANGELOG.md
 
+# Sphinx documentation
+**/_build/
+
 # Coverage.py
 .coverage
 **/htmlcov/
