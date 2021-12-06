@@ -42,9 +42,7 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-"""
-@author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
-"""
+# @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 from typing import Any, Dict, List
 
 # Do not remove, meant to be reexported.
@@ -57,12 +55,16 @@ _input_objects = []
 _input_tables = []
 
 input_objects: List = _FixedSizeListView(_input_objects, "input_object")
-"""A list of input objects of this script node using zero-based indices."""
+"""
+A list of input objects of this script node using zero-based indices.
+Input objects are Python objects that are passed in from another Python script node's
+``output_object`` port. Use this for instance to pass trained models between Python nodes.
+"""
 
 input_tables: List[ReadTable] = _FixedSizeListView(_input_tables, "input_table")
 """
-The input tables of this script node. Use zero-based indexing, 
-tables are available in the same order as the ports connectors are displayed on the node.
+The input tables of this script node. Tables are available in the same order as the ports 
+connectors are displayed alongside the node, using zero-based indexing.
 """
 
 _output_tables = []
@@ -74,16 +76,37 @@ output_tables: List[WriteTable] = _FixedSizeListView(_output_tables, "output_tab
 The output tables of this script node. You should assign a WriteTable
 or BatchWriteTable to each output port of this node.
 
-Example:
->>> knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)
+**Example:**
+
+    ``knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)``
+
 """
 
 output_images: List = _FixedSizeListView(_output_images, "output_image")
 """The output images of this script node"""
 
 output_objects: List = _FixedSizeListView(_output_objects, "output_object")
-"""The output objects of this script node"""
+"""
+The output objects of this script node. Each output object can be an arbitrary 
+Python object as long as it can be *pickled*. Use this to pass e.g. a trained
+model to another Python script node.
+"""
 
 
 def _pad_up_to_length(lst: list, length: int) -> None:
     lst += [None] * (length - len(lst))
+
+
+__all__ = [
+    "flow_variables",
+    "input_objects",
+    "input_tables",
+    "output_tables",
+    "output_objects",
+    "output_images",
+    "write_table",
+    "batch_write_table",
+    "WriteTable",
+    "ReadTable",
+    "Batch",
+]
