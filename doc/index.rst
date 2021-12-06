@@ -1,6 +1,11 @@
 KNIME Python Script (Labs) API
 ==============================
 
+This document lists the API of the module ``knime_io`` that functions as main contact point between KNIME
+and Python in the KNIME Python Script (Labs) node. 
+For a documentation on how to use the node, please see the 
+`KNIME Python Integration Guide <https://docs.knime.com/latest/python_installation_guide/index.html>`_.
+
 Inputs and outputs
 ------------------
 
