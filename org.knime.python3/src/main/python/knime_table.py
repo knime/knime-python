@@ -251,14 +251,16 @@ class _ReadData(ABC):
         """
         Access the tabular data as a pandas.DataFrame.
 
-        ### Arguments:
-        - sentinel:  Replace missing values in integral columns by the given value, one of:
-                - "min" min int32 or min int64 depending on the type of the column
-                - "max" max int32 or max int64 depending on the type of the column
-                - An integer value that should be inserted for each missing value
+        Args:
+            sentinel:
+                Replace missing values in integral columns by the given value, one of:
 
-        ### Raises:
-        - IndexError: If rows or columns were requested outside of the available shape
+                * ``"min"`` min int32 or min int64 depending on the type of the column
+                * ``"max"`` max int32 or max int64 depending on the type of the column
+                * An integer value that should be inserted for each missing value
+
+        Raises:
+            IndexError: If rows or columns were requested outside of the available shape
         """
         pass
 
@@ -272,14 +274,16 @@ class _ReadData(ABC):
         type depends on the type of the underlying object. When called on a ReadTable,
         returns a pyarrow.Table.
 
-        ### Arguments:
-        - sentinel: Replace missing values in integral columns by the given value, one of:
-            - "min" min int32 or min int64 depending on the type of the column
-            - "max" max int32 or max int64 depending on the type of the column
-            - An integer value that should be inserted for each missing value
+        Args:
+            sentinel:
+                Replace missing values in integral columns by the given value, one of:
 
-        ### Raises:
-        - IndexError: If rows or columns were requested outside of the available shape
+                * ``"min"`` min int32 or min int64 depending on the type of the column
+                * ``"max"`` max int32 or max int64 depending on the type of the column
+                * An integer value that should be inserted for each missing value
+
+        Raises:
+            IndexError: If rows or columns were requested outside of the available shape
         """
         pass
 
@@ -321,20 +325,22 @@ class Batch(_Tabular, _ReadData):
         Create a row and column sliced view of this Batch, with slicing syntax similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
-        ### Arguments:
-        - row_slice: a slice object describing which rows to use
-        - column_slice: Optional. A slice object, a list of column indices, or a list of column names
+        Args:
+            row_slice
+                a slice object describing which rows to use
+            column_slice
+                Optional. A slice object, a list of column indices, or a list of column names
 
-        ### Returns:
-        - a SlicedDataView that can be converted to pandas or pyarrow.
+        Returns:
+            a SlicedDataView that can be converted to pandas or pyarrow.
 
-        ### Examples:
+        **Examples:**
 
         Get the first 100 rows of columns 1,2,3,4:
-        >>> sliced_batch = batch[:100, 1:5]
+        ``sliced_batch = batch[:100, 1:5]``
 
         Get all rows of the columns "name" and "age":
-        >>> sliced_batch = batch[:, ["name", "age"]]
+        ``sliced_batch = batch[:, ["name", "age"]]``
 
         The returned `sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
         """
@@ -392,20 +398,22 @@ class ReadTable(_Table, _ReadData):
         Create a row and column sliced view of this ReadTable, with slicing syntax similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
-        ### Arguments:
-        - row_slice: a slice object describing which rows to use
-        - column_slice: Optional. A slice object, a list of column indices, or a list of column names
+        Args:
+            row_slice:
+                a slice object describing which rows to use
+            column_slice:
+                Optional. A slice object, a list of column indices, or a list of column names
 
-        ### Returns:
-        - a SlicedDataView that can be converted to pandas or pyarrow.
+        Returns:
+            a SlicedDataView that can be converted to pandas or pyarrow.
 
-        ### Examples:
+        **Examples:**
 
         Get the first 100 rows of columns 1,2,3,4:
-        >>> sliced_table = table[:100, 1:5]
+        ``sliced_table = table[:100, 1:5]``
 
         Get all rows of the columns "name" and "age":
-        >>> sliced_table = table[:, ["name", "age"]]
+        ``sliced_table = table[:, ["name", "age"]]``
 
         The returned `sliced_tables` cannot be sliced further. But they can be converted to pandas or pyarrow.
         """
@@ -437,18 +445,20 @@ class BatchWriteTable(_Table):
         Appends a batch with the given data to the end of this Table. The number of columns, as well as their
         data types, must match that of the previous batches in this Table.
 
-        ### Arguments:
-        - data: A Batch, a pandas.DataFrame or a pyarrow.RecordBatch
-        - sentinel:
-          Only if data is a pandas.DataFrame or pyarrow.RecordBatch.
-          Interpret the following values in integral columns as missing value:
-            - "min" min int32 or min int64 depending on the type of the column
-            - "max" max int32 or max int64 depending on the type of the column
-            - a special integer value that should be interpreted as missing value
+        Args:
+            data:
+                A Batch, a pandas.DataFrame or a pyarrow.RecordBatch
+            sentinel:
+                Only if data is a pandas.DataFrame or pyarrow.RecordBatch.
+                Interpret the following values in integral columns as missing value:
 
-        ### Raise:
-        - ValueError:
-          If the new batch does not have the same columns as previous batches in this WriteTable.
+                * ``"min"`` min int32 or min int64 depending on the type of the column
+                * ``"max"`` max int32 or max int64 depending on the type of the column
+                * a special integer value that should be interpreted as missing value
+
+        Raises:
+            ValueError:
+                If the new batch does not have the same columns as previous batches in this WriteTable.
         """
         pass
 
@@ -470,13 +480,15 @@ def write_table(
     Factory method to create a WriteTable given a pandas.DataFrame or a pyarrow.Table.
     Internally creates a WriteTable using its create, from_pandas or from_pyarrow methods respectively.
 
-    ### Arguments:
-    - data: A ReadTable, pandas.DataFrame or a pyarrow.Table
-    - sentinel:
-      Interpret the following values in integral columns as missing value:
-        - "min" min int32 or min int64 depending on the type of the column
-        - "max" max int32 or max int64 depending on the type of the column
-        - a special integer value that should be interpreted as missing value
+    Args:
+        data:
+            A ReadTable, pandas.DataFrame or a pyarrow.Table
+        sentinel:
+            Interpret the following values in integral columns as missing value:
+
+            * ``"min"`` min int32 or min int64 depending on the type of the column
+            * ``"max"`` max int32 or max int64 depending on the type of the column
+            * a special integer value that should be interpreted as missing value
     """
     return _backend.write_table(data, sentinel)
 
@@ -495,12 +507,14 @@ def batch(
     """
     Create a Batch from the given data.
 
-    ### Arguments:
-    - data: A pandas.DataFrame or a pyarrow.RecordBatch
-    - sentinel:
-      Interpret the following values in integral columns as missing value:
-        - "min" min int32 or min int64 depending on the type of the column
-        - "max" max int32 or max int64 depending on the type of the column
-        - a special integer value that should be interpreted as missing value
+    Args:
+        data:
+            A pandas.DataFrame or a pyarrow.RecordBatch
+        sentinel:
+            Interpret the following values in integral columns as missing value:
+
+            * ``"min"`` min int32 or min int64 depending on the type of the column
+            * ``"max"`` max int32 or max int64 depending on the type of the column
+            * a special integer value that should be interpreted as missing value
     """
     return _backend.batch(data, sentinel)
