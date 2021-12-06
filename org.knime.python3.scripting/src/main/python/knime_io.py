@@ -63,7 +63,7 @@ Input objects are Python objects that are passed in from another Python script n
 
 input_tables: List[ReadTable] = _FixedSizeListView(_input_tables, "input_table")
 """
-The input tables of this script node. Tables are available in the same order as the ports 
+The input tables of this script node. Tables are available in the same order as the port 
 connectors are displayed alongside the node, using zero-based indexing.
 """
 
@@ -74,16 +74,17 @@ _output_objects = []
 output_tables: List[WriteTable] = _FixedSizeListView(_output_tables, "output_table")
 """
 The output tables of this script node. You should assign a WriteTable
-or BatchWriteTable to each output port of this node.
+or BatchWriteTable to each output port of this node. See the factory methods
+``knime_io.write_table()`` and ``knime_io.batch_write_table()`` below.
 
-**Example:**
+**Example**::
 
-    ``knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)``
+    knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)
 
 """
 
 output_images: List = _FixedSizeListView(_output_images, "output_image")
-"""The output images of this script node"""
+"""The output images of this script node."""
 
 output_objects: List = _FixedSizeListView(_output_objects, "output_object")
 """
