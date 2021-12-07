@@ -1,5 +1,5 @@
 #!groovy
-def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2021-12'
+def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2022-06'
 
 @groovy.transform.Field
 static final String[] PYTHON_VERSIONS = ['36', '37', '38', '39']
