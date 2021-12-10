@@ -79,6 +79,9 @@ def pandas_df_to_arrow(
         axis=1,
     )
 
+    # Convert all column names to string or PyArrow might complain
+    data_frame.columns = [str(c) for c in data_frame.columns]
+
     if to_batch:
         return pa.RecordBatch.from_pandas(data_frame)
     else:
