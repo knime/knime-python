@@ -190,10 +190,30 @@ public class PythonKernelManager implements AutoCloseable {
      * Execute the given source code.
      *
      * @param sourceCode The source code to execute
-     * @param checkOutputs Check whether the source code populates all output ports properly
      * @param responseHandler Handler for the responded console output
      */
-    public synchronized void execute(final String sourceCode, final boolean checkOutputs,
+    public synchronized void execute(final String sourceCode,
+        final PythonKernelResponseHandler<String[]> responseHandler) {
+        executeInThread(kernel -> kernel.execute(sourceCode), responseHandler);
+    }
+
+    /**
+     * Execute the given source code and check that all output ports are populated properly.
+     *
+     * @param sourceCode The source code to execute
+     * @param responseHandler Handler for the responded console output
+     */
+    public synchronized void executeAndCheckOutputs(final String sourceCode,
+        final PythonKernelResponseHandler<String[]> responseHandler) {
+        executeInThread(kernel -> kernel.executeAndCheckOutputs(sourceCode), responseHandler);
+    }
+
+    private interface ExecutionFunction {
+        String[] run(PythonKernel kernel) throws PythonIOException;
+    }
+
+    private void executeInThread(
+        final ExecutionFunction executionCall,
         final PythonKernelResponseHandler<String[]> responseHandler) {
         final PythonKernel kernel = m_kernel;
         runInThread(new Runnable() {
@@ -202,7 +222,7 @@ public class PythonKernelManager implements AutoCloseable {
                 String[] response = null;
                 Exception exception = null;
                 try {
-                    response = kernel.execute(sourceCode, checkOutputs);
+                    response = executionCall.run(kernel);
                 } catch (final Exception e) {
                     exception = e;
                 }

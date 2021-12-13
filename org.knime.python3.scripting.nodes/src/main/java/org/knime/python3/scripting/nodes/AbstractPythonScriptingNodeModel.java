@@ -208,7 +208,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
             final var scriptExecutionMonitor = exec.createSubProgress(1d - inRelativeWeight - outRelativeWeight);
             scriptExecutionMonitor.setMessage("Executing Python script...");
-            final String[] output = kernel.execute(m_script, cancelable);
+            final String[] output = kernel.executeAndCheckOutputs(m_script, cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
             setExternalErrorOutput(new LinkedList<>(Arrays.asList(output[1].split("\n"))));
             scriptExecutionMonitor.setProgress(1);
