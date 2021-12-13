@@ -423,7 +423,7 @@ public final class PythonKernelQueue {
                 PythonKernel.testInstallation(key.m_command, requiredModules);
                 final String requiredModulesImportCode =
                     String.join("\n", Iterables.transform(requiredModules, m -> "import " + m.getName()));
-                kernel.execute(requiredModulesImportCode);
+                kernel.execute(requiredModulesImportCode, false);
             }
             final Set<PythonModuleSpec> optionalModules = key.m_optionalAdditionalModules;
             if (!optionalModules.isEmpty()) {
@@ -433,7 +433,7 @@ public final class PythonKernelQueue {
                     + "except Exception:\n" //
                     + "\tpass" //
                 ));
-                kernel.execute(optionalModulesImportCode);
+                kernel.execute(optionalModulesImportCode, false);
             }
         }
 

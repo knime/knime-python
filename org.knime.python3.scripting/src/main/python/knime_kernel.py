@@ -338,13 +338,13 @@ class PythonKernel(kg.EntryPoint):
                 warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
-    def executeOnMainThread(self, source_code: str) -> List[str]:
+    def executeOnMainThread(self, source_code: str, check_outputs: bool) -> List[str]:
         with self._main_loop_lock:
             if self._main_loop_stopped:
                 raise RuntimeError(
                     "Cannot schedule executions on the main thread after the main loop stopped."
                 )
-            execute_task = _ExecuteTask(self._execute, source_code)
+            execute_task = _ExecuteTask(self._execute, source_code, check_outputs)
             self._main_loop_queue.put(execute_task)
             return execute_task.result()
 
@@ -371,7 +371,7 @@ class PythonKernel(kg.EntryPoint):
                 )
         self._check_flow_variables()
 
-    def _execute(self, source_code: str) -> List[str]:
+    def _execute(self, source_code: str, check_outputs: bool = False) -> List[str]:
         def create_python_sink():
             java_sink = self._java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
@@ -381,7 +381,8 @@ class PythonKernel(kg.EntryPoint):
         ) as stderr:
             kt._backend = kat.ArrowBackend(create_python_sink)
             exec(source_code, self._workspace)
-            self._check_outputs()
+            if check_outputs:
+                self._check_outputs()
             kt._backend.close()
             kt._backend = None
         return ListConverter().convert(

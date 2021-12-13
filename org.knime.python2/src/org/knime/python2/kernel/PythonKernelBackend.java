@@ -280,16 +280,18 @@ public interface PythonKernelBackend extends AutoCloseable {
      * Execute the given source code on Python's main thread.
      *
      * @param sourceCode The source code to execute
+     * @param checkOutputs Check whether the sourceCode populates all output ports properly
      * @return Standard console output
      * @throws PythonIOException If an error occurred while communicating with the Python kernel
      */
-    String[] execute(String sourceCode) throws PythonIOException;
+    String[] execute(String sourceCode, boolean checkOutputs) throws PythonIOException;
 
     /**
      * Execute the given source code on Python's main thread while still checking whether the execution has been
      * canceled.
      *
      * @param sourceCode The source code to execute
+     * @param checkOutputs Check whether the sourceCode populates all output ports properly
      * @param cancelable The cancelable to check if execution has been canceled
      * @return Standard console output
      * @throws PythonIOException If an error occurred while communicating with the Python kernel or while executing the
@@ -297,7 +299,7 @@ public interface PythonKernelBackend extends AutoCloseable {
      * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
      *             must be {@link #close() closed}.
      */
-    String[] execute(String sourceCode, PythonCancelable cancelable)
+    String[] execute(String sourceCode, boolean checkOutputs, PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException;
 
     /**

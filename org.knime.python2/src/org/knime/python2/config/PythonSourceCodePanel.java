@@ -216,7 +216,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
     }
 
     @Override
-    protected void runExec(final String sourceCode) {
+    protected void runExec(final String sourceCode, final boolean checkOutputs) {
         @SuppressWarnings("resource") // The kernel manager will be closed along with this panel at the latest.
         final PythonKernelManager kernelManagerBeforeLock = getKernelManager();
         if (kernelManagerBeforeLock != null) {
@@ -234,7 +234,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     setRunning(true);
                     setStatusMessage("Executing...");
                     setStopCallback(new PythonKernelManagerStopTask());
-                    kernelManager.execute(sourceCode, new ExecuteResponseHandler(kernelManager, kernelRestarts));
+                    kernelManager.execute(sourceCode, checkOutputs, new ExecuteResponseHandler(kernelManager, kernelRestarts));
                 }
             } finally {
                 m_lock.unlock();

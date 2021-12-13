@@ -1014,7 +1014,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
             if (object != null) {
                 m_commands.putObject(name, object.getFile().getAbsolutePath()).get();
             } else {
-                execute("workspace.put_variable('" + name + "', None)");
+                execute("workspace.put_variable('" + name + "', None)", false);
             }
         } catch (InterruptedException | ExecutionException ex) {
             throw getMostSpecificPythonKernelException(ex);
@@ -1031,7 +1031,7 @@ public final class Python2KernelBackend implements PythonKernelBackend {
                     return null;
                 }, m_executorService::submit, new PythonExecutionMonitorCancelable(executionMonitor));
             } else {
-                execute("workspace.put_variable('" + name + "', None)",
+                execute("workspace.put_variable('" + name + "', None)", false,
                     new PythonExecutionMonitorCancelable(executionMonitor));
             }
         } catch (final PythonCanceledExecutionException ex) {
@@ -1230,14 +1230,16 @@ public final class Python2KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public String[] execute(final String sourceCode) throws PythonIOException {
+    public String[] execute(final String sourceCode, final boolean checkOutputs) throws PythonIOException {
+        // Note: checkOutputs is only needed by the Python3KernelBackend, the Python2Kernel performs the check
+        //       after sending data back to KNIME.
         return executeCommand(m_commands.execute(sourceCode));
     }
 
     @Override
-    public String[] execute(final String sourceCode, final PythonCancelable cancelable)
+    public String[] execute(final String sourceCode, final boolean checkOutputs, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return executeCommandCancelable(() -> execute(sourceCode), cancelable);
+        return executeCommandCancelable(() -> execute(sourceCode, checkOutputs), cancelable);
     }
 
     @Override

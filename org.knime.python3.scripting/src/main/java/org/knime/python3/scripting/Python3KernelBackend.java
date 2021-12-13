@@ -589,14 +589,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     @Override
-    public String[] execute(final String sourceCode) throws PythonIOException {
-        return beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode).toArray(String[]::new));
+    public String[] execute(final String sourceCode, final boolean checkOutputs) throws PythonIOException {
+        return beautifyPythonTraceback(() -> m_proxy.executeOnMainThread(sourceCode, checkOutputs).toArray(String[]::new));
     }
 
     @Override
-    public String[] execute(final String sourceCode, final PythonCancelable cancelable)
+    public String[] execute(final String sourceCode, final boolean checkOutputs, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> execute(sourceCode), cancelable);
+        return performCancelable(() -> execute(sourceCode, checkOutputs), cancelable);
     }
 
     @Override
