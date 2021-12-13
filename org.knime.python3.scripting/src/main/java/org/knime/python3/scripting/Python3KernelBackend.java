@@ -55,7 +55,6 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,7 +63,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -366,29 +364,17 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         final LinkedHashMap<String, Object> flowVariablesMap = new LinkedHashMap<>(flowVariables.size());
         for (final FlowVariable variable : flowVariables) {
             // Flow variables typically contain Java primitives or strings as values (or arrays of these). We simply let
-            // py4j handle the conversion of the values into their Python equivalents. Values and array elements that
-            // are not Java primitives or strings are converted into their string representations beforehand, which
-            // follows the behavior of the legacy Python back end.
+            // py4j handle the conversion of the values into their Python equivalents.
             // Note that the legacy Python back end only supports double, int, and string flow variables and converts
             // all other variable values, including arrays, into strings. So this simple implementation here is already
             // an improvement over the legacy implementation.
             //
-            // TODO: the conversion of values of unknown type into strings might be a problem in terms of forward
-            // compatibility: what if we want to provide a "proper" mapping of the values in the future? Users might
-            // already rely on the string representation in their scripts. Should we skip unknown values entirely?
             final VariableType<?> type = variable.getVariableType();
             final Class<?> simpleType = type.getSimpleType();
             Object value = variable.getValue(type);
-            if (!KNOWN_FLOW_VARIABLE_TYPES.contains(simpleType)) {
-                if (simpleType.isArray()) {
-                    value = Arrays.stream((Object[])value) //
-                        .map(v -> Objects.toString(v, null)) //
-                        .toArray(String[]::new);
-                } else {
-                    value = Objects.toString(value, null);
-                }
+            if (KNOWN_FLOW_VARIABLE_TYPES.contains(simpleType)) {
+                flowVariablesMap.put(variable.getName(), value);
             }
-            flowVariablesMap.put(variable.getName(), value);
         }
         m_proxy.setFlowVariables(flowVariablesMap);
     }
