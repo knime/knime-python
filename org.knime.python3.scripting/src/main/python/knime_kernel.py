@@ -54,7 +54,7 @@ import sys
 import warnings
 from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
-from py4j.java_collections import ListConverter
+from py4j.java_collections import JavaArray, ListConverter
 from py4j.java_gateway import JavaClass
 from queue import Full, Queue
 from threading import Event, Lock
@@ -153,7 +153,10 @@ class PythonKernel(kg.EntryPoint):
 
     def setFlowVariables(self, flow_variables: Dict[str, Any]) -> None:
         kio.flow_variables.clear()
-        kio.flow_variables.update(flow_variables)
+        for key, value in flow_variables.items():
+            if isinstance(value, JavaArray):
+                value = [x for x in value]
+            kio.flow_variables[key] = value
 
     def _check_flow_variables(self):
         LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
