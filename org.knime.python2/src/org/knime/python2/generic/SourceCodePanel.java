@@ -183,12 +183,12 @@ public abstract class SourceCodePanel extends JPanel {
         };
         final JPanel editorPanel = m_editor.getPanel();
         m_editorButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-        m_exec.addActionListener(e -> runExec(m_editor.getEditor().getText()));
+        m_exec.addActionListener(e -> runExec(m_editor.getEditor().getText(), true));
         m_editorButtons.add(m_exec);
         m_execSelection.addActionListener(e -> {
             final String selectedText = m_editor.getSelectedLines();
             if ((selectedText != null) && !selectedText.isEmpty()) {
-                runExec(selectedText);
+                runExec(selectedText, false);
             } else {
                 setStatusMessage("Nothing selected");
             }
@@ -572,13 +572,14 @@ public abstract class SourceCodePanel extends JPanel {
     }
 
     /**
-     * Executes the given source code.
+     * Executes the given source code and optionally checks whether all output ports are populated.
      *
      * This method should add the output to the console.
      *
      * @param sourceCode The source code to execute
+     * @param checkOutputs Whether to check that all output ports are filled with content of the right type.
      */
-    protected abstract void runExec(final String sourceCode);
+    protected abstract void runExec(final String sourceCode, final boolean checkOutputs);
 
     /**
      * Initiates an update of the listed variables.
