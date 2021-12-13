@@ -354,8 +354,10 @@ class PythonKernel(kg.EntryPoint):
     def _check_outputs(self):
         for i, o in enumerate(kio._output_tables):
             if o is None or not isinstance(o, kat._ArrowWriteTableImpl):
+                type_str = type(o) if o is not None else "None"
                 raise ValueError(
-                    f"Expected a WriteTable in output_tables[{i}], got {type(o)}"
+                    f"Expected a WriteTable in output_tables[{i}], got {type_str}. "
+                    "Please use knime_io.write_table(data) or knime_io.batch_write_table() to create a WriteTable."
                 )
 
         for i, o in enumerate(kio._output_objects):
