@@ -130,9 +130,9 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
             final PortType inType = inTypes[i];
             final InputPort inPort;
             if (BufferedDataTable.TYPE.equals(inType)) {
-                inPort = new DataTableInputPort(Integer.toString(inTableIndex++));
+                inPort = new DataTableInputPort("knio.input_tables[" + inTableIndex++ + "]");
             } else if (PickledObjectFileStorePortObject.TYPE.equals(inType)) {
-                inPort = new PickledObjectInputPort(Integer.toString(inObjectIndex++));
+                inPort = new PickledObjectInputPort("knio.input_objects[" + inObjectIndex++ + "]");
             } else {
                 throw new IllegalStateException("Unsupported input type: " + inType.getName());
             }
@@ -147,11 +147,11 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
             final PortType outType = outTypes[i];
             final OutputPort outPort;
             if (BufferedDataTable.TYPE.equals(outType)) {
-                outPort = new DataTableOutputPort(Integer.toString(outTableSuffix++));
+                outPort = new DataTableOutputPort("knio.output_tables[" + outTableSuffix++ + "]");
             } else if (ImagePortObject.TYPE.equals(outType)) {
-                outPort = new ImageOutputPort(Integer.toString(outImageSuffix++));
+                outPort = new ImageOutputPort("knio.output_images[" + outImageSuffix++ + "]");
             } else if (PickledObjectFileStorePortObject.TYPE.equals(outType)) {
-                outPort = new PickledObjectOutputPort(Integer.toString(outObjectSuffix++));
+                outPort = new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix++ + "]");
             } else {
                 throw new IllegalStateException("Unsupported output type: " + outType.getName());
             }

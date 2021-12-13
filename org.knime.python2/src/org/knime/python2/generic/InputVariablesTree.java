@@ -85,15 +85,15 @@ final class InputVariablesTree {
     private final JPanel m_panel;
 
     public InputVariablesTree(final VariableNames variableNames, final RSyntaxTextArea editor,
-        final BinaryOperator<String> createVariableAccessStringStrategy) {
+        final BinaryOperator<String> createVariableAccessStringStrategy, final boolean enableInputColumnAccess) {
         m_variableNames = variableNames;
 
         m_tree.setRootVisible(false);
         m_tree.setShowsRootHandles(false);
         m_tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         m_tree.setCellRenderer(new InputVariablesTreeCellRenderer());
-        m_tree
-            .addMouseListener(new InputVariablesTreeMouseListener(m_tree, editor, createVariableAccessStringStrategy));
+        m_tree.addMouseListener(new InputVariablesTreeMouseListener(m_tree, editor, createVariableAccessStringStrategy,
+            enableInputColumnAccess));
 
         m_panel = new JPanel(new BorderLayout());
         final JLabel label = new JLabel("Input variables");
@@ -182,11 +182,14 @@ final class InputVariablesTree {
 
         private final BinaryOperator<String> m_createVariableAccessStringStrategy;
 
+        private final boolean m_enableInputColumnAccess;
+
         public InputVariablesTreeMouseListener(final JTree tree, final RSyntaxTextArea editor,
-            final BinaryOperator<String> createVariableAccessStringStrategy) {
+            final BinaryOperator<String> createVariableAccessStringStrategy, final boolean enableInputColumnAccess) {
             m_tree = tree;
             m_editor = editor;
             m_createVariableAccessStringStrategy = createVariableAccessStringStrategy;
+            m_enableInputColumnAccess = enableInputColumnAccess;
         }
 
         @Override
@@ -198,9 +201,11 @@ final class InputVariablesTree {
                 String text = null;
                 if (userObject instanceof DataColumnSpec) {
                     // Column
-                    final String tableName = path.getParentPath().getLastPathComponent().toString();
-                    final String columnName = ((DataColumnSpec)userObject).getName();
-                    text = m_createVariableAccessStringStrategy.apply(tableName, columnName);
+                    if (m_enableInputColumnAccess) {
+                        final String tableName = path.getParentPath().getLastPathComponent().toString();
+                        final String columnName = ((DataColumnSpec)userObject).getName();
+                        text = m_createVariableAccessStringStrategy.apply(tableName, columnName);
+                    }
                 } else if (node.getChildCount() == 0 || !SwingUtilities.isLeftMouseButton(e)) {
                     // Object or table. Exclude left-clicks if it is a non-empty table to avoid conflicts with the
                     // toggling of the tree node.

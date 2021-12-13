@@ -483,12 +483,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      * Instead it is expected that clients terminate the entire kernel right after canceling one of its tasks, as stated
      * in the documentation of {@link PythonKernel#putDataTable(String, BufferedDataTable, ExecutionMonitor)}.
      *
-     * @param name Must be parsable as an integer.
+     * @param name Must be formatted as {@code knio.input_tables[i]} where {@code i} must be parsable as an integer.
      */
     @Override
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        performCancelable(new PutDataTableTask(Integer.parseInt(name), table),
+        performCancelable(new PutDataTableTask(parseIndex(name), table),
             new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
@@ -498,21 +498,21 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     /**
-     * @param name Must be parsable as an integer.
+     * @param name Must be formatted as {@code knio.output_tables[i]} where {@code i} must be parsable as an integer.
      */
     @Override
     public BufferedDataTable getDataTable(final String name, final ExecutionContext exec,
         final ExecutionMonitor executionMonitor) throws PythonIOException, CanceledExecutionException {
-        return performCancelable(new GetDataTableTask(Integer.parseInt(name), exec),
+        return performCancelable(new GetDataTableTask(parseIndex(name), exec),
             new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
     /**
-     * @param name Must be parsable as an integer.
+     * @param name Must be formatted as {@code knio.input_objects[i]} where {@code i} must be parsable as an integer.
      */
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
-        m_proxy.setInputObject(Integer.parseInt(name), object != null ? object.getFile().getAbsolutePath() : null);
+        m_proxy.setInputObject(parseIndex(name), object != null ? object.getFile().getAbsolutePath() : null);
     }
 
     @Override
@@ -530,12 +530,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     /**
-     * @param name Must be parsable as an integer.
+     * @param name Must be formatted as {@code knio.output_objects[i]} where {@code i} must be parsable as an integer.
      */
     @Override
     public PickledObjectFile getObject(final String name, final File file, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
-        return performCancelable(() -> getObject(Integer.parseInt(name), file),
+        return performCancelable(() -> getObject(parseIndex(name), file),
             new PythonExecutionMonitorCancelable(executionMonitor));
     }
 
@@ -552,7 +552,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     /**
-     * @param name Must be parsable as an integer.
+     * @param name Must be formatted as {@code knio.output_images[i]} where {@code i} must be parsable as an integer.
      */
     @Override
     public ImageContainer getImage(final String name) throws PythonIOException {
@@ -560,7 +560,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         try {
             tempDir = FileUtil.createTempDir("images");
             var imgPath = tempDir.toPath().resolve("image");
-            m_proxy.getOutputImage(Integer.parseInt(name), imgPath.toAbsolutePath().toString());
+            m_proxy.getOutputImage(parseIndex(name), imgPath.toAbsolutePath().toString());
             return PythonKernelBackendUtils.createImage(() -> Files.newInputStream(imgPath));
         } catch (IOException ex) {
             throw new PythonIOException(ex);
@@ -575,6 +575,10 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     public ImageContainer getImage(final String name, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         return performCancelable(() -> getImage(name), new PythonExecutionMonitorCancelable(executionMonitor));
+    }
+
+    private static int parseIndex(final String name) {
+        return Integer.parseInt(name.split("\\[")[1].split("\\]")[0]);
     }
 
     @Override
@@ -636,8 +640,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private static PythonIOException beautifyPythonTraceback(final Py4JException ex) {
         // First strip py4j's standard prefix for such kinds of errors.
-        final var pythonTraceback = StringUtils.removeStart(ex.getMessage(),
-            "An exception was raised by the Python Proxy. Return Message: ");
+        final var pythonTraceback =
+            StringUtils.removeStart(ex.getMessage(), "An exception was raised by the Python Proxy. Return Message: ");
         // Then strip the parts of the trace back that refer to kernel code rather than user code.
         final String beautifiedTraceback = Python2KernelBackend.beautifyPythonTraceback(pythonTraceback);
         final var errorMessage = "Executing the Python script failed: " + beautifiedTraceback;

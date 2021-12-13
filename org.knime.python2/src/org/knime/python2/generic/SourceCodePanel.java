@@ -146,7 +146,7 @@ public abstract class SourceCodePanel extends JPanel {
      * @param variableNames An object managing all the known variable names in the workspace.
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames) {
-        this(syntaxStyle, variableNames, false, null);
+        this(syntaxStyle, variableNames, false, true, null);
     }
 
     /**
@@ -155,11 +155,13 @@ public abstract class SourceCodePanel extends JPanel {
      * @param syntaxStyle One of the language styles defined in {@link SyntaxConstants}.
      * @param variableNames An object managing all the known variable names in the workspace.
      * @param forceSpaces Whether or not tabs should be emulated with spaces.
+     * @param enableInputColumnAccess Whether this panel supports inserting code to access input columns by clicking on
+     *            them in the input variables tree.
      * @param optionsPanel The options panel of the node dialog, if any. The constructed source code panel subscribes to
      *            changes in its configured {@link SourceCodeOptionsPanel#getRowLimit() row limit}.
      */
     public SourceCodePanel(final String syntaxStyle, final VariableNames variableNames, final boolean forceSpaces,
-        final SourceCodeOptionsPanel<?> optionsPanel) {
+        final boolean enableInputColumnAccess, final SourceCodeOptionsPanel<?> optionsPanel) {
         m_variableNames = variableNames;
         setLayout(new BorderLayout());
 
@@ -204,7 +206,8 @@ public abstract class SourceCodePanel extends JPanel {
         m_inputVarsFlowVarsSplit.setDividerSize(8);
         m_inputVarsFlowVarsSplit.setPreferredSize(new Dimension(0, 0));
 
-        m_inputVars = new InputVariablesTree(variableNames, m_editor.getEditor(), this::createVariableAccessString);
+        m_inputVars = new InputVariablesTree(variableNames, m_editor.getEditor(), this::createVariableAccessString,
+            enableInputColumnAccess);
         final JPanel inputVariablesPanel = m_inputVars.getPanel();
         inputVariablesPanel.setPreferredSize(new Dimension(0, 0));
         m_inputVarsFlowVarsSplit.setTopComponent(inputVariablesPanel);
@@ -700,15 +703,6 @@ public abstract class SourceCodePanel extends JPanel {
     }
 
     /**
-     * @param show Whether to show the input variables panel.
-     */
-    public void showInputAndFlowVariablesPanels(final boolean show) {
-        m_inputVars.getPanel().setVisible(show);
-        m_flowVars.getPanel().setVisible(show);
-        m_inputVarsFlowVarsEditorSplit.getLeftComponent().setVisible(show);
-    }
-
-    /**
      * Sets the workspacePanel to the visibility given value
      *
      * @param show whether to show the interactive components
@@ -716,13 +710,6 @@ public abstract class SourceCodePanel extends JPanel {
     public void showWorkspacePanel(final boolean show) {
         m_workspaceVars.getPanel().setVisible(show);
         m_workspaceButtons.setVisible(show);
-    }
-
-    /**
-     * @param show Whether to show the output variables panel.
-     */
-    public void showOutputVariablesPanel(final boolean show) {
-        m_outputVars.getPanel().setVisible(show);
     }
 
     /**

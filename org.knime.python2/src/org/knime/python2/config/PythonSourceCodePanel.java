@@ -166,7 +166,7 @@ public class PythonSourceCodePanel extends SourceCodePanel {
         final VariableNames variableNames, final PythonSourceCodeOptionsPanel optionsPanel,
         final PythonExecutableSelectionPanel executablePanel) {
         super(SyntaxConstants.SYNTAX_STYLE_PYTHON, variableNames, kernelBackendType == PythonKernelBackendType.PYTHON3,
-            optionsPanel);
+            kernelBackendType != PythonKernelBackendType.PYTHON3, optionsPanel);
         m_parent = parent;
         m_kernelBackendType = kernelBackendType;
         m_optionsPanel = optionsPanel;

@@ -71,7 +71,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
     }
 
     private static String createDefaultScript(final InputPort[] inPorts, final OutputPort[] outPorts) {
-        final var variables = getVariableNames(inPorts, outPorts, true);
+        final var variables = getVariableNames(inPorts, outPorts);
         String defaultScript = getOldNodesDefaultScript(inPorts, outPorts, variables);
         if (defaultScript == null) {
             // No old/known node configuration. Fall back to some generic default code that simply populates all output
@@ -81,11 +81,9 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
                 final OutputPort outPort = outPorts[i];
                 final String outVariableName = outPort.getVariableName();
                 if (outPort instanceof DataTableOutputPort) {
-                    defaultScript += "knio.output_tables[" + outVariableName + "] = None"; // TODO: create an empty table
-                } else if (outPort instanceof ImageOutputPort) {
-                    defaultScript += "knio.output_images[" + outVariableName + "] = None";
-                } else if (outPort instanceof PickledObjectOutputPort) {
-                    defaultScript += "knio.output_objects[" + outVariableName + "] = None";
+                    defaultScript += outVariableName + " = None"; // TODO: create an empty table
+                } else if (outPort instanceof ImageOutputPort || outPort instanceof PickledObjectOutputPort) {
+                    defaultScript += outVariableName + " = None";
                 }
                 defaultScript += "\n";
             }
@@ -93,16 +91,15 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
         return "import knime_io as knio\n\n" + defaultScript;
     }
 
-    static VariableNames getVariableNames(final InputPort[] inPorts, final OutputPort[] outPorts,
-        final boolean addKnio) {
+    static VariableNames getVariableNames(final InputPort[] inPorts, final OutputPort[] outPorts) {
         final List<String> inputTables = new ArrayList<>(2);
         final List<String> inputObjects = new ArrayList<>(2);
         for (final InputPort inPort : inPorts) {
             final String variableName = inPort.getVariableName();
             if (inPort instanceof DataTableInputPort) {
-                inputTables.add(addKnio ? ("knio.input_tables[" + variableName + "]") : variableName);
+                inputTables.add(variableName);
             } else if (inPort instanceof PickledObjectInputPort) {
-                inputObjects.add(addKnio ? ("knio.input_objects[" + variableName + "]") : variableName);
+                inputObjects.add(variableName);
             }
         }
         final List<String> outputTables = new ArrayList<>(2);
@@ -111,11 +108,11 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
         for (final OutputPort outPort : outPorts) {
             final String variableName = outPort.getVariableName();
             if (outPort instanceof DataTableOutputPort) {
-                outputTables.add(addKnio ? ("knio.output_tables[" + variableName + "]") : variableName);
+                outputTables.add(variableName);
             } else if (outPort instanceof ImageOutputPort) {
-                outputImages.add(addKnio ? ("knio.output_images[" + variableName + "]") : variableName);
+                outputImages.add(variableName);
             } else if (outPort instanceof PickledObjectOutputPort) {
-                outputObjects.add(addKnio ? ("knio.output_objects[" + variableName + "]") : variableName);
+                outputObjects.add(variableName);
             }
         }
         return new VariableNames("knio.flow_variables", //
@@ -195,7 +192,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
             + variables.getOutputTables()[0] + " = knio.write_table(\n" //
             + "    pd.DataFrame(\n" //
             + "        np.random.randint(0, 100, size=(10, 2)), columns=['First column', 'Second column']\n" //
-            + "    )\n"
+            + "    )\n" //
             + ")\n";
     }
 
