@@ -96,8 +96,6 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
             AbstractPythonScriptingNodeModel.createCommandConfig());
         m_scriptPanel = new PythonSourceCodePanel(this, PythonKernelBackendType.PYTHON3, variableNames,
             new PythonSourceCodeOptionsPanel(), m_executablePanel);
-        m_scriptPanel.showInputAndFlowVariablesPanels(false);
-        m_scriptPanel.showOutputVariablesPanel(false);
         addTab("Script", m_scriptPanel, false);
         addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_executablePanel);
         addTab("Templates", new SourceCodeTemplatesPanel(m_scriptPanel, templateRepositoryId));
