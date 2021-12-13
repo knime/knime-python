@@ -446,19 +446,16 @@ public class PythonKernel implements AutoCloseable {
      * Execute the given source code on Python's main thread.
      *
      * @param sourceCode The source code to execute
-     * @param checkOutputs Check whether the sourceCode populates all output ports properly
      * @return Standard console output
      * @throws PythonIOException If an error occurred while communicating with the Python kernel
      */
-    public String[] execute(final String sourceCode, final boolean checkOutputs) throws PythonIOException {
-        return m_backend.execute(sourceCode, checkOutputs);
+    public String[] execute(final String sourceCode) throws PythonIOException {
+        return m_backend.execute(sourceCode);
     }
 
     /**
      * Execute the given source code on Python's main thread while still checking whether the execution has been
      * canceled.
-     *
-     * Always requests that the backend checks that the output ports are populated properly.
      *
      * @param sourceCode The source code to execute
      * @param cancelable The cancelable to check if execution has been canceled
@@ -470,7 +467,37 @@ public class PythonKernel implements AutoCloseable {
      */
     public String[] execute(final String sourceCode, final PythonCancelable cancelable)
         throws PythonIOException, CanceledExecutionException {
-        return m_backend.execute(sourceCode, true, cancelable);
+        return m_backend.execute(sourceCode, cancelable);
+    }
+
+    /**
+     * Execute the given source code on Python's main thread and check that all output ports are properly populated.
+     *
+     * @param sourceCode The source code to execute
+     * @return Standard console output
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel
+     * @since 4.5
+     */
+    public String[] executeAndCheckOutputs(final String sourceCode) throws PythonIOException {
+        return m_backend.executeAndCheckOutputs(sourceCode);
+    }
+
+    /**
+     * Execute the given source code on Python's main thread while still checking whether the execution has been
+     * canceled, and check that all output ports are properly populated.
+     *
+     * @param sourceCode The source code to execute
+     * @param cancelable The cancelable to check if execution has been canceled
+     * @return Standard console output
+     * @throws PythonIOException If an error occurred while communicating with the Python kernel or while executing the
+     *             task
+     * @throws CanceledExecutionException if canceled. This instance must not be used after a cancellation occurred and
+     *             must be {@link #close() closed}.
+     * @since 4.5
+     */
+    public String[] executeAndCheckOutputs(final String sourceCode, final PythonCancelable cancelable)
+        throws PythonIOException, CanceledExecutionException {
+        return m_backend.executeAndCheckOutputs(sourceCode, cancelable);
     }
 
     /**

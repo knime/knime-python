@@ -234,7 +234,12 @@ public class PythonSourceCodePanel extends SourceCodePanel {
                     setRunning(true);
                     setStatusMessage("Executing...");
                     setStopCallback(new PythonKernelManagerStopTask());
-                    kernelManager.execute(sourceCode, checkOutputs, new ExecuteResponseHandler(kernelManager, kernelRestarts));
+                    final var handler = new ExecuteResponseHandler(kernelManager, kernelRestarts);
+                    if (checkOutputs) {
+                        kernelManager.executeAndCheckOutputs(sourceCode, handler);
+                    } else {
+                        kernelManager.execute(sourceCode, handler);
+                    }
                 }
             } finally {
                 m_lock.unlock();
