@@ -64,7 +64,6 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.python2.config.PythonExecutableSelectionPanel;
 import org.knime.python2.config.PythonFixedVersionExecutableSelectionPanel;
 import org.knime.python2.config.PythonSourceCodeConfig;
@@ -172,7 +171,8 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
         m_scriptPanel.loadSettingsFrom(config, specs);
 
         final Collection<FlowVariable> inFlowVariables =
-            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes()).values();
+            getAvailableFlowVariables(AbstractPythonScriptingNodeModel.getFlowVariableTypesCompatibleWithPython())
+                .values();
         m_scriptPanel.updateFlowVariables(inFlowVariables.toArray(FlowVariable[]::new));
     }
 

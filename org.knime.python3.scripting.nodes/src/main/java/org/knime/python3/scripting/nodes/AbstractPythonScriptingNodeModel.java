@@ -156,6 +156,24 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         return null; // NOSONAR Conforms to KNIME API.
     }
 
+    private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
+        Boolean.class, //
+        Boolean[].class, //
+        Double.class, //
+        Double[].class, //
+        Integer.class, //
+        Integer[].class, //
+        Long.class, //
+        Long[].class, //
+        String.class, //
+        String[].class //
+    );
+
+    static VariableType<?>[] getFlowVariableTypesCompatibleWithPython() {
+        return Arrays.stream(VariableTypeRegistry.getInstance().getAllTypes())
+            .filter(v -> KNOWN_FLOW_VARIABLE_TYPES.contains(v.getSimpleType())).toArray(VariableType[]::new);
+    }
+
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         double inWeight = 0d;
@@ -171,7 +189,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         try (final PythonKernel kernel =
             getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable)) {
             final Collection<FlowVariable> inFlowVariables =
-                getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes()).values();
+                getAvailableFlowVariables(getFlowVariableTypesCompatibleWithPython()).values();
             kernel.putFlowVariables(null, inFlowVariables);
 
             ExecutionMonitor inMonitor = exec;
