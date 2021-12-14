@@ -10,5 +10,6 @@ Bundle-ActivationPolicy: lazy
 Require-Bundle: org.knime.core;bundle-version="[4.5.0,5.0.0)",
  org.knime.base;bundle-version="[4.5.0,5.0.0)",
  org.knime.python2;bundle-version="[4.5.0,5.0.0)",
- org.knime.python2.nodes;bundle-version="[4.5.0,5.0.0)"
+ org.knime.python2.nodes;bundle-version="[4.5.0,5.0.0)",
+ org.knime.python3.scripting;bundle-version="[4.5.0,5.0.0)"
 Automatic-Module-Name: org.knime.python3.scripting.nodes
