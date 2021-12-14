@@ -76,6 +76,7 @@ import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
+import org.knime.python3.scripting.Python3KernelBackend;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -171,8 +172,7 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
         m_scriptPanel.loadSettingsFrom(config, specs);
 
         final Collection<FlowVariable> inFlowVariables =
-            getAvailableFlowVariables(AbstractPythonScriptingNodeModel.getFlowVariableTypesCompatibleWithPython())
-                .values();
+            getAvailableFlowVariables(Python3KernelBackend.getCompatibleFlowVariableTypes()).values();
         m_scriptPanel.updateFlowVariables(inFlowVariables.toArray(FlowVariable[]::new));
     }
 

@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -172,6 +173,19 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private final PythonGateway<Python3KernelBackendProxy> m_gateway;
 
     private final PythonOutputListeners m_outputListeners;
+
+    private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
+        Boolean.class, //
+        Boolean[].class, //
+        Double.class, //
+        Double[].class, //
+        Integer.class, //
+        Integer[].class, //
+        Long.class, //
+        Long[].class, //
+        String.class, //
+        String[].class //
+    );
 
     /**
      * Set to {@code null} in {@link #close()} just to make sure that any Java instances that have been referenced by
@@ -654,6 +668,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 cleanupCopiedStores();
             }).start();
         }
+    }
+
+    /**
+     * @return an array of flow variable types that can be understood by this Python backend.
+     */
+    public static VariableType<?>[] getCompatibleFlowVariableTypes() {
+        return Arrays.stream(VariableTypeRegistry.getInstance().getAllTypes())
+            .filter(v -> KNOWN_FLOW_VARIABLE_TYPES.contains(v.getSimpleType())).toArray(VariableType[]::new);
     }
 
     private void cleanupCopiedStores() {
