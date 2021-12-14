@@ -165,19 +165,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private static final List<PythonModuleSpec> REQUIRED_MODULES =
         List.of(new PythonModuleSpec("py4j"), new PythonModuleSpec("pyarrow", new Version(5, 0, 0), true));
 
-    private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
-        Boolean.class, //
-        Boolean[].class, //
-        Double.class, //
-        Double[].class, //
-        Integer.class, //
-        Integer[].class, //
-        Long.class, //
-        Long[].class, //
-        String.class, //
-        String[].class //
-    );
-
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private final PythonCommand m_command;
@@ -357,6 +344,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     /**
      * @param name Ignored by this back end.
+     * @param flowVariables The flow variables that will be passed to Python using py4j. The caller should make sure
+     *            that this does not contain complicated types which cannot be converted to Python types by py4j.
      */
     @Override
     public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables)
@@ -370,11 +359,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // an improvement over the legacy implementation.
             //
             final VariableType<?> type = variable.getVariableType();
-            final Class<?> simpleType = type.getSimpleType();
             Object value = variable.getValue(type);
-            if (KNOWN_FLOW_VARIABLE_TYPES.contains(simpleType)) {
-                flowVariablesMap.put(variable.getName(), value);
-            }
+            flowVariablesMap.put(variable.getName(), value);
         }
         m_proxy.setFlowVariables(flowVariablesMap);
     }
