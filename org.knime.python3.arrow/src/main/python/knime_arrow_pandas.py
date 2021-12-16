@@ -68,7 +68,6 @@ def pandas_df_to_arrow(
         else:
             return pa.table([])
 
-    # TODO pandas column names must not be strings. This causes errors
     # Convert the index to a str series and prepend to the data_frame
 
     # extract and drop index from DF
@@ -89,9 +88,26 @@ def pandas_df_to_arrow(
 
 
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:
-    data_frame = data.to_pandas()
+    # Use Pandas' String data type if available instead of "object" if we're using a
+    # Pandas version that is new enough. Gives better type safety and preserves its
+    # type even if all values are missing in a column.
+    from packaging.version import parse
+
+    if parse(pd.__version__) >= parse("1.0.0"):
+
+        def mapper(dtype):
+            if dtype == pa.string():
+                return pd.StringDtype()
+            else:
+                return None
+
+        data_frame = data.to_pandas(types_mapper=mapper)
+    else:
+        data_frame = data.to_pandas()
+
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
+
     return data_frame
 
 
