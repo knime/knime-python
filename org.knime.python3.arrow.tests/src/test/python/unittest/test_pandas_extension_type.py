@@ -266,6 +266,36 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         out = pa.Table.from_pandas(df)
         self.assertEqual(t.schema, out.schema)
 
+    def test_wrap_list_of_null(self):
+        """
+        Experiment how we can create a PyArrow list of null array with extension type wrapping.
+        """
+        import knime_arrow_types as katy
+
+        df = pd.DataFrame(
+            {
+                "missingList": [[None, None], [None, None, None], None, [None, None]],
+            }
+        )
+        raw_t = pa.Table.from_pandas(df)
+        array = raw_t.columns[0].chunks[0]
+        self.assertEqual(pa.list_(pa.null()), array.type)
+        self.assertEqual(7, len(array.values))
+        inner_type = MyArrowExtType(pa.null(), "VoidType")
+        outer_type = MyArrowExtType(pa.list_(inner_type), "ListType")
+
+        inner_data = pa.nulls(len(array.values), type=inner_type)
+        null_mask = array.is_null().to_pylist() + [False]
+        offsets = pa.array(
+            array.offsets.to_pylist(), mask=null_mask, type=array.offsets.type
+        )
+        self.assertEqual(len(offsets), len(array.offsets))
+        list_data = katy._create_list_array(offsets, inner_data)
+        outer_wrapped = pa.ExtensionArray.from_storage(outer_type, list_data)
+        self.assertEqual(outer_type, outer_wrapped.type)
+        self.assertTrue(outer_wrapped[0].is_valid)
+        self.assertFalse(outer_wrapped[2].is_valid)
+
 
 if __name__ == "__main__":
     unittest.main()
