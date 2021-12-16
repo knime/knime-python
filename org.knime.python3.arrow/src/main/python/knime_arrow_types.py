@@ -555,6 +555,7 @@ _arrow_to_knime_primitive_types = {
     pa.string(): _knime_primitive_type("StringValueFactory"),
     pa.bool_(): _knime_primitive_type("BooleanValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleValueFactory"),
+    pa.null(): _knime_primitive_type("VoidValueFactory"),
 }
 
 _arrow_to_knime_primitive_list_types = {
@@ -565,6 +566,7 @@ _arrow_to_knime_primitive_list_types = {
     pa.float64(): _knime_primitive_type("DoubleListValueFactory"),
 }
 
+_arrow_to_knime_list_type = _knime_primitive_type("ListValueFactory")
 _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
 
 
@@ -573,6 +575,10 @@ def _is_primitive_type(dtype):
         dtype.logical_type == _row_key_type
         or dtype.logical_type in _arrow_to_knime_primitive_types.values()
         or dtype.logical_type in _arrow_to_knime_primitive_list_types.values()
+        or (
+            dtype.logical_type == _arrow_to_knime_list_type
+            and _is_primitive_type(dtype.logical_type.storage_type.value_type)
+        )
     )
 
 
@@ -580,13 +586,16 @@ def _unwrap_primitive_knime_extension_array(
     array: Union[pa.Array, pa.ChunkedArray]
 ) -> Union[pa.Array, pa.ChunkedArray]:
     """
-    Unpacks array if it holds primitive types (int, double, string and so on). Otherwise returns the unchanged array.
+    Unpacks array if it holds primitive types (int, double, string and so on) or a
+    list of primitive types. Otherwise returns the unchanged array.
 
     Args:
         array: Can be either a pa.Array or a pa.ChunkedArray
     """
     if _is_primitive_type(array.type):
-        return _apply_to_array(array, lambda a: a.storage)
+        return _apply_to_array(
+            array, lambda a: _unwrap_primitive_knime_extension_array(a.storage)
+        )
     else:
         return array
 
@@ -619,7 +628,7 @@ def _get_wrapped_type(dtype, is_row_key):
     elif (
         not isinstance(dtype, pa.ExtensionType)
         and is_list_type(dtype)
-        and dtype.value_type in _arrow_to_knime_primitive_list_types
+        and (dtype.value_type in _arrow_to_knime_primitive_list_types)
     ):
         # We have to treat lists differently here because arrow's comparison of list types is
         # extremely strict and fails due to a mismatch in field names (which we have no control over).
@@ -627,6 +636,24 @@ def _get_wrapped_type(dtype, is_row_key):
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype, logical_type
         )
+    elif (
+        not isinstance(dtype, pa.ExtensionType)
+        and is_list_type(dtype)
+        and dtype.value_type == pa.null()
+    ):
+        # There is no special VoidList type in KNIME, so we need two extension types,
+        # one for the outer list, and one for the inner void type
+        inner_logical_type = _arrow_to_knime_primitive_types[dtype.value_type]
+        inner_ext_type = LogicalTypeExtensionType(
+            kt.get_converter(inner_logical_type), dtype.value_type, inner_logical_type
+        )
+        outer_logical_type = _arrow_to_knime_list_type
+        outer_ext_type = LogicalTypeExtensionType(
+            kt.get_converter(outer_logical_type),
+            pa.list_(inner_ext_type),
+            outer_logical_type,
+        )
+        return outer_ext_type
     else:
         return None
 
@@ -635,8 +662,37 @@ def _wrap_primitive_array(
     array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool
 ) -> Union[pa.Array, pa.ChunkedArray]:
     wrapped_type = _get_wrapped_type(array.type, is_row_key)
+
     if wrapped_type is None:
         return array
+    elif array.type == pa.null():
+        # We would like to wrap a null vector in an extension type, but there's a bug
+        # that null arrays cannot be wrapped immediately, so we create a new null vector
+        # with the appropriate type. See
+        # https://issues.apache.org/jira/browse/ARROW-14522
+        return _apply_to_array(array, lambda a: pa.nulls(len(a), type=wrapped_type))
+    elif is_list_type(array.type) and array.type.value_type == pa.null():
+
+        def to_list_of_nulls(a):
+            inner_data = pa.nulls(
+                len(a.values), type=wrapped_type.storage_type.value_type
+            )
+            # We need to manually add Nones to the offset vector where missing values
+            # should be in the resulting list, because a.offsets will not contain None.
+            # The offset vector contains an "end" element, however the validity
+            # mask does not, so it needs to be extended. Not super efficient unfortunately.
+            # Too bad Arrow does not offer to create a list with offsets, values, and mask.
+            null_mask = a.is_null().to_pylist() + [False]
+            offsets = pa.array(
+                a.offsets.to_pylist(), mask=null_mask, type=a.offsets.type
+            )
+            list_data = _create_list_array(offsets, inner_data)
+            return pa.ExtensionArray.from_storage(wrapped_type, list_data)
+
+        return _apply_to_array(
+            array,
+            to_list_of_nulls,
+        )
     else:
         return _apply_to_array(
             array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
