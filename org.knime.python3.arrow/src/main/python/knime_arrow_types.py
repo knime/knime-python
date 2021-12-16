@@ -638,7 +638,9 @@ def _wrap_primitive_array(
     if wrapped_type is None:
         return array
     else:
-        return pa.ExtensionArray.from_storage(wrapped_type, array)
+        return _apply_to_array(
+            array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
+        )
 
 
 def wrap_primitive_arrays(
