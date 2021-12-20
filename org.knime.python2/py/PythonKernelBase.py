@@ -254,13 +254,19 @@ class PythonKernelBase(Borg):
     def auto_complete(self, source_code, line, column):
         """
         Returns a list of auto suggestions for the given code at the given cursor position.
+
+        Skips producing suggestions if the cursor is within a comment or a (doc)string.
         """
         response = []
-        if self.has_auto_complete():
+        current_line = source_code.split('\n')[line]
+
+        if self.has_auto_complete() and '#' not in current_line[:column]:
             try:
                 # get possible completions by using Jedi and providing the source code, and the cursor position
                 # note: the line number (argument 2) gets incremented by 1 since Jedi's line numbering starts at 1
-                completions = jedi.Script(source_code, line + 1, column, None).completions()
+                script = jedi.Script(source_code)
+                completions = script.complete(line + 1, column)
+                # completions = jedi.Script(source_code, line + 1, column, None).completions()
                 # extract interesting information
                 for index, completion in enumerate(completions):
                     response.append({'name': completion.name, 'type': completion.type, 'doc': completion.docstring()})
