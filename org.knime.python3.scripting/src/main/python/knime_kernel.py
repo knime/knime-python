@@ -312,33 +312,37 @@ class PythonKernel(kg.EntryPoint):
         if jedi is not None:
             # Needed to make jedi thread-safe. Calls to this method are initiated asynchronously on the Java side.
             jedi.settings.fast_parser = False
-            try:
-                #  Jedi's line numbering starts at 1.
-                line += 1
+
+            # Get current line to check if the cursor is inside a comment
+            current_line = source_code.split('\n')[line]
+            if '#' not in current_line[:column]:
                 try:
-                    # Use jedi's 0.16.0+ API.
-                    completions = jedi.Script(source_code, path="").complete(
-                        line,
-                        column,
-                    )
-                except AttributeError:
-                    # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
-                    completions = jedi.Script(
-                        source_code, line, column, ""
-                    ).completions()
-                for completion in completions:
-                    if completion.name.startswith("_"):
-                        # skip all private members
-                        break
-                    suggestions.append(
-                        {
-                            "name": completion.name,
-                            "type": completion.type,
-                            "doc": completion.docstring(),
-                        }
-                    )
-            except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
-                warnings.warn("An error occurred while autocompleting.")
+                    #  Jedi's line numbering starts at 1.
+                    line += 1
+                    try:
+                        # Use jedi's 0.16.0+ API.
+                        completions = jedi.Script(source_code, path="").complete(
+                            line,
+                            column,
+                        )
+                    except AttributeError:
+                        # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
+                        completions = jedi.Script(
+                            source_code, line, column, ""
+                        ).completions()
+                    for completion in completions:
+                        if completion.name.startswith("_"):
+                            # skip all private members
+                            break
+                        suggestions.append(
+                            {
+                                "name": completion.name,
+                                "type": completion.type,
+                                "doc": completion.docstring(),
+                            }
+                        )
+                except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
+                    warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
     def executeOnMainThread(self, source_code: str, check_outputs: bool) -> List[str]:
