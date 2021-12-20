@@ -63,6 +63,7 @@ import org.knime.core.data.v2.value.LongListValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
 import org.knime.core.data.v2.value.StringListValueFactory;
 import org.knime.core.data.v2.value.StringValueFactory;
+import org.knime.core.data.v2.value.VoidValueFactory;
 import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ByteDataSpec;
 import org.knime.core.table.schema.DataSpec;
@@ -137,7 +138,7 @@ public final class DefaultValueFactories {
 
         @Override
         public Optional<ValueFactory<?, ?>> visit(final VoidDataSpec spec) {
-            return Optional.empty();
+            return Optional.of(VoidValueFactory.INSTANCE);
         }
 
         @Override
