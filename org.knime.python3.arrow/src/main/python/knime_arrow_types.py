@@ -575,27 +575,29 @@ def _is_primitive_type(dtype):
         dtype.logical_type == _row_key_type
         or dtype.logical_type in _arrow_to_knime_primitive_types.values()
         or dtype.logical_type in _arrow_to_knime_primitive_list_types.values()
-        or (
-            dtype.logical_type == _arrow_to_knime_list_type
-            and _is_primitive_type(dtype.logical_type.storage_type.value_type)
-        )
     )
 
 
-def _unwrap_primitive_knime_extension_array(
-    array: Union[pa.Array, pa.ChunkedArray]
-) -> Union[pa.Array, pa.ChunkedArray]:
+def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
     """
     Unpacks array if it holds primitive types (int, double, string and so on) or a
     list of primitive types. Otherwise returns the unchanged array.
 
     Args:
-        array: Can be either a pa.Array or a pa.ChunkedArray
+        array: A pa.Array
     """
-    if _is_primitive_type(array.type):
-        return _apply_to_array(
-            array, lambda a: _unwrap_primitive_knime_extension_array(a.storage)
-        )
+    if (
+        is_value_factory_type(array.type)
+        and array.type.logical_type == _arrow_to_knime_list_type
+        and _is_primitive_type(array.type.storage_type.value_type)
+    ):
+        # special handling for unspecific list types: we unwrap the values
+        # and maintain the offsets and validity mask
+        offsets = _get_offsets_with_nulls(array.storage)
+        values = _unwrap_primitive_knime_extension_array(array.storage.values)
+        return _create_list_array(offsets, values)
+    elif _is_primitive_type(array.type):
+        return array.storage
     else:
         return array
 
@@ -604,8 +606,10 @@ def unwrap_primitive_arrays(
     table: Union[pa.Table, pa.RecordBatch]
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = [
-        _unwrap_primitive_knime_extension_array(column) for column in table.columns
+        _apply_to_array(column, _unwrap_primitive_knime_extension_array)
+        for column in table.columns
     ]
+
     if isinstance(table, pa.Table):
         return pa.Table.from_arrays(arrays, names=table.column_names)
     else:
@@ -658,6 +662,16 @@ def _get_wrapped_type(dtype, is_row_key):
         return None
 
 
+def _get_offsets_with_nulls(a: Union[pa.ListArray, pa.LargeListArray]):
+    # We need to manually add Nones to the offset vector where missing values
+    # should be in the resulting list, because a.offsets will not contain None.
+    # The offset vector contains an "end" element, however the validity
+    # mask does not, so it needs to be extended. Not super efficient unfortunately.
+    # Too bad Arrow does not offer to create a list with offsets, values, and mask.
+    null_mask = a.is_null().to_pylist() + [False]
+    return pa.array(a.offsets.to_pylist(), mask=null_mask, type=a.offsets.type)
+
+
 def _wrap_primitive_array(
     array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool
 ) -> Union[pa.Array, pa.ChunkedArray]:
@@ -677,15 +691,7 @@ def _wrap_primitive_array(
             inner_data = pa.nulls(
                 len(a.values), type=wrapped_type.storage_type.value_type
             )
-            # We need to manually add Nones to the offset vector where missing values
-            # should be in the resulting list, because a.offsets will not contain None.
-            # The offset vector contains an "end" element, however the validity
-            # mask does not, so it needs to be extended. Not super efficient unfortunately.
-            # Too bad Arrow does not offer to create a list with offsets, values, and mask.
-            null_mask = a.is_null().to_pylist() + [False]
-            offsets = pa.array(
-                a.offsets.to_pylist(), mask=null_mask, type=a.offsets.type
-            )
+            offsets = _get_offsets_with_nulls(a)
             list_data = _create_list_array(offsets, inner_data)
             return pa.ExtensionArray.from_storage(wrapped_type, list_data)
 
