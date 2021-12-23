@@ -468,8 +468,7 @@ class BatchWriteTable(_Table):
 
 class WriteTable(_Table):
     """
-    A table that can be filled as a whole, or by appending individual batches. The data is serialized
-    to disk batch by batch. Individual batches will be available to KNIME as soon as they are written.
+    A table that can be filled as a whole.
     """
 
     pass
