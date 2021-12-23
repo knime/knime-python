@@ -255,21 +255,61 @@ class PythonKernelBase(Borg):
         """
         Returns a list of auto suggestions for the given code at the given cursor position.
 
-        Skips producing suggestions if the cursor is within a comment or a (doc)string.
+        Skips producing suggestions if the cursor is within a comment or a single/multi-line string.
         """
         response = []
         current_line = source_code.split('\n')[line]
 
+        # proceed if the current line does not contain a '#' before the cursor position
         if self.has_auto_complete() and '#' not in current_line[:column]:
+            # Needed to make jedi thread-safe. Calls to this method are initiated asynchronously on the Java side.
+            jedi.settings.fast_parser = False
+
             try:
                 # get possible completions by using Jedi and providing the source code, and the cursor position
-                # note: the line number (argument 2) gets incremented by 1 since Jedi's line numbering starts at 1
-                script = jedi.Script(source_code)
-                completions = script.complete(line + 1, column)
-                # completions = jedi.Script(source_code, line + 1, column, None).completions()
-                # extract interesting information
-                for index, completion in enumerate(completions):
-                    response.append({'name': completion.name, 'type': completion.type, 'doc': completion.docstring()})
+                # note: the line number gets incremented by 1 since Jedi's line numbering starts at 1
+                line += 1
+                
+                # try Jedi's 0.16.0+ API, otherwise fallback to the old API
+                try:
+                        completions = jedi.Script(source_code, path="").complete(
+                            line,
+                            column,
+                        )
+                except AttributeError:
+                    # fall back to jedi's old API. ("complete" raises the AttributeError caught here.)
+                    # note: the old API does not automatically cease autocompletion within strings.
+                    completions = None
+
+                    # only autocomplete if we are not in a single-line string
+                    is_within_string = False
+                    if current_line[:column].count('"') % 2 == 1:
+                        # additional check for the case of a single quote used as an apostrophe, e.g. "don't"
+                        if "'" in current_line[:column]:
+                            if current_line[:column].count("'") % 2 == 1:
+                                is_within_string = True
+                        else:
+                            is_within_string = True
+                    elif current_line[:column].count("'") % 2 == 1:
+                        # additional check for a rogue double quote, e.g. 'double quote: "'
+                        if '"' in current_line[:column]:
+                            if current_line[:column].count('"') % 2 == 1:
+                                is_within_string = True
+                        else:
+                            is_within_string = True
+
+                    # TODO: check for being in a multi-line string (using ast or tokenize)
+
+                    if not is_within_string:
+                        completions = jedi.Script(
+                            source_code, line, column, None
+                        ).completions()
+
+                # extract interesting information if the cursor was not within a string or comment
+                if completions:
+                    for index, completion in enumerate(completions):
+                        response.append({'name': completion.name, 'type': completion.type, 'doc': completion.docstring()})
+
             except Exception:
                 warnings.warn("An error occurred while autocompleting.")
         return response

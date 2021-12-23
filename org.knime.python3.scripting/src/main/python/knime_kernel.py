@@ -327,20 +327,44 @@ class PythonKernel(kg.EntryPoint):
                         )
                     except AttributeError:
                         # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
-                        completions = jedi.Script(
-                            source_code, line, column, ""
-                        ).completions()
-                    for completion in completions:
-                        if completion.name.startswith("_"):
-                            # skip all private members
-                            break
-                        suggestions.append(
-                            {
-                                "name": completion.name,
-                                "type": completion.type,
-                                "doc": completion.docstring(),
-                            }
-                        )
+                        completions = None
+
+                        # only autocomplete if we are not in a single-line string
+                        is_within_string = False
+                        if current_line[:column].count('"') % 2 == 1:
+                            # additional check for the case of a single quote used as an apostrophe, e.g. "don't"
+                            if "'" in current_line[:column]:
+                                if current_line[:column].count("'") % 2 == 1:
+                                    is_within_string = True
+                            else:
+                                is_within_string = True
+                        elif current_line[:column].count("'") % 2 == 1:
+                            # additional check for a rogue double quote, e.g. 'double quote: "'
+                            if '"' in current_line[:column]:
+                                if current_line[:column].count('"') % 2 == 1:
+                                    is_within_string = True
+                            else:
+                                is_within_string = True
+
+                        # TODO: check for being in a multi-line string (using ast or tokenize)
+
+                        if not is_within_string:
+                            completions = jedi.Script(
+                                source_code, line, column, None
+                            ).completions()
+                    
+                    if completions:        
+                        for completion in completions:
+                            if completion.name.startswith("_"):
+                                # skip all private members
+                                break
+                            suggestions.append(
+                                {
+                                    "name": completion.name,
+                                    "type": completion.type,
+                                    "doc": completion.docstring(),
+                                }
+                            )
                 except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
                     warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
