@@ -91,9 +91,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     # Use Pandas' String data type if available instead of "object" if we're using a
     # Pandas version that is new enough. Gives better type safety and preserves its
     # type even if all values are missing in a column.
-    from packaging.version import parse
-
-    if parse(pd.__version__) >= parse("1.0.0"):
+    if hasattr(pd, "StringDtype"):
 
         def mapper(dtype):
             if dtype == pa.string():
