@@ -480,6 +480,7 @@ def write_table(
 ) -> WriteTable:
     """
     Factory method to create a WriteTable given a pandas.DataFrame or a pyarrow.table.
+    If the input is a pyarrow.table, its first column must contain unique row identifiers of type 'string'.
 
     **Example**::
 
@@ -519,6 +520,7 @@ def batch(
 ) -> Batch:
     """
     Create a batch from the given data.
+    If the input is a pyarrow.table, its first column must contain unique row identifiers of type 'string'.
 
     Args:
         data:
