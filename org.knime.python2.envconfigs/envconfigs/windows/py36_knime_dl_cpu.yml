@@ -14,7 +14,6 @@ dependencies:         # List of packages that should be installed
 - pillow=5.3          # Image inputs/outputs
 - matplotlib=3.0      # Plotting
 - pyarrow>=5.0.0      # Arrow serialization
-- pkgs/main::re2      # Dependency of pyarrow
 - IPython=7.1         # Notebook support
 - nbformat=4.4        # Notebook support
 - scipy=1.1           # Notebook support
