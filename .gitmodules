@@ -1,0 +1,3 @@
+[submodule "org.knime.python3.views/js-src/knime-ui-extension-service"]
+	path = org.knime.python3.views/js-src/knime-ui-extension-service
+	url = git@bitbucket.org:KNIME/knime-ui-extension-service.git
