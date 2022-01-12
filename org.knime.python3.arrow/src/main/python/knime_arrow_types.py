@@ -673,11 +673,16 @@ def _get_offsets_with_nulls(a: Union[pa.ListArray, pa.LargeListArray]):
 
 
 def _wrap_primitive_array(
-    array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool
+    array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool, column_name: str
 ) -> Union[pa.Array, pa.ChunkedArray]:
     wrapped_type = _get_wrapped_type(array.type, is_row_key)
 
     if wrapped_type is None:
+        if not is_value_factory_type(array.type):
+            raise ValueError(
+                f"Data type '{array.type}' in column '{column_name}' is not supported in KNIME Python."
+                + " Please use a different data type."
+            )
         return array
     elif array.type == pa.null():
         # We would like to wrap a null vector in an extension type, but there's a bug
@@ -708,7 +713,10 @@ def _wrap_primitive_array(
 def wrap_primitive_arrays(
     table: Union[pa.Table, pa.RecordBatch]
 ) -> Union[pa.Table, pa.RecordBatch]:
-    arrays = [_wrap_primitive_array(column, i == 0) for i, column in enumerate(table)]
+    arrays = [
+        _wrap_primitive_array(column, i == 0, table.schema.names[i])
+        for i, column in enumerate(table)
+    ]
     if isinstance(table, pa.Table):
         return pa.Table.from_arrays(arrays, names=table.column_names)
     else:
