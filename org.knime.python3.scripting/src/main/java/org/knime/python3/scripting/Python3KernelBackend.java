@@ -924,9 +924,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
         @Override
         public void close() throws Exception {
-            deleteUnusedSinkFiles();
             PythonUtils.Misc.closeSafely(LOGGER::debug, m_rowKeyCheckers.values());
             PythonUtils.Misc.closeSafely(LOGGER::debug, m_domainCalculators.values());
+            deleteUnusedSinkFiles();
         }
 
         /** Deletes the temporary files of all sinks that have not been used */
