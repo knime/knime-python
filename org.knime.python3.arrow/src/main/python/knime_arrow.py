@@ -112,11 +112,13 @@ def factory_version_for(arrow_type: pa.DataType):
 
 
 def convert_schema(schema: pa.Schema):
-    # TODO we would like to use a schema with the virtual types not the physical types
     constructor = gateway().jvm.org.knime.python3.arrow.PythonColumnarSchemaBuilder
     schema_builder = constructor()
-    for t in schema.types:
-        schema_builder.addColumn(convert_type(t))
+    for i, t in enumerate(schema.types):
+        try:
+            schema_builder.addColumn(convert_type(t))
+        except ValueError as e:
+            raise ValueError(f"{e} in column '{schema.names[i]}'")
     return schema_builder.build()
 
 
@@ -164,7 +166,7 @@ def convert_type(arrow_type: pa.DataType):
     if arrow_type == pa.string():
         return gateway().jvm.org.knime.core.table.schema.DataSpec.stringSpec()
 
-    raise ValueError("Unsupported Arrow type: '{}'.".format(arrow_type))
+    raise ValueError(f"Unsupported Arrow type: '{arrow_type}'.")
 
 
 def extract_logical_types(schema: pa.Schema):
@@ -326,7 +328,7 @@ class ArrowDataSink:
 
     def write(self, data: Union[pa.RecordBatch, pa.Table]):
         """
-        Writes the full given batch or table to the sink, tables are NOT split into batches. 
+        Writes the full given batch or table to the sink, tables are NOT split into batches.
         Empty batches or tables are ignored.
         """
         if len(data) == 0:
