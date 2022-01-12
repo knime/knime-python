@@ -268,16 +268,16 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
     private static String getPythonLearnerDefaultScript(final VariableNames variables) {
         return "# This example script performs a linear regression on the input table's numeric data using numpy and "
             + "outputs the\n" //
-            + "# solution as pickled object.\n\n" //
+            + "# solution as pickled object.\n" //
             + "import numpy as np\n\n" //
-            + "# Only use numeric columns\n\n" //
+            + "# Only use numeric columns\n" //
             + "data = " + variables.getInputTables()[0] + ".to_pandas().select_dtypes('number')\n\n" //
-            + "# Use first column as value column\n\n" //
-            + "value_column = data[data.columns[0]]\n" //
-            + "# Use second column as target column\n\n" //
+            + "# Use first column as value column\n" //
+            + "value_column = data[data.columns[0]]\n\n" //
+            + "# Use second column as target column\n" //
             + "target_column = data[data.columns[1]]\n"
-            + "A = np.array([np.array(value_column), np.ones(len(value_column))])\n" //
-            + "# Calculate linear regression\n\n" //
+            + "A = np.array([np.array(value_column), np.ones(len(value_column))])\n\n" //
+            + "# Calculate linear regression\n" //
             + variables.getOutputObjects()[0] + " = np.linalg.lstsq(A.T, target_column)[0]\n";
     }
 
