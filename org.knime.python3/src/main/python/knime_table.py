@@ -387,10 +387,20 @@ class ReadTable(_Table, _ReadData):
     """
 
     @abstractmethod
-    def batches(self) -> Iterator[Batch]:
+    def batches(self) -> Generator[Batch]:
         """
-        Return an iterator over the batches in this table. If the iterator is advanced to a batch
+        Return an generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
+        len(my_read_table) gives the static amount of batches within the table, which is not updated.
+        
+        The generator can be accessed, for example, via the following two ways:
+        
+        **Example**::
+            processed_table = knime_io.batch_write_table()
+            for batch in knime_io.input_tables[0].batches():
+                input_batch = batch.to_pandas()
+                # process the batch
+                processed_table.append(input_batch)
         """
         pass
 
@@ -447,6 +457,18 @@ class BatchWriteTable(_Table):
         """
         Appends a batch with the given data to the end of this table. The number of columns, as well as their
         data types, must match that of the previous batches in this table.
+        Note that this cannot take a pyarrow.Table as input. With pyarrow, it can only process batches, which
+        can be created as follows from some input table.
+        
+        **Example**::
+        
+            processed_table = knime_io.batch_write_table()
+            for batch in knime_io.input_tables[0].batches():
+                input_batch = batch.to_pandas()
+                # process the batch
+                processed_table.append(input_batch)
+        
+        
 
         Args:
             data:
@@ -515,12 +537,13 @@ def batch_write_table() -> BatchWriteTable:
 
 
 def batch(
-    data: Union["pandas.DataFrame", "pyarrow.Table"],
+    data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
     sentinel: Optional[Union[str, int]] = None,
 ) -> Batch:
     """
-    Create a batch from the given data.
-    If the input is a pyarrow.table, its first column must contain unique row identifiers of type 'string'.
+    Create a batch from the given data. If working with PyArrow, it must be a 
+    RecordBatch and cannot be a Table. A PyArrow RecordBatch is expected to have 
+    unique row identifiers of type 'string' in its first column.
 
     Args:
         data:
