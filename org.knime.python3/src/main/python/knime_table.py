@@ -50,7 +50,7 @@ Defines the general table object that is used to transfer data from and to KNIME
 
 
 from abc import abstractmethod, ABC
-from typing import Iterator, List, Optional, Tuple, Type, Union, Generator
+from typing import Iterator, List, Optional, Tuple, Type, Union
 
 
 class _FixedSizeListView:
@@ -387,7 +387,7 @@ class ReadTable(_Table, _ReadData):
     """
 
     @abstractmethod
-    def batches(self) -> Generator[Batch]:
+    def batches(self) -> Iterator[Batch]:
         """
         Return an generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
