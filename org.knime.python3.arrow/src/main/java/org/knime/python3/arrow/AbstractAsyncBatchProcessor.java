@@ -144,6 +144,9 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
     private void asyncProcessNextBatch() {
         ReadBatch readBatch = null;
         try {
+            if (!m_stillRunning.get()) {
+                return;
+            }
             // Lazy reader initialization
             if (m_reader == null) {
                 initReader();
