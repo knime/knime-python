@@ -308,17 +308,70 @@ class PythonKernel(kg.EntryPoint):
             import jedi
         except ImportError:
             jedi = None
+
         suggestions = []
         if jedi is not None:
             # Needed to make jedi thread-safe. Calls to this method are initiated asynchronously on the Java side.
             jedi.settings.fast_parser = False
 
-            # Get current line to check if the cursor is inside a comment
-            current_line = source_code.split('\n')[line]
-            if '#' not in current_line[:column]:
-                try:
-                    #  Jedi's line numbering starts at 1.
-                    line += 1
+            try:
+                #  Jedi's line numbering starts at 1.
+                line += 1
+                completions = None
+                current_line = source_code.split('\n')[line-1]
+
+                in_comment = False
+                in_string = False
+                in_f_string = False
+                start_of_string = -1
+                end_of_string = -1
+
+                # keep indices of octothorpes/hashtags found in the current line
+                octothorpe_indices = [i for i, char in enumerate(current_line[:column]) if char == '#']
+                
+                # we use a stack to keep track of whether we are in a string
+                stack = []
+                for i, char in enumerate(current_line[:column]):
+                    symbols = ("'", '"', "{", "}") if in_f_string else ("'", '"')
+                    if char in symbols:
+                        try:
+                            if current_line[i-1] == 'f':
+                                in_f_string = True
+                        except IndexError:
+                            # catch the exception in case we have a negative index i
+                            pass
+                        if len(stack) != 0 and stack[-1] == char:
+                            _ = stack.pop()
+                            # if the current char ended the string
+                            if len(stack) == 0:
+                                end_of_string = i
+                                in_f_string = False
+                        else:
+                            if len(stack) == 0 and start_of_string == -1:
+                                start_of_string = i
+                            stack.append(char)
+
+                # if the stack was not emptied and the cursor isn't within an f-string
+                if len(stack) != 0 and stack[-1] != "{":
+                    # check for a special case of a rogue quotation mark inside the string,
+                    # e.g. "don't try it"
+                    if len(stack) == 1 or (len(stack) > 1 and stack[0] != stack[-1]):
+                        in_string = True
+
+                # only check for being inside a comment if we aren't already inside a string
+                if not in_string:
+                    if len(octothorpe_indices) != 0:
+                        # current line contains a string
+                        if start_of_string != -1:
+                            for index in octothorpe_indices:
+                                # check whether the octothorpe is outside of a string
+                                if (index < start_of_string) or (index > end_of_string and end_of_string != -1):
+                                    in_comment = True
+                        else:
+                            # if there are no strings in the current line, we are inside a comment
+                            in_comment = True
+                
+                if not (in_comment or in_string):
                     try:
                         # Use jedi's 0.16.0+ API.
                         completions = jedi.Script(source_code, path="").complete(
@@ -327,46 +380,26 @@ class PythonKernel(kg.EntryPoint):
                         )
                     except AttributeError:
                         # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
-                        completions = None
-
-                        # only autocomplete if we are not in a single-line string
-                        is_within_string = False
-                        if current_line[:column].count('"') % 2 == 1:
-                            # additional check for the case of a single quote used as an apostrophe, e.g. "don't"
-                            if "'" in current_line[:column]:
-                                if current_line[:column].count("'") % 2 == 1:
-                                    is_within_string = True
-                            else:
-                                is_within_string = True
-                        elif current_line[:column].count("'") % 2 == 1:
-                            # additional check for a rogue double quote, e.g. 'double quote: "'
-                            if '"' in current_line[:column]:
-                                if current_line[:column].count('"') % 2 == 1:
-                                    is_within_string = True
-                            else:
-                                is_within_string = True
-
-                        # TODO: check for being in a multi-line string (using ast or tokenize)
-
-                        if not is_within_string:
-                            completions = jedi.Script(
-                                source_code, line, column, None
-                            ).completions()
-                    
-                    if completions:        
-                        for completion in completions:
-                            if completion.name.startswith("_"):
-                                # skip all private members
-                                break
-                            suggestions.append(
-                                {
-                                    "name": completion.name,
-                                    "type": completion.type,
-                                    "doc": completion.docstring(),
-                                }
-                            )
-                except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
-                    warnings.warn("An error occurred while autocompleting.")
+                        # The old API doesn't automatically disable autocompletion in comments and strings,
+                        # which is done manually below.
+                        completions = jedi.Script(
+                            source_code, line, column, None
+                        ).completions()
+                
+                if completions:        
+                    for completion in completions:
+                        if completion.name.startswith("_"):
+                            # skip all private members
+                            break
+                        suggestions.append(
+                            {
+                                "name": completion.name,
+                                "type": completion.type,
+                                "doc": completion.docstring(),
+                            }
+                        )
+            except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
+                warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
     def executeOnMainThread(self, source_code: str, check_outputs: bool) -> List[str]:
