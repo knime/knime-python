@@ -255,60 +255,99 @@ class PythonKernelBase(Borg):
         """
         Returns a list of auto suggestions for the given code at the given cursor position.
 
-        Skips producing suggestions if the cursor is within a comment or a single/multi-line string.
+        Skips producing suggestions if the cursor is within a comment or a single-line string.
         """
         response = []
-        current_line = source_code.split('\n')[line]
-
-        # proceed if the current line does not contain a '#' before the cursor position
-        if self.has_auto_complete() and '#' not in current_line[:column]:
+        if self.has_auto_complete():
             # Needed to make jedi thread-safe. Calls to this method are initiated asynchronously on the Java side.
             jedi.settings.fast_parser = False
 
             try:
-                # get possible completions by using Jedi and providing the source code, and the cursor position
+                # get possible completions by using Jedi and providing the source code and the cursor position
                 # note: the line number gets incremented by 1 since Jedi's line numbering starts at 1
                 line += 1
+                completions = None
+                current_line = source_code.split('\n')[line-1]
+
+                in_comment = False
+                in_string = False
+                in_f_string = False
+                start_of_string = -1
+                end_of_string = -1
+
+                # keep indices of octothorpes/hashtags found in the current line
+                octothorpe_indices = [i for i, char in enumerate(current_line[:column]) if char == '#']
                 
-                # try Jedi's 0.16.0+ API, otherwise fallback to the old API
-                try:
+                # we use a stack to keep track of whether we are in a string
+                stack = []
+                for i, char in enumerate(current_line[:column]):
+                    symbols = ("'", '"', "{", "}") if in_f_string else ("'", '"')
+                    if char in symbols:
+                        try:
+                            if current_line[i-1] == 'f':
+                                in_f_string = True
+                        except IndexError:
+                            # catch the exception in case we have a negative index i
+                            pass
+                        if len(stack) != 0 and stack[-1] == char:
+                            _ = stack.pop()
+                            # if the current char ended the string
+                            if len(stack) == 0:
+                                end_of_string = i
+                                in_f_string = False
+                        else:
+                            if len(stack) == 0 and start_of_string == -1:
+                                start_of_string = i
+                            stack.append(char)
+
+                # if the stack was not emptied and the cursor isn't within an f-string
+                if len(stack) != 0 and stack[-1] != "{":
+                    # check for a special case of a rogue quotation mark inside the string
+                    # e.g. "don't try it"
+                    if len(stack) == 1 or (len(stack) > 1 and stack[0] != stack[-1]):
+                        in_string = True
+
+                # only check for being inside a comment if we aren't already inside a string
+                if not in_string:
+                    if len(octothorpe_indices) != 0:
+                        # current line contains a string
+                        if start_of_string != -1:
+                            for index in octothorpe_indices:
+                                # check whether the octothorpe is outside of a string
+                                if (index < start_of_string) or (index > end_of_string and end_of_string != -1):
+                                    in_comment = True
+                        else:
+                            # if there are no strings in the current line, we are inside a comment
+                            in_comment = True
+                
+                if not (in_comment or in_string):
+                    # try Jedi's 0.16.0+ API, otherwise fall back to the old API
+                    try:
                         completions = jedi.Script(source_code, path="").complete(
                             line,
                             column,
                         )
-                except AttributeError:
-                    # fall back to jedi's old API. ("complete" raises the AttributeError caught here.)
-                    # note: the old API does not automatically cease autocompletion within strings.
-                    completions = None
-
-                    # only autocomplete if we are not in a single-line string
-                    is_within_string = False
-                    if current_line[:column].count('"') % 2 == 1:
-                        # additional check for the case of a single quote used as an apostrophe, e.g. "don't"
-                        if "'" in current_line[:column]:
-                            if current_line[:column].count("'") % 2 == 1:
-                                is_within_string = True
-                        else:
-                            is_within_string = True
-                    elif current_line[:column].count("'") % 2 == 1:
-                        # additional check for a rogue double quote, e.g. 'double quote: "'
-                        if '"' in current_line[:column]:
-                            if current_line[:column].count('"') % 2 == 1:
-                                is_within_string = True
-                        else:
-                            is_within_string = True
-
-                    # TODO: check for being in a multi-line string (using ast or tokenize)
-
-                    if not is_within_string:
+                    except AttributeError:
+                        # fall back to Jedi's old API. ("complete" raises the AttributeError caught here.)
+                        # note: the old API does not automatically cease autocompletion within strings,
+                        # which is done manually below
                         completions = jedi.Script(
-                            source_code, line, column, None
+                            source_code, line, column
                         ).completions()
 
                 # extract interesting information if the cursor was not within a string or comment
-                if completions:
-                    for index, completion in enumerate(completions):
-                        response.append({'name': completion.name, 'type': completion.type, 'doc': completion.docstring()})
+                if completions:        
+                    for completion in completions:
+                        if completion.name.startswith("_"):
+                            # skip all private members
+                            break
+                        response.append(
+                            {
+                                "name": completion.name,
+                                "type": completion.type,
+                                "doc": completion.docstring(),
+                            }
+                        )
 
             except Exception:
                 warnings.warn("An error occurred while autocompleting.")
