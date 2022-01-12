@@ -266,9 +266,57 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         out = pa.Table.from_pandas(df)
         self.assertEqual(t.schema, out.schema)
 
-    def test_wrap_list_of_null(self):
+    def test_wrap_list_of_null_pyarrow_6(self):
         """
         Experiment how we can create a PyArrow list of null array with extension type wrapping.
+        """
+        try:
+            import packaging.version
+
+            if packaging.version.parse(pa.__version__) < packaging.version.parse(
+                "6.0.0"
+            ):
+                pass
+
+            import knime_arrow_types as katy
+
+            df = pd.DataFrame(
+                {
+                    "missingList": [
+                        [None, None],
+                        [None, None, None],
+                        None,
+                        [None, None],
+                    ],
+                }
+            )
+            raw_t = pa.Table.from_pandas(df)
+            array = raw_t.columns[0].chunks[0]
+            self.assertEqual(pa.list_(pa.null()), array.type)
+            self.assertEqual(7, len(array.values))
+            inner_type = MyArrowExtType(pa.null(), "VoidType")
+            outer_type = MyArrowExtType(pa.list_(inner_type), "ListType")
+
+            inner_data = pa.nulls(len(array.values), type=inner_type)
+            null_mask = array.is_null().to_pylist() + [False]
+            offsets = pa.array(
+                array.offsets.to_pylist(), mask=null_mask, type=array.offsets.type
+            )
+            self.assertEqual(len(offsets), len(array.offsets))
+            list_data = katy._create_list_array(offsets, inner_data)
+            outer_wrapped = pa.ExtensionArray.from_storage(outer_type, list_data)
+            self.assertEqual(outer_type, outer_wrapped.type)
+            self.assertTrue(outer_wrapped[0].is_valid)
+            self.assertFalse(outer_wrapped[2].is_valid)
+        except:
+            # test did not run because we don't have the packaging module, but we need that to test for the pyarrow version
+            pass
+
+    def test_wrap_list_of_null_pyarrow_5(self):
+        """
+        Experiment how we can create a PyArrow list of null array with extension type wrapping.
+        This is the PyArrow 5 conformal way of doing so, see the method above for PyArrow 6.
+        In PyArrow 7 the problem should be gone.
         """
         import knime_arrow_types as katy
 
@@ -284,8 +332,16 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         inner_type = MyArrowExtType(pa.null(), "VoidType")
         outer_type = MyArrowExtType(pa.list_(inner_type), "ListType")
 
-        inner_data = pa.nulls(len(array.values), type=inner_type)
-        null_mask = array.is_null().to_pylist() + [False]
+        validbits = np.packbits(
+            np.ones(len(array.values), dtype=np.uint8), bitorder="little"
+        )
+        inner_data = pa.Array.from_buffers(
+            inner_type,
+            len(array.values),
+            [pa.py_buffer(validbits)],
+            null_count=len(array.values),
+        )
+        null_mask = np.array(array.is_null().to_pylist() + [False])
         offsets = pa.array(
             array.offsets.to_pylist(), mask=null_mask, type=array.offsets.type
         )

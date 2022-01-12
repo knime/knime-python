@@ -668,8 +668,26 @@ def _get_offsets_with_nulls(a: Union[pa.ListArray, pa.LargeListArray]):
     # The offset vector contains an "end" element, however the validity
     # mask does not, so it needs to be extended. Not super efficient unfortunately.
     # Too bad Arrow does not offer to create a list with offsets, values, and mask.
-    null_mask = a.is_null().to_pylist() + [False]
+    # NOTE: PyArrow 5.0 requires the mask to be a numpy array, newer PyArrow versions don't.
+    null_mask = np.array(a.is_null().to_pylist() + [False])
     return pa.array(a.offsets.to_pylist(), mask=null_mask, type=a.offsets.type)
+
+
+def _nulls(num_nulls: int, dtype: pa.DataType):
+    # We would like to wrap a null vector in an extension type, but there's a bug
+    # that null arrays cannot be wrapped immediately, so we create a new null vector
+    # with the appropriate type. See
+    # https://issues.apache.org/jira/browse/ARROW-14522, which is fixed in PyArrow 7.
+    # We want to support PyArrow 5, which is the last version available for Python 3.6,
+    # and thus have to resort to this tedious construction of a null vector with extension
+    # type.
+    validbits = np.packbits(np.ones(num_nulls, dtype=np.uint8), bitorder="little")
+    return pa.Array.from_buffers(
+        dtype,
+        num_nulls,
+        [pa.py_buffer(validbits)],
+        null_count=num_nulls,
+    )
 
 
 def _wrap_primitive_array(
@@ -685,16 +703,12 @@ def _wrap_primitive_array(
             )
         return array
     elif array.type == pa.null():
-        # We would like to wrap a null vector in an extension type, but there's a bug
-        # that null arrays cannot be wrapped immediately, so we create a new null vector
-        # with the appropriate type. See
-        # https://issues.apache.org/jira/browse/ARROW-14522
-        return _apply_to_array(array, lambda a: pa.nulls(len(a), type=wrapped_type))
+        return _apply_to_array(array, lambda a: _nulls(len(a), dtype=wrapped_type))
     elif is_list_type(array.type) and array.type.value_type == pa.null():
 
         def to_list_of_nulls(a):
-            inner_data = pa.nulls(
-                len(a.values), type=wrapped_type.storage_type.value_type
+            inner_data = _nulls(
+                len(a.values), dtype=wrapped_type.storage_type.value_type
             )
             offsets = _get_offsets_with_nulls(a)
             list_data = _create_list_array(offsets, inner_data)
