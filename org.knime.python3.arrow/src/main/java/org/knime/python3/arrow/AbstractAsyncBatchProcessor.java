@@ -51,7 +51,6 @@ package org.knime.python3.arrow;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -59,6 +58,7 @@ import java.util.function.Supplier;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.batch.SequentialBatchReader;
+import org.knime.core.columnar.cache.object.CountUpDownLatch;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -73,7 +73,7 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
 
     private final ExecutorService m_threadPool;
 
-    private final Phaser m_phaser;
+    private final CountUpDownLatch m_countUpDownLatch = new CountUpDownLatch(1);
 
     protected AtomicBoolean m_stillRunning;
 
@@ -91,7 +91,6 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
         m_invalidCause = new AtomicReference<>(null);
         m_threadPool = Executors.newFixedThreadPool(numThreads,
             new ThreadFactoryBuilder().setNameFormat(threadPrefix + "-%d").build());
-        m_phaser = new Phaser(1);
         m_stillRunning = new AtomicBoolean(true);
     }
 
@@ -138,7 +137,7 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
             // Already invalid we do not need to check anymore
             throw invalidCause;
         }
-        m_phaser.register();
+        m_countUpDownLatch.countUp();
         m_threadPool.execute(this::asyncProcessNextBatch);
     }
 
@@ -164,18 +163,15 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
             if (readBatch != null) {
                 readBatch.release();
             }
-            m_phaser.arriveAndDeregister();
+            m_countUpDownLatch.countDown();
         }
     }
 
     protected final void waitForTermination() throws InterruptedException {
         synchronized (m_terminationLock) {
             // Wait until all threads are done
-            if (!m_phaser.isTerminated()) {
-                final var phase = m_phaser.getPhase();
-                m_phaser.arriveAndDeregister();
-                m_phaser.awaitAdvanceInterruptibly(phase);
-            }
+            m_countUpDownLatch.countDown();
+            m_countUpDownLatch.awaitInterrputibly();
 
             // Shutdown the thread pool
             m_threadPool.shutdown();
@@ -189,11 +185,8 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
 
         synchronized (m_terminationLock) {
             // Wait until the threads are all done -> uninterruptible!
-            if (!m_phaser.isTerminated()) {
-                final var phase = m_phaser.getPhase();
-                m_phaser.arriveAndDeregister();
-                m_phaser.awaitAdvance(phase);
-            }
+            m_countUpDownLatch.countDown();
+            m_countUpDownLatch.await();
 
             // Shutdown the thread pool
             m_threadPool.shutdown();
