@@ -723,6 +723,13 @@ def _wrap_primitive_array(
             array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
         )
 
+def _check_is_rowkey(array: pa.Array):
+    first_column_type = array.type
+    if not is_value_factory_type(first_column_type) or \
+        first_column_type.storage_type != pa.string() or \
+        first_column_type.logical_type != _row_key_type:
+        raise TypeError("The first column must contain unique row identifiers of type 'string'")
+
 
 def wrap_primitive_arrays(
     table: Union[pa.Table, pa.RecordBatch]
@@ -731,6 +738,7 @@ def wrap_primitive_arrays(
         _wrap_primitive_array(column, i == 0, table.schema.names[i])
         for i, column in enumerate(table)
     ]
+    _check_is_rowkey(arrays[0])
     if isinstance(table, pa.Table):
         return pa.Table.from_arrays(arrays, names=table.column_names)
     else:
