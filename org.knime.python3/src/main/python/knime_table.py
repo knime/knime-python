@@ -393,8 +393,6 @@ class ReadTable(_Table, _ReadData):
         that is not available yet, it will block until the data is present.
         len(my_read_table) gives the static amount of batches within the table, which is not updated.
         
-        The generator can be accessed, for example, via the following two ways:
-        
         **Example**::
             processed_table = knime_io.batch_write_table()
             for batch in knime_io.input_tables[0].batches():
