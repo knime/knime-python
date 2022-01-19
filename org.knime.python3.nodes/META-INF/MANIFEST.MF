@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Python 3 - Nodes
+Bundle-SymbolicName: org.knime.python3.nodes;singleton:=true
+Bundle-Version: 4.6.0.qualifier
+Bundle-ClassPath: .
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-ActivationPolicy: lazy
+Require-Bundle: 
+ org.knime.ext.py4j;bundle-version="[0.10.9,1.0.0)",
+Automatic-Module-Name: org.knime.python3.nodes
+Eclipse-RegisterBuddy: org.knime.ext.py4j
