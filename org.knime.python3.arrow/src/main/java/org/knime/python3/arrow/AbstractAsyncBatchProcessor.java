@@ -174,7 +174,7 @@ abstract class AbstractAsyncBatchProcessor implements AutoCloseable {
         synchronized (m_terminationLock) {
             // Wait until all threads are done
             m_countUpDownLatch.countDown();
-            m_countUpDownLatch.awaitInterrputibly();
+            m_countUpDownLatch.awaitInterruptibly();
 
             // Shutdown the thread pool
             m_threadPool.shutdown();
