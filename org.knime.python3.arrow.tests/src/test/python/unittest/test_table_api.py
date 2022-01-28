@@ -42,7 +42,11 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(b.to_pyarrow().to_pydict(), b2.to_pyarrow().to_pydict())
 
     def test_from_pyarrow(self):
-        d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
+        d = {
+            "RowKey": ["Row1", "Row2", "Row3", "Row4"],
+            "0": [1, 2, 3, 4],
+            "1": [1.0, 2.0, 3.0, 4.0],
+        }
         rb = pa.RecordBatch.from_pydict(d)
         b = kt.batch(rb)
         self.assertEqual(len(d), b.num_columns)
@@ -50,7 +54,11 @@ class BatchTest(unittest.TestCase):
         self.assertEqual((len(d["0"]), len(d)), b.shape)
 
     def test_row_selection(self):
-        d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0]}
+        d = {
+            "RowKey": ["Row1", "Row2", "Row3", "Row4"],
+            "0": [1, 2, 3, 4],
+            "1": [1.0, 2.0, 3.0, 4.0],
+        }
         rb = pa.RecordBatch.from_pydict(d)
         b = kt.batch(rb)
 
@@ -58,28 +66,28 @@ class BatchTest(unittest.TestCase):
 
         # test max row selection
         out = b[:2].to_pyarrow()
-        self.assertEqual(2, len(out.columns))
+        self.assertEqual(3, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(1, out["0"][0].as_py())
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection
         out = b[1:3].to_pyarrow()
-        self.assertEqual(2, len(out.columns))
+        self.assertEqual(3, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(2, out["0"][0].as_py())
         self.assertEqual(3, out["0"][1].as_py())
 
         # test range row selection with None as end
         out = b[2:].to_pyarrow()
-        self.assertEqual(2, len(out.columns))
+        self.assertEqual(3, len(out.columns))
         self.assertEqual(2, len(out))
         self.assertEqual(3, out["0"][0].as_py())
         self.assertEqual(4, out["0"][1].as_py())
 
         # test range row selection with None,None
         out = b[:].to_pyarrow()
-        self.assertEqual(2, len(out.columns))
+        self.assertEqual(3, len(out.columns))
         self.assertEqual(4, len(out))
 
         # test invalid row selection raises
@@ -87,12 +95,17 @@ class BatchTest(unittest.TestCase):
             b["foo"].to_pyarrow()
 
     def test_column_selection(self):
-        d = {"0": [1, 2, 3, 4], "1": [1.0, 2.0, 3.0, 4.0], "2": ["a", "b", "c", "d"]}
+        d = {
+            "RowKey": ["Row1", "Row2", "Row3", "Row4"],
+            "0": [1, 2, 3, 4],
+            "1": [1.0, 2.0, 3.0, 4.0],
+            "2": ["a", "b", "c", "d"],
+        }
         rb = pa.RecordBatch.from_pydict(d)
         b = kt.batch(rb)
 
         # test individual column selection
-        out = b[:, [1]].to_pyarrow()
+        out = b[:, [2]].to_pyarrow()
         self.assertEqual(1, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -100,7 +113,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(1.0, out["1"][0].as_py())
 
         # test list column selection
-        out = b[:, [2, 0]].to_pyarrow()
+        out = b[:, [3, 1]].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         self.assertEqual(["2", "0"], out.schema.names)
@@ -109,7 +122,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(1, out["0"][0].as_py())
 
         # test range column selection
-        out = b[:, 0:1].to_pyarrow()
+        out = b[:, 1:2].to_pyarrow()
         self.assertEqual(1, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -118,8 +131,8 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection with None as start
-        out = b[:, :2].to_pyarrow()
-        self.assertEqual(2, len(out.columns))
+        out = b[:, :3].to_pyarrow()
+        self.assertEqual(3, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
             print(out["2"])
@@ -127,7 +140,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(2, out["0"][1].as_py())
 
         # test range row selection with None as end
-        out = b[:, 1:].to_pyarrow()
+        out = b[:, 2:].to_pyarrow()
         self.assertEqual(2, len(out.columns))
         self.assertEqual(4, len(out))
         with self.assertRaises(KeyError):
@@ -136,7 +149,7 @@ class BatchTest(unittest.TestCase):
 
         # test range column selection with None,None
         out = b[:, :].to_pyarrow()
-        self.assertEqual(3, len(out.columns))
+        self.assertEqual(4, len(out.columns))
         self.assertEqual(4, len(out))
 
         # test selection by name
@@ -315,9 +328,13 @@ class SentinelReplacementTest(unittest.TestCase):
 
     def test_batch_replacement_api(self):
         kt._backend = kat.ArrowBackend(None)
-        d = {"0": [None, 2, 3, 4], "1": [1.0, 2.0, None, 4.0]}
+        d = {
+            "RowKey": ["Row1", "Row2", "Row3", "Row4"],
+            "0": [None, 2, 3, 4],
+            "1": [1.0, 2.0, None, 4.0],
+        }
         rb = pa.RecordBatch.from_pydict(d)
-        self.assertEqual(pa.int64(), rb.schema[0].type)
+        self.assertEqual(pa.int64(), rb.schema[1].type)
         b = kt.batch(rb)
 
         for s in ["min", "max", 42]:
@@ -334,7 +351,7 @@ class SentinelReplacementTest(unittest.TestCase):
 
             roundtrip_batch = kt.batch(out, sentinel=s)
             roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
-            self.assertEqual(pa.int64(), roundtrip_batch_pa.schema[0].type)
+            self.assertEqual(pa.int64(), roundtrip_batch_pa.schema[1].type)
             roundtrip_dict = roundtrip_batch_pa.to_pydict()
             self.assertEqual(d, roundtrip_dict)
 
@@ -430,66 +447,69 @@ class PandasToPyArrowConversionTest(unittest.TestCase):
     def test_primitive_type_wrapping(self):
         df = pd.DataFrame(
             {
+                "RowKey": ["Row1", "Row2", "Row3", "Row4"],
                 "ints": [0, 1, 2, 3],
                 "strings": ["a", "b", "c", "d"],
                 "doubles": [1.2, 2.3, 3.4, 4.5],
             }
         )
         raw_t = pa.Table.from_pandas(df)
-        self.assertEqual(pa.int64(), raw_t.schema[0].type)
-        self.assertEqual(pa.string(), raw_t.schema[1].type)
-        self.assertEqual(pa.float64(), raw_t.schema[2].type)
+        self.assertEqual(pa.int64(), raw_t.schema[1].type)
+        self.assertEqual(pa.string(), raw_t.schema[2].type)
+        self.assertEqual(pa.float64(), raw_t.schema[3].type)
         wrapped_t = katy.wrap_primitive_arrays(raw_t)
-        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[0].type))
         self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[1].type))
         self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[2].type))
-        self.assertEqual(pa.int64(), wrapped_t.schema[0].type.storage_type)
-        self.assertEqual(pa.string(), wrapped_t.schema[1].type.storage_type)
-        self.assertEqual(pa.float64(), wrapped_t.schema[2].type.storage_type)
+        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[3].type))
+        self.assertEqual(pa.int64(), wrapped_t.schema[1].type.storage_type)
+        self.assertEqual(pa.string(), wrapped_t.schema[2].type.storage_type)
+        self.assertEqual(pa.float64(), wrapped_t.schema[3].type.storage_type)
 
     def test_primitive_list_type_wrapping(self):
         df = pd.DataFrame(
             {
+                "RowKey": ["Row1", "Row2"],
                 "ints": [[0, 1, 2, 3], [1, 2, 3, 4]],
                 "strings": [["a", "b", "c", "d"], ["b", "c", "d", "e"]],
                 "doubles": [[1.2, 2.3, 3.4, 4.5], [2.3, 3.4, 4.5, 5.6]],
             }
         )
         raw_t = pa.Table.from_pandas(df)
-        self.assertEqual(pa.list_(pa.int64()), raw_t.schema[0].type)
-        self.assertEqual(pa.list_(pa.string()), raw_t.schema[1].type)
-        self.assertEqual(pa.list_(pa.float64()), raw_t.schema[2].type)
+        self.assertEqual(pa.list_(pa.int64()), raw_t.schema[1].type)
+        self.assertEqual(pa.list_(pa.string()), raw_t.schema[2].type)
+        self.assertEqual(pa.list_(pa.float64()), raw_t.schema[3].type)
         wrapped_t = katy.wrap_primitive_arrays(raw_t)
-        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[0].type))
         self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[1].type))
         self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[2].type))
-        self.assertEqual(pa.list_(pa.int64()), wrapped_t.schema[0].type.storage_type)
-        self.assertEqual(pa.list_(pa.string()), wrapped_t.schema[1].type.storage_type)
-        self.assertEqual(pa.list_(pa.float64()), wrapped_t.schema[2].type.storage_type)
+        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[3].type))
+        self.assertEqual(pa.list_(pa.int64()), wrapped_t.schema[1].type.storage_type)
+        self.assertEqual(pa.list_(pa.string()), wrapped_t.schema[2].type.storage_type)
+        self.assertEqual(pa.list_(pa.float64()), wrapped_t.schema[3].type.storage_type)
 
     def test_null_type_wrapping(self):
         df = pd.DataFrame(
             {
+                "RowKey": ["Row1", "Row2", "Row3", "Row4"],
                 "missing": [None, None, None, None],
                 "missingList": [[None, None], [None, None, None], None, [None, None]],
             }
         )
         raw_t = pa.Table.from_pandas(df)
-        self.assertEqual(pa.null(), raw_t.schema[0].type)
-        self.assertEqual(pa.list_(pa.null()), raw_t.schema[1].type)
+        self.assertEqual(pa.null(), raw_t.schema[1].type)
+        self.assertEqual(pa.list_(pa.null()), raw_t.schema[2].type)
         wrapped_t = katy.wrap_primitive_arrays(raw_t)
-        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[0].type))
         self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[1].type))
-        self.assertEqual(pa.null(), wrapped_t.schema[0].type.storage_type)
-        self.assertTrue(katy.is_list_type(wrapped_t.schema[1].type.storage_type))
+        self.assertTrue(katy.is_value_factory_type(wrapped_t.schema[2].type))
+        self.assertEqual(pa.null(), wrapped_t.schema[1].type.storage_type)
+        self.assertTrue(katy.is_list_type(wrapped_t.schema[2].type.storage_type))
         self.assertTrue(
-            katy.is_value_factory_type(wrapped_t.schema[1].type.storage_type.value_type)
+            katy.is_value_factory_type(wrapped_t.schema[2].type.storage_type.value_type)
         )
         self.assertEqual(
-            pa.null(), wrapped_t.schema[1].type.storage_type.value_type.storage_type
+            pa.null(), wrapped_t.schema[2].type.storage_type.value_type.storage_type
         )
-        self.assertFalse(wrapped_t[1][2].is_valid)
-        self.assertTrue(wrapped_t[1][3].is_valid)
+        self.assertFalse(wrapped_t[2][2].is_valid)
+        self.assertTrue(wrapped_t[2][3].is_valid)
 
 
 if __name__ == "__main__":
