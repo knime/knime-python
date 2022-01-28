@@ -43,63 +43,57 @@
 # ------------------------------------------------------------------------
 
 """
-@author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+@author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
-import os
-import sys
+import unittest
 
-# Path to knime_gateway.py
-sys.path.append(
-    os.path.normpath(
-        os.path.join(
-            __file__,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "org.knime.python3",
-            "src",
-            "main",
-            "python",
-        )
-    )
-)
+import pythonpath
+import extension_types as et
 
-# Path to knime_arrow.py
-sys.path.append(
-    os.path.normpath(
-        os.path.join(
-            __file__,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "org.knime.python3.arrow",
-            "src",
-            "main",
-            "python",
-        )
-    )
-)
-# Path to extension_types.py
-sys.path.append(
-    os.path.normpath(
-        os.path.join(
-            __file__,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "org.knime.python3.arrow.types",
-            "src",
-            "main",
-            "python",
-        )
-    )
-)
+
+class TimeExtensionTypeTest(unittest.TestCase):
+    _too_large_int = 100000000000000000000000000000000  # for testing integers too large to show in c
+    _too_large_days = 3649635  # for testing days out of the possible DateTime interval
+    _too_large_nanos = 999999999999999999999999 # for testing ns out of the possible DateTime interval
+
+    def test_zoned_date_time_value_factory2(self):
+        factory = et.ZonedDateTimeValueFactory2()
+        storage = {"0": self._too_large_days,  # days since epoch
+                   "1": 0,
+                   "2": 0,  # days since epoch
+                   "3": 0}
+        self.assertRaises(OverflowError, factory.decode, storage=storage)
+
+    def test_local_date_time_value_factory(self):
+        factory = et.LocalDateTimeValueFactory()
+        storage = {"0": self._too_large_days,  # days since epoch
+                   "1": 0}  # nanoseconds
+
+        self.assertRaises(OverflowError, factory.decode, storage=storage)
+
+        storage = {"0": 0,  # days since epoch
+                   "1": self._too_large_int}  # duration: nanoseconds
+
+        self.assertRaises(OverflowError, factory.decode, storage=storage)
+
+    def test_duration_value_factory(self):
+        factory = et.DurationValueFactory()
+        storage = {"0": self._too_large_int,  # duration: seconds
+                   "1": self._too_large_int}  # duration: nanoseconds
+
+        self.assertRaises(OverflowError, factory.decode, storage=storage)
+
+        storage = {"0": 0,  # duration: seconds
+                   "1": self._too_large_nanos}  # duration: nanoseconds
+
+        self.assertRaises(OverflowError, factory.decode, storage=storage)
+
+    def test_local_date_value_factory(self):
+        factory = et.LocalDateValueFactory()
+        self.assertRaises(OverflowError, factory.decode, day_of_epoch=self._too_large_days)
+        self.assertRaises(OverflowError, factory.decode, day_of_epoch=self._too_large_int)
+
+    def test_local_time_value_factory(self):
+        factory = et.LocalTimeValueFactory()
+        self.assertRaises(OverflowError, factory.decode, nano_of_day=self._too_large_int)
+        self.assertRaises(OverflowError, factory.decode, nano_of_day=self._too_large_nanos)
