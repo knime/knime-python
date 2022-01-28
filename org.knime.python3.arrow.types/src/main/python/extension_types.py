@@ -50,10 +50,16 @@ import knime_types as kt
 import datetime as dt
 from dateutil import tz
 
-
 _start_of_epoch = dt.datetime(1970, 1, 1)
 _microsecond_delta = dt.timedelta(microseconds=1)
 _second_delta = dt.timedelta(seconds=1)
+
+
+def _before_or_after(value):
+    if value < 0:
+        return "before"
+    else:
+        return "after"
 
 
 class ZonedDateTimeValueFactory2(
@@ -97,12 +103,25 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
     def decode(self, storage):
         if storage is None:
             return None
-        day_of_epoch = storage["0"]
-        nano_of_day = storage["1"]
-        micro_of_day = nano_of_day // 1000  # here we lose precision
-        return _start_of_epoch + dt.timedelta(
-            days=day_of_epoch, microseconds=micro_of_day
-        )
+        try:
+            day_of_epoch = storage["0"]
+            nano_of_day = storage["1"]
+            micro_of_day = nano_of_day // 1000  # here we lose precision
+            return _start_of_epoch + dt.timedelta(
+                days=day_of_epoch, microseconds=micro_of_day
+            )
+
+        except OverflowError as e:
+
+            if e.args[0] == "date value out of range":
+                raise OverflowError(
+                    f"Cannot represent the date {day_of_epoch} days and {micro_of_day} ms {_before_or_after(day_of_epoch)}"
+                    f" {_start_of_epoch} in Pandas, the data range only allows dates from {dt.date.min}"
+                    f" to {dt.date.max}") from None
+            else:
+                raise OverflowError(
+                    f"Cannot represent the value {day_of_epoch} or {micro_of_day} as date as it too large,"
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
 
     def encode(self, datetime):
         if datetime is None:
@@ -110,8 +129,8 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
         delta = datetime.replace(tzinfo=None) - _start_of_epoch
         day_of_epoch = delta.days
         micro_of_day = (
-            datetime - datetime.replace(hour=0, minute=0, second=0, microsecond=0)
-        ) // _microsecond_delta
+                               datetime - datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+                       ) // _microsecond_delta
         nano_of_day = micro_of_day * 1000
         return {"0": day_of_epoch, "1": nano_of_day}
 
@@ -129,10 +148,19 @@ class DurationValueFactory(kt.PythonValueFactory):
     def decode(self, storage):
         if storage is None:
             return None
-
-        seconds = storage["0"]
-        nanos = storage["1"]
-        return dt.timedelta(seconds=seconds, microseconds=nanos // 1000)
+        try:
+            seconds = storage["0"]
+            nanos = storage["1"]
+            return dt.timedelta(seconds=seconds, microseconds=nanos // 1000)
+        except OverflowError as e:
+            if e.args[0] == "date value out of range":
+                raise OverflowError(
+                    f"Cannot represent {seconds} and {nanos} {_before_or_after(seconds)} the date {_start_of_epoch}"
+                    f" in Pandas, the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+            else:
+                raise OverflowError(
+                    f"Cannot represent the value {seconds} or {nanos} as date as it is too large, "
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
 
     def encode(self, value):
         if value is None:
@@ -150,10 +178,21 @@ class LocalDateValueFactory(kt.PythonValueFactory):
         kt.PythonValueFactory.__init__(self, dt.date)
 
     def decode(self, day_of_epoch):
-        if day_of_epoch is None:
-            return None
+        try:
+            if day_of_epoch is None:
+                return None
 
-        return _start_of_epoch.date() + dt.timedelta(days=day_of_epoch)
+            return _start_of_epoch.date() + dt.timedelta(days=day_of_epoch)
+        except OverflowError as e:
+            if e.args[0] == "date value out of range":
+                raise OverflowError(
+                    f"Cannot represent the  Date value of {day_of_epoch} days {_before_or_after(day_of_epoch)}"
+                    f" {_start_of_epoch.date()} in Pandas, "
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+            else:
+                raise OverflowError(
+                    f"Cannot represent the value {day_of_epoch} as date as it is too large, "
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
 
     def encode(self, date):
         if date is None:
@@ -168,10 +207,21 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
     def decode(self, nano_of_day):
         if nano_of_day is None:
             return None
+        try:
+            micro_of_day = nano_of_day // 1000  # here we lose precision
+            local_dt = dt.datetime.min + dt.timedelta(microseconds=micro_of_day)
+            return local_dt.time()
 
-        micro_of_day = nano_of_day // 1000  # here we lose precision
-        local_dt = dt.datetime.min + dt.timedelta(microseconds=micro_of_day)
-        return local_dt.time()
+        except OverflowError as e:
+            if e.args[0] == "date value out of range":
+                raise OverflowError(
+                    f"Cannot represent the  Date value of {micro_of_day} microseconds after {dt.datetime.min} in Pandas,"
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+            else:
+                raise OverflowError(
+                    f"Cannot represent the value {micro_of_day} microseconds after {dt.datetime.min} as date"
+                    f" as it is too large the data range only allows dates from"
+                    f" {dt.date.min} to {dt.date.max}") from None
 
     def encode(self, time):
         if time is None:
