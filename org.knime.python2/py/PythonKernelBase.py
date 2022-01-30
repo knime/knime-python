@@ -78,6 +78,7 @@ from PythonUtils import load_module_from_path
 from PythonUtils import object_to_string
 from Serializer import Serializer
 from TypeExtensionManager import TypeExtensionManager
+from AutocompletionUtils import disable_autocompletion
 
 if EnvironmentHelper.is_jedi_available():
     import jedi
@@ -114,8 +115,10 @@ class PythonKernelBase(Borg):
 
         self._cleanup_object_names = set()
 
-        if sys.getdefaultencoding() != 'utf-8':
-            warnings.warn("Your default encoding is not 'utf-8'. You may experience errors with non ascii characters!")
+        if sys.getdefaultencoding() != "utf-8":
+            warnings.warn(
+                "Your default encoding is not 'utf-8'. You may experience errors with non ascii characters!"
+            )
 
     def __enter__(self):
         return self
@@ -152,9 +155,9 @@ class PythonKernelBase(Borg):
         return self._serializer
 
     def register_task_handler(self, task_category, handler, executor=None):
-        return self._commands.message_handlers.register_message_handler(task_category,
-                                                                        self._commands.create_task_factory(handler,
-                                                                                                           executor))
+        return self._commands.message_handlers.register_message_handler(
+            task_category, self._commands.create_task_factory(handler, executor)
+        )
 
     def unregister_task_handler(self, task_category):
         return self._commands.message_handlers.unregister_message_handler(task_category)
@@ -167,9 +170,13 @@ class PythonKernelBase(Borg):
 
     def set_serialization_library(self, path_to_serialization_library_module):
         debug_msg("Load serialization library.")
-        self._serialization_library = self._load_serialization_library(path_to_serialization_library_module)
+        self._serialization_library = self._load_serialization_library(
+            path_to_serialization_library_module
+        )
         debug_msg("Create serialization helper.")
-        self._serializer = Serializer(self._serialization_library, self._type_extension_manager)
+        self._serializer = Serializer(
+            self._serialization_library, self._type_extension_manager
+        )
 
     # Kernel commands:
 
@@ -186,7 +193,7 @@ class PythonKernelBase(Borg):
         if name in self._exec_env:
             return self._exec_env[name]
         else:
-            raise NameError(name + ' is not defined.')
+            raise NameError(name + " is not defined.")
 
     def get_variable_or_default(self, name, default):
         """
@@ -211,23 +218,23 @@ class PythonKernelBase(Borg):
             # get name of the type
             var_type = type(value).__name__
             # class type changed from classobj to type in python 3
-            class_type = 'classobj'
+            class_type = "classobj"
             if EnvironmentHelper.is_python3():
-                class_type = 'type'
-            if var_type == 'module':
-                modules.append({'name': key, 'type': var_type, 'value': ''})
+                class_type = "type"
+            if var_type == "module":
+                modules.append({"name": key, "type": var_type, "value": ""})
             elif var_type == class_type:
-                classes.append({'name': key, 'type': var_type, 'value': ''})
-            elif var_type == 'function':
-                functions.append({'name': key, 'type': var_type, 'value': ''})
-            elif key != '__builtins__':
+                classes.append({"name": key, "type": var_type, "value": ""})
+            elif var_type == "function":
+                functions.append({"name": key, "type": var_type, "value": ""})
+            elif key != "__builtins__":
                 value = object_to_string(value)
-                variables.append({'name': key, 'type': var_type, 'value': value})
+                variables.append({"name": key, "type": var_type, "value": value})
         # sort lists by name
-        modules = sorted(modules, key=lambda k: k['name'])
-        classes = sorted(classes, key=lambda k: k['name'])
-        functions = sorted(functions, key=lambda k: k['name'])
-        variables = sorted(variables, key=lambda k: k['name'])
+        modules = sorted(modules, key=lambda k: k["name"])
+        classes = sorted(classes, key=lambda k: k["name"])
+        functions = sorted(functions, key=lambda k: k["name"])
+        variables = sorted(variables, key=lambda k: k["name"])
         # create response list and add contents of the other lists in the order they should be displayed
         response = []
         response.extend(modules)
@@ -252,7 +259,7 @@ class PythonKernelBase(Borg):
         Returns true if autocomplete is available, false otherwise.
         """
         return EnvironmentHelper.is_jedi_available()
-    
+
     @staticmethod
     def is_inside_comment_or_string(current_line, cursor):
         """
@@ -273,65 +280,84 @@ class PythonKernelBase(Borg):
         curly_brace_start_end_indices = []
 
         # for each hashtag found, we have a boolean indicator of whether it's inside a string
-        hashtag_indices = [(idx, False) for idx, char in enumerate(current_line[:cursor]) if char == '#']
-
-        regex_expressions = [
-            ("'", r"(?<!\')\'(?!\')"), # match only single quotes
-            ('"', r'(?<!\")\"(?!\"")'), # match only double quotes
-            ("'''", r"\'{3}"), # match only triple single quotes
-            ('"""', r'\"{3}') # match only triple double quotes
+        hashtag_indices = [
+            (idx, False)
+            for idx, char in enumerate(current_line[:cursor])
+            if char == "#"
         ]
 
-        if python_version[0] != '2':
+        regex_expressions = [
+            ("'", r"(?<!\')\'(?!\')"),  # match only single quotes
+            ('"', r'(?<!\")\"(?!\"")'),  # match only double quotes
+            ("'''", r"\'{3}"),  # match only triple single quotes
+            ('"""', r"\"{3}"),  # match only triple double quotes
+        ]
+
+        if python_version[0] != "2":
             # if Python version is 3.x, add an expression to match f-string start indices
-            regex_expressions += [
-                ('f', r"""(?<=f)(\'|\")""")
-            ]
+            regex_expressions += [("f", r"""(?<=f)(\'|\")""")]
 
         # extract the indices of quotation marks (and f-string start indices if Python version is 3.x)
         for symbol, expr in regex_expressions:
             matches = re.finditer(expr, current_line)
-            if symbol == 'f':
+            if symbol == "f":
                 f_string_start_indices += [match.start(0) for match in matches]
             else:
-                quotation_mark_occurences += [(match.start(0), symbol) for match in matches]
+                quotation_mark_occurences += [
+                    (match.start(0), symbol) for match in matches
+                ]
 
         # sort the collected quotation mark indices in order of appearance in the line
         quotation_mark_occurences.sort()
-        string_opening_symbol = ''
+        string_opening_symbol = ""
         current_string_idx = 0
         for idx, symbol in quotation_mark_occurences:
-            if string_opening_symbol == '':
+            if string_opening_symbol == "":
                 string_opening_symbol = symbol
                 # if the current string is unclosed, save a -1 as its end index
                 string_start_end_indices.append([idx, -1])
             else:
                 if symbol == string_opening_symbol:
                     # found the end of the current string, replace the -1 with the current index
-                    string_opening_symbol = ''
+                    string_opening_symbol = ""
                     string_start_end_indices[current_string_idx][1] = idx
                     current_string_idx += 1
 
         # save indices of curly braces inside the discovered f-strings (if any)
         for f_string_idx in range(len(f_string_start_indices)):
             for string_idx in range(len(string_start_end_indices)):
-                if string_start_end_indices[string_idx][0] == f_string_start_indices[f_string_idx]:
+                if (
+                    string_start_end_indices[string_idx][0]
+                    == f_string_start_indices[f_string_idx]
+                ):
                     # match the start index of the current f-string with the start index of one of the found strings
                     # in order to get the end index of the f-string
                     start_idx = string_start_end_indices[string_idx][0]
                     end_idx = string_start_end_indices[string_idx][1]
                     substring = current_line[start_idx:end_idx]
 
-                    opening_curly_braces = [idx+start_idx for idx, char in enumerate(substring) if char == '{']
-                    closing_curly_braces = [idx+start_idx for idx, char in enumerate(substring) if char == '}']
+                    opening_curly_braces = [
+                        idx + start_idx
+                        for idx, char in enumerate(substring)
+                        if char == "{"
+                    ]
+                    closing_curly_braces = [
+                        idx + start_idx
+                        for idx, char in enumerate(substring)
+                        if char == "}"
+                    ]
 
                     # this covers the case of being inside an unfinished f-string, where there might be
                     # fewer closing curly braces than the opening ones. We pad the list of closing curly
                     # braces with -1's to be able to zip it with the list of the opening ones.
                     if len(opening_curly_braces) > len(closing_curly_braces):
-                        closing_curly_braces += [-1] * (len(opening_curly_braces) - len(closing_curly_braces))
+                        closing_curly_braces += [-1] * (
+                            len(opening_curly_braces) - len(closing_curly_braces)
+                        )
 
-                    curly_brace_start_end_indices += list(zip(opening_curly_braces, closing_curly_braces))
+                    curly_brace_start_end_indices += list(
+                        zip(opening_curly_braces, closing_curly_braces)
+                    )
                     break
 
         # check for the cursor and discovered hashtags being inside a string
@@ -339,10 +365,21 @@ class PythonKernelBase(Borg):
             if not in_string or in_comment:
                 if (end_idx == -1) or (start_idx < cursor < end_idx):
                     in_string = True
-                    for curly_brace_start, curly_brace_end in curly_brace_start_end_indices:
-                        if (curly_brace_end == -1) and (start_idx < curly_brace_start < cursor):
+                    for (
+                        curly_brace_start,
+                        curly_brace_end,
+                    ) in curly_brace_start_end_indices:
+                        if (curly_brace_end == -1) and (
+                            start_idx < curly_brace_start < cursor
+                        ):
                             in_string = False
-                        elif start_idx < curly_brace_start < cursor < curly_brace_end < end_idx:
+                        elif (
+                            start_idx
+                            < curly_brace_start
+                            < cursor
+                            < curly_brace_end
+                            < end_idx
+                        ):
                             in_string = False
 
                 if not in_string and end_idx != -1:
@@ -360,8 +397,10 @@ class PythonKernelBase(Borg):
             else:
                 # otherwise we check if there is a False is_ignored indicator in the list of hashtags,
                 # which means it isn't inside a string
-                in_comment = False in [is_ignored for idx, is_ignored in hashtag_indices]
-        return (in_string or in_comment)
+                in_comment = False in [
+                    is_ignored for idx, is_ignored in hashtag_indices
+                ]
+        return in_string or in_comment
 
     def auto_complete(self, source_code, line, column):
         """
@@ -378,10 +417,10 @@ class PythonKernelBase(Borg):
             try:
                 # get possible completions by using Jedi and providing the source code and the cursor position
                 # note: the line number gets incremented by 1 since Jedi's line numbering starts at 1.
-                current_line = source_code.split('\n')[line]
+                current_line = source_code.split("\n")[line][:column]
                 line += 1
-
-                if not self.is_inside_comment_or_string(current_line, column):
+                if not disable_autocompletion(current_line):
+                    # if not self.is_inside_comment_or_string(current_line, column):
                     try:
                         # try Jedi's 0.16.0+ API, otherwise fall back to the old API
                         completions = jedi.Script(source_code, path="").complete(
@@ -426,7 +465,7 @@ class PythonKernelBase(Borg):
         sys.stderr = PythonKernelBase._Logger(sys.stderr, error)
 
         # FIXME: This is dangerous!
-        self._exec_env['python_messaging_initiating_message_id'] = initiating_message_id
+        self._exec_env["python_messaging_initiating_message_id"] = initiating_message_id
         try:
             exec(source_code, self._exec_env, self._exec_env)
         finally:
@@ -442,8 +481,10 @@ class PythonKernelBase(Borg):
         self._exec_env = {"workspace": self}
         try:
             import knime_jupyter
+
             knime_jupyter.__implementation__._resolve_knime_url = (
-                lambda url: self._commands.resolve_knime_url(url).get())
+                lambda url: self._commands.resolve_knime_url(url).get()
+            )
             self._exec_env[knime_jupyter.__name__] = knime_jupyter
         except Exception:
             warnings.warn("Failed to initialize Jupyter notebook support.")
@@ -453,15 +494,17 @@ class PythonKernelBase(Borg):
     def start(self):
         if not self._is_running:
             if self._is_closed:
-                raise RuntimeError('Python kernel is closed and cannot be restarted.')
+                raise RuntimeError("Python kernel is closed and cannot be restarted.")
             self._is_running = True
             debug_msg("Connect.")
-            self._connection = self._connect(('localhost', int(sys.argv[1])))
+            self._connection = self._connect(("localhost", int(sys.argv[1])))
             debug_msg("Create executors.")
             self._execute_thread_executor = self._create_execute_thread_executor()
             self._executor = self._create_executor()
             debug_msg("Create Python commands.")
-            self._commands = PythonCommands(self._create_messaging(self._connection), self)
+            self._commands = PythonCommands(
+                self._create_messaging(self._connection), self
+            )
             self._setup_builtin_request_handlers()
             debug_msg("Create type extension manager.")
             self._type_extension_manager = TypeExtensionManager(self._commands)
@@ -476,9 +519,13 @@ class PythonKernelBase(Borg):
             # Order is intended.
             invoke_safely(None, lambda s: s._cleanup(), self)
             invoke_safely(None, lambda e: e.shutdown(wait=False), self._executor)
-            invoke_safely(None, lambda e: e.shutdown(wait=False), self._execute_thread_executor)
+            invoke_safely(
+                None, lambda e: e.shutdown(wait=False), self._execute_thread_executor
+            )
             invoke_safely(None, lambda c: c.close(), self._commands)
-            invoke_safely(None, lambda c: c.shutdown(socket.SHUT_RDWR), self._connection)
+            invoke_safely(
+                None, lambda c: c.shutdown(socket.SHUT_RDWR), self._connection
+            )
             invoke_safely(None, lambda c: c.close(), self._connection)
 
     # Helper:
@@ -497,7 +544,7 @@ class PythonKernelBase(Borg):
     @staticmethod
     def _load_serialization_library(serializer_path):
         last_separator = serializer_path.rfind(os.sep)
-        serializer_directory_path = serializer_path[0:last_separator + 1]
+        serializer_directory_path = serializer_path[0 : last_separator + 1]
         sys.path.append(serializer_directory_path)
         serializer = load_module_from_path(serializer_path)
         serializer.init(Simpletype)
