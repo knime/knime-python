@@ -317,9 +317,9 @@ class PythonKernel(kg.EntryPoint):
 
             try:
                 #  Jedi's line numbering starts at 1.
-                line += 1
+                current_line = source_code.split("\n")[line][:column]
                 completions = []
-                current_line = source_code.split("\n")[line - 1][:column]
+                line += 1
 
                 if not disable_autocompletion(current_line):
                     try:

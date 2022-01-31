@@ -70,7 +70,7 @@ def get_quote_indices(line: str) -> list:
     quote_indices = []
     regex_expressions = [
         ("'", r"(?<!\')\'(?!\')"),  # match only single quotes
-        ('"', r'(?<!\")\"(?!\"")'),  # match only double quotes
+        ('"', r"(?<!\")\"(?!\")"),  # match only double quotes
         ("'''", r"\'{3}"),  # match only triple single quotes
         ('"""', r"\"{3}"),  # match only triple double quotes
     ]
@@ -153,13 +153,14 @@ def get_replacement_field_indices(line: str, string_indices: list) -> list:
                 # found strings in order to get the end index of the f-string
                 start_idx = string_indices[string_idx][0]
                 end_idx = string_indices[string_idx][1]
-                substring = line[start_idx:end_idx]
+
+                f_string = line[start_idx:end_idx]
 
                 opening_curly_braces = [
-                    idx + start_idx for idx, char in enumerate(substring) if char == "{"
+                    idx + start_idx for idx, char in enumerate(f_string) if char == "{"
                 ]
                 closing_curly_braces = [
-                    idx + start_idx for idx, char in enumerate(substring) if char == "}"
+                    idx + start_idx for idx, char in enumerate(f_string) if char == "}"
                 ]
 
                 if len(opening_curly_braces) > len(closing_curly_braces):
@@ -193,9 +194,12 @@ def get_hashtag_indices(line: str, string_indices: list) -> list:
     hashtag_indices = [(idx, False) for idx, char in enumerate(line) if char == "#"]
 
     for start_idx, end_idx in string_indices:
-        if end_idx != -1:
-            for idx, (hashtag_idx, is_in_string) in enumerate(hashtag_indices):
-                is_in_string = True if start_idx < hashtag_idx < end_idx else False
+        for idx, (hashtag_idx, is_in_string) in enumerate(hashtag_indices):
+            if not is_in_string:
+                if end_idx != -1:
+                    is_in_string = True if start_idx < hashtag_idx < end_idx else False
+                else:
+                    is_in_string = True if start_idx < hashtag_idx else False
                 hashtag_indices[idx] = (hashtag_idx, is_in_string)
 
     return hashtag_indices
@@ -203,7 +207,8 @@ def get_hashtag_indices(line: str, string_indices: list) -> list:
 
 def parse_line(line: str) -> tuple:
     """
-    Parses the current line of code to find strings, f-string replacement fields, and hashtag symbols.
+    Parses the current line of code to find strings, f-string replacement fields (Python 3.6+),
+    and hashtag symbols.
 
     Parameters:
     line (str): the line of code from which autocompletion was invoked.
