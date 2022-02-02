@@ -1,0 +1,23 @@
+
+
+.wy-nav-content{
+    max-width: 100%;
+}
+
+
+dt {    
+    border-top: 3px solid #ffd800 !important;
+    background: #eff1f2 !important;
+}
+
+li.current{
+    aria-expanded: true !important;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils) > dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) > dt{
+    color: #6e6e6e !important;
+}
+
+.a.reference{
+    color: :black !important;
+}
