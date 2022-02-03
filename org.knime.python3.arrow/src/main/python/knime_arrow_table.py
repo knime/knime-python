@@ -375,13 +375,6 @@ class ArrowBackend(kta._Backend):
             data = data.to_pyarrow()
         return ArrowWriteTable(self._create_sink(), data, sentinel)
 
-    def batch(
-        self,
-        data: Union["pandas.DataFrame", pa.RecordBatch],
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> ArrowBatch:
-        return ArrowBatch(data, sentinel)
-
     def _create_sink(self):
         new_sink = self._sink_creator()
         self._sinks.append(new_sink)

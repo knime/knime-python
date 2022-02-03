@@ -52,6 +52,7 @@ import pyarrow as pa
 import pandas as pd  # just to load this at startup and don't count the time
 
 import knime_arrow as ka
+import knime_arrow_table as kat
 import knime_arrow_struct_dict_encoding as kas
 import knime_gateway as kg
 
@@ -582,7 +583,7 @@ class EntryPoint(kg.EntryPoint):
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
-                    write_batch = kta.batch(new_batch)
+                    write_batch = kat.ArrowBatch(new_batch)
                 elif mode == "arrow-sentinel":
                     arrow_batch = read_batch.to_pyarrow(sentinel=0)
                     arrays = []
@@ -592,17 +593,17 @@ class EntryPoint(kg.EntryPoint):
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
-                    write_batch = kta.batch(new_batch, sentinel=0)
+                    write_batch = kat.ArrowBatch(new_batch, sentinel=0)
                 elif mode == "pandas":
                     pandas_df = read_batch.to_pandas()
                     pandas_df["0"] = pandas_df["0"] * 2
                     pandas_df["1"] = pandas_df["1"] * 2
-                    write_batch = kta.batch(pandas_df)
+                    write_batch = kat.ArrowBatch(pandas_df)
                 elif mode == "dict":
                     d = read_batch.to_pyarrow().to_pydict()
                     d["0"] = [i * 2 for i in d["0"]]
                     d["1"] = [i * 2 for i in d["1"]]
-                    write_batch = kta.batch(
+                    write_batch = kat.ArrowBatch(
                         # from_pydict requires pyarrow 6.0! Install via PIP
                         pa.RecordBatch.from_pydict(d)
                     )

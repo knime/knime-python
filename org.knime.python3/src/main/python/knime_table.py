@@ -110,13 +110,6 @@ class _Backend(ABC):
     """
 
     @abstractmethod
-    def batch(
-        data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
-        sentinel: Optional[Union[str, int]] = None,
-    ) -> "Batch":
-        pass
-
-    @abstractmethod
     def write_table(
         data: Union["ReadTable", "pandas.DataFrame", "pyarrow.Table"],
         sentinel: Optional[Union[str, int]] = None,
@@ -532,25 +525,3 @@ def batch_write_table() -> BatchWriteTable:
 
     """
     return _backend.batch_write_table()
-
-
-def batch(
-    data: Union["pandas.DataFrame", "pyarrow.RecordBatch"],
-    sentinel: Optional[Union[str, int]] = None,
-) -> Batch:
-    """
-    Create a batch from the given data. If working with PyArrow, it must be a 
-    RecordBatch and cannot be a Table. A PyArrow RecordBatch is expected to have 
-    unique row identifiers of type 'string' in its first column.
-
-    Args:
-        data:
-            A pandas.DataFrame or a pyarrow.RecordBatch
-        sentinel:
-            Interpret the following values in integral columns as missing value:
-
-            * ``"min"`` min int32 or min int64 depending on the type of the column
-            * ``"max"`` max int32 or max int64 depending on the type of the column
-            * a special integer value that should be interpreted as missing value
-    """
-    return _backend.batch(data, sentinel)

@@ -15,7 +15,7 @@ class BatchTest(unittest.TestCase):
         df = pd.DataFrame()
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, 3.0, 4.0]
-        b = kt.batch(df)
+        b = kat.ArrowBatch(df)
         self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key is added
         self.assertEqual(len(df), b.num_rows)
         self.assertEqual((len(df), len(df.columns) + 1), b.shape)
@@ -28,14 +28,14 @@ class BatchTest(unittest.TestCase):
             "1": [1.0, 2.0, 3.0, 4.0],
         }
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.batch(rb)
+        b = kat.ArrowBatch(rb)
 
         # convert to pandas
         df = b.to_pandas()
         self.assertEqual(len(df.columns) + 1, b.num_columns)  # row key column vanishes
         self.assertEqual(len(df), b.num_rows)
 
-        b2 = kt.batch(df)
+        b2 = kat.ArrowBatch(df)
         self.assertEqual(b.num_columns, b2.num_columns)  # row key column is added back
         self.assertEqual(b.num_rows, b2.num_rows)
         self.assertEqual(b.shape, b2.shape)
@@ -48,7 +48,7 @@ class BatchTest(unittest.TestCase):
             "1": [1.0, 2.0, 3.0, 4.0],
         }
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.batch(rb)
+        b = kat.ArrowBatch(rb)
         self.assertEqual(len(d), b.num_columns)
         self.assertEqual(len(d["0"]), b.num_rows)
         self.assertEqual((len(d["0"]), len(d)), b.shape)
@@ -60,7 +60,7 @@ class BatchTest(unittest.TestCase):
             "1": [1.0, 2.0, 3.0, 4.0],
         }
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.batch(rb)
+        b = kat.ArrowBatch(rb)
 
         self.assertTrue(isinstance(b[:], kt.SlicedDataView))
 
@@ -102,7 +102,7 @@ class BatchTest(unittest.TestCase):
             "2": ["a", "b", "c", "d"],
         }
         rb = pa.RecordBatch.from_pydict(d)
-        b = kt.batch(rb)
+        b = kat.ArrowBatch(rb)
 
         # test individual column selection
         out = b[:, [2]].to_pyarrow()
@@ -335,7 +335,7 @@ class SentinelReplacementTest(unittest.TestCase):
         }
         rb = pa.RecordBatch.from_pydict(d)
         self.assertEqual(pa.int64(), rb.schema[1].type)
-        b = kt.batch(rb)
+        b = kat.ArrowBatch(rb)
 
         for s in ["min", "max", 42]:
             out = b.to_pyarrow(sentinel=s)
@@ -348,8 +348,7 @@ class SentinelReplacementTest(unittest.TestCase):
             self.assertTrue(out["0"][0].is_valid)
             self.assertEqual(expected, out["0"][0].as_py())
             self.assertFalse(out["1"][2].is_valid)
-
-            roundtrip_batch = kt.batch(out, sentinel=s)
+            roundtrip_batch = kat.ArrowBatch(out, sentinel=s)
             roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
             self.assertEqual(pa.int64(), roundtrip_batch_pa.schema[1].type)
             roundtrip_dict = roundtrip_batch_pa.to_pydict()
@@ -360,7 +359,7 @@ class SentinelReplacementTest(unittest.TestCase):
         df["0"] = [1, 2, 3, 4]
         df["1"] = [1.0, 2.0, np.nan, 4.0]
         df["2"] = [[1, 2, 3], [0, 3, 2], [6, 5, 4], [4, 3, 2]]
-        b = kt.batch(df, sentinel=1)
+        b = kat.ArrowBatch(df, sentinel=1)
         p = b.to_pyarrow()
         d = p.to_pydict()
         self.assertEqual(pa.int64(), p.schema[1].type)
@@ -378,7 +377,7 @@ class SentinelReplacementTest(unittest.TestCase):
             self.assertEqual(expected, out["0"][0], f"sentinel={s}")
             self.assertFalse(np.isfinite(out["1"][2]), f"sentinel={s}")
 
-            roundtrip_batch = kt.batch(out, sentinel=s)
+            roundtrip_batch = kat.ArrowBatch(out, sentinel=s)
             roundtrip_batch_pa = roundtrip_batch.to_pyarrow()
             roundtrip_dict = roundtrip_batch_pa.to_pydict()
             self.assertEqual(
