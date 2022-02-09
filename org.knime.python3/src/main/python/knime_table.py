@@ -154,7 +154,7 @@ class _Tabular(ABC):
     @abstractmethod
     def num_rows(self) -> int:
         """
-        Return the number of rows in the table.
+        Returns the number of rows in the table.
 
         If the table is not completely available yet because batches are still appended to it,
         querying the number of rows blocks until all data is available.
@@ -165,7 +165,7 @@ class _Tabular(ABC):
     @abstractmethod
     def num_columns(self) -> int:
         """
-        Return the number of columns in the table.
+        Returns the number of columns in the table.
         """
         pass
 
@@ -173,7 +173,7 @@ class _Tabular(ABC):
     @abstractmethod
     def column_names(self) -> Tuple[str, ...]:
         """
-        Return the list of column names.
+        Returns the list of column names.
         """
         pass
 
@@ -213,7 +213,7 @@ class _SlicedView(_Tabular):
     @property
     def num_rows(self) -> int:
         """
-        Return the number of rows in the table.
+        Returns the number of rows in the table.
 
         If the table is not completely available yet because batches are still appended to it,
         querying the number of rows blocks until all data is available.
@@ -223,14 +223,14 @@ class _SlicedView(_Tabular):
     @property
     def num_columns(self) -> int:
         """
-        Return the number of columns in the table.
+        Returns the number of columns in the table.
         """
         return len(self._column_names)
 
     @property
     def column_names(self) -> Tuple[str, ...]:
         """
-        Return the list of column names.
+        Returns the list of column names.
         """
         return self._column_names
 
@@ -368,7 +368,7 @@ class _Table(_Tabular):
     @abstractmethod
     def num_batches(self) -> int:
         """
-        Return the number of batches in this table.
+        Returns the number of batches in this table.
 
         If the table is not completely available yet because batches are still appended to it,
         querying the number of batches blocks until all data is available.
@@ -376,7 +376,7 @@ class _Table(_Tabular):
         pass
 
     def __len__(self) -> int:
-        """Return the number of batches of this table"""
+        """Returns the number of batches of this table"""
         return self.num_batches
 
 
@@ -389,7 +389,7 @@ class ReadTable(_Table, _ReadData):
     @abstractmethod
     def batches(self) -> Iterator[Batch]:
         """
-        Return an generator for the batches in this table. If the generator is advanced to a batch
+        Returns an generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
         len(my_read_table) gives the static amount of batches within the table, which is not updated.
         
@@ -499,8 +499,8 @@ def write_table(
     sentinel: Optional[Union[str, int]] = None,
 ) -> WriteTable:
     """
-    Factory method to create a WriteTable given a pandas.DataFrame or a pyarrow.table.
-    If the input is a pyarrow.table, its first column must contain unique row identifiers of type 'string'.
+    Factory method to create a WriteTable given a pandas.DataFrame or a pyarrow.Table.
+    If the input is a pyarrow.Table, its first column must contain unique row identifiers of type 'string'.
 
     **Example**::
 

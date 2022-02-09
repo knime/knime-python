@@ -1,9 +1,25 @@
 
 
 .wy-nav-content{
-    max-width: 100%;
+    max-width: 100%; !important;
+
+}
+.rst-content{
+    max-width: 750px !important;
+}
+.document > div:nth-child(1){
+        display: inline; !important;
+        justify-content: center;
+        align-items: center;
+
+
 }
 
+@media screen and (min-width: 2000px) {
+  .wy-nav-content {
+    max-width: 2000px !important;
+  }
+}
 
 dt {    
     border-top: 3px solid #ffd800 !important;
@@ -19,5 +35,5 @@ html.writer-html4 .rst-content dl:not(.docutils) > dt, html.writer-html5 .rst-co
 }
 
 .a.reference{
-    color: :black !important;
+    color: black !important;
 }

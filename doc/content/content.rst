@@ -4,8 +4,8 @@ Contents
 Inputs and outputs
 ------------------
 
-These properties can be used to retrieve data from KNIME, or pass data back to KNIME.
-The length of the input and output lists depend on the number of input and output ports of the node.
+These properties can be used to retrieve data from or pass data back to KNIME Analytics Platform.
+The length of the input and output lists depends on the number of input and output ports of the node.
 
 **Example:**
 If you have a Python Script (Labs) node configured with two input tables and one input object, you can
