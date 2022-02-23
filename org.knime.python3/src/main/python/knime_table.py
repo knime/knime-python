@@ -394,6 +394,7 @@ class ReadTable(_Table, _ReadData):
         len(my_read_table) gives the static amount of batches within the table, which is not updated.
         
         **Example**::
+        
             processed_table = knime_io.batch_write_table()
             for batch in knime_io.input_tables[0].batches():
                 input_batch = batch.to_pandas()
