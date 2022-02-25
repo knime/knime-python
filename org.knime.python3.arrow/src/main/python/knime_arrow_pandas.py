@@ -264,7 +264,11 @@ class KnimePandasExensionArray(pdext.ExtensionArray):
 
     def isna(self):
         # needed for pandas ExtensionArray API
-        return self._data.is_null().to_numpy()
+        if isinstance(self._data, pa.ChunkedArray):
+            return np.concatenate([c.to_numpy(zero_copy_only=False)
+                                   for c in self._data.is_null().chunks])
+
+        return self._data.is_null().to_numpy(zero_copy_only=False)
 
     def take(self, indices, *args, **kwargs) -> "KnimePandasExensionArray":
         # needed for pandas ExtensionArray API
