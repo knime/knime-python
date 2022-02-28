@@ -9,6 +9,8 @@ static final String DEFAULT_PYTHON_VERSION = '36'
 
 library "knime-pipeline@$BN"
 
+def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN)
+
 properties([
     pipelineTriggers([
         upstream('knime-filehandling/' + env.BRANCH_NAME.replaceAll('/', '%2F'))
@@ -28,14 +30,14 @@ try {
             // the last selected option for everything
             def python_version = new String(py)
             parallelConfigs["${python_version}"] = {
-                runPython3MultiversionWorkflowTestConfig(python_version)
+                runPython3MultiversionWorkflowTestConfig(python_version, baseBranch)
             }
         }
     }
 
     // legacy tests
     parallelConfigs["Python 2.7"] = {
-        runPython27WorkflowTests()
+        runPython27WorkflowTests(baseBranch)
     }
 
     parallel(parallelConfigs)
@@ -62,13 +64,13 @@ def getPythonParameters() {
     return pythonParams
 }
 
-def runPython27WorkflowTests(){
+def runPython27WorkflowTests(String baseBranch){
     withEnv([ "KNIME_POSTGRES_USER=knime01", "KNIME_POSTGRES_PASSWORD=password",
               "KNIME_MYSQL_USER=root", "KNIME_MYSQL_PASSWORD=password",
               "KNIME_MSSQLSERVER_USER=sa", "KNIME_MSSQLSERVER_PASSWORD=@SaPassword123",]){
 
         workflowTests.runTests(
-            testflowsDir: "Testflows (master)/knime-python/python2.7",
+            testflowsDir: "Testflows (${baseBranch})/knime-python/python2.7",
             dependencies: [
                 repositories: [
                     'knime-chemistry',
@@ -109,11 +111,11 @@ def runPython27WorkflowTests(){
     }
 }
 
-def runPython3MultiversionWorkflowTestConfig(String pythonVersion) {
+def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBranch) {
     withEnv([ "KNIME_WORKFLOWTEST_PYTHON_VERSION=${pythonVersion}" ]) {
         stage("Workflowtests with Python: ${pythonVersion}") {
             workflowTests.runTests(
-                testflowsDir: "Testflows (master)/knime-python/python3.multiversion",
+                testflowsDir: "Testflows (${baseBranch})/knime-python/python3.multiversion",
                 dependencies: [
                     repositories: [
                         'knime-chemistry',
