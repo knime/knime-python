@@ -56,7 +56,7 @@ import re
 import sys
 
 
-def get_quote_indices(line: str) -> list:
+def get_quote_indices(line):
     """
     Looks for occurences of various types of quotation marks in the current line
     by matching with the corresponding regex expression.
@@ -83,7 +83,7 @@ def get_quote_indices(line: str) -> list:
     return sorted(quote_indices)
 
 
-def get_f_string_start_indices(line: str) -> list:
+def get_f_string_start_indices(line):
     """
     Looks for occurences of f-strings in the current line
     by matching with the corresponding regex expression.
@@ -101,7 +101,7 @@ def get_f_string_start_indices(line: str) -> list:
     return f_string_start_indices
 
 
-def get_string_indices(line: str) -> list:
+def get_string_indices(line):
     """
     Processes the list of quotation marks found in the current line to
     find the start and end indices of each string (if any).
@@ -130,7 +130,7 @@ def get_string_indices(line: str) -> list:
     return string_indices
 
 
-def get_replacement_field_indices(line: str, string_indices: list) -> list:
+def get_replacement_field_indices(line, string_indices):
     """
     Looks for replacement fields (the areas enclosed by curly braces inside f-strings)
     in the strings found in the current line.
@@ -180,7 +180,7 @@ def get_replacement_field_indices(line: str, string_indices: list) -> list:
     return replacement_field_indices
 
 
-def get_hashtag_indices(line: str, string_indices: list) -> list:
+def get_hashtag_indices(line, string_indices):
     """
     Locates hashtags in the current line and checks if they are inside a string.
 
@@ -205,7 +205,7 @@ def get_hashtag_indices(line: str, string_indices: list) -> list:
     return hashtag_indices
 
 
-def parse_line(line: str) -> tuple:
+def parse_line(line):
     """
     Parses the current line of code to find strings, f-string replacement fields (Python 3.6+),
     and hashtag symbols.
@@ -231,7 +231,7 @@ def parse_line(line: str) -> tuple:
     return string_indices, replacement_field_indices, hashtag_indices
 
 
-def is_cursor_in_string(string_indices: list, replacement_field_indices: list) -> bool:
+def is_cursor_in_string(string_indices, replacement_field_indices):
     """
     Checks whether the cursor position is within any of the discovered strings.
     If the cursor is inside any of the replacement fields inside an f-string, it is not inside a string.
@@ -258,9 +258,7 @@ def is_cursor_in_string(string_indices: list, replacement_field_indices: list) -
     return in_string
 
 
-def is_cursor_in_comment(
-    in_string: bool, string_indices: list, hashtag_indices: list
-) -> bool:
+def is_cursor_in_comment(in_string, string_indices, hashtag_indices):
     """
     If the cursor is not already inside a string, checks if the current line has hashtags outside of a string.
 
@@ -287,7 +285,7 @@ def is_cursor_in_comment(
     return in_comment
 
 
-def disable_autocompletion(current_line: str) -> bool:
+def disable_autocompletion(current_line):
     """
     Returns True if the cursor position is within a single-line string or comment.
     Used as an indicator of whether to enable autocomplete at the current cursor position.
