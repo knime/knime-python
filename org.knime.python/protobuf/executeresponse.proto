@@ -1,9 +1,0 @@
-package knime;
-
-option java_package = "org.knime.python.kernel.proto";
-option java_outer_classname = "ProtobufExecuteResponse";
-
-message ExecuteResponse {
-	required string output = 1;
-	required string error = 2;
-}

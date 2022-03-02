@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Regression Scoring__3107209089456977840.xml">
-<entry key="category" type="xstring" value="scikit learn"/>
-<entry key="title" type="xstring" value="Regression Scoring"/>
-<entry key="description" type="xstring" value=""/>
-<entry key="sourcecode" type="xstring" value="# Choose x and y columns to fit%%00010rowcount = len(input_table.index)%%00010%%00010x = input_table['Universe_0_0'].reshape(rowcount,1)%%00010y = input_table['Universe_0_1'].reshape(rowcount,1)%%00010%%00010# Copy input table to output%%00010output_table = input_table.copy()%%00010%%00010# Predict using existing model + new data%%00010output_table['Predicted y'] = input_model.predict(x)"/>
-</config>
