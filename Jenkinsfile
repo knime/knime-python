@@ -35,11 +35,6 @@ try {
         }
     }
 
-    // legacy tests
-    parallelConfigs["Python 2.7"] = {
-        runPython27WorkflowTests(baseBranch)
-    }
-
     parallel(parallelConfigs)
 
     stage('Sonarqube analysis') {
@@ -62,53 +57,6 @@ def getPythonParameters() {
         pythonParams += booleanParam(defaultValue: c == DEFAULT_PYTHON_VERSION, description: "Run workflowtests with Python ${c}", name: c)
     }
     return pythonParams
-}
-
-def runPython27WorkflowTests(String baseBranch){
-    withEnv([ "KNIME_POSTGRES_USER=knime01", "KNIME_POSTGRES_PASSWORD=password",
-              "KNIME_MYSQL_USER=root", "KNIME_MYSQL_PASSWORD=password",
-              "KNIME_MSSQLSERVER_USER=sa", "KNIME_MSSQLSERVER_PASSWORD=@SaPassword123",]){
-
-        workflowTests.runTests(
-            testflowsDir: "Testflows (${baseBranch})/knime-python/python2.7",
-            dependencies: [
-                repositories: [
-                    'knime-chemistry',
-                    'knime-database',
-                    'knime-office365',
-                    'knime-datageneration',
-                    'knime-distance',
-                    'knime-ensembles',
-                    'knime-filehandling',
-                    'knime-jep',
-                    'knime-jfreechart',
-                    'knime-js-base',
-                    'knime-kerberos',
-                    'knime-python',
-                    'knime-core-columnar',
-                    'knime-core-arrow',
-                    'knime-testing-internal',
-                    'knime-xml'
-                ],
-                ius: [ 'org.knime.features.ext.jython.feature.group', 'org.knime.features.chem.types.feature.group' ]
-            ],
-            extraNodeLabel: 'python2',
-            sidecarContainers: [
-                    [ image: "${dockerTools.ECR}/knime/postgres:12", namePrefix: "POSTGRES", port: 5432,
-                        envArgs: [
-                            "POSTGRES_USER=${env.KNIME_POSTGRES_USER}", "POSTGRES_PASSWORD=${env.KNIME_POSTGRES_PASSWORD}",
-                            "POSTGRES_DB=knime_testing"
-                        ]
-                    ],
-                    [ image: "${dockerTools.ECR}/knime/mysql5", namePrefix: "MYSQL", port: 3306,
-                        envArgs: ["MYSQL_ROOT_PASSWORD=${env.KNIME_MYSQL_PASSWORD}"]
-                    ],
-                    [ image: "${dockerTools.ECR}/knime/mssql-server", namePrefix: "MSSQLSERVER", port: 1433,
-                        envArgs: ["ACCEPT_EULA=Y", "SA_PASSWORD=${env.KNIME_MSSQLSERVER_PASSWORD}", "MSSQL_DB=knime_testing"]
-                    ]
-            ],
-        )
-    }
 }
 
 def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBranch) {
