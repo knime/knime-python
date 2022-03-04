@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python API
 Bundle-SymbolicName: org.knime.python2;singleton:=true
-Bundle-Version: 4.5.1.qualifier
+Bundle-Version: 4.5.2.qualifier
 Bundle-ClassPath: knime-python2.jar
 Bundle-Activator: org.knime.python2.Activator
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
