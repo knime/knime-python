@@ -193,20 +193,34 @@ public final class PythonGateway<T extends PythonEntryPoint> implements AutoClos
         }
     }
 
+    /**
+     * Logs all output of the Python process for diagnostic purposes in case something went wrong during the setup of
+     * the gateway. Note that we only read what is already available without waiting for more output to arrive. The
+     * reason is that in the case of a crash, any potential output will already have been written by the process.
+     * Conversely, if the gateway setup failed due to problems on the Java rather than the Python side (which includes
+     * interrupts due to node cancellation), the process may not write anything at all. Trying to read the process's
+     * outputs exhaustively in such a case would lead to a deadlock.
+     */
     @SuppressWarnings("resource") // Streams will be closed or have been closed along with process.
     private void logPostMortem() throws IOException {
         if (m_process != null) {
+            final var stdoutStream = m_process.getInputStream();
             final var stdoutWriter = new StringWriter();
-            IOUtils.copy(m_process.getInputStream(), stdoutWriter, StandardCharsets.UTF_8);
-            final var stderrWriter = new StringWriter();
-            IOUtils.copy(m_process.getErrorStream(), stderrWriter, StandardCharsets.UTF_8);
-            final String stdout = stdoutWriter.toString();
-            if (!stdout.isBlank()) {
-                LOGGER.info(stdout);
+            if (stdoutStream.available() > 0) {
+                IOUtils.copy(stdoutStream, stdoutWriter, StandardCharsets.UTF_8);
+                final String stdout = stdoutWriter.toString();
+                if (!stdout.isBlank()) {
+                    LOGGER.info(stdout);
+                }
             }
-            final String stderr = stderrWriter.toString();
-            if (!stderr.isBlank()) {
-                LOGGER.error(stderr);
+            final var stderrStream = m_process.getErrorStream();
+            final var stderrWriter = new StringWriter();
+            if (stderrStream.available() > 0) {
+                IOUtils.copy(stderrStream, stderrWriter, StandardCharsets.UTF_8);
+                final String stderr = stderrWriter.toString();
+                if (!stderr.isBlank()) {
+                    LOGGER.error(stderr);
+                }
             }
         }
     }
