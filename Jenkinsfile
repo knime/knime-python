@@ -9,7 +9,7 @@ static final String DEFAULT_PYTHON_VERSION = '36'
 
 library "knime-pipeline@$BN"
 
-def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN)
+def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN.replace("releases/",""))
 
 properties([
     pipelineTriggers([
