@@ -1,0 +1,678 @@
+{
+    "schema": {
+        "specs": [
+            "string",
+            "string",
+            {
+                "type": "list",
+                "inner_type": "string"
+            },
+            {
+                "type": "list",
+                "inner_type": "string"
+            },
+            "int",
+            {
+                "type": "list",
+                "inner_type": "int"
+            },
+            {
+                "type": "list",
+                "inner_type": "int"
+            },
+            "long",
+            {
+                "type": "list",
+                "inner_type": "long"
+            },
+            {
+                "type": "list",
+                "inner_type": "long"
+            },
+            "double",
+            {
+                "type": "list",
+                "inner_type": "double"
+            },
+            {
+                "type": "list",
+                "inner_type": "double"
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "variable_width_binary",
+                    "string"
+                ]
+            },
+            {
+                "type": "list",
+                "inner_type": {
+                    "type": "list",
+                    "inner_type": {
+                        "type": "struct",
+                        "inner_types": [
+                            "variable_width_binary",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "list",
+                "inner_type": {
+                    "type": "list",
+                    "inner_type": {
+                        "type": "struct",
+                        "inner_types": [
+                            "variable_width_binary",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "boolean",
+            {
+                "type": "list",
+                "inner_type": "boolean"
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "boolean",
+                    "boolean",
+                    "boolean"
+                ]
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "variable_width_binary",
+                    "string"
+                ]
+            },
+            {
+                "type": "list",
+                "inner_type": {
+                    "type": "list",
+                    "inner_type": {
+                        "type": "struct",
+                        "inner_types": [
+                            "variable_width_binary",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "list",
+                "inner_type": {
+                    "type": "list",
+                    "inner_type": {
+                        "type": "struct",
+                        "inner_types": [
+                            "variable_width_binary",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "string",
+            {
+                "type": "list",
+                "inner_type": "string"
+            },
+            {
+                "type": "list",
+                "inner_type": "string"
+            },
+            "string",
+            "double",
+            "long",
+            "long",
+            {
+                "type": "struct",
+                "inner_types": [
+                    "long",
+                    "long"
+                ]
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "long",
+                    "long",
+                    "int",
+                    "string"
+                ]
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "int",
+                    "int",
+                    "int"
+                ]
+            },
+            {
+                "type": "struct",
+                "inner_types": [
+                    "long",
+                    "int"
+                ]
+            }
+        ],
+        "traits": [
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.DefaultRowKeyValueFactory\"}"
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringSetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.IntValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.IntListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.IntSetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.LongValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.LongListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.LongSetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.DoubleValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.DoubleListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.DoubleSetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"cell_class\":\"org.knime.core.data.date.DateAndTimeCell\"}}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {
+                            "dict_encoding": "LONG_KEY"
+                        }
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {
+                            "dict_encoding": "INT_KEY"
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.ListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "list",
+                    "traits": {
+                        "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.ListValueFactory\"}"
+                    },
+                    "inner": {
+                        "type": "struct",
+                        "traits": {
+                            "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"collection_element_type\":{\"collection_element_type\":{\"cell_class\":\"org.knime.core.data.date.DateAndTimeCell\"},\"cell_class\":\"org.knime.core.data.collection.ListCell\"},\"cell_class\":\"org.knime.core.data.collection.ListCell\"}}"
+                        },
+                        "inner": [
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "LONG_KEY"
+                                }
+                            },
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "INT_KEY"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.SetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "list",
+                    "traits": {
+                        "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.SetValueFactory\"}"
+                    },
+                    "inner": {
+                        "type": "struct",
+                        "traits": {
+                            "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"collection_element_type\":{\"collection_element_type\":{\"cell_class\":\"org.knime.core.data.date.DateAndTimeCell\"},\"cell_class\":\"org.knime.core.data.collection.SetCell\"},\"cell_class\":\"org.knime.core.data.collection.SetCell\"}}"
+                        },
+                        "inner": [
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "LONG_KEY"
+                                }
+                            },
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "INT_KEY"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.BooleanValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.BooleanListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.BooleanSetValueFactory\"}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    }
+                ]
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"cell_class\":\"org.knime.core.data.uri.URIDataCell\"}}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {
+                            "dict_encoding": "LONG_KEY"
+                        }
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {
+                            "dict_encoding": "INT_KEY"
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.ListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "list",
+                    "traits": {
+                        "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.ListValueFactory\"}"
+                    },
+                    "inner": {
+                        "type": "struct",
+                        "traits": {
+                            "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"collection_element_type\":{\"collection_element_type\":{\"cell_class\":\"org.knime.core.data.uri.URIDataCell\"},\"cell_class\":\"org.knime.core.data.collection.ListCell\"},\"cell_class\":\"org.knime.core.data.collection.ListCell\"}}"
+                        },
+                        "inner": [
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "LONG_KEY"
+                                }
+                            },
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "INT_KEY"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.SetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "list",
+                    "traits": {
+                        "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.SetValueFactory\"}"
+                    },
+                    "inner": {
+                        "type": "struct",
+                        "traits": {
+                            "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory\",\"data_type\":{\"collection_element_type\":{\"collection_element_type\":{\"cell_class\":\"org.knime.core.data.uri.URIDataCell\"},\"cell_class\":\"org.knime.core.data.collection.SetCell\"},\"cell_class\":\"org.knime.core.data.collection.SetCell\"}}"
+                        },
+                        "inner": [
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "LONG_KEY"
+                                }
+                            },
+                            {
+                                "type": "simple",
+                                "traits": {
+                                    "dict_encoding": "INT_KEY"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringValueFactory\"}"
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringListValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "list",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringSetValueFactory\"}"
+                },
+                "inner": {
+                    "type": "simple",
+                    "traits": {}
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.StringValueFactory\"}"
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.value.DoubleValueFactory\"}"
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.LocalDateValueFactory\"}"
+                }
+            },
+            {
+                "type": "simple",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.LocalTimeValueFactory\"}"
+                }
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\"}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    }
+                ]
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\"}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    }
+                ]
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.PeriodValueFactory\"}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    }
+                ]
+            },
+            {
+                "type": "struct",
+                "traits": {
+                    "logical_type": "{\"value_factory_class\":\"org.knime.core.data.v2.time.DurationValueFactory\"}"
+                },
+                "inner": [
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    },
+                    {
+                        "type": "simple",
+                        "traits": {}
+                    }
+                ]
+            }
+        ]
+    },
+    "columnNames": [
+        "RowKey",
+        "StringCol",
+        "StringListCol",
+        "StringSetCol",
+        "IntCol",
+        "IntListCol",
+        "IntSetCol",
+        "LongCol",
+        "LongListCol",
+        "LongSetCol",
+        "DoubleCol",
+        "DoubleListCol",
+        "DoubleSetCol",
+        "TimestampCol",
+        "TimestampListCol",
+        "TimestampSetCol",
+        "BooleanCol",
+        "BooleanListCol",
+        "BooleanSetCol",
+        "UriCol",
+        "UriListCol",
+        "UriSetCol",
+        "MissingValStringCol",
+        "MissingValStringListCol",
+        "MissingValStringSetCol",
+        "LongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnNameLongStringColumnName",
+        "LongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnNameLongDoubleColumnName",
+        "Local Date",
+        "Local Time",
+        "Local Date Time",
+        "Zoned Date Time",
+        "Period",
+        "Duration"
+    ],
+    "columnMetaData": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    ]
+}

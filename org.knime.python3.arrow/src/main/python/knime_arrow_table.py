@@ -51,8 +51,10 @@ Provides the implementation of the KNIME Table using the Apache Arrow backend
 from types import LambdaType
 from typing import Iterator, List, Optional, Tuple, Union
 import knime_table as kta
+import knime_schema as ks
 import knime_arrow as ka
 import knime_arrow_types as kat
+import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
 
 
@@ -155,6 +157,10 @@ class ArrowBatch(kta.Batch):
     def column_names(self) -> List[str]:
         return self._batch.schema.names
 
+    @property
+    def knime_schema(self) -> ks.Schema:
+        return _convert_arrow_schema_to_knime(self._batch.schema)
+
     def __str__(self) -> str:
         return f"Batch(shape={self.shape}, schema={_pretty_print_schema(self.to_pyarrow().schema)})"
 
@@ -209,6 +215,10 @@ class ArrowReadTable(kta.ReadTable):
     @property
     def column_names(self) -> List[str]:
         return self._source.schema.names
+
+    @property
+    def knime_schema(self) -> ks.Schema:
+        return _convert_arrow_schema_to_knime(self._source.schema)
 
     def batches(self) -> Iterator[ArrowBatch]:
         batch_idx = 0
@@ -302,6 +312,10 @@ class _ArrowWriteTableImpl(kta.WriteTable):
     @property
     def column_names(self) -> List[str]:
         return self._schema.names
+
+    @property
+    def knime_schema(self) -> ks.Schema:
+        return _convert_arrow_schema_to_knime(self._schema)
 
     def __str__(self) -> str:
         schema_str = (
@@ -406,9 +420,12 @@ def _select_columns(
     data: Union[pa.RecordBatch, pa.Table], selection
 ) -> Union[pa.RecordBatch, pa.Table]:
     columns = []
+
+    if isinstance(selection, int) or isinstance(selection, str):
+        selection = [selection]
+
     if isinstance(selection, slice):
         columns = list(range(*selection.indices(len(data.schema.names))))
-
     elif isinstance(selection, list):
         schema = data.schema
         for col in selection:
@@ -438,3 +455,52 @@ def _select_columns(
             arrays.append(data.column(c))
             fields.append(data.schema.field(c))
         return pa.RecordBatch.from_arrays(arrays, schema=pa.schema(fields))
+
+
+_arrow_to_knime_types = {
+    pa.int32(): ks.int32(),
+    pa.int64(): ks.int64(),
+    pa.string(): ks.string(),
+    pa.bool_(): ks.bool_(),
+    pa.float64(): ks.double(),
+    pa.large_binary(): ks.blob()
+    # pa.null(): ks.void(), ?
+}
+
+
+def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
+    if kat.is_dict_encoded_value_factory_type(dtype):
+        return ks.ExtensionType(
+            "structDictEncodedValueFactory",
+            _convert_arrow_type_to_knime(dtype.value_type),
+        )
+    elif kas.is_struct_dict_encoded(dtype):
+        return ks.ExtensionType(
+            "structDictEncoded", _convert_arrow_type_to_knime(dtype.value_type)
+        )
+    elif kat.is_value_factory_type(dtype):
+        return ks.ExtensionType(
+            dtype.logical_type, _convert_arrow_type_to_knime(dtype.storage_type)
+        )
+    elif dtype in _arrow_to_knime_types:
+        return _arrow_to_knime_types[dtype]
+    elif isinstance(dtype, pa.ListType) or isinstance(dtype, pa.LargeListType):
+        return ks.list_(_convert_arrow_type_to_knime(dtype.value_type))
+    elif isinstance(dtype, pa.StructType):
+        return ks.StructType(
+            [_convert_arrow_type_to_knime(field.type) for field in dtype]
+        )
+    else:
+        raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")
+
+
+def _convert_arrow_schema_to_knime(schema: pa.Schema) -> ks.Schema:
+    types = []
+    metadata = []
+    names = schema.names
+
+    for field in schema:
+        types.append(_convert_arrow_type_to_knime(field.type))
+        metadata.append(field.metadata)
+
+    return ks.Schema(types, names, metadata)
