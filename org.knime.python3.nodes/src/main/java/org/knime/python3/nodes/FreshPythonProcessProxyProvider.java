@@ -50,6 +50,8 @@ package org.knime.python3.nodes;
 
 import java.io.IOException;
 
+import org.knime.core.node.NodeLogger;
+import org.knime.python3.nodes.KnimeNodeBackend.Callback;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
@@ -65,6 +67,9 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
     private static final String LAUNCHER = PythonNodesSourceDirectory.getPath()//
             .resolve("knime_node_backend.py")//
             .toString();
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(
+        DelegatingNodeModel.class);
 
     private final PythonNodeClass m_nodeClass;
 
@@ -92,6 +97,14 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
         // TODO do we need a process queue similar to what we have for the scripting nodes?
         try {
             var gateway = PythonGatewayUtils.openPythonGateway(KnimeNodeBackend.class, LAUNCHER);
+
+            final var callback = new Callback() {
+                @Override
+                public void log(final String msg) {
+                    LOGGER.warn(msg);
+                }
+            };
+            gateway.getEntryPoint().initializeJavaCallback(callback);
             var nodeProxy =
                 gateway.getEntryPoint().createNodeProxy(m_nodeClass.getModuleName(), m_nodeClass.getNodeClass());
             return new CloseablePythonProxy(nodeProxy, gateway);

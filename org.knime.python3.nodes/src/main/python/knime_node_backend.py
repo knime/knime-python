@@ -51,12 +51,21 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 import knime_node as kn
 import knime_node_parameter as knp
 import knime_gateway as kg
+import knime_schema as ks
+import knime_arrow_table as kat
+import knime_table as kt
 import importlib
 import json
+import pickle
+import logging
+from py4j.java_gateway import JavaClass
+from py4j.java_collections import ListConverter
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here.
 # TODO an alternative could be the use of tuples since we are only interested in comparability
 from packaging.version import parse
+
+# TODO: register extension types
 
 
 class _PythonNodeProxy:
@@ -92,13 +101,53 @@ class _PythonNodeProxy:
         description_dict = self._node.get_description()
         return json.dumps(description_dict)
 
-    def execute(self):
-        # TODO properly implement
-        self._node.execute()
+    def initializeJavaCallback(self, java_callback: JavaClass) -> None:
+        self._java_callback = java_callback
 
-    def configure(self):
-        # TODO properly implement
-        self._node.configure()
+    def execute(
+        self, in_sources, in_object_paths, out_object_paths, exec_context
+    ) -> list:
+        # convert sources to tables
+        tables = [kat.ArrowReadTable(kg.data_source_mapper(s)) for s in in_sources]
+
+        # unpickle object from file paths
+        objects = []
+        for path in in_object_paths:
+            if path is not None:
+                with open(path, "rb") as file:
+                    objects.append(pickle.load(file))
+
+        # prepare output table creation
+        def create_python_sink():
+            java_sink = self._java_callback.create_sink()
+            return kg.data_sink_mapper(java_sink)
+
+        kt._backend = kat.ArrowBackend(create_python_sink)
+
+        # execute
+        out_tables, out_objects = self._node.execute(tables, objects, exec_context)
+        kt._backend.close()
+        kt._backend = None
+
+        # get Java sink from WriteTables:
+        out_sinks = [t._sink._java_data_sink for t in out_tables]
+
+        # pickle objects to the specified output paths
+        for obj, path in zip(out_objects, out_object_paths):
+            with open(path, "wb") as file:
+                pickle.dump(obj=obj, file=file)
+
+        return ListConverter().convert(out_sinks, kg.client_server._gateway_client)
+
+    def configure(self, in_schemas: list[ks.Schema]) -> list[ks.Schema]:
+        knime_in_schemas = [
+            ks.Schema.from_knime_dict(json.loads(i)) for i in in_schemas
+        ]
+        knime_out_schemas = self._node.configure(knime_in_schemas)
+        out_str_schemas = [json.dumps(s.to_knime_dict()) for s in knime_out_schemas]
+        return ListConverter().convert(
+            out_str_schemas, kg.client_server._gateway_client
+        )
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
@@ -107,6 +156,7 @@ class _PythonNodeProxy:
 class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
+        self._callback = None
 
     def createNodeProxy(
         self, module_name: str, python_node_class: str
@@ -116,9 +166,28 @@ class _KnimeNodeBackend(kg.EntryPoint):
         node = node_class()  # TODO assumes that there is an empty constructor
         return _PythonNodeProxy(node)
 
+    def initializeJavaCallback(self, callback):
+        self._callback = callback
+
     class Java:
         implements = ["org.knime.python3.nodes.KnimeNodeBackend"]
 
 
+class KnimeLogHandler(logging.StreamHandler):
+    def __init__(self, backend):
+        super().__init__(self)
+        self.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+        self._backend = backend
+
+    def emit(self, record: logging.LogRecord):
+        if self._backend._callback is not None:
+            msg = self.format(record)
+            self._backend._callback.log(msg)
+
+
 backend = _KnimeNodeBackend()
 kg.connect_to_knime(backend)
+logging.getLogger().addHandler(KnimeLogHandler(backend))
+# I'd like to set the log level to INFO here, but py4j logs some stuff to info while
+# calling into Java and then our log redirection into Java is biting itself :D so no
+# global log setting to INFO possible without other hacks (I didn't google yet).

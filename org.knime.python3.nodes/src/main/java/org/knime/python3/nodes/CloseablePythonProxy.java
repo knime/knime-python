@@ -50,11 +50,15 @@ package org.knime.python3.nodes;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 import org.knime.python3.PythonGateway;
+import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
+import org.knime.python3.nodes.proxy.NodeModelProxy;
 import org.knime.python3.nodes.proxy.NodeProxy;
 
 import py4j.Py4JException;
@@ -87,6 +91,11 @@ final class CloseablePythonProxy
     }
 
     @Override
+    public void initializeJavaCallback(final Callback callback) {
+        m_proxy.initializeJavaCallback(callback);
+    }
+
+    @Override
     public String getInitialParameters() {
         return m_proxy.getInitialParameters();
     }
@@ -106,13 +115,9 @@ final class CloseablePythonProxy
     }
 
     @Override
-    public void execute() {
-        m_proxy.execute();
-    }
-
-    @Override
-    public void configure() {
-        m_proxy.configure();
+    public List<PythonArrowDataSink> execute(final PythonArrowDataSource[] sources, final String[] inputObjectPaths,
+        final String[] outputObjectPaths, final NodeModelProxy.PythonExecutionContext ctx) {
+        return m_proxy.execute(sources, inputObjectPaths, outputObjectPaths, ctx);
     }
 
     @Override
@@ -120,4 +125,8 @@ final class CloseablePythonProxy
         return m_proxy.getDialogRepresentation(parameters, version, specs);
     }
 
+    @Override
+    public List<String> configure(final String[] serializedInSchemas) {
+        return m_proxy.configure(serializedInSchemas);
+    }
 }

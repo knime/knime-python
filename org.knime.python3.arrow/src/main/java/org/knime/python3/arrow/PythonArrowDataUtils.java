@@ -312,6 +312,23 @@ public final class PythonArrowDataUtils {
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
         final var columnNames = ArrowSchemaUtils.extractColumnNames(schema);
 
+        return createColumnarValueSchema(columnarSchema, columnNames, dataRepository, domainAndMetadata);
+    }
+
+    /**
+     * Create a {@link ColumnarValueSchema} from a {@link ColumnarSchema}.
+     *
+     * @param columnNames The names of the columns in the table
+     * @param dataRepository the {@link IDataRepository} to use for this table
+     * @param domainAndMetadata the domain and metadata for the table. Can be null, then no domain and metadata info is
+     *            set for the columns.
+     * @param columnarSchema The schema of the table for which to create a {@link ColumnarValueSchema}.
+     *
+     * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
+     */
+    public static ColumnarValueSchema createColumnarValueSchema(final ColumnarSchema columnarSchema,
+        final String[] columnNames, final IDataRepository dataRepository,
+        final TableDomainAndMetadata domainAndMetadata) {
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
 
@@ -329,15 +346,41 @@ public final class PythonArrowDataUtils {
             // Get the DataColumnSpec for this column
             final var dataType = ValueFactoryUtils.getDataTypeForValueFactory(valueFactory);
             final var specCreator = new DataColumnSpecCreator(columnNames[i], dataType);
-            specCreator.setDomain(domainAndMetadata.getDomain(i));
-            for (final DataColumnMetaData m : domainAndMetadata.getMetadata(i)) {
-                specCreator.addMetaData(m, false); // TODO overwrite or merge?
+            if (domainAndMetadata != null) {
+                specCreator.setDomain(domainAndMetadata.getDomain(i));
+                for (final DataColumnMetaData m : domainAndMetadata.getMetadata(i)) {
+                    specCreator.addMetaData(m, false); // TODO overwrite or merge?
+                }
             }
             specs.add(specCreator.createSpec());
         }
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
         return ColumnarValueSchemaUtils
             .create(ValueSchemaUtils.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new)));
+    }
+
+    /**
+     * Create a {@link DataTableSpec} from a {@link ColumnarSchema}. No metadata or domains will be attached to the returned {@link DataTableSpec}.
+     *
+     * @param columnNames The names of the columns in the table
+     * @param columnarSchema The schema of the table for which to create a {@link ColumnarValueSchema}.
+     *
+     * @return The {@link DataTableSpec}
+     */
+    public static DataTableSpec createDataTableSpec(final ColumnarSchema columnarSchema,
+        final String[] columnNames) {
+        final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
+
+        // Loop and get factory and spec for each column
+        for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
+
+            // Get the value factory for this column
+            final var dataType = ValueFactoryUtils.createDataTypeForTraits(columnarSchema.getTraits(i));
+
+            final var specCreator = new DataColumnSpecCreator(columnNames[i], dataType);
+            specs.add(specCreator.createSpec());
+        }
+        return new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
     }
 
     private static RowKeyValueFactory<?, ?> extractRowKeyValueFactory(final ColumnarSchema schema) {

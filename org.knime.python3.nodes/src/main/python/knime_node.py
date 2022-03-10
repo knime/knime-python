@@ -47,22 +47,30 @@ Provides base implementations and utilities for the development of KNIME nodes i
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+from abc import ABC, abstractmethod
+from numbers import Number
+from typing import List
+import knime_table as kt
+
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
 from packaging.version import Version
 
-class PythonNode:
+
+class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
     """
 
-    def configure(self):
+    def configure(self, inSchemas: List[str]) -> List[str]:
         # TODO we need something akin to PortObjectSpecs in Python
-        pass
+        print(f"Configure got input schemas:\n{inSchemas}")
+        return inSchemas
 
     def execute(
-        self,
-    ):  # TODO does this also use the knime_io module or do we provide the inputs as parameters (similar to how its done in Java)?
-        pass
+        self, tables: list[kt.ReadTable], objects: list, exec_context
+    ) -> tuple[list[kt.WriteTable], list]:
+        out_t = [t for t in tables]
+        return (out_t, objects)
 
     def get_description(self) -> dict:
         """
@@ -72,8 +80,6 @@ class PythonNode:
         """
         # TODO generate from doc string
         pass
-
-
 
 
 class Parameter:

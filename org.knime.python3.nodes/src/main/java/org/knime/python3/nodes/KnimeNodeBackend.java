@@ -69,4 +69,20 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
     // that would be somewhat similar to NodeSetFactory.
     NodeProxy createNodeProxy(final String moduleName, final String pythonNodeClass);
 
+    /**
+     * Initialize global callbacks like access to the logging functionality
+     * @param callback
+     */
+    void initializeJavaCallback(Callback callback);
+
+    /**
+     * Global callbacks for this entry point
+     */
+    interface Callback {
+        /**
+         * Pipe Python logging to KNIME's log facilities
+         * @param msg
+         */
+        void log(String msg);
+    }
 }
