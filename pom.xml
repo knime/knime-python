@@ -59,6 +59,11 @@
 			<url>${knime.base.p2}</url>
 		</repository>
 		<repository>
+			<id>p2-knime-conda</id>
+			<layout>p2</layout>
+			<url>${knime.conda.p2}</url>
+		</repository>
+		<repository>
 			<id>p2-knime-expressions</id>
 			<layout>p2</layout>
 			<url>${knime.expressions.p2}</url>
@@ -77,6 +82,11 @@
 			<id>p2-knime-svg</id>
 			<layout>p2</layout>
 			<url>${knime.svg.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-python-legacy</id>
+			<layout>p2</layout>
+			<url>${knime.python.legacy.p2}</url>
 		</repository>
 		<repository>
 			<id>p2-knime-shared</id>
