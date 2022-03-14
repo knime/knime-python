@@ -69,7 +69,7 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
             .toString();
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(
-        DelegatingNodeModel.class);
+        FreshPythonProcessProxyProvider.class);
 
     private final PythonNodeClass m_nodeClass;
 

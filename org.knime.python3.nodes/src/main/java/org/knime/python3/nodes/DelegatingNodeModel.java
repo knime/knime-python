@@ -278,7 +278,7 @@ final class DelegatingNodeModel extends NodeModel {
                 }
 
                 @Override
-                public boolean is_cancelled() {
+                public boolean is_canceled() {
                     try {
                         exec.checkCanceled();
                     } catch (CanceledExecutionException e) {

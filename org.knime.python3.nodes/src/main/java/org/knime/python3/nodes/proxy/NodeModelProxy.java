@@ -136,6 +136,6 @@ public interface NodeModelProxy {
     public interface PythonExecutionContext {
         void set_progress(double progress);
 
-        boolean is_cancelled();
+        boolean is_canceled();
     }
 }
