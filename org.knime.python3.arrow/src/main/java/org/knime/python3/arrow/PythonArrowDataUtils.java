@@ -375,7 +375,7 @@ public final class PythonArrowDataUtils {
         for (int i = 1; i < columnarSchema.numColumns(); i++) {//NOSONAR
 
             // Get the value factory for this column
-            final var dataType = ValueFactoryUtils.createDataTypeForTraits(columnarSchema.getTraits(i));
+            final var dataType = ValueFactoryUtils.getDataTypeForTraits(columnarSchema.getTraits(i));
 
             final var specCreator = new DataColumnSpecCreator(columnNames[i], dataType);
             specs.add(specCreator.createSpec());
