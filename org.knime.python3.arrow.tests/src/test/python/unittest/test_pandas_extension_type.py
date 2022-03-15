@@ -1,11 +1,15 @@
-from os import pardir
-from typing import Type, Union
 import unittest
+from typing import Type, Union
+
+import numpy as np
 import pandas as pd
 import pandas.api.extensions as pdext
-from pandas.core.dtypes.dtypes import register_extension_dtype
 import pyarrow as pa
-import numpy as np
+from pandas.core.dtypes.dtypes import register_extension_dtype
+
+import knime_arrow as knar
+import knime_arrow_pandas
+import knime_arrow_types as katy
 
 
 class MyArrowExtType(pa.ExtensionType):
@@ -135,10 +139,12 @@ class MyPandasExtType(pdext.ExtensionDtype):
 
     na_value = pd.NA
 
+    @property
     def type(self):
         # We just say that this is raw data?! No need to be interpreted
         return bytes
 
+    @property
     def name(self):
         return f"MyPandasExtType({self._storage_type_str}, {self._logical_type})"
 
@@ -158,10 +164,10 @@ class MyPandasExtType(pdext.ExtensionDtype):
 
 class MyPandasExtArray(pdext.ExtensionArray):
     def __init__(
-        self,
-        storage_type_str,
-        logical_type,
-        data: Union[pa.Array, pa.ChunkedArray] = None,
+            self,
+            storage_type_str,
+            logical_type,
+            data: Union[pa.Array, pa.ChunkedArray] = None,
     ):
         self._data = data
         self._storage_type_str = storage_type_str
@@ -171,25 +177,103 @@ class MyPandasExtArray(pdext.ExtensionArray):
         return self._data
 
     @classmethod
-    def _from_sequence(cls, scalars, dtype=None, copy=None):
-        arrow_type = MyPandasExtType("test", "sample")
-        return MyPandasExtArray(pa.array(scalars, type=arrow_type))
+    def _from_sequence(
+            cls,
+            scalars,
+            dtype=None,
+            copy=None,
+            storage_type=None,
+            logical_type=None,
+    ):
+        if scalars is None:
+            raise ValueError("Cannot create MyPandasExtArray from empty data")
+
+        # easy case
+        if isinstance(scalars, pa.Array) or isinstance(scalars, pa.ChunkedArray):
+            if not isinstance(scalars.type, MyArrowExtType):
+                raise ValueError(
+                    "MyPandasExtArray must be backed by MyArrowExtType values"
+                )
+            return MyPandasExtArray(
+                scalars.type.storage_type,
+                scalars.type.logical_type,
+                scalars,
+            )
+
+        if isinstance(dtype, MyPandasExtType):
+            # in this case we can extract storage, logical_type and converter
+            storage_type = dtype._storage_type
+            logical_type = dtype._logical_type
+
+        if storage_type is None:
+            raise ValueError(
+                "Can only create MyPandasExtArray from a sequence if the storage type is given."
+            )
+
+        # needed for pandas ExtensionArray API
+        arrow_type = MyArrowExtType(storage_type,
+                                    logical_type)
+
+        a = pa.array(scalars, type=storage_type)
+        extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
+        return MyPandasExtArray(
+            storage_type, logical_type, extension_array
+        )
 
     def _from_factorized(self):
         raise NotImplementedError("Cannot be created from factors")
+
 
     def __getitem__(self, item):
         if isinstance(item, int):
             return self._data[item].as_py()
         elif isinstance(item, slice):
-            # todo: handle stride
-            return self._data.slice(item.start, length=item.stop - item.start)
+            (start, stop, step) = item.indices(len(self._data))
+
+            indices = list(range(start, stop, step))
+            return self.take(indices)
         elif isinstance(item, list):
             # fetch objects at the individual indices
-            return self._data.take(item)
+            return self.take(item)
         elif isinstance(item, np.ndarray):
             # masked array
-            raise NotImplementedError("Cannot index using masked array from numpy yet")
+            raise NotImplementedError("Cannot index using masked array from numpy yet.")
+
+    def __setitem__(self, item, value):
+
+        def _set_data_from_input(inp: Union[list, np.ndarray]):
+            an_arr = pa.array(inp)
+            an_arr = _apply_to_array(
+                an_arr, lambda a: MyPandasExtArray(self._storage_type_str, self._logical_type, a)
+            )
+            self._data = MyPandasExtArray(self._storage_type_str, self._logical_type, an_arr)._data
+
+        tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
+        if isinstance(item, int):
+            tmp_list[item] = value
+            _set_data_from_input(tmp_list)
+
+        elif isinstance(item, slice):
+            (start, stop, step) = item.indices(len(self._data))
+            for i in range(len(value)):
+                tmp_list[start] = value[i].as_py()
+                start += step
+            _set_data_from_input(tmp_list)
+
+        elif isinstance(item, list):
+            # "This is only reachable from knime side"
+            tmp_arr = np.asarray(tmp_list)
+            tmp_indices = np.asarray(item)
+            tmp_values = np.asarray(value)
+            tmp_arr[tmp_indices] = tmp_values
+            _set_data_from_input(tmp_arr)
+
+        elif isinstance(item, np.ndarray):
+            # masked array
+            # panda converts all set queries with lists as indices to np.ndarrays
+            tmp_arr = np.asarray(tmp_list)
+            tmp_arr[item] = value
+            _set_data_from_input(tmp_arr)
 
     def __len__(self):
         return len(self._data)
@@ -211,7 +295,6 @@ class MyPandasExtArray(pdext.ExtensionArray):
         return self._data.is_null().to_numpy()
 
     def take(self, indices, *args, **kwargs) -> "MyPandasExtArray":
-        # TODO: handle allow_fill and fill_value kwargs
         arrow_scalars = self._data.take(indices)
         return self._from_sequence(arrow_scalars)
 
@@ -233,6 +316,21 @@ class MyPandasExtArray(pdext.ExtensionArray):
         raise NotImplementedError("Need to concat underlying pyarrow arrays")
 
 
+class TestDataSource:
+    def __init__(self, absolute_path):
+        self.absolute_path = absolute_path
+
+    def getAbsolutePath(self):
+        return self.absolute_path
+
+    def isFooterWritten(self):
+        return True
+
+    def hasColumnNames(self):
+        return False
+
+
+
 class PyArrowExtensionTypeTest(unittest.TestCase):
     def _create_test_table(self):
         d = {"test_data": [0, 1, 2, 3, 4], "reference": [0, 1, 2, 3, 4]}
@@ -243,6 +341,32 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             columns[0], lambda a: pa.ExtensionArray.from_storage(dtype, a)
         )
         return pa.Table.from_arrays(columns, names=list(d.keys()))
+
+    def _generate_test_data_frame(self, lists=True, sets=True):
+        knime_generated_table_path = "generatedTestData.zip"
+
+        test_data_source = TestDataSource(knime_generated_table_path)
+        pa_data_source = knar.ArrowDataSource(test_data_source)
+        arrow = pa_data_source.to_arrow_table()
+        arrow = katy.unwrap_primitive_arrays(arrow)
+
+        df = knime_arrow_pandas.arrow_data_to_pandas_df(arrow)
+
+        df.columns = ['StringCol', 'StringListCol', 'StringSetCol', 'IntCol', 'IntListCol', 'IntSetCol',
+                      'LongCol', 'LongListCol', 'LongSetCol', 'DoubleCol', 'DoubleListCol', 'DoubleSetCol',
+                      'TimestampCol', 'TimestampListCol', 'TimestampSetCol',
+                      'BooleanCol', 'BooleanListCol', 'BooleanSetCol', 'URICol', 'URIListCol', 'URISetCol',
+                      'MissingValStringCol', 'MissingValStringListCol', 'MissingValStringSetCol',
+                      'LongStringColumnName', 'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
+                      'Zoned Date Time', 'Period', 'Duration'
+                      ]
+
+        df = df.drop(columns=['DoubleSetCol'])  # this column is buggy (DoubleSetColumns)
+        if not lists:
+            df = df[df.columns.drop(list(df.filter(regex='List')))]
+        if not sets:
+            df = df[df.columns.drop(list(df.filter(regex='Set')))]
+        return df
 
     def test_create_extension(self):
         t = self._create_test_table()
@@ -262,7 +386,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df = t.to_pandas()
         self.assertTrue("test_data" in df)
         self.assertTrue(isinstance(df["test_data"].dtype, MyPandasExtType))
-        print(df["test_data"][0])
         out = pa.Table.from_pandas(df)
         self.assertEqual(t.schema, out.schema)
 
@@ -274,7 +397,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             import packaging.version
 
             if packaging.version.parse(pa.__version__) < packaging.version.parse(
-                "6.0.0"
+                    "6.0.0"
             ):
                 pass
 
@@ -351,6 +474,81 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual(outer_type, outer_wrapped.type)
         self.assertTrue(outer_wrapped[0].is_valid)
         self.assertFalse(outer_wrapped[2].is_valid)
+
+    def test_complicated_setitem_in_pandas(self):
+        # loads a table with all knime extension types
+        df = self._generate_test_data_frame(lists=False, sets=False)
+
+        # currently, it does not work for lists, sets and dicts
+        error_columns = [4, 6, 12, 13, 14, 15]  # remove all dicts
+        df.drop(df.columns[error_columns], axis=1, inplace=True)
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
+
+        # test single item setting with int index for all columns
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[1, col_index] = df.iloc[2, col_index]  # test iloc
+            df.loc[1, col_key] = df.loc[2, col_key]
+
+        self.assertTrue(df.iloc[1].equals(df.iloc[2]), msg="The rows are not equal")
+
+        # test slice setting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[:3, col_index] = df.iloc[3:6, col_index]
+            df.loc[:3, col_key] = df.loc[3:6, col_key]
+
+        self.assertTrue(df.iloc[0].equals(df.iloc[2]), msg="The rows are not equal")
+
+        # test slice broadcasting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[:6, col_index] = df.iloc[6, col_index]
+            df.loc[:6, col_key] = df.loc[6, col_key]
+
+        self.assertTrue(df.iloc[0].equals(df.iloc[6]), msg="The rows are not equal")
+
+        # test a weird case of loc list setting, where the left values are overwritten with N/A value
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.loc[[1, 2], col_key] = df.loc[[5, 6], col_key]
+            if isinstance(df.loc[[5], col_key].dtype, knime_arrow_pandas.PandasLogicalTypeExtensionType):
+                n_type = df.loc[[5], col_key].dtype.na_value
+                self.assertTrue(df.iloc[1, col_index] == n_type)
+
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[[1, 2], col_index] = df.iloc[[5, 6], col_index]
+
+        self.assertTrue(df.iloc[1].equals(df.iloc[6]), msg="The rows are not equal")
+
+        index_arr = np.arange(7)
+
+        # test a weird case of loc np-arr setting, where the left values are overwritten with N/A value
+        for col_key in df.columns:
+            df.loc[index_arr, col_key] = df.loc[(index_arr + 7), col_key]
+            col_index = df.columns.get_loc(col_key)
+            if isinstance(df.loc[[10], col_key].dtype, knime_arrow_pandas.PandasLogicalTypeExtensionType):
+                n_type = df.loc[[10], col_key].dtype.na_value
+
+                self.assertTrue(df.iloc[1, col_index] == n_type)
+
+        # test np arr setting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[index_arr, col_index] = df.iloc[(index_arr + 7), col_index]  # this works
+
+        self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
+
+        # test appending
+        df = df.append(df.iloc[2])
+        self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
+
+        # test appending with len
+        df.loc[len(df)] = df.loc[0]
+        self.assertTrue(df.iloc[0].equals(df.iloc[-1]))
 
 
 if __name__ == "__main__":
