@@ -1,0 +1,5 @@
+---
+id: org.knime.python3.nodes.tests.fluent_extension
+author: Adrian
+environment_name: my_env # TODO placeholder needs to be properly implemented
+extension_module: my_extension

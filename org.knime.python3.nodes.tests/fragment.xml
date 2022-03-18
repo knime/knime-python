@@ -6,6 +6,9 @@
       <PythonExtension
             ExtensionPath="src/test/python/first_extension">
       </PythonExtension>
+      <PythonExtension
+            ExtensionPath="src/test/python/fluent_extension">
+      </PythonExtension>
    </extension>
 
 </fragment>
