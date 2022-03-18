@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension-point id="PythonExtension" name="Python Extension" schema="schema/PythonExtension.exsd"/>
    <extension
          point="org.knime.workbench.repository.nodes">
       <node
@@ -8,5 +9,12 @@
             factory-class="org.knime.python3.nodes.playground.MyDecoratedPythonNodeFactory"
             hidden="false">
       </node>
+   </extension>
+   <extension
+         point="org.knime.workbench.repository.nodesets">
+      <nodeset
+            deprecated="false"
+            factory-class="org.knime.python3.nodes.PurePythonNodeSetFactory">
+      </nodeset>
    </extension>
 </plugin>
