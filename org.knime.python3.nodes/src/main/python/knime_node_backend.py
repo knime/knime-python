@@ -159,6 +159,12 @@ class _KnimeNodeBackend(kg.EntryPoint):
         super().__init__()
         self._callback = None
 
+	def createNodeExtensionProxy(self, factory_module_name: str, factory_method_name: str, node_id: str) -> _PythonNodeProxy:
+        factory_module = importlib.import_module(factory_module_name)
+        factory_method = getattr(factory_module, factory_method_name)
+        node = factory_method(node_id)
+        return _PythonNodeProxy(node)
+
     def createNodeProxy(
         self, module_name: str, python_node_class: str
     ) -> _PythonNodeProxy:

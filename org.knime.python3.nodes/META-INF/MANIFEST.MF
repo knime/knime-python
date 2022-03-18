@@ -23,6 +23,7 @@ Require-Bundle:
  org.knime.core.columnar.arrow;bundle-version="[4.6.0,5.0.0)",
  org.knime.python2,
  com.google.guava;bundle-version="[19.0.0,20.0.0)",
- org.knime.python3.scripting;bundle-version="[4.6.0,5.0.0)"
+ org.knime.python3.scripting;bundle-version="[4.6.0,5.0.0)",
+ org.yaml.snakeyaml;bundle-version="[1.23.0,2.0.0)"
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
