@@ -64,11 +64,18 @@ import org.knime.core.webui.page.Page;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class JsonFormsNodeDialog extends NodeDialog {
+// TODO move to different package?
+public final class JsonFormsNodeDialog extends NodeDialog {
 
     private final TextSettingsDataService m_settingsService;
 
-    JsonFormsNodeDialog(final SettingsType settingsType, final TextSettingsDataService settingsService) {
+    /**
+     * Constructor.
+     * 
+     * @param settingsType the type of settings this dialog is for
+     * @param settingsService providing settings to the dialog
+     */
+    public JsonFormsNodeDialog(final SettingsType settingsType, final TextSettingsDataService settingsService) {
         super(settingsType);
         m_settingsService = settingsService;
     }

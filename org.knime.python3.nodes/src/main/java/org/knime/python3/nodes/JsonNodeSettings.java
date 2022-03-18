@@ -61,7 +61,8 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class JsonNodeSettings {
+// TODO consider moving this class
+public final class JsonNodeSettings {
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -69,20 +70,36 @@ final class JsonNodeSettings {
 
     private final String m_version;
 
-    JsonNodeSettings(final String parametersJson) {
+    /**
+     * Constructor.
+     * 
+     * @param parametersJson JSON containing the parameters
+     */
+    public JsonNodeSettings(final String parametersJson) {
         m_parameters = parametersJson;
         m_version = KNIMEConstants.VERSION;
     }
 
-    String getParameters() {
+    /**
+     * @return JSON string containing the parameters
+     */
+    public String getParameters() {
         return m_parameters;
     }
 
-    String getCreationVersion() {
+    /**
+     * @return the version with which the settings were created
+     */
+    public String getCreationVersion() {
         return m_version;
     }
 
-    JsonNodeSettings(final NodeSettingsRO settings) {
+    /**
+     * Constructor.
+     * 
+     * @param settings {@link NodeSettingsRO} containing the parameters
+     */
+    public JsonNodeSettings(final NodeSettingsRO settings) {
         var settingsWithoutVersion = settingsWithoutVersion(toNodeSettings(settings));
         m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(settingsWithoutVersion);
         try {

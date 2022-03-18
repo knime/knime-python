@@ -44,56 +44,56 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.extension;
 
-import java.util.Map;
-import java.util.function.Supplier;
+final class NodeId {
 
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+    private static final String SEPARATOR = "_!_";
 
-/**
- * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
- * {@link NodeDialogProxy} that can e.g. be implemented in Python.
- *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- */
-// TODO move to new package? (wait until the dialog deep dive is merged in order to avoid conflicts)
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
+    private final String m_extensionId;
 
-    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
+    private final String m_nodeId;
 
-    /**
-     * Constructor.
-     * 
-     * @param proxyProvider provides proxy objects
-     */
-    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
+    NodeId(final String extensionId, final String nodeId) {
+        m_extensionId = extensionId;
+        m_nodeId = nodeId;
+    }
+
+    static NodeId fromCombined(final String combinedId) {
+        var parts = combinedId.split(SEPARATOR, 2);
+        var extensionId = parts[0];
+        var nodeId = parts[1];
+        return new NodeId(extensionId, nodeId);
+    }
+
+    String getExtensionId() {
+        return m_extensionId;
+    }
+
+    String getNodeId() {
+        return m_nodeId;
+    }
+
+    String getCombinedId() {
+        return m_extensionId + SEPARATOR + m_nodeId;
     }
 
     @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        } else if (obj instanceof NodeId) {
+            var other = (NodeId)obj;
+            return m_extensionId.equals(other.m_extensionId) && m_nodeId.equals(other.m_nodeId);
+        } else {
+            return false;
         }
     }
 
     @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
+    public int hashCode() {
+        return m_extensionId.hashCode() + 13 * m_nodeId.hashCode();
     }
-
 }

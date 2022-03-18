@@ -44,56 +44,42 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.extension;
 
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.python3.nodes.proxy.NodeProxyProvider;
 
 /**
- * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
- * {@link NodeDialogProxy} that can e.g. be implemented in Python.
+ * Represents a KNIME extension that provides a number of nodes.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// TODO move to new package? (wait until the dialog deep dive is merged in order to avoid conflicts)
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
-
-    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
+public interface KnimeExtension {
 
     /**
-     * Constructor.
-     * 
-     * @param proxyProvider provides proxy objects
+     * @return id of the extension
      */
-    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
-    }
+    String getId();
 
-    @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
-        }
-    }
+    /**
+     * @return a stream of the nodes of the extension
+     */
+    Stream<ExtensionNode> getNodes();
 
-    @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
-    }
+    /**
+     * @param nodeId id of the node in the extension
+     * @return the node identified by nodeId
+     */
+    ExtensionNode getNode(String nodeId);
 
+    /**
+     * @param nodeId of a node in the extension
+     * @return a proxy provider for the node identified by nodeId
+     * @throws InvalidSettingsException
+     */
+    NodeProxyProvider createProxyProvider(final String nodeId) throws InvalidSettingsException;
 }

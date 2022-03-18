@@ -127,7 +127,8 @@ import py4j.Py4JException;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class DelegatingNodeModel extends NodeModel {
+// TODO Perhaps move to the extension package?
+public final class DelegatingNodeModel extends NodeModel {
 
     private final Supplier<CloseableNodeModelProxy> m_proxySupplier;
 
@@ -143,6 +144,12 @@ final class DelegatingNodeModel extends NodeModel {
 
     private JsonNodeSettings m_settings;
 
+    /**
+     * Constructor.
+     *
+     * @param pythonNodeSupplier supplier for proxies
+     * @param initialSettings of the node
+     */
     // TODO retrieve the expected in and outputs from Python
     protected DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier,
         final JsonNodeSettings initialSettings) {

@@ -44,56 +44,94 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Mar 1, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.extension;
 
-import java.util.Map;
-import java.util.function.Supplier;
-
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.core.node.NodeDescription;
+import org.knime.core.node.NodeFactory.NodeType;
+import org.w3c.dom.Element;
 
 /**
- * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
- * {@link NodeDialogProxy} that can e.g. be implemented in Python.
+ * Dummy implementation to be replaced.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// TODO move to new package? (wait until the dialog deep dive is merged in order to avoid conflicts)
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
+final class ExtensionNodeDescription extends NodeDescription {
 
-    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
+    private final ExtensionNode m_node;
 
-    /**
-     * Constructor.
-     * 
-     * @param proxyProvider provides proxy objects
-     */
-    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
+    ExtensionNodeDescription(final ExtensionNode node) {
+        m_node = node;
     }
 
     @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
-        }
+    public String getIconPath() {
+        return m_node.getIconPath().toAbsolutePath().toString();
     }
 
     @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
+    public String getInportDescription(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getInportName(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getInteractiveViewName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getNodeName() {
+        return m_node.getName();
+    }
+
+    @Override
+    public String getOutportDescription(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getOutportName(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public NodeType getType() {
+        return NodeType.valueOf(m_node.getType());
+    }
+
+    @Override
+    public int getViewCount() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public String getViewDescription(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getViewName(final int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Element getXMLDescription() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }
