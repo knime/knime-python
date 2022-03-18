@@ -44,49 +44,74 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Mar 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.pycentric;
 
-import org.knime.python3.PythonEntryPoint;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import org.knime.python3.nodes.KnimeNodeBackend;
+import org.knime.python3.nodes.PyNodeExtension;
+import org.knime.python3.nodes.PythonNode;
 import org.knime.python3.nodes.proxy.NodeProxy;
 
 /**
- * Handles the communication with a node written purely in Python.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface KnimeNodeBackend extends PythonEntryPoint {
+final class FluentPythonNodeExtension implements PyNodeExtension {
 
-    /**
-     * Creates a proxy for a node implemented in Python.
-     *
-     * @param moduleName containing the node
-     * @param pythonNodeClass class of the node
-     * @return a proxy for the Python node
-     */
-    NodeProxy createNodeProxy(final String moduleName, final String pythonNodeClass);
+    private final Map<String, PythonNode> m_nodes;
 
-    /**
-     * Initialize global callbacks like access to the logging functionality
-     * @param callback
-     */
-    void initializeJavaCallback(Callback callback);
+    private final String m_name;
 
-    /**
-     * Global callbacks for this entry point
-     */
-    interface Callback {
-        /**
-         * Pipe Python logging to KNIME's log facilities
-         * @param msg
-         */
-        void log(String msg);
+    private final String m_id;
+
+    private final String m_environmentName;
+
+    private final String m_extensionModule;
+
+    FluentPythonNodeExtension(final String id, final String name, final String environmentName,
+        final String extensionModule, final PythonNode[] nodes) {
+        m_id = id;
+        m_name = name;
+        m_environmentName = environmentName;
+        m_extensionModule = extensionModule;
+        m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));
     }
 
-    NodeProxy createNodeExtensionProxy(final String factoryModule, String factoryMethod, String nodeId);
+    @Override
+    public String getId() {
+        return m_id;
+    }
 
-    String retrieveNodesAsJson(final String extensionModule);
+    @Override
+    public String getName() {
+        return m_name;
+    }
 
-    NodeProxy createNodeFromExtension(final String extensionModule, final String nodeId);
+    @Override
+    public PythonNode getNode(final String id) {
+        return m_nodes.get(id);
+    }
+
+    @Override
+    public String getEnvironmentName() {
+        return m_environmentName;
+    }
+
+    @Override
+    public NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
+        return backend.createNodeFromExtension(m_extensionModule, nodeId);
+    }
+
+    @Override
+    public Stream<PythonNode> getNodeStream() {
+        return m_nodes.values().stream();
+    }
+
 }

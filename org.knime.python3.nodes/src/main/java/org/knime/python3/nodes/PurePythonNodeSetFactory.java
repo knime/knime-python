@@ -61,7 +61,7 @@ import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.ymlcentric.YmlPythonNodeExtensionParser;
+import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
 
 /**
  * {@link ExtensionNodeSetFactory} for ALL nodes written purely in Python. On startup, it collects all registered Python
@@ -94,7 +94,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     // TODO Allow to provide Paths for debugging e.g. via a system property or a preference page
     private static final List<Path> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
 
-    private static final PythonExtensionParser EXTENSION_PARSER = new YmlPythonNodeExtensionParser();
+    private static final PythonExtensionParser EXTENSION_PARSER = new PythonCentricExtensionParser();
 
     /**
      * Constructor.

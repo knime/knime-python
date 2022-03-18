@@ -53,7 +53,10 @@ from typing import List, Tuple
 import knime_table as kt
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
+from dataclasses import dataclass
 from packaging.version import Version
+from typing import Callable
+
 
 
 class PythonNode(ABC):
@@ -89,6 +92,56 @@ class PythonNode(ABC):
         """
         # TODO generate from doc string
         pass
+
+
+@dataclass
+class _Node:
+    """Class representing an actual node in KNIME AP."""
+
+    node_factory: Callable
+    id: str
+    name: str
+    node_type: str
+    icon_path: str
+    category: str
+    after: str
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "node_type": self.node_type,
+            "icon_path": self.icon_path,
+            "category": self.category,
+            "after": self.after,
+        }
+
+
+_nodes = {}
+
+# TODO allow to pass in other nodes as after?
+# TODO allow to define categories
+def node(
+    name: str, node_type: str, icon_path: str, category: str, after: str = None
+) -> Callable:
+    """
+    Use this decorator to annotate a PythonNode class or function that creates a PythonNode instance that should correspond to a node in KNIME.
+    """
+
+    def register(factory_method):
+        id = f"{category}/{name}"
+        _nodes[id] = _Node(
+            node_factory=factory_method,
+            id=id,
+            name=name,
+            node_type=node_type,
+            icon_path=icon_path,
+            category=category,
+            after=after,
+        )
+        return factory_method
+
+    return register
 
 
 class Parameter:

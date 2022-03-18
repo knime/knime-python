@@ -49,6 +49,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 """
 
 from typing import List
+
 import knime_node as kn
 import knime_node_parameter as knp
 import knime_gateway as kg
@@ -159,7 +160,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
         super().__init__()
         self._callback = None
 
-	def createNodeExtensionProxy(self, factory_module_name: str, factory_method_name: str, node_id: str) -> _PythonNodeProxy:
+    def createNodeExtensionProxy(self, factory_module_name: str, factory_method_name: str, node_id: str) -> _PythonNodeProxy:
         factory_module = importlib.import_module(factory_module_name)
         factory_method = getattr(factory_module, factory_method_name)
         node = factory_method(node_id)
@@ -175,6 +176,18 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
     def initializeJavaCallback(self, callback):
         self._callback = callback
+    
+
+    def retrieveNodesAsJson(self, extension_module_name: str) -> str:
+        importlib.import_module(extension_module_name)
+        node_dicts = [n.to_dict() for n in kn._nodes.values()]
+        return json.dumps(node_dicts)
+
+    def createNodeFromExtension(self, extension_module_name: str, node_id: str) -> _PythonNodeProxy:
+        importlib.import_module(extension_module_name)
+        node_info = kn._nodes[node_id]
+        node = node_info.node_factory()
+        return _PythonNodeProxy(node)
 
     class Java:
         implements = ["org.knime.python3.nodes.KnimeNodeBackend"]
