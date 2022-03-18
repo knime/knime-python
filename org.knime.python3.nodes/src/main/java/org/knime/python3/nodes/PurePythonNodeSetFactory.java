@@ -50,6 +50,7 @@ package org.knime.python3.nodes;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -71,6 +72,13 @@ import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
  */
 public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
+    /**
+     * Python node developers can register the extensions they are developing via this system property (as a ; separated
+     * list). In case there are conflicts with the extensions provided via the extension point then the extension
+     * provided via the property takes precedence.
+     */
+    private static final String PY_EXTENSION_DEV_PROPERTY = "knime.python.extensions";
+
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PurePythonNodeSetFactory.class);
 
     /**
@@ -91,7 +99,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         PyNodeExtension parseExtension(final Path path) throws IOException;
     }
 
-    // TODO Allow to provide Paths for debugging e.g. via a system property or a preference page
     private static final List<Path> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
 
     private static final PythonExtensionParser EXTENSION_PARSER = new PythonCentricExtensionParser();
@@ -104,9 +111,23 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     }
 
     private static Stream<KnimeExtension> parseExtensions() {
-        return PYTHON_NODE_EXTENSION_PATHS.stream()//
+        return Stream.concat(pathsFromProperty(), PYTHON_NODE_EXTENSION_PATHS.stream())
             .map(PurePythonNodeSetFactory::parseExtension)//
-            .filter(Objects::nonNull);
+            .filter(Objects::nonNull)//
+            // if the same extension is defined by property and by extension point,
+            // then we take the one from the property because the property is
+            // intended for use during Python node development
+            .distinct();
+    }
+
+    private static Stream<Path> pathsFromProperty() {
+        var propertyDefinedPaths = System.getProperty(PY_EXTENSION_DEV_PROPERTY);
+        if (propertyDefinedPaths == null) {
+            return Stream.empty();
+        } else {
+            return Stream.of(propertyDefinedPaths.split(";"))//
+                    .map(Paths::get);
+        }
     }
 
     private static final KnimeExtension parseExtension(final Path extensionPath) {
@@ -158,6 +179,23 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         @Override
         public ExtensionNode getNode(final String nodeId) {
             return new ResolvedPythonNode(m_path, m_extension.getNode(nodeId));
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == this) {
+                return true;
+            } else if (obj instanceof ResolvedPythonExtension) {
+                var other = (ResolvedPythonExtension)obj;
+                return getId().equals(other.getId());
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return getId().hashCode();
         }
     }
 
