@@ -134,6 +134,12 @@ class IntStringStructTest(TypeTest, unittest.TestCase):
         return isinstance(o, k.StructType)
 
 
+class KnimeType(unittest.TestCase):
+    def test_knime_type_cannot_be_created(self):
+        with self.assertRaises(RuntimeError):
+            t = k.KnimeType()
+
+
 # ----------------------------------------------------------
 
 

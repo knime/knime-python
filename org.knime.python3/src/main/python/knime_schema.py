@@ -58,8 +58,9 @@ from typing import List, Sequence, Union, Tuple
 
 class KnimeType:
     # How to make sure this is not instanciated directly?
-    # def __init__(self):
-    #     raise RuntimeError(f"{type(self)} is not supposed to be created directly")
+    def __init__(self):
+        if type(self) == KnimeType:
+            raise RuntimeError(f"{type(self)} is not supposed to be created directly")
 
     def __repr__(self) -> str:
         return str(self)
@@ -133,7 +134,7 @@ class SupportsDictEncoding:
         self._key_type = None
 
 
-class StringType(KnimeType, SupportsDictEncoding):
+class StringType(SupportsDictEncoding, KnimeType):
     def __init__(self, dict_encoding_key_type=None):
         super(StringType, self).__init__(dict_encoding_key_type)
 
@@ -147,7 +148,7 @@ class StringType(KnimeType, SupportsDictEncoding):
         return hash(str(self))
 
 
-class BlobType(KnimeType, SupportsDictEncoding):
+class BlobType(SupportsDictEncoding, KnimeType):
     def __init__(self, dict_encoding_key_type=None):
         super(BlobType, self).__init__(dict_encoding_key_type)
 
