@@ -48,6 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+from typing import List
 import knime_node as kn
 import knime_node_parameter as knp
 import knime_gateway as kg
@@ -139,7 +140,7 @@ class _PythonNodeProxy:
 
         return ListConverter().convert(out_sinks, kg.client_server._gateway_client)
 
-    def configure(self, in_schemas: list[ks.Schema]) -> list[ks.Schema]:
+    def configure(self, in_schemas: List[ks.Schema]) -> List[ks.Schema]:
         knime_in_schemas = [
             ks.Schema.from_knime_dict(json.loads(i)) for i in in_schemas
         ]

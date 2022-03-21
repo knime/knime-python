@@ -49,7 +49,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 """
 from abc import ABC, abstractmethod
 from numbers import Number
-from typing import List
+from typing import List, Tuple
 import knime_table as kt
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
@@ -61,16 +61,25 @@ class PythonNode(ABC):
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
     """
 
+    @abstractmethod
     def configure(self, inSchemas: List[str]) -> List[str]:
-        # TODO we need something akin to PortObjectSpecs in Python
-        print(f"Configure got input schemas:\n{inSchemas}")
-        return inSchemas
+        # TODO: We need something akin to PortObjectSpecs in Python.
+        #       See https://knime-com.atlassian.net/browse/AP-18368
 
+        # TODO: Make flow variables available during configuration.
+        #       See https://knime-com.atlassian.net/browse/AP-18641
+        pass
+
+    @abstractmethod
     def execute(
-        self, tables: list[kt.ReadTable], objects: list, exec_context
-    ) -> tuple[list[kt.WriteTable], list]:
-        out_t = [t for t in tables]
-        return (out_t, objects)
+        self, tables: List[kt.ReadTable], objects: List, exec_context
+    ) -> Tuple[List[kt.WriteTable], List]:
+        # TODO: Allow mixing tables and port objects in inputs and outputs.
+        #       See https://knime-com.atlassian.net/browse/AP-18640
+
+        # TODO: Make flow variables available during execution.
+        #       See https://knime-com.atlassian.net/browse/AP-18641
+        pass
 
     def get_description(self) -> dict:
         """
@@ -128,7 +137,9 @@ class Parameter:
             self.__set__(obj, current_val)
 
     def setter(self, fset):
-        param = type(self)(self.fget, fset, self._type, self.since_version, self.__doc__)
+        param = type(self)(
+            self.fget, fset, self._type, self.since_version, self.__doc__
+        )
         param._name = self._name
         return param
 
@@ -139,7 +150,14 @@ class Parameter:
         return self.since_version is None or self.since_version <= version
 
 
-def parameter(_func=None, *, fset=None, _type: str = None, since_version: Version = None, doc: str = None):
+def parameter(
+    _func=None,
+    *,
+    fset=None,
+    _type: str = None,
+    since_version: Version = None,
+    doc: str = None,
+):
     def decorator_parameter(fget):
         return Parameter(fget, fset, _type, since_version, doc)
 

@@ -1,7 +1,11 @@
+from typing import List, Tuple
 import knime_gateway as kg
 import knime_node as kn
 import knime_node_backend as knb
+import knime_table as kt
+import knime_schema as ks
 from packaging.version import Version
+
 
 class MyDecoratedNode(kn.PythonNode):
     def __init__(self) -> None:
@@ -36,12 +40,24 @@ class MyDecoratedNode(kn.PythonNode):
     def backwards_compatible_parameter(self, value):
         self._backwards_compat_param = value
 
-class PythonNodeProxyTestEntryPoint(kg.EntryPoint):
+    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
+        return input_schemas
 
+    def execute(
+        self, tables: List[kt.ReadTable], objects: List, exec_context
+    ) -> Tuple[List[kt.WriteTable], List]:
+        out_t = [t for t in tables]
+        return (out_t, objects)
+
+
+class PythonNodeProxyTestEntryPoint(kg.EntryPoint):
     def getProxy(self):
         return knb._PythonNodeProxy(MyDecoratedNode())
 
     class Java:
-        implements = ["org.knime.python3.nodes.PythonNodeProxyTest.PythonNodeProxyTestEntryPoint"]
+        implements = [
+            "org.knime.python3.nodes.PythonNodeProxyTest.PythonNodeProxyTestEntryPoint"
+        ]
+
 
 kg.connect_to_knime(PythonNodeProxyTestEntryPoint())

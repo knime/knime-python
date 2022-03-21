@@ -42,9 +42,12 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-import pythonpath # adds knime_node to the Python path
+from typing import List, Tuple
+import pythonpath  # adds knime_node to the Python path
 import knime_node as kn
 import knime_node_parameter as knp
+import knime_table as kt
+import knime_schema as ks
 from packaging.version import Version
 import unittest
 
@@ -86,6 +89,15 @@ class MyDecoratedNode(kn.PythonNode):
     def backwards_compatible_parameter(self, value):
         self._backwards_compat_param = value
 
+    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
+        return input_schemas
+
+    def execute(
+        self, tables: List[kt.ReadTable], objects: List, exec_context
+    ) -> Tuple[List[kt.WriteTable], List]:
+        out_t = [t for t in tables]
+        return (out_t, objects)
+
 
 class DescriptorTest(unittest.TestCase):
     def setUp(self):
@@ -110,7 +122,9 @@ class DescriptorTest(unittest.TestCase):
         params["param1"] = 3
         self.assertIsNone(knp.validate_parameters(self.node, params, version))
         params["param1"] = -1
-        self.assertEqual("The value must be non-negative.", knp.validate_parameters(self.node, params, version))
+        self.assertEqual(
+            "The value must be non-negative.",
+            knp.validate_parameters(self.node, params, version),
 
     def test_extract_inject(self):
         params = knp.extract_parameters(self.node)
@@ -121,7 +135,7 @@ class DescriptorTest(unittest.TestCase):
         assert self.node.param1 == 3
         params["param1"] = -1
         try:
-            knp.inject_parameters(self.node,params, version)
+            knp.inject_parameters(self.node, params, version)
             assert False
         except ValueError:
             pass
@@ -158,5 +172,8 @@ class DescriptorTest(unittest.TestCase):
         old_parameters = {"param1": 42, "param2": "foobar"}
         version = Version("4.5.1")
         self.assertIsNone(knp.validate_parameters(self.node, old_parameters, version))
-        knp.inject_parameters(self.node,old_parameters, version)
-        self.assertEqual("Missing the parameter backwards_compatible_parameter.", knp.validate_parameters(self.node, old_parameters, Version("4.6.0")))
+        knp.inject_parameters(self.node, old_parameters, version)
+        self.assertEqual(
+            "Missing the parameter backwards_compatible_parameter.",
+            knp.validate_parameters(self.node, old_parameters, Version("4.6.0")),
+        )
