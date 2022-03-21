@@ -132,6 +132,7 @@ final class DelegatingNodeModel extends NodeModel {
     private final Supplier<CloseableNodeModelProxy> m_proxySupplier;
 
     // STUFF FOR CONFIG AND EXEC:
+    // TODO: clean up, see https://knime-com.atlassian.net/browse/AP-18640
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private SinkManager m_sinkManager = new SinkManager();
@@ -213,7 +214,10 @@ final class DelegatingNodeModel extends NodeModel {
     }
 
     // Store will be closed along with table. If it is a copy, it will have already been closed.
-    // NOTE: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!!
+    // TODO: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!
+    //       See https://knime-com.atlassian.net/browse/AP-18640
+
+    // TODO: Then remove Python2 dependency.
     @SuppressWarnings("resource")
     private static ColumnarBatchReadStore extractColumnStore(final BufferedDataTable table) throws IOException {
         final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
@@ -384,7 +388,11 @@ final class DelegatingNodeModel extends NodeModel {
     }
 
     /**
-     * NOTE: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!!
+     * TODO: Refactor and reuse!
+     * Copied and stripped from Python3KernelBackend
+     * See https://knime-com.atlassian.net/browse/AP-18640
+     *
+     * TODO: Then remove Python2 dependency.
      */
     private final class GetDataTableTask implements Callable<BufferedDataTable> {
 
@@ -434,7 +442,9 @@ final class DelegatingNodeModel extends NodeModel {
     /**
      * A class for managing a set of sinks with rowKeyCheckers and domainCalculators
      *
-     * NOTE: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!!
+     * TODO: Refactor and reuse!
+     * Copied and stripped from Python3KernelBackend
+     * See https://knime-com.atlassian.net/browse/AP-18640
      */
     private final class SinkManager implements AutoCloseable {
 
