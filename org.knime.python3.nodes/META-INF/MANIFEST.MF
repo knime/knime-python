@@ -17,12 +17,12 @@ Require-Bundle:
  org.knime.python3.arrow;bundle-version="[4.6.0,5.0.0)",
  org.knime.workbench.repository;bundle-version="[4.6.0,5.0.0)",
  org.knime.ext.py4j;bundle-version="[0.10.9,1.0.0)",
- org.knime.core.columnar;bundle-version="4.6.0",
- org.knime.core.data.columnar;bundle-version="4.6.0",
- org.knime.core.table,
- org.knime.core.columnar.arrow,
+ org.knime.core.columnar;bundle-version="[4.6.0,5.0.0)",
+ org.knime.core.data.columnar;bundle-version="[4.6.0,5.0.0)",
+ org.knime.core.table;bundle-version="[4.6.0,5.0.0)",
+ org.knime.core.columnar.arrow;bundle-version="[4.6.0,5.0.0)",
  org.knime.python2,
- com.google.guava,
- org.knime.python3.scripting;bundle-version="4.6.0"
+ com.google.guava;bundle-version="[19.0.0,20.0.0)",
+ org.knime.python3.scripting;bundle-version="[4.6.0,5.0.0)"
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
