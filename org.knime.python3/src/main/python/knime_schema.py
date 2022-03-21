@@ -347,12 +347,12 @@ class Columnar(ABC):
         self, func, output_col_name: str, output_type: KnimeType = None
     ) -> "Columnar":
         """
-        Apply the function to each row of this table. 
-        The function `func` is expected to take as many parameters as this table has columns, with the respective data types, 
-        and to provide one value as output. 
+        Apply the function to each row of this table.
+        The function `func` is expected to take as many parameters as this table has columns, 
+        with the respective data types, and to provide one value as output.
 
-        We try to parse the type annotations of the provided function. It must return a `ks.KnimeType`. If there are no type annotations,
-        then the output_type of this map function must be provided.
+        We try to parse the type annotations of the provided function. It must return a `ks.KnimeType`. 
+        If there are no type annotations, then the output_type of this map function must be provided.
         """
         if output_type is None:
             import inspect
@@ -376,16 +376,8 @@ class Columnar(ABC):
         self, func, output_col_name: str, output_type: KnimeType = None
     ) -> "Columnar":
         pass
-        # Implement _map in ArrowReadBatch and ArrowReadTable:
-        # if isinstance(self, kt.ReadBatch):
-        #     # todo: apply row by row
-        #     pass
-        # elif isinstance(self, kt.ReadTable):
-        #     out_table = kt.batch_write_table()
-        #     for batch in self.batches():
-        #         out_batch = batch.map(func, output_col_name, output_type)
-        #         out_table.append(out_batch)
-        #     return out_table
+        # See the prototype in test_functional_table_api.py, to be
+        # implemented in https://knime-com.atlassian.net/browse/AP-18642
 
 
 # --------------------------------------------------------------------
@@ -499,9 +491,6 @@ class Schema(Columnar):
             return Schema.from_columns(cols)
         else:
             raise ValueError("Can only append columns or schemas to this schema")
-
-    def __add__(self, other: Union["Schema", Column]) -> "Schema":
-        return self.append(other)
 
     def __str__(self) -> str:
         sep = ",\n\t"

@@ -233,8 +233,8 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(2 * len(s), len(s_double))
         self.assertEqual(2 * len(s_with_m), len(s_with_m_double))
 
-        added_no_meta = s + s
-        added_with_meta = s_with_m + s_with_m
+        added_no_meta = s.append(s)
+        added_with_meta = s_with_m.append(s_with_m)
         self.assertEqual(s_double, added_no_meta)
         self.assertEqual(s_with_m_double, added_with_meta)
 
