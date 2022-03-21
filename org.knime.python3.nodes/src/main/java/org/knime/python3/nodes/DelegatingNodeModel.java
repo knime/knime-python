@@ -192,7 +192,7 @@ final class DelegatingNodeModel extends NodeModel {
                 .map(DelegatingNodeModel::deserializeAnnotatedColumnarSchema).toArray(AnnotatedColumnarSchema[]::new);
 
             return Arrays.stream(outSchemas).map(acs -> {
-                return PythonArrowDataUtils.createDataTableSpec(acs.getColumnarSchema(), acs.getColumnNames());
+                return PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames());
             }).toArray(DataTableSpec[]::new);
         }
     }
