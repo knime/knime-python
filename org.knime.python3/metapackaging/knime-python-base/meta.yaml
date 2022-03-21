@@ -1,0 +1,40 @@
+package:
+  name: knime-python-base
+  version: "4.6.0"
+
+requirements:
+  build:
+    - python {{ python }}
+    - py4j
+    - nomkl
+    - pandas
+    - pyarrow >=7
+    - numpy >=1.22 # [py>=38]
+    - numpy >=1.16 # [py<38]
+    - jpype1
+
+  run:
+    - python                # Python
+    - py4j                  # used for KNIME <-> Python communication
+    - nomkl                 # Prevents the use of Intel's MKL
+    - pandas                # Table data structures
+    - python-dateutil       # Date and Time utilities
+    - numpy                 # N-dimensional arrays
+    - pyarrow               # Arrow serialization
+    - jpype1                # Databases
+
+test:
+  imports:
+    - pandas
+    - pyarrow
+    - py4j
+
+build:
+  number: {{ version_number }}
+  string: py{{ python | replace(".", "") }}_{{ version_number }}
+
+about:
+  home: https://knime.com
+  license: GPL-3.0
+  license_file: LICENSE.TXT
+  summary: The knime-python-base package collects all dependencies needed to use Python from the KNIME Analytics Platform.

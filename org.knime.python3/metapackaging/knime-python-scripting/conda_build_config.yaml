@@ -1,0 +1,18 @@
+python:
+  - 3.7
+  - 3.8
+  - 3.9
+  - 3.10
+
+pin_run_as_build:
+  cairo: x.x.x
+  pillow: x.x.x
+  matplotlib: x.x.x
+  ipython: x.x.x
+  nbformat: x.x.x
+  scipy: x.x.x
+  jedi: x.x.x
+
+
+version_number:
+  - 0 # Increment this whenever you make changes
