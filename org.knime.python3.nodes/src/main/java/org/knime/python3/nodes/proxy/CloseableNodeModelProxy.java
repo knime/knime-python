@@ -49,7 +49,7 @@
 package org.knime.python3.nodes.proxy;
 
 /**
- * A {@link NodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
+ * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */

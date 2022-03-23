@@ -44,98 +44,32 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Mar 23, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowDataSource;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.python3.nodes.JsonNodeSettings;
 
 /**
- * Proxy for a node implemented in Python. This interface is implemented on the Python side.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public interface NodeModelProxy {
 
-    // TODO separate methods with long runtime (i.e. execute) from methods with short runtimes (all other methods)
+    void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
 
+    void loadValidatedSettings(JsonNodeSettings settings);
 
-    /**
-     * Sets the given parameters.
-     *
-     * @param parameters as JSON string
-     * @param version of KNIME with which the parameters were created (used for backwards compatibility)
-     */
-    void setParameters(final String parameters, String version);
+    JsonNodeSettings saveSettings();
 
-    /**
-     * Validates the given parameters.
-     *
-     * @param parameters as JSON string
-     * @param version of KNIME with which the parameters were created (used for backwards compatibility)
-     * @return the validation error or null if there are no errors
-     */
-    String validateParameters(final String parameters, String version);
+    BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws IOException, CanceledExecutionException;
 
-    /**
-     * Performs the node execution.
-     *
-     * @param outputObjectPaths
-     * @param inputObjectPaths
-     * @param sources
-     * @return The data sinks populated with data on the Python side
-     */
-    List<PythonArrowDataSink> execute(PythonArrowDataSource[] sources, String[] inputObjectPaths,
-        String[] outputObjectPaths, PythonExecutionContext ctx);
-
-    /**
-     * Performs the node configuration. Given the input table schemas, provide the schemas of the resulting tables.
-     *
-     * @param serializedInSchemas JSON to String serialized version of the input schemas
-     * @return The JSON to String serialized version of the output schemas
-     */
-    List<String> configure(String[] serializedInSchemas);
-
-    /**
-     * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving
-     * KNIME URLs to local file paths).
-     *
-     * @param callback The node's Java callback.
-     */
-    void initializeJavaCallback(Callback callback);
-
-    /**
-     * Provides Java-backed functionality to the Python side.
-     * DUPLICATED FROM Python3KernelBackendProxy
-     * <P>
-     * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
-     * conventions. Sonar issues caused by this are suppressed.
-     */
-    public interface Callback {
-        /**
-         * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local
-         * temporary file.
-         *
-         * @param knimeUrl The {@code knime://} URL to resolve to a local path.
-         * @return The resolved local path.
-         * @throws IllegalStateException If resolving the URL failed. Wrapped in a {@code Py4JJavaError} on Python side.
-         */
-        String resolve_knime_url(String knimeUrl); // NOSONAR
-
-        /**
-         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
-         * @throws IOException if the temporary file for the sink could not be created
-         */
-        PythonArrowDataSink create_sink() throws IOException; //NOSONAR
-    }
-
-    public interface PythonExecutionContext {
-        void set_progress(double progress);
-
-        boolean is_canceled();
-    }
+    DataTableSpec[] configure(final DataTableSpec[] inSpecs);
 }

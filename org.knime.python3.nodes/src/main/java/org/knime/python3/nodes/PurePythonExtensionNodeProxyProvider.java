@@ -93,7 +93,7 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     }
 
     @SuppressWarnings("resource")// the gateway is managed by the returned object
-    private CloseablePythonProxy createPythonNode() {
+    private CloseablePythonNodeProxy createPythonNode() {
         try {
             var gatewayBuilder = PythonGatewayUtils.createPythonGatewayBuilder(LAUNCHER, KnimeNodeBackend.class);
             Files.walk(m_extension.getPath())//
@@ -101,7 +101,7 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
                 .forEach(gatewayBuilder::withSourceFolder);
             var gateway = gatewayBuilder.build();
             var nodeProxy = m_extension.createProxy(gateway.getEntryPoint(), m_nodeId);
-            return new CloseablePythonProxy(nodeProxy, gateway);
+            return new CloseablePythonNodeProxy(nodeProxy, gateway);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
         } catch (InterruptedException ex) {

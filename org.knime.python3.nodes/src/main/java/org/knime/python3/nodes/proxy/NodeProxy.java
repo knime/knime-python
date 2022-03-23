@@ -54,6 +54,6 @@ package org.knime.python3.nodes.proxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeProxy extends NodeFactoryProxy, NodeModelProxy, NodeDialogProxy {
+public interface NodeProxy extends NodeFactoryProxy, PythonNodeModelProxy, NodeDialogProxy {
     // marker interface that is implemented on the Python side
 }

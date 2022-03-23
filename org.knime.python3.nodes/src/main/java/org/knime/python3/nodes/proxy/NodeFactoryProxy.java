@@ -58,6 +58,6 @@ public interface NodeFactoryProxy {
     /**
      * @return the initial parameters of the node as JSON string
      */
-    String getInitialParameters();
+    String getParameters();
 
 }

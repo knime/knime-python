@@ -90,7 +90,7 @@ public abstract class AbstractDelegatingNodeFactory extends NodeFactory<Delegati
     protected AbstractDelegatingNodeFactory(final NodeProxyProvider proxyProvider) {
         m_proxyProvider = proxyProvider;
         try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
-            m_initialSettings = new JsonNodeSettings(proxy.getInitialParameters());
+            m_initialSettings = new JsonNodeSettings(proxy.getParameters());
             m_settingsService = new DelegatingTextSettingsDataService(m_proxyProvider::getNodeDialogProxy);
         }
     }

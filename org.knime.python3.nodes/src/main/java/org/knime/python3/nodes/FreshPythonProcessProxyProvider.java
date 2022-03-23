@@ -93,7 +93,7 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
     }
 
     @SuppressWarnings("resource") // it's the responsibility of the caller to close the PythonNode
-    private CloseablePythonProxy createPythonNode() {
+    private CloseablePythonNodeProxy createPythonNode() {
         // TODO do we need a process queue similar to what we have for the scripting nodes?
         try {
             var gateway = PythonGatewayUtils.openPythonGateway(KnimeNodeBackend.class, LAUNCHER);
@@ -107,7 +107,7 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
             gateway.getEntryPoint().initializeJavaCallback(callback);
             var nodeProxy =
                 gateway.getEntryPoint().createNodeProxy(m_nodeClass.getModuleName(), m_nodeClass.getNodeClass());
-            return new CloseablePythonProxy(nodeProxy, gateway);
+            return new CloseablePythonNodeProxy(nodeProxy, gateway);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
         } catch (InterruptedException ex) {

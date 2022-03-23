@@ -84,7 +84,7 @@ class _PythonNodeProxy:
         }
         return json.dumps(json_forms_dict)
 
-    def getInitialParameters(self) -> str:
+    def getParameters(self) -> str:
         parameters_dict = knp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
