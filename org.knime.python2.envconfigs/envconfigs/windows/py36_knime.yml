@@ -8,7 +8,7 @@ dependencies:               # List of packages that should be installed
 - py4j                      # used for KNIME <-> Python communication
 - nomkl                     # Prevents the use of Intel's MKL
 - pandas                    # Table data structures
-- jedi                      # Python script autocompletion
+- jedi<=0.17.2              # Python script autocompletion
 - python-dateutil           # Date and Time utilities
 - numpy                     # N-dimensional arrays
 - cairo                     # SVG support
