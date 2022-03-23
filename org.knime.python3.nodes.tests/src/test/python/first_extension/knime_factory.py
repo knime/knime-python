@@ -1,4 +1,7 @@
+from typing import List, Tuple
 import knime_node as kn
+import knime_table as kt
+import knime_schema as ks
 
 def create_node(node_id: str) -> kn.PythonNode:
     if node_id == "first":
@@ -31,8 +34,8 @@ class MyPythonNode(kn.PythonNode):
             raise ValueError("The value of numerical_parameter must be non-negative.")
         self._numerical_parameter = value
 
-    def configure(self):
-        return super().configure()
+    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
+        return input_schemas
 
-    def execute(self):
-        return super().execute()
+    def execute(self, tables: List[kt.ReadTable], objects: List, exec_context) -> Tuple[List[kt.WriteTable], List]:
+        return [kt.write_table(table) for table in tables], []
