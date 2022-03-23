@@ -51,14 +51,8 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,8 +66,6 @@ import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
 import org.knime.core.data.columnar.table.ColumnarContainerTable;
-import org.knime.core.data.container.DataContainer;
-import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
@@ -101,18 +93,17 @@ import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.util.PythonUtils;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.DefaultPythonArrowDataSink;
-import org.knime.python3.arrow.DomainCalculator;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
-import org.knime.python3.arrow.RowKeyChecker;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
+import org.knime.python3.scripting.SinkManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -137,7 +128,7 @@ final class CloseablePythonNodeProxy
     // TODO: clean up, see https://knime-com.atlassian.net/browse/AP-18640
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
-    private SinkManager m_sinkManager = new SinkManager();
+    private SinkManager m_sinkManager = new SinkManager(this::getDataRepository, ARROW_STORE_FACTORY);
 
     private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
@@ -415,86 +406,17 @@ final class CloseablePythonNodeProxy
         }
     }
 
-    /**
-     * A class for managing a set of sinks with rowKeyCheckers and domainCalculators
-     *
-     * TODO: Refactor and reuse! Copied and stripped from Python3KernelBackend See
-     * https://knime-com.atlassian.net/browse/AP-18640
-     */
-    private final class SinkManager implements AutoCloseable {
-
-        private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
-
-        private final Set<DefaultPythonArrowDataSink> m_usedSinks = new HashSet<>();
-
-        private final Map<DefaultPythonArrowDataSink, RowKeyChecker> m_rowKeyCheckers = new HashMap<>();
-
-        private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
-
-        @SuppressWarnings("resource") // The resources are remembered and closed in #close
-        private synchronized PythonArrowDataSink create_sink() throws IOException {//NOSONAR used by Python
-            final var path = DataContainer.createTempFile(".knable").toPath();
-            final var sink = PythonArrowDataUtils.createSink(path);
-
-            final IFileStoreHandler fileStoreHandler = getFileStoreHandler();
-            final IDataRepository dataRepository;
-            if (fileStoreHandler != null) {
-                dataRepository = fileStoreHandler.getDataRepository();
-            } else {
-                dataRepository = NotInWorkflowDataRepository.newInstance();
-            }
-
-            // Check row keys and compute the domain as soon as anything is written to the sink
-            final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
-            final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
-                DataContainerSettings.getDefault().getMaxDomainValues(), dataRepository);
-
-            // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
-            m_sinks.add(sink);
-            m_rowKeyCheckers.put(sink, rowKeyChecker);
-            m_domainCalculators.put(sink, domainCalculator);
-
-            return sink;
-        }
-
-        public boolean contains(final Object sink) {
-            return m_sinks.contains(sink);
-        }
-
-        public RowKeyChecker getRowKeyChecker(final DefaultPythonArrowDataSink sink) {
-            return m_rowKeyCheckers.get(sink);
-        }
-
-        public DomainCalculator getDomainCalculator(final DefaultPythonArrowDataSink sink) {
-            return m_domainCalculators.get(sink);
-        }
-
-        public void markUsed(final DefaultPythonArrowDataSink sink) {
-            m_usedSinks.add(sink);
-        }
-
-        @Override
-        public void close() {
-            m_rowKeyCheckers.values();
-            m_domainCalculators.values();
-            deleteUnusedSinkFiles();
-        }
-
-        /** Deletes the temporary files of all sinks that have not been used */
-        private void deleteUnusedSinkFiles() {
-            m_sinks.removeAll(m_usedSinks);
-            for (var s : m_sinks) {
-                try {
-                    Files.deleteIfExists(Path.of(s.getAbsolutePath()));
-                } catch (IOException ex) {
-                    throw new IllegalStateException(ex);
-                }
-            }
-        }
-    }
-
     @SuppressWarnings("static-method")
     private IFileStoreHandler getFileStoreHandler() {
         return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+    }
+
+    private IDataRepository getDataRepository() {
+        var fsHandler = getFileStoreHandler();
+        if (fsHandler == null) {
+            return NotInWorkflowDataRepository.newInstance();
+        } else {
+            return fsHandler.getDataRepository();
+        }
     }
 }

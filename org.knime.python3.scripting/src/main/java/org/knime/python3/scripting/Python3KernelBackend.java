@@ -54,11 +54,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -83,8 +81,6 @@ import org.knime.core.data.columnar.table.ColumnarContainerTable;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTableSettings;
-import org.knime.core.data.container.DataContainer;
-import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
@@ -133,14 +129,12 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.DefaultPythonArrowDataSink;
-import org.knime.python3.arrow.DomainCalculator;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
-import org.knime.python3.arrow.RowKeyChecker;
 import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
@@ -222,7 +216,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
-    private final SinkManager m_sinkManager = new SinkManager();
+    private final SinkManager m_sinkManager = new SinkManager(this::getDataRepository, ARROW_STORE_FACTORY);
 
     /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
@@ -891,76 +885,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
     }
 
-    /** A class for managing a set of sinks with rowKeyCheckers and domainCalculators */
-    private final class SinkManager implements AutoCloseable {
-
-        private final Set<DefaultPythonArrowDataSink> m_sinks = new HashSet<>();
-
-        private final Set<DefaultPythonArrowDataSink> m_usedSinks = new HashSet<>();
-
-        private final Map<DefaultPythonArrowDataSink, RowKeyChecker> m_rowKeyCheckers = new HashMap<>();
-
-        private final Map<DefaultPythonArrowDataSink, DomainCalculator> m_domainCalculators = new HashMap<>();
-
-        @SuppressWarnings("resource") // The resources are remembered and closed in #close
-        private synchronized PythonArrowDataSink create_sink() throws IOException {//NOSONAR used by Python
-            final var path = DataContainer.createTempFile(".knable").toPath();
-            final var sink = PythonArrowDataUtils.createSink(path);
-
-            final IFileStoreHandler fileStoreHandler = getFileStoreHandler();
-            final IDataRepository dataRepository;
-            if (fileStoreHandler != null) {
-                dataRepository = fileStoreHandler.getDataRepository();
-            } else {
-                dataRepository = NotInWorkflowDataRepository.newInstance();
-            }
-
-            // Check row keys and compute the domain as soon as anything is written to the sink
-            final var rowKeyChecker = PythonArrowDataUtils.createRowKeyChecker(sink, ARROW_STORE_FACTORY);
-            final var domainCalculator = PythonArrowDataUtils.createDomainCalculator(sink, ARROW_STORE_FACTORY,
-                DataContainerSettings.getDefault().getMaxDomainValues(), dataRepository);
-
-            // Remember the sink, rowKeyChecker and domainCalc for cleaning up later
-            m_sinks.add(sink);
-            m_rowKeyCheckers.put(sink, rowKeyChecker);
-            m_domainCalculators.put(sink, domainCalculator);
-
-            return sink;
-        }
-
-        public boolean contains(final Object sink) {
-            return m_sinks.contains(sink);
-        }
-
-        public RowKeyChecker getRowKeyChecker(final DefaultPythonArrowDataSink sink) {
-            return m_rowKeyCheckers.get(sink);
-        }
-
-        public DomainCalculator getDomainCalculator(final DefaultPythonArrowDataSink sink) {
-            return m_domainCalculators.get(sink);
-        }
-
-        public void markUsed(final DefaultPythonArrowDataSink sink) {
-            m_usedSinks.add(sink);
-        }
-
-        @Override
-        public void close() throws Exception {
-            PythonUtils.Misc.closeSafely(LOGGER::debug, m_rowKeyCheckers.values());
-            PythonUtils.Misc.closeSafely(LOGGER::debug, m_domainCalculators.values());
-            deleteUnusedSinkFiles();
-        }
-
-        /** Deletes the temporary files of all sinks that have not been used */
-        private void deleteUnusedSinkFiles() {
-            m_sinks.removeAll(m_usedSinks);
-            PythonUtils.Misc.invokeSafely(LOGGER::debug, s -> {
-                try {
-                    Files.deleteIfExists(Path.of(s.getAbsolutePath()));
-                } catch (IOException ex) {
-                    throw new IllegalStateException(ex);
-                }
-            }, m_sinks);
+    private IDataRepository getDataRepository() {
+        var fsHandler = getFileStoreHandler();
+        if (fsHandler != null) {
+            return fsHandler.getDataRepository();
+        } else {
+            return NotInWorkflowDataRepository.newInstance();
         }
     }
 }
