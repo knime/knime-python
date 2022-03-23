@@ -240,6 +240,26 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      *             Python side during setup, communication errors between the Java and the Python side.
      */
     public Python3KernelBackend(final PythonCommand command) throws IOException {
+        this(command, PythonPath.builder().build());
+    }
+
+    /**
+     * Creates a new Python kernel back end by starting a Python process and connecting to it.
+     * <P>
+     * Important: call the {@link #close()} method when this back end is no longer needed to shut down the underlying
+     * Python process.
+     *
+     * @param command The {@link PythonCommand} that is used to launch the Python process.
+     * @param extensionPythonPath additional paths that should be added to the PYTHONPATH
+     * @throws PythonInstallationTestException If the Python environment represented by the given {@link PythonCommand}
+     *             is not capable of running the Python kernel (e.g. because it misses essential Python modules or there
+     *             are version mismatches).
+     * @throws IOException If the kernel could not be set up for any reason. This includes the
+     *             {@link PythonInstallationTestException} described above which subclasses {@link PythonIOException}.
+     *             Other possible cases include: process creation problems, socket connection problems, exceptions on
+     *             Python side during setup, communication errors between the Java and the Python side.
+     */
+    public Python3KernelBackend(final PythonCommand command, final PythonPath extensionPythonPath) throws IOException {
         if (command.getPythonVersion() == PythonVersion.PYTHON2) {
             throw new IllegalArgumentException("The new Python kernel back end does not support Python 2 anymore. If "
                 + "you still want to use Python 2, please change your settings to use the legacy kernel back end.");
@@ -253,7 +273,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
             final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("knime_kernel.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
-            final PythonPath pythonPath = new PythonPathBuilder() //
+            final PythonPath pythonPath = new PythonPathBuilder(extensionPythonPath) //
                 .add(Python3SourceDirectory.getPath()) //
                 .add(Python3ArrowSourceDirectory.getPath()) //
                 .add(Python3ArrowTypesSourceDirectory.getPath()) //
@@ -334,7 +354,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 final var pythonModule = module.getModuleName();
                 for (final var factory : module) {
                     m_proxy.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                            factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
+                        factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
                 }
             }
         } catch (Py4JException ex) {
