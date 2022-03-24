@@ -140,8 +140,9 @@ public final class TestUtils {
     /**
      * @return a new {@link PythonGateway} for running tests.
      * @throws IOException
+     * @throws InterruptedException
      */
-    public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException {
+    public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException, InterruptedException {
         final PythonCommand command = getPythonCommand();
         final String launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "tests_launcher.py").toString();

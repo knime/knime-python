@@ -311,8 +311,10 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // m_proxy.enableDebugging();
         } catch (final Throwable th) { // NOSONAR We cannot risk leaking the Python process or any other held resources.
             close();
-            if (th instanceof Error || th instanceof IOException) {
-                throw th;
+            if (th instanceof Error) {
+                throw (Error)th;
+            } else if (th instanceof IOException) {
+                throw (IOException)th;
             } else {
                 throw new IOException(th);
             }

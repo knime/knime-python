@@ -100,9 +100,10 @@ public class KnimeTableTest {
      * Test copying a table through the Python KNIME DataFrame API
      *
      * @throws IOException
+     * @throws InterruptedException
      **/
     @Test
-    public void test() throws IOException {
+    public void test() throws IOException, InterruptedException {
 
         final var schema = ColumnarSchema.of(LONG, DOUBLE, STRING);
 

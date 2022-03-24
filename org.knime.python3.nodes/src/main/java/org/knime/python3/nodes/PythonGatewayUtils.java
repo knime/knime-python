@@ -74,7 +74,7 @@ final class PythonGatewayUtils {
     private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
 
     static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass,
-        final String launcherPath, final PythonModule... modules) throws IOException {
+        final String launcherPath, final PythonModule... modules) throws IOException, InterruptedException {
         final PythonCommand command = getPythonCommand();
         final PythonPathBuilder builder = PythonPath.builder()//
             .add(Python3SourceDirectory.getPath()) //

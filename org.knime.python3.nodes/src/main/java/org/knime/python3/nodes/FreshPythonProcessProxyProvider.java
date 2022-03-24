@@ -110,6 +110,9 @@ final class FreshPythonProcessProxyProvider implements NodeProxyProvider {
             return new CloseablePythonProxy(nodeProxy, gateway);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("The Python gateway setup has been interrupted.", ex);
         }
     }
 }

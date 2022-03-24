@@ -55,6 +55,7 @@ import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -63,7 +64,10 @@ import org.knime.core.node.NodeLogger;
 
 import py4j.ClientServer;
 import py4j.ClientServer.ClientServerBuilder;
+import py4j.DefaultGatewayServerListener;
 import py4j.Py4JException;
+import py4j.Py4JJavaServer;
+import py4j.Py4JServerConnection;
 
 /**
  * Gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
@@ -119,10 +123,11 @@ public final class PythonGateway<T extends PythonEntryPoint> implements AutoClos
      * @param pythonPath the {@link PythonPath} which defines additional folders from which Python modules can be
      *            imported
      * @throws IOException If creating the Python process or establishing the connection to it failed.
+     * @throws InterruptedException If creating the Python process is interrupted (typically by the user)
      */
     public PythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
         final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
-        throws IOException {
+        throws IOException, InterruptedException {
         try {
             m_clientServer = new ClientServerBuilder().javaPort(0).build();
             final int javaPort = m_clientServer.getJavaServer().getListeningPort();
@@ -135,7 +140,7 @@ public final class PythonGateway<T extends PythonEntryPoint> implements AutoClos
             @SuppressWarnings("unchecked")
             final var casted = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
             m_entryPoint = casted;
-            m_pid = waitForConnection(m_entryPoint, m_process);
+            m_pid = waitForConnection(m_entryPoint, m_process, m_clientServer.getJavaServer());
 
             m_entryPoint.registerExtensions(extensions.stream() //
                 .map(PythonExtension::getPythonModule) //
@@ -151,26 +156,33 @@ public final class PythonGateway<T extends PythonEntryPoint> implements AutoClos
         }
     }
 
-    // TODO: there must be some better way than a busy wait. Check if py4j sends us some kind of signal once it's ready.
-    private static int waitForConnection(final PythonEntryPoint entryPoint, final Process process)
-        throws ConnectException {
+    private static int waitForConnection(final PythonEntryPoint entryPoint, final Process process,
+        final Py4JJavaServer server) throws ConnectException, InterruptedException {
         final long timeout = getConnectionTimeoutInMillis();
         final long start = System.currentTimeMillis();
+        final var connectionLatch = new CountDownLatch(1);
+        final var listener = new DefaultGatewayServerListener() {
+
+            @Override
+            public void connectionStarted(final Py4JServerConnection gatewayConnection) {
+                connectionLatch.countDown();
+            }
+
+        };
+        server.addListener(listener);
+        connectionLatch.await();
+        server.removeListener(listener);
         do {
             try {
-                final int pid = entryPoint.getPid(); // Fails if not yet connected.
+                // wait for a brief moment since the callback does not seem to guarantee that Py4J is fully initialized
+                Thread.sleep(10);
+                final int pid = entryPoint.getPid(); // NOSONAR Fails if not yet connected.
                 LOGGER.debug("Connected to Python process with PID: " + pid + " after ms: "
                     + (System.currentTimeMillis() - start)); // TODO: remove once in production!
                 return pid;
             } catch (final Py4JException ex) {
                 if (!(ex.getCause() instanceof ConnectException)) {
                     throw ex;
-                }
-                try {
-                    Thread.sleep(10);
-                } catch (final InterruptedException ex1) {
-                    Thread.currentThread().interrupt();
-                    break;
                 }
             }
         } while (process.isAlive() && (System.currentTimeMillis() - start) <= timeout);

@@ -132,7 +132,7 @@ public class Python3KernelBackendProxyTest {
     }
 
     @Test
-    public void testPutTableIntoWorkspace() throws IOException {
+    public void testPutTableIntoWorkspace() throws IOException, InterruptedException {
         try (final PythonGateway<Python3KernelBackendProxyTestRunner> gateway = openPythonGateway();
                 final ArrowBatchReadStore store = createTestStore()) {
             final PythonArrowDataSource dataSource = PythonArrowDataUtils.createSource(store, COLUMN_NAMES);
@@ -144,12 +144,12 @@ public class Python3KernelBackendProxyTest {
     }
 
     @Test
-    public void testGetImageFromWorkspace() throws IOException {
+    public void testGetImageFromWorkspace() throws IOException, InterruptedException {
         testGetImageFromWorkspace("png");
         testGetImageFromWorkspace("svg");
     }
 
-    public void testGetImageFromWorkspace(final String type) throws IOException {
+    public void testGetImageFromWorkspace(final String type) throws IOException, InterruptedException {
         try (final PythonGateway<Python3KernelBackendProxyTestRunner> gateway = openPythonGateway()) {
             var tempDir = FileUtil.createTempDir("images");
             var imgPath = tempDir.toPath().resolve("image");
@@ -201,14 +201,14 @@ public class Python3KernelBackendProxyTest {
         });
     }
 
-    private static void performEntryPointTest(final Consumer<Python3KernelBackendProxyTestRunner> test) throws IOException {
+    private static void performEntryPointTest(final Consumer<Python3KernelBackendProxyTestRunner> test) throws IOException, InterruptedException {
         try (var gateway = openPythonGateway()) {
             test.accept(gateway.getEntryPoint());
         }
     }
 
     private static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass)
-        throws IOException {
+        throws IOException, InterruptedException {
         final var command = getPythonCommand();
         final var launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "knime_kernel_test.py").toString();
@@ -222,7 +222,7 @@ public class Python3KernelBackendProxyTest {
             pythonPath);
     }
 
-    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException {
+    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException, InterruptedException {
         return openPythonGateway(Python3KernelBackendProxyTestRunner.class);
     }
 

@@ -295,7 +295,7 @@ public class KnimeArrowExtensionTypesTest {
 		return new DataSpecWithTraits(valueFactory.getSpec(), ValueFactoryUtils.getTraits(valueFactory));
 	}
 
-	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester() throws IOException {
+	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester() throws IOException, InterruptedException {
 		final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
 		final var tester = new PythonArrowEntryPointTester<>(KnimeArrowExtensionTypeEntryPoint.class,
 				"extension_tests_launcher.py", modules.toArray(PythonModule[]::new));
@@ -816,7 +816,7 @@ public class KnimeArrowExtensionTypesTest {
 		private final PythonGateway<E> m_gateway;
 
 		PythonArrowEntryPointTester(final Class<E> entryPointClass, final String pythonEntryPointModule,
-				final PythonModule... modules) throws IOException {
+				final PythonModule... modules) throws IOException, InterruptedException {
 			m_gateway = openPythonGateway(entryPointClass, pythonEntryPointModule, modules);
 		}
 
@@ -984,7 +984,7 @@ public class KnimeArrowExtensionTypesTest {
 	private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
 
 	private static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass,
-			final String launcherModule, final PythonModule... modules) throws IOException {
+			final String launcherModule, final PythonModule... modules) throws IOException, InterruptedException {
 		final PythonCommand command = getPythonCommand();
 		final String launcherPath = Paths.get(System.getProperty("user.dir"), "src/test/python", launcherModule)
 				.toString();
