@@ -53,10 +53,8 @@ from typing import List, Tuple
 import knime_table as kt
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
-from dataclasses import dataclass
 from packaging.version import Version
 from typing import Callable
-
 
 
 class PythonNode(ABC):
@@ -94,7 +92,6 @@ class PythonNode(ABC):
         pass
 
 
-@dataclass
 class _Node:
     """Class representing an actual node in KNIME AP."""
 
@@ -105,6 +102,24 @@ class _Node:
     icon_path: str
     category: str
     after: str
+
+    def __init__(
+        self,
+        node_factory: Callable,
+        id: str,
+        name: str,
+        node_type: str,
+        icon_path: str,
+        category: str,
+        after: str,
+    ) -> None:
+        self.node_factory = node_factory
+        self.id = id
+        self.name = name
+        self.node_type = node_type
+        self.icon_path = icon_path
+        self.category = category
+        self.after = after
 
     def to_dict(self):
         return {
