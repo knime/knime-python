@@ -13,6 +13,7 @@ class MyDecoratedNode(kn.PythonNode):
         super().__init__()
         self._num_columns: int = 5
         self._param2 = "awesome"
+        self._param1 = 42
         self._backwards_compat_param = "Some parameter introduced in a later version"
 
     @kn.parameter
@@ -70,7 +71,7 @@ class MyDecoratedNode(kn.PythonNode):
     ) -> Tuple[List[kt.WriteTable], list]:
         logger.warning(f"Executing with values {self._param2} and {self._num_columns}")
         num_columns = self._num_columns + 1  # +1 for the RowKey
-        t = kt.write_table(tables[0][0:num_columns].to_pyarrow())
+        t = kt.write_table(tables[0][:, 0:num_columns].to_pyarrow())
 
         import time
 
