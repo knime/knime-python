@@ -52,7 +52,6 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import List, Sequence, Union, Tuple
 
 
@@ -383,15 +382,29 @@ class Columnar(ABC):
 # --------------------------------------------------------------------
 # Schema
 # --------------------------------------------------------------------
-@dataclass
 class Column:
     type: KnimeType
     name: str
     metadata: str
 
+    def __init__(self, type, name, metadata):
+        self.type = type
+        self.name = name
+        self.metadata = metadata
+
     def __str__(self) -> str:
         metastr = "" if self.metadata is None else f", {self.metadata}"
         return f"Column<'{self.name}', {self.type}{metastr}>"
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.type == other.type
+            and self.name == other.name
+            and (
+                (self.metadata is None and other.metadata is None)
+                or (self.metadata == other.metadata)
+            )
+        )
 
 
 class Schema(Columnar):
