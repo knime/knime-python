@@ -103,13 +103,16 @@ should be an array of bytes encoding an SVG or PNG image.
 output_objects: List = _FixedSizeListView(_output_objects, "output_object")
 """
 The output objects of this script node. Each output object can be an arbitrary 
-Python object as long as it can be *pickled*. Use this to pass e.g. a trained
+Python object as long as it can be *pickled*. Use this to, for example, pass a trained
 model to another Python script node.
 
 **Example**::
 
-    data = pandas.DataFrame({'col1': [1, 2, 3], 'col2': ['a', 'b', 'c']})
-    knime_io.output_objects[0] = data
+    model = torchvision.models.resnet18()
+    ...
+    # train/finetune model
+    ...
+    knime_io.output_objects[0] = model
 
 """
 
