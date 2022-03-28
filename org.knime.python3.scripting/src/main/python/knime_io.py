@@ -58,7 +58,7 @@ input_objects: List = _FixedSizeListView(_input_objects, "input_object")
 """
 A list of input objects of this script node using zero-based indices.
 Input objects are Python objects that are passed in from another Python script node's
-``output_object`` port. Use this for instance to pass trained models between Python nodes.
+``output_object`` port. This can, for instance, be used to pass trained models between Python nodes.
 """
 
 input_tables: List[ReadTable] = _FixedSizeListView(_input_tables, "input_table")
@@ -84,13 +84,33 @@ or BatchWriteTable to each output port of this node. See the factory methods
 """
 
 output_images: List = _FixedSizeListView(_output_images, "output_image")
-"""The output images of this script node."""
+"""The output images of this script node. The value passed to the output port
+should be an array of bytes encoding an SVG or PNG image.
+
+**Example**::
+
+    data = knime_io.input_tables[0].to_pandas()
+    buffer = io.BytesIO()
+
+    pyplot.figure()
+    pyplot.plot('x', 'y', data=data)
+    pyplot.savefig(buffer, format='svg')
+
+    knime_io.output_images[0] = buffer.getvalue()
+
+"""
 
 output_objects: List = _FixedSizeListView(_output_objects, "output_object")
 """
 The output objects of this script node. Each output object can be an arbitrary 
 Python object as long as it can be *pickled*. Use this to pass e.g. a trained
 model to another Python script node.
+
+**Example**::
+
+    data = pandas.DataFrame({'col1': [1, 2, 3], 'col2': ['a', 'b', 'c']})
+    knime_io.output_objects[0] = data
+
 """
 
 
