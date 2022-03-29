@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,8 +75,8 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     /**
      * Python node developers can register the extensions they are developing via this system property (as a ; separated
-     * list). In case there are conflicts with the extensions provided via the extension point then the extension
-     * provided via the property takes precedence.
+     * list on Windows and a : separated list on Linux and Mac). In case there are conflicts with the extensions
+     * provided via the extension point then the extension provided via the property takes precedence.
      */
     private static final String PY_EXTENSION_DEV_PROPERTY = "knime.python.extensions";
 
@@ -125,7 +126,8 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         if (propertyDefinedPaths == null) {
             return Stream.empty();
         } else {
-            return Stream.of(propertyDefinedPaths.split(";"))//
+            // the separator is either a ; on Windows or : on Mac and Linux and therefore split will not use Pattern
+            return Stream.of(propertyDefinedPaths.split(File.pathSeparator))//NOSONAR
                     .map(Paths::get);
         }
     }
