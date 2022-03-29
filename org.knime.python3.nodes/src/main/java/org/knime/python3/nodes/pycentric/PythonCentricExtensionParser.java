@@ -110,7 +110,12 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         Files.walk(pathToExtension)//
             .filter(Files::isDirectory)// TODO filter out __pycache__ and other special directories
             .forEach(gatewayBuilder::withSourceFolder);
-        return gatewayBuilder.build();
+        try {
+            return gatewayBuilder.build();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IOException("The Python process startup was interrupted.", ex);
+        }
     }
 
     private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
