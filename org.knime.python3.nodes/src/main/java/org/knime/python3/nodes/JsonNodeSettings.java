@@ -72,7 +72,7 @@ public final class JsonNodeSettings {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parametersJson JSON containing the parameters
      */
     public JsonNodeSettings(final String parametersJson) {
@@ -96,7 +96,7 @@ public final class JsonNodeSettings {
 
     /**
      * Constructor.
-     * 
+     *
      * @param settings {@link NodeSettingsRO} containing the parameters
      */
     public JsonNodeSettings(final NodeSettingsRO settings) {
@@ -130,7 +130,12 @@ public final class JsonNodeSettings {
         return settingsWithoutVersion;
     }
 
-    void saveTo(final NodeSettingsWO settings) {
+    /**
+     * Saves the settings including their creation version.
+     *
+     * @param settings to save to
+     */
+    public void saveTo(final NodeSettingsWO settings) {
         JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, settings);
         settings.addString(CFG_VERSION, m_version);
     }

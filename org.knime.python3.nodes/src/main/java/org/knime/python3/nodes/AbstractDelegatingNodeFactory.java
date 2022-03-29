@@ -57,6 +57,8 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.TextSettingsDataService;
+import org.knime.python3.nodes.dialog.DelegatingTextSettingsDataService;
+import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 
 /**

@@ -46,53 +46,54 @@
  * History
  *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.dialog;
 
-import java.util.Optional;
+import java.util.Map;
+import java.util.function.Supplier;
 
-import org.knime.base.views.node.defaultdialog.DefaultNodeDialog;
-import org.knime.core.webui.data.DataService;
-import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.core.webui.page.Page;
+import org.knime.python3.nodes.JsonNodeSettings;
+import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
+import org.knime.python3.nodes.proxy.NodeDialogProxy;
 
 /**
- * JSON Forms based dialog. Not exposed as API.
- *
- * TODO to be removed once UIEXT-161 is implemented
+ * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
+ * {@link NodeDialogProxy} that can e.g. be implemented in Python.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// TODO move to different package?
-public final class JsonFormsNodeDialog extends NodeDialog {
+public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
 
-    private final TextSettingsDataService m_settingsService;
+    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
 
     /**
      * Constructor.
-     * 
-     * @param settingsType the type of settings this dialog is for
-     * @param settingsService providing settings to the dialog
+     *
+     * @param proxyProvider provides proxy objects
      */
-    public JsonFormsNodeDialog(final SettingsType settingsType, final TextSettingsDataService settingsService) {
-        super(settingsType);
-        m_settingsService = settingsService;
+    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
+        m_proxyProvider = proxyProvider;
     }
 
     @Override
-    public Optional<DataService> createDataService() {
-        return Optional.empty();
+    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
+        try (var proxy = m_proxyProvider.get()) {
+            // TODO support model and view settings?
+            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
+            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
+                new String[0]);
+        }
     }
 
     @Override
-    public Page getPage() {
-        return DefaultNodeDialog.buildPage();
-    }
-
-    @Override
-    protected TextSettingsDataService getSettingsDataService() {
-        return m_settingsService;
+    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+        // TODO support model and view settings?
+        var jsonSettings = new JsonNodeSettings(textSettings);
+        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
     }
 
 }
