@@ -27,7 +27,7 @@ requirements:
 
 test:
   imports:
-    - ipython
+    - matplotlib
     - jedi
 
 build:

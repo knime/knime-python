@@ -9,7 +9,7 @@ do
     continue
   fi
 
-  conda build ${i##*/} -c conda-forge --override-channels --output-folder metapackages --yes
+  conda build ${i##*/} -c conda-forge --override-channels --output-folder metapackages
 done
 
 echo "Metapackages created. Cleaning up temporary files."
