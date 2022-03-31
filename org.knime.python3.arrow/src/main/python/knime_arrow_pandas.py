@@ -53,13 +53,8 @@ import knime_arrow_types as kat
 import knime_types as kt
 
 
-def pandas_df_to_arrow(
-        data_frame: pd.DataFrame
-) -> pa.Table:
-    if data_frame.shape == (
-            0,
-            0,
-    ):
+def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
+    if data_frame.shape == (0, 0,):
         return pa.table([])
 
     for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
@@ -72,8 +67,7 @@ def pandas_df_to_arrow(
     row_keys = data_frame.index.to_series().astype(str)
     row_keys.name = "<Row Key>"  # TODO what is the right string?
     data_frame = pd.concat(
-        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)],
-        axis=1,
+        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)], axis=1,
     )
 
     # Convert all column names to string or PyArrow might complain
@@ -144,14 +138,15 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
 
 class KnimePandasExtensionArray(pdext.ExtensionArray):
     def __init__(
-            self,
-            storage_type: pa.DataType,
-            logical_type: str,
-            converter,
-            data: Union[pa.Array, pa.ChunkedArray],
+        self,
+        storage_type: pa.DataType,
+        logical_type: str,
+        converter,
+        data: Union[pa.Array, pa.ChunkedArray],
     ):
         if data is None:
             raise ValueError("Cannot create empty KnimePandasExtensionArray")
+
         self._data = data
         self._converter = converter
         self._storage_type = storage_type
@@ -162,13 +157,13 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
     @classmethod
     def _from_sequence(
-            cls,
-            scalars,
-            dtype=None,
-            copy=None,
-            storage_type=None,
-            logical_type=None,
-            converter=None,
+        cls,
+        scalars,
+        dtype=None,
+        copy=None,
+        storage_type=None,
+        logical_type=None,
+        converter=None,
     ):
         """
         Construct a new ExtensionArray from a sequence of scalars.
@@ -243,13 +238,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             return self._data[item].as_py()
         elif isinstance(item, slice):
             (start, stop, step) = item.indices(len(self._data))
-            # if step == 1:
-            #     return self._data.slice(offset=start, length=stop - start)
-
             indices = list(range(start, stop, step))
             return self.take(indices)
         elif isinstance(item, list):
-            # fetch objects at the individual indices
             return self.take(item)
         elif isinstance(item, np.ndarray):
             # masked array
@@ -280,6 +271,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         -------
         None
         """
+
         def _apply_to_array(array, func):
             if isinstance(array, pa.ChunkedArray):
                 return pa.chunked_array([func(chunk) for chunk in array.chunks])
@@ -292,7 +284,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             try:
                 tmp = list(map(our_ext_type.encode, inp))
             except TypeError:
-                raise TypeError("Encoding of the new value is not possible, maybe its not the right dtype?")
+                raise TypeError(
+                    "Encoding of the new value is not possible, maybe its not the right dtype?"
+                )
 
             an_arr = pa.array(tmp, type=our_ext_type.storage_type)
 
@@ -311,8 +305,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
             (start, stop, step) = item.indices(len(self._data))
 
-            if hasattr(value, "__len__") and 1 < len(value) != len(range(start, stop, step)):
-                raise ValueError("Must have equal len keys and value when setting with an iterable")
+            if hasattr(value, "__len__") and 1 < len(value) != len(
+                range(start, stop, step)
+            ):
+                raise ValueError(
+                    "Must have equal len keys and value when setting with an iterable"
+                )
 
             val_i = 0  # index for the value
             for i in range(start, stop, step):  # todo: improve speed with np.array
@@ -320,13 +318,19 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     try:
                         tmp_list[i] = value.iloc[val_i]
                     except IndexError:
-                        raise ValueError("Must have equal len keys and value when setting with an iterable")
+                        raise ValueError(
+                            "Must have equal len keys and value when setting with an iterable"
+                        )
                     val_i += 1
-                elif isinstance(value, KnimePandasExtensionArray): # value is an extension array
+                elif isinstance(
+                    value, KnimePandasExtensionArray
+                ):  # value is an extension array
                     try:
                         tmp_list[i] = value[val_i]
                     except IndexError:
-                        raise ValueError("Must have equal len keys and value when setting with an iterable")
+                        raise ValueError(
+                            "Must have equal len keys and value when setting with an iterable"
+                        )
                     val_i += 1
                 else:  # value needs to be broadcasted
                     tmp_list[i] = value
@@ -348,7 +352,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             _set_data_from_input(tmp_arr)
 
         else:
-            raise NotImplementedError(f"Setting a value with an indexer of type {type(item)} is not (yet) possible")
+            raise NotImplementedError(
+                f"Setting a value with an indexer of type {type(item)} is not (yet) possible"
+            )
 
     def __len__(self):
         return len(self._data)
@@ -357,10 +363,10 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         if not isinstance(other, KnimePandasExtensionArray):
             return False
         return (
-                other._storage_type == self._storage_type
-                and other._logical_type == self._logical_type
-                and other._converter == self._converter
-                and other._data == self._data
+            other._storage_type == self._storage_type
+            and other._logical_type == self._logical_type
+            and other._converter == self._converter
+            and other._data == self._data
         )
 
     @property
@@ -378,12 +384,15 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
     def isna(self):
         # needed for pandas ExtensionArray API
         if isinstance(self._data, pa.ChunkedArray):
-            return np.concatenate([c.to_numpy(zero_copy_only=False)
-                                   for c in self._data.is_null().chunks])
+            return np.concatenate(
+                [c.to_numpy(zero_copy_only=False) for c in self._data.is_null().chunks]
+            )
 
         return self._data.is_null().to_numpy(zero_copy_only=False)
 
-    def take(self, indices, allow_fill: bool = False, fill_value=None) -> "KnimePandasExtensionArray":
+    def take(
+        self, indices, allow_fill: bool = False, fill_value=None
+    ) -> "KnimePandasExtensionArray":
         """
         Take elements from an array.
         Parameters
@@ -422,19 +431,26 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         numpy.take
         api.extensions.take
         """
-        storage = kat._to_storage_array(self._data)  # decodes the data puts it in storage array
+        storage = kat._to_storage_array(
+            self._data
+        )  # decodes the data puts it in storage array
 
-        if allow_fill and fill_value is None: # ensures the right fill value
+        if allow_fill and fill_value is None:  # ensures the right fill value
             fill_value = self.dtype.na_value
 
         if allow_fill:  # in this case -1's can be included in indices
             from pandas.core.algorithms import take
-            taken = take(storage, indices, fill_value=fill_value, allow_fill=allow_fill)  # returns nparray
+
+            taken = take(
+                storage, indices, fill_value=fill_value, allow_fill=allow_fill
+            )  # returns nparray
             # to convert to pa.array, the correct null values have to be provided
             # missing values in storage have to be located and their indexes have to be consistent with the taken values
             # thus the take function is also used to get missing values
             bool_nulls = pd.Series(self._data.is_null())
-            null_mask = take(bool_nulls.to_numpy(), indices, fill_value=True, allow_fill=allow_fill)  # returns nparray
+            null_mask = take(
+                bool_nulls.to_numpy(), indices, fill_value=True, allow_fill=allow_fill
+            )  # returns nparray
 
             taken = pa.array(taken, type=self._storage_type, mask=null_mask)
 
