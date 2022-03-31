@@ -267,12 +267,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
             final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("knime_kernel.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
-            final PythonPath pythonPath = new PythonPathBuilder(extensionPythonPath) //
+            final var pythonPathBuilder = new PythonPathBuilder(extensionPythonPath) //
                 .add(Python3SourceDirectory.getPath()) //
                 .add(Python3ArrowSourceDirectory.getPath()) //
                 .add(Python3ArrowTypesSourceDirectory.getPath()) //
-                .add(Python3ScriptingSourceDirectory.getPath()) //
-                .build();
+                .add(Python3ScriptingSourceDirectory.getPath());
+
+            addPythonValueFactoriesToPythonPath(pythonPathBuilder);
+            final PythonPath pythonPath = pythonPathBuilder.build();
 
             m_gateway = new PythonGateway<>(command.createProcessBuilder(), launcherPath,
                 Python3KernelBackendProxy.class, extensions, pythonPath);
@@ -355,6 +357,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             }
         } catch (Py4JException ex) {
             throw beautifyPythonTraceback(ex);
+        }
+    }
+
+    private void addPythonValueFactoriesToPythonPath(final PythonPathBuilder builder) {
+        final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
+        for (final var module : modules) {
+            builder.add(module.getParentDirectory());
         }
     }
 
