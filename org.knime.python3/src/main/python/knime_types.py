@@ -48,6 +48,7 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+from abc import ABC, abstractmethod
 import importlib
 import json
 
@@ -143,3 +144,64 @@ def get_value_factory_bundle_for_type(value):
     raise ValueError(
         f"The value {value} is not compatible with any registered PythonValueFactory."
     )
+
+
+# ---------------------------------------------------------------
+# Pandas Column Converters
+#
+# TODO: where should we put those? We don't want to expose that we use Arrow and
+#       how we convert to Pandas, but for some extension types (GeoSpatial) we need
+#       to inject some specialties...
+# ---------------------------------------------------------------
+class FromPandasColumnConverter(ABC):
+    """
+    Convert a column inside a Pandas DataFrame before it gets converted
+    into a pyarrow Table or RecordBatch with pyarrows "from_pandas" method.
+
+    Note: additional module imports should only occur in the convert_column method,
+          as each module import leads to slower startup time of the Python process.
+    """
+
+    @abstractmethod
+    def can_convert(self, dtype) -> bool:
+        return False
+
+    @abstractmethod
+    def convert_column(self, column: "pandas.Series") -> "pandas.Series":
+        pass
+
+
+class ToPandasColumnConverter(ABC):
+    """
+    Convert a column inside a Pandas DataFrame right after it was converted from
+    a pyarrow Table or RecordBatch, before it gets returned from knime_table's to_pandas().
+
+    Note: additional module imports should only occur in the convert_column method,
+          as each module import leads to slower startup time of the Python process.
+    """
+
+    @abstractmethod
+    def can_convert(self, dtype) -> bool:
+        return False
+
+    @abstractmethod
+    def convert_column(self, column: "pandas.Series") -> "pandas.Series":
+        pass
+
+
+_from_pandas_column_converters = []
+_to_pandas_column_converters = []
+
+
+def get_first_matching_from_pandas_col_converter(dtype):
+    for c in _from_pandas_column_converters:
+        if c.can_convert(dtype):
+            return c
+    return None
+
+
+def get_first_matching_to_pandas_col_converter(dtype):
+    for c in _to_pandas_column_converters:
+        if c.can_convert(dtype):
+            return c
+    return None

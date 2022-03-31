@@ -41,7 +41,6 @@
 #  may freely choose the license terms applicable to such Node, including
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
-
 from typing import Type, Union
 
 import numpy as np
@@ -51,6 +50,7 @@ import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
 import knime_arrow_types as kat
+import knime_types as kt
 
 
 def pandas_df_to_arrow(
@@ -62,8 +62,12 @@ def pandas_df_to_arrow(
     ):
         return pa.table([])
 
-    # Convert the index to a str series and prepend to the data_frame
+    for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
+        col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
+        if col_converter is not None:
+            data_frame[col_name] = col_converter.convert_column(data_frame[col_name])
 
+    # Convert the index to a str series and prepend to the data_frame:
     # extract and drop index from DF
     row_keys = data_frame.index.to_series().astype(str)
     row_keys.name = "<Row Key>"  # TODO what is the right string?
@@ -93,6 +97,11 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
         data_frame = data.to_pandas(types_mapper=mapper)
     else:
         data_frame = data.to_pandas()
+
+    for col_name, col_type in zip(data.schema.names, data.schema.types):
+        col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
+        if col_converter is not None:
+            data_frame[col_name] = col_converter.convert_column(data_frame[col_name])
 
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
