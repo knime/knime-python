@@ -54,16 +54,13 @@ import knime_arrow_types as kat
 
 
 def pandas_df_to_arrow(
-        data_frame: pd.DataFrame, to_batch=False
-) -> Union[pa.Table, pa.RecordBatch]:
+        data_frame: pd.DataFrame
+) -> pa.Table:
     if data_frame.shape == (
             0,
             0,
     ):
-        if to_batch:
-            return pa.RecordBatch.from_arrays([])
-        else:
-            return pa.table([])
+        return pa.table([])
 
     # Convert the index to a str series and prepend to the data_frame
 
@@ -78,10 +75,7 @@ def pandas_df_to_arrow(
     # Convert all column names to string or PyArrow might complain
     data_frame.columns = [str(c) for c in data_frame.columns]
 
-    if to_batch:
-        return pa.RecordBatch.from_pandas(data_frame)
-    else:
-        return pa.Table.from_pandas(data_frame)
+    return pa.Table.from_pandas(data_frame)
 
 
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:

@@ -7,9 +7,11 @@ import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
+import knime_arrow as ka
 import knime_arrow as knar
 import knime_arrow_pandas
 import knime_arrow_types as katy
+import knime_arrow_table as kat
 
 
 class MyArrowExtType(pa.ExtensionType):
@@ -223,7 +225,6 @@ class MyPandasExtArray(pdext.ExtensionArray):
     def _from_factorized(self):
         raise NotImplementedError("Cannot be created from factors")
 
-
     def __getitem__(self, item):
         if isinstance(item, int):
             return self._data[item].as_py()
@@ -329,6 +330,34 @@ class TestDataSource:
     def hasColumnNames(self):
         return False
 
+
+class DummyJavaDataSink:
+    def __init__(self) -> None:
+        import os
+
+        self._path = os.path.join(os.curdir, "test_data_sink")
+
+    def getAbsolutePath(self):
+        return self._path
+
+    def reportBatchWritten(self, offset):
+        pass
+
+    def setColumnarSchema(self, schema):
+        pass
+
+    def setFinalSize(self, size):
+        import os
+
+        os.remove(self._path)
+
+
+class DummyWriter:
+    def write(self, data):
+        pass
+
+    def close(self):
+        pass
 
 
 class PyArrowExtensionTypeTest(unittest.TestCase):
@@ -480,8 +509,8 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df = self._generate_test_data_frame(lists=False, sets=False)
 
         # currently, it does not work for lists, sets and dicts
-        error_columns = [4, 6, 12, 13, 14, 15]  # remove all dicts
-        df.drop(df.columns[error_columns], axis=1, inplace=True)
+        dict_columns = ['TimestampCol', 'URICol', 'Local Date Time', 'Zoned Date Time', 'Period', 'Duration']
+        df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
         df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
@@ -549,6 +578,27 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # test appending with len
         df.loc[len(df)] = df.loc[0]
         self.assertTrue(df.iloc[0].equals(df.iloc[-1]))
+
+    def test_append_sets_lists_2(self):
+        df = self._generate_test_data_frame(lists=True, sets=True)
+
+        # currently, it does not work for dicts
+        dict_columns = ['TimestampCol', 'URICol', 'Local Date Time', 'Zoned Date Time', 'Period', 'Duration']
+        df.drop(dict_columns, axis=1, inplace=True)
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        dummy_java_sink = DummyJavaDataSink()
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+        t = kat.ArrowBatchWriteTable(arrow_sink)
+
+        mid = int(len(df) / 2)
+        df1 = df[:mid]
+        df2 = df[mid:]
+        # Create batch write table, fill it with batches
+        t.append(df1)
+        t.append(df2)
 
 
 if __name__ == "__main__":

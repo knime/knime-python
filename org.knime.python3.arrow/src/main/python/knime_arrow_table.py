@@ -105,7 +105,7 @@ class ArrowBatch(kta.Batch):
             if isinstance(data, pd.DataFrame):
                 import knime_arrow_pandas as kap
 
-                self._batch = kap.pandas_df_to_arrow(data, to_batch=True)
+                self._batch = kap.pandas_df_to_arrow(data)
             else:
                 raise ValueError("Can only create a Batch with data")
 
