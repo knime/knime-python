@@ -44,62 +44,46 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   2 Apr 2022 (Carsten Haubold): created
  */
-package org.knime.python3.nodes.dialog;
+package org.knime.python3.scripting.nodes.prefs;
 
-import java.util.Map;
-import java.util.function.Supplier;
-
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.python3.nodes.JsonNodeSettings;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.knime.python2.config.AbstractPythonConfigPanel;
 
 /**
- * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
- * {@link NodeDialogProxy} that can e.g. be implemented in Python.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
-
-    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
-
-    /**
-     * Constructor.
-     *
-     * @param proxyProvider provides proxy objects
-     */
-    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
+public final class BundledCondaEnvironmentPreferencesPanel
+    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
+        super(config, parent);
     }
 
     @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
-        }
+    protected Composite createPanel(final Composite parent) {
+        final Composite panel = new Composite(parent, SWT.NONE);
+        panel.setLayout(new GridLayout());
+
+        final String bundledEnvDescription =
+            "KNIME Analytics Platform provides its own Python environment that can be used\n"
+                + "by the Python Script (Labs) nodes. If you select this option, then all Python Script (Labs) nodes\n"
+                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
+                + "\n\n"
+                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
+                + "use the \"Conda\" option above to change the environment for all Python Script (Labs) nodes or\n"
+                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
+
+        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
+        final var gridData = new GridData();
+        environmentSelectionLabel.setLayoutData(gridData);
+        environmentSelectionLabel.setText(bundledEnvDescription);
+
+        return panel;
     }
-
-    @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
-    }
-
-    @Override
-    public void saveDefaultSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
-        // TODO Auto-generated method stub
-
-    }
-
 }

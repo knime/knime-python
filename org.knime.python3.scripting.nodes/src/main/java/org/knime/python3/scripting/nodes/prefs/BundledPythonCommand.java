@@ -44,62 +44,45 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 6, 2020 (marcel): created
  */
-package org.knime.python3.nodes.dialog;
+package org.knime.python3.scripting.nodes.prefs;
 
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
-import org.knime.python3.nodes.JsonNodeSettings;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.python2.AbstractCondaPythonCommand;
+import org.knime.python2.CondaPythonCommand;
+import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonVersion;
 
 /**
- * Delegates the {@link TextSettingsDataService#getInitialData(Map, PortObjectSpec[])} method to a
- * {@link NodeDialogProxy} that can e.g. be implemented in Python.
+ * Conda-specific implementation of {@link PythonCommand} that works with bundled Python environments. Allows to build
+ * Python processes for a given Conda installation and environment name. Takes care of resolving PATH-related issues on
+ * Windows.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
-
-    private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
+public final class BundledPythonCommand extends AbstractCondaPythonCommand {
+    /**
+     * Constructs a {@link PythonCommand} that describes a Python process that is run in the bundled Conda environment
+     * identified by the given Conda installation directory and the given Conda environment name.<br>
+     * The validity of the given arguments is not tested.
+     *
+     * @param environmentDirectoryPath The path to the directory of the bundled Conda environment.
+     */
+    public BundledPythonCommand(final String environmentDirectoryPath) {
+        super(PythonVersion.PYTHON3, environmentDirectoryPath);
+    }
 
     /**
-     * Constructor.
-     *
-     * @param proxyProvider provides proxy objects
+     * For user-provided Conda environments we add the path to the "condabin" dir inside the conda installation
+     * directory for the {@link CondaPythonCommand}. But for bundled conda environments, we do not have a conda
+     * installation available, so we don't need to add anything
      */
-    public DelegatingTextSettingsDataService(final Supplier<CloseableNodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
-    }
-
     @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
-        }
+    protected List<String> getAdditionalPathPrefixesForWindows() {
+        return new ArrayList<String>();
     }
-
-    @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
-    }
-
-    @Override
-    public void saveDefaultSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
-        // TODO Auto-generated method stub
-
-    }
-
 }

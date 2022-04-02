@@ -20,4 +20,13 @@
              path="templates/">
        </directory>
     </extension>
+    <extension
+          point="org.eclipse.ui.preferencePages">
+       <page
+             category="org.knime.workbench.ui.preferences"
+             class="org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferencePage"
+             id="org.knime.python3.scripting.nodes.prefs.PythonPreferencePage"
+             name="Python (Labs)">
+       </page>
+    </extension>
 </plugin>

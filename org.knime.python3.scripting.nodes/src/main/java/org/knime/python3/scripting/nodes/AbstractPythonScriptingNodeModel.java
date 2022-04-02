@@ -88,8 +88,8 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python2.ports.Port;
-import org.knime.python2.prefs.PythonPreferences;
 import org.knime.python3.scripting.Python3KernelBackend;
+import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -99,8 +99,8 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     private static final String CFG_KEY_SCRIPT = "script";
 
     static PythonCommandConfig createCommandConfig() {
-        return new PythonCommandConfig(PythonVersion.PYTHON3, PythonPreferences::getCondaInstallationPath,
-            PythonPreferences::getPython3CommandPreference);
+        return new PythonCommandConfig(PythonVersion.PYTHON3, Python3ScriptingPreferences::getCondaInstallationPath,
+            Python3ScriptingPreferences::getPython3CommandPreference);
     }
 
     static void saveScriptTo(final String script, final NodeSettingsWO settings) {

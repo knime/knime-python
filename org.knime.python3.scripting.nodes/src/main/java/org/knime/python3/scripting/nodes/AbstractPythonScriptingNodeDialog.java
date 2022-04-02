@@ -77,6 +77,7 @@ import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python3.scripting.Python3KernelBackend;
+import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -93,7 +94,7 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
         final String templateRepositoryId) {
         m_inPorts = inPorts;
         m_executablePanel = new PythonFixedVersionExecutableSelectionPanel(this,
-            AbstractPythonScriptingNodeModel.createCommandConfig());
+            AbstractPythonScriptingNodeModel.createCommandConfig(), () -> Python3ScriptingPreferences.getEnvironmentTypePreference().getName());
         m_scriptPanel = new PythonSourceCodePanel(this, PythonKernelBackendType.PYTHON3, variableNames,
             new PythonSourceCodeOptionsPanel(), m_executablePanel);
         addTab("Script", m_scriptPanel, false);
