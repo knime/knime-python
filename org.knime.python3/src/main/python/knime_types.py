@@ -193,6 +193,34 @@ _from_pandas_column_converters = []
 _to_pandas_column_converters = []
 
 
+def register_from_pandas_column_converter(converter_class):
+    """
+    Use this to decorate a class that can be used as column converter.
+
+    Example::
+        @knime_types.register_from_pandas_column_converter
+        class MyColumnConverter(knime_types.FromPandasColumnConverter):
+            ...
+    """
+    assert issubclass(converter_class, FromPandasColumnConverter)
+    _from_pandas_column_converters.append(converter_class())
+    return converter_class
+
+
+def register_to_pandas_column_converter(converter_class):
+    """
+    Use this to decorate a class that can be used as column converter.
+
+    Example::
+        @knime_types.register_to_pandas_column_converter
+        class MyColumnConverter(knime_types.ToPandasColumnConverter):
+            ...
+    """
+    assert issubclass(converter_class, ToPandasColumnConverter)
+    _to_pandas_column_converters.append(converter_class())
+    return converter_class
+
+
 def get_first_matching_from_pandas_col_converter(dtype):
     for c in _from_pandas_column_converters:
         if c.can_convert(dtype):
