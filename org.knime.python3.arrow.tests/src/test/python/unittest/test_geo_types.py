@@ -3,8 +3,6 @@ from os import pardir
 from typing import Type, Union
 import unittest
 import pandas as pd
-import pandas.api.extensions as pdext
-from pandas.core.dtypes.dtypes import register_extension_dtype
 import pyarrow as pa
 import numpy as np
 
@@ -29,7 +27,16 @@ class TestDataSource:
         return False
 
 
-class PyArrowExtensionTypeTest(unittest.TestCase):
+class GeoSpatialExtensionTypeTest(unittest.TestCase):
+    """
+    We currently put the testcase for the GeoSpatial types here because the test needs access 
+    to some internals (moc an ArrowDataSource...) and also serves as test for the column conversion 
+    extension mechanism.
+    
+    However, it only works if knime-geospatial is checked out right next to knime-python. 
+    TODO: We should consider moving this test over to knime-geospatial as part of AP-18690.
+    """
+
     geospatial_types_found = False
 
     @classmethod
@@ -75,7 +82,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             # to register the arrow<->pandas column converters
             import geospatial_types
 
-            PyArrowExtensionTypeTest.geospatial_types_found = True
+            GeoSpatialExtensionTypeTest.geospatial_types_found = True
         except ImportError:
             # We simply skip the tests if no geospatial extension was found
             print(
@@ -98,7 +105,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         return kap.arrow_data_to_pandas_df(arrow)
 
     def test_load_table(self):
-        if not PyArrowExtensionTypeTest.geospatial_types_found:
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
 
         t = self._generate_test_table()
@@ -107,7 +114,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertIsInstance(t.schema.types[2], pa.ExtensionType)
 
     def test_load_df(self):
-        if not PyArrowExtensionTypeTest.geospatial_types_found:
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
 
         t = self._generate_test_table()
