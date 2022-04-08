@@ -55,6 +55,10 @@ from contextlib import ExitStack, AbstractContextManager
 
 from py4j.clientserver import ClientServer, JavaParameters, PythonParameters
 
+# Import this before we start with threading
+# https://bugs.python.org/issue42647
+import concurrent.futures.thread
+
 client_server = None
 
 DATA_SOURCES = {}
