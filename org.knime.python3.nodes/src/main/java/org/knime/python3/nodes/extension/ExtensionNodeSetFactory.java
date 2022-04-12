@@ -183,8 +183,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getParameters();
+                var schema = proxy.getSchema();
                 return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy,
-                    new JsonNodeSettings(initialSettings));
+                    new JsonNodeSettings(initialSettings, schema), s -> new JsonNodeSettings(s, schema));
             }
         }
 

@@ -61,4 +61,9 @@ public interface NodeDialogProxy {
      * @return the representation of the dialog e.g. JSON Forms
      */
     String getDialogRepresentation(String parameters, String parametersVersion, String[] specs);
+
+    /**
+     * @return the JSON schema of the parameters
+     */
+    String getSchema();
 }

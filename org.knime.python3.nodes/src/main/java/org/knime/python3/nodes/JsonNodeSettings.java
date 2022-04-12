@@ -68,16 +68,20 @@ public final class JsonNodeSettings {
 
     private final String m_parameters;
 
+    private final String m_schema;
+
     private final String m_version;
 
     /**
      * Constructor.
      *
      * @param parametersJson JSON containing the parameters
+     * @param schema the JSON schema of the parameters
      */
-    public JsonNodeSettings(final String parametersJson) {
+    public JsonNodeSettings(final String parametersJson, final String schema) {
         m_parameters = parametersJson;
         m_version = KNIMEConstants.VERSION;
+        m_schema = schema;
     }
 
     /**
@@ -98,10 +102,12 @@ public final class JsonNodeSettings {
      * Constructor.
      *
      * @param settings {@link NodeSettingsRO} containing the parameters
+     * @param schema JSON schema of the parameters
      */
-    public JsonNodeSettings(final NodeSettingsRO settings) {
+    public JsonNodeSettings(final NodeSettingsRO settings, final String schema) {
         var settingsWithoutVersion = settingsWithoutVersion(toNodeSettings(settings));
         m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(settingsWithoutVersion);
+        m_schema = schema;
         try {
             m_version = settings.getString(CFG_VERSION);
         } catch (InvalidSettingsException ex) {
@@ -136,7 +142,7 @@ public final class JsonNodeSettings {
      * @param settings to save to
      */
     public void saveTo(final NodeSettingsWO settings) {
-        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, settings);
+        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, settings);
         settings.addString(CFG_VERSION, m_version);
     }
 

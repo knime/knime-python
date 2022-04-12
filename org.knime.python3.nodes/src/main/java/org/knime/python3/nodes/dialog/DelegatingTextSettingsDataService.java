@@ -70,6 +70,8 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
 
     private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
 
+    private String m_schema;
+
     /**
      * Constructor.
      *
@@ -83,7 +85,10 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
     public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             // TODO support model and view settings?
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL));
+            if (m_schema == null) {
+                m_schema = proxy.getSchema();
+            }
+            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL), m_schema);
             return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
                 new String[0]);
         }
@@ -91,8 +96,13 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
 
     @Override
     public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+        if (m_schema == null) {
+            try (var proxy = m_proxyProvider.get()) {
+                m_schema = proxy.getSchema();
+            }
+        }
         // TODO support model and view settings?
-        var jsonSettings = new JsonNodeSettings(textSettings);
+        var jsonSettings = new JsonNodeSettings(textSettings, m_schema);
         jsonSettings.saveTo(settings.get(SettingsType.MODEL));
     }
 

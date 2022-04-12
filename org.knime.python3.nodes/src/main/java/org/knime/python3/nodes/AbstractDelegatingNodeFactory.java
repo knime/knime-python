@@ -75,6 +75,8 @@ public abstract class AbstractDelegatingNodeFactory extends NodeFactory<Delegati
 
     private final NodeProxyProvider m_proxyProvider;
 
+    private final String m_parameterSchema;
+
     /**
      * Constructor.
      *
@@ -92,14 +94,16 @@ public abstract class AbstractDelegatingNodeFactory extends NodeFactory<Delegati
     protected AbstractDelegatingNodeFactory(final NodeProxyProvider proxyProvider) {
         m_proxyProvider = proxyProvider;
         try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
-            m_initialSettings = new JsonNodeSettings(proxy.getParameters());
+            m_parameterSchema = proxy.getSchema();
+            m_initialSettings = new JsonNodeSettings(proxy.getParameters(), m_parameterSchema);
             m_settingsService = new DelegatingTextSettingsDataService(m_proxyProvider::getNodeDialogProxy);
         }
     }
 
     @Override
     public DelegatingNodeModel createNodeModel() {
-        return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy, m_initialSettings);
+        return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy, m_initialSettings,
+            s -> new JsonNodeSettings(s, m_parameterSchema));
     }
 
     @Override

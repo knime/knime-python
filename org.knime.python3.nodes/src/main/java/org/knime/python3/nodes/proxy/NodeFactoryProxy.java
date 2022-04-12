@@ -60,4 +60,9 @@ public interface NodeFactoryProxy {
      */
     String getParameters();
 
+    /**
+     * @return the JSON schema of the parameters
+     */
+    String getSchema();
+
 }

@@ -174,7 +174,7 @@ final class CloseablePythonNodeProxy
 
     @Override
     public JsonNodeSettings saveSettings() {
-        return new JsonNodeSettings(m_proxy.getParameters());
+        return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema());
     }
 
     @Override
@@ -418,5 +418,10 @@ final class CloseablePythonNodeProxy
         } else {
             return fsHandler.getDataRepository();
         }
+    }
+
+    @Override
+    public String getSchema() {
+        return m_proxy.getSchema();
     }
 }

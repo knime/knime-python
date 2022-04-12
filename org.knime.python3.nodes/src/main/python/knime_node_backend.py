@@ -88,6 +88,10 @@ class _PythonNodeProxy:
         parameters_dict = knp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
+    def getSchema(self) -> str:
+        schema = knp.extract_schema(self._node)
+        return json.dumps(schema)
+
     def setParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
         version = parse(version)

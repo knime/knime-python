@@ -50,6 +50,7 @@ package org.knime.python3.nodes;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.knime.core.data.DataTableSpec;
@@ -75,18 +76,22 @@ public final class DelegatingNodeModel extends NodeModel {
 
     private JsonNodeSettings m_settings;
 
+    private Function<NodeSettingsRO, JsonNodeSettings> m_settingsFactory;
+
     /**
      * Constructor.
      *
      * @param pythonNodeSupplier supplier for proxies
      * @param initialSettings of the node
+     * @param settingsFactory for creating JsonNodeSettings from NodeSettingsRO
      */
     // TODO retrieve the expected in and outputs from Python
     public DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier,
-        final JsonNodeSettings initialSettings) {
+        final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
         super(1, 1);
         m_proxySupplier = pythonNodeSupplier;
         m_settings = initialSettings;
+        m_settingsFactory = settingsFactory;
     }
 
     @Override
@@ -118,7 +123,7 @@ public final class DelegatingNodeModel extends NodeModel {
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        var jsonSettings = new JsonNodeSettings(settings);
+        var jsonSettings = m_settingsFactory.apply(settings);
         try (var node = m_proxySupplier.get()) {
             node.validateSettings(jsonSettings);
         }
@@ -126,7 +131,7 @@ public final class DelegatingNodeModel extends NodeModel {
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings = new JsonNodeSettings(settings);
+        m_settings = m_settingsFactory.apply(settings);
         // the settings are not set on the proxy because the proxy is closed anyway
         // and any other operation will be performed on a new proxy where the settings are set anyway
     }
