@@ -56,11 +56,19 @@ import org.eclipse.swt.widgets.Label;
 import org.knime.python2.config.AbstractPythonConfigPanel;
 
 /**
+ * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class BundledCondaEnvironmentPreferencesPanel
     extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+
+    /**
+     * Create a panel that displays information about the bundled conda environment.
+     *
+     * @param config The {@link BundledCondaEnvironmentConfig}
+     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     */
     public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
         super(config, parent);
     }
