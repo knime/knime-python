@@ -56,7 +56,6 @@ import knime_types as kt
 def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     if data_frame.shape == (0, 0,):
         return pa.table([])
-
     for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
         col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
         if col_converter is not None:

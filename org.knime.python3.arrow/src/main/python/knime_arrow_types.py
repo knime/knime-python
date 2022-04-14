@@ -617,7 +617,7 @@ def unwrap_primitive_arrays(
 
 
 def _get_wrapped_type(dtype, is_row_key):
-    if is_row_key and dtype == pa.string():
+    if is_row_key and dtype == pa.string(): # if we deal with the rowkey
         return LogicalTypeExtensionType(
             kt.get_converter(_row_key_type), dtype, _row_key_type
         )
@@ -625,6 +625,7 @@ def _get_wrapped_type(dtype, is_row_key):
         not isinstance(dtype, pa.ExtensionType)
         and dtype in _arrow_to_knime_primitive_types
     ):
+        # if it is a primitive extension type
         logical_type = _arrow_to_knime_primitive_types[dtype]
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype, logical_type
@@ -693,6 +694,10 @@ def _nulls(num_nulls: int, dtype: pa.DataType):
 def _wrap_primitive_array(
     array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool, column_name: str
 ) -> Union[pa.Array, pa.ChunkedArray]:
+    """
+    wraps the given column array in the corresponding LogicalTypeExtensionType and returns it
+    @rtype: Union[pa.Array, pa.ChunkedArray]
+    """
     wrapped_type = _get_wrapped_type(array.type, is_row_key)
 
     if wrapped_type is None:

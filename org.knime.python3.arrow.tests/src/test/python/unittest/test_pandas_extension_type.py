@@ -1,5 +1,8 @@
+import datetime
 import unittest
 from typing import Type, Union
+import pythonpath
+import extension_types  # import to register column converters
 
 import numpy as np
 import pandas as pd
@@ -351,6 +354,9 @@ class DummyJavaDataSink:
 
         os.remove(self._path)
 
+    def write(self, data):
+        pass
+
 
 class DummyWriter:
     def write(self, data):
@@ -599,6 +605,67 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # Create batch write table, fill it with batches
         t.append(df1)
         t.append(df2)
+
+    def test_send_timestamp_to_knime(self):
+        """
+        This Testcase creates a pandas dataframe containing pandas timestamps and sends this timestamps to knime.
+        If the pandas timestamp is not handled correctly this test should fail by throwing an exception.
+        As this tests the KNIME communication from the python side, and therefore the function
+        :func:`~ka.ArrowDataSink.write_table` thats why the assertion is just looking at the table result.
+
+        """
+        dummy_java_sink = DummyJavaDataSink()
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+
+        arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
+
+        # Create table
+        rng = pd.date_range('2015-02-24', periods=5e5, freq='s')
+        df = pd.DataFrame({'Date': rng[:5], 'Val': np.random.randn(len(rng[:5]))})
+
+        A = arrow_backend.write_table(df)
+        knime_ts_ext_str = 'extension<' \
+                           'logical={"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"},' \
+                           ' storage=struct<int64, int64>>'
+
+        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+        self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
+
+    def test_timestamp_columns(self):
+        """
+        This test tests the conversion of a dict encoded KNIME timestamp from KNIME to python and back to KNIME.
+        Currently, the dict representation of timestamps on the python side is not working properly. This can be
+        reproduced in the test by readding the outcommented line in the test.
+        """
+        dummy_java_sink = DummyJavaDataSink()
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+
+        arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
+
+        df = self._generate_test_data_frame(lists=False, sets=False)
+        # currently, it does not work for lists, sets and dicts
+        wrong_cols = ['StringCol', 'IntCol', 'LongCol', 'DoubleCol',
+                      'BooleanCol', 'URICol', 'MissingValStringCol', 'LongStringColumnName',
+                      'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
+                      'Zoned Date Time', 'Period', 'Duration']
+        df.drop(wrong_cols, axis=1, inplace=True)  # remove all dicts
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
+
+        A = arrow_backend.write_table(df)
+        knime_ts_ext_str = 'extension<logical={' \
+                           '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",' \
+                           '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, ' \
+                           'storage=struct<extension<logical=structDictEncoded, storage=blob>, ' \
+                           'extension<logical=structDictEncoded, storage=string>>>'
+
+        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+        self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
 
 
 if __name__ == "__main__":

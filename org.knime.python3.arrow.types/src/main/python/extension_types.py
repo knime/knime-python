@@ -46,9 +46,9 @@
 PythonValueFactory implementations for types defined in KNIME.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
-import knime_types as kt
 import datetime as dt
 from dateutil import tz
+import knime_types as kt
 
 _start_of_epoch = dt.datetime(1970, 1, 1)
 _microsecond_delta = dt.timedelta(microseconds=1)
@@ -298,3 +298,30 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         if value is None:
             return None
         return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}
+
+
+def _knime_value_factory(name):
+    return '{"value_factory_class":"' + name + '"}'
+
+
+@kt.register_from_pandas_column_converter
+class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
+    """
+    Converts columns containing pandas timestamps to a py.datetime extension type
+    """
+    def can_convert(self, dtype) -> bool:
+        return hasattr(dtype, "name") and dtype.name == "datetime64[ns]"
+
+    def convert_column(self, column: "pandas.Series") -> "pandas.Series":
+        from pyarrow import int64, struct
+        from knime_arrow_pandas import PandasLogicalTypeExtensionType
+        from pandas import Series
+
+        # todo: fasten up with a mapping eg: column.map(lambda x: x.to_pydatetime(), na_action='ignore')
+        logical_type_str = "org.knime.core.data.v2.time.LocalDateTimeValueFactory"
+        dtype = PandasLogicalTypeExtensionType(
+            storage_type=struct([("0", int64()), ("1", int64())]),
+            logical_type=_knime_value_factory(logical_type_str),
+            converter=LocalDateTimeValueFactory(),
+        )
+        return Series([x.to_pydatetime() for x in column.tolist()], dtype=dtype, index=column.index)
