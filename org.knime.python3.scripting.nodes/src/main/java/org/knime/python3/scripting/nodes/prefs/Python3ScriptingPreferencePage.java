@@ -47,6 +47,7 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -66,6 +67,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.knime.conda.Conda;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
@@ -144,8 +146,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
         environmentConfigurationGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Environment type selection:
-        m_environmentTypeConfig = new PythonEnvironmentTypeConfig();
-        m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.BUNDLED.getId());
+        m_environmentTypeConfig = Python3ScriptingPreferencesInitializer.getDefaultPythonEnvironmentTypeConfig();
         configs.add(m_environmentTypeConfig);
         new PythonBundledEnvironmentTypePreferencePanel(m_environmentTypeConfig, environmentConfigurationGroup,
             m_bundledCondaEnvironmentConfig.isAvailable());
@@ -158,14 +159,14 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
         environmentConfigurationPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         // Conda environment:
-        m_condaEnvironmentsConfig = new CondaEnvironmentsConfig();
+        m_condaEnvironmentsConfig = Python3ScriptingPreferencesInitializer.getDefaultCondaEnvironmentsConfig();
         configs.add(m_condaEnvironmentsConfig);
         m_python3EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON3);
         m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(m_condaEnvironmentsConfig, null,
             m_python3EnvironmentCreator, environmentConfigurationPanel);
 
         // Manual environment:
-        m_manualEnvironmentsConfig = new ManualEnvironmentsConfig();
+        m_manualEnvironmentsConfig = Python3ScriptingPreferencesInitializer.getDefaultManualEnvironmentsConfig();
         configs.add(m_manualEnvironmentsConfig);
         m_manualEnvironmentPanel =
             new ManualEnvironmentsPreferencePanel(m_manualEnvironmentsConfig, environmentConfigurationPanel, false);
@@ -215,32 +216,54 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
     protected void reflectLoadedConfigurations() {
         var pythonEnvType = PythonEnvironmentType.fromId(m_environmentTypeConfig.getEnvironmentType().getStringValue());
 
-        boolean showWarning = false;
-        if (PythonEnvironmentType.BUNDLED.equals(pythonEnvType) && !m_bundledCondaEnvironmentConfig.isAvailable()) {
-            showWarning = true;
+        var showBundledToCondaWarning = false;
+        var showCondaToBundledWarning = false;
+        if (PythonEnvironmentType.BUNDLED == pythonEnvType && !m_bundledCondaEnvironmentConfig.isAvailable()) {
+            showBundledToCondaWarning = true;
             m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.CONDA.getId());
+        } else if (PythonEnvironmentType.CONDA == pythonEnvType //
+            && m_bundledCondaEnvironmentConfig.isAvailable() //
+            && !isCondaConfigured()) {
+            showCondaToBundledWarning = true;
+            m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.BUNDLED.getId());
         }
 
         displayPanelForEnvironmentType(m_environmentTypeConfig.getEnvironmentType().getStringValue());
 
-        if (showWarning) {
-            setMessage("You had previously selected the 'Bundled' option, but no bundled Python environment is available. "
-                + "Switched to 'Conda'.", WARNING);
+        if (showBundledToCondaWarning) {
+            setMessage(
+                "You had previously selected the 'Bundled' option, but no bundled Python environment is available. "
+                    + "Switched to 'Conda'.",
+                WARNING);
+        } else if (showCondaToBundledWarning) {
+            setMessage("You had previously selected the 'Conda' option, but Conda is not configured properly. "
+                + "Switched to 'Bundled'.", WARNING);
+        }
+    }
+
+    private static boolean isCondaConfigured() {
+        try {
+            final var condaDir = CondaPreferences.getCondaInstallationDirectory();
+            final var conda = new Conda(condaDir);
+            conda.testInstallation();
+            return true;
+        } catch (IOException ex) { // NOSONAR: we handle the exception by returning false, no need to rethrow
+            return false;
         }
     }
 
     private void displayPanelForEnvironmentType(final String environmentTypeId) {
-        setMessage("", NONE); // clear warning message if settings were changed
-        final PythonEnvironmentType environmentType = PythonEnvironmentType.fromId(environmentTypeId);
-        if (PythonEnvironmentType.CONDA.equals(environmentType)) {
+        setMessage("", NONE); // clear warning message as soon as settings are changed
+        final var environmentType = PythonEnvironmentType.fromId(environmentTypeId);
+        if (PythonEnvironmentType.CONDA == environmentType) {
             m_environmentConfigurationLayout.topControl = m_condaEnvironmentPanel.getPanel();
-        } else if (PythonEnvironmentType.MANUAL.equals(environmentType)) {
+        } else if (PythonEnvironmentType.MANUAL == environmentType) {
             m_environmentConfigurationLayout.topControl = m_manualEnvironmentPanel.getPanel();
-        } else if (PythonEnvironmentType.BUNDLED.equals(environmentType)) {
+        } else if (PythonEnvironmentType.BUNDLED == environmentType) {
             m_environmentConfigurationLayout.topControl = m_bundledCondaEnvironmentPanel.getPanel();
         } else {
             throw new IllegalStateException(
-                "Selected Python environment type is neither Conda nor manual. This is an implementation error.");
+                "Selected Python environment type is neither Bundled, Conda, nor Manual. This is an implementation error.");
         }
         updateDisplayMinSize();
     }

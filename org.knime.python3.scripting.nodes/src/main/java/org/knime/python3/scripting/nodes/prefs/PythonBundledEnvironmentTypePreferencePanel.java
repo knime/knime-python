@@ -86,16 +86,16 @@ public final class PythonBundledEnvironmentTypePreferencePanel
 
     @Override
     protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
+        final var panel = new Composite(parent, SWT.NONE);
         panel.setLayout(new GridLayout());
         return panel;
     }
 
     private static void createEnvironmentTypeWidget(final SettingsModelString environmentTypeConfig,
         final Composite panel, final boolean isBundledEnvAvailable) {
-        final EnvironmentTypeSelectionRadioGroup environmentTypeSelection =
+        final var environmentTypeSelection =
             new EnvironmentTypeSelectionRadioGroup(environmentTypeConfig, panel, isBundledEnvAvailable);
-        final GridData gridData = new GridData();
+        final var gridData = new GridData();
         gridData.grabExcessHorizontalSpace = true;
         gridData.horizontalAlignment = SWT.FILL;
         environmentTypeSelection.setLayoutData(gridData);
@@ -112,7 +112,7 @@ public final class PythonBundledEnvironmentTypePreferencePanel
         public EnvironmentTypeSelectionRadioGroup(final SettingsModelString environmentTypeConfig,
             final Composite parent, final boolean isBundledEnvAvailable) {
             super(parent, SWT.NONE);
-            final RowLayout rowLayout = new RowLayout(SWT.HORIZONTAL);
+            final var rowLayout = new RowLayout(SWT.HORIZONTAL);
             rowLayout.pack = false;
             rowLayout.justify = true;
             setLayout(rowLayout);
@@ -132,8 +132,7 @@ public final class PythonBundledEnvironmentTypePreferencePanel
             setSelectedEnvironmentType(environmentTypeConfig.getStringValue());
             environmentTypeConfig
                 .addChangeListener(e -> setSelectedEnvironmentType(environmentTypeConfig.getStringValue()));
-            final SelectionListener radioButtonSelectionListener =
-                createRadioButtonSelectionListener(environmentTypeConfig);
+            final var radioButtonSelectionListener = createRadioButtonSelectionListener(environmentTypeConfig);
             m_bundledCondaEnvironmentRadioButton.addSelectionListener(radioButtonSelectionListener);
             m_condaEnvironmentRadioButton.addSelectionListener(radioButtonSelectionListener);
             m_manualEnvironmentRadioButton.addSelectionListener(radioButtonSelectionListener);
@@ -146,17 +145,17 @@ public final class PythonBundledEnvironmentTypePreferencePanel
         }
 
         private void setSelectedEnvironmentType(final String environmentTypeId) {
-            final PythonEnvironmentType environmentType = PythonEnvironmentType.fromId(environmentTypeId);
+            final var environmentType = PythonEnvironmentType.fromId(environmentTypeId);
 
-            if (PythonEnvironmentType.BUNDLED.equals(environmentType)) {
+            if (PythonEnvironmentType.BUNDLED == environmentType) {
                 setButtonSelection(m_bundledCondaEnvironmentRadioButton, true);
                 setButtonSelection(m_condaEnvironmentRadioButton, false);
                 setButtonSelection(m_manualEnvironmentRadioButton, false);
-            } else if (PythonEnvironmentType.CONDA.equals(environmentType)) {
+            } else if (PythonEnvironmentType.CONDA == environmentType) {
                 setButtonSelection(m_bundledCondaEnvironmentRadioButton, false);
                 setButtonSelection(m_condaEnvironmentRadioButton, true);
                 setButtonSelection(m_manualEnvironmentRadioButton, false);
-            } else if (PythonEnvironmentType.MANUAL.equals(environmentType)) {
+            } else if (PythonEnvironmentType.MANUAL == environmentType) {
                 setButtonSelection(m_bundledCondaEnvironmentRadioButton, false);
                 setButtonSelection(m_condaEnvironmentRadioButton, false);
                 setButtonSelection(m_manualEnvironmentRadioButton, true);
@@ -169,10 +168,9 @@ public final class PythonBundledEnvironmentTypePreferencePanel
 
                 @Override
                 public void widgetSelected(final SelectionEvent e) {
-                    final Button button = (Button)e.widget;
+                    final var button = (Button)e.widget;
                     if (button.getSelection()) {
-                        final PythonEnvironmentType selectedEnvironmentType =
-                            PythonEnvironmentType.fromName(button.getText());
+                        final var selectedEnvironmentType = PythonEnvironmentType.fromName(button.getText());
                         environmentTypeConfig.setStringValue(selectedEnvironmentType.getId());
                     }
                 }

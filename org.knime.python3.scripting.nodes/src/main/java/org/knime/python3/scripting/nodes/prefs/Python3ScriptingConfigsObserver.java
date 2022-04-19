@@ -60,10 +60,9 @@ import org.knime.python2.config.PythonVersionConfig;
 import org.knime.python2.config.SerializerConfig;
 
 /**
- * Specialization of the {@link PythonConfigsObserver} for the org.knime.python3 scripting nodes.
- * Those nodes do no longer offer support for Python version 2 and do not allow to choose a
- * serialization method, but add the option to use a bundled conda environment compared to the
- * {@link PythonConfigsObserver} from org.knime.python2.
+ * Specialization of the {@link PythonConfigsObserver} for the org.knime.python3 scripting nodes. Those nodes do no
+ * longer offer support for Python version 2 and do not allow to choose a serialization method, but add the option to
+ * use a bundled conda environment compared to the {@link PythonConfigsObserver} from org.knime.python2.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
@@ -96,7 +95,7 @@ public class Python3ScriptingConfigsObserver extends PythonConfigsObserver {
     @Override
     protected PythonEnvironmentsConfig getEnvironmentsOfCurrentType() {
         final PythonEnvironmentType environmentType = getEnvironmentType();
-        if (PythonEnvironmentType.BUNDLED.equals(environmentType)) {
+        if (PythonEnvironmentType.BUNDLED == environmentType) {
             return m_bundledCondaEnvironmentConfig;
         }
 
@@ -107,8 +106,13 @@ public class Python3ScriptingConfigsObserver extends PythonConfigsObserver {
     @Override
     public void testCurrentPreferences() {
         final PythonEnvironmentType environmentType = getEnvironmentType();
-        if (PythonEnvironmentType.BUNDLED.equals(environmentType)) {
-            return;
+        if (PythonEnvironmentType.BUNDLED == environmentType) {
+            // TODO: what to test for a bundled conda environment? compare the env to its specs?
+            if (!m_bundledCondaEnvironmentConfig.isAvailable()) {
+                // This should never happen!
+                m_bundledCondaEnvironmentConfig.getPythonInstallationError().setStringValue(
+                    "Bundled conda environment is not available, please reinstall the KNIME Python Scripting (Labs) - Bundled Conda Environment feature.");
+            }
         } else {
             super.testCurrentPreferences();
         }

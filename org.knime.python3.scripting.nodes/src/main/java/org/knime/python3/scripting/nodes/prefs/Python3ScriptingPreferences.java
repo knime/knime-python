@@ -53,21 +53,20 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.CondaEnvironmentsConfig;
-import org.knime.python2.config.ManualEnvironmentsConfig;
 import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.PythonEnvironmentConfig;
 import org.knime.python2.config.PythonEnvironmentType;
 import org.knime.python2.config.PythonEnvironmentTypeConfig;
-import org.knime.python2.config.PythonEnvironmentsConfig;
 import org.knime.python2.prefs.PreferenceStorage;
 import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
+import org.knime.python2.prefs.PythonPreferences;
 
 /**
- * Convenience front-end of the preference-based configuration of the Python integration.
+ * Convenience front-end of the preference-based configuration of the Python (Labs) integration.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class Python3ScriptingPreferences {
     private static final String PLUGIN_ID = "org.knime.python3.scripting.nodes";
@@ -108,7 +107,8 @@ public final class Python3ScriptingPreferences {
      * @return The currently selected Python environment type (Bundled vs. Conda vs. Manual).
      */
     public static PythonEnvironmentType getEnvironmentTypePreference() {
-        final PythonEnvironmentTypeConfig environmentTypeConfig = new PythonEnvironmentTypeConfig();
+        PythonEnvironmentType pythonPreferenceSetting = PythonPreferences.getEnvironmentTypePreference();
+        final var environmentTypeConfig = new PythonEnvironmentTypeConfig(pythonPreferenceSetting);
         environmentTypeConfig.loadConfigFrom(CURRENT);
         return PythonEnvironmentType.fromId(environmentTypeConfig.getEnvironmentType().getStringValue());
     }
@@ -121,21 +121,10 @@ public final class Python3ScriptingPreferences {
     }
 
     private static PythonCommand getPythonCommandPreference(final PythonVersion pythonVersion) {
-        final PythonEnvironmentType currentEnvironmentType = getEnvironmentTypePreference();
-        PythonEnvironmentsConfig environmentsConfig;
-        if (PythonEnvironmentType.CONDA.equals(currentEnvironmentType)) {
-            environmentsConfig = new CondaEnvironmentsConfig();
-        } else if (PythonEnvironmentType.MANUAL.equals(currentEnvironmentType)) {
-            environmentsConfig = new ManualEnvironmentsConfig();
-        } else if (PythonEnvironmentType.BUNDLED.equals(currentEnvironmentType)) {
-            environmentsConfig = new BundledCondaEnvironmentConfig(BUNDLED_PYTHON_ENV_ID);
-        } else {
-            throw new IllegalStateException(
-                "Selected Python environment type is neither bundled, conda nor manual. This is an implementation error.");
-        }
+        var environmentsConfig = PythonPreferences.getPythonEnvironmentsConfig(getEnvironmentTypePreference());
         environmentsConfig.loadConfigFrom(CURRENT);
         PythonEnvironmentConfig environmentConfig;
-        if (PythonVersion.PYTHON3.equals(pythonVersion)) {
+        if (PythonVersion.PYTHON3 == pythonVersion) {
             environmentConfig = environmentsConfig.getPython3Config();
         } else {
             throw new IllegalStateException(
@@ -149,19 +138,5 @@ public final class Python3ScriptingPreferences {
      */
     public static String getCondaInstallationPath() {
         return CondaPreferences.getCondaInstallationDirectory();
-    }
-
-    /**
-     * @return the path to the conda environment directory
-     */
-    public static String getPython3CondaEnvironmentDirectoryPath() {
-        final CondaEnvironmentsConfig condaEnvironmentsConfig = loadCurrentCondaEnvironmentsConfig();
-        return condaEnvironmentsConfig.getPython3Config().getEnvironmentDirectory().getStringValue();
-    }
-
-    private static CondaEnvironmentsConfig loadCurrentCondaEnvironmentsConfig() {
-        final CondaEnvironmentsConfig condaEnvironmentsConfig = new CondaEnvironmentsConfig();
-        condaEnvironmentsConfig.loadConfigFrom(CURRENT);
-        return condaEnvironmentsConfig;
     }
 }
