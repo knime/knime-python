@@ -57,6 +57,7 @@ import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.PythonEnvironmentConfig;
 import org.knime.python2.config.PythonEnvironmentType;
 import org.knime.python2.config.PythonEnvironmentTypeConfig;
+import org.knime.python2.config.PythonEnvironmentsConfig;
 import org.knime.python2.prefs.PreferenceStorage;
 import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
 import org.knime.python2.prefs.PythonPreferences;
@@ -120,9 +121,23 @@ public final class Python3ScriptingPreferences {
         return getPythonCommandPreference(PythonVersion.PYTHON3);
     }
 
+    private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {
+        final var bundledEnvConfig = new BundledCondaEnvironmentConfig(BUNDLED_PYTHON_ENV_ID);
+        bundledEnvConfig.loadConfigFrom(CURRENT);
+        return bundledEnvConfig;
+    }
+
     private static PythonCommand getPythonCommandPreference(final PythonVersion pythonVersion) {
-        var environmentsConfig = PythonPreferences.getPythonEnvironmentsConfig(getEnvironmentTypePreference());
-        environmentsConfig.loadConfigFrom(CURRENT);
+        final var envType = getEnvironmentTypePreference();
+        PythonEnvironmentsConfig environmentsConfig;
+
+        if (envType == PythonEnvironmentType.BUNDLED) {
+            environmentsConfig = getBundledCondaEnvironmentConfig();
+        } else {
+            environmentsConfig = PythonPreferences.getPythonEnvironmentsConfig(envType);
+            environmentsConfig.loadConfigFrom(CURRENT);
+        }
+
         PythonEnvironmentConfig environmentConfig;
         if (PythonVersion.PYTHON3 == pythonVersion) {
             environmentConfig = environmentsConfig.getPython3Config();
