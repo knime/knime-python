@@ -47,7 +47,6 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -67,7 +66,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.knime.conda.Conda;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
@@ -223,7 +221,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
             m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.CONDA.getId());
         } else if (PythonEnvironmentType.CONDA == pythonEnvType //
             && m_bundledCondaEnvironmentConfig.isAvailable() //
-            && !isCondaConfigured()) {
+            && !Python3ScriptingPreferencesInitializer.isCondaConfigured()) {
             showCondaToBundledWarning = true;
             m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.BUNDLED.getId());
         }
@@ -238,17 +236,6 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
         } else if (showCondaToBundledWarning) {
             setMessage("You had previously selected the 'Conda' option, but Conda is not configured properly. "
                 + "Switched to 'Bundled'.", WARNING);
-        }
-    }
-
-    private static boolean isCondaConfigured() {
-        try {
-            final var condaDir = CondaPreferences.getCondaInstallationDirectory();
-            final var conda = new Conda(condaDir);
-            conda.testInstallation();
-            return true;
-        } catch (IOException ex) { // NOSONAR: we handle the exception by returning false, no need to rethrow
-            return false;
         }
     }
 
