@@ -201,8 +201,9 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
     private static void addBundledEnvInstallationInfo(final Composite parent) {
         final Label bundledEnvInstallationInfo = new Label(parent, SWT.NONE);
         bundledEnvInstallationInfo.setLayoutData(new GridData());
+        // TODO: adjust the feature name if we decide to change that in AP-18855
         final String message = "To enable the Python environment bundled with KNIME, please install the "
-            + "'KNIME Python (Labs) - Bundled environment' feature.";
+            + "'KNIME Conda channel pythonscripting' feature.";
         bundledEnvInstallationInfo.setText(message);
         final Color gray = new Color(parent.getDisplay(), 100, 100, 100);
         bundledEnvInstallationInfo.setForeground(gray);

@@ -110,8 +110,9 @@ public class Python3ScriptingConfigsObserver extends PythonConfigsObserver {
             // TODO: what to test for a bundled conda environment? compare the env to its specs?
             if (!m_bundledCondaEnvironmentConfig.isAvailable()) {
                 // This should never happen!
+                // TODO: adjust the feature name if we decide to change that in AP-18855
                 m_bundledCondaEnvironmentConfig.getPythonInstallationError().setStringValue(
-                    "Bundled conda environment is not available, please reinstall the KNIME Python Scripting (Labs) - Bundled Conda Environment feature.");
+                    "Bundled conda environment is not available, please reinstall the 'KNIME Conda channel pythonscripting' feature.");
             }
         } else {
             super.testCurrentPreferences();
