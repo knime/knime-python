@@ -126,7 +126,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         if (propertyDefinedPaths == null) {
             return Stream.empty();
         } else {
-            // the separator is either a ; on Windows or : on Mac and Linux and therefore split will not use Pattern
+            // the separator is either a ';' on Windows or ':' on Mac and Linux and therefore split will not use Pattern
             return Stream.of(propertyDefinedPaths.split(File.pathSeparator))//NOSONAR
                     .map(Paths::get);
         }
@@ -173,6 +173,10 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return m_extension.createNodeProxy(backend, nodeId);
         }
 
+        String getEnvironmentName() {
+            return m_extension.getEnvironmentName();
+        }
+
         @Override
         public NodeProxyProvider createProxyProvider(final String nodeId) throws InvalidSettingsException {
             return new PurePythonExtensionNodeProxyProvider(this, nodeId);
@@ -200,6 +204,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return getId().hashCode();
         }
     }
+
 
     private static final class ResolvedPythonNode implements ExtensionNode {
 

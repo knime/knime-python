@@ -49,7 +49,6 @@
 package org.knime.python3.nodes;
 
 import java.io.IOException;
-import java.nio.file.Files;
 
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
@@ -63,10 +62,6 @@ import org.knime.python3.nodes.proxy.NodeProxyProvider;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
-
-    private static final String LAUNCHER = PythonNodesSourceDirectory.getPath()//
-        .resolve("knime_node_backend.py")//
-        .toString();
 
     private final String m_nodeId;
 
@@ -92,14 +87,11 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
         return createPythonNode();
     }
 
-    @SuppressWarnings("resource")// the gateway is managed by the returned object
+    @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNode() {
         try {
-            var gatewayBuilder = PythonGatewayUtils.createPythonGatewayBuilder(LAUNCHER, KnimeNodeBackend.class);
-            Files.walk(m_extension.getPath())//
-                .filter(Files::isDirectory)// TODO filter out __pycache__ and other special directories
-                .forEach(gatewayBuilder::withSourceFolder);
-            var gateway = gatewayBuilder.build();
+            var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
+                m_extension.getEnvironmentName());
             var nodeProxy = m_extension.createProxy(gateway.getEntryPoint(), m_nodeId);
             return new CloseablePythonNodeProxy(nodeProxy, gateway);
         } catch (IOException ex) {
