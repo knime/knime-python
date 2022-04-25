@@ -106,6 +106,9 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     @Override
     public NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
+        // TODO if we decide to use purely this version of PythonNodeExtensions, then we should
+        // preload the extension module when we create the Gateway.
+        // This would reduce response time if there is a gateway queue in place.
         return backend.createNodeFromExtension(m_extensionModule, nodeId);
     }
 

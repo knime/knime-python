@@ -54,13 +54,11 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
-import org.knime.python3.nodes.PythonGatewayUtils;
 import org.knime.python3.nodes.PythonNode;
-import org.knime.python3.nodes.PythonNodesSourceDirectory;
+import org.knime.python3.nodes.PythonNodeGatewayFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -73,10 +71,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonCentricExtensionParser implements PythonExtensionParser {
-
-    private static final String LAUNCHER = PythonNodesSourceDirectory.getPath()//
-        .resolve("knime_node_backend.py")//
-        .toString();
 
     @Override
     public PyNodeExtension parseExtension(final Path path) throws IOException {
@@ -99,27 +93,18 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
     private static PyNodeExtension retrieveDynamicInformationFromPython(final Path pathToExtension,
         final StaticExtensionInfo staticInfo) throws IOException {
-        try (var gateway = openGateway(pathToExtension)) {
+        try (var gateway = PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension, staticInfo.m_environmentName)) {
             return createNodeExtension(gateway.getEntryPoint(), staticInfo);
-        }
-    }
-
-    private static PythonGateway<KnimeNodeBackend> openGateway(final Path pathToExtension) throws IOException {
-        // TODO copied from PurePythonExtensionNodeProxyProvider
-        var gatewayBuilder = PythonGatewayUtils.createPythonGatewayBuilder(LAUNCHER, KnimeNodeBackend.class);
-        Files.walk(pathToExtension)//
-            .filter(Files::isDirectory)// TODO filter out __pycache__ and other special directories
-            .forEach(gatewayBuilder::withSourceFolder);
-        try {
-            return gatewayBuilder.build();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            throw new IOException("The Python process startup was interrupted.", ex);
+            throw new IOException("Python gateway creation was interrupted.", ex);
         }
     }
 
     private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
         final StaticExtensionInfo staticInfo) {
+        // TODO should we decide on using only this way of defining PythonNodeExtensions, we should add the extension
+        // module to the preloaded modules to take full advantage of a potential process/gateway queue
         var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_extensionModule);
         return new FluentPythonNodeExtension(staticInfo.m_id, "TODO", staticInfo.m_environmentName,
             staticInfo.m_extensionModule, parseNodes(nodesJson));
