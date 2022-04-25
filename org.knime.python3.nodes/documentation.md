@@ -129,3 +129,22 @@ def my_function(inputs: List[kn.Table]) -> List[kn.Table]:
 ```
 
 > See `knime-python/org.knime.python3.arrow.tests/src/test/python/unittest/test_functional_table_api.py` for first experiments with this API
+
+## Configuration of alternative Python executable
+
+Every Python node extension comes with a bundled environment that is automatically created during installation.
+In most cases this environment should be sufficient for the extension to work as it contains all dependencies.
+However, during development this bundled environment is typically not available.
+It is therefore possible to provide a YAML file that specifies which Python executable should be used for which Python extension.
+The path to this YAML has to be added as system property in the knime.ini via the key word `org.knime.python3.nodes.alternate_executable_yml`.
+The YAML supports two types of exectuables, either a Conda environment or another (manual) Python executable (see 'Manually configured Python environments' in https://docs.knime.com/2021-12/python_installation_guide/index.html#configure_python_integration for more details).
+Here is an example outlining the format of the YAML:
+```yml
+org.my.first.extension:
+  type: conda
+  environment_path: path/to/the/environment
+org.my.second.extension:
+  type: manual
+  command_path: path/to/python/executable
+```
+
