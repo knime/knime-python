@@ -633,12 +633,17 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df = pd.DataFrame({'Date': rng[:5], 'Val': np.random.randn(len(rng[:5]))})
 
         A = arrow_backend.write_table(df)
-        knime_ts_ext_str = 'extension<' \
-                           'logical={"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"},' \
-                           ' storage=struct<int64, int64>>'
-
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
-        self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
+
+        import knime_schema as ks
+
+        self.assertEqual(
+            ks.ExtensionType(
+                '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
+                ks.struct_(ks.int64(), ks.int64()),
+            ),
+            A.knime_schema[1].type,
+        )
 
     def test_timestamp_columns(self):
         """

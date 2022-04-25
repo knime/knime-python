@@ -51,12 +51,10 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
@@ -67,11 +65,7 @@ import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
 import org.knime.core.data.columnar.table.ColumnarContainerTable;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
-import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
-import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
-import org.knime.core.data.v2.RowKeyType;
-import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -81,9 +75,6 @@ import org.knime.core.node.Node;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.table.schema.AnnotatedColumnarSchema;
-import org.knime.core.table.schema.DefaultAnnotatedColumnarSchema;
-import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python2.kernel.PythonCancelable;
@@ -105,10 +96,6 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.scripting.SinkManager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -160,7 +147,6 @@ final class CloseablePythonNodeProxy
         return m_proxy.getDialogRepresentation(parameters, version, specs);
     }
 
-
     @Override
     public void validateSettings(final JsonNodeSettings settings) throws InvalidSettingsException {
         var error = m_proxy.validateParameters(settings.getParameters(), settings.getCreationVersion());
@@ -178,7 +164,8 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws IOException, CanceledExecutionException {
+    public BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+        throws IOException, CanceledExecutionException {
         final var columnReadStores = new ColumnarBatchReadStore[inData.length];
         final var sources = new PythonArrowDataSource[inData.length];
         for (int inputIndex = 0; inputIndex < inData.length; inputIndex++) {
@@ -236,15 +223,15 @@ final class CloseablePythonNodeProxy
     }
 
     private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
-            throws PythonIOException, CanceledExecutionException {
-            try {
-                return PythonUtils.Misc.executeCancelable(task, m_executorService::submit, cancelable);
-            } catch (final PythonCanceledExecutionException ex) {
-                final var ex1 = new CanceledExecutionException(ex.getMessage());
-                ex1.initCause(ex);
-                throw ex1;
-            }
+        throws PythonIOException, CanceledExecutionException {
+        try {
+            return PythonUtils.Misc.executeCancelable(task, m_executorService::submit, cancelable);
+        } catch (final PythonCanceledExecutionException ex) {
+            final var ex1 = new CanceledExecutionException(ex.getMessage());
+            ex1.initCause(ex);
+            throw ex1;
         }
+    }
 
     // Store will be closed along with table. If it is a copy, it will have already been closed.
     // TODO: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!
@@ -303,56 +290,9 @@ final class CloseablePythonNodeProxy
 
     @Override
     public DataTableSpec[] configure(final DataTableSpec[] inSpecs) {
-        final AnnotatedColumnarSchema[] inSchemas =
-                Stream.of(inSpecs).map(this::specToSchema).toArray(AnnotatedColumnarSchema[]::new);
-
-            final String[] serializedInSchemas =
-                Arrays.stream(inSchemas).map(CloseablePythonNodeProxy::serializeColumnarValueSchema).toArray(String[]::new);
-            final List<String> serializedOutSchemas = m_proxy.configure(serializedInSchemas);
-            AnnotatedColumnarSchema[] outSchemas = serializedOutSchemas.stream()
-                .map(CloseablePythonNodeProxy::deserializeAnnotatedColumnarSchema).toArray(AnnotatedColumnarSchema[]::new);
-
-            return Arrays.stream(outSchemas).map(acs -> {
-                return PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames());
-            }).toArray(DataTableSpec[]::new);
-    }
-
-    private static String serializeColumnarValueSchema(final AnnotatedColumnarSchema schema) {
-        return AnnotatedColumnarSchemaSerializer.save(schema, JsonNodeFactory.instance).toString();
-    }
-
-    private static AnnotatedColumnarSchema deserializeAnnotatedColumnarSchema(final String serializedSchema) {
-        final ObjectMapper om = new ObjectMapper();
-        try {
-            return AnnotatedColumnarSchemaSerializer.load(om.readTree(serializedSchema));
-        } catch (JsonMappingException ex) {
-            throw new IllegalStateException("Python node returned invalid serialized columnar schema", ex);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Python node returned invalid serialized columnar schema", ex);
-        }
-    }
-
-    private AnnotatedColumnarSchema specToSchema(final DataTableSpec spec) {
-        // TODO: do this without a IWriteFileStoreHandler!!
-        final var vs = ValueSchemaUtils.create(spec, RowKeyType.CUSTOM, getWriteFileStoreHandler());
-        final var cvs = ColumnarValueSchemaUtils.create(vs);
-        // TODO: pass metadata as well?
-        var columnNames = new String[spec.getNumColumns() + 1];
-        columnNames[0] = "RowKey";
-        System.arraycopy(spec.getColumnNames(), 0, columnNames, 1, spec.getNumColumns());
-        return DefaultAnnotatedColumnarSchema.annotate(cvs, columnNames);
-    }
-
-    private IWriteFileStoreHandler getWriteFileStoreHandler() {
-        final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
-        IWriteFileStoreHandler fsHandler = null;
-        if (nodeFsHandler instanceof IWriteFileStoreHandler) {
-            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
-        } else {
-            // TODO: copied from Python3KernelBackend but removed the logic to close temporary FS handlers for now -> re-add that!
-            fsHandler = NotInWorkflowWriteFileStoreHandler.create();
-        }
-        return fsHandler;
+        final String[] serializedInSchemas = TableSpecSerializationUtils.serializeTableSpecs(inSpecs);
+        final List<String> serializedOutSchemas = m_proxy.configure(serializedInSchemas);
+        return TableSpecSerializationUtils.deserializeTableSpecs(serializedOutSchemas);
     }
 
     /**

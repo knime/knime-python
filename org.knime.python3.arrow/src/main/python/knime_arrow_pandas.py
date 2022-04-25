@@ -82,6 +82,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     if hasattr(pd, "StringDtype"):
 
         def mapper(dtype):
+            # TODO: maybe also try the nullable integer types of Pandas so we don't need sentinels any more?
             if dtype == pa.string():
                 return pd.StringDtype()
             else:

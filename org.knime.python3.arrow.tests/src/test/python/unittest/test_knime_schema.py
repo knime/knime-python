@@ -48,6 +48,8 @@
 from abc import ABC, abstractmethod
 import unittest
 import json
+import datetime as dt
+
 import pythonpath
 import knime_schema as k
 
@@ -134,10 +136,102 @@ class IntStringStructTest(TypeTest, unittest.TestCase):
         return isinstance(o, k.StructType)
 
 
+class ExtensionStringTest(TypeTest, unittest.TestCase):
+    def create_type(self):
+        return k.ExtensionType(k._knime_logical_type("StringValueFactory"), k.string())
+
+    def isinstance(self, o):
+        return isinstance(o, k.ExtensionType)
+
+    def test_value_type_fails(self):
+        with self.assertRaises(TypeError):
+            t = self.create_type()
+            print(t.value_type)
+
+
+class ExtensionTimeTest(TypeTest, unittest.TestCase):
+    """
+    This test shows how extension types can be created
+    with KNIME's Python type system
+    """
+
+    def setUpClass():
+        _register_extension_types()
+
+    def create_type(self):
+        return k.extension(dt.date)
+
+    def isinstance(self, o):
+        return isinstance(o, k.ExtensionType)
+
+    def test_value_type(self):
+        t = self.create_type()
+        self.assertEqual(dt.date, t.value_type)
+
+
+class UnknownExtensionTest(unittest.TestCase):
+    def test_unknown_extension_creation_fails(self):
+        class Dummy:
+            pass
+
+        with self.assertRaises(TypeError):
+            t = k.extension(Dummy())
+
+        with self.assertRaises(TypeError):
+            t = k.extension(int)
+
+
 class KnimeType(unittest.TestCase):
     def test_knime_type_cannot_be_created(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(TypeError):
             t = k.KnimeType()
+
+
+# ----------------------------------------------------------
+
+
+def _register_extension_types():
+    import knime_types as kt
+
+    kt.register_python_value_factory(
+        "extension_types",
+        "LocalTimeValueFactory",
+        '"long"',
+        """
+                {
+                    "type": "simple", 
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                }
+                """,
+    )
+
+    kt.register_python_value_factory(
+        "extension_types",
+        "LocalDateValueFactory",
+        '"long"',
+        """
+                {
+                    "type": "simple", 
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateValueFactory\\"}" }
+                }
+                """,
+    )
+
+    kt.register_python_value_factory(
+        "extension_types",
+        "LocalDateTimeValueFactory",
+        '{"type": "struct", "inner_types": ["long", "long"]}',
+        """
+                {
+                    "type": "struct", 
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" }, 
+                    "inner": [
+                        {"type": "simple", "traits": {}},
+                        {"type": "simple", "traits": {}}
+                    ]
+                }
+                """,
+    )
 
 
 # ----------------------------------------------------------
@@ -271,7 +365,98 @@ class SchemaTest(unittest.TestCase):
             f"Schema<\n\t{sep.join(str(k.Column(t,n,None)) for t,n in zip(types, names))}>",
         )
 
+    def test_logical_type_wrapping(self):
+        types = [
+            k.int32(),
+            k.int64(),
+            k.double(),
+            k.string(),
+            k.bool_(),
+            k.list_(k.int32()),
+            k.list_(k.int64()),
+            k.list_(k.double()),
+            k.list_(k.string()),
+            k.list_(k.bool_()),
+        ]
+        names = [
+            "Int",
+            "Long",
+            "Double",
+            "String",
+            "Bool",
+            "Ints",
+            "Longs",
+            "Doubles",
+            "Strings",
+            "Bools",
+        ]
+        s = k.Schema(types, names)
+        knime_schema = s.to_knime_dict()
+        traits = knime_schema["schema"]["traits"]
+
+        # all data types must be wrapped in a logical type and first column must be row key
+        self.assertTrue(all("logical_type" in t["traits"] for t in traits))
+        self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
+        self.assertTrue(
+            all(k._logical_list_type != t["traits"]["logical_type"] for t in traits)
+        )
+
+        # check roundtrip leads to equality
+        out_s = k.Schema.from_knime_dict(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        self.assertEqual(s, out_s)
+
+    def test_extension_type_wrapping(self):
+        _register_extension_types()
+
+        types = [
+            k.extension(dt.date),
+            k.extension(dt.time),
+            k.extension(dt.datetime),
+        ]
+        names = ["Date", "Time", "DateTime"]
+        s = k.Schema(types, names)
+        knime_schema = s.to_knime_dict()
+        traits = knime_schema["schema"]["traits"]
+
+        # all data types must be wrapped in a logical type and first column must be row key
+        self.assertTrue(all("logical_type" in t["traits"] for t in traits))
+        self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
+
+        # check roundtrip leads to equality
+        out_s = k.Schema.from_knime_dict(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        self.assertEqual(s, out_s)
+
+    def test_list_wrapping(self):
+        _register_extension_types()
+        types = [
+            k.list_(k.extension(dt.date)),
+            k.list_(k.extension(dt.time)),
+            k.list_(k.extension(dt.datetime)),
+            k.list_(k.struct_(k.int64(), k.string())),
+        ]
+        names = ["Dates", "Times", "DateTimes", "Structs"]
+        s = k.Schema(types, names)
+        knime_schema = s.to_knime_dict()
+        traits = knime_schema["schema"]["traits"]
+
+        # all data types must be wrapped in a logical type and first column must be row key
+        self.assertTrue(all("logical_type" in t["traits"] for t in traits))
+        self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
+        self.assertTrue(
+            all(k._logical_list_type == t["traits"]["logical_type"] for t in traits[1:])
+        )
+
+        # check roundtrip leads to equality
+        out_s = k.Schema.from_knime_dict(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        self.assertEqual(s, out_s)
+
     def test_serialization_roundtrip(self):
+        _register_extension_types()
+
+        # load a JSON schema as it is coming from KNIME for a table created with the Test Data Generator
         with open("schema.json", "rt") as f:
             table_schema = json.load(f)
 
@@ -282,27 +467,37 @@ class SchemaTest(unittest.TestCase):
 
         # perform roundtrip
         s = k.Schema.from_knime_dict(table_schema)
+        # print(s)
         out_schema = s.to_knime_dict()
+        # with open("out_schema.json", "wt") as f:
+        #     json.dump(out_schema, f, indent=4)
 
-        self.assertEqual(names, out_schema["columnNames"])
-        self.assertEqual(metadata, out_schema["columnMetaData"])
-        out_specs = out_schema["schema"]["specs"]
-        out_traits = out_schema["schema"]["traits"]
-        self.assertEqual(len(specs), len(out_specs))
-        self.assertEqual(len(traits), len(out_traits))
+        self.assert_schema_dict_equality(table_schema, out_schema)
 
-        for i in range(len(specs)):
+    def assert_schema_dict_equality(self, schema_a_dict, schema_b_dict):
+        self.assertEqual(schema_a_dict["columnNames"], schema_b_dict["columnNames"])
+        self.assertEqual(
+            schema_a_dict["columnMetaData"], schema_b_dict["columnMetaData"]
+        )
+        a_specs = schema_a_dict["schema"]["specs"]
+        a_traits = schema_a_dict["schema"]["traits"]
+        b_specs = schema_b_dict["schema"]["specs"]
+        b_traits = schema_b_dict["schema"]["traits"]
+        self.assertEqual(len(a_specs), len(b_specs))
+        self.assertEqual(len(a_traits), len(b_traits))
+
+        for i in range(len(a_specs)):
             self.assertEqual(
-                specs[i],
-                out_specs[i],
-                f"Specs of Col {i} differ: {specs[i]}, {out_specs[i]}",
+                a_specs[i],
+                b_specs[i],
+                f"Specs of Col {i} differ: {a_specs[i]}, {b_specs[i]}",
             )
 
-        for i in range(len(traits)):
+        for i in range(len(a_traits)):
             self.assertEqual(
-                traits[i],
-                out_traits[i],
-                f"Traits of Col {i} differ: {traits[i]}, {out_traits[i]}",
+                a_traits[i],
+                b_traits[i],
+                f"Traits of Col {i} differ: {a_traits[i]}, {b_traits[i]}",
             )
 
 

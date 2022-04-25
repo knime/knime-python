@@ -42,6 +42,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
+            import geopandas
             import sys
             import os
 
@@ -86,7 +87,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         except ImportError:
             # We simply skip the tests if no geospatial extension was found
             print(
-                "Skipping GeoSpatial tests because knime-geospatial could not be found"
+                "Skipping GeoSpatial tests because knime-geospatial could not be found or 'geopandas' is not available"
             )
             pass
 

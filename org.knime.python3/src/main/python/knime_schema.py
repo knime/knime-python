@@ -52,14 +52,16 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from typing import List, Sequence, Union, Tuple
+from typing import Iterator, List, Sequence, Type, Union, Tuple
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 class KnimeType:
-    # How to make sure this is not instanciated directly?
     def __init__(self):
         if type(self) == KnimeType:
-            raise RuntimeError(f"{type(self)} is not supposed to be created directly")
+            raise TypeError(f"{type(self)} is not supposed to be created directly")
 
     def __repr__(self) -> str:
         return str(self)
@@ -210,17 +212,49 @@ class StructType(KnimeType):
 
 
 class ExtensionType(KnimeType):
-    def __init__(self, logical_type, storage_type):
+    """
+    A KNIME extension type represents any type that is understood by KNIME but
+    which has no Python KnimeType equivalent.
+
+    An ExtensionType is linked to a type on the KNIME side through its logical_type.
+    The data itself is stored using the storage_type.
+
+    Some ExtensionTypes, such as date and time formats, are also implemented on the Python
+    side. For these, the value_type property represents the Python type, and these
+    extensions can be created using the helper method knime_schema.extension(value_type) below.
+    """
+
+    def __init__(self, logical_type, storage_type: KnimeType):
         self._logical_type = logical_type
         self._storage_type = storage_type
 
     @property
     def logical_type(self):
+        """
+        The JSON encoded definition of the type in KNIME
+        """
         return self._logical_type
 
     @property
     def storage_type(self) -> KnimeType:
+        """
+        The KnimeType that is actually used to store the data of this extension type
+        """
         return self._storage_type
+
+    @property
+    def value_type(self) -> Type:
+        """
+        The type of the values as they are represented in Python.
+        This only returns a type if a PythonValueFactory has been registered
+        for this extension type.
+        """
+        import knime_types as kt
+
+        if self.logical_type not in kt._java_value_factory_to_python_type:
+            raise TypeError()
+
+        return kt._java_value_factory_to_python_type[self.logical_type]
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -230,7 +264,15 @@ class ExtensionType(KnimeType):
         )
 
     def __str__(self) -> str:
-        return f"extension<logical={self.logical_type}, storage={self.storage_type}>"
+        import knime_types as kt
+
+        if self.logical_type in kt._java_value_factory_to_python_type:
+            dtype = kt._java_value_factory_to_python_type[self.logical_type]
+            return f"extension<{'.'.join([dtype.__module__, dtype.__name__])}>"
+        else:
+            return (
+                f"extension<logical={self.logical_type}, storage={self.storage_type}>"
+            )
 
     def __hash__(self):
         return hash(str(self))
@@ -240,154 +282,117 @@ class ExtensionType(KnimeType):
 # Helpers
 # --------------------------------------------------------------------
 def int32():
+    """
+    Create a KNIME integer type with 32 bits
+    """
     return IntType()
 
 
 def int64():
+    """
+    Create a KNIME integer type with 64 bits
+    """
     return LongType()
 
 
 def double():
+    """
+    Create a KNIME floating point type with double precision (64 bits)
+    """
     return DoubleType()
 
 
 def string(key_type=None):
+    """
+    Create a KNIME string type.
+
+    Args:
+        key_type: 
+    """
     return StringType(key_type)
 
 
 def bool_():
+    """
+    Create a KNIME boolean type
+    """
     return BoolType()
 
 
 def blob(key_type=None):
+    """
+    Create a KNIME blob type for binary data of variable length
+    """
     return BlobType(key_type)
 
 
-def list_(inner_type):
+def list_(inner_type: KnimeType):
+    """
+    Create a KNIME type that is a list of the given inner types
+
+    Args:
+        inner_type: The type of the elements in the list. Must be a KnimeType
+    """
     return ListType(inner_type)
 
 
 def struct_(*inner_types):
+    """
+    Create a KNIME structured data type where each given argument represents
+    a field of the struct.
+
+    Args:
+        inner_types:
+            The argument list of this method defines the fields 
+            in this structured data type. Each inner type must be a
+            KNIME type
+    """
     return StructType(inner_types)
 
 
-def logical(logical_type, storage_type):
-    return ExtensionType(logical_type, storage_type)
-
-
-# --------------------------------------------------------------------------------------------------------------------------------------------
-
-
-class Columnar(ABC):
+def extension(value_type):
     """
-    Defines some operations that work on Columnar structured data.
-    However, a Columnar object does not hold the data itself but uses a delegate for that.
-    A Columnar object can also be backed by a Schema instead of a Table, then the operations
-    are only applied to create a Schema of the appropriate output type.
+    Create a KNIME extension data type of the given Python value type.
+
+    Args:
+        value_type: 
+            The type of the values inside this column. A knime_types.PythonValueFactory must be registered
+            for this type.
+    
+    Raise:
+        TypeError: if no PythonValueFactory has been registered for this value type with `knime_types.register_python_value_factory`
     """
+    import knime_types as kt
 
-    # TODO: make Table, Batch and Schema implement the Columnar protocol?
-    # Use a protocol for this? (only supported by Python >= 3.8 though).
-    # https://www.python.org/dev/peps/pep-0544/#defining-a-protocol
+    try:
+        vf = kt._python_type_to_java_value_factory[value_type]
 
-    def __init__(self, delegate=None, slicing=None):
-        self._slicing = slicing
-        self._delegate = None
-
-    @property
-    @abstractmethod
-    def num_columns(self) -> int:
-        """
-        Returns the number of columns in the table.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def column_names(self) -> Tuple[str, ...]:
-        """
-        Returns the list of column names.
-        """
-        pass
-
-    @abstractmethod
-    def __getitem__(self, slicing: Union[slice, List[int], List[str]]) -> "Columnar":
-        """
-        Creates a view of this Columnar data by slicing columns. The slicing syntax is similar to
-        that of numpy arrays, but columns can also be addressed as index lists or via a list of column names.
-
-        Args:
-            column_slice
-                A slice object, a list of column indices, or a list of column names.
-
-        Returns:
-            A Columnar with the remaining/reordered columns
-
-        **Examples:**
-
-        """
-        return Columnar(self, slicing)
-
-    def append(self, other: "Columnar") -> "Columnar":
-        """
-        Appends the columns of the 'other' table at the end of this table
-        """
-        return self.insert(other, at=self.num_columns)
-
-    @abstractmethod
-    def insert(self, other: "Columnar", at: int) -> "Columnar":
-        """
-        Inserts all columns of the 'other' table directly before the specified column index in this table
-        """
-        # TODO: create append operation? Or implement in ArrowTable, ArrowBatch and Schema directly?
-        pass
-
-    def map(
-        self, func, output_col_name: str, output_type: KnimeType = None
-    ) -> "Columnar":
-        """
-        Apply the function to each row of this table.
-        The function `func` is expected to take as many parameters as this table has columns, 
-        with the respective data types, and to provide one value as output.
-
-        We try to parse the type annotations of the provided function. It must return a `ks.KnimeType`. 
-        If there are no type annotations, then the output_type of this map function must be provided.
-        """
-        if output_type is None:
-            import inspect
-
-            output_type = inspect.signature(func).return_annotation
-
-        if output_type is None:
-            raise ValueError("Cannot determine output type of map function")
-
-        if not issubclass(output_type, KnimeType):
-            raise TypeError(
-                "Output type of a map operation must be a subclass of KnimeType"
-            )
-
-        if isinstance(self, Schema):
-            return Schema(output_type)
-        else:
-            return self._map(func, output_col_name, output_type)
-
-    def _map(
-        self, func, output_col_name: str, output_type: KnimeType = None
-    ) -> "Columnar":
-        pass
-        # See the prototype in test_functional_table_api.py, to be
-        # implemented in https://knime-com.atlassian.net/browse/AP-18642
+        # decode the storage type of this value_type from the info provided with the java value factory
+        bundle = kt._java_value_factory_to_bundle[vf]
+        specs = bundle.data_spec_json
+        traits = bundle.data_traits
+        return _dict_to_knime_type(specs, traits)
+    except Exception as e:
+        raise TypeError(
+            f"Could not find registered KNIME extension type for Python type {value_type}",
+            e,
+        )
 
 
 # --------------------------------------------------------------------
 # Schema
 # --------------------------------------------------------------------
 class Column:
+    """
+    A column inside a table schema consists of the datatype, a column name
+    and optional metadata.
+    """
+
     type: KnimeType
     name: str
     metadata: str
 
-    def __init__(self, type, name, metadata):
+    def __init__(self, type, name, metadata=None):
         self.type = type
         self.name = name
         self.metadata = metadata
@@ -407,17 +412,25 @@ class Column:
         )
 
 
-class Schema(Columnar):
+class Schema:
+    """
+    A schema defines the data types and names of the columns inside a table.
+    Additionally it can hold metadata for the individual columns of for the full schema.
+    """
+
     @staticmethod
-    def from_columns(columns):
+    def from_columns(columns: List[Column]):
+        """Create a schema from a list of columns"""
         types, names, metadata = zip(*[(c.type, c.name, c.metadata) for c in columns])
         return Schema(types, names, metadata)
 
     @staticmethod
-    def from_types(types, names, metadata=None):
+    def from_types(types: List[KnimeType], names: List[str], metadata: List = None):
+        """Create a schema from a list of column data types, names and metadata"""
         return Schema(types, names, metadata)
 
-    def __init__(self, types, names, metadata=None):
+    def __init__(self, types: List[KnimeType], names: List[str], metadata: List = None):
+        """Create a schema from a list of column data types, names and metadata"""
         if not isinstance(types, Sequence) or not all(
             isinstance(t, KnimeType) for t in types
         ):
@@ -454,26 +467,58 @@ class Schema(Columnar):
         self._columns = [Column(t, n, m) for t, n, m in zip(types, names, metadata)]
 
     @property
-    def column_names(self):
+    def column_names(self) -> List[str]:
+        """Return the list of column names"""
         return [c.name for c in self._columns]
 
     @property
-    def num_columns(self):
+    def num_columns(self) -> int:
+        """The number of columns in this schema"""
         return len(self._columns)
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """The number of columns in this schema"""
         return len(self._columns)
+
+    def __iter__(self) -> Iterator[Column]:
+        """Allow iteration over columns"""
+        for c in self._columns:
+            yield c
 
     def __getitem__(self, index: Union[int, slice]) -> Union[Column, "Schema"]:
+        """
+        Select columns from this schema. If the index is a single integer, a single column will be
+        returned. If the index is a slice, then a new schema is returned.
+        
+        Args:
+            index:
+                An integer index specifying a single column or a slice of columns.
+
+        Returns:
+            The selected column if the index is an integer, or a new schema with the columns 
+            selected by the slice.
+
+        Raises:
+            IndexError: if the index is invalid
+            TypeError: if the index is neither an int nor a slice
+            
+        **Examples:**
+
+        Get a specific column:
+        ``my_col = schema[3]``
+
+        Get a slice of columns:
+        ``sliced_schema = schema[1:4]``
+        """
+        # TODO: better slicing support will be added when the functional API prototype is finished,
+        #       see https://knime-com.atlassian.net/browse/AP-18642 or test_functional_table_api.py
         if isinstance(index, int):
             if index < 0 or index > len(self._columns):
                 return IndexError(
                     f"Index {index} does not exist in schema with {len(self)} columns"
                 )
 
-            # which is better, returning a column or a schema? Always returning a schema makes concatenation of operations much simpler
             return self._columns[index]
-            # return Schema.from_columns([self._columns[index]])
         elif isinstance(index, slice):
             return Schema.from_columns(self._columns[index])
         else:
@@ -489,7 +534,7 @@ class Schema(Columnar):
 
     def append(self, other: Union["Schema", Column]) -> "Schema":
         """Create a new schema by adding another schema or a column to the end"""
-        return super().append(other)
+        return self.insert(other, at=self.num_columns)
 
     def insert(self, other: Union["Schema", Column], at: int) -> "Schema":
         """Create a new schema by inserting another schema or a column right before the given position"""
@@ -513,17 +558,131 @@ class Schema(Columnar):
         return str(self)
 
     def to_knime_dict(self) -> dict:
-        return _schema_to_knime_dict(self)
+        """
+        Convert this Schema into dict which can then be JSON encoded and sent to KNIME
+        as result of a node's configure() method.
+
+        Because KNIME expects a row key column as first column of the schema but we don't
+        include this in the KNIME Python table schema, we insert a row key column here.
+        """
+        row_key_type = ExtensionType(_row_key_type, string())
+        schema_with_row_key = _wrap_primitive_types(self).insert(
+            Column(row_key_type, "RowKey"), at=0
+        )
+        return _schema_to_knime_dict(schema_with_row_key)
 
     @staticmethod
     def from_knime_dict(table_schema: dict) -> "Schema":
+        """
+        Construct a Schema from a dict that was retrieved from KNIME in JSON encoded form
+        as the input to a node's configure() method.
+
+        KNIME provides table information with a RowKey column at the beginning, which we drop before
+        returning the created schema.
+        """
         specs = table_schema["schema"]["specs"]
         traits = table_schema["schema"]["traits"]
         names = table_schema["columnNames"]
         metadata = table_schema["columnMetaData"]
 
         types = [_dict_to_knime_type(s, t) for s, t in zip(specs, traits)]
-        return Schema(types, names, metadata)
+        row_key_type = ExtensionType(_row_key_type, string())
+        if types[0] == row_key_type:
+            schema_without_row_key = Schema(types[1:], names[1:], metadata[1:])
+        else:
+            LOGGER.warn(
+                "Did not find RowKey column when creating Schema from KNIME dict"
+            )
+            schema_without_row_key = Schema(types, names, metadata)
+        return _unwrap_primitive_types(schema_without_row_key)
+
+
+# ---------------------------------------------------------------------------------
+# Logical Type handling
+
+
+def _knime_logical_type(name):
+    return '{"value_factory_class":"org.knime.core.data.v2.value.' + name + '"}'
+
+
+_row_key_type = _knime_logical_type("DefaultRowKeyValueFactory")
+
+_knime_type_to_logical_type = {
+    int32(): _knime_logical_type("IntValueFactory"),
+    int64(): _knime_logical_type("LongValueFactory"),
+    string(): _knime_logical_type("StringValueFactory"),
+    bool_(): _knime_logical_type("BooleanValueFactory"),
+    double(): _knime_logical_type("DoubleValueFactory"),
+    # null(): _knime_logical_type("VoidValueFactory"),
+    list_(int32()): _knime_logical_type("IntListValueFactory"),
+    list_(int64()): _knime_logical_type("LongListValueFactory"),
+    list_(string()): _knime_logical_type("StringListValueFactory"),
+    list_(bool_()): _knime_logical_type("BooleanListValueFactory"),
+    list_(double()): _knime_logical_type("DoubleListValueFactory"),
+}
+_logical_type_to_knime_type = dict(
+    (l, k) for k, l in _knime_type_to_logical_type.items()
+)
+_logical_list_type = _knime_logical_type("ListValueFactory")
+
+
+def _unwrap_primitive_type(dtype: KnimeType) -> KnimeType:
+    # TODO: also unwrap struct types?
+    # extension types don't need unwrapping, we use the PythonValueFactory in our ks.ExtensionType if available
+    import knime_types as kt
+
+    if (
+        isinstance(dtype, ExtensionType)
+        and dtype.logical_type in _logical_type_to_knime_type
+    ):
+        dtype = _logical_type_to_knime_type[dtype.logical_type]
+    elif (
+        isinstance(dtype, ExtensionType)
+        and dtype.logical_type == _logical_list_type
+        and isinstance(dtype.storage_type, ListType)
+    ):
+        dtype = list_(_unwrap_primitive_type(dtype.storage_type.inner_type))
+    return dtype
+
+
+def _unwrap_primitive_types(schema: Schema) -> Schema:
+    """
+    A table schema as it is coming from KNIME contains all columns as "extension types",
+    because they have a logical type trait (and java_value_factory) attached to it. 
+    Here we unwrap all extension types that are known to us and present them as
+    primitive types to our users.
+    """
+    unwrapped_columns = []
+    for c in schema:
+        c.type = _unwrap_primitive_type(c.type)
+        unwrapped_columns.append(c)
+    return Schema.from_columns(unwrapped_columns)
+
+
+def _wrap_primitive_type(dtype: KnimeType) -> KnimeType:
+    # TODO: also wrap struct types?
+    # no need to wrap extension types -> happens in ks.extension(value_type)
+    import knime_types as kt
+
+    if dtype in _knime_type_to_logical_type:
+        dtype = ExtensionType(_knime_type_to_logical_type[dtype], dtype)
+    elif isinstance(dtype, ListType):
+        wrapped_inner = _wrap_primitive_type(dtype.inner_type)
+        dtype = ExtensionType(_logical_list_type, list_(wrapped_inner))
+    return dtype
+
+
+def _wrap_primitive_types(schema: Schema) -> Schema:
+    """
+    Given a schema with primitive types we wrap all columns - with types that
+    we understand - in extension types to attach a logical type (including a java_value_factory)
+    to them. This is needed to be able to read the Schema on the KNIME side.
+    """
+    wrapped_columns = []
+    for c in schema:
+        c.type = _wrap_primitive_type(c.type)
+        wrapped_columns.append(c)
+    return Schema.from_columns(wrapped_columns)
 
 
 # ---------------------------------------------------------------------------------
@@ -569,31 +728,10 @@ def _dict_to_knime_type(spec, traits):
 
     if "traits" in traits and "logical_type" in traits["traits"]:
         logical_type = traits["traits"]["logical_type"]
-        return logical(logical_type, storage_type)
+        return ExtensionType(logical_type, storage_type)
+
     return storage_type
 
-
-def _knime_logical_type(name):
-    return '{"value_factory_class":"org.knime.core.data.v2.value.' + name + '"}'
-
-
-# TODO: automatic logical_type wrapping/unwrapping?!
-_knime_to_logical_type = {
-    int32(): _knime_logical_type("IntValueFactory"),
-    int64(): _knime_logical_type("LongValueFactory"),
-    string(): _knime_logical_type("StringValueFactory"),
-    bool_(): _knime_logical_type("BooleanValueFactory"),
-    double(): _knime_logical_type("DoubleValueFactory"),
-    # null(): _knime_logical_type("VoidValueFactory"),
-}
-
-_knime_to_logical_list_type = {
-    int32(): _knime_logical_type("IntListValueFactory"),
-    int64(): _knime_logical_type("LongListValueFactory"),
-    string(): _knime_logical_type("StringListValueFactory"),
-    bool_(): _knime_logical_type("BooleanListValueFactory"),
-    double(): _knime_logical_type("DoubleListValueFactory"),
-}
 
 _knime_to_type_str = {
     int32(): "int",
@@ -632,8 +770,12 @@ def _knime_type_to_dict(dtype):
             isinstance(dtype, StringType) or isinstance(dtype, BlobType)
         ) and dtype.dict_encoding_key_type is not None:
             traits["traits"]["dict_encoding"] = dtype.dict_encoding_key_type
-            dtype.reset_key()  # to look up the data type without key in the list
-        spec = _knime_to_type_str[dtype]
+            dtype.reset_key()  # to look up the data type without key in the list]
+
+        try:
+            spec = _knime_to_type_str[dtype]
+        except:
+            raise TypeError(f"Could not find spec for type: {dtype}")
 
     return spec, traits
 
