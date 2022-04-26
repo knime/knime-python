@@ -53,10 +53,13 @@ import java.nio.file.Path;
 
 import org.knime.python3.FreshPythonGatewayFactory;
 import org.knime.python3.Python3SourceDirectory;
+import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
+import org.knime.python3.data.PythonValueFactoryModule;
+import org.knime.python3.data.PythonValueFactoryRegistry;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -90,7 +93,11 @@ public final class PythonNodeGatewayFactory {
                 .addToPythonPath(Python3SourceDirectory.getPath())//
                 .addToPythonPath(Python3ArrowSourceDirectory.getPath())
             .addToPythonPath(pathToExtension);
-        return FACTORY.create(gatewayDescriptionBuilder.build());
+        PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
+            .forEach(gatewayDescriptionBuilder::addToPythonPath);
+        var gateway = FACTORY.create(gatewayDescriptionBuilder.build());
+        PythonEntryPointUtils.registerPythonValueFactories(gateway.getEntryPoint());
+        return gateway;
     }
 
 }
