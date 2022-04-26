@@ -179,7 +179,7 @@ public interface PythonGatewayFactory {
              * @param path to add to the Python path
              * @return this builder
              */
-            public Builder<E> withSourceFolder(final Path path) {
+            public Builder<E> addToPythonPath(final Path path) {
                 m_pythonPath.add(path);
                 return this;
             }

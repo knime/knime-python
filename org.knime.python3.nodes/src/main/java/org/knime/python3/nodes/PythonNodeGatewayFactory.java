@@ -49,7 +49,6 @@
 package org.knime.python3.nodes;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.knime.python3.FreshPythonGatewayFactory;
@@ -88,12 +87,9 @@ public final class PythonNodeGatewayFactory {
         final String environmentName) throws IOException, InterruptedException {
         var command = PythonNodeCommandFactory.createCommand(extensionId, environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
-                .withSourceFolder(Python3SourceDirectory.getPath())//
-                .withSourceFolder(Python3ArrowSourceDirectory.getPath());
-        try (var fileStream = Files.walk(pathToExtension)) {
-            fileStream.filter(Files::isDirectory)// TODO filter out __pycache__ and other special directories
-                .forEach(gatewayDescriptionBuilder::withSourceFolder);
-        }
+                .addToPythonPath(Python3SourceDirectory.getPath())//
+                .addToPythonPath(Python3ArrowSourceDirectory.getPath())
+            .addToPythonPath(pathToExtension);
         return FACTORY.create(gatewayDescriptionBuilder.build());
     }
 
