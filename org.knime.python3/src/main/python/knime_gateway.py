@@ -103,6 +103,19 @@ class EntryPoint:
         # Note: Import errors are given back to the Java caller
         for ext in extensions:
             importlib.import_module(ext)
+    
+    def registerPythonValueFactory(
+        self,
+        python_module,
+        python_value_factory_name,
+        data_spec,
+        data_traits,
+    ):
+        import knime_types
+
+        knime_types.register_python_value_factory(
+            python_module, python_value_factory_name, data_spec, data_traits
+        )
 
     class Java:
         implements = ["org.knime.python3.PythonEntryPoint"]

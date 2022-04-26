@@ -124,6 +124,7 @@ import org.knime.python2.kernel.PythonOutputListeners;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.util.PythonUtils;
 import org.knime.python3.Python3SourceDirectory;
+import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
@@ -347,14 +348,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private void registerPythonValueFactories() throws PythonIOException {
         try {
-            final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
-            for (final var module : modules) {
-                final var pythonModule = module.getModuleName();
-                for (final var factory : module) {
-                    m_proxy.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                        factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
-                }
-            }
+            PythonEntryPointUtils.registerPythonValueFactories(m_proxy);
         } catch (Py4JException ex) {
             throw beautifyPythonTraceback(ex);
         }

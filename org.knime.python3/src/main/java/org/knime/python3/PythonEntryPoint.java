@@ -50,6 +50,10 @@ package org.knime.python3;
 
 import java.util.List;
 
+import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.traits.DataTraits;
+
 /**
  * Base interface for all Python entry points. A Python entry point defines methods that must be implemented by a Python
  * class. When calling these methods Python will be invoked. To use the {@link PythonGateway} all Python entry points
@@ -95,4 +99,16 @@ public interface PythonEntryPoint {
      * @param extensions a list of Python modules that will be imported
      */
     void registerExtensions(List<String> extensions);
+
+    /**
+     * Register a combination of a ValueFactory of KNIME with its equivalent PythonValueFactory.
+     *
+     * @param pythonModule The module in which the PythonValueFactory is defined
+     * @param pythonValueFactoryName The name of the PythonValueFactory
+     * @param dataSpec String representation of the {@link DataSpec} created by the {@link ValueFactory}
+     * @param dataTraits String representation of the {@link DataTraits} created by the {@link ValueFactory}
+     */
+    void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
+        final String dataSpec, final String dataTraits);
+
 }

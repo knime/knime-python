@@ -77,19 +77,6 @@ class PythonKernel(kg.EntryPoint):
         self._working_dir_initialized = False
         self._java_callback = None
 
-    def registerPythonValueFactory(
-        self,
-        python_module,
-        python_value_factory_name,
-        data_spec,
-        data_traits,
-    ):
-        import knime_types
-
-        knime_types.register_python_value_factory(
-            python_module, python_value_factory_name, data_spec, data_traits
-        )
-
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         if self._java_callback is not None:
             raise RuntimeError(
