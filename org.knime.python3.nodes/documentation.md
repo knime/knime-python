@@ -142,9 +142,10 @@ Here is an example outlining the format of the YAML:
 ```yml
 org.my.first.extension:
   type: conda
-  environment_path: path/to/the/environment
+  environment_path: /path/to/the/environment
 org.my.second.extension:
   type: manual
-  command_path: path/to/python/executable
+  command_path: /path/to/python/executable
 ```
 
+To include it you can add the following to your knime.ini: `-Dorg.knime.python3.nodes.alternate_executable_yml=/path/to/my/file.yml`
