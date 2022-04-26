@@ -50,6 +50,11 @@ from knime_table import write_table, batch_write_table, WriteTable, ReadTable, B
 from knime_table import _FixedSizeListView
 
 flow_variables: Dict[str, Any] = {}
+"""
+A dictionary of flow variables provided by the KNIME workflow.
+New flow variables can be added to the output of the node by adding them to the dictionary.
+Supported flow variable types are numbers, strings, booleans and lists thereof.
+"""
 
 _input_objects = []
 _input_tables = []
