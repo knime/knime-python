@@ -238,8 +238,7 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pandas(
-        self,
-        sentinel: Optional[Union[str, int]] = None,
+        self, sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         """
         Access the batch or table as a pandas.DataFrame.
@@ -259,8 +258,7 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pyarrow(
-        self,
-        sentinel: Optional[Union[str, int]] = None,
+        self, sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         """
         Access this batch or table as a pyarrow.RecordBatch or pyarrow.table. The returned
@@ -291,14 +289,12 @@ class SlicedDataView(_SlicedView, _ReadData):
         super().__init__(delegate, row_slice, column_slice)
 
     def to_pandas(
-        self,
-        sentinel: Optional[Union[str, int]] = None,
+        self, sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         return self._delegate.to_pandas(sentinel, self._row_slice, self._column_slice)
 
     def to_pyarrow(
-        self,
-        sentinel: Optional[Union[str, int]] = None,
+        self, sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         return self._delegate.to_pyarrow(sentinel, self._row_slice, self._column_slice)
 

@@ -169,10 +169,10 @@ class MyPandasExtType(pdext.ExtensionDtype):
 
 class MyPandasExtArray(pdext.ExtensionArray):
     def __init__(
-            self,
-            storage_type_str,
-            logical_type,
-            data: Union[pa.Array, pa.ChunkedArray] = None,
+        self,
+        storage_type_str,
+        logical_type,
+        data: Union[pa.Array, pa.ChunkedArray] = None,
     ):
         self._data = data
         self._storage_type_str = storage_type_str
@@ -183,12 +183,7 @@ class MyPandasExtArray(pdext.ExtensionArray):
 
     @classmethod
     def _from_sequence(
-            cls,
-            scalars,
-            dtype=None,
-            copy=None,
-            storage_type=None,
-            logical_type=None,
+        cls, scalars, dtype=None, copy=None, storage_type=None, logical_type=None,
     ):
         if scalars is None:
             raise ValueError("Cannot create MyPandasExtArray from empty data")
@@ -200,9 +195,7 @@ class MyPandasExtArray(pdext.ExtensionArray):
                     "MyPandasExtArray must be backed by MyArrowExtType values"
                 )
             return MyPandasExtArray(
-                scalars.type.storage_type,
-                scalars.type.logical_type,
-                scalars,
+                scalars.type.storage_type, scalars.type.logical_type, scalars,
             )
 
         if isinstance(dtype, MyPandasExtType):
@@ -216,14 +209,11 @@ class MyPandasExtArray(pdext.ExtensionArray):
             )
 
         # needed for pandas ExtensionArray API
-        arrow_type = MyArrowExtType(storage_type,
-                                    logical_type)
+        arrow_type = MyArrowExtType(storage_type, logical_type)
 
         a = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
-        return MyPandasExtArray(
-            storage_type, logical_type, extension_array
-        )
+        return MyPandasExtArray(storage_type, logical_type, extension_array)
 
     def _from_factorized(self):
         raise NotImplementedError("Cannot be created from factors")
@@ -244,13 +234,17 @@ class MyPandasExtArray(pdext.ExtensionArray):
             raise NotImplementedError("Cannot index using masked array from numpy yet.")
 
     def __setitem__(self, item, value):
-
         def _set_data_from_input(inp: Union[list, np.ndarray]):
             an_arr = pa.array(inp)
             an_arr = _apply_to_array(
-                an_arr, lambda a: MyPandasExtArray(self._storage_type_str, self._logical_type, a)
+                an_arr,
+                lambda a: MyPandasExtArray(
+                    self._storage_type_str, self._logical_type, a
+                ),
             )
-            self._data = MyPandasExtArray(self._storage_type_str, self._logical_type, an_arr)._data
+            self._data = MyPandasExtArray(
+                self._storage_type_str, self._logical_type, an_arr
+            )._data
 
         tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
         if isinstance(item, int):
@@ -394,20 +388,48 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         df = knime_arrow_pandas.arrow_data_to_pandas_df(arrow)
 
-        df.columns = ['StringCol', 'StringListCol', 'StringSetCol', 'IntCol', 'IntListCol', 'IntSetCol',
-                      'LongCol', 'LongListCol', 'LongSetCol', 'DoubleCol', 'DoubleListCol', 'DoubleSetCol',
-                      'TimestampCol', 'TimestampListCol', 'TimestampSetCol',
-                      'BooleanCol', 'BooleanListCol', 'BooleanSetCol', 'URICol', 'URIListCol', 'URISetCol',
-                      'MissingValStringCol', 'MissingValStringListCol', 'MissingValStringSetCol',
-                      'LongStringColumnName', 'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
-                      'Zoned Date Time', 'Period', 'Duration'
-                      ]
+        df.columns = [
+            "StringCol",
+            "StringListCol",
+            "StringSetCol",
+            "IntCol",
+            "IntListCol",
+            "IntSetCol",
+            "LongCol",
+            "LongListCol",
+            "LongSetCol",
+            "DoubleCol",
+            "DoubleListCol",
+            "DoubleSetCol",
+            "TimestampCol",
+            "TimestampListCol",
+            "TimestampSetCol",
+            "BooleanCol",
+            "BooleanListCol",
+            "BooleanSetCol",
+            "URICol",
+            "URIListCol",
+            "URISetCol",
+            "MissingValStringCol",
+            "MissingValStringListCol",
+            "MissingValStringSetCol",
+            "LongStringColumnName",
+            "LongDoubleColumnName",
+            "Local Date",
+            "Local Time",
+            "Local Date Time",
+            "Zoned Date Time",
+            "Period",
+            "Duration",
+        ]
 
-        df = df.drop(columns=['DoubleSetCol'])  # this column is buggy (DoubleSetColumns)
+        df = df.drop(
+            columns=["DoubleSetCol"]
+        )  # this column is buggy (DoubleSetColumns)
         if not lists:
-            df = df[df.columns.drop(list(df.filter(regex='List')))]
+            df = df[df.columns.drop(list(df.filter(regex="List")))]
         if not sets:
-            df = df[df.columns.drop(list(df.filter(regex='Set')))]
+            df = df[df.columns.drop(list(df.filter(regex="Set")))]
         return df
 
     def test_create_extension(self):
@@ -439,7 +461,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             import packaging.version
 
             if packaging.version.parse(pa.__version__) < packaging.version.parse(
-                    "6.0.0"
+                "6.0.0"
             ):
                 pass
 
@@ -486,9 +508,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         import knime_arrow_types as katy
 
         df = pd.DataFrame(
-            {
-                "missingList": [[None, None], [None, None, None], None, [None, None]],
-            }
+            {"missingList": [[None, None], [None, None, None], None, [None, None]],}
         )
         raw_t = pa.Table.from_pandas(df)
         array = raw_t.columns[0].chunks[0]
@@ -522,7 +542,14 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df = self._generate_test_data_frame(lists=False, sets=False)
 
         # currently, it does not work for lists, sets and dicts
-        dict_columns = ['TimestampCol', 'URICol', 'Local Date Time', 'Zoned Date Time', 'Period', 'Duration']
+        dict_columns = [
+            "TimestampCol",
+            "URICol",
+            "Local Date Time",
+            "Zoned Date Time",
+            "Period",
+            "Duration",
+        ]
         df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
@@ -556,7 +583,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
             df.loc[[1, 2], col_key] = df.loc[[5, 6], col_key]
-            if isinstance(df.loc[[5], col_key].dtype, knime_arrow_pandas.PandasLogicalTypeExtensionType):
+            if isinstance(
+                df.loc[[5], col_key].dtype,
+                knime_arrow_pandas.PandasLogicalTypeExtensionType,
+            ):
                 n_type = df.loc[[5], col_key].dtype.na_value
                 self.assertTrue(df.iloc[1, col_index] == n_type)
 
@@ -572,7 +602,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         for col_key in df.columns:
             df.loc[index_arr, col_key] = df.loc[(index_arr + 7), col_key]
             col_index = df.columns.get_loc(col_key)
-            if isinstance(df.loc[[10], col_key].dtype, knime_arrow_pandas.PandasLogicalTypeExtensionType):
+            if isinstance(
+                df.loc[[10], col_key].dtype,
+                knime_arrow_pandas.PandasLogicalTypeExtensionType,
+            ):
                 n_type = df.loc[[10], col_key].dtype.na_value
 
                 self.assertTrue(df.iloc[1, col_index] == n_type)
@@ -580,7 +613,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # test np arr setting
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
-            df.iloc[index_arr, col_index] = df.iloc[(index_arr + 7), col_index]  # this works
+            df.iloc[index_arr, col_index] = df.iloc[
+                (index_arr + 7), col_index
+            ]  # this works
 
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
 
@@ -596,7 +631,14 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df = self._generate_test_data_frame(lists=True, sets=True)
 
         # currently, it does not work for dicts
-        dict_columns = ['TimestampCol', 'URICol', 'Local Date Time', 'Zoned Date Time', 'Period', 'Duration']
+        dict_columns = [
+            "TimestampCol",
+            "URICol",
+            "Local Date Time",
+            "Zoned Date Time",
+            "Period",
+            "Duration",
+        ]
         df.drop(dict_columns, axis=1, inplace=True)
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
@@ -629,8 +671,8 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
 
         # Create table
-        rng = pd.date_range('2015-02-24', periods=5e5, freq='s')
-        df = pd.DataFrame({'Date': rng[:5], 'Val': np.random.randn(len(rng[:5]))})
+        rng = pd.date_range("2015-02-24", periods=5e5, freq="s")
+        df = pd.DataFrame({"Date": rng[:5], "Val": np.random.randn(len(rng[:5]))})
 
         A = arrow_backend.write_table(df)
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
@@ -660,21 +702,36 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         df = self._generate_test_data_frame(lists=False, sets=False)
         # currently, it does not work for lists, sets and dicts
-        wrong_cols = ['StringCol', 'IntCol', 'LongCol', 'DoubleCol',
-                      'BooleanCol', 'URICol', 'MissingValStringCol', 'LongStringColumnName',
-                      'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
-                      'Zoned Date Time', 'Period', 'Duration']
+        wrong_cols = [
+            "StringCol",
+            "IntCol",
+            "LongCol",
+            "DoubleCol",
+            "BooleanCol",
+            "URICol",
+            "MissingValStringCol",
+            "LongStringColumnName",
+            "LongDoubleColumnName",
+            "Local Date",
+            "Local Time",
+            "Local Date Time",
+            "Zoned Date Time",
+            "Period",
+            "Duration",
+        ]
         df.drop(wrong_cols, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
         # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
 
         A = arrow_backend.write_table(df)
-        knime_ts_ext_str = 'extension<logical={' \
-                           '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",' \
-                           '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, ' \
-                           'storage=struct<extension<logical=structDictEncoded, storage=blob>, ' \
-                           'extension<logical=structDictEncoded, storage=string>>>'
+        knime_ts_ext_str = (
+            "extension<logical={"
+            '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
+            '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, '
+            "storage=struct<extension<logical=structDictEncoded, storage=blob>, "
+            "extension<logical=structDictEncoded, storage=string>>>"
+        )
 
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
         self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
