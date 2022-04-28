@@ -377,8 +377,15 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         )
         return pa.Table.from_arrays(columns, names=list(d.keys()))
 
-    def _generate_test_data_frame(self, lists=True, sets=True):
-        knime_generated_table_path = "generatedTestData.zip"
+    def _generate_test_data_frame(self, path="generatedTestData.zip", lists=True, sets=True) -> pd.DataFrame:
+        """
+        Creates a Dataframe from a KNIME table on disk
+        @param path: path for the KNIME Table
+        @param lists: allow lists in output table (extension lists have difficulties)
+        @param sets: allow sets in output table (extension sets have difficulties)
+        @return: pandas dataframe containing data from KNIME GenerateTestTable node
+        """
+        knime_generated_table_path = path
 
         test_data_source = TestDataSource(knime_generated_table_path)
         pa_data_source = knar.ArrowDataSource(test_data_source)
@@ -667,6 +674,43 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
         self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
 
+    def test_lists_with_missing_values(self):
+        """
+        Tests if list extensiontypes can handle missing values
+        @return:
+        """
+        dummy_java_sink = DummyJavaDataSink()
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+        t = kat.ArrowBatchWriteTable(arrow_sink)
+
+        # Create table
+        df = self._generate_test_data_frame(path="missingTestData.zip", lists=True, sets=True)
+        # print(df.columns)
+        remove_cols = ['StringCol', 'StringListCol', 'StringSetCol', 'IntCol', 'IntListCol',
+                       'IntSetCol', 'LongCol', 'LongListCol', 'LongSetCol', 'DoubleCol',
+                       'DoubleListCol', 'TimestampCol', 'TimestampSetCol',
+                       'BooleanCol', 'BooleanListCol', 'BooleanSetCol', 'URICol', 'URIListCol',
+                       'URISetCol', 'MissingValStringCol', 'MissingValStringListCol',
+                       'MissingValStringSetCol', 'LongStringColumnName',
+                       'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
+                       'Zoned Date Time', 'Period', 'Duration']
+
+        df.drop(remove_cols, axis=1, inplace=True)
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        # Slice into two dfs which we will use as batches
+        mid = int(len(df) / 2)
+        df1 = df[:mid]
+        # actually here the null value gets replaced by a list
+        df2 = df[mid:]
+
+        # Create batch write table, fill it with batches
+        t.append(df1, sentinel="min")
+        t.append(df2, sentinel="min")
+
+        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
 
 if __name__ == "__main__":
     unittest.main()
