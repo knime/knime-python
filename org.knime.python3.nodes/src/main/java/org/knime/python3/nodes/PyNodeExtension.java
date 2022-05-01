@@ -60,14 +60,14 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 public interface PyNodeExtension {
 
     /**
-     * @return of the extension
+     * @return id of the extension
      */
     String getId();
 
     /**
      * @return human-readable name of the extension
      */
-    String getName();
+    String getDescription();
 
     /**
      * @param id of the node

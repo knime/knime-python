@@ -72,17 +72,17 @@ final class PythonNodeExtension implements PyNodeExtension {
 
     private String m_factoryMethod;
 
-    private String m_name;
+    private String m_description;
 
     // TODO how can we ensure uniqueness? Could this be a combination of m_name and m_author?
     private String m_id;
 
     private PythonNode[] m_nodes;
 
-    public PythonNodeExtension(final String id, final String name, final String author, final String environmentName,
+    public PythonNodeExtension(final String id, final String description, final String author, final String environmentName,
         final String factoryModule, final String factoryMethod, final PythonNode[] nodes) {
         m_id = id;
-        m_name = name;
+        m_description = description;
         m_author = author;
         m_environmentName = environmentName;
         m_factoryModule = factoryModule;
@@ -96,8 +96,8 @@ final class PythonNodeExtension implements PyNodeExtension {
     }
 
     @Override
-    public String getName() {
-        return m_name;
+    public String getDescription() {
+        return m_description;
     }
 
     @Override

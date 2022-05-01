@@ -9,13 +9,17 @@ A Python node extension needs to contain a YAML file called `knime.yml` that giv
 `knime.yml`:
 ```yaml
 ---
-id: org.mycompany.knime.nodes.myextension
+name: myextension # Will be concatenated with the group_id to an ID
 author: Jane Doe
-environment_name: my_conda_env
+env_yml_path: path/to/env_yml # Path to the Conda environment yml, from which the environment for this extension will be built
 extension_module: my_extension
+description: My New Extension # Human readable bundle name / description
+group_id: org.knime.python3.nodes.tests # Will be concatenated with the name to an ID
+version: 4.6.0 # First version of the KNIME Analytics Platform, for which this extension can be used
+vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
 ```
 
-The `id` needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL to prevent `id` clashes.
+The `id` will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
 
 The extension module will then be put on the Pythonpath and imported by KNIME using `import my_extension`. This module should contain KNIME nodes. Each class decorated with `@kn.Node` within this file will become available in KNIME as dedicated node.
 

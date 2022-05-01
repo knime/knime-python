@@ -67,7 +67,7 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     private final Map<String, PythonNode> m_nodes;
 
-    private final String m_name;
+    private final String m_description;
 
     private final String m_id;
 
@@ -75,10 +75,10 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     private final String m_extensionModule;
 
-    FluentPythonNodeExtension(final String id, final String name, final String environmentName,
+    FluentPythonNodeExtension(final String id, final String description, final String environmentName,
         final String extensionModule, final PythonNode[] nodes) {
         m_id = id;
-        m_name = name;
+        m_description = description;
         m_environmentName = environmentName;
         m_extensionModule = extensionModule;
         m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));
@@ -90,8 +90,8 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     }
 
     @Override
-    public String getName() {
-        return m_name;
+    public String getDescription() {
+        return m_description;
     }
 
     @Override

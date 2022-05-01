@@ -83,7 +83,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         try (var inputStream = Files.newInputStream(path.resolve("knime.yml"))) {
             Map<String, Object> map = yaml.load(inputStream);
             return new StaticExtensionInfo(//
-                (String)map.get("id"), //
+                (String)map.get("name"), //
+                (String)map.get("group_id"), //
                 (String)map.get("author"), //
                 (String)map.get("environment_name"), //
                 (String)map.get("extension_module")//
@@ -152,9 +153,9 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String m_extensionModule;
 
-        StaticExtensionInfo(final String id, final String author, final String environmentName,
+        StaticExtensionInfo(final String name, final String group_id, final String author, final String environmentName,
             final String extensionModule) {
-            m_id = id;
+            m_id = group_id + "." + name;
             m_author = author;
             m_environmentName = environmentName;
             m_extensionModule = extensionModule;
