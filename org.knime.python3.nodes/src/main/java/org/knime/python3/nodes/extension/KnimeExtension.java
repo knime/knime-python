@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes.extension;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -64,6 +65,12 @@ public interface KnimeExtension {
      * @return id of the extension
      */
     String getId();
+
+    /**
+     * @return the name of the OSGI bundle containing the extension or empty if the extension is not provided via a
+     *         bundle
+     */
+    Optional<String> getBundleName();
 
     /**
      * @return a stream of the nodes of the extension

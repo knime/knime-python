@@ -78,9 +78,9 @@ final class PythonExtensionRegistry {
 
     private static final String EXT_POINT_ID = "org.knime.python3.nodes.PythonExtension";
 
-    static final List<Path> PY_EXTENSIONS = collectPathsToPyExtensions();
+    static final List<PyExtensionEntry> PY_EXTENSIONS = collectPathsToPyExtensions();
 
-    private static List<Path> collectPathsToPyExtensions() {
+    private static List<PyExtensionEntry> collectPathsToPyExtensions() {
         var extPoint = getExtensionPoint();
         return Stream.of(extPoint.getExtensions())//
             .flatMap(PythonExtensionRegistry::extractPathsToExtensions)//
@@ -94,9 +94,10 @@ final class PythonExtensionRegistry {
         return point;
     }
 
-    private static Stream<Path> extractPathsToExtensions(final IExtension extension) {
+    private static Stream<PyExtensionEntry> extractPathsToExtensions(final IExtension extension) {
         var contributor = extension.getContributor();
-        var bundle = Platform.getBundle(contributor.getName());
+        final var bundleName = contributor.getName();
+        var bundle = Platform.getBundle(bundleName);
         return Stream.of(extension.getConfigurationElements())//
             .filter(PythonExtensionRegistry::isPyExtension)//
             .map(PythonExtensionRegistry::extractPluginRelativePath)//
@@ -104,7 +105,8 @@ final class PythonExtensionRegistry {
             .filter(u -> filterWithError(u, contributor))//
             .map(PythonExtensionRegistry::toPath)//
             .filter(Optional::isPresent)//
-            .map(Optional::get);
+            .map(Optional::get)//
+            .map(p -> new PyExtensionEntry(p, bundleName));
     }
 
     private static boolean filterWithError(final URL url, final IContributor contributor) {
@@ -134,6 +136,25 @@ final class PythonExtensionRegistry {
     private static org.eclipse.core.runtime.Path extractPluginRelativePath(final IConfigurationElement pyExtension) {
         var pathInPlugin = pyExtension.getAttribute("ExtensionPath");
         return new org.eclipse.core.runtime.Path(pathInPlugin);
+    }
+
+    static final class PyExtensionEntry {
+        private final Path m_path;
+        private final String m_bundleName;
+
+        PyExtensionEntry(final Path path, final String bundleName) {
+            m_path = path;
+            m_bundleName = bundleName;
+        }
+
+        Path getPath() {
+            return m_path;
+        }
+
+        String getBundleName() {
+            return m_bundleName;
+        }
+
     }
 
     private PythonExtensionRegistry() {

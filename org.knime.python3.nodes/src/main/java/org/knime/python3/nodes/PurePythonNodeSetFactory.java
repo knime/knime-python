@@ -54,10 +54,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
+import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
@@ -83,8 +85,8 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PurePythonNodeSetFactory.class);
 
     /**
-     * Implementing classes allow to create a {@link PyNodeExtension} from a {@link Path} where the Python part of
-     * the extension resides.
+     * Implementing classes allow to create a {@link PyNodeExtension} from a {@link Path} where the Python part of the
+     * extension resides.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
@@ -100,7 +102,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         PyNodeExtension parseExtension(final Path path) throws IOException;
     }
 
-    private static final List<Path> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
+    private static final List<PyExtensionEntry> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
 
     private static final PythonExtensionParser EXTENSION_PARSER = new PythonCentricExtensionParser();
 
@@ -112,13 +114,22 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     }
 
     private static Stream<KnimeExtension> parseExtensions() {
-        return Stream.concat(pathsFromProperty(), PYTHON_NODE_EXTENSION_PATHS.stream())
-            .map(PurePythonNodeSetFactory::parseExtension)//
+        return Stream.concat(getExtensionsFromProperty(), getExtensionsFromExtensionPoint())
             .filter(Objects::nonNull)//
             // if the same extension is defined by property and by extension point,
             // then we take the one from the property because the property is
             // intended for use during Python node development
             .distinct();
+    }
+
+    private static Stream<KnimeExtension> getExtensionsFromProperty() {
+        return pathsFromProperty()//
+                .map(p -> parseExtension(p, null));
+    }
+
+    private static Stream<KnimeExtension> getExtensionsFromExtensionPoint() {
+        return PYTHON_NODE_EXTENSION_PATHS.stream()//
+                .map(e -> parseExtension(e.getPath(), e.getBundleName()));
     }
 
     private static Stream<Path> pathsFromProperty() {
@@ -128,14 +139,14 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         } else {
             // the separator is either a ';' on Windows or ':' on Mac and Linux and therefore split will not use Pattern
             return Stream.of(propertyDefinedPaths.split(File.pathSeparator))//NOSONAR
-                    .map(Paths::get);
+                .map(Paths::get);
         }
     }
 
-    private static final KnimeExtension parseExtension(final Path extensionPath) {
+    private static final KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
         try {
             var extension = EXTENSION_PARSER.parseExtension(extensionPath);
-            return new ResolvedPythonExtension(extensionPath, extension);
+            return new ResolvedPythonExtension(extensionPath, extension, bundleName);
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole
             // class from loading
@@ -150,14 +161,22 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
         private final PyNodeExtension m_extension;
 
-        ResolvedPythonExtension(final Path path, final PyNodeExtension extension) {
+        private final String m_bundleName;
+
+        ResolvedPythonExtension(final Path path, final PyNodeExtension extension, final String bundleName) {
             m_path = path;
             m_extension = extension;
+            m_bundleName = bundleName;
         }
 
         @Override
         public String getId() {
             return m_extension.getId();
+        }
+
+        @Override
+        public Optional<String> getBundleName() {
+            return Optional.ofNullable(m_bundleName);
         }
 
         Path getPath() {

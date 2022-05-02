@@ -53,6 +53,7 @@ import static java.util.stream.Collectors.toMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -157,20 +158,28 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
 
         private NodeDescription m_nodeDescription;
 
+        private Optional<String> m_bundleName;
+
+        @SuppressWarnings("null")
         @Override
         public void loadAdditionalFactorySettings(final ConfigRO config) throws InvalidSettingsException {
             var extensionId = config.getString("extension_id");
             var nodeId = config.getString("node_id");
             var extension = ALL_EXTENSIONS.get(extensionId);
             CheckUtils.checkSetting(extension != null, "Unknown extension id '%s' encountered.", extensionId);
-            @SuppressWarnings("null") // checked in preceding line
+            m_bundleName = extension.getBundleName();
             var node = extension.getNode(nodeId);
-            m_nodeDescription = new ExtensionNodeDescription(node);
+            m_nodeDescription = node.getNodeDescription();
             m_nodeFactoryConfig = config;
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
             m_dialogSettingsService = new DelegatingTextSettingsDataService(m_proxyProvider::getNodeDialogProxy);
             super.loadAdditionalFactorySettings(config);
+        }
+
+        @Override
+        protected Optional<String> getBundleName() {
+            return m_bundleName;
         }
 
         @Override
@@ -191,7 +200,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
 
         @Override
         protected NodeDescription createNodeDescription() {
-            // TODO retrieve from extension
             return m_nodeDescription;
         }
 
