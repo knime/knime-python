@@ -6,12 +6,18 @@ import knime_schema as ks
 
 @kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
 class MyNode(kn.PythonNode):
+    """My first node
+
+    This node has a description
+    
+    """
     def __init__(self) -> None:
         super().__init__()
         self._some_param = 42
 
     @kn.Parameter
     def some_param(self):
+        """The answer to everything"""
         return self._some_param
 
     @some_param.setter
