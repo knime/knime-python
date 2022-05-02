@@ -58,6 +58,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
@@ -155,6 +156,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         }
     }
 
+
     static final class ResolvedPythonExtension implements KnimeExtension {
 
         private final Path m_path;
@@ -224,7 +226,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         }
     }
 
-
     private static final class ResolvedPythonNode implements ExtensionNode {
 
         private final PythonNode m_node;
@@ -234,11 +235,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         ResolvedPythonNode(final Path pathToExtension, final PythonNode node) {
             m_node = node;
             m_iconPath = pathToExtension.resolve(node.getIconPath());
-        }
-
-        @Override
-        public Path getIconPath() {
-            return m_iconPath;
         }
 
         @Override
@@ -257,13 +253,10 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         }
 
         @Override
-        public String getName() {
-            return m_node.getName();
-        }
-
-        @Override
-        public String getType() {
-            return m_node.getType();
+        public NodeDescription getNodeDescription() {
+            return m_node.getDescriptionBuilder()//
+                .withIcon(m_iconPath)//
+                .build();
         }
 
     }

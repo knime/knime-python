@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import List
+from typing import List, Tuple
 
 import knime_node as kn
 import knime_node_parameter as knp
@@ -184,8 +184,37 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
     def retrieveNodesAsJson(self, extension_module_name: str) -> str:
         importlib.import_module(extension_module_name)
-        node_dicts = [n.to_dict() for n in kn._nodes.values()]
+        node_dicts = [self.resolve_node_dict(n) for n in kn._nodes.values()]
         return json.dumps(node_dicts)
+
+    def resolve_node_dict(self, node: kn._Node):
+        d = node.to_dict()
+        instance = node.node_factory()
+        description = self.extract_description(instance)
+        return {**d, **description}
+
+    def extract_description(self, node: kn.PythonNode) -> dict:
+        doc = node.__doc__
+        lines = doc.splitlines()
+        if len(lines) == 0:
+            short_description = "Please document your node class with a docstring"
+        else:
+            short_description = lines[0]
+        if len(lines) > 1:
+            full_description = "\n".join(lines[1:])
+        else:
+            full_description = short_description
+
+        param_doc = knp.extract_parameter_docs(node)
+        # TODO support for tabs
+        # TODO support for ports
+        # TODO support for views
+        return {
+            "short_description": short_description,
+            "full_description": full_description,
+            "options": param_doc
+        }
+
 
     def createNodeFromExtension(self, extension_module_name: str, node_id: str) -> _PythonNodeProxy:
         importlib.import_module(extension_module_name)

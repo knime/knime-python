@@ -52,6 +52,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import org.knime.python3.nodes.KnimeNodeBackend;
@@ -59,6 +61,8 @@ import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
 import org.knime.python3.nodes.PythonNode;
 import org.knime.python3.nodes.PythonNodeGatewayFactory;
+import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
+import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
 import org.yaml.snakeyaml.Yaml;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -94,7 +98,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
     private static PyNodeExtension retrieveDynamicInformationFromPython(final Path pathToExtension,
         final StaticExtensionInfo staticInfo) throws IOException {
-        try (var gateway = PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension, staticInfo.m_environmentName)) {
+        try (var gateway =
+            PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension, staticInfo.m_environmentName)) {
             return createNodeExtension(gateway.getEntryPoint(), staticInfo);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -132,9 +137,57 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             objectNode.get("category").textValue(), //
             objectNode.get("after").textValue(), //
             objectNode.get("icon_path").textValue(), //
-            objectNode.get("name").textValue(), //
-            objectNode.get("node_type").textValue() //
-        );
+            createNodeDescriptionBuilder(objectNode));
+    }
+
+    private static NodeDescriptionBuilder createNodeDescriptionBuilder(final ObjectNode objectNode) {
+        var builder =
+            new NodeDescriptionBuilder(objectNode.get("name").textValue(), objectNode.get("node_type").textValue())//
+                .withShortDescription(objectNode.get("short_description").textValue())//
+                .withIntro(objectNode.get("full_description").textValue());
+
+        final var tabsNode = (ArrayNode)objectNode.get("tabs");
+        if (tabsNode != null) {
+            processArrayNode(tabsNode, t -> builder.withTab(parseTab(t)));
+        }
+
+        parseArrayIfExists((ArrayNode)objectNode.get("options"), builder::withOption);
+        parseArrayIfExists((ArrayNode)objectNode.get("input_ports"), builder::withInputPort);
+        parseArrayIfExists((ArrayNode) objectNode.get("outputPorts"), builder::withOutputPort);
+        parseArrayIfExists((ArrayNode) objectNode.get("views"), builder::withView);
+
+        return builder;
+    }
+
+    private static void parseArrayIfExists(final ArrayNode array,
+        final BiConsumer<String, String> elementDescriptionConsumer) {
+        if (array != null) {
+            processArrayNode(array, unpackingDescription(elementDescriptionConsumer));
+        }
+    }
+
+    private static Consumer<ObjectNode> unpackingDescription(final BiConsumer<String, String> descriptionConsumer) {
+        return o -> unpackDescription(o, descriptionConsumer);
+    }
+
+    private static void processArrayNode(final ArrayNode array, final Consumer<ObjectNode> elementConsumer) {
+        IntStream.range(0, array.size())//
+            .mapToObj(array::get)//
+            .map(ObjectNode.class::cast)//
+            .forEach(elementConsumer);
+    }
+
+    private static Tab parseTab(final ObjectNode tab) {
+        var name = tab.get("name").textValue();
+        var description = tab.get("description").textValue();
+        var builder = Tab.builder(name, description);
+        processArrayNode((ArrayNode)tab.get("options"), unpackingDescription(builder::withOption));
+        return builder.build();
+    }
+
+    private static void unpackDescription(final ObjectNode describedNode,
+        final BiConsumer<String, String> descriptionConsumer) {
+        descriptionConsumer.accept(describedNode.get("name").textValue(), describedNode.get("description").textValue());
     }
 
     /**

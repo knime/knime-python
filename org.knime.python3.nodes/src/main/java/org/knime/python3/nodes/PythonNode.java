@@ -48,12 +48,14 @@
  */
 package org.knime.python3.nodes;
 
+import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
+
 /**
  * Represents a PythonNode.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonNode {
+public final class PythonNode { // TODO record in Java 17
 
     private final String m_id;
 
@@ -63,9 +65,7 @@ public final class PythonNode {
 
     private final String m_iconPath;
 
-    private final String m_name;
-
-    private final String m_type;
+    private final NodeDescriptionBuilder m_descriptionBuilder;
 
     /**
      * Constructor.
@@ -73,18 +73,16 @@ public final class PythonNode {
      * @param id of the node
      * @param categoryPath path to the category the node is contained in in the node repository
      * @param afterId id of the node after which to insert this node
-     * @param iconPath to the icon of this node
-     * @param name human-readable name of the node
-     * @param type of the node e.g. Manipulator
+     * @param iconPath path to the icon (relative to the node)
+     * @param descriptionBuilder for building the node description
      */
     public PythonNode(final String id, final String categoryPath, final String afterId, final String iconPath,
-        final String name, final String type) {
+        final NodeDescriptionBuilder descriptionBuilder) {
         m_id = id;
         m_categoryPath = categoryPath;
         m_afterId = afterId;
+        m_descriptionBuilder = descriptionBuilder;
         m_iconPath = iconPath;
-        m_name = name;
-        m_type = type;
     }
 
     /**
@@ -116,16 +114,10 @@ public final class PythonNode {
     }
 
     /**
-     * @return human-readable name of this node
+     * @return the pre-filled builder for the NodeDescription
      */
-    public String getName() {
-        return m_name;
+    public NodeDescriptionBuilder getDescriptionBuilder() {
+        return m_descriptionBuilder;
     }
 
-    /**
-     * @return type of this node
-     */
-    public String getType() {
-        return m_type;
-    }
 }

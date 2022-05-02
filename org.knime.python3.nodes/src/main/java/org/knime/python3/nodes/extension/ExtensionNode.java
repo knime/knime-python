@@ -48,7 +48,7 @@
  */
 package org.knime.python3.nodes.extension;
 
-import java.nio.file.Path;
+import org.knime.core.node.NodeDescription;
 
 /**
  * Represents a node that is provided by a KNIME extension.
@@ -74,18 +74,8 @@ public interface ExtensionNode {
     String getAfterId();
 
     /**
-     * @return the human-readable name of the node
+     * @return the description of the node as it is displayed in the KNIME AP
      */
-    String getName();
-
-    /**
-     * @return path to the node's icon
-     */
-    Path getIconPath();
-
-    /**
-     * @return the type of node e.g. Manipulator or Learner
-     */
-    String getType();
+    NodeDescription getNodeDescription();
 
 }

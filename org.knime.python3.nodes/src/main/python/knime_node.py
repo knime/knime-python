@@ -82,20 +82,14 @@ class PythonNode(ABC):
         #       See https://knime-com.atlassian.net/browse/AP-18641
         pass
 
-    def get_description(self) -> dict:
-        """
-        Retrieves the description of this node.
-        The returned dict should have a general description of the node, the individual parameters
-        as well as inputs and outputs.
-        """
-        # TODO generate from doc string
-        pass
+
+    
 
 
 class _Node:
     """Class representing an actual node in KNIME AP."""
 
-    node_factory: Callable
+    node_factory: Callable[[], PythonNode]
     id: str
     name: str
     node_type: str
@@ -105,7 +99,7 @@ class _Node:
 
     def __init__(
         self,
-        node_factory: Callable,
+        node_factory: Callable[[], PythonNode],
         id: str,
         name: str,
         node_type: str,
@@ -120,6 +114,7 @@ class _Node:
         self.icon_path = icon_path
         self.category = category
         self.after = after
+
 
     def to_dict(self):
         return {

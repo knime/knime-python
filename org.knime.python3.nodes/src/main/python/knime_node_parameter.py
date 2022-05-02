@@ -53,6 +53,10 @@ from knime_node import Parameter, UI, Rule, PythonNode
 from packaging.version import Version
 from numbers import Number
 
+def extract_parameter_docs(node: PythonNode):
+    """Extracts the descriptions of the node's parameters."""
+    param_descriptors = _collect_parameter_descriptors(type(node))
+    return [{"name": k, "description": v.__doc__} for k, v in param_descriptors.items()]
 
 def extract_parameters(node: PythonNode):
     """

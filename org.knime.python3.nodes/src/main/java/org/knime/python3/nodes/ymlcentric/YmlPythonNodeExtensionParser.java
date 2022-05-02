@@ -98,7 +98,7 @@ public final class YmlPythonNodeExtensionParser implements PythonExtensionParser
         var name = (String)nodeObject.get("name");
         var iconPath = (String)nodeObject.get("icon");
         var type = (String)nodeObject.get("type");
-        return new PythonNode(id, categoryPath, afterId, iconPath, name, type);
+        return new PythonNode(id, categoryPath, afterId, iconPath, null);
     }
 
 }
