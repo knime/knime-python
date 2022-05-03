@@ -104,7 +104,7 @@ try:
 except Exception as e:
     import warnings
 
-    warnings.warn(e)
+    warnings.warn(str(e))
     warnings.warn(
         "Could not read knime-ui-extension-service JavaScript. "
         + "Selections will not be propagated to and from Python views."
