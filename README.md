@@ -18,6 +18,7 @@ The code is organized as follows:
 * _org.knime.python3.nodes_: Framework for writing KNIME AP nodes in Python
 * _org.knime.python3.scripting_: Useful functionality for providing Python scripting in KNIME AP
 * _org.knime.python3.scripting.nodes_: Implementation of Python scripting nodes for KNIME AP
+* _org.knime.python3.views_: Library for creating node views in Python
 
 ## Development Notes
 
