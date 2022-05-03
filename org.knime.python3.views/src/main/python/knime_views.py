@@ -47,6 +47,7 @@
 """
 
 import os
+import io
 import base64
 from typing import Any, Union
 
@@ -138,6 +139,7 @@ def view(obj) -> NodeView:
     - SVG: The obj must be of type str and contain a valid SVG
     - PNG: The obj must be of type bytes and contain a PNG image file
     - JPEG: The obj must be of type bytes and contain a JPEG image file
+    - Matplotlib: The obj must be a matplotlib.figure.Figure
 
     Args:
         obj: The object which should be displayed
@@ -170,7 +172,11 @@ def view(obj) -> NodeView:
     # Utility functions from third parties that create views from other
     # objects can live somewhere else and can be called explicitly.
 
-    # TODO AP-18345: Matplotlib
+    # Matplotlib
+    try:
+        return view_matplotlib(obj)
+    except (ImportError, TypeError):
+        pass
 
     # TODO AP-18343: Plotly
     # try:
@@ -291,6 +297,69 @@ class NodeViewSink:
 
         with open(self._java_data_sink.getOutputFilePath(), "w", encoding="utf-8") as f:
             f.write(node_view.html)
+
+
+##########################################################################
+# MATPLOTLIB
+##########################################################################
+
+try:
+    # Set the matplotlib backend to svg which is a non-GUI backend
+    # Therefore, plt.show() will do noting
+    import matplotlib
+
+    matplotlib.use("svg")
+except ImportError:
+    # matplotlib is not available
+    pass
+
+
+def view_matplotlib(fig=None) -> NodeView:
+    """Create a view showing the given matplotlib figure.
+
+    The figure is displayed by exporting it as an SVG. If no figure is given
+    the current active figure is displayed. Note that the figure is closed and
+    should not be used after calling this method.
+
+    Args:
+        fig: A matplotlib.figure.Figure which should be displayed.
+
+    Raises:
+        ImportError: If matplotlib is not available.
+        TypeError: If the figure is not a matplotlib figure.
+    """
+    import matplotlib.figure
+
+    if fig is None:
+        # Use the current active figure
+        import matplotlib.pyplot
+
+        fig = matplotlib.pyplot.gcf()
+    else:
+        # Check the type of the figure that we got
+        if not isinstance(fig, matplotlib.figure.Figure):
+            raise TypeError("the given object is not a matplotlib figure")
+
+    buffer = io.StringIO()
+    fig.savefig(buffer, format="svg")
+
+    # Matplotlib remembers every figure in an interal state
+    # We remove the figure from the interal state such that the gc can clear the memory
+    matplotlib.pyplot.close(fig)
+
+    return view_svg(buffer.getvalue())
+
+
+def view_seaborn() -> NodeView:
+    """Create a view showing the current active seaborn figure.
+
+    This fuction just calls view_matplotlib() because seaborn plots are just
+    matplotlib figures under the hood.
+
+    Raises:
+        ImportError: If matplotlib is not available.
+    """
+    return view_matplotlib()
 
 
 ##########################################################################

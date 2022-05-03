@@ -1,5 +1,6 @@
-import pythonpath  # adds knime_node to the Python path
 import os
+import pythonpath  # adds knime_views to the Python path
+
 import unittest
 import knime_views as kv
 
@@ -147,6 +148,49 @@ class KnimeViewsTest(unittest.TestCase):
         jpeg_viewable = ViewableClass(jpeg=self.jpegs[0])
         jpeg_view = kv.view(jpeg_viewable)
         self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
+
+    def test_matplotlib_view(self):
+        def check_view(matplotlib_view):
+            self.assertIsInstance(matplotlib_view, kv.NodeView)
+            self.assertTrue(is_html(matplotlib_view.html))
+            self.assertTrue(
+                'xmlns="http://www.w3.org/2000/svg"' in matplotlib_view.html
+            )
+
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        data_x = list(range(10))
+        data_y = [i + 2 for i in range(10)]
+
+        # Stateful approach
+        plt.plot(data_x, data_y)
+        check_view(kv.view_matplotlib())
+
+        # object oriented approach
+        fig, ax = plt.subplots()
+        ax.plot(data_x, data_y)
+        check_view(kv.view_matplotlib(fig))
+
+        # object oriented approach + view()
+        fig, ax = plt.subplots()
+        ax.plot(data_x, data_y)
+        check_view(kv.view(fig))
+
+        # Seaborn stateful
+        sns.lineplot(x="x", y="y", data={"x": data_x, "y": data_y})
+        check_view(kv.view_matplotlib())
+
+        # Seaborn stateful
+        sns.lineplot(x="x", y="y", data={"x": data_x, "y": data_y})
+        check_view(kv.view_seaborn())
+
+        # Seaborn figure object
+        lp = sns.lineplot(x="x", y="y", data={"x": data_x, "y": data_y})
+        check_view(kv.view(lp.figure))
+
+        # This shouldn't do anything
+        plt.show()
 
 
 if __name__ == "__main__":
