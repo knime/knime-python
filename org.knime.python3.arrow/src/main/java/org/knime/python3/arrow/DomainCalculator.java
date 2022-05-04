@@ -67,7 +67,7 @@ import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class DomainCalculator extends AbstractAsyncBatchProcessor {
+final class DomainCalculator extends AbstractAsyncBatchProcessor {
 
     private final Supplier<DomainWritableConfig> m_configSupplier;
 
@@ -80,14 +80,14 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
     private Map<Integer, ColumnarDomainCalculator<? extends NullableReadData, DataColumnMetaData[]>> m_metadataCalculators;
 
     /**
-     * Create a new {@link DomainCalculator} that will get the batches from the {@link SequentialBatchReadable} supplied
+     * Create a new DomainCalculator that will get the batches from the {@link SequentialBatchReadable} supplied
      * by the given {@link Supplier}. The {@link Supplier} is called when the first batch is checked.
      *
      * @param batchReadableSupplier a {@link Supplier} for the {@link SequentialBatchReadable}. Only called once and the
-     *            {@link SequentialBatchReadable} is closed with {@link DomainCalculator#close()}.
+     *            {@link SequentialBatchReadable} is closed with DomainCalculator#close().
      * @param configSupplier A {@link Supplier} for the {@link DomainWritableConfig} specifying which domains should be
      *            calculated and how
-     * @return A {@link DomainCalculator} that calculates domains of the columns in the {@link SequentialBatchReadable}.
+     * @return A DomainCalculator that calculates domains of the columns in the {@link SequentialBatchReadable}.
      */
     public static DomainCalculator fromSequentialReadable(final Supplier<SequentialBatchReadable> batchReadableSupplier,
         final Supplier<DomainWritableConfig> configSupplier) {
@@ -95,15 +95,15 @@ public final class DomainCalculator extends AbstractAsyncBatchProcessor {
     }
 
     /**
-     * Create a new {@link DomainCalculator} that will get the batches from the {@link RandomAccessBatchReadable}
+     * Create a new DomainCalculator that will get the batches from the {@link RandomAccessBatchReadable}
      * supplied by the given {@link Supplier}. The {@link Supplier} is called when the first batch is checked. The
      * batches are accessed in sequential order starting with batch 0.
      *
      * @param batchReadableSupplier a {@link Supplier} for the {@link RandomAccessBatchReadable}. Only called once and
-     *            the {@link RandomAccessBatchReadable} is closed with {@link DomainCalculator#close()}.
+     *            the {@link RandomAccessBatchReadable} is closed with DomainCalculator#close().
      * @param configSupplier A {@link Supplier} for the link DomainWritableConfig} specifying which domains should be
      *            calculated and how
-     * @return A {@link DomainCalculator} that calculates domains of the columns in the
+     * @return A DomainCalculator that calculates domains of the columns in the
      *         {@link RandomAccessBatchReadable}.
      */
     public static DomainCalculator fromRandomAccessReadable(

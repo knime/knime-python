@@ -66,7 +66,7 @@ import org.knime.core.util.DuplicateKeyException;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
+final class RowKeyChecker extends AbstractAsyncBatchProcessor {
 
     private final DuplicateChecker m_duplicateChecker;
 
@@ -75,25 +75,25 @@ public final class RowKeyChecker extends AbstractAsyncBatchProcessor {
     private static final int ROW_KEY_COL_IDX = 0;
 
     /**
-     * Create a new {@link RowKeyChecker} that will get the batches from the {@link SequentialBatchReadable} supplied by
+     * Create a new RowKeyChecker that will get the batches from the {@link SequentialBatchReadable} supplied by
      * the given {@link Supplier}. The {@link Supplier} is called when the first batch is checked.
      *
      * @param batchReadableSupplier a {@link Supplier} for the {@link SequentialBatchReadable}. Only called once and the
-     *            {@link SequentialBatchReadable} is closed with {@link RowKeyChecker#close()}.
-     * @return A {@link RowKeyChecker} that checks the keys
+     *            {@link SequentialBatchReadable} is closed with RowKeyChecker#close().
+     * @return A RowKeyChecker that checks the keys
      */
     public static RowKeyChecker fromSequentialReadable(final Supplier<SequentialBatchReadable> batchReadableSupplier) {
         return new RowKeyChecker(batchReadableSupplier);
     }
 
     /**
-     * Create a new {@link RowKeyChecker} that will get the batches from the {@link RandomAccessBatchReadable} supplied
+     * Create a new RowKeyChecker that will get the batches from the {@link RandomAccessBatchReadable} supplied
      * by the given {@link Supplier}. The {@link Supplier} is called when the first batch is checked. The batches are
      * accessed in sequential order starting with batch 0.
      *
      * @param batchReadableSupplier a {@link Supplier} for the {@link RandomAccessBatchReadable}. Only called once and
-     *            the {@link RandomAccessBatchReadable} is closed with {@link RowKeyChecker#close()}.
-     * @return A {@link RowKeyChecker} that checks the keys
+     *            the {@link RandomAccessBatchReadable} is closed with RowKeyChecker#close().
+     * @return A RowKeyChecker that checks the keys
      */
     public static RowKeyChecker
         fromRandomAccessReadable(final Supplier<RandomAccessBatchReadable> batchReadableSupplier) {
