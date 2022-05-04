@@ -710,7 +710,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         t.append(df1, sentinel="min")
         t.append(df2, sentinel="min")
 
-        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+        self.assertEqual("<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t)))
 
 if __name__ == "__main__":
     unittest.main()
