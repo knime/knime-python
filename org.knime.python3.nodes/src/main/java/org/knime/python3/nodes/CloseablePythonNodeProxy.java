@@ -49,52 +49,32 @@
 package org.knime.python3.nodes;
 
 import java.io.Closeable;
-import java.io.Flushable;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.knime.core.columnar.arrow.ArrowBatchReadStore;
-import org.knime.core.columnar.arrow.ArrowBatchStore;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.IDataRepository;
-import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
-import org.knime.core.data.columnar.table.ColumnarBatchReadStore;
-import org.knime.core.data.columnar.table.ColumnarContainerTable;
-import org.knime.core.data.filestore.internal.IFileStoreHandler;
-import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.Node;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.ThreadUtils;
 import org.knime.python2.kernel.Python2KernelBackend;
-import org.knime.python2.kernel.PythonCancelable;
-import org.knime.python2.kernel.PythonCanceledExecutionException;
-import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
-import org.knime.python2.kernel.PythonIOException;
-import org.knime.python2.util.PythonUtils;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.arrow.DefaultPythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowDataSource;
-import org.knime.python3.arrow.PythonArrowDataUtils;
-import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
+import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
-import org.knime.python3.scripting.SinkManager;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -111,11 +91,9 @@ final class CloseablePythonNodeProxy
 
     private final PythonGateway<?> m_gateway;
 
-    // STUFF FOR CONFIG AND EXEC:
-    // TODO: clean up, see https://knime-com.atlassian.net/browse/AP-18640
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
-    private SinkManager m_sinkManager = new SinkManager(this::getDataRepository, ARROW_STORE_FACTORY);
+    private PythonArrowTableConverter m_tableManager;
 
     private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
@@ -126,12 +104,23 @@ final class CloseablePythonNodeProxy
         m_gateway = gateway;
     }
 
+    private static IWriteFileStoreHandler getFileStoreHandler() {
+        var context = NodeContext.getContext();
+        if (context == null) {
+            throw new IllegalStateException("No NodeContext available");
+        }
+        var nativeNodeContainer = (NativeNodeContainer)context.getNodeContainer();
+        return (IWriteFileStoreHandler)nativeNodeContainer.getNode().getFileStoreHandler();
+    }
+
     @Override
     public void close() {
         try {
             // TODO close asynchronously for performance (but keep the Windows pitfalls with file deletion in mind)
             m_gateway.close();
-            m_sinkManager.close();
+            if (m_tableManager != null) {
+                m_tableManager.close();
+            }
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to shutdown Python gateway.", ex);
         }
@@ -163,16 +152,18 @@ final class CloseablePythonNodeProxy
         return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema());
     }
 
+    private void initTableManager() {
+        if (m_tableManager == null) {
+            m_tableManager =
+                new PythonArrowTableConverter(m_executorService, ARROW_STORE_FACTORY, getFileStoreHandler());
+        }
+    }
+
     @Override
     public BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws IOException, CanceledExecutionException {
-        final var columnReadStores = new ColumnarBatchReadStore[inData.length];
-        final var sources = new PythonArrowDataSource[inData.length];
-        for (int inputIndex = 0; inputIndex < inData.length; inputIndex++) {
-            columnReadStores[inputIndex] = extractColumnStore(inData[inputIndex]);
-            sources[inputIndex] = convertStoreIntoSource(columnReadStores[inputIndex],
-                inData[inputIndex].getDataTableSpec().getColumnNames());
-        }
+        initTableManager();
+        final var sources = m_tableManager.createSources(inData, exec.createSubExecutionContext(0.1));
 
         // TODO: populate those properly
         String[] inputObjectPaths = new String[0];
@@ -187,23 +178,25 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
-                return m_sinkManager.create_sink();
+                return m_tableManager.createSink();
             }
         };
         m_proxy.initializeJavaCallback(callback);
+
+        var progressMonitor = exec.createSubProgress(0.8);
 
         final var execContext = new PythonNodeModelProxy.PythonExecutionContext() {
 
             @Override
             public void set_progress(final double progress) {
-                exec.setProgress(progress);
+                progressMonitor.setProgress(progress);
             }
 
             @Override
             public boolean is_canceled() {
                 try {
-                    exec.checkCanceled();
-                } catch (CanceledExecutionException e) {
+                    progressMonitor.checkCanceled();
+                } catch (CanceledExecutionException e) {//NOSONAR
                     return true;
                 }
                 return false;
@@ -212,80 +205,7 @@ final class CloseablePythonNodeProxy
 
         List<PythonArrowDataSink> sinks = m_proxy.execute(sources, inputObjectPaths, outputObjectPaths, execContext);
 
-        var tables = new BufferedDataTable[sinks.size()];
-        int i = 0;
-        for (var s : sinks) {
-            tables[i] = performCancelable(new GetDataTableTask(s, exec),
-                new PythonExecutionMonitorCancelable(exec.createSubProgress(0.2)));
-            i++;
-        }
-        return tables;
-    }
-
-    private <T> T performCancelable(final Callable<T> task, final PythonCancelable cancelable)
-        throws PythonIOException, CanceledExecutionException {
-        try {
-            return PythonUtils.Misc.executeCancelable(task, m_executorService::submit, cancelable);
-        } catch (final PythonCanceledExecutionException ex) {
-            final var ex1 = new CanceledExecutionException(ex.getMessage());
-            ex1.initCause(ex);
-            throw ex1;
-        }
-    }
-
-    // Store will be closed along with table. If it is a copy, it will have already been closed.
-    // TODO: COPIED AND STRIPPED FROM Python3KernelBackend. Refactor and reuse!
-    //       See https://knime-com.atlassian.net/browse/AP-18640
-
-    // TODO: Then remove Python2 dependency.
-    @SuppressWarnings("resource")
-    private static ColumnarBatchReadStore extractColumnStore(final BufferedDataTable table) throws IOException {
-        final KnowsRowCountTable delegate = Node.invokeGetDelegate(table);
-        if (delegate instanceof ColumnarContainerTable) {
-            var columnarTable = (ColumnarContainerTable)delegate;
-            final var baseStore = columnarTable.getStore().getDelegateBatchReadStore();
-            final boolean isLegacyArrow;
-            if (baseStore instanceof ArrowBatchReadStore) {
-                isLegacyArrow = ((ArrowBatchReadStore)baseStore).isUseLZ4BlockCompression()
-                    || ColumnarValueSchemaUtils.storesDataCellSerializersSeparately(columnarTable.getSchema());
-            } else if (baseStore instanceof ArrowBatchStore) {
-                // Write stores shouldn't be using the old compression format or the old ValueSchema anymore
-                isLegacyArrow = false;
-            } else {
-                // Not Arrow at all (= a new storage back end), treat like legacy, i.e. copy.
-                isLegacyArrow = true;
-            }
-            if (!isLegacyArrow) {
-                return ((ColumnarContainerTable)delegate).getStore();
-            }
-        }
-        throw new IOException("Python nodes can only work with saved Arrow tables for now");
-    }
-
-    // Store will be closed along with table. If it is a copy, it will have already been closed.
-    @SuppressWarnings("resource")
-    private static PythonArrowDataSource convertStoreIntoSource(final ColumnarBatchReadStore columnarStore,
-        final String[] columnNames) throws IOException {
-        // Unwrap the underlying physical Arrow store from the table. Along the way, flush any cached table
-        // content to disk to make it available to Python.
-        //
-        // TODO: ideally, we want to be able to flush per batch/up to some batch index. Once this is supported,
-        // defer flushing until actually needed (i.e. when Python pulls data).
-        if (columnarStore instanceof Flushable) {
-            ((Flushable)columnarStore).flush();
-        }
-        final var baseStore = columnarStore.getDelegateBatchReadStore();
-        if (baseStore instanceof ArrowBatchReadStore) {
-            final ArrowBatchReadStore store = (ArrowBatchReadStore)baseStore;
-            return PythonArrowDataUtils.createSource(store, columnNames);
-        } else if (baseStore instanceof ArrowBatchStore) {
-            final ArrowBatchStore store = (ArrowBatchStore)baseStore;
-            return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
-        } else {
-            // Any non-Arrow store should already have been copied into an Arrow store further above.
-            throw new IllegalStateException(
-                "Unrecognized store type: " + baseStore.getClass().getName() + ". This is an implementation error.");
-        }
+        return m_tableManager.convertToTables(sinks, exec.createSubExecutionContext(0.1));
     }
 
     @Override
@@ -293,71 +213,6 @@ final class CloseablePythonNodeProxy
         final String[] serializedInSchemas = TableSpecSerializationUtils.serializeTableSpecs(inSpecs);
         final List<String> serializedOutSchemas = m_proxy.configure(serializedInSchemas);
         return TableSpecSerializationUtils.deserializeTableSpecs(serializedOutSchemas);
-    }
-
-    /**
-     * TODO: Refactor and reuse! Copied and stripped from Python3KernelBackend See
-     * https://knime-com.atlassian.net/browse/AP-18640
-     *
-     * TODO: Then remove Python2 dependency.
-     */
-    private final class GetDataTableTask implements Callable<BufferedDataTable> {
-
-        private final PythonArrowDataSink m_pythonSink;
-
-        private final ExecutionContext m_exec;
-
-        public GetDataTableTask(final PythonArrowDataSink pythonSink, final ExecutionContext exec) {
-            m_pythonSink = pythonSink;
-            m_exec = exec;
-        }
-
-        @Override
-        public BufferedDataTable call() throws Exception {
-            final PythonArrowDataSink pythonSink = m_pythonSink;
-            assert m_sinkManager.contains(
-                pythonSink) : "Sink was not created by Python3KernelBackend#createSink. This is a coding issue.";
-            // Must be a DefaultPythonarrowDataSink because it was created by #createSink
-            final DefaultPythonArrowDataSink sink = (DefaultPythonArrowDataSink)pythonSink;
-
-            checkRowKeys(sink);
-            final var domainAndMetadata = getDomain(sink);
-            final IDataRepository dataRepository = Node.invokeGetDataRepository(m_exec);
-            @SuppressWarnings("resource") // Closed by the framework when the table is not needed anymore
-            final BufferedDataTable table = PythonArrowDataUtils
-                .createTable(sink, domainAndMetadata, ARROW_STORE_FACTORY, dataRepository).create(m_exec);
-
-            m_sinkManager.markUsed(sink);
-            return table;
-        }
-
-        @SuppressWarnings("resource") // All rowKeyCheckers are closed at #close
-        private void checkRowKeys(final DefaultPythonArrowDataSink sink) throws InterruptedException, IOException {
-            final var rowKeyChecker = m_sinkManager.getRowKeyChecker(sink);
-            if (!rowKeyChecker.allUnique()) {
-                throw new IOException(rowKeyChecker.getInvalidCause());
-            }
-        }
-
-        @SuppressWarnings("resource") // All domainCalculators are closed at #close
-        private TableDomainAndMetadata getDomain(final DefaultPythonArrowDataSink sink) throws InterruptedException {
-            final var domainCalc = m_sinkManager.getDomainCalculator(sink);
-            return domainCalc.getTableDomainAndMetadata();
-        }
-    }
-
-    @SuppressWarnings("static-method")
-    private IFileStoreHandler getFileStoreHandler() {
-        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
-    }
-
-    private IDataRepository getDataRepository() {
-        var fsHandler = getFileStoreHandler();
-        if (fsHandler == null) {
-            return NotInWorkflowDataRepository.newInstance();
-        } else {
-            return fsHandler.getDataRepository();
-        }
     }
 
     @Override
