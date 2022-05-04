@@ -1,5 +1,7 @@
 ---
-id: org.knime.python3.nodes.tests.fluent_extension
+group_id: org.knime
+name: fluent_extension
+description: "First pure python extension"
 author: Adrian
 environment_name: my_env # TODO placeholder needs to be properly implemented
 extension_module: my_extension
