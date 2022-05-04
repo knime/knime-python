@@ -63,6 +63,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
 import org.knime.python3.scripting.nodes.prefs.BundledPythonCommand;
+import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -93,8 +94,9 @@ public final class PythonNodeGatewayFactory {
         final String environmentName) throws IOException, InterruptedException {
         var command = createCommand(extensionId, environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
-                .addToPythonPath(Python3SourceDirectory.getPath())//
-                .addToPythonPath(Python3ArrowSourceDirectory.getPath())
+            .addToPythonPath(Python3SourceDirectory.getPath())//
+            .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
+            .addToPythonPath(Python3ViewsSourceDirectory.getPath()) //
             .addToPythonPath(pathToExtension);
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);

@@ -65,6 +65,7 @@ import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.scripting.Python3ScriptingSourceDirectory;
+import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**
  *
@@ -80,7 +81,8 @@ public final class PythonGatewayUtils {
         final PythonPathBuilder builder = PythonPath.builder()//
             .add(Python3SourceDirectory.getPath()) //
             .add(Python3ArrowSourceDirectory.getPath()) //
-            .add(Python3ScriptingSourceDirectory.getPath());
+            .add(Python3ScriptingSourceDirectory.getPath()) //
+            .add(Python3ViewsSourceDirectory.getPath());
         for (final PythonModule module : modules) {
             builder.add(module.getParentDirectory());
         }
