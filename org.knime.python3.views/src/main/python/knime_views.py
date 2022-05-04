@@ -289,7 +289,7 @@ class NodeViewSink:
         else:
             node_view = view(obj)
 
-        with open(self._java_data_sink.getOutputFilePath(), "w") as f:
+        with open(self._java_data_sink.getOutputFilePath(), "w", encoding="utf-8") as f:
             f.write(node_view.html)
 
 
