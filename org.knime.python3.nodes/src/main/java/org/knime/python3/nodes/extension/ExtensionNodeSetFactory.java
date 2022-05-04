@@ -68,18 +68,20 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
-import org.knime.core.node.NodeView;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.view.NodeView;
+import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.dialog.DelegatingTextSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.views.HtmlFileNodeView;
 
 /**
  * A {@link NodeSetFactory} for extensions that provide nodes whose settings are JSON and whose dialogs are JSON Forms
@@ -148,7 +150,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class DynamicExtensionNodeFactory extends DynamicNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory {
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel> {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -162,6 +164,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
 
         private ExtensionNode m_node;
 
+        private int m_numViews;
+
         @SuppressWarnings("null")
         @Override
         public void loadAdditionalFactorySettings(final ConfigRO config) throws InvalidSettingsException {
@@ -173,6 +177,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
             m_node = extension.getNode(nodeId);
             m_nodeDescription = m_node.getNodeDescription();
             m_nodeFactoryConfig = config;
+            m_numViews = m_node.getNumViews();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
             m_dialogSettingsService = new DelegatingTextSettingsDataService(m_proxyProvider::getNodeDialogProxy);
@@ -209,14 +214,14 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
 
         @Override
         protected int getNrNodeViews() {
-            // TODO support views. Talk with Benny how this can be realized
-            return 0; // Will not be called because Views are realized via the new View API
+            // We never have Java Views (see #hasView() for the JS view)
+            return 0;
         }
 
         @Override
-        public NodeView<DelegatingNodeModel> createNodeView(final int viewIndex, final DelegatingNodeModel nodeModel) {
-            // TODO throw an exception? NodeViews are Java, hence the extension can't be pure Python and therefore nodes
-            // can be registered the ordinary way.
+        public org.knime.core.node.NodeView<DelegatingNodeModel> createNodeView(final int viewIndex,
+            final DelegatingNodeModel nodeModel) {
+            // We never have Java Views but only a JS view (see #createNodeView(NodeModel))
             return null;
         }
 
@@ -238,6 +243,21 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
             return null;
         }
 
-    }
+        @Override
+        public boolean hasNodeView() {
+            return m_numViews > 0;
+        }
 
+        @Override
+        public NodeView createNodeView(final DelegatingNodeModel nodeModel) {
+            if (!hasNodeView()) {
+                throw new IllegalStateException("The node has no view.");
+            }
+            final var pathToHtml = nodeModel.getPathToHtmlView();
+            if (pathToHtml.isEmpty()) {
+                throw new IllegalStateException("The node did not return a view.");
+            }
+            return new HtmlFileNodeView(pathToHtml.get());
+        }
+    }
 }
