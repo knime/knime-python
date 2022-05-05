@@ -67,6 +67,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -90,6 +91,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.Version;
+import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -154,6 +156,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private final PythonGateway<Python3KernelBackendProxy> m_gateway;
 
     private final PythonOutputListeners m_outputListeners;
+
+    private final AsynchronousCloseable<RuntimeException> m_closer =
+        AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
 
     private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
         Boolean.class, //
@@ -697,20 +702,26 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     @Override
     public void close() throws PythonKernelCleanupException {
-        if (m_closed.compareAndSet(false, true)) {
-            PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
-            PythonUtils.Misc.invokeSafely(LOGGER::debug, Python3KernelBackendProxy::releaseInputTables, m_proxy);
-            new Thread(() -> {
-                PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
-                PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
-                m_proxy = null;
-                PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
-                synchronized (m_temporaryFsHandlers) {
-                    PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose,
-                        m_temporaryFsHandlers);
-                }
-                m_sourceFactory.close();
-            }).start();
+        m_closer.close();
+    }
+
+    @Override
+    public Future<Void> asynchronousClose() throws PythonKernelCleanupException {
+        return m_closer.asynchronousClose();
+    }
+
+    private void closeInternal() {
+        PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
+        PythonUtils.Misc.invokeSafely(LOGGER::debug, Python3KernelBackendProxy::releaseInputTables, m_proxy);
+        if (m_sourceFactory != null) {
+            PythonUtils.Misc.closeSafely(LOGGER::debug, m_sourceFactory);
+        }
+        PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
+        PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
+        m_proxy = null;
+        PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
+        synchronized (m_temporaryFsHandlers) {
+            PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose, m_temporaryFsHandlers);
         }
     }
 
