@@ -63,6 +63,7 @@ import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObject;
@@ -71,6 +72,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.PythonCommandConfig;
@@ -80,6 +82,7 @@ import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonKernel;
 import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
+import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonKernelQueue;
 import org.knime.python2.ports.DataTableOutputPort;
@@ -97,6 +100,8 @@ import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNodeModel {
 
     private static final String CFG_KEY_SCRIPT = "script";
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractPythonScriptingNodeModel.class);
 
     static PythonCommandConfig createCommandConfig() {
         return new PythonCommandConfig(PythonVersion.PYTHON3, Python3ScriptingPreferences::getCondaInstallationPath,
@@ -118,6 +123,9 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     private String m_script;
 
     private final PythonCommandConfig m_command = createCommandConfig();
+
+    private final AsynchronousCloseableTracker<PythonKernelCleanupException> m_kernelShutdownTracker =
+        new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     protected AbstractPythonScriptingNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts,
         final String defaultScript) {
@@ -230,8 +238,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                     : outExec;
                 outObjects[i] = outPort.execute(kernel, outPortExec);
             }
+            m_kernelShutdownTracker.closeAsynchronously(kernel);
             return outObjects;
         }
+    }
+
+    @Override
+    protected void onDispose() {
+        m_kernelShutdownTracker.waitForAllToClose();
     }
 
     protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
