@@ -48,11 +48,13 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.core.util.asynclose.AsynchronousCloseable;
+
 /**
  * Defines methods needed by a Python node factory on Java side.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface CloseableNodeFactoryProxy extends UncheckedCloseable, NodeFactoryProxy {
+public interface CloseableNodeFactoryProxy extends AsynchronousCloseable<RuntimeException>, NodeFactoryProxy {
 
 }

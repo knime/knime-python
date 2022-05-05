@@ -42,16 +42,18 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- * 
+ *
  * History
  *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.core.util.asynclose.AsynchronousCloseable;
+
 /**
- * 
+ *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface CloseableNodeDialogProxy extends UncheckedCloseable, NodeDialogProxy {
+public interface CloseableNodeDialogProxy extends AsynchronousCloseable<RuntimeException>, NodeDialogProxy {
 
 }

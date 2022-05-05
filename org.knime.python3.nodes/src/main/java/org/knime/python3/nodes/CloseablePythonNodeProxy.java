@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.DataTableSpec;
@@ -65,6 +66,7 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.ThreadUtils;
+import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -91,6 +93,9 @@ final class CloseablePythonNodeProxy
 
     private final PythonGateway<?> m_gateway;
 
+    private final AsynchronousCloseable<RuntimeException> m_closer =
+        AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
+
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private PythonArrowTableConverter m_tableManager;
@@ -113,10 +118,8 @@ final class CloseablePythonNodeProxy
         return (IWriteFileStoreHandler)nativeNodeContainer.getNode().getFileStoreHandler();
     }
 
-    @Override
-    public void close() {
+    private void closeInternal() {
         try {
-            // TODO close asynchronously for performance (but keep the Windows pitfalls with file deletion in mind)
             m_gateway.close();
             if (m_tableManager != null) {
                 m_tableManager.close();
@@ -124,6 +127,16 @@ final class CloseablePythonNodeProxy
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to shutdown Python gateway.", ex);
         }
+    }
+
+    @Override
+    public void close() {
+        m_closer.close();
+    }
+
+    @Override
+    public Future<Void> asynchronousClose() {
+        return m_closer.asynchronousClose();
     }
 
     @Override

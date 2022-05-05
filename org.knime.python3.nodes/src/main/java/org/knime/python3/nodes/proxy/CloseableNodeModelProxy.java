@@ -48,11 +48,13 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.core.util.asynclose.AsynchronousCloseable;
+
 /**
  * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface CloseableNodeModelProxy extends UncheckedCloseable, NodeModelProxy {
+public interface CloseableNodeModelProxy extends AsynchronousCloseable<RuntimeException>, NodeModelProxy {
     // marker interface used by the DelegatingNodeModel
 }
