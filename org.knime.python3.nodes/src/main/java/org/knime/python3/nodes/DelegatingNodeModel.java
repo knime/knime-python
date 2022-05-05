@@ -59,9 +59,11 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 
 /**
@@ -72,11 +74,16 @@ import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 // TODO Perhaps move to the extension package?
 public final class DelegatingNodeModel extends NodeModel {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
+
     private final Supplier<CloseableNodeModelProxy> m_proxySupplier;
 
     private JsonNodeSettings m_settings;
 
     private Function<NodeSettingsRO, JsonNodeSettings> m_settingsFactory;
+
+    private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
+        new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
 
     /**
      * Constructor.
@@ -101,6 +108,7 @@ public final class DelegatingNodeModel extends NodeModel {
             var result = node.configure(inSpecs);
             // allows for auto-configure
             m_settings = node.saveSettings();
+            m_proxyShutdownTracker.closeAsynchronously(node);
             return result;
         }
     }
@@ -112,6 +120,7 @@ public final class DelegatingNodeModel extends NodeModel {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec);
             m_settings = node.saveSettings();
+            m_proxyShutdownTracker.closeAsynchronously(node);
             return result;
         }
     }
@@ -126,6 +135,7 @@ public final class DelegatingNodeModel extends NodeModel {
         var jsonSettings = m_settingsFactory.apply(settings);
         try (var node = m_proxySupplier.get()) {
             node.validateSettings(jsonSettings);
+            m_proxyShutdownTracker.waitForAllToClose();
         }
     }
 
@@ -134,6 +144,11 @@ public final class DelegatingNodeModel extends NodeModel {
         m_settings = m_settingsFactory.apply(settings);
         // the settings are not set on the proxy because the proxy is closed anyway
         // and any other operation will be performed on a new proxy where the settings are set anyway
+    }
+
+    @Override
+    protected void onDispose() {
+        m_proxyShutdownTracker.waitForAllToClose();
     }
 
     @Override
