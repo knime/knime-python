@@ -54,7 +54,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
@@ -65,10 +65,7 @@ import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
 import org.yaml.snakeyaml.Yaml;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.Gson;
 
 /**
  *
@@ -117,77 +114,87 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     }
 
     private static PythonNode[] parseNodes(final String nodesJson) {
-        var mapper = new ObjectMapper();
-        ArrayNode array;
-        try {
-            array = (ArrayNode)mapper.readTree(nodesJson);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalArgumentException("Failed to parse node array.", ex);
-        }
-        return IntStream.range(0, array.size())//
-            .mapToObj(array::get)//
-            .map(ObjectNode.class::cast)//
-            .map(PythonCentricExtensionParser::createNode)//
+        JsonNodeDescription[] nodes = new Gson().fromJson(nodesJson, JsonNodeDescription[].class);
+        return Stream.of(nodes)//
+            .map(JsonNodeDescription::toPythonNode)//
             .toArray(PythonNode[]::new);
     }
 
-    private static PythonNode createNode(final ObjectNode objectNode) {
-        return new PythonNode(//
-            objectNode.get("id").textValue(), //
-            objectNode.get("category").textValue(), //
-            objectNode.get("after").textValue(), //
-            objectNode.get("icon_path").textValue(), //
-            createNodeDescriptionBuilder(objectNode));
-    }
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static final class JsonNodeDescription {
+        private String id;
 
-    private static NodeDescriptionBuilder createNodeDescriptionBuilder(final ObjectNode objectNode) {
-        var builder =
-            new NodeDescriptionBuilder(objectNode.get("name").textValue(), objectNode.get("node_type").textValue())//
-                .withShortDescription(objectNode.get("short_description").textValue())//
-                .withIntro(objectNode.get("full_description").textValue());
+        private String name;
 
-        final var tabsNode = (ArrayNode)objectNode.get("tabs");
-        if (tabsNode != null) {
-            processArrayNode(tabsNode, t -> builder.withTab(parseTab(t)));
+        private String node_type;
+
+        private String icon_path;
+
+        private String category;
+
+        private String after;
+
+        private String short_description;
+
+        private String full_description;
+
+        private JsonTab[] tabs;
+
+        private JsonDescribed[] options;
+
+        private JsonDescribed[] input_ports;
+
+        private JsonDescribed[] output_ports;
+
+        private JsonDescribed[] views;
+
+        PythonNode toPythonNode() {
+            return new PythonNode(id, category, after, icon_path, createDescriptionBuilder());
         }
 
-        parseArrayIfExists((ArrayNode)objectNode.get("options"), builder::withOption);
-        parseArrayIfExists((ArrayNode)objectNode.get("input_ports"), builder::withInputPort);
-        parseArrayIfExists((ArrayNode) objectNode.get("outputPorts"), builder::withOutputPort);
-        parseArrayIfExists((ArrayNode) objectNode.get("views"), builder::withView);
+        private NodeDescriptionBuilder createDescriptionBuilder() {
+            var builder = new NodeDescriptionBuilder(name, node_type)//
+                .withShortDescription(short_description)//
+                .withIntro(full_description);
+            consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
+            consumeIfPresent(options, o -> o.enter(builder::withOption));
+            consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
+            consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
+            consumeIfPresent(views, v -> v.enter(builder::withView));
+            return builder;
+        }
 
-        return builder;
-    }
-
-    private static void parseArrayIfExists(final ArrayNode array,
-        final BiConsumer<String, String> elementDescriptionConsumer) {
-        if (array != null) {
-            processArrayNode(array, unpackingDescription(elementDescriptionConsumer));
+        private static <T> void consumeIfPresent(final T[] array, final Consumer<T> elementConsumer) {
+            if (array != null) {
+                for (var element : array) {
+                    elementConsumer.accept(element);
+                }
+            }
         }
     }
 
-    private static Consumer<ObjectNode> unpackingDescription(final BiConsumer<String, String> descriptionConsumer) {
-        return o -> unpackDescription(o, descriptionConsumer);
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static class JsonDescribed {
+        protected String name;
+
+        protected String description;
+
+        void enter(final BiConsumer<String, String> descriptionConsumer) {
+            descriptionConsumer.accept(name, description);
+        }
     }
 
-    private static void processArrayNode(final ArrayNode array, final Consumer<ObjectNode> elementConsumer) {
-        IntStream.range(0, array.size())//
-            .mapToObj(array::get)//
-            .map(ObjectNode.class::cast)//
-            .forEach(elementConsumer);
-    }
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static class JsonTab extends JsonDescribed {
+        private JsonDescribed[] options;
 
-    private static Tab parseTab(final ObjectNode tab) {
-        var name = tab.get("name").textValue();
-        var description = tab.get("description").textValue();
-        var builder = Tab.builder(name, description);
-        processArrayNode((ArrayNode)tab.get("options"), unpackingDescription(builder::withOption));
-        return builder.build();
-    }
-
-    private static void unpackDescription(final ObjectNode describedNode,
-        final BiConsumer<String, String> descriptionConsumer) {
-        descriptionConsumer.accept(describedNode.get("name").textValue(), describedNode.get("description").textValue());
+        Tab toTab() {
+            var builder = Tab.builder(name, description);
+            for (var option : options) {
+                option.enter(builder::withOption);
+            }
+            return builder.build();
+        }
     }
 
     /**
