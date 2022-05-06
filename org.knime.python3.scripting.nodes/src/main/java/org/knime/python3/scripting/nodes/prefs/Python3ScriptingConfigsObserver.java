@@ -48,6 +48,11 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.knime.core.util.Version;
+import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.CondaEnvironmentCreationObserver;
 import org.knime.python2.config.CondaEnvironmentsConfig;
@@ -117,5 +122,13 @@ public class Python3ScriptingConfigsObserver extends PythonConfigsObserver {
         } else {
             super.testCurrentPreferences();
         }
+    }
+
+    @Override
+    protected Collection<PythonModuleSpec> getAdditionalRequiredModules() {
+        return List.of(//
+            new PythonModuleSpec("py4j"), //
+            new PythonModuleSpec("pyarrow", new Version(6, 0, 0), true, new Version(7, 0, 0), false)//
+        );
     }
 }
