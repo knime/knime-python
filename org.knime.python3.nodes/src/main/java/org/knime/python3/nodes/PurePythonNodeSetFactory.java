@@ -115,8 +115,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     }
 
     private static Stream<KnimeExtension> parseExtensions() {
-        return Stream.concat(getExtensionsFromProperty(), getExtensionsFromExtensionPoint())
-            .filter(Objects::nonNull)//
+        return Stream.concat(getExtensionsFromProperty(), getExtensionsFromExtensionPoint()).filter(Objects::nonNull)//
             // if the same extension is defined by property and by extension point,
             // then we take the one from the property because the property is
             // intended for use during Python node development
@@ -125,12 +124,12 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static Stream<KnimeExtension> getExtensionsFromProperty() {
         return pathsFromProperty()//
-                .map(p -> parseExtension(p, null));
+            .map(p -> parseExtension(p, null));
     }
 
     private static Stream<KnimeExtension> getExtensionsFromExtensionPoint() {
         return PYTHON_NODE_EXTENSION_PATHS.stream()//
-                .map(e -> parseExtension(e.getPath(), e.getBundleName()));
+            .map(e -> parseExtension(e.getPath(), e.getBundleName()));
     }
 
     private static Stream<Path> pathsFromProperty() {
@@ -155,7 +154,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return null;
         }
     }
-
 
     static final class ResolvedPythonExtension implements KnimeExtension {
 

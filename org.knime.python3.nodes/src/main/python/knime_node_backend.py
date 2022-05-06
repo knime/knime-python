@@ -102,11 +102,6 @@ class _PythonNodeProxy:
         version = parse(version)
         return knp.validate_parameters(self._node, parameters_dict, version)
 
-    # TODO turn this stub into a proper implementation
-    def getDescription(self) -> str:
-        description_dict = self._node.get_description()
-        return json.dumps(description_dict)
-
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
 
@@ -164,7 +159,9 @@ class _KnimeNodeBackend(kg.EntryPoint):
         super().__init__()
         self._callback = None
 
-    def createNodeExtensionProxy(self, factory_module_name: str, factory_method_name: str, node_id: str) -> _PythonNodeProxy:
+    def createNodeExtensionProxy(
+        self, factory_module_name: str, factory_method_name: str, node_id: str
+    ) -> _PythonNodeProxy:
         factory_module = importlib.import_module(factory_module_name)
         factory_method = getattr(factory_module, factory_method_name)
         node = factory_method(node_id)
@@ -180,7 +177,6 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
     def initializeJavaCallback(self, callback):
         self._callback = callback
-    
 
     def retrieveNodesAsJson(self, extension_module_name: str) -> str:
         importlib.import_module(extension_module_name)
@@ -190,14 +186,17 @@ class _KnimeNodeBackend(kg.EntryPoint):
     def resolve_node_dict(self, node: kn._Node):
         d = node.to_dict()
         instance = node.node_factory()
-        description = self.extract_description(instance)
+        description = self.extract_description(instance, node.name)
         return {**d, **description}
 
-    def extract_description(self, node: kn.PythonNode) -> dict:
+    def extract_description(self, node: kn.PythonNode, name) -> dict:
         doc = node.__doc__
         lines = doc.splitlines()
         if len(lines) == 0:
             short_description = "Please document your node class with a docstring"
+            logging.warning(
+                f"No docstring available for node {name}. Please document the node class with a docstring or set __doc__ in the init of the node."
+            )
         else:
             short_description = lines[0]
         if len(lines) > 1:
@@ -212,11 +211,12 @@ class _KnimeNodeBackend(kg.EntryPoint):
         return {
             "short_description": short_description,
             "full_description": full_description,
-            "options": param_doc
+            "options": param_doc,
         }
 
-
-    def createNodeFromExtension(self, extension_module_name: str, node_id: str) -> _PythonNodeProxy:
+    def createNodeFromExtension(
+        self, extension_module_name: str, node_id: str
+    ) -> _PythonNodeProxy:
         importlib.import_module(extension_module_name)
         node_info = kn._nodes[node_id]
         node = node_info.node_factory()

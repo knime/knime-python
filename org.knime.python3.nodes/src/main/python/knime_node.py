@@ -83,9 +83,6 @@ class PythonNode(ABC):
         pass
 
 
-    
-
-
 class _Node:
     """Class representing an actual node in KNIME AP."""
 
@@ -114,7 +111,6 @@ class _Node:
         self.icon_path = icon_path
         self.category = category
         self.after = after
-
 
     def to_dict(self):
         return {
