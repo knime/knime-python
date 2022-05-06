@@ -57,6 +57,7 @@ import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDescription41Proxy;
 import org.knime.node.v41.KnimeNodeDocument;
 import org.knime.node.v41.NodeType;
+import org.knime.node.v41.Views;
 
 /**
  * A builder for {@link NodeDescription NodeDescriptions}.
@@ -141,6 +142,17 @@ public final class NodeDescriptionBuilder {
             }
         } else {
             throw new IllegalStateException("Node " + m_name + " has no input or output ports configured");
+        }
+
+        if (!m_views.isEmpty()) {
+            final Views views = node.addNewViews();
+            for (int i = 0; i < m_views.size(); i++) {
+                final View view = m_views.get(i);
+                org.knime.node.v41.View viewXML = views.addNewView();
+                viewXML.setName(view.getName());
+                viewXML.setIndex(BigInteger.valueOf(i));
+                viewXML.addNewP().newCursor().setTextValue(view.getDescription());
+            }
         }
 
         return new NodeDescription41Proxy(doc);
