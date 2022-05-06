@@ -50,6 +50,7 @@ package org.knime.python3.nodes.dialog;
 
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -88,9 +89,12 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
             if (m_schema == null) {
                 m_schema = proxy.getSchema();
             }
+            // FIXME: Ask Martin if this is desired behavior
+            var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
             var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL), m_schema);
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                new String[0]);
+            var rep = proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
+                specsWithoutFlowVars);
+            return rep;
         }
     }
 
@@ -108,8 +112,14 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
 
     @Override
     public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
-        // TODO Auto-generated method stub
-
+        try (var proxy = m_proxyProvider.get()) {
+            var parameters = proxy.getParameters();
+            if (m_schema == null) {
+                m_schema = proxy.getSchema();
+            }
+            var jsonSettings = new JsonNodeSettings(parameters, m_schema);
+            jsonSettings.saveTo(settings.get(SettingsType.MODEL));
+        }
     }
 
 }

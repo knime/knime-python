@@ -53,6 +53,7 @@ from numbers import Number
 from enum import Enum, auto
 from typing import List, Optional, Tuple
 import knime_table as kt
+import knime_parameter as kp
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
 from packaging.version import Version
@@ -88,6 +89,14 @@ class Port:
 class ViewDeclaration:
     name: str
     description: str
+
+
+IntParameter = kp.IntParameter
+DoubleParameter = kp.DoubleParameter
+BoolParameter = kp.BoolParameter
+StringParameter = kp.StringParameter
+parameter_group = kp.parameter_group
+ColumnParameter = kp.ColumnParameter
 
 
 class PythonNode(ABC):
@@ -365,143 +374,3 @@ def view(name: str, description: str):
         return node_factory
 
     return add_view
-
-
-# ---------------------------------------------------------------------------------------------------------
-class Parameter:
-    """
-    Decorator class that essentially is an extension of property that includes the type as well as other information useful
-    for e.g. validation.
-    """
-
-    def __init__(
-        self,
-        fget,
-        fset=None,
-        _type: str = None,
-        since_version: Version = None,
-        doc=None,
-    ) -> None:
-        if fget is None:
-            raise ValueError("fget must always be defined for a Parameter")
-        self.fget = fget
-        self.fset = fset
-        self._type = _type
-        self.since_version = since_version
-        if doc is None and fget is not None:
-            doc = fget.__doc__
-        self.__doc__ = doc
-        self._name = ""
-
-    def __set_name__(self, owner, name):
-        self._name = name
-
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-        return self.fget(obj)
-
-    def __set__(self, obj, value):
-        if self.fset is None:
-            raise NotImplementedError("Every parameter must have a setter.")
-        self.fset(obj, value)
-
-    def validate(self, obj, value):
-        current_val = self.fget(obj)
-        try:
-            self.__set__(obj, value)
-        finally:
-            self.__set__(obj, current_val)
-
-    def setter(self, fset):
-        param = type(self)(
-            self.fget, fset, self._type, self.since_version, self.__doc__
-        )
-        param._name = self._name
-        return param
-
-    def get_parameter(self):
-        return self
-
-    def exists_in_version(self, version):
-        return self.since_version is None or self.since_version <= version
-
-
-def parameter(
-    _func=None,
-    *,
-    fset=None,
-    _type: str = None,
-    since_version: Version = None,
-    doc: str = None,
-):
-    def decorator_parameter(fget):
-        return Parameter(fget, fset, _type, since_version, doc)
-
-    if _func is None:
-        return decorator_parameter
-    else:
-        return decorator_parameter(_func)
-
-
-class BaseDescriptor:
-    def __init__(self, descriptor) -> None:
-        self.descriptor = descriptor
-
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-        return self.descriptor.__get__(obj, objtype)
-
-    def __set__(self, obj, value):
-        self.descriptor.__set__(obj, value)
-
-    def validate(self, obj, value):
-        self.descriptor.validate(obj, value)
-
-    def get_parameter(self):
-        return self.descriptor.get_parameter()
-
-    # TODO figure out if we can also implement setter here
-
-
-# TODO maybe this could be implemented as class decorator
-class UI(BaseDescriptor):
-    """
-    Decorator class defining the UI for a parameter.
-    """
-
-    def __init__(
-        self, parameter: Parameter = None, label: str = None, options: dict = None
-    ) -> None:
-        super().__init__(parameter)
-        self._label = label
-        self._options = options
-
-    def setter(self, fset):
-        param = self.descriptor.setter(fset)
-        return UI(param, self._label, self._options)
-
-
-def ui(label: str = None, options: dict = None):
-    return lambda parameter: UI(parameter, label, options)
-
-
-class Rule(BaseDescriptor):
-    """
-    Decorator class defining a rule for a parameter.
-    """
-
-    def __init__(self, descriptor, effect: str, scope: Parameter, schema: str) -> None:
-        super().__init__(descriptor)
-        self.effect = effect
-        self.scope = scope
-        self.schema = schema
-
-    def setter(self, fset):
-        descriptor = self.descriptor.setter(fset)
-        return Rule(descriptor, self.effect, self.scope, self.schema)
-
-
-def rule(effect: str, scope: Parameter, schema: dict):
-    return lambda descriptor: Rule(descriptor, effect, scope, schema)

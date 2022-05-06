@@ -51,7 +51,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 from typing import List, Tuple, Union
 
 import knime_node as kn
-import knime_node_parameter as knp
+import knime_parameter as kp
 import knime_gateway as kg
 import knime_schema as ks
 import knime_arrow_table as kat
@@ -226,29 +226,35 @@ class _PythonNodeProxy:
         self.setParameters(parameters, parameters_version)
         # TODO construct json forms here instead of in the node so that it isn't exposed as our API
         json_forms_dict = {
-            "data": knp.extract_parameters(self._node),
-            "schema": knp.extract_schema(self._node),
-            "ui_schema": knp.extract_ui_schema(self._node),
+            "data": kp.extract_parameters(self._node),
+            "schema": kp.extract_schema(self._node, _to_schemas(specs)),
+            "ui_schema": kp.extract_ui_schema(self._node),
         }
         return json.dumps(json_forms_dict)
 
     def getParameters(self) -> str:
-        parameters_dict = knp.extract_parameters(self._node)
+        parameters_dict = kp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
-    def getSchema(self) -> str:
-        schema = knp.extract_schema(self._node)
+    def getSchema(self, specs: List[str] = None) -> str:
+        if specs is not None:
+            specs = _to_schemas(specs)  # TODO support arbitrary port object specs
+        schema = kp.extract_schema(self._node, specs)
         return json.dumps(schema)
 
     def setParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
         version = parse(version)
-        knp.inject_parameters(self._node, parameters_dict, version)
+        kp.inject_parameters(self._node, parameters_dict, version)
 
     def validateParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
         version = parse(version)
-        return knp.validate_parameters(self._node, parameters_dict, version)
+        try:
+            kp.validate_parameters(self._node, parameters_dict, version)
+            return None
+        except BaseException as error:
+            return str(error)
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
@@ -305,6 +311,10 @@ class _PythonNodeProxy:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
 
 
+def _to_schemas(in_schemas: List[str]):
+    return [ks.Schema.from_knime_dict(json.loads(i)) for i in in_schemas]
+
+
 class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
@@ -355,14 +365,22 @@ class _KnimeNodeBackend(kg.EntryPoint):
         else:
             full_description = short_description
 
-        param_doc = knp.extract_parameter_docs(node)
+        param_doc = kp.extract_parameter_descriptions(node)
+        options = []
+        tabs = []
+        for doc in param_doc:
+            if "options" in doc:
+                tabs.append(doc)
+            else:
+                options.append(doc)
         # TODO support for tabs
         # TODO support for ports
         # TODO support for views
         return {
             "short_description": short_description,
             "full_description": full_description,
-            "options": param_doc,
+            "options": options,
+            "tabs": tabs,
         }
 
     def createNodeFromExtension(

@@ -3,9 +3,6 @@
 <plugin>
    <extension-point id="PythonExtension" name="Python Extension" schema="schema/PythonExtension.exsd"/>
    <extension
-         point="org.knime.workbench.repository.nodes">
-   </extension>
-   <extension
          point="org.knime.workbench.repository.nodesets">
       <nodeset
             deprecated="false"

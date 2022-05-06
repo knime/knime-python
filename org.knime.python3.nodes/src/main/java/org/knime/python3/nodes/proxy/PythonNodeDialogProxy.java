@@ -44,16 +44,28 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 10, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes.proxy;
 
 /**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeProxy extends NodeFactoryProxy, PythonNodeModelProxy, PythonNodeDialogProxy {
-    // marker interface that is implemented on the Python side
+public interface PythonNodeDialogProxy {
+
+    /**
+     * @param parameters current node configuration
+     * @param parametersVersion version of the parameters
+     * @param specs input specs TODO just a placeholder to be replaced with the actual specs eventually
+     * @return the representation of the dialog e.g. JSON Forms
+     */
+    String getDialogRepresentation(String parameters, String parametersVersion, String[] schemas);
+
+    String getParameters();
+
+    /**
+     * @return the JSON schema of the parameters
+     */
+    String getSchema();
 }

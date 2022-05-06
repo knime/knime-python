@@ -88,7 +88,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Constructor for a new builder.
      *
-     * @param name of the node
+     * @param name     of the node
      * @param nodeType of the node
      */
     public NodeDescriptionBuilder(final String name, final String nodeType) {
@@ -123,7 +123,7 @@ public final class NodeDescriptionBuilder {
 
         var ports = node.addNewPorts();
         if (!(m_inputPorts.isEmpty() && m_outputPorts.isEmpty())) {
-            int inputIdx = 0;//NOSONAR
+            int inputIdx = 0;// NOSONAR
             for (var inPort : m_inputPorts) {
                 var port = ports.addNewInPort();
                 port.setIndex(BigInteger.valueOf(inputIdx));
@@ -131,7 +131,7 @@ public final class NodeDescriptionBuilder {
                 port.setName(inPort.getName());
                 port.addNewP().newCursor().setTextValue(inPort.getDescription());
             }
-            int outputIdx = 0;//NOSONAR
+            int outputIdx = 0;// NOSONAR
             for (var outPort : m_outputPorts) {
                 var port = ports.addNewOutPort();
                 port.setIndex(BigInteger.valueOf(outputIdx));
@@ -182,7 +182,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds an input port.
      *
-     * @param name of the input port
+     * @param name        of the input port
      * @param description of the input port
      * @return this builder
      */
@@ -194,7 +194,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds an output port.
      *
-     * @param name of the port
+     * @param name        of the port
      * @param description of the port
      * @return this builder
      */
@@ -206,7 +206,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds a top-level option.
      *
-     * @param name of the option
+     * @param name        of the option
      * @param description of the option
      * @return this builder
      */
@@ -229,7 +229,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds a view.
      *
-     * @param name of the view
+     * @param name        of the view
      * @param description of the view
      * @return this builder
      */
@@ -238,7 +238,7 @@ public final class NodeDescriptionBuilder {
         return this;
     }
 
-    private abstract static class Described { //NOSONAR will become obsolete once we can use records in Java 17
+    private abstract static class Described { // NOSONAR will become obsolete once we can use records in Java 17
 
         private final String m_name;
 
@@ -282,7 +282,7 @@ public final class NodeDescriptionBuilder {
         /**
          * Creates a Builder for a Tab.
          *
-         * @param name of the tab
+         * @param name        of the tab
          * @param description of the tab
          * @return the builder
          */
@@ -297,7 +297,6 @@ public final class NodeDescriptionBuilder {
                 option.fill(tab.addNewOption());
             }
         }
-
 
         /**
          * A builder for tabs.
@@ -315,7 +314,7 @@ public final class NodeDescriptionBuilder {
             /**
              * Adds an option to the tab.
              *
-             * @param name of the option
+             * @param name        of the option
              * @param description of the option
              * @return this builder
              */
@@ -352,6 +351,5 @@ public final class NodeDescriptionBuilder {
             super(name, description);
         }
     }
-
 
 }
