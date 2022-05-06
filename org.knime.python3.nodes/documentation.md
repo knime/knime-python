@@ -134,22 +134,35 @@ def my_function(inputs: List[kn.Table]) -> List[kn.Table]:
 
 > See `knime-python/org.knime.python3.arrow.tests/src/test/python/unittest/test_functional_table_api.py` for first experiments with this API
 
-## Configuration of alternative Python executable
+## Customizing the Python executable
 
-Every Python node extension comes with a bundled environment that is automatically created during installation.
-In most cases this environment should be sufficient for the extension to work as it contains all dependencies.
-However, during development this bundled environment is typically not available.
-It is therefore possible to provide a YAML file that specifies which Python executable should be used for which Python extension.
-The path to this YAML has to be added as system property in the knime.ini via the key word `org.knime.python3.nodes.alternate_executable_yml`.
-The YAML supports two types of exectuables, either a Conda environment or another (manual) Python executable (see 'Manually configured Python environments' in https://docs.knime.com/2021-12/python_installation_guide/index.html#configure_python_integration for more details).
-Here is an example outlining the format of the YAML:
+Some extensions might have additional requirements that are not part of the bundled environment e.g. in case of third party models.
+For these extensions, it is possible to overwrite the Python executable used for execution.
+This can be done via the system property `org.knime.python.extension.config` that has to point to a special YAML file on disc.
+Add it to your knime.ini with the following line:
+`-Dorg.knime.python.extension.config=path/to/your/config.yml`
+The format of the YAML is:
 ```yml
-org.my.first.extension:
-  type: conda
-  environment_path: /path/to/the/environment
-org.my.second.extension:
-  type: manual
-  command_path: /path/to/python/executable
+id.of.first.extension:
+  conda_env_path: path/to/conda/env
+id.of.second.extension:
+  python_executable: path/to/python/executable
 ```
+You have two options to specify a custom Python exectuable:
+- Via the `conda_env_path` property (recommended) that points to a Conda environment on your machine
+- Via the `python_executable` property that points to an executable script that starts Python (see 'Manually configured Python environments' in https://docs.knime.com/2021-12/python_installation_guide/index.html#configure_python_integration for more details)
+If you specify both, then `conda_env_path` will take precedence.
+It is your responsibility to ensure that the Python you specified in this file has the necessary dependencies to run the extension.
+As illustrated above, you can overwrite the Python executable of multiple extensions.
 
-To include it you can add the following to your knime.ini: `-Dorg.knime.python3.nodes.alternate_executable_yml=/path/to/my/file.yml`
+
+## Registering Python extensions during development
+
+In order to register a Python extension you are developing, you can added to the `org.knime.python.extension.config` YAML explained above by adding a src property:
+```yml
+---
+id.of.your.dev.extension:
+  src: path/to/your/extension
+  conda_env_path: path/to/conda/env
+```
+Note that you have to specify either `conda_env_path` or `python_executable` because the Analytics Platform doesn't have a bundled environment for your extension installed.

@@ -48,10 +48,8 @@
  */
 package org.knime.python3.nodes;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -75,13 +73,6 @@ import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
-
-    /**
-     * Python node developers can register the extensions they are developing via this system property (as a ; separated
-     * list on Windows and a : separated list on Linux and Mac). In case there are conflicts with the extensions
-     * provided via the extension point then the extension provided via the property takes precedence.
-     */
-    private static final String PY_EXTENSION_DEV_PROPERTY = "knime.python.extensions";
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PurePythonNodeSetFactory.class);
 
@@ -115,32 +106,22 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     }
 
     private static Stream<KnimeExtension> parseExtensions() {
-        return Stream.concat(getExtensionsFromProperty(), getExtensionsFromExtensionPoint()).filter(Objects::nonNull)//
+        return Stream.concat(getExtensionsFromPreferences(), getExtensionsFromExtensionPoint())//
+                .filter(Objects::nonNull)//
             // if the same extension is defined by property and by extension point,
             // then we take the one from the property because the property is
             // intended for use during Python node development
             .distinct();
     }
 
-    private static Stream<KnimeExtension> getExtensionsFromProperty() {
-        return pathsFromProperty()//
+    private static Stream<KnimeExtension> getExtensionsFromPreferences() {
+        return PythonExtensionPreferences.getPathsToCustomExtensions()//
             .map(p -> parseExtension(p, null));
     }
 
     private static Stream<KnimeExtension> getExtensionsFromExtensionPoint() {
         return PYTHON_NODE_EXTENSION_PATHS.stream()//
             .map(e -> parseExtension(e.getPath(), e.getBundleName()));
-    }
-
-    private static Stream<Path> pathsFromProperty() {
-        var propertyDefinedPaths = System.getProperty(PY_EXTENSION_DEV_PROPERTY);
-        if (propertyDefinedPaths == null) {
-            return Stream.empty();
-        } else {
-            // the separator is either a ';' on Windows or ':' on Mac and Linux and therefore split will not use Pattern
-            return Stream.of(propertyDefinedPaths.split(File.pathSeparator))//NOSONAR
-                .map(Paths::get);
-        }
     }
 
     private static final KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {

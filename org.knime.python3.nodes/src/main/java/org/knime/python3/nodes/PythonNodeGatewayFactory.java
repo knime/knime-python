@@ -51,8 +51,10 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.python3.FreshPythonGatewayFactory;
 import org.knime.python3.Python3SourceDirectory;
+import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
@@ -60,6 +62,7 @@ import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.scripting.nodes.prefs.BundledPythonCommand;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -88,7 +91,7 @@ public final class PythonNodeGatewayFactory {
      */
     public static PythonGateway<KnimeNodeBackend> create(final String extensionId, final Path pathToExtension,
         final String environmentName) throws IOException, InterruptedException {
-        var command = PythonNodeCommandFactory.createCommand(extensionId, environmentName);
+        var command = createCommand(extensionId, environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
                 .addToPythonPath(Python3SourceDirectory.getPath())//
                 .addToPythonPath(Python3ArrowSourceDirectory.getPath())
@@ -98,6 +101,17 @@ public final class PythonNodeGatewayFactory {
         var gateway = FACTORY.create(gatewayDescriptionBuilder.build());
         PythonEntryPointUtils.registerPythonValueFactories(gateway.getEntryPoint());
         return gateway;
+    }
+
+    private static PythonCommand createCommand(final String extensionId, final String environmentName) {
+        return PythonExtensionPreferences.getCustomPythonCommand(extensionId)//
+                .orElseGet(() -> getPythonCommandForEnvironment(environmentName));
+    }
+
+    private static PythonCommand getPythonCommandForEnvironment(final String environmentName) {
+        var environment = CondaEnvironmentRegistry.getEnvironment(environmentName);
+        var legacyBundledCondaCommand = new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
+        return new LegacyPythonCommandAdapter(legacyBundledCondaCommand);
     }
 
 }
