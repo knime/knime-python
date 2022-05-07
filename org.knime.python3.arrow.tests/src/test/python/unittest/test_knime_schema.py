@@ -68,8 +68,9 @@ class TypeTest(ABC):
         self.assertIsInstance(self.create_type(), k.KnimeType)
 
     def test_equals(self):
-        self.assertTrue(self.create_type() == self.create_type())
+        self.assertEqual(self.create_type(), self.create_type())
         self.assertFalse(self.create_type() != self.create_type())
+        self.assertEqual(id(self.create_type()), id(self.create_type()))
 
 
 class IntTest(TypeTest, unittest.TestCase):
@@ -77,7 +78,7 @@ class IntTest(TypeTest, unittest.TestCase):
         return k.int32()
 
     def isinstance(self, o):
-        return isinstance(o, k.IntType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.INT
 
 
 class BoolTest(TypeTest, unittest.TestCase):
@@ -85,7 +86,7 @@ class BoolTest(TypeTest, unittest.TestCase):
         return k.bool_()
 
     def isinstance(self, o):
-        return isinstance(o, k.BoolType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.BOOL
 
 
 class BlobTest(TypeTest, unittest.TestCase):
@@ -93,7 +94,7 @@ class BlobTest(TypeTest, unittest.TestCase):
         return k.blob()
 
     def isinstance(self, o):
-        return isinstance(o, k.BlobType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.BLOB
 
 
 class LongTest(TypeTest, unittest.TestCase):
@@ -101,7 +102,7 @@ class LongTest(TypeTest, unittest.TestCase):
         return k.int64()
 
     def isinstance(self, o):
-        return isinstance(o, k.LongType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.LONG
 
 
 class StringTest(TypeTest, unittest.TestCase):
@@ -109,7 +110,7 @@ class StringTest(TypeTest, unittest.TestCase):
         return k.string()
 
     def isinstance(self, o):
-        return isinstance(o, k.StringType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.STRING
 
 
 class DoubleTest(TypeTest, unittest.TestCase):
@@ -117,7 +118,7 @@ class DoubleTest(TypeTest, unittest.TestCase):
         return k.double()
 
     def isinstance(self, o):
-        return isinstance(o, k.DoubleType)
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.DOUBLE
 
 
 class IntListTest(TypeTest, unittest.TestCase):
@@ -125,23 +126,37 @@ class IntListTest(TypeTest, unittest.TestCase):
         return k.list_(k.int32())
 
     def isinstance(self, o):
-        return isinstance(o, k.ListType)
+        return (
+            isinstance(o, k.ListType)
+            and isinstance(o.inner_type, k.PrimitiveType)
+            and o.inner_type._type_id == k.PrimitiveTypeId.INT
+        )
 
 
 class IntStringStructTest(TypeTest, unittest.TestCase):
     def create_type(self):
-        return k.struct_(k.int32(), k.string())
+        return k.struct(k.int32(), k.string())
 
     def isinstance(self, o):
-        return isinstance(o, k.StructType)
+        return (
+            isinstance(o, k.StructType)
+            and isinstance(o.inner_types[0], k.PrimitiveType)
+            and o.inner_types[0]._type_id == k.PrimitiveTypeId.INT
+            and isinstance(o.inner_types[1], k.PrimitiveType)
+            and o.inner_types[1]._type_id == k.PrimitiveTypeId.STRING
+        )
 
 
-class ExtensionStringTest(TypeTest, unittest.TestCase):
+class LogicalStringTest(TypeTest, unittest.TestCase):
     def create_type(self):
-        return k.ExtensionType(k._knime_logical_type("StringValueFactory"), k.string())
+        return k.LogicalType(k._knime_logical_type("StringValueFactory"), k.string())
 
     def isinstance(self, o):
-        return isinstance(o, k.ExtensionType)
+        return (
+            isinstance(o, k.LogicalType)
+            and o.storage_type == k.string()
+            and o.logical_type == k._knime_logical_type("StringValueFactory")
+        )
 
     def test_value_type_fails(self):
         with self.assertRaises(TypeError):
@@ -149,7 +164,7 @@ class ExtensionStringTest(TypeTest, unittest.TestCase):
             print(t.value_type)
 
 
-class ExtensionTimeTest(TypeTest, unittest.TestCase):
+class LogicalTimeTest(TypeTest, unittest.TestCase):
     """
     This test shows how extension types can be created
     with KNIME's Python type system
@@ -159,32 +174,50 @@ class ExtensionTimeTest(TypeTest, unittest.TestCase):
         _register_extension_types()
 
     def create_type(self):
-        return k.extension(dt.date)
+        return k.logical(dt.date)
 
     def isinstance(self, o):
-        return isinstance(o, k.ExtensionType)
+        return isinstance(o, k.LogicalType)
 
     def test_value_type(self):
         t = self.create_type()
         self.assertEqual(dt.date, t.value_type)
 
 
-class UnknownExtensionTest(unittest.TestCase):
+class UnknownLogicalTest(unittest.TestCase):
     def test_unknown_extension_creation_fails(self):
         class Dummy:
             pass
 
         with self.assertRaises(TypeError):
-            t = k.extension(Dummy())
+            t = k.logical(Dummy())
 
         with self.assertRaises(TypeError):
-            t = k.extension(int)
+            t = k.logical(int)
 
 
 class KnimeType(unittest.TestCase):
     def test_knime_type_cannot_be_created(self):
         with self.assertRaises(TypeError):
             t = k.KnimeType()
+
+
+class KnimeTypeInDict(unittest.TestCase):
+    def test_knime_types_are_hashable(self):
+        d = {
+            k.int32(): "int32",
+            k.int64(): "int64",
+            k.double(): "double",
+            k.string(): "string",
+            k.string(k.DictEncodingKeyType.BYTE): "string[dict_encoding=BYTE_KEY]",
+            k.bool_(): "bool",
+            k.blob(): "blob",
+            k.list_(k.int32()): "list<int32>",
+            k.struct(k.int32(), k.string()): "struct<int32, string>",
+        }
+
+        for key, v in d.items():
+            self.assertEqual(v, str(key))
 
 
 # ----------------------------------------------------------
@@ -199,7 +232,7 @@ def _register_extension_types():
         '"long"',
         """
                 {
-                    "type": "simple", 
+                    "type": "simple",
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
                 }
                 """,
@@ -211,7 +244,7 @@ def _register_extension_types():
         '"long"',
         """
                 {
-                    "type": "simple", 
+                    "type": "simple",
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateValueFactory\\"}" }
                 }
                 """,
@@ -223,8 +256,8 @@ def _register_extension_types():
         '{"type": "struct", "inner_types": ["long", "long"]}',
         """
                 {
-                    "type": "struct", 
-                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" }, 
+                    "type": "struct",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" },
                     "inner": [
                         {"type": "simple", "traits": {}},
                         {"type": "simple", "traits": {}}
@@ -347,7 +380,7 @@ class SchemaTest(unittest.TestCase):
             k.double(),
             k.string(),
             k.list_(k.bool_()),
-            k.struct_(k.int64(), k.string()),
+            k.struct(k.int64(), k.string()),
         ]
         names = ["Ints", "Longs", "Doubles", "Strings", "List", "Struct"]
         s = k.Schema(types, names)
@@ -357,7 +390,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual("double", str(k.double()))
         self.assertEqual("bool", str(k.bool_()))
         self.assertEqual("list<bool>", str(k.list_(k.bool_())))
-        self.assertEqual("struct<int64, string>", str(k.struct_(k.int64(), k.string())))
+        self.assertEqual("struct<int64, string>", str(k.struct(k.int64(), k.string())))
 
         sep = ",\n\t"
         self.assertEqual(
@@ -410,9 +443,9 @@ class SchemaTest(unittest.TestCase):
         _register_extension_types()
 
         types = [
-            k.extension(dt.date),
-            k.extension(dt.time),
-            k.extension(dt.datetime),
+            k.logical(dt.date),
+            k.logical(dt.time),
+            k.logical(dt.datetime),
         ]
         names = ["Date", "Time", "DateTime"]
         s = k.Schema(types, names)
@@ -431,10 +464,10 @@ class SchemaTest(unittest.TestCase):
     def test_list_wrapping(self):
         _register_extension_types()
         types = [
-            k.list_(k.extension(dt.date)),
-            k.list_(k.extension(dt.time)),
-            k.list_(k.extension(dt.datetime)),
-            k.list_(k.struct_(k.int64(), k.string())),
+            k.list_(k.logical(dt.date)),
+            k.list_(k.logical(dt.time)),
+            k.list_(k.logical(dt.datetime)),
+            k.list_(k.struct(k.int64(), k.string())),
         ]
         names = ["Dates", "Times", "DateTimes", "Structs"]
         s = k.Schema(types, names)
