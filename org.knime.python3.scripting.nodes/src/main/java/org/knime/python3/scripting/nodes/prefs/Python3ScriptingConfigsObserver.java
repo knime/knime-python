@@ -128,7 +128,7 @@ public class Python3ScriptingConfigsObserver extends PythonConfigsObserver {
     protected Collection<PythonModuleSpec> getAdditionalRequiredModules() {
         return List.of(//
             new PythonModuleSpec("py4j"), //
-            new PythonModuleSpec("pyarrow", new Version(6, 0, 0), true, new Version(7, 0, 0), false)//
+            new PythonModuleSpec("pyarrow", new Version(6, 0, 0), true)//
         );
     }
 }
