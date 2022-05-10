@@ -160,7 +160,6 @@ As illustrated above, you can overwrite the Python executable of multiple extens
 
 In order to register a Python extension you are developing, you can added to the `org.knime.python.extension.config` YAML explained above by adding a src property:
 ```yml
----
 id.of.your.dev.extension:
   src: path/to/your/extension
   conda_env_path: path/to/conda/env
