@@ -14,6 +14,7 @@ author: Jane Doe
 env_yml_path: path/to/env_yml # Path to the Conda environment yml, from which the environment for this extension will be built
 extension_module: my_extension
 description: My New Extension # Human readable bundle name / description
+long_description: This extension provides functionality that everyone wants to have. # Text describing the extension (optional)
 group_id: org.knime.python3.nodes.tests # Will be concatenated with the name to an ID
 version: 4.6.0 # First version of the KNIME Analytics Platform, for which this extension can be used
 vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
