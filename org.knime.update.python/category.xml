@@ -2,6 +2,8 @@
 <site>
    <feature id="org.knime.features.python3.scripting" version="0.0.0"/>
    <feature id="org.knime.features.python3.scripting.source" version="0.0.0"/>
+   <feature id="org.knime.features.python3.nodes" version="0.0.0"/>
+   <feature id="org.knime.features.python3.nodes.source" version="0.0.0"/>
    <category-def name="knime-python" label="Build artifacts from knime-python">
        <description>Build artifacts from knime-python</description>
        <query><expression type="match">id ~= /.+/</expression></query>

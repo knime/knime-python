@@ -23,6 +23,7 @@
 	<modules>
 		<module>org.knime.ext.py4j</module>
 		<module>org.knime.features.python3.scripting</module>
+		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.arrow</module>
 		<!-- 
@@ -33,6 +34,7 @@
 		<module>org.knime.python3.py4j.dependencies</module>
 		<module>org.knime.python3.scripting</module>
 		<module>org.knime.python3.scripting.nodes</module>
+		<module>org.knime.python3.nodes</module>
 		<module>org.knime.update.python</module>
 	</modules>
 
