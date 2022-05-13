@@ -41,6 +41,11 @@
 	<!-- List all required repositories here. The variables are defined in knime-maven-parent/pom.xml. -->
 	<repositories>
 		<repository>
+			<id>p2-knime-base-views</id>
+			<layout>p2</layout>
+			<url>${knime.base.views.p2}</url>
+		</repository>
+		<repository>
 			<id>p2-knime-core-columnar</id>
 			<layout>p2</layout>
 			<url>${knime.core.columnar.p2}</url>
