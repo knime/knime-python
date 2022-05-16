@@ -53,8 +53,6 @@ import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
@@ -64,6 +62,8 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 
@@ -115,7 +115,7 @@ public final class DelegatingNodeModel extends NodeModel {
     }
 
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         try (var node = m_proxySupplier.get()) {
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs);
@@ -127,7 +127,7 @@ public final class DelegatingNodeModel extends NodeModel {
     }
 
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec)
         throws Exception {
         try (var node = m_proxySupplier.get()) {
             node.loadValidatedSettings(m_settings);

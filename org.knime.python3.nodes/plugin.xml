@@ -4,11 +4,6 @@
    <extension-point id="PythonExtension" name="Python Extension" schema="schema/PythonExtension.exsd"/>
    <extension
          point="org.knime.workbench.repository.nodes">
-      <node
-            deprecated="false"
-            factory-class="org.knime.python3.nodes.playground.MyDecoratedPythonNodeFactory"
-            hidden="false">
-      </node>
    </extension>
    <extension
          point="org.knime.workbench.repository.nodesets">
@@ -16,5 +11,16 @@
             deprecated="false"
             factory-class="org.knime.python3.nodes.PurePythonNodeSetFactory">
       </nodeset>
+   </extension>
+   <extension
+         point="org.knime.core.PortType">
+      <portType
+            hidden="false"
+            name="org.knime.python3.nodes.PythonBinaryBlobFileStorePortObject"
+            objectClass="org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+            objectSerializer="org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject$Serializer"
+            specClass="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
+            specSerializer="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec$Serializer">
+      </portType>
    </extension>
 </plugin>

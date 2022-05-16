@@ -52,7 +52,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowDataSource;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 
 /**
  * Proxy for a node implemented in Python. This interface is implemented on the Python side.
@@ -62,7 +63,6 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 public interface PythonNodeModelProxy {
 
     // TODO separate methods with long runtime (i.e. execute) from methods with short runtimes (all other methods)
-
 
     /**
      * Sets the given parameters.
@@ -84,33 +84,30 @@ public interface PythonNodeModelProxy {
     /**
      * Performs the node execution.
      *
-     * @param outputObjectPaths
-     * @param inputObjectPaths
-     * @param sources
-     * @return The data sinks populated with data on the Python side
+     * @param inputs
+     * @param context The {@link PythonExecutionContext} valid for this execution
+     * @return The outputs
      */
-    List<PythonArrowDataSink> execute(PythonArrowDataSource[] sources, String[] inputObjectPaths,
-        String[] outputObjectPaths, PythonExecutionContext ctx);
+    List<PythonPortObject> execute(PythonPortObject[] inputs, PythonExecutionContext context);
 
     /**
      * Performs the node configuration. Given the input table schemas, provide the schemas of the resulting tables.
      *
-     * @param serializedInSchemas JSON to String serialized version of the input schemas
-     * @return The JSON to String serialized version of the output schemas
+     * @param inputs input specs
+     * @return The output specs
      */
-    List<String> configure(String[] serializedInSchemas);
+    List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs);
 
     /**
-     * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving
-     * KNIME URLs to local file paths).
+     * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving KNIME
+     * URLs to local file paths).
      *
      * @param callback The node's Java callback.
      */
     void initializeJavaCallback(Callback callback);
 
     /**
-     * Provides Java-backed functionality to the Python side.
-     * DUPLICATED FROM Python3KernelBackendProxy
+     * Provides Java-backed functionality to the Python side. DUPLICATED FROM Python3KernelBackendProxy
      * <P>
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
@@ -133,9 +130,31 @@ public interface PythonNodeModelProxy {
         PythonArrowDataSink create_sink() throws IOException; //NOSONAR
     }
 
+    /**
+     * Execution context provided to Python while executing a node. This can be used to perform progress reporting
+     * and/or cancellation checks.
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
     public interface PythonExecutionContext {
+        /**
+         * Set the current node execution progress
+         *
+         * @param progress between 0 and 1
+         */
         void set_progress(double progress);
 
+        /**
+         * Set the current node execution progress with a message
+         *
+         * @param progress between 0 and 1
+         * @param message The message to be shown in the progress monitor
+         */
+        void set_progress(final double progress, final String message);
+
+        /**
+         * @return True if the node has been cancelled. Then the Python code should return as soon as possible
+         */
         boolean is_canceled();
     }
 }

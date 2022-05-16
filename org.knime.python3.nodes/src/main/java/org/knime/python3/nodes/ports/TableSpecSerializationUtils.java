@@ -46,14 +46,13 @@
  * History
  *   22 Apr 2022 (chaubold): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.ports;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.IDataRepository;
@@ -83,17 +82,14 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
  */
 public final class TableSpecSerializationUtils {
     /**
-     * Convert an Array of {@link DataTableSpec} to a serialized string representation using JSON
+     * Convert a {@link DataTableSpec} to a serialized string representation using JSON
      *
-     * @param specs The {@link DataTableSpec}s to serialize to JSON
-     * @return The string representations of the JSON serialized {@link DataTableSpec}s.
+     * @param spec The {@link DataTableSpec} to serialize to JSON
+     * @return The string representation of the JSON serialized {@link DataTableSpec}.
      */
-    static String[] serializeTableSpecs(final DataTableSpec[] specs) {
-        final AnnotatedColumnarSchema[] inSchemas =
-            Stream.of(specs).map(TableSpecSerializationUtils::specToSchema).toArray(AnnotatedColumnarSchema[]::new);
-
-        return Arrays.stream(inSchemas).map(TableSpecSerializationUtils::serializeColumnarValueSchema)
-            .toArray(String[]::new);
+    static String serializeTableSpec(final DataTableSpec spec) {
+        final var annotatedSchema = specToSchema(spec);
+        return serializeColumnarValueSchema(annotatedSchema);
     }
 
     /**

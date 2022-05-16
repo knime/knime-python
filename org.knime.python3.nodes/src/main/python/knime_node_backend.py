@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import knime_node as kn
 import knime_node_parameter as knp
@@ -68,6 +68,151 @@ from py4j.java_collections import ListConverter
 from packaging.version import parse
 
 # TODO: register extension types
+
+
+class _PythonPortObject:
+    def __init__(self, java_class_name):
+        self._java_class_name = java_class_name
+
+    def getJavaClassName(self) -> str:
+        return self._java_class_name
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PythonPortObject"
+        ]
+
+
+class _PythonTablePortObject:
+    def __init__(self, java_class_name, sink):
+        self._java_class_name = java_class_name
+        self._sink = sink
+
+    def getJavaClassName(self) -> str:
+        return self._java_class_name
+
+    def getPythonArrowDataSink(self):
+        return self._sink
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonTablePortObject"
+        ]
+
+
+class _PythonBinaryPortObject:
+    def __init__(self, java_class_name, data, id):
+        self._java_class_name = java_class_name
+        self._data = data
+        self._id = id
+
+    def getJavaClassName(self) -> str:
+        return self._java_class_name
+
+    def getBinaryData(self):
+        return self._data
+
+    def getPortId(self):
+        return self._id
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonBinaryPortObject"
+        ]
+
+
+class _PythonPortObjectSpec:
+    def __init__(self, java_class_name, json_string_data):
+        self._java_class_name = java_class_name
+        self._json_string_data = json_string_data
+
+    def getJavaClassName(self) -> str:
+        return self._java_class_name
+
+    def toJsonString(self) -> str:
+        return self._json_string_data
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PythonPortObjectSpec"
+        ]
+
+
+def _spec_to_python(spec: _PythonPortObjectSpec, port: kn.Port):
+    # TODO: use extension point,
+    #       see https://knime-com.atlassian.net/browse/AP-18368
+    class_name = spec.getJavaClassName()
+    data = json.loads(spec.toJsonString())
+    if class_name == "org.knime.core.data.DataTableSpec":
+        assert port.type == kn.PortType.TABLE
+        return ks.Schema.from_knime_dict(data)
+    elif class_name == "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec":
+        assert port.type == kn.PortType.BYTES
+        bpos = ks.BinaryPortObjectSpec.from_knime_dict(data)
+        assert (
+            bpos.id == port.id
+        ), f"Expected binary input port ID {port.id} but got {bpos.id}"
+        return bpos
+
+    raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
+
+
+def _spec_from_python(spec, port: kn.Port):
+    # TODO: use extension point,
+    #       see https://knime-com.atlassian.net/browse/AP-18368
+    if port.type == kn.PortType.TABLE:
+        assert isinstance(spec, ks.Schema)
+        data = spec.to_knime_dict()
+        class_name = "org.knime.core.data.DataTableSpec"
+    elif port.type == kn.PortType.BYTES:
+        assert isinstance(spec, ks.BinaryPortObjectSpec)
+        assert (
+            port.id == spec.id
+        ), f"Expected binary output port ID {port.id} but got {spec.id}"
+
+        data = spec.to_knime_dict()
+        class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
+    else:
+        raise ValueError("Configure got unsupported PortObject")
+
+    return _PythonPortObjectSpec(class_name, json.dumps(data))
+
+
+def _port_object_to_python(port_object: _PythonPortObject, port: kn.Port):
+    # TODO: use extension point,
+    #       see https://knime-com.atlassian.net/browse/AP-18368
+    class_name = port_object.getJavaClassName()
+
+    if class_name == "org.knime.core.node.BufferedDataTable":
+        assert port.type == kn.PortType.TABLE
+        java_source = port_object.getDataSource()
+        return kat.ArrowReadTable(kg.data_source_mapper(java_source))
+    elif (
+        class_name
+        == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+    ):
+        assert port.type == kn.PortType.BYTES
+        return port_object.getBinaryData()
+
+    raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
+
+
+def _port_object_from_python(obj, port: kn.Port) -> _PythonPortObject:
+    # TODO: use extension point,
+    #       see https://knime-com.atlassian.net/browse/AP-18368
+    if port.type == kn.PortType.TABLE:
+        assert isinstance(obj, kt.WriteTable)
+        sink = obj._sink._java_data_sink
+        class_name = "org.knime.core.node.BufferedDataTable"
+        return _PythonTablePortObject(class_name, sink)
+    elif port.type == kn.PortType.BYTES:
+        assert isinstance(obj, bytes)
+        data = obj
+        id = port.id
+        class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+        return _PythonBinaryPortObject(class_name, data, id)
+    else:
+        raise ValueError("Configure got unsupported PortObject")
 
 
 class _PythonNodeProxy:
@@ -106,17 +251,12 @@ class _PythonNodeProxy:
         self._java_callback = java_callback
 
     def execute(
-        self, in_sources, in_object_paths, out_object_paths, exec_context
-    ) -> list:
-        # convert sources to tables
-        tables = [kat.ArrowReadTable(kg.data_source_mapper(s)) for s in in_sources]
-
-        # unpickle object from file paths
-        objects = []
-        for path in in_object_paths:
-            if path is not None:
-                with open(path, "rb") as file:
-                    objects.append(pickle.load(file))
+        self, input_objects: List[_PythonPortObject], exec_context
+    ) -> List[_PythonPortObject]:
+        inputs = [
+            _port_object_to_python(po, self._node.input_ports[idx])
+            for idx, po in enumerate(input_objects)
+        ]
 
         # prepare output table creation
         def create_python_sink():
@@ -126,29 +266,44 @@ class _PythonNodeProxy:
         kt._backend = kat.ArrowBackend(create_python_sink)
 
         # execute
-        out_tables, out_objects = self._node.execute(tables, objects, exec_context)
+        outputs = self._node.execute(inputs, exec_context)
+
         kt._backend.close()
         kt._backend = None
 
-        # get Java sink from WriteTables:
-        out_sinks = [t._sink._java_data_sink for t in out_tables]
+        #     # execute
+        #     out_tables, out_objects = self._node.execute(tables, objects, exec_context)
 
-        # pickle objects to the specified output paths
-        for obj, path in zip(out_objects, out_object_paths):
-            with open(path, "wb") as file:
-                pickle.dump(obj=obj, file=file)
+        #     # get Java sink from WriteTables:
+        #     out_sinks = [t._sink._java_data_sink for t in out_tables]
 
-        return ListConverter().convert(out_sinks, kg.client_server._gateway_client)
+        #     # pickle objects to the specified output paths
+        #     for obj, path in zip(out_objects, out_object_paths):
+        #         with open(path, "wb") as file:
+        #             pickle.dump(obj=obj, file=file)
 
-    def configure(self, in_schemas: List[ks.Schema]) -> List[ks.Schema]:
-        knime_in_schemas = [
-            ks.Schema.from_knime_dict(json.loads(i)) for i in in_schemas
+        java_outputs = [
+            _port_object_from_python(obj, self._node.output_ports[idx])
+            for idx, obj in enumerate(outputs)
         ]
-        knime_out_schemas = self._node.configure(knime_in_schemas)
-        out_str_schemas = [json.dumps(s.to_knime_dict()) for s in knime_out_schemas]
-        return ListConverter().convert(
-            out_str_schemas, kg.client_server._gateway_client
-        )
+
+        return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
+
+    def configure(
+        self, input_specs: List[_PythonPortObjectSpec]
+    ) -> List[_PythonPortObjectSpec]:
+
+        inputs = [
+            _spec_to_python(spec, self._node.input_ports[i])
+            for i, spec in enumerate(input_specs)
+        ]
+        outputs = self._node.configure(inputs)
+
+        output_specs = [
+            _spec_from_python(spec, self._node.output_ports[i])
+            for i, spec in enumerate(outputs)
+        ]
+        return ListConverter().convert(output_specs, kg.client_server._gateway_client)
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]

@@ -50,18 +50,22 @@ package org.knime.python3.nodes;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
-import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
@@ -71,6 +75,11 @@ import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
+import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
@@ -96,26 +105,19 @@ final class CloseablePythonNodeProxy
     private final AsynchronousCloseable<RuntimeException> m_closer =
         AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
 
+    private final ExtensionNode m_nodeSpec;
+
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private PythonArrowTableConverter m_tableManager;
 
     private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
-    // END STUFF FOR CONFIG AND EXEC
 
-    CloseablePythonNodeProxy(final NodeProxy proxy, final PythonGateway<?> gateway) {
+    CloseablePythonNodeProxy(final NodeProxy proxy, final PythonGateway<?> gateway, final ExtensionNode nodeSpec) {
         m_proxy = proxy;
         m_gateway = gateway;
-    }
-
-    private static IWriteFileStoreHandler getFileStoreHandler() {
-        var context = NodeContext.getContext();
-        if (context == null) {
-            throw new IllegalStateException("No NodeContext available");
-        }
-        var nativeNodeContainer = (NativeNodeContainer)context.getNodeContainer();
-        return (IWriteFileStoreHandler)nativeNodeContainer.getNode().getFileStoreHandler();
+        m_nodeSpec = nodeSpec;
     }
 
     private void closeInternal() {
@@ -168,19 +170,14 @@ final class CloseablePythonNodeProxy
     private void initTableManager() {
         if (m_tableManager == null) {
             m_tableManager =
-                new PythonArrowTableConverter(m_executorService, ARROW_STORE_FACTORY, getFileStoreHandler());
+                new PythonArrowTableConverter(m_executorService, ARROW_STORE_FACTORY, getWriteFileStoreHandler());
         }
     }
 
     @Override
-    public BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+    public PortObject[] execute(final PortObject[] inData, final ExecutionContext exec)
         throws IOException, CanceledExecutionException {
         initTableManager();
-        final var sources = m_tableManager.createSources(inData, exec.createSubExecutionContext(0.1));
-
-        // TODO: populate those properly
-        String[] inputObjectPaths = new String[0];
-        String[] outputObjectPaths = new String[0];
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
@@ -196,9 +193,18 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
+        final var pythonInputs =
+            Arrays.stream(inData).map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
+                .toArray(PythonPortObject[]::new);
+        exec.setProgress(0.1, "Sending data to Python");
+
         var progressMonitor = exec.createSubProgress(0.8);
 
-        final var execContext = new PythonNodeModelProxy.PythonExecutionContext() {
+        final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
+            @Override
+            public void set_progress(final double progress, final String message) {
+                progressMonitor.setProgress(progress, message);
+            }
 
             @Override
             public void set_progress(final double progress) {
@@ -209,27 +215,89 @@ final class CloseablePythonNodeProxy
             public boolean is_canceled() {
                 try {
                     progressMonitor.checkCanceled();
-                } catch (CanceledExecutionException e) {//NOSONAR
+                } catch (CanceledExecutionException e) { // NOSONAR we use the exception as an indicator for being cancelled
                     return true;
                 }
                 return false;
             }
         };
 
-        List<PythonArrowDataSink> sinks = m_proxy.execute(sources, inputObjectPaths, outputObjectPaths, execContext);
+        final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
 
-        return m_tableManager.convertToTables(sinks, exec.createSubExecutionContext(0.1));
+        return pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo,
+            m_tableManager, exec.createSubExecutionContext(0.1))).toArray(PortObject[]::new);
     }
 
     @Override
-    public DataTableSpec[] configure(final DataTableSpec[] inSpecs) {
-        final String[] serializedInSchemas = TableSpecSerializationUtils.serializeTableSpecs(inSpecs);
-        final List<String> serializedOutSchemas = m_proxy.configure(serializedInSchemas);
-        return TableSpecSerializationUtils.deserializeTableSpecs(serializedOutSchemas);
+    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) {
+        final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
+            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+
+        final var serializedOutSpecs = m_proxy.configure(serializedInSpecs);
+
+        final var outputPortTypeIdentifiers = m_nodeSpec.getOutputPortTypes();
+        if (serializedOutSpecs.size() != outputPortTypeIdentifiers.length) {
+            throw new IllegalStateException("Python node configure returned wrong number of output port specs");
+        }
+
+        return serializedOutSpecs.stream().map(PythonPortObjectTypeRegistry::convertFromPythonPortObjectSpec)
+            .toArray(PortObjectSpec[]::new);
+    }
+
+    private IWriteFileStoreHandler getWriteFileStoreHandler() {
+        final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
+        IWriteFileStoreHandler fsHandler = null;
+        if (nodeFsHandler instanceof IWriteFileStoreHandler) {
+            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
+        } else {
+            // TODO: copied from Python3KernelBackend but removed the logic to close temporary FS handlers for now -> re-add that!
+            fsHandler = NotInWorkflowWriteFileStoreHandler.create();
+        }
+        return fsHandler;
+    }
+
+    @SuppressWarnings("static-method")
+    private IFileStoreHandler getFileStoreHandler() {
+        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
     }
 
     @Override
     public String getSchema() {
         return m_proxy.getSchema();
+    }
+
+    private static PortType getPortTypeForIdentifier(final String identifier) {
+        if (identifier.equals("PortType.TABLE")) {
+            return BufferedDataTable.TYPE;
+        } else if (identifier.startsWith("PortType.BYTES")) {
+            return PythonBinaryBlobFileStorePortObject.TYPE;
+        }
+
+        throw new IllegalStateException("Found unknown PortType: " + identifier);
+    }
+
+    /**
+     * @return Input port types encoded as string. The order is important. Possible values are TABLE and BYTES, where
+     *         BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     */
+    @Override
+    public PortType[] getInputPortTypes() {
+        return Arrays.stream(m_nodeSpec.getInputPortTypes()).map(CloseablePythonNodeProxy::getPortTypeForIdentifier)
+            .toArray(PortType[]::new);
+    }
+
+    /**
+     * @return Output port types encoded as string. The order is important. Possible values are TABLE and BYTES, where
+     *         BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     */
+    @Override
+    public PortType[] getOutputPortTypes() {
+        return Arrays.stream(m_nodeSpec.getOutputPortTypes()).map(CloseablePythonNodeProxy::getPortTypeForIdentifier)
+            .toArray(PortType[]::new);
+    }
+
+    @Override
+    public int getNumViews() {
+        return m_nodeSpec.getNumViews();
     }
 }

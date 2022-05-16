@@ -51,8 +51,8 @@ Type system and schema definition for KNIME tables.
 # --------------------------------------------------------------------
 # Types
 # --------------------------------------------------------------------
-from abc import ABC, abstractmethod
-from typing import Iterator, List, Sequence, Type, Union, Tuple
+from abc import ABC, abstractmethod, abstractclassmethod
+from typing import Dict, Iterator, List, Sequence, Type, Union, Tuple
 import logging
 from enum import Enum, unique
 
@@ -403,6 +403,44 @@ def logical(value_type):
         )
 
 
+class PortObjectSpec(ABC):
+    """
+    Base protocol for PortObjectSpecs.
+
+    The must support conversion from/to a dictionary which is then
+    encoded via JSON and sent to KNIME
+    """
+
+    @abstractmethod
+    def to_knime_dict():
+        pass
+
+    @abstractclassmethod
+    def from_knime_dict(cls, data: Dict):
+        pass
+
+
+class BinaryPortObjectSpec(PortObjectSpec):
+    """
+    Port object spec for simple binary port objects with
+    and id that identifies what type of binary data is contained.
+    """
+
+    def __init__(self, id):
+        self._id = id
+
+    @property
+    def id(self):
+        return self._id
+
+    def to_knime_dict(self):
+        return {"id": self._id}
+
+    @classmethod
+    def from_knime_dict(cls, data):
+        return cls(data["id"])
+
+
 # --------------------------------------------------------------------
 # Schema
 # --------------------------------------------------------------------
@@ -436,7 +474,7 @@ class Column:
         )
 
 
-class Schema:
+class Schema(PortObjectSpec):
     """
     A schema defines the data types and names of the columns inside a table.
     Additionally it can hold metadata for the individual columns.
@@ -576,7 +614,7 @@ class Schema:
             f"{self.__class__.__name__}<\n\t{sep.join(str(c) for c in self._columns)}>"
         )
 
-    def to_knime_dict(self) -> dict:
+    def to_knime_dict(self) -> Dict:
         """
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME
         as result of a node's configure() method.

@@ -50,11 +50,11 @@ package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.JsonNodeSettings;
 
@@ -74,7 +74,7 @@ public interface NodeModelProxy {
 
     JsonNodeSettings saveSettings();
 
-    BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec) throws IOException, CanceledExecutionException;
+    PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws IOException, CanceledExecutionException;
 
-    DataTableSpec[] configure(final DataTableSpec[] inSpecs);
+    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs);
 }

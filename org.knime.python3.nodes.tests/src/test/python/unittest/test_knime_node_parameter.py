@@ -125,6 +125,7 @@ class DescriptorTest(unittest.TestCase):
         self.assertEqual(
             "The value must be non-negative.",
             knp.validate_parameters(self.node, params, version),
+        )
 
     def test_extract_inject(self):
         params = knp.extract_parameters(self.node)
