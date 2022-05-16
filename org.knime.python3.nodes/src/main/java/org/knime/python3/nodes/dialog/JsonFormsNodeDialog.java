@@ -54,7 +54,7 @@ import org.knime.base.views.node.defaultdialog.DefaultNodeDialog;
 import org.knime.core.webui.data.DataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
+import org.knime.core.webui.node.dialog.TextNodeSettingsService;
 import org.knime.core.webui.page.Page;
 
 /**
@@ -66,7 +66,7 @@ import org.knime.core.webui.page.Page;
  */
 public final class JsonFormsNodeDialog extends NodeDialog {
 
-    private final TextSettingsDataService m_settingsService;
+    private final TextNodeSettingsService m_settingsService;
 
     /**
      * Constructor.
@@ -74,7 +74,7 @@ public final class JsonFormsNodeDialog extends NodeDialog {
      * @param settingsType the type of settings this dialog is for
      * @param settingsService providing settings to the dialog
      */
-    public JsonFormsNodeDialog(final SettingsType settingsType, final TextSettingsDataService settingsService) {
+    public JsonFormsNodeDialog(final SettingsType settingsType, final TextNodeSettingsService settingsService) {
         super(settingsType);
         m_settingsService = settingsService;
     }
@@ -90,7 +90,7 @@ public final class JsonFormsNodeDialog extends NodeDialog {
     }
 
     @Override
-    protected TextSettingsDataService getSettingsDataService() {
+    protected TextNodeSettingsService getNodeSettingsService() {
         return m_settingsService;
     }
 

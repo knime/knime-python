@@ -55,7 +55,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextSettingsDataService;
+import org.knime.core.webui.node.dialog.TextNodeSettingsService;
 import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -66,7 +66,7 @@ import org.knime.python3.nodes.proxy.NodeDialogProxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingTextSettingsDataService implements TextSettingsDataService {
+public final class DelegatingTextSettingsDataService implements TextNodeSettingsService {
 
     private final Supplier<CloseableNodeDialogProxy> m_proxyProvider;
 
@@ -82,7 +82,7 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
     }
 
     @Override
-    public String getInitialData(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
+    public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             // TODO support model and view settings?
             if (m_schema == null) {
@@ -95,7 +95,7 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
     }
 
     @Override
-    public void applyData(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+    public void toNodeSettings(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
         if (m_schema == null) {
             try (var proxy = m_proxyProvider.get()) {
                 m_schema = proxy.getSchema();
@@ -107,7 +107,7 @@ public final class DelegatingTextSettingsDataService implements TextSettingsData
     }
 
     @Override
-    public void saveDefaultSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
+    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
         // TODO Auto-generated method stub
 
     }
