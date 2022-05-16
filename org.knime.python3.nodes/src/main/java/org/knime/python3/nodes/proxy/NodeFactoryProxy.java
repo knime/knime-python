@@ -65,4 +65,8 @@ public interface NodeFactoryProxy {
      */
     String getSchema();
 
+    /**
+     * @return The number of views of the node
+     */
+    int getNumViews();
 }

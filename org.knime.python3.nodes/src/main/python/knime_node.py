@@ -48,8 +48,10 @@ Provides base implementations and utilities for the development of KNIME nodes i
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from numbers import Number
-from typing import List, Tuple
+from enum import Enum, auto
+from typing import List, Optional, Tuple
 import knime_table as kt
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
@@ -57,10 +59,48 @@ from packaging.version import Version
 from typing import Callable
 
 
+class PortType(Enum):
+    # TODO: make this extensible
+    BYTES = auto()  # could have an ID -> PortObjectSpec, could be checked in configure?
+    TABLE = auto()
+
+
+@dataclass
+class Port:
+    type: PortType
+    name: str
+    description: str
+    id: Optional[
+        str
+    ] = None  # can be used by BYTES ports to only allow linking ports with matching IDs
+
+    def __post_init__(self):
+        """
+        Perform validation after __init__
+        """
+        if self.type == PortType.BYTES and self.id is None:
+            raise TypeError(
+                f"{type(self)}s of type {self.type} must have a unique 'id' set"
+            )
+
+
+@dataclass
+class ViewDeclaration:
+    name: str
+    description: str
+
+
 class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
+
+    Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
+    or populate the input_ports, output_ports, and view attributes.
     """
+
+    input_ports: List[Port] = None
+    output_ports: List[Port] = None
+    view: ViewDeclaration = None
 
     @abstractmethod
     def configure(self, inSchemas: List[str]) -> List[str]:
@@ -82,21 +122,56 @@ class PythonNode(ABC):
         #       See https://knime-com.atlassian.net/browse/AP-18641
         pass
 
+    def get_input_ports(self) -> List[Port]:
+        """
+        Optional method (TODO: only put into documentation, not implementation!)
+
+        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
+        or implement the get_input_ports, get_output_ports, and get_view methods. If the
+        methods exist, they will take precedence over the decorators.
+        """
+        return None
+
+    def get_output_ports(self) -> List[Port]:
+        """
+        Optional method (TODO: only put into documentation, not implementation!)
+
+        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
+        or implement the get_input_ports, get_output_ports, and get_view methods. If the
+        methods exist, they will take precedence over the decorators.
+        """
+        return None
+
+    def get_view(self) -> ViewDeclaration:
+        """
+        Optional method (TODO: only put into documentation, not implementation!)
+
+        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
+        or implement the get_input_ports, get_output_ports, and get_view methods. If the
+        methods exist, they will take precedence over the decorators.
+        """
+        return None
+
 
 class _Node:
     """Class representing an actual node in KNIME AP."""
 
-    node_factory: Callable[[], PythonNode]
+    node_factory: Callable
     id: str
     name: str
     node_type: str
     icon_path: str
     category: str
     after: str
+    input_ports: List[Port]
+    output_ports: List[Port]
+    views: List[
+        ViewDeclaration
+    ]  # for the moment we only allow one view, but we use a list to potentially allow multiple
 
     def __init__(
         self,
-        node_factory: Callable[[], PythonNode],
+        node_factory,
         id: str,
         name: str,
         node_type: str,
@@ -111,8 +186,17 @@ class _Node:
         self.icon_path = icon_path
         self.category = category
         self.after = after
+        self.input_ports = _get_ports(node_factory, "input_ports")
+        self.output_ports = _get_ports(node_factory, "output_ports")
+        self.views = [_get_view(node_factory)]
 
     def to_dict(self):
+        def port_to_str(port):
+            if port.type == PortType.BYTES:
+                return f"{port.type}={port.id}"
+            else:
+                return str(port.type)
+
         return {
             "id": self.id,
             "name": self.name,
@@ -120,6 +204,16 @@ class _Node:
             "icon_path": self.icon_path,
             "category": self.category,
             "after": self.after,
+            "input_port_types": [port_to_str(p) for p in self.input_ports],
+            "output_port_types": [port_to_str(p) for p in self.output_ports],
+            "input_ports": [
+                {"name": p.name, "description": p.description} for p in self.input_ports
+            ],
+            "output_ports": [
+                {"name": p.name, "description": p.description}
+                for p in self.output_ports
+            ],
+            "num_views": len(self.views),
         }
 
 
@@ -134,10 +228,10 @@ def node(
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode instance that should correspond to a node in KNIME.
     """
 
-    def register(factory_method):
+    def register(node_factory):
         id = f"{category}/{name}"
-        _nodes[id] = _Node(
-            node_factory=factory_method,
+        n = _Node(
+            node_factory=node_factory,
             id=id,
             name=name,
             node_type=node_type,
@@ -145,11 +239,135 @@ def node(
             category=category,
             after=after,
         )
-        return factory_method
+        _nodes[id] = n
+
+        def port_injector(*args, **kwargs):
+            """
+            This method is called whenever a node is instanciated through the node_factory
+            which was modified by the @kn.node decorator.
+
+            We inject the found ports/views into the instance after creation so that they are available
+            to the users.
+            """
+            node = node_factory(*args, **kwargs)
+            node.input_ports = n.input_ports
+            node.output_ports = n.output_ports
+            node.view = n.views[0]
+            return node
+
+        return port_injector
 
     return register
 
 
+def _add_port(node_factory, port_slot: str, port: Port):
+    if not hasattr(node_factory, port_slot) or getattr(node_factory, port_slot) is None:
+        setattr(node_factory, port_slot, [])
+        # We insert a tiny marker to know whether the port slot was created by us,
+        # or whether it already existed in the class because we do NOT want to
+        # insert ports into an attrib usin the decorator if it was previously
+        # filled by the user. The reason is that we wouldn't know the Port order
+        # and whether overriding or appending was desired.
+        setattr(node_factory, "__knime_added_" + port_slot, True)
+    else:
+        if not hasattr(node_factory, "__knime_added_" + port_slot):
+            raise ValueError(
+                f"Cannot use '{port_slot}' decorator on object which has an attribute '{port_slot}' already"
+            )
+
+    getattr(node_factory, port_slot).insert(0, port)
+
+    return node_factory
+
+
+def _get_attr_from_instance_or_factory(node_factory, attr) -> List[Port]:
+    # first try an instance of the node whether it has the respective port set
+    if hasattr((n := node_factory()), attr) and (ps := getattr(n, attr)) is not None:
+        return ps
+
+    # then look at the node factory
+    if hasattr(node_factory, attr) and (ps := getattr(node_factory, attr)) is not None:
+        return ps
+
+    return None
+
+
+def _get_ports(node_factory, port_slot) -> List[Port]:
+    ps = _get_attr_from_instance_or_factory(node_factory, port_slot)
+
+    if ps is None:
+        return []
+    else:
+        return ps
+
+
+def _get_view(node_factory) -> Optional[ViewDeclaration]:
+    return _get_attr_from_instance_or_factory(node_factory, "view")
+
+
+def input_port(name: str, description: str, id: str):
+    """
+    Use this decorator to define a bytes-serialized port object input of a node.
+
+    Args:
+        name:
+        description:
+        id:
+            A unique ID identifying the type of the Port. Only Ports with equal ID
+            can be connected in KNIME
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "input_ports", Port(PortType.BYTES, name, description, id)
+    )
+
+
+def input_table(name: str, description: str):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "input_ports", Port(PortType.TABLE, name, description)
+    )
+
+
+def output_port(name: str, description: str, id: str):
+    """
+    Use this decorator to define a bytes-serialized port object output of a node.
+
+    Args:
+        name:
+        description:
+        id:
+            A unique ID identifying the type of the Port. Only Ports with equal ID
+            can be connected in KNIME
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "output_ports", Port(PortType.BYTES, name, description, id)
+    )
+
+
+def output_table(name: str, description: str):
+    """
+    Use this decorator to define an output port of type "Table" of a node.
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "output_ports", Port(PortType.TABLE, name, description)
+    )
+
+
+def view(name: str, description: str):
+    """
+    Use this decorator to specify that this node has a view
+    """
+
+    def add_view(node_factory):
+        setattr(node_factory, "view", ViewDeclaration(name, description))
+        return node_factory
+
+    return add_view
+
+
+# ---------------------------------------------------------------------------------------------------------
 class Parameter:
     """
     Decorator class that essentially is an extension of property that includes the type as well as other information useful

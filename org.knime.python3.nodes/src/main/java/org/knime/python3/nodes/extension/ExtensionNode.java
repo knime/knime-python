@@ -78,4 +78,18 @@ public interface ExtensionNode {
      */
     NodeDescription getNodeDescription();
 
+    /**
+     * @return the input port types
+     */
+    String[] getInputPortTypes();
+
+    /**
+     * @return the output port types
+     */
+    String[] getOutputPortTypes();
+
+    /**
+     * @return the number of views of the node
+     */
+    int getNumViews();
 }

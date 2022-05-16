@@ -206,7 +206,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
         @Override
         protected int getNrNodeViews() {
             // TODO support views. Talk with Benny how this can be realized
-            return 0;
+            return 0; // Will not be called because Views are realized via the new View API
         }
 
         @Override

@@ -87,6 +87,14 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
         return createPythonNode();
     }
 
+    public String[] getInputPortTypes() {
+        return m_extension.getNode(m_nodeId).getInputPortTypes();
+    }
+
+    public String[] getOutputPortTypes() {
+        return m_extension.getNode(m_nodeId).getOutputPortTypes();
+    }
+
     @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNode() {
         try {

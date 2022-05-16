@@ -139,6 +139,8 @@ public final class NodeDescriptionBuilder {
                 port.setName(outPort.getName());
                 port.addNewP().newCursor().setTextValue(outPort.getDescription());
             }
+        } else {
+            throw new IllegalStateException("Node " + m_name + " has no input or output ports configured");
         }
 
         return new NodeDescription41Proxy(doc);

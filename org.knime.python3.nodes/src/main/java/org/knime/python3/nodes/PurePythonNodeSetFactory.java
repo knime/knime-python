@@ -238,6 +238,21 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
                 .build();
         }
 
+        @Override
+        public String[] getInputPortTypes() {
+            return m_node.getInputPortTypes();
+        }
+
+        @Override
+        public String[] getOutputPortTypes() {
+            return m_node.getOutputPortTypes();
+        }
+
+        @Override
+        public int getNumViews() {
+            return m_node.getNumViews();
+        }
+
     }
 
 }

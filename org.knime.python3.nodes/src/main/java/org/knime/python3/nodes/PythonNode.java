@@ -65,7 +65,17 @@ public final class PythonNode { // TODO record in Java 17
 
     private final String m_iconPath;
 
+    private final String m_name;
+
+    private final String m_type;
+
     private final NodeDescriptionBuilder m_descriptionBuilder;
+
+    private final String[] m_inputPortTypes;
+
+    private final String[] m_outputPortTypes;
+
+    private final int m_numViews;
 
     /**
      * Constructor.
@@ -75,14 +85,33 @@ public final class PythonNode { // TODO record in Java 17
      * @param afterId id of the node after which to insert this node
      * @param iconPath path to the icon (relative to the node)
      * @param descriptionBuilder for building the node description
+     * @param name human-readable name of the node
+     * @param type of the node e.g. Manipulator
+     * @param inputPortTypes
+     * @param outputPortTypes
+     * @param numViews
      */
-    public PythonNode(final String id, final String categoryPath, final String afterId, final String iconPath,
-        final NodeDescriptionBuilder descriptionBuilder) {
+    public PythonNode(
+        final String id, //
+        final String categoryPath, //
+        final String afterId, //
+        final String iconPath, //
+        final NodeDescriptionBuilder descriptionBuilder, //
+        final String name, //
+        final String type, //
+        final String[] inputPortTypes, //
+        final String[] outputPortTypes, //
+        final int numViews) {
         m_id = id;
         m_categoryPath = categoryPath;
         m_afterId = afterId;
         m_descriptionBuilder = descriptionBuilder;
         m_iconPath = iconPath;
+        m_name = name;
+        m_type = type;
+        m_inputPortTypes = inputPortTypes;
+        m_outputPortTypes = outputPortTypes;
+        m_numViews = numViews;
     }
 
     /**
@@ -120,4 +149,22 @@ public final class PythonNode { // TODO record in Java 17
         return m_descriptionBuilder;
     }
 
+    /**
+     * @return type of this node
+     */
+    public String getType() {
+        return m_type;
+    }
+
+    public String[] getInputPortTypes() {
+        return m_inputPortTypes;
+    }
+
+    public String[] getOutputPortTypes() {
+        return m_outputPortTypes;
+    }
+
+    public int getNumViews() {
+        return m_numViews;
+    }
 }

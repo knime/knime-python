@@ -141,6 +141,12 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String full_description;
 
+        private String[] input_port_types;
+
+        private String[] output_port_types;
+
+        private int num_views;
+
         private JsonTab[] tabs;
 
         private JsonDescribed[] options;
@@ -152,7 +158,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         private JsonDescribed[] views;
 
         PythonNode toPythonNode() {
-            return new PythonNode(id, category, after, icon_path, createDescriptionBuilder());
+            return new PythonNode(id, category, after, icon_path, createDescriptionBuilder(), name, node_type,
+                input_port_types, output_port_types, num_views);
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {

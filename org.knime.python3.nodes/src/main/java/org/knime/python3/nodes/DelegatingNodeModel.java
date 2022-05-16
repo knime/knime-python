@@ -64,6 +64,7 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 
 /**
@@ -95,10 +96,22 @@ public final class DelegatingNodeModel extends NodeModel {
     // TODO retrieve the expected in and outputs from Python
     public DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier,
         final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
-        super(1, 1);
+        super(getInputPorts(pythonNodeSupplier), getOutputPorts(pythonNodeSupplier));
         m_proxySupplier = pythonNodeSupplier;
         m_settings = initialSettings;
         m_settingsFactory = settingsFactory;
+    }
+
+    private static PortType[] getInputPorts(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier) {
+        try (var node = pythonNodeSupplier.get()) {
+            return node.getInputPortTypes();
+        }
+    }
+
+    private static PortType[] getOutputPorts(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier) {
+        try (var node = pythonNodeSupplier.get()) {
+            return node.getOutputPortTypes();
+        }
     }
 
     @Override

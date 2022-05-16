@@ -55,6 +55,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.JsonNodeSettings;
 
 /**
@@ -62,6 +63,10 @@ import org.knime.python3.nodes.JsonNodeSettings;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public interface NodeModelProxy {
+
+    PortType[] getInputPortTypes();
+
+    PortType[] getOutputPortTypes();
 
     void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
 

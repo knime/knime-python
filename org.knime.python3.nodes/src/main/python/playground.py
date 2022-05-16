@@ -1,4 +1,6 @@
 from typing import List, Tuple
+
+from importlib_metadata import Deprecated
 import knime_node as kn
 import knime_schema as ks
 import knime_table as kt
@@ -8,7 +10,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@Deprecated
 class MyDecoratedNode(kn.PythonNode):
+    """
+    No longer used, just here as example code
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self._num_columns: int = 5

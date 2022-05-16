@@ -66,3 +66,39 @@ sys.path.append(
         )
     )
 )
+
+sys.path.append(
+    os.path.normpath(
+        os.path.join(
+            __file__,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "org.knime.python3",
+            "src",
+            "main",
+            "python",
+        )
+    )
+)
+
+sys.path.append(
+    os.path.normpath(
+        os.path.join(
+            __file__,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "org.knime.python3.arrow",
+            "src",
+            "main",
+            "python",
+        )
+    )
+)
