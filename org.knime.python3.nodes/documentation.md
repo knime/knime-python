@@ -64,6 +64,8 @@ from typing import List, Tuple
 import knime_node as kn
 
 @kn.node(name="My Node", node_type="Learner", icon_path="../icons/icon.png", category="/")
+@kn.input_table(name="Input Data", description="The data to process in my node")
+@kn.output_table("Output Data", "Result of processing in my node")
 class MyNode(kn.PythonNode):
     def __init__(self) -> None:
         super().__init__()
@@ -78,15 +80,49 @@ class MyNode(kn.PythonNode):
 
 > `@kn.node`'s configuration options are:
 > * name: the name of the node in KNIME
+> * node_type: the type of node, should be one of "Learner", "Manipulator", "Predictor", ...?
 > * icon_path: module-relative path to the PNG file to use as icon. TODO: link icon requirements
 > * category: defines the path to the node inside KNIME's _Node Repository_
->
-> **TODO:**
-> * num_in_ports: The number of input ports of the node?
-> * num_out_ports: The output ports of the node?
-> * `input_ports`: A list of specifiers `kn.TABLE` or `kn.PORT_OBJECT` to specify which input ports should be available. Default is a single table.
-> * `output_ports`: A list of specifiers `kn.TABLE` or `kn.PORT_OBJECT` to specify which output ports will be populated. Default is a single table.
 
+### Node port configuration
+
+The number of input and output ports of a node can be configured by decorating the node with `@kn.input_table`, `@kn.input_port`, 
+and respectively `@kn.output_table` and `@kn.output_port`. 
+All of these decorators take a `name` and a `description` which will be displayed in the node description.
+The port configuration decorators must be positioned _between_ the `@kn.node` decorator and the decorated objects, and their order determines the order of port connectors of the node in KNIME.
+
+The `_table` variants of the decorators configure the port to consume or produce KNIME tables. 
+
+If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_port` and `@kn.output_port`. This decorator has an additional argument `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be
+connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. 
+The data is expected to have type `bytes`.
+
+```python
+@kn.node("My Predictor", node_type="Predictor", icon_path="icon.png", category="/")
+@kn.input_port("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
+@kn.input_table("Data", "The data on which to predict")
+class MyPredictor():
+    def configure(self, in_specs: List[Union[kn.Schema, kn.BinaryPortObjectSpec]]):
+        return in_specs[1]
+    
+    def execute(self, input_data: List[Union[kn.Table, bytes]]):
+        model = self._load_model_from_bytes(input_data[0])
+        table = input_data[1]
+        new_col = model.predict(table.to_pandas()) # TODO: make this work :)
+        return [table.append_column(new_col)]
+    
+    def _load_model_from_bytes(self, data):
+        return pickle.loads(data)
+```
+
+> Alternatively, you can populate the `input_ports` and `output_ports` attributes of your node class (on class or instance level) for more fine grained control.
+
+### Node view declaration
+
+You can use the `@kn.view(name="", description="")` decorator to specify that a node returns a view. 
+In that case, the `execute` method should return a tuple of port outputs and the view. 
+
+> **TODO:** Benny, add some details here?
 
 ### Defining the node's configuration dialog
 
@@ -166,3 +202,9 @@ id.of.your.dev.extension:
   conda_env_path: path/to/conda/env
 ```
 Note that you have to specify either `conda_env_path` or `python_executable` because the Analytics Platform doesn't have a bundled environment for your extension installed.
+
+## Other Topics
+
+### Logging
+
+You can use the logging module to send warnings and errors to the KNIME console
