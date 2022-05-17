@@ -121,8 +121,8 @@ public final class NodeDescriptionBuilder {
 
         m_tabs.forEach(t -> t.fill(fullDescription.addNewTab()));
 
+        var ports = node.addNewPorts();
         if (!(m_inputPorts.isEmpty() && m_outputPorts.isEmpty())) {
-            var ports = node.addNewPorts();
             int inputIdx = 0;//NOSONAR
             for (var inPort : m_inputPorts) {
                 var port = ports.addNewInPort();
