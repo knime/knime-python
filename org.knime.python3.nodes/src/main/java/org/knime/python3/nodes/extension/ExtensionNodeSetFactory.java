@@ -160,6 +160,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
 
         private Optional<String> m_bundleName;
 
+        private ExtensionNode m_node;
+
         @SuppressWarnings("null")
         @Override
         public void loadAdditionalFactorySettings(final ConfigRO config) throws InvalidSettingsException {
@@ -168,8 +170,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
             var extension = ALL_EXTENSIONS.get(extensionId);
             CheckUtils.checkSetting(extension != null, "Unknown extension id '%s' encountered.", extensionId);
             m_bundleName = extension.getBundleName();
-            var node = extension.getNode(nodeId);
-            m_nodeDescription = node.getNodeDescription();
+            m_node = extension.getNode(nodeId);
+            m_nodeDescription = m_node.getNodeDescription();
             m_nodeFactoryConfig = config;
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
@@ -193,8 +195,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getParameters();
                 var schema = proxy.getSchema();
-                return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy,
-                    new JsonNodeSettings(initialSettings, schema), s -> new JsonNodeSettings(s, schema));
+
+                return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy, m_node.getInputPortTypes(),
+                    m_node.getOutputPortTypes(), new JsonNodeSettings(initialSettings, schema),
+                    s -> new JsonNodeSettings(s, schema));
             }
         }
 

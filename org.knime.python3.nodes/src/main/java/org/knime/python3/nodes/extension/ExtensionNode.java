@@ -49,6 +49,7 @@
 package org.knime.python3.nodes.extension;
 
 import org.knime.core.node.NodeDescription;
+import org.knime.core.node.port.PortType;
 
 /**
  * Represents a node that is provided by a KNIME extension.
@@ -81,12 +82,12 @@ public interface ExtensionNode {
     /**
      * @return the input port types
      */
-    String[] getInputPortTypes();
+    PortType[] getInputPortTypes();
 
     /**
      * @return the output port types
      */
-    String[] getOutputPortTypes();
+    PortType[] getOutputPortTypes();
 
     /**
      * @return the number of views of the node

@@ -90,28 +90,19 @@ public final class DelegatingNodeModel extends NodeModel {
      * Constructor.
      *
      * @param pythonNodeSupplier supplier for proxies
+     * @param inputPorts The input ports of this node
+     * @param outputPorts The output ports of this node
      * @param initialSettings of the node
      * @param settingsFactory for creating JsonNodeSettings from NodeSettingsRO
      */
     // TODO retrieve the expected in and outputs from Python
-    public DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier,
-        final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
-        super(getInputPorts(pythonNodeSupplier), getOutputPorts(pythonNodeSupplier));
+    public DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier, final PortType[] inputPorts,
+        final PortType[] outputPorts, final JsonNodeSettings initialSettings,
+        final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
+        super(inputPorts, outputPorts);
         m_proxySupplier = pythonNodeSupplier;
         m_settings = initialSettings;
         m_settingsFactory = settingsFactory;
-    }
-
-    private static PortType[] getInputPorts(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier) {
-        try (var node = pythonNodeSupplier.get()) {
-            return node.getInputPortTypes();
-        }
-    }
-
-    private static PortType[] getOutputPorts(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier) {
-        try (var node = pythonNodeSupplier.get()) {
-            return node.getOutputPortTypes();
-        }
     }
 
     @Override
@@ -127,8 +118,7 @@ public final class DelegatingNodeModel extends NodeModel {
     }
 
     @Override
-    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec)
-        throws Exception {
+    protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         try (var node = m_proxySupplier.get()) {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec);

@@ -58,14 +58,11 @@ import java.util.concurrent.Future;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
-import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
@@ -76,7 +73,6 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.extension.ExtensionNode;
-import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -244,56 +240,24 @@ final class CloseablePythonNodeProxy
             .toArray(PortObjectSpec[]::new);
     }
 
-    private IWriteFileStoreHandler getWriteFileStoreHandler() {
+    private static IWriteFileStoreHandler getWriteFileStoreHandler() {
         final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
         IWriteFileStoreHandler fsHandler = null;
         if (nodeFsHandler instanceof IWriteFileStoreHandler) {
             fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
         } else {
-            // TODO: copied from Python3KernelBackend but removed the logic to close temporary FS handlers for now -> re-add that!
-            fsHandler = NotInWorkflowWriteFileStoreHandler.create();
+            throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
         }
         return fsHandler;
     }
 
-    @SuppressWarnings("static-method")
-    private IFileStoreHandler getFileStoreHandler() {
+    private static IFileStoreHandler getFileStoreHandler() {
         return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
     }
 
     @Override
     public String getSchema() {
         return m_proxy.getSchema();
-    }
-
-    private static PortType getPortTypeForIdentifier(final String identifier) {
-        if (identifier.equals("PortType.TABLE")) {
-            return BufferedDataTable.TYPE;
-        } else if (identifier.startsWith("PortType.BYTES")) {
-            return PythonBinaryBlobFileStorePortObject.TYPE;
-        }
-
-        throw new IllegalStateException("Found unknown PortType: " + identifier);
-    }
-
-    /**
-     * @return Input port types encoded as string. The order is important. Possible values are TABLE and BYTES, where
-     *         BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
-     */
-    @Override
-    public PortType[] getInputPortTypes() {
-        return Arrays.stream(m_nodeSpec.getInputPortTypes()).map(CloseablePythonNodeProxy::getPortTypeForIdentifier)
-            .toArray(PortType[]::new);
-    }
-
-    /**
-     * @return Output port types encoded as string. The order is important. Possible values are TABLE and BYTES, where
-     *         BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
-     */
-    @Override
-    public PortType[] getOutputPortTypes() {
-        return Arrays.stream(m_nodeSpec.getOutputPortTypes()).map(CloseablePythonNodeProxy::getPortTypeForIdentifier)
-            .toArray(PortType[]::new);
     }
 
     @Override

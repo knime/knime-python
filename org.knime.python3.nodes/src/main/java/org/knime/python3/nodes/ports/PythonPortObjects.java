@@ -49,13 +49,14 @@
 package org.knime.python3.nodes.ports;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.core.node.port.PortType;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -376,5 +377,33 @@ public final class PythonPortObjects {
         public PortObjectSpec getPortObjectSpec() {
             return m_spec;
         }
+    }
+
+    /**
+     * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BYTES, where BYTES is
+     * followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     *
+     * @param identifier Port type identifier (TABLE or BYTES currently).
+     * @return {@link PortType}
+     */
+    public static PortType getPortTypeForIdentifier(final String identifier) {
+        if (identifier.equals("PortType.TABLE")) {
+            return BufferedDataTable.TYPE;
+        } else if (identifier.startsWith("PortType.BYTES")) {
+            return PythonBinaryBlobFileStorePortObject.TYPE;
+        }
+
+        throw new IllegalStateException("Found unknown PortType: " + identifier);
+    }
+
+    /**
+     * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE and
+     * BYTES, where BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     *
+     * @param identifiers Port type identifiers (TABLE or BYTES currently).
+     * @return {@link PortType}s
+     */
+    public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
+        return Arrays.stream(identifiers).map(PythonPortObjects::getPortTypeForIdentifier).toArray(PortType[]::new);
     }
 }

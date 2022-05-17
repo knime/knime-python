@@ -58,10 +58,12 @@ import java.util.stream.Stream;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
+import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
@@ -107,7 +109,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static Stream<KnimeExtension> parseExtensions() {
         return Stream.concat(getExtensionsFromPreferences(), getExtensionsFromExtensionPoint())//
-                .filter(Objects::nonNull)//
+            .filter(Objects::nonNull)//
             // if the same extension is defined by property and by extension point,
             // then we take the one from the property because the property is
             // intended for use during Python node development
@@ -239,13 +241,13 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         }
 
         @Override
-        public String[] getInputPortTypes() {
-            return m_node.getInputPortTypes();
+        public PortType[] getInputPortTypes() {
+            return PythonPortObjects.getPortTypesForIdentifiers(m_node.getInputPortTypes());
         }
 
         @Override
-        public String[] getOutputPortTypes() {
-            return m_node.getOutputPortTypes();
+        public PortType[] getOutputPortTypes() {
+            return PythonPortObjects.getPortTypesForIdentifiers(m_node.getOutputPortTypes());
         }
 
         @Override
