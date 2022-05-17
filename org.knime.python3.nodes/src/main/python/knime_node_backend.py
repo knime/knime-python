@@ -271,17 +271,6 @@ class _PythonNodeProxy:
         kt._backend.close()
         kt._backend = None
 
-        #     # execute
-        #     out_tables, out_objects = self._node.execute(tables, objects, exec_context)
-
-        #     # get Java sink from WriteTables:
-        #     out_sinks = [t._sink._java_data_sink for t in out_tables]
-
-        #     # pickle objects to the specified output paths
-        #     for obj, path in zip(out_objects, out_object_paths):
-        #         with open(path, "wb") as file:
-        #             pickle.dump(obj=obj, file=file)
-
         java_outputs = [
             _port_object_from_python(obj, self._node.output_ports[idx])
             for idx, obj in enumerate(outputs)

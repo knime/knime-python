@@ -156,14 +156,23 @@ public final class PythonNode { // TODO record in Java 17
         return m_type;
     }
 
+    /**
+     * @return Input port type identifiers
+     */
     public String[] getInputPortTypes() {
         return m_inputPortTypes;
     }
 
+    /**
+     * @return Output port type identifiers
+     */
     public String[] getOutputPortTypes() {
         return m_outputPortTypes;
     }
 
+    /**
+     * @return The number of views offered by this node
+     */
     public int getNumViews() {
         return m_numViews;
     }

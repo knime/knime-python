@@ -91,7 +91,7 @@ public final class PythonPortObjects {
     }
 
     /**
-     * When tabular data is passed to KNIME from Python, it will be packaged as PurePythonTablePortObject
+     * When tabular data is passed to KNIME from Python, it will be packaged as {@link PurePythonTablePortObject}
      *
      * @author Carsten Haubold
      */
@@ -103,7 +103,7 @@ public final class PythonPortObjects {
     }
 
     /**
-     * When binary data is passed to KNIME from Python, it will be packaged as PurePythonBinaryPortObject
+     * When binary data is passed to KNIME from Python, it will be packaged as {@link PurePythonBinaryPortObject}
      *
      * @author Carsten Haubold
      */
@@ -131,9 +131,9 @@ public final class PythonPortObjects {
     }
 
     /**
-     * {@link PythonPortObject} implementation for {@link BufferedDataTable}s.
+     * {@link PythonPortObject} implementation for {@link BufferedDataTable}s used and populated on the Java side.
      */
-    public static class PythonTablePortObject implements PythonPortObject, PortObjectProvider {
+    public static final class PythonTablePortObject implements PythonPortObject, PortObjectProvider {
         private final BufferedDataTable m_data;
 
         private final PythonArrowTableConverter m_tableConverter;
@@ -152,9 +152,9 @@ public final class PythonPortObjects {
         /**
          * Construct a {@link PythonTablePortObject} from a {@link PurePythonTablePortObject}
          *
-         * @param portObject
-         * @param tableConverter
-         * @param execContext
+         * @param portObject The {@link PurePythonTablePortObject} received from Python
+         * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
+         * @param execContext The current {@link ExecutionContext}
          * @return the {@link PythonTablePortObject}
          */
         public static PythonTablePortObject fromPurePython(final PurePythonTablePortObject portObject,
@@ -192,15 +192,18 @@ public final class PythonPortObjects {
     }
 
     /**
-     * {@link PythonPortObject} implementation for {@link PythonBinaryBlobFileStorePortObject}s.
+     * {@link PythonPortObject} implementation for {@link PythonBinaryBlobFileStorePortObject}s used and populated on
+     * the Java side.
      */
-    public static class PythonBinaryPortObject implements PythonPortObject, PortObjectProvider {
+    public static final class PythonBinaryPortObject implements PythonPortObject, PortObjectProvider {
         private final PythonBinaryBlobFileStorePortObject m_data;
 
         /**
          * Create a {@link PythonBinaryPortObject} with data
+         *
          * @param binaryData The data to wrap in this port object
-         * @param tableConverter Unused here, but required interface of the constructor
+         * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
+         *            {@link PythonPortObjectTypeRegistry}
          */
         public PythonBinaryPortObject(final PythonBinaryBlobFileStorePortObject binaryData,
             final PythonArrowTableConverter tableConverter) {
@@ -210,10 +213,11 @@ public final class PythonPortObjects {
         /**
          * Create a PythonBinaryPortObject from a PurePythonBinaryPortObject
          *
-         * @param portObject
-         * @param tableConverter
-         * @param execContext
-         * @return new PythonBinaryPortObject
+         * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
+         * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
+         *            {@link PythonPortObjectTypeRegistry}
+         * @param execContext The current {@link ExecutionContext}
+         * @return new {@link PythonBinaryPortObject} wrapping the binary data
          */
         public static PythonBinaryPortObject fromPurePython(final PurePythonBinaryPortObject portObject,
             final PythonArrowTableConverter tableConverter, final ExecutionContext execContext) {
@@ -271,14 +275,13 @@ public final class PythonPortObjects {
     }
 
     /**
-     * {@link PythonPortObjectSpec} wrapping a {@link DataTableSpec}
+     * {@link PythonPortObjectSpec} specialization wrapping a {@link DataTableSpec}
      */
-    public static class PythonTablePortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+    public static final class PythonTablePortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
         private final DataTableSpec m_spec;
 
         /**
-         * Create a {@link PythonTablePortObjectSpec} with a {@link DataTableSpec} to wrap and a file store handler
-         * which is needed to convert the spec to a {@link ColumnarSchema} internally.
+         * Create a {@link PythonTablePortObjectSpec} with a {@link DataTableSpec}
          *
          * @param spec The {@link DataTableSpec} to wrap
          */
@@ -329,7 +332,7 @@ public final class PythonPortObjects {
      * The {@link PythonBinaryPortObjectSpec} specifies the contents of a Port of binary type that can be populated and
      * read on the Python side.
      */
-    public static class PythonBinaryPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+    public static final class PythonBinaryPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
         private final PythonBinaryBlobPortObjectSpec m_spec;
 
         /**

@@ -74,6 +74,17 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObjectSpec
 /**
  * A registry for {@link PythonPortObject}s that manages the types registered at the extension point.
  *
+ * Interface contracts used via reflection:
+ *
+ * {@link PythonPortObjectSpec}s are expected to have a constructor that take an instance of the corresponding
+ * {@link PortObjectSpec} as input, as well as a "public static fromJsonString(String)" factory method to be created
+ * from a JSON encoded string representation.
+ *
+ * {@link PythonPortObject}s are expected to have a constructor that takes an instance of the corresponding
+ * {@link PortObject} as well as a {@link PythonArrowTableConverter}. And they should offer a factory method
+ * "fromPurePython" with arguments: 1. Pure Python interface (as registered in the m_pythonPortObjectInterfaceMap) 2.
+ * the {@link PythonArrowTableConverter} and 3. the current {@link ExecutionContext}.
+ *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonPortObjectTypeRegistry {
@@ -86,10 +97,13 @@ public final class PythonPortObjectTypeRegistry {
         private static final PythonPortObjectTypeRegistry INSTANCE = new PythonPortObjectTypeRegistry();
     }
 
+    // Port object types going from KNIME to Python
     private final Map<String, Class<? extends PythonPortObject>> m_pythonPortObjectMap;
 
+    // Port object interfaces that are implemented in Python and passed to KNIME
     private final Map<String, Class<? extends PythonPortObject>> m_pythonPortObjectInterfaceMap;
 
+    // Port object specs
     private final Map<String, Class<? extends PythonPortObjectSpec>> m_pythonPortObjectSpecMap;
 
     private PythonPortObjectTypeRegistry() {
@@ -192,6 +206,13 @@ public final class PythonPortObjectTypeRegistry {
 
     /**
      * Convert from a {@link PythonPortObject} to a {@link PortObject} using the registered conversion rules.
+     *
+     * When a {@link PythonPortObject} is converted to a KNIME {@link PortObject}, it can be either a PythonPortObject
+     * or a PurePythonPortObject, where the latter is actually implemented on the Python side. For those, we need to
+     * have a mapping registered from PortObject fully qualified classname to PurePythonPortObject interface so we can
+     * find the {@link PythonPortObject} factory method with the correct inputs via reflection. The created
+     * {@link PythonPortObject} is then also one that implements {@link PortObjectProvider} and used to finally return
+     * the {@link PortObject}.
      *
      * @param pythonPortObject The {@link PythonPortObject}
      * @param tableConverter The {@link PythonArrowTableConverter} to use when converting {@link BufferedDataTable}s

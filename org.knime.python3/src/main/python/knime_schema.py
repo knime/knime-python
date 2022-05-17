@@ -407,8 +407,8 @@ class PortObjectSpec(ABC):
     """
     Base protocol for PortObjectSpecs.
 
-    The must support conversion from/to a dictionary which is then
-    encoded via JSON and sent to KNIME
+    A PortObjectSpec must support conversion from/to a dictionary which is then
+    encoded as JSON and sent to/from KNIME.
     """
 
     @abstractmethod
@@ -422,11 +422,19 @@ class PortObjectSpec(ABC):
 
 class BinaryPortObjectSpec(PortObjectSpec):
     """
-    Port object spec for simple binary port objects with
-    and id that identifies what type of binary data is contained.
+    Port object spec for simple binary port objects.
+    
+    BinaryPortObjectSpecs have an ID that is used to ensure
+    that only ports with equal ID can be connected.
     """
 
     def __init__(self, id):
+        """
+        Create a BinaryPortObjectSpec
+
+        Args:
+            id: The id of this binary port.
+        """
         self._id = id
 
     @property
