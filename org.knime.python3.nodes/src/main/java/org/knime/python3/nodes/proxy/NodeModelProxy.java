@@ -49,6 +49,8 @@
 package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -69,7 +71,14 @@ public interface NodeModelProxy {
 
     JsonNodeSettings saveSettings();
 
-    PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws IOException, CanceledExecutionException;
+    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec)
+        throws IOException, CanceledExecutionException;
 
     PortObjectSpec[] configure(final PortObjectSpec[] inSpecs);
+
+    public interface ExecutionResult {
+        PortObject[] getPortObjects();
+
+        Optional<Path> getView();
+    }
 }

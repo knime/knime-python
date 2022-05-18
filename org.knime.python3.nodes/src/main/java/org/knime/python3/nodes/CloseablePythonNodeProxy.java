@@ -50,9 +50,11 @@ package org.knime.python3.nodes;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,6 +73,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python2.kernel.Python2KernelBackend;
@@ -88,25 +91,25 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
+import org.knime.python3.views.PythonNodeViewSink;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
- * Manages the lifecycle of a Python based NodeProxy and its associated process.
- * Invoking {@link Closeable#close()}
+ * Manages the lifecycle of a Python based NodeProxy and its associated process. Invoking {@link Closeable#close()}
  * shuts down the Python process and the proxy is no longer usable.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class CloseablePythonNodeProxy
-        implements CloseableNodeModelProxy, CloseableNodeFactoryProxy, CloseableNodeDialogProxy {
+    implements CloseableNodeModelProxy, CloseableNodeFactoryProxy, CloseableNodeDialogProxy {
 
     private final NodeProxy m_proxy;
 
     private final PythonGateway<?> m_gateway;
 
-    private final AsynchronousCloseable<RuntimeException> m_closer = AsynchronousCloseable
-            .createAsynchronousCloser(this::closeInternal);
+    private final AsynchronousCloseable<RuntimeException> m_closer =
+        AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
 
     private final ExtensionNode m_nodeSpec;
 
@@ -115,7 +118,7 @@ final class CloseablePythonNodeProxy
     private PythonArrowTableConverter m_tableManager;
 
     private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
-            Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
 
     CloseablePythonNodeProxy(final NodeProxy proxy, final PythonGateway<?> gateway, final ExtensionNode nodeSpec) {
         m_proxy = proxy;
@@ -175,16 +178,17 @@ final class CloseablePythonNodeProxy
 
     private void initTableManager() {
         if (m_tableManager == null) {
-            m_tableManager = new PythonArrowTableConverter(m_executorService, ARROW_STORE_FACTORY,
-                    getWriteFileStoreHandler());
+            m_tableManager =
+                new PythonArrowTableConverter(m_executorService, ARROW_STORE_FACTORY, getWriteFileStoreHandler());
         }
     }
 
     @Override
-    public PortObject[] execute(final PortObject[] inData, final ExecutionContext exec)
-            throws IOException, CanceledExecutionException {
+    public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec)
+        throws IOException, CanceledExecutionException {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
+        final PythonExecutionResult executionResult = new PythonExecutionResult();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
@@ -205,11 +209,19 @@ final class CloseablePythonNodeProxy
                 fileStoresByKey.put(fileStoreKey, fileStore);
                 return new FileStoreBasedFile(fileStore.getFile().getAbsolutePath(), fileStoreKey);
             }
+
+            @Override
+            public PythonNodeViewSink create_view_sink() throws IOException {
+                if (executionResult.m_view == null) {
+                    executionResult.m_view = PathUtils.createTempFile("python_node_view_", "html");
+                }
+                return new PythonNodeViewSink(executionResult.m_view.toAbsolutePath().toString());
+            }
         };
         m_proxy.initializeJavaCallback(callback);
 
-        final var pythonInputs = Arrays.stream(inData)
-                .map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
+        final var pythonInputs =
+            Arrays.stream(inData).map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
                 .toArray(PythonPortObject[]::new);
         exec.setProgress(0.1, "Sending data to Python");
 
@@ -241,15 +253,31 @@ final class CloseablePythonNodeProxy
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
         final var outputExec = exec.createSubExecutionContext(0.1);
 
-        return pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo,
-                fileStoresByKey, m_tableManager, outputExec)).toArray(PortObject[]::new);
+        executionResult.m_portObjects = pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry
+            .convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager, outputExec)).toArray(PortObject[]::new);
+        return executionResult;
+    }
 
+    public static class PythonExecutionResult implements ExecutionResult {
+        private PortObject[] m_portObjects;
+
+        private Path m_view;
+
+        @Override
+        public PortObject[] getPortObjects() {
+            return m_portObjects;
+        }
+
+        @Override
+        public Optional<Path> getView() {
+            return Optional.ofNullable(m_view);
+        }
     }
 
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) {
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
-                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs);
 
@@ -259,14 +287,14 @@ final class CloseablePythonNodeProxy
         }
 
         return serializedOutSpecs.stream().map(PythonPortObjectTypeRegistry::convertFromPythonPortObjectSpec)
-                .toArray(PortObjectSpec[]::new);
+            .toArray(PortObjectSpec[]::new);
     }
 
     private static IWriteFileStoreHandler getWriteFileStoreHandler() {
         final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
         IWriteFileStoreHandler fsHandler = null;
         if (nodeFsHandler instanceof IWriteFileStoreHandler) {
-            fsHandler = (IWriteFileStoreHandler) nodeFsHandler;
+            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
         } else {
             throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
         }
@@ -274,7 +302,7 @@ final class CloseablePythonNodeProxy
     }
 
     private static IFileStoreHandler getFileStoreHandler() {
-        return ((NativeNodeContainer) NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
     }
 
     @Override

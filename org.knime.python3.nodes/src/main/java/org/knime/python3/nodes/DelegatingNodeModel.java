@@ -50,6 +50,9 @@ package org.knime.python3.nodes;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -61,10 +64,11 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 
 /**
@@ -82,6 +86,8 @@ public final class DelegatingNodeModel extends NodeModel {
     private JsonNodeSettings m_settings;
 
     private Function<NodeSettingsRO, JsonNodeSettings> m_settingsFactory;
+
+    private Optional<Path> m_view;
 
     private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
@@ -103,6 +109,7 @@ public final class DelegatingNodeModel extends NodeModel {
         m_proxySupplier = pythonNodeSupplier;
         m_settings = initialSettings;
         m_settingsFactory = settingsFactory;
+        m_view = Optional.empty();
     }
 
     @Override
@@ -124,7 +131,8 @@ public final class DelegatingNodeModel extends NodeModel {
             var result = node.execute(inData, exec);
             m_settings = node.saveSettings();
             m_proxyShutdownTracker.closeAsynchronously(node);
-            return result;
+            m_view = result.getView();
+            return result.getPortObjects();
         }
     }
 
@@ -156,18 +164,37 @@ public final class DelegatingNodeModel extends NodeModel {
 
     @Override
     protected void reset() {
-        // nothing to reset
+        m_view = Optional.empty();
     }
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        // Nothing to load
+        final Path viewPath = persistedViewPath(nodeInternDir);
+        if (Files.isReadable(viewPath)) {
+            m_view = Optional.of(viewPath);
+        }
     }
 
     @Override
     protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        // Nothing to save
+        if (m_view.isPresent()) {
+            // Copy the view from the temporary file to the persisted internals directory
+            Files.copy(m_view.get(), persistedViewPath(nodeInternDir));
+        }
+    }
+
+    /** Path to the persisted view inside the internals directory */
+    private static Path persistedViewPath(final File nodeInternDir) {
+        return nodeInternDir.toPath().resolve("view.html");
+    }
+
+    /**
+     * @return the path to the HTML document for the {@link NodeView}. {@link Optional#empty()} if the node did not
+     *         return a view.
+     */
+    public Optional<Path> getPathToHtmlView() {
+        return m_view;
     }
 }

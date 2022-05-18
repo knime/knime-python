@@ -55,6 +55,7 @@ import org.knime.core.data.filestore.FileStore;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.views.PythonNodeViewSink;
 
 /**
  * Proxy for a node implemented in Python. This interface is implemented on the Python side.
@@ -171,6 +172,12 @@ public interface PythonNodeModelProxy {
          * @throws IOException if the {@link FileStore} file could not be created
          */
         FileStoreBasedFile create_filestore_file() throws IOException; // NOSONAR
+
+        /**
+         * @return a {@link PythonNodeViewSink} that provides a temporary HTML file
+         * @throws IOException if the temporary folder could not be created
+         */
+        PythonNodeViewSink create_view_sink() throws IOException; // NOSONAR
     }
 
     /**
