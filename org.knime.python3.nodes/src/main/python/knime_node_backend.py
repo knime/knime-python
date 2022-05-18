@@ -101,19 +101,23 @@ class _PythonTablePortObject:
 
 
 class _PythonBinaryPortObject:
-    def __init__(self, java_class_name, data, id):
+    def __init__(self, java_class_name, filestore_file, data, id):
         self._java_class_name = java_class_name
         self._data = data
         self._id = id
+        self._key = filestore_file.get_key()
+
+        with open(filestore_file.get_file_path(), "wb") as f:
+            f.write(data)
 
     def getJavaClassName(self) -> str:
         return self._java_class_name
 
-    def getBinaryData(self):
-        return self._data
-
     def getPortId(self):
         return self._id
+
+    def getFileStoreKey(self):
+        return self._key
 
     class Java:
         implements = [
@@ -192,25 +196,24 @@ def _port_object_to_python(port_object: _PythonPortObject, port: kn.Port):
         == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
     ):
         assert port.type == kn.PortType.BYTES
-        return port_object.getBinaryData()
+        file = port_object.getFilePath()
+        with open(file, "rb") as f:
+            return f.read()
 
     raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
 
-def _port_object_from_python(obj, port: kn.Port) -> _PythonPortObject:
+def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObject:
     # TODO: use extension point,
     #       see https://knime-com.atlassian.net/browse/AP-18368
     if port.type == kn.PortType.TABLE:
         assert isinstance(obj, kt.WriteTable)
-        sink = obj._sink._java_data_sink
         class_name = "org.knime.core.node.BufferedDataTable"
-        return _PythonTablePortObject(class_name, sink)
+        return _PythonTablePortObject(class_name, obj._sink._java_data_sink)
     elif port.type == kn.PortType.BYTES:
         assert isinstance(obj, bytes)
-        data = obj
-        id = port.id
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-        return _PythonBinaryPortObject(class_name, data, id)
+        return _PythonBinaryPortObject(class_name, file_creator(), obj, port.id)
     else:
         raise ValueError("Configure got unsupported PortObject")
 
@@ -272,7 +275,11 @@ class _PythonNodeProxy:
         kt._backend = None
 
         java_outputs = [
-            _port_object_from_python(obj, self._node.output_ports[idx])
+            _port_object_from_python(
+                obj,
+                lambda: self._java_callback.create_filestore_file(),
+                self._node.output_ports[idx],
+            )
             for idx, obj in enumerate(outputs)
         ]
 

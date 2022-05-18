@@ -51,6 +51,7 @@ package org.knime.python3.nodes.proxy;
 import java.io.IOException;
 import java.util.List;
 
+import org.knime.core.data.filestore.FileStore;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -107,7 +108,43 @@ public interface PythonNodeModelProxy {
     void initializeJavaCallback(Callback callback);
 
     /**
-     * Provides Java-backed functionality to the Python side. DUPLICATED FROM Python3KernelBackendProxy
+     * Get a file path with a key, where the key is used to identify the file
+     * in a list of {@link FileStore}s generated during node execution via the {@link Callback}.
+     *
+     * Sonar: Method names follow Python naming convention.
+     */
+    public static class FileStoreBasedFile {
+        private final String m_filePath;
+
+        private final String m_key;
+
+        /**
+         * Create a {@link FileStoreBasedFile}
+         * @param filePath
+         * @param key
+         */
+        public FileStoreBasedFile(final String filePath, final String key) {
+            m_filePath = filePath;
+            m_key = key;
+        }
+
+        /**
+         * @return the key used to identify the file later on
+         */
+        public String get_key() { // NOSONAR
+            return m_key;
+        }
+
+        /**
+         * @return Path to the file on disk
+         */
+        public String get_file_path() { // NOSONAR
+            return m_filePath;
+        }
+    }
+
+    /**
+     * Provides Java-backed functionality to the Python side.
      * <P>
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
@@ -128,6 +165,12 @@ public interface PythonNodeModelProxy {
          * @throws IOException if the temporary file for the sink could not be created
          */
         PythonArrowDataSink create_sink() throws IOException; //NOSONAR
+
+        /**
+         * @return a new {@link FileStore} backed file
+         * @throws IOException if the {@link FileStore} file could not be created
+         */
+        FileStoreBasedFile create_filestore_file() throws IOException; // NOSONAR
     }
 
     /**

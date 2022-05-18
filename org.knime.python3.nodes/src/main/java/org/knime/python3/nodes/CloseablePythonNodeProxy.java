@@ -51,11 +51,16 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
@@ -82,6 +87,7 @@ import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -174,6 +180,7 @@ final class CloseablePythonNodeProxy
     public PortObject[] execute(final PortObject[] inData, final ExecutionContext exec)
         throws IOException, CanceledExecutionException {
         initTableManager();
+        Map<String, FileStore> fileStoresByKey = new HashMap<>();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
@@ -185,6 +192,14 @@ final class CloseablePythonNodeProxy
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
                 return m_tableManager.createSink();
+            }
+
+            @Override
+            public FileStoreBasedFile create_filestore_file() throws IOException {
+                final var fileStoreKey = UUID.randomUUID().toString();
+                final var fileStore = FileStoreFactory.createFileStoreFactory(exec).createFileStore(fileStoreKey);
+                fileStoresByKey.put(fileStoreKey, fileStore);
+                return new FileStoreBasedFile(fileStore.getFile().getAbsolutePath(), fileStoreKey);
             }
         };
         m_proxy.initializeJavaCallback(callback);
@@ -219,9 +234,11 @@ final class CloseablePythonNodeProxy
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
+        final var outputExec = exec.createSubExecutionContext(0.1);
 
         return pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo,
-            m_tableManager, exec.createSubExecutionContext(0.1))).toArray(PortObject[]::new);
+            fileStoresByKey, m_tableManager, outputExec)).toArray(PortObject[]::new);
+
     }
 
     @Override

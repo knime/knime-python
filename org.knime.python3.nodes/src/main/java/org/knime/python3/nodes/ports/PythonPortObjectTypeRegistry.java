@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
@@ -82,8 +83,9 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObjectSpec
  *
  * {@link PythonPortObject}s are expected to have a constructor that takes an instance of the corresponding
  * {@link PortObject} as well as a {@link PythonArrowTableConverter}. And they should offer a factory method
- * "fromPurePython" with arguments: 1. Pure Python interface (as registered in the m_pythonPortObjectInterfaceMap) 2.
- * the {@link PythonArrowTableConverter} and 3. the current {@link ExecutionContext}.
+ * "fromPurePython" with arguments: 1. Pure Python interface (as registered in the m_pythonPortObjectInterfaceMap), 2. a
+ * map of {@link String} keys to {@link FileStore}s which may contain additional data, 3. the
+ * {@link PythonArrowTableConverter} and 4. the current {@link ExecutionContext}.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
@@ -215,12 +217,14 @@ public final class PythonPortObjectTypeRegistry {
      * the {@link PortObject}.
      *
      * @param pythonPortObject The {@link PythonPortObject}
+     * @param fileStoresByKey A map of {@link FileStore}s that could have been created during node execution
      * @param tableConverter The {@link PythonArrowTableConverter} to use when converting {@link BufferedDataTable}s
      * @param execContext The {@link ExecutionContext} to use when accessing table internals
      * @return The {@link PortObject}
      */
     public static PortObject convertFromPythonPortObject(final PythonPortObject pythonPortObject,
-        final PythonArrowTableConverter tableConverter, final ExecutionContext execContext) {
+        final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+        final ExecutionContext execContext) {
         if (pythonPortObject == null) {
             throw new IllegalStateException("Cannot convert 'null' port object from Python to KNIME");
         }
@@ -242,9 +246,9 @@ public final class PythonPortObjectTypeRegistry {
 
         Method factory;
         try {
-            factory =
-                clazz.getMethod("fromPurePython", interfazze, PythonArrowTableConverter.class, ExecutionContext.class);
-            final var object = factory.invoke(null, pythonPortObject, tableConverter, execContext);
+            factory = clazz.getMethod("fromPurePython", interfazze, Map.class, PythonArrowTableConverter.class,
+                ExecutionContext.class);
+            final var object = factory.invoke(null, pythonPortObject, fileStoresByKey, tableConverter, execContext);
             return ((PortObjectProvider)object).getPortObject();
         } catch (NoSuchElementException | SecurityException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException | NoSuchMethodException ex) {

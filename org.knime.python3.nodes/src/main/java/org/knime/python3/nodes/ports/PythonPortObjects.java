@@ -50,8 +50,10 @@ package org.knime.python3.nodes.ports;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
@@ -110,15 +112,15 @@ public final class PythonPortObjects {
      */
     public interface PurePythonBinaryPortObject extends PythonPortObject {
         /**
-         * @return the binary data
-         */
-        byte[] getBinaryData();
-
-        /**
          * @return The string that identifies the binary port object content, must match the ID of the corresponding
          *         {@link PythonBinaryPortObjectSpec}
          */
         String getPortId();
+
+        /**
+         * @return The key identifying the file store
+         */
+        String getFileStoreKey();
     }
 
     /**
@@ -154,12 +156,15 @@ public final class PythonPortObjects {
          * Construct a {@link PythonTablePortObject} from a {@link PurePythonTablePortObject}
          *
          * @param portObject The {@link PurePythonTablePortObject} received from Python
-         * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
+         * @param fileStoresByKey Not used here, needed for the Reflection API
+         * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from
+         *            {@link PythonArrowDataSink}s
          * @param execContext The current {@link ExecutionContext}
          * @return the {@link PythonTablePortObject}
          */
         public static PythonTablePortObject fromPurePython(final PurePythonTablePortObject portObject,
-            final PythonArrowTableConverter tableConverter, final ExecutionContext execContext) {
+            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+            final ExecutionContext execContext) {
             try {
                 final var sink = portObject.getPythonArrowDataSink();
                 final var bdt = tableConverter.convertToTable(sink, execContext);
@@ -215,16 +220,20 @@ public final class PythonPortObjects {
          * Create a PythonBinaryPortObject from a PurePythonBinaryPortObject
          *
          * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
+         * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
          * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
          *            {@link PythonPortObjectTypeRegistry}
          * @param execContext The current {@link ExecutionContext}
          * @return new {@link PythonBinaryPortObject} wrapping the binary data
          */
         public static PythonBinaryPortObject fromPurePython(final PurePythonBinaryPortObject portObject,
-            final PythonArrowTableConverter tableConverter, final ExecutionContext execContext) {
+            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+            final ExecutionContext execContext) {
             try {
-                return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(portObject.getBinaryData(),
-                    portObject.getPortId(), execContext), null);
+                final var key = portObject.getFileStoreKey();
+                final var fileStore = fileStoresByKey.get(key);
+                return new PythonBinaryPortObject(
+                    PythonBinaryBlobFileStorePortObject.create(fileStore, portObject.getPortId(), execContext), null);
             } catch (IOException ex) {
                 throw new IllegalStateException("Could not create PythonBinaryPortObject", ex);
             }
@@ -241,12 +250,12 @@ public final class PythonPortObjects {
         }
 
         /**
-         * Used on the Python side to access the binary data.
+         * Used on the Python side to get the file path where to read the binary data
          *
-         * @return The binary data of this port object
+         * @return The file path where to read the binary data
          */
-        public byte[] getBinaryData() {
-            return m_data.getBinaryBlob();
+        public String getFilePath() {
+            return m_data.getFilePath();
         }
     }
 

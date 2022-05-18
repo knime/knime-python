@@ -47,19 +47,14 @@ package org.knime.python3.nodes.ports;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.zip.ZipEntry;
 
 import javax.swing.JComponent;
 
 import org.knime.core.data.filestore.FileStore;
-import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.filestore.FileStorePortObject;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -71,7 +66,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.PortTypeRegistry;
 
 /**
- * FileStore-based port object type for Python nodes
+ * FileStore-based port object type for Python nodes. The data is never read on the Java side.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 4.6
@@ -87,9 +82,6 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
 
     private final PythonBinaryBlobPortObjectSpec m_spec;
 
-    // effectively final
-    private byte[] m_data;
-
     /**
      * Deserialization constructor
      */
@@ -97,44 +89,33 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
         m_spec = spec;
     }
 
-    private PythonBinaryBlobFileStorePortObject(final byte[] data, final String id, final FileStore fileStore)
-        throws IOException {
+    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore, final String id) throws IOException {
         super(Arrays.asList(fileStore));
-        m_data = data;
         m_spec = new PythonBinaryBlobPortObjectSpec(id);
-        flushToFileStore();
     }
 
     /**
-     * Construction with data and spec
+     * Construction with data inside a FileStore and spec
      *
-     * @param data binary data
+     * @param fileStore the {@link FileStore} holding the data
      * @param id identification of the binary object port
      * @param exec The {@link ExecutionContext}
      * @return Newly created {@link PythonBinaryBlobFileStorePortObject}
      * @throws IOException
      */
-    public static PythonBinaryBlobFileStorePortObject create(final byte[] data, final String id,
+    public static PythonBinaryBlobFileStorePortObject create(final FileStore fileStore, final String id,
         final ExecutionContext exec) throws IOException {
-        final FileStoreFactory fsFactory = FileStoreFactory.createFileStoreFactory(exec);
-        final var fs = fsFactory.createFileStore(UUID.randomUUID().toString());
-        return new PythonBinaryBlobFileStorePortObject(data, id, fs);
+        if (fileStore == null) {
+            throw new IOException("FileStore cannot be null for PythonBinaryBlobFileStorePortObject");
+        }
+        return new PythonBinaryBlobFileStorePortObject(fileStore, id);
     }
 
     /**
-     * @return The included binary data
+     * @return The path to the file on disk that contains the binary data, needed to access the file in Python
      */
-    public byte[] getBinaryBlob() {
-        return m_data;
-    }
-
-    @Override
-    protected void postConstruct() throws IOException {
-        super.postConstruct();
-
-        try (var inStream = new FileInputStream(getFileStore(0).getFile())) {
-            m_data = inStream.readAllBytes();
-        }
+    public String getFilePath() {
+        return getFileStore(0).getFile().getAbsolutePath();
     }
 
     @Override
@@ -158,7 +139,7 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(m_data);
+        return Objects.hash(m_spec);
     }
 
     @Override
@@ -170,15 +151,7 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
             return false;
         }
         final PythonBinaryBlobFileStorePortObject other = (PythonBinaryBlobFileStorePortObject)obj;
-        return Objects.equals(m_data, other.m_data);
-    }
-
-    @Override
-    protected void flushToFileStore() throws IOException {
-        final File file = getFileStore(0).getFile();
-        try (var out = new FileOutputStream(file)) {
-            out.write(m_data);
-        }
+        return Objects.equals(m_spec, other.m_spec);
     }
 
     /**
