@@ -2,6 +2,7 @@ from typing import List, Tuple
 import knime_node as kn
 import knime_table as kt
 import knime_schema as ks
+import knime_views as kv
 import pyarrow as pa
 
 @kn.parameter_group("Awesome Options")
@@ -28,6 +29,7 @@ class MyParameterGroup:
     description="Whatever the node has produced",
     id="org.knime.python3.nodes.tests.model",
 )
+@kn.view(name="My pretty view", description="Shows only hello world ;)")
 class MyNode(kn.PythonNode):
     """My first node
 
@@ -58,7 +60,9 @@ class MyNode(kn.PythonNode):
         ]
 
     def execute(self, inputs, exec_context):
-        return [kt.write_table(inputs[0]), b"RandomTestData"]
+        return [kt.write_table(inputs[0]), b"RandomTestData"], kv.view(
+            "<!DOCTYPE html> Hello World"
+        )
 
 
 @kn.node(
