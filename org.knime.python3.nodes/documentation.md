@@ -22,7 +22,7 @@ vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
 
 The `id` will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
 
-The extension module will then be put on the Pythonpath and imported by KNIME using `import my_extension`. This module should contain KNIME nodes. Each class decorated with `@kn.Node` within this file will become available in KNIME as dedicated node.
+The extension module will then be put on the Pythonpath and imported by KNIME using `import my_extension`. This module should contain KNIME nodes. Each class decorated with `@kn.node` within this file will become available in KNIME as dedicated node.
 
 Recommended project folder structure:
 
@@ -42,16 +42,7 @@ Recommended project folder structure:
 
 > See `knime-python/org.knime.python3.nodes.tests/src/test/python/fluent_extension` for an example.
 
-To use this KNIME Python extension locally, set the `knime.python.extensions` system property. Either in your KNIME launch configuration's VM arguments in Eclipse or in `knime.ini` add the following on Windows (extension paths are separated by semicolon "`;`"):
-
-```
--Dknime.python.extensions=C:\path\to\extension\;C:\path\to\other\extension
-```
-
-or on linux and macOS, where extension paths are separated by colon "`:`":
-```
--Dknime.python.extensions=/path/to/extension/:/path/to/other/extension
-```
+To use this KNIME Python extension locally, set the `knime.python.extension.config` system property either in your KNIME launch configuration's VM arguments in Eclipse. See the chapters **Registering Python extensions during development** and **Customizing the Python executable** at the end of this document.
 
 ## Defining a KNIME Node in Python: Full API
 
@@ -132,22 +123,83 @@ The parameters of the KNIME node that should be shown in its configuration dialo
 
 ```python
 import knime_node as kn
+import knime_schema as ks
+import knime_table as kt
+import pyarrow as pa
 
 @kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
-class MyNode(kn.PythonNode):
-    def __init__(self) -> None:
-        super().__init__()
-        self._some_param = 42
-
-    @kn.Parameter
-    def some_param(self):
-        return self._some_param
-
-    @some_param.setter
-    def some_param(self, value):
-        self._some_param = value
+@kn.input_table("input", "table")
+@kn.output_table("output", "table")
+class MyNode():
+    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="peter")
     
-    ... configure and execute ...
+    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    
+    @num_repetitions.validator
+    def reps_validator(value):
+        if value == 2:
+            raise ValueError("Stupid value!")
+    
+    def configure(self, table_schema) -> ks.Schema:
+        out_schema = table_schema
+        for i in range(self.num_repetitions):
+            out_schema.append(ks.Column(ks.string(), self.name + " Column"))
+        return out_schema
+    
+    def execute(self, exec_context, table: kt.ReadTable) -> kt.WriteTable:
+        pa_table = table.to_pyarrow()
+        col = pa.array([self.name] * len(pa_table))
+        field = pa.field(self.name + " Column", type=pa.string())
+    
+        for i in range(self.num_repetitions):
+            pa_table = pa_table.append_column(field, col)
+        return kt.write_table(pa_table)
+```
+
+More involved nodes might have groups of parameters, which will show up in the UI as sections.
+
+```python
+import knime_node as kn
+import knime_schema as ks
+import knime_table as kt
+import pyarrow as pa
+
+@kn.parameter_group(label="My Settings")
+class MySettings():
+    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="peter")
+    
+    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    
+    @num_repetitions.validator
+    def reps_validator(value):
+        if value == 2:
+            raise ValueError("Stupid value!")
+            
+
+@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.input_table("input", "table")
+@kn.output_table("output", "table")
+class MyNode():
+    settings = MySettings()
+    
+    @settings.validator
+    def settings_validator(values):
+        assert len(values["name"]) > values["num_repetitions"]
+    
+    def configure(self, table_schema) -> ks.Schema:
+        out_schema = table_schema
+        for i in range(self.settings.num_repetitions):
+            out_schema.append(ks.Column(ks.string(), self.settings.name + " Column"))
+        return out_schema
+    
+    def execute(self, exec_context, table: kt.ReadTable) -> kt.WriteTable:
+        pa_table = table.to_pyarrow()
+        col = pa.array([self.settings.name] * len(pa_table))
+        field = pa.field(self.settings.name + " Column", type=pa.string())
+    
+        for i in range(self.settings.num_repetitions):
+            pa_table = pa_table.append_column(field, col)
+        return kt.write_table(pa_table)
 ```
 
 ## Functional Node API
