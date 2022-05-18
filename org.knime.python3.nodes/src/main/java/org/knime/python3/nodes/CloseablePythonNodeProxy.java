@@ -57,7 +57,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStore;
@@ -152,9 +151,10 @@ final class CloseablePythonNodeProxy
 
     @Override
     public String getDialogRepresentation(final String parameters, final String version, final PortObjectSpec[] specs) {
-        var tableSpecs = Stream.of(specs).map(DataTableSpec.class::cast).toArray(DataTableSpec[]::new);
-        return m_proxy.getDialogRepresentation(parameters, version,
-                TableSpecSerializationUtils.serializeTableSpecs(tableSpecs));
+        final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
+                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+
+        return m_proxy.getDialogRepresentation(parameters, version, serializedSpecs);
     }
 
     @Override

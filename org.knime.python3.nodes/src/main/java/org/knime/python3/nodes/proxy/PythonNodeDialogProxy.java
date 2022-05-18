@@ -48,6 +48,8 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
@@ -57,10 +59,10 @@ public interface PythonNodeDialogProxy {
     /**
      * @param parameters current node configuration
      * @param parametersVersion version of the parameters
-     * @param specs input specs TODO just a placeholder to be replaced with the actual specs eventually
+     * @param portObjectSpecs specs of all input port objects
      * @return the representation of the dialog e.g. JSON Forms
      */
-    String getDialogRepresentation(String parameters, String parametersVersion, String[] schemas);
+    String getDialogRepresentation(String parameters, String parametersVersion, PythonPortObjectSpec[] portObjectSpecs);
 
     String getParameters();
 

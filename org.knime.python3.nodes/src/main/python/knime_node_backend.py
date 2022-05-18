@@ -222,15 +222,26 @@ class _PythonNodeProxy:
     def __init__(self, node: kn.PythonNode) -> None:
         self._node = node
 
-    def getDialogRepresentation(self, parameters: str, parameters_version: str, specs):
+    def getDialogRepresentation(
+        self,
+        parameters: str,
+        parameters_version: str,
+        specs: List[_PythonPortObjectSpec],
+    ):
         self.setParameters(parameters, parameters_version)
+
+        inputs = self._specs_to_python(specs)
+
         # TODO construct json forms here instead of in the node so that it isn't exposed as our API
         json_forms_dict = {
             "data": kp.extract_parameters(self._node),
-            "schema": kp.extract_schema(self._node, _to_schemas(specs)),
+            "schema": kp.extract_schema(self._node, inputs),
             "ui_schema": kp.extract_ui_schema(self._node),
         }
         return json.dumps(json_forms_dict)
+
+    def _specs_to_python(self, specs):
+        return [_spec_to_python(spec, port) for port, spec in zip(self._node.input_ports, specs)]
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -238,7 +249,7 @@ class _PythonNodeProxy:
 
     def getSchema(self, specs: List[str] = None) -> str:
         if specs is not None:
-            specs = _to_schemas(specs)  # TODO support arbitrary port object specs
+            specs = self._specs_to_python(specs)
         schema = kp.extract_schema(self._node, specs)
         return json.dumps(schema)
 
@@ -295,10 +306,7 @@ class _PythonNodeProxy:
         self, input_specs: List[_PythonPortObjectSpec]
     ) -> List[_PythonPortObjectSpec]:
 
-        inputs = [
-            _spec_to_python(spec, self._node.input_ports[i])
-            for i, spec in enumerate(input_specs)
-        ]
+        inputs = self._specs_to_python(input_specs)
         outputs = self._node.configure(inputs)
 
         output_specs = [
@@ -309,10 +317,6 @@ class _PythonNodeProxy:
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
-
-
-def _to_schemas(in_schemas: List[str]):
-    return [ks.Schema.from_knime_dict(json.loads(i)) for i in in_schemas]
 
 
 class _KnimeNodeBackend(kg.EntryPoint):
