@@ -327,3 +327,7 @@ class ParameterTest(unittest.TestCase):
         pass  # TODO
         # injection of custom parameter/parameter group validators can only be done
         # inside their "parent" class declaration
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -65,15 +65,6 @@ import knime_schema as ks
 class MyTestNode:
     def __init__(self) -> None:
         super().__init__()
-        self._some_param = 42
-
-    @kn.Parameter
-    def some_param(self):
-        return self._some_param
-
-    @some_param.setter
-    def some_param(self, value):
-        self._some_param = value
 
     def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
         return input_schemas
@@ -127,7 +118,6 @@ class MyTestNode(kn.PythonNode):
 
     def __init__(self) -> None:
         super().__init__()
-        self._some_param = 42
 
         self.output_ports = [
             kn.Port(
@@ -142,14 +132,6 @@ class MyTestNode(kn.PythonNode):
                 id="org.knime.python3.nodes.test.port",
             ),
         ]
-
-    @kn.Parameter
-    def some_param(self):
-        return self._some_param
-
-    @some_param.setter
-    def some_param(self, value):
-        self._some_param = value
 
     @property
     def view(self):
