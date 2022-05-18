@@ -291,6 +291,13 @@ class _PythonNodeProxy:
         kt._backend.close()
         kt._backend = None
 
+        if hasattr(self._node, "view") and self._node.view is not None:
+            outputs, out_view = outputs
+
+            # write the view to the sink
+            view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
+            view_sink.display(out_view)
+
         java_outputs = [
             _port_object_from_python(
                 obj,
