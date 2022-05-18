@@ -48,7 +48,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from numbers import Number
 from enum import Enum, auto
 from typing import List, Optional, Tuple
@@ -222,7 +222,7 @@ class _Node:
                 {"name": p.name, "description": p.description}
                 for p in self.output_ports
             ],
-            "num_views": len(self.views),
+            "views": [asdict(v) for v in self.views if v is not None],
         }
 
 
