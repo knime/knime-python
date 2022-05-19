@@ -48,25 +48,23 @@ To use this KNIME Python extension locally, set the `knime.python.extension.conf
 
 A Python KNIME node should be a class deriving from `KnimePythonNode` and has to implement the `execute` and `configure` methods. The node description is automatically generated from the docstrings of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@kn.node` decorator.
 
-The simplest possible node does nothing but passing the input data to its outputs unmodified:
+The simplest possible node does nothing but passing an input table to its output unmodified:
 
 ```python
 from typing import List, Tuple
 import knime_node as kn
+import knime_table as kt
+import knime_schema as ks
 
 @kn.node(name="My Node", node_type="Learner", icon_path="../icons/icon.png", category="/")
 @kn.input_table(name="Input Data", description="The data to process in my node")
 @kn.output_table("Output Data", "Result of processing in my node")
-class MyNode(kn.PythonNode):
-    def __init__(self) -> None:
-        super().__init__()
-
+class MyNode():
     def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
         return input_schemas
 
-    def execute(self, tables: List[kt.ReadTable], objects: List, exec_context) -> Tuple[List[kt.WriteTable], List]:
-        return [kt.write_table(table) for table in tables], []
-
+    def execute(self, input_ports: List, exec_context) -> List
+        return [kt.write_table(input_ports[0])]
 ```
 
 > `@kn.node`'s configuration options are:
@@ -108,18 +106,22 @@ class MyPredictor():
 
 > Alternatively, you can populate the `input_ports` and `output_ports` attributes of your node class (on class or instance level) for more fine grained control.
 
-### Node view declaration
-
-You can use the `@kn.view(name="", description="")` decorator to specify that a node returns a view. 
-In that case, the `execute` method should return a tuple of port outputs and the view. 
-
-> **TODO:** Benny, add some details here?
-
 ### Defining the node's configuration dialog
 
-The parameters of the KNIME node that should be shown in its configuration dialog are defined in the Python code. Similar to Python's properties we annotate the configuration parameters with `@kn.Parameter`
-
 > **TODO:** Update once https://knime-com.atlassian.net/browse/AP-18300 is done
+
+The parameters of the KNIME node that should be shown in its configuration dialog are defined in the Python code. We have defined a set of parameter types to use, and these must be placed top level in your node class (they work like Python descriptors).
+
+The availabla parameter types are
+
+* `kn.IntParameter` for integral numbers
+* `kn.DoubleParameter` for floating point numbers
+* `kn.StringParameter` for string parameters
+* `kn.BoolParameter` for boolean parameters
+
+All of those have arguments `label` and `description` as well as a `default_value`.
+
+Per-parameter validation can be added similar to Python property setters. Define a function that receives a potential value for the parameter, and decorate it with `@my_parameter_name.validator` as seen in the example below.
 
 ```python
 import knime_node as kn
@@ -138,7 +140,7 @@ class MyNode():
     @num_repetitions.validator
     def reps_validator(value):
         if value == 2:
-            raise ValueError("Stupid value!")
+            raise ValueError("I don't like the number 2")
     
     def configure(self, table_schema) -> ks.Schema:
         out_schema = table_schema
@@ -156,7 +158,9 @@ class MyNode():
         return kt.write_table(pa_table)
 ```
 
-More involved nodes might have groups of parameters, which will show up in the UI as sections.
+More involved nodes might have groups of parameters, which will show up in the UI as sections. For these, you can define a class similar to a dataclass but using the `@kn.parameter_group` decorator which will turn this class into a parameter group that can be used inside your node just like the other parameters.
+
+Validation on group level can be added using the `@my_group_instance.validator`, where the method receives a dictionary containing `parameter_name : value` mappings.
 
 ```python
 import knime_node as kn
@@ -201,6 +205,13 @@ class MyNode():
             pa_table = pa_table.append_column(field, col)
         return kt.write_table(pa_table)
 ```
+
+### Node view declaration
+
+You can use the `@kn.view(name="", description="")` decorator to specify that a node returns a view. 
+In that case, the `execute` method should return a tuple of port outputs and the view. 
+
+> **TODO:** Benny, add some details here?
 
 ## Functional Node API
 
