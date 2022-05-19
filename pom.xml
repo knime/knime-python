@@ -35,6 +35,7 @@
 		<module>org.knime.python3.scripting</module>
 		<module>org.knime.python3.scripting.nodes</module>
 		<module>org.knime.python3.nodes</module>
+		<module>org.knime.python3.views</module>
 		<module>org.knime.update.python</module>
 	</modules>
 
