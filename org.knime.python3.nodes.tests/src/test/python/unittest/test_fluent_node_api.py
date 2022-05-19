@@ -56,23 +56,18 @@ import knime_schema as ks
     name="Second input table", description="We might also read data from there"
 )
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
-@kn.output_port(
+@kn.output_binary(
     name="Some output port",
     description="Maybe a model",
     id="org.knime.python3.nodes.test.port",
 )
 @kn.view(name="Test View", description="lalala")
 class MyTestNode:
-    def __init__(self) -> None:
-        super().__init__()
+    def configure(self, config_ctx, schema_1, schema_2):
+        return schema_1
 
-    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
-        return input_schemas
-
-    def execute(
-        self, tables: List[kt.ReadTable], objects: List, exec_context
-    ) -> Tuple[List[kt.WriteTable], List]:
-        return [kt.write_table(table) for table in tables], []
+    def execute(self, exec_context, table_1, table_2):
+        return [kt.write_table(table_1), b"random bytes"]
 
 
 class NodeApiTest(unittest.TestCase):
@@ -98,11 +93,11 @@ class NodeApiTest(unittest.TestCase):
     def test_output_ports(self):
         self.assertEqual(2, len(self.node.output_ports))
         self.assertEqual(kn.PortType.TABLE, self.node.output_ports[0].type)
-        self.assertEqual(kn.PortType.BYTES, self.node.output_ports[1].type)
+        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
 
 
 @kn.node(name="My Second Node", node_type="Learner", icon_path="icon.png", category="/")
-class MyTestNode(kn.PythonNode):
+class MyTestNode:
     input_ports = [
         kn.Port(
             type=kn.PortType.TABLE,
@@ -126,7 +121,7 @@ class MyTestNode(kn.PythonNode):
                 description="Whatever the node has produced",
             ),
             kn.Port(
-                type=kn.PortType.BYTES,
+                type=kn.PortType.BINARY,
                 name="Some output port",
                 description="Maybe a model",
                 id="org.knime.python3.nodes.test.port",
@@ -139,13 +134,11 @@ class MyTestNode(kn.PythonNode):
             name="ExampleView", description="White letters on white background"
         )
 
-    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
-        return input_schemas
+    def configure(self, config_ctx, schema_1, schema_2):
+        return schema_1, ks.BinaryPortTypeSpec(id="org.knime.python3.nodes.test.port")
 
-    def execute(
-        self, tables: List[kt.ReadTable], objects: List, exec_context
-    ) -> Tuple[List[kt.WriteTable], List]:
-        return [kt.write_table(table) for table in tables], []
+    def execute(self, exec_context, table_1, table_2):
+        return [kt.write_table(table_1), b"random bytes"]
 
 
 class InstanceAttributePortsTest(unittest.TestCase):
@@ -168,15 +161,15 @@ class InstanceAttributePortsTest(unittest.TestCase):
     def test_output_ports(self):
         self.assertEqual(2, len(self.node.output_ports))
         self.assertEqual(kn.PortType.TABLE, self.node.output_ports[0].type)
-        self.assertEqual(kn.PortType.BYTES, self.node.output_ports[1].type)
+        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
 
 
 class PortTest(unittest.TestCase):
     def test_port_must_have_id(self):
         with self.assertRaises(TypeError):
-            p = kn.Port(type=kn.PortType.BYTES, name="A", description="a")
+            p = kn.Port(type=kn.PortType.BINARY, name="A", description="a")
 
-        p = kn.Port(type=kn.PortType.BYTES, name="A", description="a", id="test")
+        p = kn.Port(type=kn.PortType.BINARY, name="A", description="a", id="test")
         self.assertEqual("test", p.id)
 
         # TABLE doesn't need an ID, should not throw.
@@ -190,18 +183,18 @@ class PortTest(unittest.TestCase):
     name="Second input table", description="We might also read data from there"
 )
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
-@kn.output_port(
+@kn.output_binary(
     name="Some output port",
     description="Maybe a model",
     id="org.knime.python3.nodes.test.port",
 )
 def my_node_generating_func():
     class MyHiddenNode:
-        def configure(self, inputs):
-            return inputs
+        def configure(self, config_ctx, input):
+            return input
 
-        def execute(self, inputs):
-            return [kt.write_table(table) for table in inputs], []
+        def execute(self, exec_ctx, input):
+            return kt.write_table(input)
 
     return MyHiddenNode()
 
@@ -232,11 +225,11 @@ class NodeFactoryApiTest(unittest.TestCase):
     def test_output_ports(self):
         self.assertEqual(2, len(self.node.output_ports))
         self.assertEqual(kn.PortType.TABLE, self.node.output_ports[0].type)
-        self.assertEqual(kn.PortType.BYTES, self.node.output_ports[1].type)
+        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
 
         self.assertEqual(2, len(self.node_instance.output_ports))
         self.assertEqual(kn.PortType.TABLE, self.node_instance.output_ports[0].type)
-        self.assertEqual(kn.PortType.BYTES, self.node_instance.output_ports[1].type)
+        self.assertEqual(kn.PortType.BINARY, self.node_instance.output_ports[1].type)
 
 
 class DoubleInputPortsTest(unittest.TestCase):

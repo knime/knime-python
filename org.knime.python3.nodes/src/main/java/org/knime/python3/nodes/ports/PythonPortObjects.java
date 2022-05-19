@@ -389,16 +389,16 @@ public final class PythonPortObjects {
     }
 
     /**
-     * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BYTES, where BYTES is
-     * followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
+     * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype"
      *
-     * @param identifier Port type identifier (TABLE or BYTES currently).
+     * @param identifier Port type identifier (TABLE or BINARY currently).
      * @return {@link PortType}
      */
     public static PortType getPortTypeForIdentifier(final String identifier) {
         if (identifier.equals("PortType.TABLE")) {
             return BufferedDataTable.TYPE;
-        } else if (identifier.startsWith("PortType.BYTES")) {
+        } else if (identifier.startsWith("PortType.BINARY")) {
             return PythonBinaryBlobFileStorePortObject.TYPE;
         }
 
@@ -407,9 +407,9 @@ public final class PythonPortObjects {
 
     /**
      * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE and
-     * BYTES, where BYTES is followed by a Port Type ID as in "BYTES=org.knime.python3.nodes.test.porttype"
+     * BINARY, where BINARY is followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype"
      *
-     * @param identifiers Port type identifiers (TABLE or BYTES currently).
+     * @param identifiers Port type identifiers (TABLE or BINARY currently).
      * @return {@link PortType}s
      */
     public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {

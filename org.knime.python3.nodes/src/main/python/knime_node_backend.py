@@ -151,7 +151,7 @@ def _spec_to_python(spec: _PythonPortObjectSpec, port: kn.Port):
         assert port.type == kn.PortType.TABLE
         return ks.Schema.from_knime_dict(data)
     elif class_name == "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec":
-        assert port.type == kn.PortType.BYTES
+        assert port.type == kn.PortType.BINARY
         bpos = ks.BinaryPortObjectSpec.from_knime_dict(data)
         assert (
             bpos.id == port.id
@@ -168,7 +168,7 @@ def _spec_from_python(spec, port: kn.Port):
         assert isinstance(spec, ks.Schema)
         data = spec.to_knime_dict()
         class_name = "org.knime.core.data.DataTableSpec"
-    elif port.type == kn.PortType.BYTES:
+    elif port.type == kn.PortType.BINARY:
         assert isinstance(spec, ks.BinaryPortObjectSpec)
         assert (
             port.id == spec.id
@@ -195,7 +195,7 @@ def _port_object_to_python(port_object: _PythonPortObject, port: kn.Port):
         class_name
         == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
     ):
-        assert port.type == kn.PortType.BYTES
+        assert port.type == kn.PortType.BINARY
         file = port_object.getFilePath()
         with open(file, "rb") as f:
             return f.read()
@@ -210,7 +210,7 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
         assert isinstance(obj, kt.WriteTable)
         class_name = "org.knime.core.node.BufferedDataTable"
         return _PythonTablePortObject(class_name, obj._sink._java_data_sink)
-    elif port.type == kn.PortType.BYTES:
+    elif port.type == kn.PortType.BINARY:
         assert isinstance(obj, bytes)
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
         return _PythonBinaryPortObject(class_name, file_creator(), obj, port.id)
@@ -241,7 +241,10 @@ class _PythonNodeProxy:
         return json.dumps(json_forms_dict)
 
     def _specs_to_python(self, specs):
-        return [_spec_to_python(spec, port) for port, spec in zip(self._node.input_ports, specs)]
+        return [
+            _spec_to_python(spec, port)
+            for port, spec in zip(self._node.input_ports, specs)
+        ]
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -286,7 +289,11 @@ class _PythonNodeProxy:
         kt._backend = kat.ArrowBackend(create_python_sink)
 
         # execute
-        outputs = self._node.execute(inputs, exec_context)
+        outputs = self._node.execute(exec_context, *inputs)
+
+        if not isinstance(outputs, list) and not isinstance(outputs, tuple):
+            # single outputs are fine
+            outputs = [outputs]
 
         kt._backend.close()
         kt._backend = None
@@ -310,11 +317,15 @@ class _PythonNodeProxy:
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
     def configure(
-        self, input_specs: List[_PythonPortObjectSpec]
+        self, input_specs: List[_PythonPortObjectSpec], config_context
     ) -> List[_PythonPortObjectSpec]:
 
         inputs = self._specs_to_python(input_specs)
-        outputs = self._node.configure(inputs)
+        outputs = self._node.configure(config_context, *inputs)
+
+        if not isinstance(outputs, list) and not isinstance(outputs, tuple):
+            # single outputs are fine
+            outputs = [outputs]
 
         output_specs = [
             _spec_from_python(spec, self._node.output_ports[i])

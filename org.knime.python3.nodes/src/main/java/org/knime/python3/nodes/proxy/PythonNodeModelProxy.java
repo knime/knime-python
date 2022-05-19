@@ -96,9 +96,10 @@ public interface PythonNodeModelProxy {
      * Performs the node configuration. Given the input table schemas, provide the schemas of the resulting tables.
      *
      * @param inputs input specs
+     * @param context The {@link PythonConfigurationContext} used during configure
      * @return The output specs
      */
-    List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs);
+    List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs, PythonConfigurationContext context);
 
     /**
      * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving KNIME
@@ -206,5 +207,14 @@ public interface PythonNodeModelProxy {
          * @return True if the node has been cancelled. Then the Python code should return as soon as possible
          */
         boolean is_canceled();
+    }
+
+    /**
+     * Context provided to Python while configuring a node. This can e.g. provide flow variables.
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    public interface PythonConfigurationContext {
+        // TODO: add flow variable
     }
 }

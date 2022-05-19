@@ -88,7 +88,7 @@ The data is expected to have type `bytes`.
 
 ```python
 @kn.node("My Predictor", node_type="Predictor", icon_path="icon.png", category="/")
-@kn.input_port("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
+@kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
 @kn.input_table("Data", "The data on which to predict")
 class MyPredictor():
     def configure(self, in_specs: List[Union[kn.Schema, kn.BinaryPortObjectSpec]]):
@@ -263,9 +263,9 @@ def my_function(inputs: List[kn.Table]) -> List[kn.Table]:
 
 Some extensions might have additional requirements that are not part of the bundled environment e.g. in case of third party models.
 For these extensions, it is possible to overwrite the Python executable used for execution.
-This can be done via the system property `org.knime.python.extension.config` that has to point to a special YAML file on disc.
+This can be done via the system property `knime.python.extension.config` that has to point to a special YAML file on disc.
 Add it to your knime.ini with the following line:
-`-Dorg.knime.python.extension.config=path/to/your/config.yml`
+`-Dknime.python.extension.config=path/to/your/config.yml`
 The format of the YAML is:
 ```yml
 id.of.first.extension:
@@ -283,7 +283,7 @@ As illustrated above, you can overwrite the Python executable of multiple extens
 
 ## Registering Python extensions during development
 
-In order to register a Python extension you are developing, you can added to the `org.knime.python.extension.config` YAML explained above by adding a src property:
+In order to register a Python extension you are developing, you can added to the `knime.python.extension.config` YAML explained above by adding a src property:
 ```yml
 id.of.your.dev.extension:
   src: path/to/your/extension

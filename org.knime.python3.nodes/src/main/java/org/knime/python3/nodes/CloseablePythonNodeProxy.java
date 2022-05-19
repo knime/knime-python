@@ -248,6 +248,8 @@ final class CloseablePythonNodeProxy
                 }
                 return false;
             }
+
+            // TODO: add flow variables
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -279,7 +281,11 @@ final class CloseablePythonNodeProxy
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
 
-        final var serializedOutSpecs = m_proxy.configure(serializedInSpecs);
+        final var pythonConfigContext = new PythonNodeModelProxy.PythonConfigurationContext() {
+            // TODO: add flow variables
+        };
+
+        final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
 
         final var outputPortTypeIdentifiers = m_nodeSpec.getOutputPortTypes();
         if (serializedOutSpecs.size() != outputPortTypeIdentifiers.length) {

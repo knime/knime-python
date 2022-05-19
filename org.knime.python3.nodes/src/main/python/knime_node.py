@@ -62,7 +62,9 @@ from typing import Callable
 
 class PortType(Enum):
     # TODO: make this extensible
-    BYTES = auto()  # could have an ID -> PortObjectSpec, could be checked in configure?
+    BINARY = (
+        auto()
+    )  # could have an ID -> PortObjectSpec, could be checked in configure?
     TABLE = auto()
 
 
@@ -73,13 +75,13 @@ class Port:
     description: str
     id: Optional[
         str
-    ] = None  # can be used by BYTES ports to only allow linking ports with matching IDs
+    ] = None  # can be used by BINARY ports to only allow linking ports with matching IDs
 
     def __post_init__(self):
         """
         Perform validation after __init__
         """
-        if self.type == PortType.BYTES and self.id is None:
+        if self.type == PortType.BINARY and self.id is None:
             raise TypeError(
                 f"{type(self)}s of type {self.type} must have a unique 'id' set"
             )
@@ -112,7 +114,7 @@ class PythonNode(ABC):
     view: ViewDeclaration = None
 
     @abstractmethod
-    def configure(self, inSchemas: List[str]) -> List[str]:
+    def configure(self, config_context, *inputs):
         # TODO: We need something akin to PortObjectSpecs in Python.
         #       See https://knime-com.atlassian.net/browse/AP-18368
 
@@ -121,9 +123,7 @@ class PythonNode(ABC):
         pass
 
     @abstractmethod
-    def execute(
-        self, tables: List[kt.ReadTable], objects: List, exec_context
-    ) -> Tuple[List[kt.WriteTable], List]:
+    def execute(self, exec_context, *inputs):
         # TODO: Allow mixing tables and port objects in inputs and outputs.
         #       See https://knime-com.atlassian.net/browse/AP-18640
 
@@ -201,7 +201,7 @@ class _Node:
 
     def to_dict(self):
         def port_to_str(port):
-            if port.type == PortType.BYTES:
+            if port.type == PortType.BINARY:
                 return f"{port.type}={port.id}"
             else:
                 return str(port.type)
@@ -314,7 +314,7 @@ def _get_view(node_factory) -> Optional[ViewDeclaration]:
     return _get_attr_from_instance_or_factory(node_factory, "view")
 
 
-def input_port(name: str, description: str, id: str):
+def input_binary(name: str, description: str, id: str):
     """
     Use this decorator to define a bytes-serialized port object input of a node.
 
@@ -326,7 +326,7 @@ def input_port(name: str, description: str, id: str):
             can be connected in KNIME
     """
     return lambda node_factory: _add_port(
-        node_factory, "input_ports", Port(PortType.BYTES, name, description, id)
+        node_factory, "input_ports", Port(PortType.BINARY, name, description, id)
     )
 
 
@@ -339,7 +339,7 @@ def input_table(name: str, description: str):
     )
 
 
-def output_port(name: str, description: str, id: str):
+def output_binary(name: str, description: str, id: str):
     """
     Use this decorator to define a bytes-serialized port object output of a node.
 
@@ -351,7 +351,7 @@ def output_port(name: str, description: str, id: str):
             can be connected in KNIME
     """
     return lambda node_factory: _add_port(
-        node_factory, "output_ports", Port(PortType.BYTES, name, description, id)
+        node_factory, "output_ports", Port(PortType.BINARY, name, description, id)
     )
 
 
