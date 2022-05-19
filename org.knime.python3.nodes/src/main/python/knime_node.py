@@ -49,9 +49,8 @@ Provides base implementations and utilities for the development of KNIME nodes i
 """
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, asdict
-from numbers import Number
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Callable
 import knime_parameter as kp
 import knime_node_table as kt
 
@@ -230,6 +229,83 @@ class PythonNode(ABC):
             should be returned as plain Python `bytes` object.
         """
         pass
+
+
+class _Category:
+    def __init__(
+        self,
+        path: str,
+        level_id: str,
+        name: str,
+        description: str,
+        icon: str,
+        after: str = "",
+        locked: bool = True,
+    ) -> None:
+        self._path = path
+        self._level_id = level_id
+        self._name = name
+        self._description = description
+        self._icon = icon
+        self._after = after
+        self._locked = locked
+
+    def to_dict(self):
+        return {
+            "path": self._path,
+            "level_id": self._level_id,
+            "name": self._name,
+            "description": self._description,
+            "icon": self._icon,
+            "after": self._after,
+            "locked": self._locked,
+        }
+
+
+_categories = []
+
+
+def category(
+    path: str,
+    level_id: str,
+    name: str,
+    description: str,
+    icon: str,
+    after: str = "",
+    locked: bool = True,
+):
+    """Register a new node category.
+
+    A node cateogry must only be created once. Use a string encoding the
+    absolute category path to add nodes to an existing category.
+
+    Args:
+        path (Union[str, Category]): The absolute "path" that lead to this
+            category e.g. "/io/read". The segments are the category
+            level-IDs, separated by a slash ("/").
+        level_id (str): The identifier of the level which is used as a
+            path-segment and must be unique at the level specified by
+            "path".
+        name (str): The name of this category e.g. "File readers".
+        description (str): A short description of the category.
+        icon (str): File path to 16x16 pixel PNG icon for this category. The
+            path must be relative to the root of the extension.
+        after (str, optional): Specifies the level-id of the category after
+            which this category should be sorted in. Defaults to "".
+        locked (bool, optional): Set this to False to allow extensions from
+            other vendors to add sub-categories or nodes to this category.
+            Defaults to True.
+
+    Returns:
+        str: The full path of the category which can be used to create nodes
+            inside this category.
+    """
+    _categories.append(
+        _Category(path, level_id, name, description, icon, after, locked)
+    )
+    if path.endswith("/"):
+        return path + level_id
+    return f"{path}/{level_id}"
 
 
 class _Node:
