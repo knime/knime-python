@@ -9,6 +9,11 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
+pycat = kn.category(
+    "/", "pycat", "Python category", "A category defined in Python", "icon.png"
+)
+
+
 @kn.parameter_group("Awesome Options")
 class MyParameterGroup:
     """
@@ -24,7 +29,7 @@ class MyParameterGroup:
             raise ValueError("The sum of the parameter exceeds 10")
 
 
-@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category=pycat)
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
 @kn.output_binary(
@@ -68,7 +73,7 @@ class MyNode:
 
 
 @kn.node(
-    name="My Second Node", node_type="Predictor", icon_path="icon.png", category="/"
+    name="My Second Node", node_type="Predictor", icon_path="icon.png", category=pycat
 )
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.input_binary(
