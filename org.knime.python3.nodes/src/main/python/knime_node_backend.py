@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import List, Tuple, Union
+from typing import List
 
 import knime_gateway as kg
 import knime_node as kn
@@ -426,6 +426,11 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg: callback.log(msg))
+
+    def retrieveCategoriesAsJson(self, extension_module_name: str) -> str:
+        importlib.import_module(extension_module_name)
+        category_dicts = [category.to_dict() for category in kn._categories]
+        return json.dumps(category_dicts)
 
     def retrieveNodesAsJson(self, extension_module_name: str) -> str:
         importlib.import_module(extension_module_name)

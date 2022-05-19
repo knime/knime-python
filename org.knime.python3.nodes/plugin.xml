@@ -10,6 +10,12 @@
       </nodeset>
    </extension>
    <extension
+         point="org.knime.workbench.repository.categorysets">
+      <categoryset
+            factory-class="org.knime.python3.nodes.PurePythonNodeSetFactory">
+      </categoryset>
+   </extension>
+   <extension
          point="org.knime.core.PortType">
       <portType
             hidden="false"

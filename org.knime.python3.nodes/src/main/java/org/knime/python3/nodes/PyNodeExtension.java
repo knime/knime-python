@@ -50,6 +50,7 @@ package org.knime.python3.nodes;
 
 import java.util.stream.Stream;
 
+import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.nodes.proxy.NodeProxy;
 
 /**
@@ -68,6 +69,12 @@ public interface PyNodeExtension {
      * @return human-readable name of the extension
      */
     String getDescription();
+
+    /**
+     * @return a stream of builders that will build the category declarations defined for the extension. The caller is
+     *         supposed to set the pluginId of the extension.
+     */
+    Stream<CategoryExtension.Builder> getCategories();
 
     /**
      * @param id of the node

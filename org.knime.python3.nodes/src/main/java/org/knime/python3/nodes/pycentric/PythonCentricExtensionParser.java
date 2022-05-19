@@ -51,11 +51,14 @@ package org.knime.python3.nodes.pycentric;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
@@ -100,20 +103,29 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         final StaticExtensionInfo staticInfo) throws IOException {
         try (var gateway =
             PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension, staticInfo.m_environmentName)) {
-            return createNodeExtension(gateway.getEntryPoint(), staticInfo);
+            return createNodeExtension(gateway.getEntryPoint(), pathToExtension, staticInfo);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IOException("Python gateway creation was interrupted.", ex);
         }
     }
 
-    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
+    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend, final Path pathToExtension,
         final StaticExtensionInfo staticInfo) {
         // TODO should we decide on using only this way of defining PythonNodeExtensions, we should add the extension
         // module to the preloaded modules to take full advantage of a potential process/gateway queue
+        var categoriesJson = backend.retrieveCategoriesAsJson(staticInfo.m_extensionModule);
         var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_extensionModule);
         return new FluentPythonNodeExtension(staticInfo.m_id, "TODO", staticInfo.m_environmentName,
-            staticInfo.m_extensionModule, parseNodes(nodesJson));
+            staticInfo.m_extensionModule, parseNodes(nodesJson), parseCategories(categoriesJson, pathToExtension));
+    }
+
+    private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,
+        final Path pathToExtension) {
+        JsonCategory[] categories = new Gson().fromJson(categoriesJson, JsonCategory[].class);
+        return Stream.of(categories) //
+            .map(c -> c.toExtension(pathToExtension)) //
+            .collect(Collectors.toUnmodifiableList());
     }
 
     private static PythonNode[] parseNodes(final String nodesJson) {
@@ -202,6 +214,36 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 option.enter(builder::withOption);
             }
             return builder.build();
+        }
+    }
+
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static class JsonCategory {
+        private String path;
+
+        private String level_id;
+
+        private String name;
+
+        private String description;
+
+        private String icon;
+
+        private String after;
+
+        private boolean locked;
+
+        CategoryExtension.Builder toExtension(final Path pathToExtension) {
+            return CategoryExtension.builder(name, level_id) //
+                .withPath(path) //
+                .withDescription(description) //
+                .withIcon(pathToIcon(pathToExtension)) //
+                .withAfter(after) //
+                .withLocked(locked);
+        }
+
+        private String pathToIcon(final Path pathToExtension) {
+            return pathToExtension.resolve(icon).toAbsolutePath().toString();
         }
     }
 

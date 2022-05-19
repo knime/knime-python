@@ -86,6 +86,8 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
 
     NodeProxy createNodeExtensionProxy(final String factoryModule, String factoryMethod, String nodeId);
 
+    String retrieveCategoriesAsJson(final String extensionModule);
+
     String retrieveNodesAsJson(final String extensionModule);
 
     NodeProxy createNodeFromExtension(final String extensionModule, final String nodeId);

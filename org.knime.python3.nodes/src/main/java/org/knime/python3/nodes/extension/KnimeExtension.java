@@ -52,6 +52,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 
 /**
@@ -71,6 +72,11 @@ public interface KnimeExtension {
      *         bundle
      */
     Optional<String> getBundleName();
+
+    /**
+     * @return a stream of categories that the extension defines
+     */
+    Stream<CategoryExtension> getCategories();
 
     /**
      * @return a stream of the nodes of the extension

@@ -50,8 +50,10 @@ package org.knime.python3.nodes.extension;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +72,8 @@ import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.extension.CategoryExtension;
+import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
@@ -89,13 +93,15 @@ import org.knime.python3.nodes.views.HtmlFileNodeView;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
+public abstract class ExtensionNodeSetFactory implements NodeSetFactory, CategorySetFactory {
 
     private static final Map<String, KnimeExtension> ALL_EXTENSIONS = new ConcurrentHashMap<>();
 
     private final Map<String, KnimeExtension> m_extensions;
 
     private final Map<NodeId, ExtensionNode> m_allNodes;
+
+    private final List<CategoryExtension> m_allCategories;
 
     /**
      * Constructor.
@@ -106,9 +112,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
         m_extensions = extensionSupplier.get().collect(toMap(KnimeExtension::getId, Function.identity()));
         ALL_EXTENSIONS.putAll(m_extensions);
         m_allNodes = new HashMap<>();
+        m_allCategories = new ArrayList<>();
         for (var extension : m_extensions.values()) {
             var extensionId = extension.getId();
             extension.getNodes().forEach(n -> m_allNodes.put(new NodeId(extensionId, n.getId()), n));
+            extension.getCategories().forEach(c -> m_allCategories.add(c));
         }
     }
 
@@ -142,6 +150,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
         settings.addString("extension_id", extensionId);
         settings.addString("node_id", nodeId.getNodeId());
         return settings;
+    }
+
+    @Override
+    public Collection<CategoryExtension> getCategories() {
+        return m_allCategories;
     }
 
     /**

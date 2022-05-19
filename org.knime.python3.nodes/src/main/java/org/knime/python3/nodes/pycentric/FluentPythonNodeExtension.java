@@ -50,10 +50,12 @@ package org.knime.python3.nodes.pycentric;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PyNodeExtension;
 import org.knime.python3.nodes.PythonNode;
@@ -64,6 +66,8 @@ import org.knime.python3.nodes.proxy.NodeProxy;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class FluentPythonNodeExtension implements PyNodeExtension {
+
+    private final List<CategoryExtension.Builder> m_categoryBuilders;
 
     private final Map<String, PythonNode> m_nodes;
 
@@ -76,12 +80,13 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     private final String m_extensionModule;
 
     FluentPythonNodeExtension(final String id, final String description, final String environmentName,
-        final String extensionModule, final PythonNode[] nodes) {
+        final String extensionModule, final PythonNode[] nodes, final List<CategoryExtension.Builder> categoryBuilders) {
         m_id = id;
         m_description = description;
         m_environmentName = environmentName;
         m_extensionModule = extensionModule;
         m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));
+        m_categoryBuilders = categoryBuilders;
     }
 
     @Override
@@ -92,6 +97,11 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     @Override
     public String getDescription() {
         return m_description;
+    }
+
+    @Override
+    public Stream<CategoryExtension.Builder> getCategories() {
+        return m_categoryBuilders.stream();
     }
 
     @Override
@@ -116,5 +126,4 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     public Stream<PythonNode> getNodeStream() {
         return m_nodes.values().stream();
     }
-
 }

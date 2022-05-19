@@ -58,6 +58,7 @@ import java.util.stream.Stream;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
@@ -118,7 +119,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static Stream<KnimeExtension> getExtensionsFromPreferences() {
         return PythonExtensionPreferences.getPathsToCustomExtensions()//
-            .map(p -> parseExtension(p, null));
+            .map(p -> parseExtension(p, "unknown"));
     }
 
     private static Stream<KnimeExtension> getExtensionsFromExtensionPoint() {
@@ -164,6 +165,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
         Path getPath() {
             return m_path;
+        }
+
+        @Override
+        public Stream<CategoryExtension> getCategories() {
+            return m_extension.getCategories().map(b -> b.withPluginId(m_bundleName).build());
         }
 
         @Override
