@@ -47,11 +47,11 @@ Provides base implementations and utilities for the development of KNIME nodes i
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, asdict
 from numbers import Number
 from enum import Enum, auto
-from typing import List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Tuple, Callable
 import knime_parameter as kp
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
@@ -99,12 +99,84 @@ parameter_group = kp.parameter_group
 ColumnParameter = kp.ColumnParameter
 
 
+class ConfigurationContext(ABC):
+    """
+    The ConfigurationContext provides utilities to communicate with KNIME
+    during a node's configure() method.
+    """
+
+    @abstractproperty
+    def flow_variables(self) -> Dict[str, Any]:
+        """
+        The flow variables coming in from KNIME as a dictionary with string keys.
+        The dictionary can be edited and supports flow variables of the following types:
+
+        * bool
+        * list(bool)
+        * float
+        * list(float)
+        * int
+        * list(int)
+        * str
+        * list(str)
+
+        """
+        pass
+
+
+class ExecutionContext(ABC):
+    """
+    The ExecutionContext provides utilities to communicate with KNIME during a 
+    node's execute() method.
+    """
+
+    @abstractproperty
+    def flow_variables(self) -> Dict[str, Any]:
+        """
+        The flow variables coming in from KNIME as a dictionary with string keys.
+        The dictionary can be edited and supports flow variables of the following types:
+
+        * bool
+        * list(bool)
+        * float
+        * list(float)
+        * int
+        * list(int)
+        * str
+        * list(str)
+
+        """
+        pass
+
+    @abstractmethod
+    def set_progress(self, progress: float, message: str = None):
+        """
+        Set the 
+
+        Args:
+            progress: a floating point number between 0 and 1
+            message: an optional message to display in KNIME with the progress
+        """
+
+    @abstractmethod
+    def is_canceled(self) -> bool:
+        """
+        Returns true if this node's execution has been canceled from KNIME.
+        Nodes can check for this property and return early if the execution does
+        not need to finish. Raising a RuntimeError in that case is encouraged.
+        """
+        pass
+
+
 class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
 
     Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
     or populate the input_ports, output_ports, and view attributes.
+
+    Use the Python logging facilities and its `.warn` and `.error` methods to write warnings
+    and errors to the KNIME console.
     """
 
     input_ports: List[Port] = None
@@ -112,52 +184,43 @@ class PythonNode(ABC):
     view: ViewDeclaration = None
 
     @abstractmethod
-    def configure(self, config_context, *inputs):
-        # TODO: We need something akin to PortObjectSpecs in Python.
-        #       See https://knime-com.atlassian.net/browse/AP-18368
+    def configure(self, config_context: ConfigurationContext, *inputs):
+        """
+        Configure this Python node.
 
-        # TODO: Make flow variables available during configuration.
-        #       See https://knime-com.atlassian.net/browse/AP-18641
+        Args:
+            config_context: The ConfigurationContext providing KNIME utilities during execution
+            *inputs:
+                Each input table spec or binary port spec will be added as parameter,
+                in the same order that the ports were defined.
+        
+        Returns:
+            Either a single spec, or a tuple or list of specs. The number of specs
+            must match the number of defined output ports, and they must be returned in this order.
+        
+        Raise:
+            InvalidConfigurationError:
+                If the input configuration does not satisfy this node's requirements.
+        """
         pass
 
     @abstractmethod
-    def execute(self, exec_context, *inputs):
-        # TODO: Allow mixing tables and port objects in inputs and outputs.
-        #       See https://knime-com.atlassian.net/browse/AP-18640
+    def execute(self, exec_context: ExecutionContext, *inputs):
+        """
+        Execute this Python node.
 
-        # TODO: Make flow variables available during execution.
-        #       See https://knime-com.atlassian.net/browse/AP-18641
+        Args:
+            exec_context: The ExecutionContext providing KNIME utilities during execution
+            *inputs:
+                Each input table or binary port object will be added as parameter,
+                in the same order that the ports were defined.
+        
+        Returns:
+            Either a single output object (table or binary), or a tuple or list of objects. 
+            The number of output objects must match the number of defined output ports, 
+            and they must be returned in this order. 
+        """
         pass
-
-    def get_input_ports(self) -> List[Port]:
-        """
-        Optional method (TODO: only put into documentation, not implementation!)
-
-        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
-        or implement the get_input_ports, get_output_ports, and get_view methods. If the
-        methods exist, they will take precedence over the decorators.
-        """
-        return None
-
-    def get_output_ports(self) -> List[Port]:
-        """
-        Optional method (TODO: only put into documentation, not implementation!)
-
-        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
-        or implement the get_input_ports, get_output_ports, and get_view methods. If the
-        methods exist, they will take precedence over the decorators.
-        """
-        return None
-
-    def get_view(self) -> ViewDeclaration:
-        """
-        Optional method (TODO: only put into documentation, not implementation!)
-
-        Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
-        or implement the get_input_ports, get_output_ports, and get_view methods. If the
-        methods exist, they will take precedence over the decorators.
-        """
-        return None
 
 
 class _Node:
