@@ -58,7 +58,6 @@ import knime_arrow_table as kat
 import knime_table as kt
 import importlib
 import json
-import pickle
 import logging
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
