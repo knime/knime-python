@@ -51,6 +51,7 @@ package org.knime.python3.nodes.proxy;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Map;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -65,16 +66,34 @@ import org.knime.python3.nodes.JsonNodeSettings;
  */
 public interface NodeModelProxy {
 
+    /**
+     * Interface that should be implemented by a class that provides access to and can receive updated flow variables
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    public interface FlowVariablesProxy {
+        /**
+         * @return the map of flow variables that are the inputs to this node
+         */
+        Map<String, Object> getFlowVariables();
+
+        /**
+         * Set updated flow variables after modifications by this node
+         * @param flowVariables
+         */
+        void setFlowVariables(Map<String, Object> flowVariables);
+    }
+
     void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
 
     void loadValidatedSettings(JsonNodeSettings settings);
 
     JsonNodeSettings saveSettings();
 
-    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec)
+    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVariablesProxy)
         throws IOException, CanceledExecutionException;
 
-    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs);
+    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariablesProxy);
 
     public interface ExecutionResult {
         PortObject[] getPortObjects();

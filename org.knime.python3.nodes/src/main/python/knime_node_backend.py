@@ -291,7 +291,9 @@ class _PythonNodeProxy:
         kt._backend = kat.ArrowBackend(create_python_sink)
 
         # execute
+        exec_context.flow_variables = self._get_flow_variables()
         outputs = self._node.execute(exec_context, *inputs)
+        self._set_flow_variables(exec_context.flow_variables)
 
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
@@ -301,7 +303,8 @@ class _PythonNodeProxy:
         kt._backend = None
 
         if hasattr(self._node, "view") and self._node.view is not None:
-            outputs, out_view = outputs
+            out_view = outputs[-1]
+            outputs = outputs[:-1]
 
             # write the view to the sink
             view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
@@ -323,7 +326,9 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg: self._java_callback.log(msg))
         inputs = self._specs_to_python(input_specs)
+        config_context.flow_variables = self._get_flow_variables()
         outputs = self._node.configure(config_context, *inputs)
+        self._set_flow_variables(config_context.flow_variables)
 
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
@@ -335,6 +340,48 @@ class _PythonNodeProxy:
         ]
         _pop_log_callback()
         return ListConverter().convert(output_specs, kg.client_server._gateway_client)
+
+    def _get_flow_variables(self):
+        from py4j.java_collections import JavaArray
+
+        java_flow_variables = self._java_callback.get_flow_variables()
+
+        flow_variables = {}
+        for key, value in java_flow_variables.items():
+            if isinstance(value, JavaArray):
+                value = [x for x in value]
+            flow_variables[key] = value
+        return flow_variables
+
+    def _check_flow_variables(self, flow_variables):
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in flow_variables.keys():
+            fv = flow_variables[key]
+            try:
+                java_flow_variables[key] = fv
+            except AttributeError as ex:
+                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
+                # fails to translate Python objects to Java objects.
+                raise TypeError(
+                    f"Flow variable '{key}' of type '{type(fv)}' cannot be translated to a valid KNIME flow "
+                    f"variable. Please remove the flow variable or change its type to something that can be translated."
+                )
+
+    def _set_flow_variables(self, flow_variables):
+        self._check_flow_variables(flow_variables)
+
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in flow_variables.keys():
+            flow_variable = flow_variables[key]
+            java_flow_variables[key] = flow_variable
+
+        self._java_callback.set_flow_variables(java_flow_variables)
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]

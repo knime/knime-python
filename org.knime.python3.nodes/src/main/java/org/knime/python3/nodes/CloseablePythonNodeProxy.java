@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -74,6 +75,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
@@ -92,6 +94,7 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
+import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -122,6 +125,19 @@ final class CloseablePythonNodeProxy
 
     private final ExecutorService m_executorService = ThreadUtils.executorServiceWithContext(
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-node-%d").build()));
+
+    private static final Set<Class<?>> KNOWN_FLOW_VARIABLE_TYPES = Set.of( //
+        Boolean.class, //
+        Boolean[].class, //
+        Double.class, //
+        Double[].class, //
+        Integer.class, //
+        Integer[].class, //
+        Long.class, //
+        Long[].class, //
+        String.class, //
+        String[].class //
+    );
 
     CloseablePythonNodeProxy(final NodeProxy proxy, final PythonGateway<?> gateway, final ExtensionNode nodeSpec) {
         m_proxy = proxy;
@@ -158,7 +174,7 @@ final class CloseablePythonNodeProxy
     @Override
     public String getDialogRepresentation(final String parameters, final String version, final PortObjectSpec[] specs) {
         final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
-                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
 
         return m_proxy.getDialogRepresentation(parameters, version, serializedSpecs);
     }
@@ -187,8 +203,8 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec)
-        throws IOException, CanceledExecutionException {
+    public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
+        final FlowVariablesProxy flowVariablesProxy) throws IOException, CanceledExecutionException {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final PythonExecutionResult executionResult = new PythonExecutionResult();
@@ -219,10 +235,21 @@ final class CloseablePythonNodeProxy
                     executionResult.m_view = PathUtils.createTempFile("python_node_view_", "html");
                 }
                 return new PythonNodeViewSink(executionResult.m_view.toAbsolutePath().toString());
+            }
 
             @Override
             public void log(final String msg) {
                 LOGGER.warn(msg);
+            }
+
+            @Override
+            public Map<String, Object> get_flow_variables() {
+                return flowVariablesProxy.getFlowVariables();
+            }
+
+            @Override
+            public void set_flow_variables(final Map<String, Object> flowVariables) {
+                flowVariablesProxy.setFlowVariables(flowVariables);
             }
         };
         m_proxy.initializeJavaCallback(callback);
@@ -255,8 +282,6 @@ final class CloseablePythonNodeProxy
                 }
                 return false;
             }
-
-            // TODO: add flow variables
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -284,7 +309,7 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) {
+    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy) {
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
 
@@ -308,6 +333,21 @@ final class CloseablePythonNodeProxy
             @Override
             public void log(final String msg) {
                 LOGGER.warn(msg);
+            }
+
+            @Override
+            public Map<String, Object> get_flow_variables() {
+                return flowVariablesProxy.getFlowVariables();
+            }
+
+            @Override
+            public void set_flow_variables(final Map<String, Object> flowVariables) {
+                flowVariablesProxy.setFlowVariables(flowVariables);
+            }
+
+            @Override
+            public PythonNodeViewSink create_view_sink() throws IOException {
+                throw new IllegalStateException("Cannot create view in configure");
             }
         };
         m_proxy.initializeJavaCallback(callback);
@@ -350,5 +390,12 @@ final class CloseablePythonNodeProxy
     @Override
     public int getNumViews() {
         return m_nodeSpec.getNumViews();
+    }
+
+    /**
+     * @return an array of flow variable types that can be understood by this Python backend.
+     */
+    public static VariableType<?>[] getCompatibleFlowVariableTypes() {
+        return FlowVariableUtils.convertToFlowVariableTypes(KNOWN_FLOW_VARIABLE_TYPES);
     }
 }

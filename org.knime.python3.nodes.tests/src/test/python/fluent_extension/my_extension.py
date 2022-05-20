@@ -93,4 +93,6 @@ class MySecondNode:
         col = pa.array([binary.decode()] * len(table))
         field = pa.field("AddedColumn", type=pa.string())
         out_table = table.append_column(field, col)
+        LOGGER.warn(exec_ctx.flow_variables)
+        exec_ctx.flow_variables["test"] = 42
         return kt.write_table(out_table)

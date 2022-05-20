@@ -53,6 +53,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -68,8 +70,16 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
+import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
+import org.knime.python3.nodes.proxy.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.utils.FlowVariableUtils;
 
 /**
  * NodeModel that delegates its operations to a proxy implemented in Python.
@@ -77,7 +87,7 @@ import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 // TODO Perhaps move to the extension package?
-public final class DelegatingNodeModel extends NodeModel {
+public final class DelegatingNodeModel extends NodeModel implements FlowVariablesProxy {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -116,7 +126,7 @@ public final class DelegatingNodeModel extends NodeModel {
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         try (var node = m_proxySupplier.get()) {
             node.loadValidatedSettings(m_settings);
-            var result = node.configure(inSpecs);
+            var result = node.configure(inSpecs, this);
             // allows for auto-configure
             m_settings = node.saveSettings();
             m_proxyShutdownTracker.closeAsynchronously(node);
@@ -128,7 +138,7 @@ public final class DelegatingNodeModel extends NodeModel {
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         try (var node = m_proxySupplier.get()) {
             node.loadValidatedSettings(m_settings);
-            var result = node.execute(inData, exec);
+            var result = node.execute(inData, exec, this);
             m_settings = node.saveSettings();
             m_proxyShutdownTracker.closeAsynchronously(node);
             m_view = result.getView();
@@ -196,5 +206,30 @@ public final class DelegatingNodeModel extends NodeModel {
      */
     public Optional<Path> getPathToHtmlView() {
         return m_view;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pushNewFlowVariable(final FlowVariable variable) {
+        pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
+            variable.getValue(variable.getVariableType()));
+    }
+
+    @Override
+    public Map<String, Object> getFlowVariables() {
+        return FlowVariableUtils.convertToMap(
+            getAvailableFlowVariables(CloseablePythonNodeProxy.getCompatibleFlowVariableTypes()).values());
+    }
+
+    @Override
+    public void setFlowVariables(final Map<String, Object> flowVariables) {
+        final Map<String, FlowVariable> oldVariables =
+            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+
+        final var newVariables = FlowVariableUtils.convertFromMap(flowVariables, LOGGER);
+        for (final FlowVariable variable : newVariables) {
+            if (!Objects.equals(oldVariables.get(variable.getName()), variable)) {
+                pushNewFlowVariable(variable);
+            }
+        }
     }
 }

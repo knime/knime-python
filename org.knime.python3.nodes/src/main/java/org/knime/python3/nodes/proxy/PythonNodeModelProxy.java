@@ -50,6 +50,7 @@ package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -185,6 +186,18 @@ public interface PythonNodeModelProxy {
          * @param msg The log message
          */
         void log(String msg);
+
+        /**
+         * Used to send flow variables from KNIME to Python
+         * @return A map of name -> object pairs for the flow variables;
+         */
+        Map<String, Object> get_flow_variables(); // NOSONAR
+
+        /**
+         * Used to send flow variables from Python to KNIME
+         * @param flowVariables A map of name -> object pairs for the flow variables;
+         */
+        void set_flow_variables(Map<String, Object> flowVariables); // NOSONAR
     }
 
     /**
