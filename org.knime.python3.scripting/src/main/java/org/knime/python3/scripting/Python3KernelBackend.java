@@ -51,14 +51,10 @@ package org.knime.python3.scripting;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,7 +83,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.Version;
@@ -128,6 +123,7 @@ import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
 import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
+import org.knime.python3.utils.FlowVariableUtils;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -381,19 +377,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public void putFlowVariables(final String name, final Collection<FlowVariable> flowVariables)
         throws PythonIOException {
-        final LinkedHashMap<String, Object> flowVariablesMap = new LinkedHashMap<>(flowVariables.size());
-        for (final FlowVariable variable : flowVariables) {
-            // Flow variables typically contain Java primitives or strings as values (or arrays of these). We simply let
-            // py4j handle the conversion of the values into their Python equivalents.
-            // Note that the legacy Python back end only supports double, int, and string flow variables and converts
-            // all other variable values, including arrays, into strings. So this simple implementation here is already
-            // an improvement over the legacy implementation.
-            //
-            final VariableType<?> type = variable.getVariableType();
-            Object value = variable.getValue(type);
-            flowVariablesMap.put(variable.getName(), value);
-        }
-        m_proxy.setFlowVariables(flowVariablesMap);
+        m_proxy.setFlowVariables(FlowVariableUtils.convertToMap(flowVariables));
     }
 
     /**
@@ -402,71 +386,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     @Override
     public Collection<FlowVariable> getFlowVariables(final String name) throws PythonIOException {
         final Map<String, Object> flowVariablesMap = m_proxy.getFlowVariables();
-        final VariableType<?>[] allVariableTypes = VariableTypeRegistry.getInstance().getAllTypes();
-        final Set<FlowVariable> flowVariables = new LinkedHashSet<>(flowVariablesMap.size());
-        for (final var entry : flowVariablesMap.entrySet()) {
-            final String variableName = entry.getKey();
-            Object value = entry.getValue();
-            if (value instanceof List) {
-                // py4j returns lists instead of arrays, convert them manually.
-                value = convertIntoArrayValue(variableName, (List<?>)value);
-                if (value == null) {
-                    continue;
-                }
-            }
-            if (value != null) {
-                final VariableType<?> matchingType = findMatchingVariableType(variableName, value, allVariableTypes);
-                if (matchingType != null
-                    // Reserved flow variables like "knime.workspace" are also passed through the node, filter them out.
-                    && isValidVariableName(variableName)) {
-                    @SuppressWarnings({"unchecked", "rawtypes"})
-                    final var variable = new FlowVariable(variableName, (VariableType)matchingType, value);
-                    flowVariables.add(variable);
-                }
-            } else {
-                LOGGER.warn("Flow variable '" + variableName + "' is empty. The variable will be ignored.");
-            }
-        }
-        return flowVariables;
-    }
-
-    private static Object convertIntoArrayValue(final String variableName, final List<?> listValue) {
-        if (!listValue.isEmpty()) {
-            try {
-                return listValue.toArray(size -> (Object[])Array.newInstance(listValue.get(0).getClass(), size));
-            } catch (final ArrayStoreException ex) {
-                LOGGER.warn(
-                    "Array-typed flow variable '" + variableName
-                        + "' contains elements of different types, which is not allowed. The variable will be ignored",
-                    ex);
-            }
-        } else {
-            LOGGER.warn("Array-typed flow variable '" + variableName + "' is empty and will be ignored.");
-        }
-        return null;
-    }
-
-    private static VariableType<?> findMatchingVariableType(final String variableName, final Object value,
-        final VariableType<?>[] variableTypes) {
-        VariableType<?> matchingType = null;
-        for (final var type : variableTypes) {
-            if (type.getSimpleType().isInstance(value)) {
-                matchingType = type;
-                break;
-            }
-        }
-        if (matchingType == null) {
-            LOGGER.warn("KNIME offers no flow variable types that match the type of flow variable '" + variableName
-                + "'. The variable will be ignored. Please change its type to something KNIME understands.");
-            LOGGER.debug(
-                "The Java type of flow variable '" + variableName + "' is '" + value.getClass().getTypeName() + "'.");
-        }
-        return matchingType;
-    }
-
-    private static boolean isValidVariableName(final String variableName) {
-        return !(variableName.startsWith(FlowVariable.Scope.Global.getPrefix())
-            || variableName.startsWith(FlowVariable.Scope.Local.getPrefix()));
+        return FlowVariableUtils.convertFromMap(flowVariablesMap, LOGGER);
     }
 
     /**
@@ -729,10 +649,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      * @return an array of flow variable types that can be understood by this Python backend.
      */
     public static VariableType<?>[] getCompatibleFlowVariableTypes() {
-        return Arrays.stream(VariableTypeRegistry.getInstance().getAllTypes())
-            .filter(v -> KNOWN_FLOW_VARIABLE_TYPES.contains(v.getSimpleType())).toArray(VariableType[]::new);
+        return FlowVariableUtils.convertToFlowVariableTypes(KNOWN_FLOW_VARIABLE_TYPES);
     }
-
 
     private final class PutDataTableTask implements Callable<Void> {
 
