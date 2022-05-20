@@ -376,7 +376,7 @@ class StringParameter(_BaseParameter):
             return {"oneOf": [{"const": e, "title": e} for e in self._enum]}
 
     def _get_options(self) -> dict:
-        if self._enum is None:
+        if self._enum is None or len(self._enum) > 4:
             return {"format": "string"}
         else:
             return {"format": "radio"}
