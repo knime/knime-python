@@ -50,6 +50,7 @@ package org.knime.python3.nodes;
 
 import java.io.IOException;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
 import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
@@ -62,6 +63,8 @@ import org.knime.python3.nodes.proxy.NodeProxyProvider;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
+
+    private final static NodeLogger LOGGER = NodeLogger.getLogger(PurePythonExtensionNodeProxyProvider.class);
 
     private final String m_nodeId;
 
@@ -92,7 +95,15 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
         try {
             var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
                 m_extension.getEnvironmentName());
-            var nodeProxy = m_extension.createProxy(gateway.getEntryPoint(), m_nodeId);
+            final var backend = gateway.getEntryPoint();
+            final var cb = new KnimeNodeBackend.Callback() {
+                @Override
+                public void log(final String msg) {
+                    LOGGER.warn(msg);
+                }
+            };
+            backend.initializeJavaCallback(cb);
+            var nodeProxy = m_extension.createProxy(backend, m_nodeId);
             return new CloseablePythonNodeProxy(nodeProxy, gateway, m_extension.getNode(m_nodeId));
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);

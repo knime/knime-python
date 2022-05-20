@@ -179,6 +179,12 @@ public interface PythonNodeModelProxy {
          * @throws IOException if the temporary folder could not be created
          */
         PythonNodeViewSink create_view_sink() throws IOException; // NOSONAR
+
+        /**
+         * Pipe Python logging to KNIME's log facilities
+         * @param msg The log message
+         */
+        void log(String msg);
     }
 
     /**

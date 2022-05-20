@@ -68,6 +68,7 @@ import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.CheckUtils;
@@ -103,6 +104,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 final class CloseablePythonNodeProxy
     implements CloseableNodeModelProxy, CloseableNodeFactoryProxy, CloseableNodeDialogProxy {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
     private final NodeProxy m_proxy;
 
@@ -216,6 +219,10 @@ final class CloseablePythonNodeProxy
                     executionResult.m_view = PathUtils.createTempFile("python_node_view_", "html");
                 }
                 return new PythonNodeViewSink(executionResult.m_view.toAbsolutePath().toString());
+
+            @Override
+            public void log(final String msg) {
+                LOGGER.warn(msg);
             }
         };
         m_proxy.initializeJavaCallback(callback);
@@ -280,6 +287,30 @@ final class CloseablePythonNodeProxy
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) {
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+
+        final PythonNodeModelProxy.Callback callback = new Callback() {
+
+            @Override
+            public String resolve_knime_url(final String knimeUrl) {
+                return Python2KernelBackend.resolveKnimeUrl(knimeUrl, /* m_nodeContextManager */null);
+            }
+
+            @Override
+            public PythonArrowDataSink create_sink() throws IOException {
+                throw new IllegalStateException("Cannot create arrow data sink in configure");
+            }
+
+            @Override
+            public FileStoreBasedFile create_filestore_file() throws IOException {
+                throw new IllegalStateException("Cannot create filestore in configure");
+            }
+
+            @Override
+            public void log(final String msg) {
+                LOGGER.warn(msg);
+            }
+        };
+        m_proxy.initializeJavaCallback(callback);
 
         final var pythonConfigContext = new PythonNodeModelProxy.PythonConfigurationContext() {
             // TODO: add flow variables

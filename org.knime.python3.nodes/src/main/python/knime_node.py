@@ -51,13 +51,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from numbers import Number
 from enum import Enum, auto
-from typing import List, Optional, Tuple
-import knime_table as kt
+from typing import List, Optional, Tuple, Callable
 import knime_parameter as kp
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
 from packaging.version import Version
-from typing import Callable
 
 
 class PortType(Enum):

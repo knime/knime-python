@@ -276,6 +276,8 @@ class _PythonNodeProxy:
     def execute(
         self, input_objects: List[_PythonPortObject], exec_context
     ) -> List[_PythonPortObject]:
+        _push_log_callback(lambda msg: self._java_callback.log(msg))
+
         inputs = [
             _port_object_to_python(po, self._node.input_ports[idx])
             for idx, po in enumerate(input_objects)
@@ -313,13 +315,13 @@ class _PythonNodeProxy:
             )
             for idx, obj in enumerate(outputs)
         ]
-
+        _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
     def configure(
         self, input_specs: List[_PythonPortObjectSpec], config_context
     ) -> List[_PythonPortObjectSpec]:
-
+        _push_log_callback(lambda msg: self._java_callback.log(msg))
         inputs = self._specs_to_python(input_specs)
         outputs = self._node.configure(config_context, *inputs)
 
@@ -331,6 +333,7 @@ class _PythonNodeProxy:
             _spec_from_python(spec, self._node.output_ports[i])
             for i, spec in enumerate(outputs)
         ]
+        _pop_log_callback()
         return ListConverter().convert(output_specs, kg.client_server._gateway_client)
 
     class Java:
@@ -340,7 +343,6 @@ class _PythonNodeProxy:
 class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
-        self._callback = None
 
     def createNodeExtensionProxy(
         self, factory_module_name: str, factory_method_name: str, node_id: str
@@ -359,7 +361,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
         return _PythonNodeProxy(node)
 
     def initializeJavaCallback(self, callback):
-        self._callback = callback
+        _push_log_callback(lambda msg: callback.log(msg))
 
     def retrieveNodesAsJson(self, extension_module_name: str) -> str:
         importlib.import_module(extension_module_name)
@@ -424,13 +426,31 @@ class KnimeLogHandler(logging.StreamHandler):
         self._backend = backend
 
     def emit(self, record: logging.LogRecord):
-        if self._backend._callback is not None:
+        if _log_callback is not None:
             msg = self.format(record)
-            self._backend._callback.log(msg)
+            _log_callback(msg)
 
 
 backend = _KnimeNodeBackend()
 kg.connect_to_knime(backend)
+_log_callback = None
+_old_log_callbacks = []
+
+
+def _push_log_callback(callback):
+    global _log_callback
+    global _old_log_callbacks
+    _old_log_callbacks.append(_log_callback)
+    _log_callback = callback
+
+
+def _pop_log_callback():
+    global _log_callback
+    global _old_log_callbacks
+    callback = _old_log_callbacks.pop()
+    _log_callback = callback
+
+
 logging.getLogger().addHandler(KnimeLogHandler(backend))
 # I'd like to set the log level to INFO here, but py4j logs some stuff to info while
 # calling into Java and then our log redirection into Java is biting itself :D so no

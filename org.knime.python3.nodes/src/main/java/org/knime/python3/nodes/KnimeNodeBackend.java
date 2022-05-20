@@ -79,7 +79,7 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
     interface Callback {
         /**
          * Pipe Python logging to KNIME's log facilities
-         * @param msg
+         * @param msg The log message
          */
         void log(String msg);
     }

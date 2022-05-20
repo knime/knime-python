@@ -4,6 +4,9 @@ import knime_table as kt
 import knime_schema as ks
 import knime_views as kv
 import pyarrow as pa
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 @kn.parameter_group("Awesome Options")
@@ -50,13 +53,13 @@ class MyNode:
 
     param_group = MyParameterGroup()
 
-    def __init__(self) -> None:
-        super().__init__()
-
     def configure(self, config_ctx, schema_1):
+        LOGGER.warn("Configuring")
+        LOGGER.info("Invisible")
         return schema_1, ks.BinaryPortObjectSpec("org.knime.python3.nodes.tests.model")
 
     def execute(self, exec_context, table):
+        LOGGER.warn("Executing")
         return (
             kt.write_table(table),
             b"RandomTestData",
