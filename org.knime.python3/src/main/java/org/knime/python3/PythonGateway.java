@@ -161,13 +161,14 @@ public final class PythonGateway<T extends PythonEntryPoint> implements AutoClos
         final long timeout = getConnectionTimeoutInMillis();
         final long start = System.currentTimeMillis();
         final var connectionLatch = new CountDownLatch(1);
-        final var listener = new DefaultGatewayServerListener() {
+        // Make sure that we also count down the latch if the process dies before we managed to set up a connection
+        process.onExit().thenRun(() -> connectionLatch.countDown());
 
+        final var listener = new DefaultGatewayServerListener() {
             @Override
             public void connectionStarted(final Py4JServerConnection gatewayConnection) {
                 connectionLatch.countDown();
             }
-
         };
         server.addListener(listener);
         connectionLatch.await();
