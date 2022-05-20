@@ -103,6 +103,11 @@ class ParameterisedWithTwoGroups:
     first_group = ReusableGroup()
     second_group = ReusableGroup()
 
+class ComposedParameterized:
+    def __init__(self) -> None:
+        # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
+        self.first_group = ReusableGroup()
+        self.second_group = ReusableGroup()
 
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
@@ -322,6 +327,107 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(group1.third, 5)
         obj2.parameter_group.third = 7
         self.assertEqual(group1.third, 5)
+
+    def test_extract_parameters_from_uninitialized_composed(self):
+        obj = ComposedParameterized()
+        parameters = kp.extract_parameters(obj)
+        expected = {
+            "first_group": {
+                "first_param": 12345,
+                "second_param": 54321
+            },
+            "second_group": {
+                "first_param": 12345,
+                "second_param": 54321
+            }
+        }
+        self.assertEqual(parameters, expected)
+
+    def test_extract_parameters_from_altered_composed(self):
+        obj = ComposedParameterized()
+        obj.first_group.first_param = 3
+        parameters = kp.extract_parameters(obj)
+        expected = {
+            "first_group": {
+                "first_param": 3,
+                "second_param": 54321
+            },
+            "second_group": {
+                "first_param": 12345,
+                "second_param": 54321
+            }
+        }
+        self.assertEqual(parameters, expected)
+
+    def test_extract_schema_from_composed(self):
+        obj = ComposedParameterized()
+        schema = kp.extract_schema(obj)
+        expected = {
+            "type": "object",
+            "properties": {
+                "first_group": {
+                    "type": "object",
+                    "properties": {
+                        "first_param": {"type": "integer"},
+                        "second_param": {"type": "integer"}
+                    },
+                },
+                "second_group": {
+                    "type": "object",
+                    "properties": {
+                        "first_param": {"type": "integer"},
+                        "second_param": {"type": "integer"}
+                    },
+                }
+            },
+        }
+        self.assertEqual(schema, expected)
+
+    def test_extract_ui_schema_from_composed(self):
+        obj = ComposedParameterized()
+        ui_schema = kp.extract_ui_schema(obj)
+        expected = {
+            "elements": [
+                {
+                    "elements": [
+                        {
+                            "label": "Plain int param",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/first_group/properties/first_param",
+                            "type": "Control",
+                        },
+                        {
+                            "label": "Second int param",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/first_group/properties/second_param",
+                            "type": "Control",
+                        }
+                    ],
+                    "label": "Parameter group to be used for multiple descriptor instances.",
+                    "type": "Section",
+                },
+                {
+                    "elements": [
+                        {
+                            "label": "Plain int param",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/second_group/properties/first_param",
+                            "type": "Control",
+                        },
+                        {
+                            "label": "Second int param",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/second_group/properties/second_param",
+                            "type": "Control",
+                        }
+                    ],
+                    "label": "Parameter group to be used for multiple descriptor instances.",
+                    "type": "Section",
+                },
+            ],
+            "type": "VerticalLayout",
+        }
+        self.assertEqual(ui_schema, expected)
 
     def test_inject_validates(self):
         pass  # TODO

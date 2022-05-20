@@ -58,8 +58,9 @@ def extract_schema(obj, specs=None) -> dict:
 def extract_ui_schema(obj) -> dict:
     # TODO discuss with UIEXT if we can unpack the dicts
     elements = [
-        param._extract_ui_schema(_Scope("#/properties"))
-        for param in _get_parameters(obj).values()
+        # name is provided for parameter_groups that are held as instance variables
+        param._extract_ui_schema(name, _Scope("#/properties"))
+        for name, param in _get_parameters(obj).items()
     ]
     return {"type": "VerticalLayout", "elements": elements}
 
@@ -219,11 +220,11 @@ class _BaseParameter(ABC):
     def _extract_schema(self, specs: List[ks.Schema] = None):
         pass
 
-    def _extract_ui_schema(self, parent_scope: _Scope):
+    def _extract_ui_schema(self, name, parent_scope: _Scope):
         return {
             "type": "Control",
             "label": self._label,
-            "scope": str(parent_scope.create_child(self._name)),
+            "scope": str(parent_scope.create_child(name)),
             "options": self._get_options(),
         }
 
@@ -559,12 +560,12 @@ def parameter_group(label: str):
         def _extract_schema(self, specs=None):
             return extract_schema(self, specs)
 
-        def _extract_ui_schema(self, parent_scope: _Scope):
-            scope = parent_scope.create_child(self._name, is_group=True)
+        def _extract_ui_schema(self, name, parent_scope: _Scope):
+            scope = parent_scope.create_child(name, is_group=True)
             # TODO how do we get the name in case of composition? Pass name as parameter!
             elements = [
-                param._extract_ui_schema(scope)
-                for param in _get_parameters(self).values()
+                param._extract_ui_schema(name, scope)
+                for name, param in _get_parameters(self).items()
             ]
             # TODO treat first level groups as sections and deeper nested groups as groups
 
