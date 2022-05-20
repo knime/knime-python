@@ -491,6 +491,8 @@ class Schema(PortObjectSpec):
     @classmethod
     def from_columns(cls, columns: List[Column]):
         """Create a schema from a list of columns"""
+        if len(columns) == 0:
+            return cls([], [], [])
         types, names, metadata = zip(*[(c.type, c.name, c.metadata) for c in columns])
         return cls(types, names, metadata)
 
