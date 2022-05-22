@@ -105,6 +105,7 @@ import org.knime.python2.kernel.PythonKernelOptions;
 import org.knime.python2.kernel.PythonOutputListeners;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.util.PythonUtils;
+import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonExtension;
@@ -270,7 +271,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             addPythonValueFactoriesToPythonPath(pythonPathBuilder);
             final PythonPath pythonPath = pythonPathBuilder.build();
 
-            m_gateway = new PythonGateway<>(command.createProcessBuilder(), launcherPath,
+            m_gateway = new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath,
                 Python3KernelBackendProxy.class, extensions, pythonPath);
 
             @SuppressWarnings("resource") // Will be closed along with gateway.

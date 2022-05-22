@@ -82,6 +82,7 @@ import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.util.FileUtil;
 import org.knime.python2.kernel.PythonKernelBackendUtils;
+import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSource;
@@ -218,7 +219,7 @@ public class Python3KernelBackendProxyTest {
             .add(Python3ArrowSourceDirectory.getPath()) //
             .add(Python3ScriptingSourceDirectory.getPath()) //
             .build();
-        return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
+        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
             pythonPath);
     }
 

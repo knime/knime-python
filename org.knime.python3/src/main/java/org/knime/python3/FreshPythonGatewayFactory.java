@@ -61,7 +61,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
-        return new PythonGateway<>(description.getCommand().createProcessBuilder(), launcherPath,
+        return new DefaultPythonGateway<>(description.getCommand().createProcessBuilder(), launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());
     }
 

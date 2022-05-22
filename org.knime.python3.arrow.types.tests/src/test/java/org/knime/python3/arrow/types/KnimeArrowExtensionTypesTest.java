@@ -179,6 +179,7 @@ import org.knime.filehandling.core.data.location.FSLocationValue;
 import org.knime.filehandling.core.data.location.FSLocationValueFactory;
 import org.knime.filehandling.core.data.location.FSLocationValueFactory.FSLocationWriteValue;
 import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
+import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
@@ -998,7 +999,7 @@ public class KnimeArrowExtensionTypesTest {
 		final List<PythonExtension> pyExtensions = new ArrayList<>();
 		pyExtensions.add(PythonArrowExtension.INSTANCE);
 
-		return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
+		return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
 				pythonPath);
 	}
 

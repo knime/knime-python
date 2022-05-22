@@ -53,6 +53,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPoint;
@@ -90,7 +91,7 @@ public final class PythonGatewayUtils {
         final List<PythonExtension> pyExtensions = new ArrayList<>();
         pyExtensions.add(PythonArrowExtension.INSTANCE);
 
-        return new PythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
+        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
             pythonPath);
     }
 
@@ -166,7 +167,7 @@ public final class PythonGatewayUtils {
          */
         public PythonGateway<E> build() throws IOException, InterruptedException {
             var command = getPythonCommand();
-            return new PythonGateway<>(command.createProcessBuilder(), m_launcherPath, m_entryPointClass,
+            return new DefaultPythonGateway<>(command.createProcessBuilder(), m_launcherPath, m_entryPointClass,
                 m_pyExtensions, m_pyPathBuilder.build());
         }
 

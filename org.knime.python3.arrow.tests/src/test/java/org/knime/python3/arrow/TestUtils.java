@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.knime.core.columnar.store.FileHandle;
+import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
@@ -152,8 +153,8 @@ public final class TestUtils {
             .build();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
 
-        return new PythonGateway<>(command.createProcessBuilder(), launcherPath, ArrowTestsEntryPoint.class, extensions,
-            pythonPath);
+        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, ArrowTestsEntryPoint.class,
+            extensions, pythonPath);
     }
 
     /**
