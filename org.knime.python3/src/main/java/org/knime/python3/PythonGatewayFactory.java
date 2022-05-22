@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.knime.python3.PythonPath.PythonPathBuilder;
 
@@ -120,6 +121,27 @@ public interface PythonGatewayFactory {
 
         List<PythonExtension> getExtensions() {
             return m_pythonExtensions;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(m_command, m_launcherPath, m_entryPointClass, m_pythonPath, m_pythonExtensions);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (!(obj instanceof PythonGatewayDescription)) {
+                return false;
+            }
+            final PythonGatewayDescription<?> other = (PythonGatewayDescription<?>)obj;
+            return Objects.equals(other.m_command, m_command) //
+                && Objects.equals(other.m_launcherPath, m_launcherPath)
+                && Objects.equals(other.m_entryPointClass, m_entryPointClass)
+                && Objects.equals(other.m_pythonPath, m_pythonPath)
+                && Objects.equals(other.m_pythonExtensions, m_pythonExtensions);
         }
 
         /**
@@ -193,6 +215,5 @@ public interface PythonGatewayFactory {
                 return new PythonGatewayDescription<>(this);
             }
         }
-
     }
 }

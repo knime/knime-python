@@ -53,6 +53,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A representation of a PYTHONPATH with Python modules on it. The {@link PythonPath} contains a list of strings which
@@ -84,6 +85,22 @@ public final class PythonPath {
     public String getPythonPath() {
         final String seperator = File.pathSeparator;
         return String.join(seperator, m_paths);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(m_paths);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof PythonPath)) {
+            return false;
+        }
+        return Objects.equals(((PythonPath)obj).m_paths, m_paths);
     }
 
     @Override
