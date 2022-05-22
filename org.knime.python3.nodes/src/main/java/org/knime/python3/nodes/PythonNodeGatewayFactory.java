@@ -52,7 +52,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
-import org.knime.python3.FreshPythonGatewayFactory;
+import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
@@ -75,7 +75,7 @@ public final class PythonNodeGatewayFactory {
     private static final Path LAUNCHER = PythonNodesSourceDirectory.getPath()//
         .resolve("knime_node_backend.py");
 
-    private static final PythonGatewayFactory FACTORY = new FreshPythonGatewayFactory();
+    private static final PythonGatewayFactory FACTORY = Activator.GATEWAY_FACTORY;
 
     private PythonNodeGatewayFactory() {
     }
