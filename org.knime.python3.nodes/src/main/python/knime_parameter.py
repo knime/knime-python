@@ -1,21 +1,34 @@
 """
-Contains definitions of:
-- parameter descriptors
-- decorator for defining parameter groups
-- helper functions to deal with the above
+Contains the implementation of the Parameter Dialogue API for building native Python nodes in KNIME.
 
 @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
-from types import SimpleNamespace
 from typing import Callable, Dict, List
 import knime_schema as ks
 
 
+def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
+    """
+    Get all parameter objects from obj as a nested dict.
+    """
+    class_params = {
+        name: param
+        for name, param in type(obj).__dict__.items()
+        if _is_parameter_or_group(param)
+    }
+    instance_params = {
+        name: param
+        for name, param in obj.__dict__.items()
+        if _is_parameter_or_group(param)
+    }
+    return {**class_params, **instance_params}
+
+
 def extract_parameters(obj) -> dict:
     """
-    Recursively get all parameters from an object as a nested dict.
+    Get all parameter values from obj as a nested dict.
     """
     result = dict()
     params = _get_parameters(obj)
@@ -34,7 +47,6 @@ def inject_parameters(obj, parameters: dict, version) -> None:
     for name, parameter in _get_parameters(obj).items():
         # TODO can only set if the parameter was already available in version
         parameter._inject(obj, parameters[name], version)
-        
 
 
 # TODO version support
@@ -90,20 +102,6 @@ def _extract_parameter_descriptions(obj, scope: "_Scope"):
         else:
             flattened.append(description)
     return flattened
-
-
-def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
-    class_params = {
-        name: param
-        for name, param in type(obj).__dict__.items()
-        if _is_parameter_or_group(param)
-    }
-    instance_params = {
-        name: param
-        for name, param in obj.__dict__.items()
-        if _is_parameter_or_group(param)
-    }
-    return {**class_params, **instance_params}
 
 
 def _is_parameter_or_group(obj) -> bool:
@@ -192,13 +190,6 @@ class _BaseParameter(ABC):
 
         # perform individual validation
         self._validate(value)
-
-        # perform group validation
-        # TODO: only call group validation at execution with all group member values set as a transaction
-        # values = extract_parameters(obj)
-        # values[self._name] = value
-        # if hasattr(obj, "__kind__"):
-        #     obj._validate(values)
 
         obj.__parameters__[self._name] = value
 
@@ -479,33 +470,36 @@ class BoolParameter(_BaseParameter):
         return {"format": "boolean"}
 
 
-# a dirty trick to make importing predefined classes easier
-# e.g.: from knime_parameters import parameters
-#       int_param = parameters.IntParameter(42)
-parameters = SimpleNamespace(
-    **{
-        "IntParameter": IntParameter,
-        "DoubleParameter": DoubleParameter,
-        "StringParameter": StringParameter,
-        "BoolParameter": BoolParameter,
-    }
-)
-
-
 def parameter_group(label: str):
     """
     Used for injecting descriptor protocol methods into a custom parameter group class.
     "obj" in this context is the parameterized object instance or a parameter group instance.
+
+    Group validators need to raise an exception if a values-based condition is violated, where values is a dictionary
+    of parameter names and values.
+    Group validators can be set using either of the following methods:
+    - By implementing the "validate(self, values)" method inside the class definition of the group. For example:
+
+        def validate(self, values):
+            assert values['first_param'] + values['second_param'] < 100
+
+    - By using the "@group_name.validator" decorator notation inside the class definition of the "parent" of the group.
+      The decorator has an optional 'override' parameter, set to True by default, which overrides the "validate" method.
+      If 'override' is set to False, the "validate" method, if defined, will be called first. For example:
+
+        @hyperparameters.validator(override=False)
+        def validate_hyperparams(values):
+            assert values['first_param'] + values['second_param'] < 100
     """
 
     def decorate_class(custom_cls):
-        # we can preserve and call the original class' _init_ method if required
         orig_init = custom_cls.__init__
 
         def __init__(self, label=label, validator=None, *args, **kwargs):
             self._label = label
             self._validator = validator
             self.__parameters__ = {}
+            self._override_internal_validator = False
 
             orig_init(self, *args, **kwargs)
 
@@ -553,9 +547,35 @@ def parameter_group(label: str):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
         def _validate(self, values, version=None):
+            # validate individual parameters
             validate_parameters(self, values, version)
+
+            # use the "internal" group validator if exists
+            if (
+                hasattr(custom_cls, "validate")
+                and not self._override_internal_validator
+            ):
+                self.validate(values)
+
+            # use the decorator-defined validator if exists
             if self._validator is not None:
                 self._validator(values)
+
+        def validator(self, override=None):
+            """
+            To be used as a decorator for setting a validator function for a parameter.
+            """
+            if isinstance(override, bool):
+
+                def decorator(func):
+                    self._validator = func
+                    self._override_internal_validator = override
+
+                return decorator
+            else:
+                func = override
+                self._validator = func
+                self._override_internal_validator = True
 
         def _extract_schema(self, specs=None):
             return extract_schema(self, specs)
@@ -600,7 +620,7 @@ def parameter_group(label: str):
         custom_cls._extract_schema = _extract_schema
         custom_cls._extract_ui_schema = _extract_ui_schema
         custom_cls._extract_description = _extract_description
-        custom_cls.validator = _BaseParameter.validator
+        custom_cls.validator = validator
         custom_cls.__kind__ = "parameter_group"
 
         return custom_cls

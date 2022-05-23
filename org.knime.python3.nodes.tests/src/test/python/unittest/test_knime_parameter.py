@@ -1,5 +1,4 @@
 import unittest
-
 import pythonpath
 import knime_parameter as kp
 
@@ -25,7 +24,7 @@ def generate_values_dict(
     }
 
 
-#### Primary parameterised object for testing all functionality: ####
+#### Primary parameterised object and its groups for testing main functionality: ####
 @kp.parameter_group("Subgroup")
 class NestedParameterGroup:
     """
@@ -43,6 +42,12 @@ class NestedParameterGroup:
         description="Second parameter description",
         default_value=5,
     )
+
+    def validate(self, values):
+        if values["first"] + values["second"] > 100:
+            raise ValueError(
+                "The sum of the parameters of subgroup must not exceed 100."
+            )
 
 
 @kp.parameter_group("Primary Group")
@@ -64,10 +69,12 @@ class ParameterGroup:
         if value < 0:
             raise ValueError("The third parameter must be positive.")
 
-    @subgroup.validator
+    @subgroup.validator(override=False)
     def validate_subgroup(values, version=None):
-        if values["first"] + values["second"] > 10:
-            raise ValueError("The sum of the parameters may not exceed 10.")
+        if values["first"] + values["second"] < 0:
+            raise ValueError("The sum of the parameters must be non-negative.")
+        elif values["first"] == 42:
+            raise ValueError("Detected a forbidden number.")
 
 
 class Parameterized:
@@ -84,7 +91,7 @@ class Parameterized:
             raise ValueError(f"Length of string must not exceed 10!")
 
 
-#### Secondary parameterised object for testing group independance: ####
+#### Secondary parameterised objects for testing composition: ####
 @kp.parameter_group("Parameter group to be used for multiple descriptor instances.")
 class ReusableGroup:
     first_param = kp.IntParameter(
@@ -99,21 +106,17 @@ class ReusableGroup:
     )
 
 
-class ParameterisedWithTwoGroups:
-    first_group = ReusableGroup()
-    second_group = ReusableGroup()
-
 class ComposedParameterized:
     def __init__(self) -> None:
         # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
         self.first_group = ReusableGroup()
         self.second_group = ReusableGroup()
 
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
         self.parameterized = Parameterized()
-        self.parameterised_with_two_groups = ParameterisedWithTwoGroups()
 
         self.maxDiff = None
 
@@ -153,22 +156,6 @@ class ParameterTest(unittest.TestCase):
         self.parameterized.parameter_group.subgroup.first = 2
         self.assertEqual(self.parameterized.parameter_group.subgroup.first, 2)
 
-    def test_default_validators(self):
-        """
-        Test the default type-checking validators provided with each parameter class.
-        """
-        with self.assertRaises(TypeError):
-            self.parameterized.int_param = "foo"
-
-        with self.assertRaises(TypeError):
-            self.parameterized.double_param = 1
-
-        with self.assertRaises(TypeError):
-            self.parameterized.string_param = 1
-
-        with self.assertRaises(TypeError):
-            self.parameterized.bool_param = 1
-
     def test_extracting_parameters(self):
         """
         Test extracting nested parameter values.
@@ -183,15 +170,6 @@ class ParameterTest(unittest.TestCase):
         kp.inject_parameters(self.parameterized, params, version=None)
         extracted = kp.extract_parameters(self.parameterized)
         self.assertEqual(params, extracted)
-
-    def test_group_individual_validation(self):
-        """
-        Test caling validators on individual parameters of a group/parameterised object on-demand.
-        """
-        params = generate_values_dict(first=5, second=7)
-        with self.assertRaises(ValueError):
-            # TODO versioning
-            kp.validate_parameters(self.parameterized, params, version=None)
 
     def test_extract_schema(self):
         expected = {
@@ -282,29 +260,28 @@ class ParameterTest(unittest.TestCase):
         extracted = kp.extract_ui_schema(self.parameterized)
         self.assertEqual(expected, extracted)
 
-    def test_group_independence(self):
+    def test_default_validators(self):
         """
-        Test that instances of the same parameter group class don't share references to the
-        same parameter instances. Parameter values are fetched from the __parameters__ dictionary
-        of the root object, so, given correct setting and fetching, parameter values should be independent for
-        multiple descriptor instances.
+        Test the default type-checking validators provided with each parameter class.
         """
-        self.parameterised_with_two_groups.first_group.first_param = 54321
-        self.parameterised_with_two_groups.second_group.second_param = 12345
+        with self.assertRaises(TypeError):
+            self.parameterized.int_param = "foo"
 
-        self.assertEqual(
-            self.parameterised_with_two_groups.second_group.first_param, 12345
-        )
-        self.assertEqual(
-            self.parameterised_with_two_groups.first_group.second_param, 54321
-        )
+        with self.assertRaises(TypeError):
+            self.parameterized.double_param = 1
+
+        with self.assertRaises(TypeError):
+            self.parameterized.string_param = 1
+
+        with self.assertRaises(TypeError):
+            self.parameterized.bool_param = 1
 
     def test_custom_validators(self):
         """
         Test custom validators for parameters.
 
         Note: custom validators can currently only be set inside of the parameter
-        group class declaration.
+        group class definition.
         """
         with self.assertRaises(ValueError):
             self.parameterized.parameter_group.third = -1
@@ -319,6 +296,30 @@ class ParameterTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.parameterized.string_param = 1
 
+    def test_group_validation(self):
+        """
+        Test validators for parameter groups. Group validators can be set internally inside the
+        group class definition using the validate(self, values) method, or externally using the
+        @group_name.validator decorator notation.
+
+        Validators for parameterized.parameter_group.subgroup:
+        - Internal validator: sum of values must not be larger than 100.
+        - External validator: sum of values must not be negative OR 'first' must not be equal to 42.
+        """
+        # TODO versioning
+        params_internal = generate_values_dict(first=100)
+        params_external = generate_values_dict(first=-90)
+        params_forbidden = generate_values_dict(first=42)
+
+        with self.assertRaises(ValueError):
+            kp.validate_parameters(self.parameterized, params_internal, version=None)
+
+        with self.assertRaises(ValueError):
+            kp.validate_parameters(self.parameterized, params_external, version=None)
+
+        with self.assertRaises(ValueError):
+            kp.validate_parameters(self.parameterized, params_forbidden, version=None)
+
     def test_groups_are_independent(self):
         obj1 = Parameterized()
         obj2 = Parameterized()
@@ -332,14 +333,8 @@ class ParameterTest(unittest.TestCase):
         obj = ComposedParameterized()
         parameters = kp.extract_parameters(obj)
         expected = {
-            "first_group": {
-                "first_param": 12345,
-                "second_param": 54321
-            },
-            "second_group": {
-                "first_param": 12345,
-                "second_param": 54321
-            }
+            "first_group": {"first_param": 12345, "second_param": 54321},
+            "second_group": {"first_param": 12345, "second_param": 54321},
         }
         self.assertEqual(parameters, expected)
 
@@ -348,14 +343,8 @@ class ParameterTest(unittest.TestCase):
         obj.first_group.first_param = 3
         parameters = kp.extract_parameters(obj)
         expected = {
-            "first_group": {
-                "first_param": 3,
-                "second_param": 54321
-            },
-            "second_group": {
-                "first_param": 12345,
-                "second_param": 54321
-            }
+            "first_group": {"first_param": 3, "second_param": 54321},
+            "second_group": {"first_param": 12345, "second_param": 54321},
         }
         self.assertEqual(parameters, expected)
 
@@ -369,16 +358,16 @@ class ParameterTest(unittest.TestCase):
                     "type": "object",
                     "properties": {
                         "first_param": {"type": "integer"},
-                        "second_param": {"type": "integer"}
+                        "second_param": {"type": "integer"},
                     },
                 },
                 "second_group": {
                     "type": "object",
                     "properties": {
                         "first_param": {"type": "integer"},
-                        "second_param": {"type": "integer"}
+                        "second_param": {"type": "integer"},
                     },
-                }
+                },
             },
         }
         self.assertEqual(schema, expected)
@@ -401,7 +390,7 @@ class ParameterTest(unittest.TestCase):
                             "options": {"format": "integer"},
                             "scope": "#/properties/first_group/properties/second_param",
                             "type": "Control",
-                        }
+                        },
                     ],
                     "label": "Parameter group to be used for multiple descriptor instances.",
                     "type": "Section",
@@ -419,7 +408,7 @@ class ParameterTest(unittest.TestCase):
                             "options": {"format": "integer"},
                             "scope": "#/properties/second_group/properties/second_param",
                             "type": "Control",
-                        }
+                        },
                     ],
                     "label": "Parameter group to be used for multiple descriptor instances.",
                     "type": "Section",
