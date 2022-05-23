@@ -72,6 +72,11 @@
 			<url>${knime.conda.p2}</url>
 		</repository>
 		<repository>
+			<id>p2-knime-conda-channels</id>
+			<layout>p2</layout>
+			<url>${knime.conda.channels.p2}</url>
+		</repository>
+		<repository>
 			<id>p2-knime-expressions</id>
 			<layout>p2</layout>
 			<url>${knime.expressions.p2}</url>

@@ -6,10 +6,11 @@
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
-      This experimental integration contains a node that allows to execute Python 3 scripts in KNIME. It brings
+      This experimental integration contains a node that allows the execution of Python 3 scripts in KNIME. It brings
 significant performance improvements over the stable KNIME Python Integration and enables working with
-larger-than-memory data. It is however not yet advised to use the integration in production. Its node requires a local
-Python installation in order to work (not included).
+larger-than-memory data. It is, however, not yet advised to use the integration in production. This extension provides
+a Python installation with a small set of selected Python packages. Alternatively, the node can use a local Python
+installation.
    </description>
 
    <copyright>
@@ -784,5 +785,38 @@ propagated with or for interoperation with KNIME.
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="org.knime.pythonscripting.channel.v1.bin"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
+         id="org.knime.pythonscripting.channel.v1.bin.linux.x86_64"
+         os="linux"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"/>
+
+   <plugin
+         id="org.knime.pythonscripting.channel.v1.bin.win32.x86_64"
+         os="win32"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"/>
+
+   <plugin
+         id="org.knime.pythonscripting.channel.v1.bin.macosx.x86_64"
+         os="macosx"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"/>
 
 </feature>
