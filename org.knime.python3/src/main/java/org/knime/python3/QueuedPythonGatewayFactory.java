@@ -171,7 +171,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
     /**
      * The actual queue implementation of the enclosing gateway factory.
      */
-    public static final class PythonGatewayQueue extends AbstractPythonGatewayQueue {
+    static final class PythonGatewayQueue extends AbstractPythonGatewayQueue {
 
         private static final int EVICTION_CHECK_INTERVAL_IN_MILLISECONDS = 60 * 1000;
 

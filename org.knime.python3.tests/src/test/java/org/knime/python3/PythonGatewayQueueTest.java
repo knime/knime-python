@@ -46,7 +46,7 @@
  * History
  *   May 17, 2022 (marcel): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3;
 
 import static org.junit.Assert.assertEquals;
 
