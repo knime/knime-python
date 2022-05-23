@@ -775,6 +775,13 @@ propagated with or for interoperation with KNIME.
          version="0.0.0"
          unpack="false"/>
 
+    <plugin
+         id="org.knime.python3.views"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
    <plugin
          id="org.knime.conda.envbundling"
          download-size="0"
