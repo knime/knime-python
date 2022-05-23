@@ -201,7 +201,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory {
                 var initialSettings = proxy.getParameters();
                 var schema = proxy.getSchema();
 
-                return new DelegatingNodeModel(m_proxyProvider::getNodeModelProxy, m_node.getInputPortTypes(),
+                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(),
                     m_node.getOutputPortTypes(), new JsonNodeSettings(initialSettings, schema),
                     s -> new JsonNodeSettings(s, schema));
             }

@@ -44,76 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 16, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.dialog;
+package org.knime.python3.nodes.proxy.model;
 
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
 
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextNodeSettingsService;
-import org.knime.python3.nodes.JsonNodeSettings;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.PortObject;
 
 /**
- * Delegates methods to a proxy object that can e.g. be implemented in Python.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingTextSettingsDataService implements TextNodeSettingsService {
-
-    private final Supplier<NodeDialogProxy> m_proxyProvider;
-
-    private String m_schema;
+public interface NodeExecutionProxy extends NodeModelProxy {
 
     /**
-     * Constructor.
-     *
-     * @param proxyProvider provides proxy objects
+     * @param inData the input data of the node
+     * @param exec the execution context
+     * @param flowVarProxy for access to flow variables
+     * @return the result of the execution
+     * @throws IOException if the data transfer failed
+     * @throws CanceledExecutionException if the node execution is canceled
      */
-    public DelegatingTextSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
-        m_proxyProvider = proxyProvider;
-    }
+    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy)
+        throws IOException, CanceledExecutionException;
 
-    @Override
-    public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            if (m_schema == null) {
-                m_schema = proxy.getSchema();
-            }
-            var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL), m_schema);
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
-                specsWithoutFlowVars);
-        }
-    }
 
-    @Override
-    public void toNodeSettings(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        if (m_schema == null) {
-            try (var proxy = m_proxyProvider.get()) {
-                m_schema = proxy.getSchema();
-            }
-        }
-        var jsonSettings = new JsonNodeSettings(textSettings, m_schema);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
-    }
+    /**
+     * Encapsulates the result of an execute call.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface ExecutionResult {
+        /**
+         * @return the output port objects
+         */
+        PortObject[] getPortObjects();
 
-    @Override
-    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            var parameters = proxy.getParameters();
-            if (m_schema == null) {
-                m_schema = proxy.getSchema();
-            }
-            var jsonSettings = new JsonNodeSettings(parameters, m_schema);
-            jsonSettings.saveTo(settings.get(SettingsType.MODEL));
-        }
+        /**
+         * @return path to the view of the node (if there is one)
+         */
+        Optional<Path> getView();
     }
 
 }

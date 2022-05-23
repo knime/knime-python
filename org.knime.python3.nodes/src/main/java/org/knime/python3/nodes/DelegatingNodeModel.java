@@ -52,11 +52,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -70,15 +69,12 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
-import org.knime.core.node.port.PortObject;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
-import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
-import org.knime.python3.nodes.proxy.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.utils.FlowVariableUtils;
 
 /**
@@ -91,7 +87,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
-    private final Supplier<CloseableNodeModelProxy> m_proxySupplier;
+    private final NodeModelProxyProvider m_proxyProvider;
 
     private JsonNodeSettings m_settings;
 
@@ -105,18 +101,17 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     /**
      * Constructor.
      *
-     * @param pythonNodeSupplier supplier for proxies
+     * @param proxyProvider provides the proxies for delegation
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
      * @param initialSettings of the node
      * @param settingsFactory for creating JsonNodeSettings from NodeSettingsRO
      */
-    // TODO retrieve the expected in and outputs from Python
-    public DelegatingNodeModel(final Supplier<CloseableNodeModelProxy> pythonNodeSupplier, final PortType[] inputPorts,
-        final PortType[] outputPorts, final JsonNodeSettings initialSettings,
-        final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
-        super(inputPorts, outputPorts);
-        m_proxySupplier = pythonNodeSupplier;
+    public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+        final PortType[] outputPorts,
+        final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
+        super(1, 1);
+        m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
         m_settingsFactory = settingsFactory;
         m_view = Optional.empty();
@@ -124,7 +119,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-        try (var node = m_proxySupplier.get()) {
+        try (var node = m_proxyProvider.getConfigurationProxy()) {
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs, this);
             // allows for auto-configure
@@ -136,13 +131,14 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        try (var node = m_proxySupplier.get()) {
+        try (var node = m_proxyProvider.getExecutionProxy()) {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this);
             m_settings = node.saveSettings();
-            m_proxyShutdownTracker.closeAsynchronously(node);
             m_view = result.getView();
-            return result.getPortObjects();
+            var objects = result.getPortObjects();
+            m_proxyShutdownTracker.closeAsynchronously(node);
+            return objects;
         }
     }
 
@@ -154,9 +150,9 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         var jsonSettings = m_settingsFactory.apply(settings);
-        try (var node = m_proxySupplier.get()) {
+        try (var node = m_proxyProvider.getConfigurationProxy()) {
             node.validateSettings(jsonSettings);
-            m_proxyShutdownTracker.waitForAllToClose();
+            m_proxyShutdownTracker.closeAsynchronously(node);
         }
     }
 

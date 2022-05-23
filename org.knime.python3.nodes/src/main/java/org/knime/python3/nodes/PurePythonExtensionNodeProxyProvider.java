@@ -76,7 +76,12 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     }
 
     @Override
-    public CloseableNodeModelProxy getNodeModelProxy() {
+    public NodeConfigurationProxy getConfigurationProxy() {
+        return createPythonNode();
+    }
+
+    @Override
+    public NodeExecutionProxy getExecutionProxy() {
         return createPythonNode();
     }
 
@@ -86,7 +91,7 @@ final class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     }
 
     @Override
-    public CloseableNodeDialogProxy getNodeDialogProxy() {
+    public NodeDialogProxy getNodeDialogProxy() {
         return createPythonNode();
     }
 

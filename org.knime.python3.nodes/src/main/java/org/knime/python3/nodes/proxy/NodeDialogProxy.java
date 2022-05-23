@@ -49,21 +49,25 @@
 package org.knime.python3.nodes.proxy;
 
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.util.asynclose.AsynchronousCloseable;
 
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeDialogProxy {
+public interface NodeDialogProxy extends AsynchronousCloseable<RuntimeException> {
 
     /**
      * @param parameters current node configuration
      * @param parametersVersion version of the parameters
-     * @param specs input specs TODO just a placeholder to be replaced with the actual specs eventually
+     * @param specs input specs
      * @return the representation of the dialog e.g. JSON Forms
      */
     String getDialogRepresentation(String parameters, String parametersVersion, PortObjectSpec[] specs);
 
+    /**
+     * @return the node's parameters/settings encoded as JSON
+     */
     String getParameters();
 
     /**

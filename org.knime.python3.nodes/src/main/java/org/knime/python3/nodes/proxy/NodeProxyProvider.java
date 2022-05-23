@@ -48,17 +48,14 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
+
 /**
  * Provides proxy objects for the different aspects of a node.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeProxyProvider {
-
-    /**
-     * @return proxy for NodeModel tasks
-     */
-    CloseableNodeModelProxy getNodeModelProxy();
+public interface NodeProxyProvider extends NodeModelProxyProvider {
 
     /**
      * @return proxy for NodeFactory tasks
@@ -68,6 +65,6 @@ public interface NodeProxyProvider {
     /**
      * @return proxy for NodeDialog tasks
      */
-    CloseableNodeDialogProxy getNodeDialogProxy();
+    NodeDialogProxy getNodeDialogProxy();
 
 }

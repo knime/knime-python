@@ -80,20 +80,20 @@ import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python2.kernel.Python2KernelBackend;
-import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
-import org.knime.python3.nodes.proxy.CloseableNodeDialogProxy;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
-import org.knime.python3.nodes.proxy.CloseableNodeModelProxy;
+import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
+import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
+import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
 
@@ -106,13 +106,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class CloseablePythonNodeProxy
-    implements CloseableNodeModelProxy, CloseableNodeFactoryProxy, CloseableNodeDialogProxy {
+    implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
     private final NodeProxy m_proxy;
 
-    private final PythonGateway<?> m_gateway;
+    private final AutoCloseable m_gateway;
 
     private final AsynchronousCloseable<RuntimeException> m_closer =
         AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
@@ -139,7 +139,7 @@ final class CloseablePythonNodeProxy
         String[].class //
     );
 
-    CloseablePythonNodeProxy(final NodeProxy proxy, final PythonGateway<?> gateway, final ExtensionNode nodeSpec) {
+    CloseablePythonNodeProxy(final NodeProxy proxy, final AutoCloseable gateway, final ExtensionNode nodeSpec) {
         m_proxy = proxy;
         m_gateway = gateway;
         m_nodeSpec = nodeSpec;
@@ -151,7 +151,7 @@ final class CloseablePythonNodeProxy
             if (m_tableManager != null) {
                 m_tableManager.close();
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException("Failed to shutdown Python gateway.", ex);
         }
     }

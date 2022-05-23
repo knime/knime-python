@@ -44,16 +44,41 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 17, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Mar 23, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.proxy;
+package org.knime.python3.nodes.proxy.model;
+
+import java.util.Map;
 
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python3.nodes.JsonNodeSettings;
 
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface CloseableNodeDialogProxy extends AsynchronousCloseable<RuntimeException>, NodeDialogProxy {
+public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException> {
+
+    /**
+     * Interface that should be implemented by a class that provides access to and can receive updated flow variables
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    public interface FlowVariablesProxy {
+        /**
+         * @return the map of flow variables that are the inputs to this node
+         */
+        Map<String, Object> getFlowVariables();
+
+        /**
+         * Set updated flow variables after modifications by this node
+         * @param flowVariables
+         */
+        void setFlowVariables(Map<String, Object> flowVariables);
+    }
+
+    void loadValidatedSettings(JsonNodeSettings settings);
+
+    JsonNodeSettings saveSettings();
 
 }

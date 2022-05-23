@@ -64,6 +64,9 @@ public interface PythonNodeDialogProxy {
      */
     String getDialogRepresentation(String parameters, String parametersVersion, PythonPortObjectSpec[] portObjectSpecs);
 
+    /**
+     * @return the node's settings encoded as JSON
+     */
     String getParameters();
 
     /**

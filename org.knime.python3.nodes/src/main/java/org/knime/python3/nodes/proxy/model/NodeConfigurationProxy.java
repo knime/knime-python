@@ -44,60 +44,37 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Mar 23, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Feb 15, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.proxy;
+package org.knime.python3.nodes.proxy.model;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Map;
-
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.python3.nodes.JsonNodeSettings;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 
 /**
+ * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeModelProxy {
+public interface NodeConfigurationProxy extends NodeModelProxy {
 
     /**
-     * Interface that should be implemented by a class that provides access to and can receive updated flow variables
+     * Performs configure with the proxy.
+     * In order to retrieve changed settings call {@link NodeModelProxy#saveSettings()}.
      *
-     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     * @param inSpecs the incoming port specs
+     * @param flowVariableProxy for flow variable access
+     * @return the output specs of the node
      */
-    public interface FlowVariablesProxy {
-        /**
-         * @return the map of flow variables that are the inputs to this node
-         */
-        Map<String, Object> getFlowVariables();
+    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariableProxy);
 
-        /**
-         * Set updated flow variables after modifications by this node
-         * @param flowVariables
-         */
-        void setFlowVariables(Map<String, Object> flowVariables);
-    }
-
+    /**
+     * Validates the provided settings.
+     *
+     * @param settings to validate
+     * @throws InvalidSettingsException if the settings are invalid
+     */
     void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
-
-    void loadValidatedSettings(JsonNodeSettings settings);
-
-    JsonNodeSettings saveSettings();
-
-    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVariablesProxy)
-        throws IOException, CanceledExecutionException;
-
-    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariablesProxy);
-
-    public interface ExecutionResult {
-        PortObject[] getPortObjects();
-
-        Optional<Path> getView();
-    }
 }

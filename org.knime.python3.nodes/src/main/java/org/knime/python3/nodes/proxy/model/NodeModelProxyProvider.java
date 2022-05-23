@@ -44,17 +44,24 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 16, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.proxy;
-
-import org.knime.core.util.asynclose.AsynchronousCloseable;
+package org.knime.python3.nodes.proxy.model;
 
 /**
- * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
+ * Provides proxies for the NodeModel.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface CloseableNodeModelProxy extends AsynchronousCloseable<RuntimeException>, NodeModelProxy {
-    // marker interface used by the DelegatingNodeModel
+public interface NodeModelProxyProvider {
+
+    /**
+     * @return a proxy handling execute
+     */
+    NodeExecutionProxy getExecutionProxy();
+
+    /**
+     * @return a proxy for configuration tasks (configure, validate)
+     */
+    NodeConfigurationProxy getConfigurationProxy();
 }
