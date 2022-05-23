@@ -181,7 +181,8 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
         private final ExecutorService m_gatewayCreators;
 
-        private final ScheduledExecutorService m_gatewayEvictor = Executors.newSingleThreadScheduledExecutor();
+        private final ScheduledExecutorService m_gatewayEvictor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("python-gateway-evictor-%d").build());
 
         private final ExecutorService m_gatewayClosers;
 
@@ -207,8 +208,8 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
         private ExecutorService createThreadPoolExecutor(final String threadNamePrefix,
             final boolean blockIfPoolSaturated) {
-            return new ThreadPoolExecutor(0, m_maxNumberOfIdlingGateways != 0 ? m_maxNumberOfIdlingGateways : 1,
-                m_expirationDurationInMinutes, TimeUnit.MINUTES, new SynchronousQueue<>(),
+            return new ThreadPoolExecutor(0, m_maxNumberOfIdlingGateways, m_expirationDurationInMinutes,
+                TimeUnit.MINUTES, new SynchronousQueue<>(),
                 new ThreadFactoryBuilder().setNameFormat(threadNamePrefix + "-%d").build(),
                 blockIfPoolSaturated ? new CallerRunsPolicy() : new AbortPolicy());
 
@@ -400,7 +401,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
                 m_exception = exception;
             }
 
-            public PythonGateway<?> getGatewayOrThrow() throws IOException, InterruptedException {
+            public PythonGateway<?> getGatewayOrThrow() throws IOException, InterruptedException { // NOSONAR Private API
                 if (m_exception != null) {
                     if (m_exception instanceof IOException) {
                         throw (IOException)m_exception;
