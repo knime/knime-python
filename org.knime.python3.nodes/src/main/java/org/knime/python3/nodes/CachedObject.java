@@ -44,79 +44,69 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 16, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes;
 
-import java.io.IOException;
-
-import org.knime.core.node.NodeLogger;
-import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
-import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
-import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * {@link NodeProxyProvider} for a KNIME extension written purely in Python.
+ * A wrapper around an object that is cached.
+ * Handles the scenario where an {@link AutoCloseable} is removed from a cache but still used by some client.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
+final class CachedObject<T extends AutoCloseable> implements AutoCloseable {
 
-    private final static NodeLogger LOGGER = NodeLogger.getLogger(PurePythonExtensionNodeProxyProvider.class);
+    private final AtomicBoolean m_isCached = new AtomicBoolean(true);
 
-    private final String m_nodeId;
+    private final AtomicBoolean m_isUsed = new AtomicBoolean(false);
 
-    private final ResolvedPythonExtension m_extension;
+    private final T m_closeable;
 
-    PurePythonExtensionNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
-        m_nodeId = nodeId;
-        m_extension = extension;
+    CachedObject(final T closeable) {
+        m_closeable = closeable;
     }
 
-    @Override
-    public NodeConfigurationProxy getConfigurationProxy() {
-        return createPythonNode();
+    void markAsUsed() {
+        if (!m_isCached.get()) {
+            throw new IllegalStateException("A CachedObject may only be used if it is in the cache.");
+        }
+        m_isUsed.set(true);
     }
 
-    @Override
-    public NodeExecutionProxy getExecutionProxy() {
-        return createPythonNode();
+    T get() {
+        return m_closeable;
     }
 
-    @Override
-    public CloseableNodeFactoryProxy getNodeFactoryProxy() {
-        return createPythonNode();
-    }
-
-    @Override
-    public NodeDialogProxy getNodeDialogProxy() {
-        return createPythonNode();
-    }
-
-    @SuppressWarnings("resource") // the gateway is managed by the returned object
-    protected CloseablePythonNodeProxy createPythonNode() {
-        try {
-            var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
-                m_extension.getEnvironmentName());
-            final var backend = gateway.getEntryPoint();
-            final var cb = new KnimeNodeBackend.Callback() {
-                @Override
-                public void log(final String msg) {
-                    LOGGER.warn(msg);
-                }
-            };
-            backend.initializeJavaCallback(cb);
-            var nodeProxy = m_extension.createProxy(backend, m_nodeId);
-            return new CloseablePythonNodeProxy(nodeProxy, gateway, m_extension.getNode(m_nodeId));
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to initialize Python gateway.", ex);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while creating Python gateway.", ex);
+    /**
+     * Needs to be called when the object is evicted from the cache.
+     * Marks this object as no longer cached and closes the delegate if it is no longer in use
+     * @throws Exception if the close of the delegate throws an exception
+     */
+    void removeFromCache() throws Exception {
+        if (!m_isCached.getAndSet(false)) {
+            throw new IllegalStateException("The current implementation allows for only one removal from the cache.");
+        }
+        if (!m_isUsed.get()) {
+            closeInternal();
         }
     }
+
+    /**
+     * The delegate is only closed if it isn't cached anymore.
+     */
+    @Override
+    public void close() throws Exception {
+        m_isUsed.set(false);
+        if (!m_isCached.get()) {
+            closeInternal();
+        }
+    }
+
+    private void closeInternal() throws Exception {//NOSONAR signature of AutoCloseable
+        m_closeable.close();
+    }
+
 
 }
