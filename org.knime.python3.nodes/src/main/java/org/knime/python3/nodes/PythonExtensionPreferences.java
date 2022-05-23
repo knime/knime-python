@@ -95,6 +95,15 @@ final class PythonExtensionPreferences {
             .flatMap(ExtensionConfig::getCommand);
     }
 
+    static boolean cacheGateway(final String extensionId) {
+        return loadConfigs()//
+                .filter(e -> extensionId.equals(e.m_id))//
+                .map(ExtensionConfig::cacheGateway)//
+                .findFirst()//
+                // cache the gateway if not told otherwise
+                .orElse(true);
+    }
+
     private static Stream<ExtensionConfig> loadConfigs() {
         var pathToYml = System.getProperty(PY_EXTENSIONS_YML_PROPERTY);
         if (pathToYml == null) {
@@ -123,11 +132,14 @@ final class PythonExtensionPreferences {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>)configEntry.getValue();
+            // cache gateways if not told otherwise
+            var cacheGateway = map.containsKey("cache_gateway") ? (boolean)map.get("cache_gateway") : true;
             return new ExtensionConfig(//
                 configEntry.getKey(), //
                 (String)map.get("src"), //
                 (String)map.get("conda_env_path"), //
-                (String)map.get("python_executable")//
+                (String)map.get("python_executable"),//
+                cacheGateway//
                     );
         } catch (RuntimeException ex) {
             LOGGER.errorWithFormat("Failed to parse Python extension config.", ex);
@@ -144,11 +156,19 @@ final class PythonExtensionPreferences {
 
         private String m_pythonExecutable;
 
-        ExtensionConfig(final String id, final String src, final String condaEnvPath, final String pythonExecutable) {
+        private boolean m_cacheGateway;
+
+        ExtensionConfig(final String id, final String src, final String condaEnvPath, final String pythonExecutable,
+            final boolean cacheNonExecutionConfig) {
             m_id = id;
             m_src = src;
             m_condaEnvPath = condaEnvPath;
             m_pythonExecutable = pythonExecutable;
+            m_cacheGateway = cacheNonExecutionConfig;
+        }
+
+        boolean cacheGateway() {
+            return m_cacheGateway;
         }
 
         Optional<Path> getSrcPath() {
