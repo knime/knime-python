@@ -1,4 +1,5 @@
 from typing import List, Tuple
+
 import knime_node as kn
 import knime_table as kt
 import knime_schema as ks
@@ -96,3 +97,62 @@ class MySecondNode:
         LOGGER.warn(exec_ctx.flow_variables)
         exec_ctx.flow_variables["test"] = 42
         return kt.write_table(out_table)
+
+
+@kn.node(
+    name="My Third Node", node_type="Manipulator", icon_path="icon.png", category="/"
+)
+@kn.input_table(
+    name="Input Data", description="The input table. Should contain double columns."
+)
+@kn.output_table(
+    name="Output Data",
+    description="The input table plus a column containing the row-wise sum of the values.",
+)
+class MyThirdNode(kn.PythonNode):
+    """My third node
+
+    This node allows to compute the row-wise sums of double columns.
+    """
+
+    columns = kn.MultiColumnParameter(
+        "Columns",
+        "Columns to calculate row-wise sums over.",
+        column_filter=lambda c: c.type == ks.double(),
+    )
+    aggregation = kn.StringParameter(
+        "Aggregation",
+        "The aggregation to perform on the selected columns.",
+        default_value="Sum",
+        enum=["Sum", "Product"],
+    )
+
+    def configure(self, config_context: kn.ConfigurationContext, spec):
+        if self.columns is None:
+            # autoconfigure if no columns are specified yet
+            self.columns = [c.name for c in spec if c.type == ks.double()]
+        # TODO utility functions for unique name generation
+        return spec.append(ks.Column(type=ks.double(), name=self.aggregation))
+
+    def execute(self, exec_context: kn.ExecutionContext, table: kt.ReadTable):
+        table = table.to_pyarrow()
+        selected = table.select(self.columns)
+        num_columns = len(self.columns)
+        if self.aggregation == "Sum":
+            aggregator = pa.compute.add
+        elif self.aggregation == "Product":
+            aggregator = pa.compute.multiply
+        else:
+            raise ValueError(
+                f"Unsupported aggregation '{self.aggregation}' encountered."
+            )
+        aggregated = selected.column(0)
+        for i in range(1, num_columns):
+            if exec_context.is_canceled():
+                raise RuntimeError("The execution has been cancelled by the user.")
+            exec_context.set_progress(i / num_columns)
+            aggregated = aggregator(aggregated, selected.column(i))
+        table = table.append_column(
+            pa.field(self.aggregation, type=pa.float64()), aggregated
+        )
+        return kt.write_table(table)
