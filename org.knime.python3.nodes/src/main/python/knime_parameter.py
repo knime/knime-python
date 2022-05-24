@@ -215,9 +215,8 @@ class _BaseParameter(ABC):
         """
         self._validator = func
 
-    @abstractmethod
     def _extract_schema(self, specs: List[ks.Schema] = None):
-        pass
+        return {"title": self._label, "description": self.__doc__}
 
     def _extract_ui_schema(self, name, parent_scope: _Scope):
         return {
@@ -272,12 +271,13 @@ class _NumericParameter(_BaseParameter):
             raise ValueError(f"{value} is >= the max value {self.max_value}")
 
     def _extract_schema(self, specs):
-        prop = {"type": "number"}
+        schema = super()._extract_schema(specs)
+        schema["type"] = "number"
         if self.min_value is not None:
-            prop["minimum"] = self.min_value
+            schema["minimum"] = self.min_value
         if self.max_value is not None:
-            prop["maximum"] = self.max_value
-        return prop
+            schema["maximum"] = self.max_value
+        return schema
 
 
 class IntParameter(_NumericParameter):
@@ -375,10 +375,12 @@ class StringParameter(_BaseParameter):
         super().__init__(label, description, default_value, validator)
 
     def _extract_schema(self, specs):
+        schema = super()._extract_schema(specs)
         if self._enum is None:
-            return {"type": "string"}
+            schema["type"] = "string"
         else:
-            return {"oneOf": [{"const": e, "title": e} for e in self._enum]}
+            schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
+        return schema
 
     def _get_options(self) -> dict:
         if self._enum is None or len(self._enum) > 4:
@@ -410,8 +412,10 @@ class ColumnParameter(_BaseParameter):
         self._column_filter = column_filter
 
     def _extract_schema(self, specs: List[ks.Schema] = None):
+        schema = super()._extract_schema(specs)
         values = _filter_columns(specs, self._port_index, self._column_filter)
-        return {"oneOf": values}
+        schema["oneOf"] = values
+        return schema
 
     def _get_options(self) -> dict:
         return {
@@ -454,8 +458,10 @@ class MultiColumnParameter(_BaseParameter):
         self._column_filter = column_filter
 
     def _extract_schema(self, specs: List[ks.Schema] = None):
+        schema = super()._extract_schema(specs)
         values = _filter_columns(specs, self._port_index, self._column_filter)
-        return {"anyOf": values}
+        schema["anyOf"] = values
+        return schema
 
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
@@ -478,7 +484,9 @@ class BoolParameter(_BaseParameter):
         super().__init__(label, description, default_value, validator)
 
     def _extract_schema(self, specs):
-        return {"type": "boolean"}
+        schema = super()._extract_schema(specs)
+        schema["type"] = "boolean"
+        return schema
 
     def _get_options(self) -> dict:
         return {"format": "boolean"}
