@@ -302,7 +302,7 @@ public final class PythonGatewayQueueTest {
                     throw new IllegalArgumentException(numCreatedGateways + " vs " + m_numCreatedGateways);
                 }
                 while (m_numCreatedGateways != numCreatedGateways) {
-                    if (!m_numGatewaysChanged.await(4l * TestPythonGateway.CREATION_DELAY_IN_MILLIS,
+                    if (!m_numGatewaysChanged.await(10l * TestPythonGateway.CREATION_DELAY_IN_MILLIS,
                         TimeUnit.MILLISECONDS)) {
                         throw new AssertionError("Queue failed to produce gateway in time: expected="
                             + numCreatedGateways + " vs actual=" + m_numCreatedGateways);
