@@ -133,7 +133,7 @@ class MyThirdNode(kn.PythonNode):
         # TODO utility functions for unique name generation
         return spec.append(ks.Column(type=ks.double(), name=self.aggregation))
 
-    def execute(self, exec_context: kn.ExecutionContext, table: kt.ReadTable):
+    def execute(self, exec_context: kn.ExecutionContext, table: kn.Table):
         table = table.to_pyarrow()
         selected = table.select(self.columns)
         num_columns = len(self.columns)

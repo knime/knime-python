@@ -110,7 +110,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts,
         final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
-        super(1, 1);
+        super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
         m_settingsFactory = settingsFactory;
