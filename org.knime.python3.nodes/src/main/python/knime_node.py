@@ -215,11 +215,15 @@ class PythonNode(ABC):
             *inputs:
                 Each input table or binary port object will be added as parameter,
                 in the same order that the ports were defined.
+                Tables will be provided as a `kn.Table`, while binary data will be a plain
+                Python `bytes` object.
         
         Returns:
             Either a single output object (table or binary), or a tuple or list of objects. 
             The number of output objects must match the number of defined output ports, 
             and they must be returned in this order. 
+            Tables must be provided as a `kn.Table` or `kn.BatchOutputTable`, while binary data 
+            should be returned as plain Python `bytes` object.
         """
         pass
 

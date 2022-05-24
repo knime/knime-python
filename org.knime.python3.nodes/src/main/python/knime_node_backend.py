@@ -50,12 +50,13 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 
 from typing import List, Tuple, Union
 
+import knime_gateway as kg
 import knime_node as kn
 import knime_parameter as kp
-import knime_gateway as kg
 import knime_schema as ks
-import knime_arrow_table as kat
-import knime_table as kt
+
+import knime_node_arrow_table as kat
+import knime_node_table as kt
 import importlib
 import json
 import logging
@@ -164,6 +165,8 @@ def _spec_from_python(spec, port: kn.Port):
     # TODO: use extension point,
     #       see https://knime-com.atlassian.net/browse/AP-18368
     if port.type == kn.PortType.TABLE:
+        if isinstance(spec, ks._ColumnarView):
+            spec = spec.get()
         assert isinstance(spec, ks.Schema)
         data = spec.to_knime_dict()
         class_name = "org.knime.core.data.DataTableSpec"
@@ -189,7 +192,7 @@ def _port_object_to_python(port_object: _PythonPortObject, port: kn.Port):
     if class_name == "org.knime.core.node.BufferedDataTable":
         assert port.type == kn.PortType.TABLE
         java_source = port_object.getDataSource()
-        return kat.ArrowReadTable(kg.data_source_mapper(java_source))
+        return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
     elif (
         class_name
         == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
@@ -206,9 +209,23 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
     # TODO: use extension point,
     #       see https://knime-com.atlassian.net/browse/AP-18368
     if port.type == kn.PortType.TABLE:
-        assert isinstance(obj, kt.WriteTable)
+        if isinstance(obj, kt._TabularView):
+            obj = obj.get()
         class_name = "org.knime.core.node.BufferedDataTable"
-        return _PythonTablePortObject(class_name, obj._sink._java_data_sink)
+
+        java_data_sink = None
+        if isinstance(obj, kat.ArrowTable):
+            sink = kt._backend.create_sink()
+            obj._write_to_sink(sink)
+            java_data_sink = sink._java_data_sink
+        elif isinstance(obj, kat.ArrowBatchOutputTable):
+            java_data_sink = obj._sink._java_data_sink
+        else:
+            raise TypeError(
+                f"Object for port {port} should be of type Table or BatchOutputTable, but got {type(obj)}"
+            )
+
+        return _PythonTablePortObject(class_name, java_data_sink)
     elif port.type == kn.PortType.BINARY:
         assert isinstance(obj, bytes)
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
@@ -287,7 +304,7 @@ class _PythonNodeProxy:
             java_sink = self._java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
 
-        kt._backend = kat.ArrowBackend(create_python_sink)
+        kt._backend = kat._ArrowBackend(create_python_sink)
 
         # execute
         exec_context.flow_variables = self._get_flow_variables()
@@ -297,9 +314,6 @@ class _PythonNodeProxy:
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
-
-        kt._backend.close()
-        kt._backend = None
 
         if hasattr(self._node, "view") and self._node.view is not None:
             out_view = outputs[-1]
@@ -317,6 +331,10 @@ class _PythonNodeProxy:
             )
             for idx, obj in enumerate(outputs)
         ]
+
+        kt._backend.close()
+        kt._backend = None
+
         _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 

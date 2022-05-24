@@ -46,7 +46,7 @@ from typing import List, Tuple, Type
 import unittest
 import pythonpath
 import knime_node as kn
-import knime_table as kt
+import knime_node_table as kt
 import knime_schema as ks
 
 
@@ -67,7 +67,7 @@ class MyTestNode:
         return schema_1
 
     def execute(self, exec_context, table_1, table_2):
-        return [kt.write_table(table_1), b"random bytes"]
+        return [table_1, b"random bytes"]
 
 
 class NodeApiTest(unittest.TestCase):
@@ -138,7 +138,7 @@ class MyTestNode:
         return schema_1, ks.BinaryPortTypeSpec(id="org.knime.python3.nodes.test.port")
 
     def execute(self, exec_context, table_1, table_2):
-        return [kt.write_table(table_1), b"random bytes"]
+        return [table_1, b"random bytes"]
 
 
 class InstanceAttributePortsTest(unittest.TestCase):
@@ -194,7 +194,7 @@ def my_node_generating_func():
             return input
 
         def execute(self, exec_ctx, input):
-            return kt.write_table(input)
+            return input
 
     return MyHiddenNode()
 

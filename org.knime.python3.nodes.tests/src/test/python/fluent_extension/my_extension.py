@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 import knime_node as kn
-import knime_table as kt
+import knime_node_table as kt
 import knime_schema as ks
 import knime_views as kv
 import pyarrow as pa
@@ -62,7 +62,7 @@ class MyNode:
     def execute(self, exec_context, table):
         LOGGER.warn("Executing")
         return (
-            kt.write_table(table),
+            table,
             b"RandomTestData",
             kv.view("<!DOCTYPE html> Hello World"),
         )
@@ -96,7 +96,7 @@ class MySecondNode:
         out_table = table.append_column(field, col)
         LOGGER.warn(exec_ctx.flow_variables)
         exec_ctx.flow_variables["test"] = 42
-        return kt.write_table(out_table)
+        return kt.Table.from_pyarrow(out_table)
 
 
 @kn.node(
@@ -155,4 +155,4 @@ class MyThirdNode(kn.PythonNode):
         table = table.append_column(
             pa.field(self.aggregation, type=pa.float64()), aggregated
         )
-        return kt.write_table(table)
+        return kt.Table.from_pyarrow(out_table)
