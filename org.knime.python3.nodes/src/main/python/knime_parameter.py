@@ -26,7 +26,7 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj) -> dict:
+def extract_parameters(obj, for_dialog=False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
@@ -38,7 +38,11 @@ def extract_parameters(obj) -> dict:
         elif param_obj.__kind__ == "parameter_group":
             # TODO doesn't the getter handle this?
             result[name] = extract_parameters(param_obj)
-    return result
+
+    if for_dialog:
+        return {"model": result}
+    else:
+        return result
 
 
 # TODO version support
@@ -59,19 +63,23 @@ def validate_parameters(obj, parameters: dict, version=None) -> str:
         param._validate(parameters[name], version)
 
 
-def extract_schema(obj, specs=None) -> dict:
+def extract_schema(obj, specs=None, for_dialog=False) -> dict:
     properties = {
         name: param._extract_schema(specs)
         for name, param in _get_parameters(obj).items()
     }
-    return {"type": "object", "properties": properties}
+    schema = {"type": "object", "properties": properties}
+    if for_dialog:
+        return {"type": "object", "properties": {"model": schema}}
+    else:
+        return schema
 
 
 def extract_ui_schema(obj) -> dict:
     # TODO discuss with UIEXT if we can unpack the dicts
     elements = [
         # name is provided for parameter_groups that are held as instance variables
-        param._extract_ui_schema(name, _Scope("#/properties"))
+        param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
         for name, param in _get_parameters(obj).items()
     ]
     return {"type": "VerticalLayout", "elements": elements}

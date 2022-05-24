@@ -249,10 +249,12 @@ class _PythonNodeProxy:
         inputs = self._specs_to_python(specs)
 
         # TODO construct json forms here instead of in the node so that it isn't exposed as our API
-        json_forms_dict = {
-            "data": kp.extract_parameters(self._node),
-            "schema": kp.extract_schema(self._node, inputs),
-            "ui_schema": kp.extract_ui_schema(self._node),
+        json_forms_dict = {"result":
+            {
+                "data": kp.extract_parameters(self._node, for_dialog=True),
+                "schema": kp.extract_schema(self._node, inputs, for_dialog=True),
+                "ui_schema": kp.extract_ui_schema(self._node),
+            }
         }
         return json.dumps(json_forms_dict)
 
