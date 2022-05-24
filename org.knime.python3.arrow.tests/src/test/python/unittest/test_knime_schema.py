@@ -275,9 +275,9 @@ class SchemaTest(unittest.TestCase):
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema.from_types(types, names)
-        self.assertEqual(len(types), len(s))
+        self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
-            self.assertIsInstance(s[i], k.Column)
+            self.assertIsInstance(s[i].get(), k.Column)
             self.assertEqual(t, s[i].type)
             self.assertEqual(n, s[i].name)
             self.assertIsNone(s[i].metadata)
@@ -286,9 +286,9 @@ class SchemaTest(unittest.TestCase):
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema.from_types(types, names, names)
-        self.assertEqual(len(types), len(s))
+        self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
-            self.assertIsInstance(s[i], k.Column)
+            self.assertIsInstance(s[i].get(), k.Column)
             self.assertEqual(t, s[i].type)
             self.assertEqual(n, s[i].name)
             self.assertEqual(n, s[i].metadata)
@@ -298,9 +298,9 @@ class SchemaTest(unittest.TestCase):
         names = ["Ints", "Longs", "Doubles", "Strings"]
         columns = [k.Column(t, n, None) for t, n in zip(types, names)]
         s = k.Schema.from_columns(columns)
-        self.assertEqual(len(types), len(s))
+        self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
-            self.assertIsInstance(s[i], k.Column)
+            self.assertIsInstance(s[i].get(), k.Column)
             self.assertEqual(t, s[i].type)
             self.assertEqual(n, s[i].name)
             self.assertIsNone(s[i].metadata)
@@ -310,9 +310,9 @@ class SchemaTest(unittest.TestCase):
         names = ["Ints", "Longs", "Doubles", "Strings"]
         columns = [k.Column(t, n, n) for t, n in zip(types, names)]
         s = k.Schema.from_columns(columns)
-        self.assertEqual(len(types), len(s))
+        self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
-            self.assertIsInstance(s[i], k.Column)
+            self.assertIsInstance(s[i].get(), k.Column)
             self.assertEqual(t, s[i].type)
             self.assertEqual(n, s[i].name)
             self.assertEqual(n, s[i].metadata)
@@ -357,20 +357,20 @@ class SchemaTest(unittest.TestCase):
         s_with_m = k.Schema(types, names, metadata=names)
         s_double = k.Schema(types + types, names + names)
         s_with_m_double = k.Schema(types + types, names + names, names + names)
-        self.assertEqual(2 * len(s), len(s_double))
-        self.assertEqual(2 * len(s_with_m), len(s_with_m_double))
+        self.assertEqual(2 * s.num_columns, s_double.num_columns)
+        self.assertEqual(2 * s_with_m.num_columns, s_with_m_double.num_columns)
 
         added_no_meta = s.append(s)
         added_with_meta = s_with_m.append(s_with_m)
-        self.assertEqual(s_double, added_no_meta)
-        self.assertEqual(s_with_m_double, added_with_meta)
+        self.assertEqual(s_double, added_no_meta.get())
+        self.assertEqual(s_with_m_double, added_with_meta.get())
 
     def test_slicing(self):
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema(types, names)
         sl = s[1:3]
-        self.assertEqual(2, len(sl))
+        self.assertEqual(2, sl.num_columns)
         self.assertEqual(["Longs", "Doubles"], sl.column_names)
 
     def test_to_str(self):
@@ -429,6 +429,7 @@ class SchemaTest(unittest.TestCase):
 
         # all data types must be wrapped in a logical type and first column must be row key
         self.assertTrue(all("logical_type" in t["traits"] for t in traits))
+
         self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
         self.assertTrue(
             all(k._logical_list_type != t["traits"]["logical_type"] for t in traits)

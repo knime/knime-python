@@ -102,3 +102,22 @@ sys.path.append(
         )
     )
 )
+
+# Path to extension_types.py
+sys.path.append(
+    os.path.normpath(
+        os.path.join(
+            __file__,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "org.knime.python3.arrow.types",
+            "src",
+            "main",
+            "python",
+        )
+    )
+)

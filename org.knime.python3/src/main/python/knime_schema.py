@@ -51,7 +51,7 @@ Type system and schema definition for KNIME tables.
 # --------------------------------------------------------------------
 # Types
 # --------------------------------------------------------------------
-from abc import ABC, abstractmethod, abstractclassmethod
+from abc import ABC, abstractmethod, abstractclassmethod, abstractproperty
 from typing import Dict, Iterator, List, Sequence, Type, Union, Tuple
 import logging
 from enum import Enum, unique
@@ -482,7 +482,149 @@ class Column:
         )
 
 
-class Schema(PortObjectSpec):
+class _Columnar(ABC):
+    """
+    Base interface for columnar data structures like Schema and Table,
+    providing __getitem__ access as well as insert and append methods
+    which return a View into the "real" object.
+    """
+
+    @abstractproperty
+    def num_columns(self):
+        pass
+
+    def insert(self, other: "_Columnar", at: int) -> "_Columnar":
+        n = self.num_columns
+        permuted_indices = list(range(n))
+        new_columns = 1 if isinstance(other, Column) else other.num_columns
+        permuted_indices[at:at] = [i + n for i in range(new_columns)]
+        return self.append(other)[permuted_indices]
+
+    def __getitem__(
+        self, slicing: Union[slice, List[int], List[str]]
+    ) -> "_ColumnarView":
+        # we need to return IndexError already here if slicing is an int to end for-loops,
+        # otherwise `for i in columnar_obj` will run forever
+        if isinstance(slicing, int) and slicing >= self.num_columns:
+            raise IndexError(
+                f"Index {slicing} is too large for {self.__class__.__name__} with {self.num_columns} columns"
+            )
+
+        return _ColumnarView(delegate=self, operation=_ColumnSlicingOperation(slicing))
+
+    def append(self, other: "_Columnar") -> "_ColumnarView":
+        return _ColumnarView(delegate=self, operation=_AppendOperation(other))
+
+    @abstractmethod
+    def _select_columns(self, selection):
+        """Implement column slicing here"""
+        pass
+
+    @abstractmethod
+    def _append(self, other: "_Columnar") -> "_Columnar":
+        """Implement append here"""
+        pass
+
+
+class _ColumnarView(_Columnar):
+    def __init__(self, delegate: _Columnar, operation: "_ColumnarOperation"):
+        self._delegate = delegate
+        self._operation = operation
+        self._cache = None  # prevent computing the same "result" multiple times
+
+    @property
+    def delegate(self) -> _Columnar:
+        return self._delegate
+
+    @property
+    def operation(self) -> "_ColumnarOperation":
+        return self._operation
+
+    @property
+    def num_columns(self):
+        return self.get().num_columns
+
+    def __str__(self):
+        return f"ColumnarView<delegate={self._delegate}, op={self._operation}>"
+
+    def get(self, cache=True) -> _Columnar:
+        """
+        Dispatches the application of all slicing etc operations and
+        returns a table that is backed by data.
+
+        The result is cached internally to prevent re-evaluating the operation,
+        unless this View is wrapped inside another view. Then only the outermost
+        view is cached.
+        """
+        if self._cache is not None:
+            return self._cache
+
+        if isinstance(self._delegate, _ColumnarView):
+            input = self._delegate.get(cache=False)
+        else:
+            input = self._delegate
+        out = self._operation.apply(input)
+        if cache:
+            self._cache = out
+        return out
+
+    def _select_columns(self, selection):
+        raise NotImplementedError(
+            "Cannot execute column selection on a view, do that on real data instead!"
+        )
+
+    def _append(self, other: "_Columnar") -> "_Columnar":
+        raise NotImplementedError(
+            "Cannot execute 'append' on a view, do that on real data instead!"
+        )
+
+    def __getattr__(self, name):
+        # as a last resort, create and call the delegate
+        return getattr(self.get(), name)
+
+
+# --------------------------------------------------------------
+# Operations
+class _ColumnarOperation(ABC):
+    @abstractmethod
+    def apply(self, input: _Columnar) -> _Columnar:
+        # The input should NOT be a view
+        pass
+
+
+class _ColumnSlicingOperation(_ColumnarOperation):
+    def __init__(self, col_slice):
+        self._col_slice = col_slice
+
+    def apply(self, input):
+        return input._select_columns(self._col_slice)
+
+    def __str__(self):
+        return f"ColumnSlicingOp({self._col_slice})"
+
+
+class _AppendOperation(_ColumnarOperation):
+    def __init__(self, other):
+        self._other = other
+
+    def apply(self, input):
+        if isinstance(self._other, _ColumnarView):
+            other = self._other.get()
+        else:
+            other = self._other
+
+        return input._append(other)
+
+    def __str__(self):
+        return f"AppendOp({self._other})"
+
+
+# ------------------------------------------------------------------
+# Schema
+# ------------------------------------------------------------------
+
+
+class Schema(_Columnar, PortObjectSpec):
     """
     A schema defines the data types and names of the columns inside a table.
     Additionally it can hold metadata for the individual columns.
@@ -506,10 +648,10 @@ class Schema(PortObjectSpec):
     def __init__(self, types: List[KnimeType], names: List[str], metadata: List = None):
         """Create a schema from a list of column data types, names and metadata"""
         if not isinstance(types, Sequence) or not all(
-            isinstance(t, KnimeType) for t in types
+            isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in types
         ):
             raise TypeError(
-                f"Schema expected types to be a sequence of KNIME types but got {type(types)}"
+                f"Schema expected types to be a sequence of KNIME types but got {type(types)}: {types}"
             )
 
         if (not isinstance(names, list) and not isinstance(names, tuple)) or not all(
@@ -545,7 +687,8 @@ class Schema(PortObjectSpec):
         """Return the list of column names"""
         return [c.name for c in self._columns]
 
-    def __len__(self) -> int:
+    @property
+    def num_columns(self):
         """The number of columns in this schema"""
         return len(self._columns)
 
@@ -553,45 +696,40 @@ class Schema(PortObjectSpec):
         """Allow iteration over columns"""
         yield from self._columns
 
-    def __getitem__(self, index: Union[int, slice]) -> Union[Column, "Schema"]:
-        """
-        Select columns from this schema. If the index is a single integer, a single column will be
-        returned. If the index is a slice, then a new schema is returned.
-        
-        Args:
-            index:
-                An integer index specifying a single column or a slice of columns.
-
-        Returns:
-            The selected column if the index is an integer, or a new schema with the columns 
-            selected by the slice.
-
-        Raises:
-            IndexError: if the index is invalid
-            TypeError: if the index is neither an int nor a slice
-            
-        **Examples:**
-
-        Get a specific column:
-        ``my_col = schema[3]``
-
-        Get a slice of columns:
-        ``sliced_schema = schema[1:4]``
-        """
-        # TODO: better slicing support will be added when the functional API prototype is finished,
-        #       see https://knime-com.atlassian.net/browse/AP-18642 or test_functional_table_api.py
+    def _select_columns(self, index) -> Union[Column, "Schema"]:
         if isinstance(index, int):
-            if index < 0 or index > len(self._columns):
-                return IndexError(
-                    f"Index {index} does not exist in schema with {len(self)} columns"
+            if index < 0 or index >= len(self._columns):
+                raise IndexError(
+                    f"Index {index} does not exist in schema with {self.num_columns} columns"
                 )
-
             return self._columns[index]
+        elif isinstance(index, str):
+            for c in self._columns:
+                if c.name == index:
+                    return self.__class__.from_columns([c])
+            raise IndexError(f"Schema has no column named '{index}'")
         elif isinstance(index, slice):
             return self.__class__.from_columns(self._columns[index])
+        elif isinstance(index, list):
+            columns = []
+            for col in index:
+                if isinstance(col, str):
+                    try:
+                        columns.append(self.column_names.index(col))
+                    except ValueError:
+                        raise IndexError(
+                            f"Invalid column selection, '{col}' is not available in {self}"
+                        )
+                elif isinstance(col, int):
+                    if not 0 <= col < self.num_columns:
+                        raise IndexError(f"Column index {col} out of bounds")
+                    columns.append(col)
+                else:
+                    raise IndexError(f"Invalid column index {col}")
+            return self.__class__.from_columns([self[c] for c in columns])
         else:
-            return TypeError(
-                f"Schema can only be indexed by int or slice, not {type(index)}"
+            raise TypeError(
+                f"{self.__class__.__name__} can only be indexed by int or slice, not {type(index)}"
             )
 
     def __eq__(self, other) -> bool:
@@ -600,29 +738,32 @@ class Schema(PortObjectSpec):
 
         return all(a == b for a, b in zip(self._columns, other._columns))
 
-    def append(self, other: Union["Schema", Column]) -> "Schema":
+    def _append(self, other: Union["Schema", Column]) -> "Schema":
         """Create a new schema by adding another schema or a column to the end"""
-        return self.insert(other, at=len(self))
+        cols = self._columns.copy()
 
-    def insert(self, other: Union["Schema", Column], at: int) -> "Schema":
-        """Create a new schema by inserting another schema or a column right before the given position"""
+        if isinstance(other, _ColumnarView):
+            other = other.get()
+
         if isinstance(other, self.__class__):
-            cols = self._columns.copy()
-            # this fancy syntax inserts an expanded list at an index
-            cols[at:at] = other._columns
-            return self.__class__.from_columns(cols)
+            cols.extend(other._columns)
         elif isinstance(other, Column):
-            cols = self._columns.copy()
-            cols.insert(at, other)
-            return self.__class__.from_columns(cols)
+            cols.append(other)
         else:
-            raise ValueError("Can only append columns or schemas to this schema")
+            raise ValueError(
+                f"Can only append columns or schemas to this schema, not {type(other)}"
+            )
+
+        return self.__class__.from_columns(cols)
 
     def __str__(self) -> str:
         sep = ",\n\t"
         return (
             f"{self.__class__.__name__}<\n\t{sep.join(str(c) for c in self._columns)}>"
         )
+
+    def __repr__(self) -> str:
+        return str(self)
 
     def to_knime_dict(self) -> Dict:
         """
@@ -636,7 +777,7 @@ class Schema(PortObjectSpec):
         schema_with_row_key = _wrap_primitive_types(self).insert(
             Column(row_key_type, "RowKey"), at=0
         )
-        return _schema_to_knime_dict(schema_with_row_key)
+        return _schema_to_knime_dict(schema_with_row_key.get())
 
     @classmethod
     def from_knime_dict(cls, table_schema: dict) -> "Schema":
@@ -699,7 +840,7 @@ def _unwrap_primitive_type(dtype: KnimeType) -> KnimeType:
     If the type is unknown or does not contain a logical type, it
     will be returned unmodified.
     """
-    # extension types don't need unwrapping, we use the PythonValueFactory in our ks.LogicalType if available
+    # extension types don't need unwrapping, we use the PythonValueFactory in our LogicalType if available
     if (
         isinstance(dtype, LogicalType)
         and dtype.logical_type in _logical_type_to_knime_type
@@ -714,6 +855,22 @@ def _unwrap_primitive_type(dtype: KnimeType) -> KnimeType:
     return dtype
 
 
+def _wrap_primitive_type(dtype: KnimeType) -> KnimeType:
+    """
+    Wraps all primitive types in their according KNIME logical type.
+    If the type is unknown, it will be returned unmodified.
+    """
+    # no need to wrap extension types -> happens in logical(value_type)
+    import knime_types as kt
+
+    if dtype in _knime_type_to_logical_type:
+        dtype = LogicalType(_knime_type_to_logical_type[dtype], dtype)
+    elif isinstance(dtype, ListType):
+        wrapped_inner = _wrap_primitive_type(dtype.inner_type)
+        dtype = LogicalType(_logical_list_type, list_(wrapped_inner))
+    return dtype
+
+
 def _unwrap_primitive_types(schema: Schema) -> Schema:
     """
     A table schema as it is coming from KNIME contains all columns as "logical types",
@@ -725,23 +882,7 @@ def _unwrap_primitive_types(schema: Schema) -> Schema:
     for c in schema:
         c.type = _unwrap_primitive_type(c.type)
         unwrapped_columns.append(c)
-    return Schema.from_columns(unwrapped_columns)
-
-
-def _wrap_primitive_type(dtype: KnimeType) -> KnimeType:
-    """
-    Wraps all primitive types in their according KNIME logical type.
-    If the type is unknown, it will be returned unmodified.
-    """
-    # no need to wrap extension types -> happens in ks.logical(value_type)
-    import knime_types as kt
-
-    if dtype in _knime_type_to_logical_type:
-        dtype = LogicalType(_knime_type_to_logical_type[dtype], dtype)
-    elif isinstance(dtype, ListType):
-        wrapped_inner = _wrap_primitive_type(dtype.inner_type)
-        dtype = LogicalType(_logical_list_type, list_(wrapped_inner))
-    return dtype
+    return schema.__class__.from_columns(unwrapped_columns)
 
 
 def _wrap_primitive_types(schema: Schema) -> Schema:
@@ -754,7 +895,7 @@ def _wrap_primitive_types(schema: Schema) -> Schema:
     for c in schema:
         c.type = _wrap_primitive_type(c.type)
         wrapped_columns.append(c)
-    return Schema.from_columns(wrapped_columns)
+    return schema.__class__.from_columns(wrapped_columns)
 
 
 # ---------------------------------------------------------------------------------

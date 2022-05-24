@@ -51,7 +51,7 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 from abc import ABC, abstractmethod
 import importlib
 import json
-import knime_schema as ks
+
 
 class PythonValueFactory:
     def __init__(self, compatible_type):
@@ -120,6 +120,7 @@ _bundles = []
 _python_type_to_java_value_factory = {}
 _java_value_factory_to_python_type = {}
 
+
 def register_python_value_factory(
     python_module, python_value_factory_name, data_spec_json, data_traits,
 ):
@@ -134,7 +135,7 @@ def register_python_value_factory(
     _java_value_factory_to_bundle[logical_type] = value_factory_bundle
     _bundles.append(value_factory_bundle)
     python_type = value_factory.compatible_type
-    
+
     _java_value_factory_to_python_type[logical_type] = python_type
     _python_type_to_java_value_factory[python_type] = logical_type
 
