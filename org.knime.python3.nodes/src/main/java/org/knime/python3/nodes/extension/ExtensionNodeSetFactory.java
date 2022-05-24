@@ -70,16 +70,21 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
+import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.webui.data.ApplyDataService;
+import org.knime.core.webui.data.DataService;
+import org.knime.core.webui.data.InitialDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
+import org.knime.core.webui.page.Page;
 import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.dialog.DelegatingTextSettingsDataService;
@@ -258,7 +263,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         public boolean hasNodeView() {
-            return m_numViews > 0;
+            // FIXME hack to make dialogs for nodes without views work until they work on their own.
+            return true;
         }
 
         @Override
@@ -268,9 +274,45 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             }
             final var pathToHtml = nodeModel.getPathToHtmlView();
             if (pathToHtml.isEmpty()) {
-                throw new IllegalStateException("The node did not return a view.");
+                // FIXME this is just a hack to make dialogs work for nodes without view
+//                throw new IllegalStateException("The node did not return a view.");
+                return new DummyNodeView();
             }
             return new HtmlFileNodeView(pathToHtml.get());
+        }
+
+        private static final class DummyNodeView implements NodeView {
+
+            @Override
+            public Optional<InitialDataService> createInitialDataService() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<DataService> createDataService() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ApplyDataService> createApplyDataService() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Page getPage() {
+                return Page.builder(() -> "<!DOCTYPE html>", "index.html").build();
+            }
+
+            @Override
+            public void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+                // nothing to do
+            }
+
+            @Override
+            public void loadValidatedSettingsFrom(final NodeSettingsRO settings) {
+                // nothing to do
+            }
+
         }
     }
 }
