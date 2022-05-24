@@ -60,11 +60,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.After;
 import org.junit.Test;
-import org.knime.python3.PythonEntryPoint;
-import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
-import org.knime.python3.QueuedPythonGatewayFactory;
 import org.knime.python3.QueuedPythonGatewayFactory.PythonGatewayQueue;
 
 /**
@@ -303,13 +299,13 @@ public final class PythonGatewayQueueTest {
             m_numGatewaysLock.lock();
             try {
                 if (numCreatedGateways < m_numCreatedGateways) {
-                    throw new IllegalArgumentException(numCreatedGateways + " vs " + m_numActiveGateways);
+                    throw new IllegalArgumentException(numCreatedGateways + " vs " + m_numCreatedGateways);
                 }
                 while (m_numCreatedGateways != numCreatedGateways) {
                     if (!m_numGatewaysChanged.await(4l * TestPythonGateway.CREATION_DELAY_IN_MILLIS,
                         TimeUnit.MILLISECONDS)) {
-                        throw new AssertionError("Queue failed to produce gateway in time: " + numCreatedGateways
-                            + " vs " + m_numActiveGateways);
+                        throw new AssertionError("Queue failed to produce gateway in time: expected="
+                            + numCreatedGateways + " vs actual=" + m_numCreatedGateways);
                     }
                 }
             } finally {
