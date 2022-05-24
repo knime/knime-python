@@ -1,7 +1,6 @@
 from typing import List, Tuple
 
 import knime_node as kn
-import knime_node_table as kt
 import knime_schema as ks
 import knime_views as kv
 import pyarrow as pa
@@ -96,7 +95,7 @@ class MySecondNode:
         out_table = table.append_column(field, col)
         LOGGER.warn(exec_ctx.flow_variables)
         exec_ctx.flow_variables["test"] = 42
-        return kt.Table.from_pyarrow(out_table)
+        return kn.Table.from_pyarrow(out_table)
 
 
 @kn.node(
@@ -155,4 +154,4 @@ class MyThirdNode(kn.PythonNode):
         table = table.append_column(
             pa.field(self.aggregation, type=pa.float64()), aggregated
         )
-        return kt.Table.from_pyarrow(out_table)
+        return kn.Table.from_pyarrow(table)

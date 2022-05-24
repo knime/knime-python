@@ -53,6 +53,7 @@ from numbers import Number
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Tuple, Callable
 import knime_parameter as kp
+import knime_node_table as kt
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here
 from packaging.version import Version
@@ -91,6 +92,7 @@ class ViewDeclaration:
     description: str
 
 
+# re-exporting symbols so that "import knime_node" will include the most needed features
 IntParameter = kp.IntParameter
 DoubleParameter = kp.DoubleParameter
 BoolParameter = kp.BoolParameter
@@ -98,6 +100,8 @@ StringParameter = kp.StringParameter
 parameter_group = kp.parameter_group
 ColumnParameter = kp.ColumnParameter
 MultiColumnParameter = kp.MultiColumnParameter
+Table = kt.Table
+BatchOutputTable = kt.BatchOutputTable
 
 
 class ConfigurationContext(ABC):
