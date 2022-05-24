@@ -300,6 +300,7 @@ class IntParameter(_NumericParameter):
     def _extract_schema(self, specs):
         prop = super()._extract_schema(specs)
         prop["type"] = "integer"
+        prop["format"] = "int32"
         return prop
 
     def _get_options(self) -> dict:
@@ -329,6 +330,11 @@ class DoubleParameter(_NumericParameter):
             raise TypeError(
                 f"{value} is of type {type(value)}, but should be of type float."
             )
+
+    def _extract_schema(self, specs):
+        schema = super()._extract_schema(specs)
+        schema["format"] = "double"
+        return schema
 
     def _get_options(self) -> dict:
         return {"format": "number"}
