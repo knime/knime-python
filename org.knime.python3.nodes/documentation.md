@@ -291,7 +291,7 @@ id.of.your.dev.extension:
   cache_gateway: false
 ```
 Note that you have to specify either `conda_env_path` or `python_executable` because the Analytics Platform doesn't have a bundled environment for your extension installed.
-For debugging it is also advisable to disable gateway caching by setting `cache_gateway: false` because otherwise changes you make to your Python code won't immediately reflected in the Analytics Platform. Note that you have to restart the Analytics Platform for the `cache_gateway` configuration to take effect.
+For debugging it is also advisable to disable gateway caching by setting `cache_gateway: false` because otherwise changes you make to your Python code won't immediately be reflected in the Analytics Platform. Note that you have to restart the Analytics Platform for the `cache_gateway` configuration to take effect.
 
 ## Other Topics
 

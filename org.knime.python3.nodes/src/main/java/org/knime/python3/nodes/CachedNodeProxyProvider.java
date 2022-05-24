@@ -65,6 +65,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * A {@link NodeProxyProvider} that caches the gateway used for non-execution proxies. The number of gateways to cache
@@ -86,7 +87,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
 
     private static final int CACHE_EXPIRATION_DEFAULT = 300;
 
-    private static final ScheduledExecutorService EXEC_SERVICE = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService EXEC_SERVICE = Executors.newScheduledThreadPool(1,
+        new ThreadFactoryBuilder().setNameFormat("python-non-execution-gateway-cleaner-%d").build());
 
     private static final LoadingCache<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> GATEWAY_CACHE =
         createCache();
