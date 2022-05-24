@@ -97,6 +97,7 @@ BoolParameter = kp.BoolParameter
 StringParameter = kp.StringParameter
 parameter_group = kp.parameter_group
 ColumnParameter = kp.ColumnParameter
+MultiColumnParameter = kp.MultiColumnParameter
 
 
 class ConfigurationContext(ABC):
