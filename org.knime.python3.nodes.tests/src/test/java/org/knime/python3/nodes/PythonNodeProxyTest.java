@@ -55,6 +55,7 @@ import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonGateway;
@@ -94,6 +95,7 @@ public class PythonNodeProxyTest {
     }
 
     @Test
+    @Ignore
     public void testValidateSettingsMissingParameter() {
         var settings = "{\"param2\": \"foo\", \"param1\": 4}";
         var version = "4.6.0"; // version in nightly if org.knime.core is checked out
@@ -102,6 +104,7 @@ public class PythonNodeProxyTest {
     }
 
     @Test
+    @Ignore
     public void testBackwardsCompatibleValidate() {
         var settings = "{\"param2\": \"foo\", \"param1\": 4}";
         var version = "4.5.0";
@@ -110,6 +113,7 @@ public class PythonNodeProxyTest {
     }
 
     @Test
+    @Ignore
     public void testValidateInvalidSettings() {
         // param1 has to be non-negative
         var settings = "{\"param2\": \"foo\", \"param1\": -1}";
