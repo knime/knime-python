@@ -371,7 +371,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         )
         return pa.Table.from_arrays(columns, names=list(d.keys()))
 
-    def _generate_test_data_frame(self, path="generatedTestData.zip", lists=True, sets=True) -> pd.DataFrame:
+    def _generate_test_data_frame(
+        self, path="generatedTestData.zip", lists=True, sets=True
+    ) -> pd.DataFrame:
         """
         Creates a Dataframe from a KNIME table on disk
         @param path: path for the KNIME Table
@@ -680,11 +682,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         import knime_schema as ks
 
         self.assertEqual(
-            ks.ExtensionType(
+            ks.LogicalType(
                 '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
-                ks.struct_(ks.int64(), ks.int64()),
+                ks.struct(ks.int64(), ks.int64()),
             ),
-            A.knime_schema[1].type,
+            kat._convert_arrow_schema_to_knime(A._schema)[1].type,
         )
 
     def test_timestamp_columns(self):
@@ -734,7 +736,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         )
 
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
-        self.assertEqual(knime_ts_ext_str, str(A.knime_schema[1].type))
+        self.assertEqual(
+            knime_ts_ext_str, str(kat._convert_arrow_schema_to_knime(A._schema)[1].type)
+        )
 
     def test_lists_with_missing_values(self):
         """
@@ -748,16 +752,42 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         t = kat.ArrowBatchWriteTable(arrow_sink)
 
         # Create table
-        df = self._generate_test_data_frame(path="missingTestData.zip", lists=True, sets=True)
+        df = self._generate_test_data_frame(
+            path="missingTestData.zip", lists=True, sets=True
+        )
         # print(df.columns)
-        remove_cols = ['StringCol', 'StringListCol', 'StringSetCol', 'IntCol', 'IntListCol',
-                       'IntSetCol', 'LongCol', 'LongListCol', 'LongSetCol', 'DoubleCol',
-                       'DoubleListCol', 'TimestampCol', 'TimestampSetCol',
-                       'BooleanCol', 'BooleanListCol', 'BooleanSetCol', 'URICol', 'URIListCol',
-                       'URISetCol', 'MissingValStringCol', 'MissingValStringListCol',
-                       'MissingValStringSetCol', 'LongStringColumnName',
-                       'LongDoubleColumnName', 'Local Date', 'Local Time', 'Local Date Time',
-                       'Zoned Date Time', 'Period', 'Duration']
+        remove_cols = [
+            "StringCol",
+            "StringListCol",
+            "StringSetCol",
+            "IntCol",
+            "IntListCol",
+            "IntSetCol",
+            "LongCol",
+            "LongListCol",
+            "LongSetCol",
+            "DoubleCol",
+            "DoubleListCol",
+            "TimestampCol",
+            "TimestampSetCol",
+            "BooleanCol",
+            "BooleanListCol",
+            "BooleanSetCol",
+            "URICol",
+            "URIListCol",
+            "URISetCol",
+            "MissingValStringCol",
+            "MissingValStringListCol",
+            "MissingValStringSetCol",
+            "LongStringColumnName",
+            "LongDoubleColumnName",
+            "Local Date",
+            "Local Time",
+            "Local Date Time",
+            "Zoned Date Time",
+            "Period",
+            "Duration",
+        ]
 
         df.drop(remove_cols, axis=1, inplace=True)
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
@@ -772,7 +802,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         t.append(df1, sentinel="min")
         t.append(df2, sentinel="min")
 
-        self.assertEqual("<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t)))
+        self.assertEqual(
+            "<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t))
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

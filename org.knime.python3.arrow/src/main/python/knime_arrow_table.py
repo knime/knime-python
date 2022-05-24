@@ -157,10 +157,6 @@ class ArrowBatch(kta.Batch):
     def column_names(self) -> List[str]:
         return self._batch.schema.names
 
-    @property
-    def knime_schema(self) -> ks.Schema:
-        return _convert_arrow_schema_to_knime(self._batch.schema)
-
     def __str__(self) -> str:
         return f"Batch(shape={self.shape}, schema={_pretty_print_schema(self.to_pyarrow().schema)})"
 
@@ -215,10 +211,6 @@ class ArrowReadTable(kta.ReadTable):
     @property
     def column_names(self) -> List[str]:
         return self._source.schema.names
-
-    @property
-    def knime_schema(self) -> ks.Schema:
-        return _convert_arrow_schema_to_knime(self._source.schema)
 
     def batches(self) -> Iterator[ArrowBatch]:
         batch_idx = 0
@@ -312,10 +304,6 @@ class _ArrowWriteTableImpl(kta.WriteTable):
     @property
     def column_names(self) -> List[str]:
         return self._schema.names
-
-    @property
-    def knime_schema(self) -> ks.Schema:
-        return _convert_arrow_schema_to_knime(self._schema)
 
     def __str__(self) -> str:
         schema_str = (
@@ -470,16 +458,16 @@ _arrow_to_knime_types = {
 
 def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
     if kat.is_dict_encoded_value_factory_type(dtype):
-        return ks.ExtensionType(
+        return ks.LogicalType(
             "structDictEncodedValueFactory",
             _convert_arrow_type_to_knime(dtype.value_type),
         )
     elif kas.is_struct_dict_encoded(dtype):
-        return ks.ExtensionType(
+        return ks.LogicalType(
             "structDictEncoded", _convert_arrow_type_to_knime(dtype.value_type)
         )
     elif kat.is_value_factory_type(dtype):
-        return ks.ExtensionType(
+        return ks.LogicalType(
             dtype.logical_type, _convert_arrow_type_to_knime(dtype.storage_type)
         )
     elif dtype in _arrow_to_knime_types:
