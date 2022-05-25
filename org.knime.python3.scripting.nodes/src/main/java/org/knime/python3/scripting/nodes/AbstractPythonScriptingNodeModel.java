@@ -248,6 +248,12 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         m_kernelShutdownTracker.waitForAllToClose();
     }
 
+    @Override
+    protected void reset() {
+        super.reset();
+        m_kernelShutdownTracker.waitForAllToClose();
+    }
+
     protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
         final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {

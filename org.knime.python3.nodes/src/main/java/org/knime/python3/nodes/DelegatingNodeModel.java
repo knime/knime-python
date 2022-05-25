@@ -171,6 +171,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void reset() {
         m_view = Optional.empty();
+        m_proxyShutdownTracker.waitForAllToClose();
     }
 
     @Override
