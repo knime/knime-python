@@ -50,3 +50,26 @@ Classes
    :noindex:
    :inherited-members:
 
+
+Python Extension Development
+-----------------------------
+
+These classes can be used by developers to implement their own python nodes for KNIME. For a more detailed description see the nodes documentation at: `Pure-Python KNIME Node Extensions <https://github.com/knime/knime-python/blob/master/org.knime.python3.nodes/documentation.md>`_
+
+.. autoclass:: knime_node.PythonNode
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime_node_table.Table
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime_schema.Schema
+   :members:
+   :noindex:
+   :inherited-members:
+
+
+

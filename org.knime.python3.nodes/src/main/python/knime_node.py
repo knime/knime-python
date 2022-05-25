@@ -176,11 +176,33 @@ class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
 
-    Users can either use the decorators @kn.input_port, @kn.output_port, and @kn.view,
-    or populate the input_ports, output_ports, and view attributes.
+    Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary, 
+    and @kn.view, or populate the input_ports, output_ports, and view attributes.
 
     Use the Python logging facilities and its `.warn` and `.error` methods to write warnings
     and errors to the KNIME console.
+
+    **Example**::
+
+        @kn.node("My Predictor", node_type="Predictor", icon_path="icon.png", category="/")
+        @kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
+        @kn.input_table("Data", "The data on which to predict")
+        @kn.input_table("Output Data", "The input table with appended double column which holds the predictions")
+        class MyPredictor():
+            def configure(self, binary_spec, table_spec):
+                # append a "double" column to the table_spec
+                return table_spec.append(kn.Column(ks.double(), "Predictions"))
+
+            def execute(self, table, binary):
+                model = self._load_model_from_bytes(binary)
+                df = table.to_pandas()
+                new_col = model.predict(df)
+                df["Predictions"] = new_col
+                return [table.append(kn.Table.from_pandas(df))]
+
+            def _load_model_from_bytes(self, data):
+                return pickle.loads(data)
+    
     """
 
     input_ports: List[Port] = None

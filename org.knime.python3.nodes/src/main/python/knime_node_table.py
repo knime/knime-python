@@ -70,7 +70,7 @@ LOGGER = logging.getLogger(__name__)
 
 class _Tabular(ks._Columnar):
     """
-    Interface for 
+    Common interface for Table and _TableView
     """
 
     @abstractproperty
@@ -171,6 +171,16 @@ class _Tabular(ks._Columnar):
 
 
 class _TabularView(_Tabular, ks._ColumnarView):
+    """
+    A _TabularView is created whenever operations such as slicing or appending
+    are applied to an object that implements _Tabular, which are _TabularView and Table.
+
+    Those operations are performed lazily, because especially on tables they can
+    involve allocating and copying large amounts of memory and copying.
+
+    If you need the materialized result of the operation, call the `.get()` method.
+    """
+
     def __init__(self, delegate: _Tabular, operation: ks._ColumnarOperation):
         super().__init__(delegate, operation)
 
@@ -248,7 +258,7 @@ _backend = None
 
 
 class Table(_Tabular):
-    """This is what we'd show as public API"""
+    """public API"""
 
     def __init__(self):
         raise RuntimeError(

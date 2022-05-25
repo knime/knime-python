@@ -12,10 +12,43 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
 
-# for knime_table.py
+
+class Mock(MagicMock):
+
+
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+
+class ModuleMock(Mock):
+    """
+    Used to add python libraries. If not added that way python modules written in C can't be imported by sphinx autodoc.
+
+    """
+    def __init__(self, path='', *args, **kwargs):
+        super().__init__(*args, *kwargs)
+        self.path = path
+
+    def __getattr__(self, name):
+        if name in ('_mock_methods', '_mock_unsafe'):
+            return super(ModuleMock, self).__getattr__(name)
+        return ModuleMock(path=self.path + '.' + name)
+
+    def __repr__(self):
+        return self.path
+
+
+# for knime_table.py, knime_schema.py
 sys.path.insert(
     0, os.path.abspath(os.path.join("..", "org.knime.python3", "src", "main", "python"))
+)
+
+# for knime_node.py
+sys.path.insert(
+    0, os.path.abspath(os.path.join("..", "org.knime.python3.nodes", "src", "main", "python"))
 )
 
 # for knime_io.py
@@ -26,13 +59,11 @@ sys.path.insert(
     ),
 )
 
-
 # -- Project information -----------------------------------------------------
 
 project = "KNIME Python Script (Labs) API"
 copyright = "2021, KNIME GmbH"
 author = "Carsten Haubold, Adrian Nembach, Marcel Wiedenmann, Benjamin Wilhelm"
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -49,6 +80,10 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# mock import that sphinx recognizes them
+MOCK_MODULES = ['numpy', 'pandas', 'pyarrow']
+
+sys.modules.update((mod_name, ModuleMock()) for mod_name in MOCK_MODULES)
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -61,14 +96,13 @@ html_logo = "KNIME_Logo.png"
 html_theme_options = {
     'logo_only': True,
     'display_version': True,
-    'style_nav_header_background' : "white",
+    'style_nav_header_background': "white",
     'collapse_navigation': False,
     'analytics_anonymize_ip': True,
 }
 html_js_files = [
     'js/custom.js'
 ]
-
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
