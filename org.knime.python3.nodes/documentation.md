@@ -2,6 +2,51 @@
 
 We introduce a new API to write nodes for KNIME completely in Python.
 
+## Contents
+
+- [Pure-Python KNIME Node Extensions](#pure-python-knime-node-extensions)
+  - [Contents](#contents)
+  - [Tutorial: Your First Python Node From Scratch](#tutorial-your-first-python-node-from-scratch)
+  - [Python Node Extension Setup](#python-node-extension-setup)
+  - [Defining a KNIME Node in Python: Full API](#defining-a-knime-node-in-python-full-api)
+    - [Node port configuration](#node-port-configuration)
+    - [Defining the node's configuration dialog](#defining-the-nodes-configuration-dialog)
+    - [Node view declaration](#node-view-declaration)
+  - [Functional Node API](#functional-node-api)
+  - [Customizing the Python executable](#customizing-the-python-executable)
+  - [Registering Python extensions during development](#registering-python-extensions-during-development)
+  - [Other Topics](#other-topics)
+    - [Logging](#logging)
+    - [Gateway caching](#gateway-caching)
+
+## Tutorial: Your First Python Node From Scratch
+1. Install the KNIME Analytics Platform (KAP) version 4.6.0 or higher or a Nightly (if Nightly before the release of 4.6.0, use the master update site)
+2. Go to File --> Install KNIME Extensions... and search within the `KNIME Labs Extensions` for `KNIME Python Node Development Extension (Labs)`; install it
+3. Copy the extension template (TODO! Until then use `knime-python/org.knime.python3.nodes.tests/src/test/python/fluent_extension`) to some place on your computer; this will be your new extension; note that there is a `knime.yml` which holds information you need in step 5
+4. Create a Python environment containing the `knime-python-base` metapackage and for now also `packaging`  
+    Example via Conda:  
+    `conda create -n my_python_env python=3.9 packaging knime-python-base -c knime -c conda-forge`
+    If you already have some environment `my_python_env` and want to install only `knime-python-base` and `packaging` on top, use _in that environment_ `conda install knime-python-base packaging -c knime -c conda-forge`; it is indispensable that you take both channels, `knime` and `conda-forge`
+5. Create a text file `config.yml` next to your extension; this will provide a link to your extension and to the used Python environment  
+    It has the content:
+    ```
+    <extension_id>:
+        src: path/to/folder/of/template
+        conda_env_path: path/to/my_python_env
+    ```
+    Replace the two paths accordingly; as <extension_id> use from the `knime.yml` of your extension the `group_id` and `name` and connect them with a dot: `your_group_id.name`
+6. Let the KAP know where the `config.yml` is; this allows the KAP to use the extension and its Python environment; for this go to `<path>/<your-KAP>/Contents\Eclipse\knime.ini`; in that `knime.ini` add the following line at the end and change it accordingly: `-Dorg.knime.python.extension.config=path/to/your/config.yml`
+7. Start your KAP
+8. You should see the template node in the node repository
+9. Build a new workflow, which has a small `Table Creator` node
+10. Uncomment parameters; congrats, you did your first configuration dialogue!
+11. Uncomment for a second input table; change the `configure` method to reflect the changes in the schema; change execute method to reflect changes
+12. Uncomment to do something in the node
+13. Uncomment to use a parameter
+15. Execute; congrats, you have your first node doing something!
+
+
+
 ## Python Node Extension Setup
 
 A Python node extension needs to contain a YAML file called `knime.yml` that gives general information about the node extension, which Python module to load, and what conda environment should be used for the nodes.
