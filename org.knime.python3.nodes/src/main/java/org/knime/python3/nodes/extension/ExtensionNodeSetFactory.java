@@ -256,9 +256,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected NodeDialogPane createNodeDialogPane() {
-            // TODO throw an exception? If a NodeDialogPane is used, then we don't have a pure Python extension and
-            // and nodes could be registered the ordinary way
-            return null;
+            return createNodeDialog().createLegacyFlowVariableNodeDialog();
         }
 
         @Override
