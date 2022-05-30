@@ -93,6 +93,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     private static final LoadingCache<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> GATEWAY_CACHE =
         createCache();
 
+    private static boolean gatewayCacheClosed = false;
+
     private final ResolvedPythonExtension m_extension;
 
     private final String m_nodeId;
@@ -165,6 +167,13 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         }
     }
 
+    public static void close() {
+        synchronized (GATEWAY_CACHE) {
+            gatewayCacheClosed = true;
+            GATEWAY_CACHE.invalidateAll();
+        }
+    }
+
     @Override
     public NodeConfigurationProxy getConfigurationProxy() {
         return createPythonNodeFromCache();
@@ -183,8 +192,14 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNodeFromCache() {
         try {
-            var cachedGateway = GATEWAY_CACHE.get(m_extension);
-            cachedGateway.markAsUsed();
+            CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway;
+            synchronized (GATEWAY_CACHE) {
+                if (gatewayCacheClosed) {
+                    throw new IllegalStateException("Gateway cache has been closed.");
+                }
+                cachedGateway = GATEWAY_CACHE.get(m_extension);
+                cachedGateway.markAsUsed();
+            }
             var gateway = cachedGateway.get();
             var nodeProxy = m_extension.createProxy(gateway.getEntryPoint(), m_nodeId);
             var nodeSpec = m_extension.getNode(m_nodeId);
