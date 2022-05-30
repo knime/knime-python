@@ -160,3 +160,17 @@ class MyThirdNode(kn.PythonNode):
             pa.field(self.aggregation, type=pa.float64()), aggregated
         )
         return kn.Table.from_pyarrow(table)
+
+
+@kn.node("No-Op", node_type="Visualizer", icon_path="icon.png", category=pycat)
+class NoInpOupNode(kn.PythonNode):
+    """Node without inputs or outputs that does nothing
+
+    Node without inputs or outputs that does nothing
+    """
+
+    def configure(self, config_context: kn.ConfigurationContext):
+        pass
+
+    def execute(self, exec_context: kn.ExecutionContext):
+        pass
