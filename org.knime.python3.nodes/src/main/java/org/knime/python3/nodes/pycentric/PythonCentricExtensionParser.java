@@ -101,8 +101,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
     private static PyNodeExtension retrieveDynamicInformationFromPython(final Path pathToExtension,
         final StaticExtensionInfo staticInfo) throws IOException {
-        try (var gateway =
-            PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension, staticInfo.m_environmentName)) {
+        try (var gateway = PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension,
+            staticInfo.m_environmentName, staticInfo.m_extensionModule)) {
             return createNodeExtension(gateway.getEntryPoint(), pathToExtension, staticInfo);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();

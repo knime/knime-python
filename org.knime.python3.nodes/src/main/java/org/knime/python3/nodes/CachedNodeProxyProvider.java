@@ -140,8 +140,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
                 @Override
                 public CachedObject<PythonGateway<KnimeNodeBackend>> load(final ResolvedPythonExtension key)
                     throws Exception {
-                    return new CachedObject<>(
-                        PythonNodeGatewayFactory.create(key.getId(), key.getPath(), key.getEnvironmentName()));
+                    return new CachedObject<>(PythonNodeGatewayFactory.create(key.getId(), key.getPath(),
+                        key.getEnvironmentName(), key.getExtensionModule()));
                 }
             };
 

@@ -50,12 +50,14 @@ package org.knime.python3.nodes;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
+import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
@@ -86,18 +88,20 @@ public final class PythonNodeGatewayFactory {
      * @param extensionId id of the extension for which to create the gateway
      * @param pathToExtension location of the extension on disc
      * @param environmentName name of the environment the extension uses
+     * @param extensionModule the name of the Python module providing the extension
      * @return a {@link PythonGateway} for the provided extension
      * @throws IOException if creation fails due to I/O problems
      * @throws InterruptedException if the creation is interrupted
      */
     public static PythonGateway<KnimeNodeBackend> create(final String extensionId, final Path pathToExtension,
-        final String environmentName) throws IOException, InterruptedException {
+        final String environmentName, final String extensionModule) throws IOException, InterruptedException {
         var command = createCommand(extensionId, environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
             .addToPythonPath(Python3SourceDirectory.getPath())//
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
             .addToPythonPath(Python3ViewsSourceDirectory.getPath()) //
-            .addToPythonPath(pathToExtension);
+            .addToPythonPath(pathToExtension) //
+            .withPreloaded(new PythonExtensionFromModuleName(extensionModule));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
         var gateway = FACTORY.create(gatewayDescriptionBuilder.build());
@@ -116,4 +120,34 @@ public final class PythonNodeGatewayFactory {
         return new LegacyPythonCommandAdapter(legacyBundledCondaCommand);
     }
 
+
+    private static final class PythonExtensionFromModuleName implements PythonExtension {
+
+        private final String m_moduleName;
+
+        public PythonExtensionFromModuleName(final String moduleName) {
+            m_moduleName = moduleName;
+        }
+
+        @Override
+        public String getPythonModule() {
+            return m_moduleName;
+        }
+
+        @Override
+        public int hashCode() {
+            return m_moduleName.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (!(obj instanceof PythonExtensionFromModuleName)) {
+                return false;
+            }
+            return Objects.equals(((PythonExtensionFromModuleName)obj).m_moduleName, m_moduleName);
+        }
+    }
 }

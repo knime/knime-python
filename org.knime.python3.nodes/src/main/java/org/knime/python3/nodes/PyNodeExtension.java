@@ -88,6 +88,11 @@ public interface PyNodeExtension {
     String getEnvironmentName();
 
     /**
+     * @return the name of the Python module providing this extension
+     */
+    String getExtensionModule();
+
+    /**
      * @param backend Python proxy for node creation
      * @param nodeId id of the node to create a Python proxy for
      * @return the NodeProxy for the node identified by nodeId

@@ -56,8 +56,8 @@ package org.knime.python3;
 public interface PythonExtension {
 
     /**
-     * @return the name of the Python module which must be imported. Importing the module must register the extension
-     *         using the appropriate Python endpoint.
+     * @return the name of the Python module which must be imported. The imported module may register the extension at
+     *         the appropriate Python extension points.
      */
     String getPythonModule();
 }

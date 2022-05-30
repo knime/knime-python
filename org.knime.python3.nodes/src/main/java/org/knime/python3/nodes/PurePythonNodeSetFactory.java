@@ -185,6 +185,10 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return m_extension.getEnvironmentName();
         }
 
+        String getExtensionModule() {
+            return m_extension.getExtensionModule();
+        }
+
         @Override
         public NodeProxyProvider createProxyProvider(final String nodeId) throws InvalidSettingsException {
             if (PythonExtensionPreferences.cacheGateway(getId())) {

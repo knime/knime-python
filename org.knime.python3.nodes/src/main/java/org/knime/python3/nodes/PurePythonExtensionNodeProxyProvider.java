@@ -100,7 +100,7 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     protected CloseablePythonNodeProxy createPythonNode() {
         try {
             var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
-                m_extension.getEnvironmentName());
+                m_extension.getEnvironmentName(), m_extension.getExtensionModule());
             final var backend = gateway.getEntryPoint();
             final var cb = new KnimeNodeBackend.Callback() {
                 @Override

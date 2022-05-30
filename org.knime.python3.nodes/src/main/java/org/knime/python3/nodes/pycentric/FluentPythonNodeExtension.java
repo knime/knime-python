@@ -115,6 +115,11 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     }
 
     @Override
+    public String getExtensionModule() {
+        return m_extensionModule;
+    }
+
+    @Override
     public NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
         // TODO if we decide to use purely this version of PythonNodeExtensions, then we should
         // preload the extension module when we create the Gateway.
