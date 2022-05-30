@@ -122,26 +122,25 @@ public final class NodeDescriptionBuilder {
 
         m_tabs.forEach(t -> t.fill(fullDescription.addNewTab()));
 
+        // NOTE:
+        // We always need the "ports" element even if there are no ports.
+        // Otherwise the XML validation will fail.
         var ports = node.addNewPorts();
-        if (!(m_inputPorts.isEmpty() && m_outputPorts.isEmpty())) {
-            int inputIdx = 0;// NOSONAR
-            for (var inPort : m_inputPorts) {
-                var port = ports.addNewInPort();
-                port.setIndex(BigInteger.valueOf(inputIdx));
-                inputIdx++;
-                port.setName(inPort.getName());
-                port.addNewP().newCursor().setTextValue(inPort.getDescription());
-            }
-            int outputIdx = 0;// NOSONAR
-            for (var outPort : m_outputPorts) {
-                var port = ports.addNewOutPort();
-                port.setIndex(BigInteger.valueOf(outputIdx));
-                outputIdx++;
-                port.setName(outPort.getName());
-                port.addNewP().newCursor().setTextValue(outPort.getDescription());
-            }
-        } else {
-            throw new IllegalStateException("Node " + m_name + " has no input or output ports configured");
+        int inputIdx = 0;// NOSONAR
+        for (var inPort : m_inputPorts) {
+            var port = ports.addNewInPort();
+            port.setIndex(BigInteger.valueOf(inputIdx));
+            inputIdx++;
+            port.setName(inPort.getName());
+            port.addNewP().newCursor().setTextValue(inPort.getDescription());
+        }
+        int outputIdx = 0;// NOSONAR
+        for (var outPort : m_outputPorts) {
+            var port = ports.addNewOutPort();
+            port.setIndex(BigInteger.valueOf(outputIdx));
+            outputIdx++;
+            port.setName(outPort.getName());
+            port.addNewP().newCursor().setTextValue(outPort.getDescription());
         }
 
         if (!m_views.isEmpty()) {
