@@ -259,10 +259,10 @@ class _PythonNodeProxy:
         return json.dumps(json_forms_dict)
 
     def _specs_to_python(self, specs):
-        return [
-            _spec_to_python(spec, port)
-            for port, spec in zip(self._node.input_ports, specs)
-        ]
+        input_ports = (
+            self._node.input_ports if self._node.input_ports is not None else []
+        )
+        return [_spec_to_python(spec, port) for port, spec in zip(input_ports, specs)]
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -313,6 +313,9 @@ class _PythonNodeProxy:
         outputs = self._node.execute(exec_context, *inputs)
         self._set_flow_variables(exec_context.flow_variables)
 
+        if outputs is None:
+            outputs = []
+
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
@@ -349,6 +352,8 @@ class _PythonNodeProxy:
         outputs = self._node.configure(config_context, *inputs)
         self._set_flow_variables(config_context.flow_variables)
 
+        if outputs is None:
+            outputs = []
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
