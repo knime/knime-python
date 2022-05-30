@@ -26,28 +26,29 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj, for_dialog=False) -> dict:
+def extract_parameters(obj) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
+    return {"model": _extract_parameters(obj)}
+
+def _extract_parameters(obj) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
         if param_obj.__kind__ == "parameter":
             result[name] = getattr(obj, name)
         elif param_obj.__kind__ == "parameter_group":
-            # TODO doesn't the getter handle this?
-            result[name] = extract_parameters(param_obj)
-
-    if for_dialog:
-        return {"model": result}
-    else:
-        return result
+            result[name] = _extract_parameters(param_obj)
+    return result
 
 
 # TODO version support
 def inject_parameters(obj, parameters: dict, version) -> None:
-    validate_parameters(obj, parameters, version)
+    _inject_parameters(obj, parameters["model"], version)
+
+def _inject_parameters(obj, parameters: dict, version) -> None:
+    _validate_parameters(obj, parameters, version)
     for name, parameter in _get_parameters(obj).items():
         # TODO can only set if the parameter was already available in version
         parameter._inject(obj, parameters[name], version)
@@ -58,21 +59,24 @@ def validate_parameters(obj, parameters: dict, version=None) -> str:
     """
     Perform validation on the individual parameters of obj.
     """
+    return _validate_parameters(obj, parameters["model"], version)
+
+def _validate_parameters(obj, parameters: dict, version=None) -> str:
     for name, param in _get_parameters(obj).items():
         # TODO test if that also works for parameter groups
         param._validate(parameters[name], version)
+    
 
 
-def extract_schema(obj, specs=None, for_dialog=False) -> dict:
+def extract_schema(obj, specs=None) -> dict:
+    return {"type": "object", "properties": {"model": _extract_schema(obj, specs)}}
+
+def _extract_schema(obj, specs=None):
     properties = {
         name: param._extract_schema(specs)
         for name, param in _get_parameters(obj).items()
     }
-    schema = {"type": "object", "properties": properties}
-    if for_dialog:
-        return {"type": "object", "properties": {"model": schema}}
-    else:
-        return schema
+    return {"type": "object", "properties": properties}
 
 
 def extract_ui_schema(obj) -> dict:
@@ -570,7 +574,7 @@ def parameter_group(label: str):
 
         def _validate(self, values, version=None):
             # validate individual parameters
-            validate_parameters(self, values, version)
+            _validate_parameters(self, values, version)
 
             # use the "internal" group validator if exists
             if (
@@ -598,9 +602,6 @@ def parameter_group(label: str):
                 func = override
                 self._validator = func
                 self._override_internal_validator = True
-
-        def _extract_schema(self, specs=None):
-            return extract_schema(self, specs)
 
         def _extract_ui_schema(self, name, parent_scope: _Scope):
             scope = parent_scope.create_child(name, is_group=True)

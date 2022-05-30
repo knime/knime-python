@@ -13,14 +13,16 @@ def generate_values_dict(
     third=3,
 ):
     return {
-        "int_param": int_param,
-        "double_param": double_param,
-        "string_param": string_param,
-        "bool_param": bool_param,
-        "parameter_group": {
-            "subgroup": {"first": first, "second": second},
-            "third": third,
-        },
+        "model": {
+            "int_param": int_param,
+            "double_param": double_param,
+            "string_param": string_param,
+            "bool_param": bool_param,
+            "parameter_group": {
+                "subgroup": {"first": first, "second": second},
+                "third": third,
+            },
+        }
     }
 
 
@@ -175,24 +177,61 @@ class ParameterTest(unittest.TestCase):
         expected = {
             "type": "object",
             "properties": {
-                "int_param": {"type": "integer"},
-                "double_param": {"type": "number"},
-                "string_param": {"type": "string"},
-                "bool_param": {"type": "boolean"},
-                "parameter_group": {
+                "model": {
                     "type": "object",
                     "properties": {
-                        "subgroup": {
-                            "properties": {
-                                "first": {"type": "integer"},
-                                "second": {"type": "integer"},
+                        "int_param": {
+                            "title": "Int Parameter",
+                            "description": "An integer parameter",
+                            "type": "integer",
+                            "format": "int32"
                             },
+                        "double_param": {
+                            "title": "Double Parameter",
+                            "description": "A double parameter",
+                            "type": "number",
+                            "format": "double"},
+                        "string_param": {
+                            "title": "String Parameter",
+                            "description": "A string parameter",
+                            "type": "string"
+                            },
+                        "bool_param": {
+                            "title": "Boolean Parameter",
+                            "description": "A boolean parameter",
+                            "type": "boolean"
+                            },
+                        "parameter_group": {
                             "type": "object",
+                            "properties": {
+                                "subgroup": {
+                                    "properties": {
+                                        "first": {
+                                            "title": "First Parameter",
+                                            "description": "First parameter description",
+                                            "type": "integer",
+                                            "format": "int32"
+                                            },
+                                        "second": {
+                                            "title": "Second Parameter",
+                                            "description": "Second parameter description",
+                                            "type": "integer",
+                                            "format": "int32"
+                                            },
+                                    },
+                                    "type": "object",
+                                },
+                                "third": {
+                                    "title": "Internal int Parameter",
+                                    "description": "Internal int parameter description",
+                                    "type": "integer",
+                                    "format": "int32"
+                                    },
+                            },
                         },
-                        "third": {"type": "integer"},
                     },
-                },
-            },
+                }
+            }
         }
         extracted = kp.extract_schema(self.parameterized)
         self.assertEqual(expected, extracted)
@@ -203,25 +242,25 @@ class ParameterTest(unittest.TestCase):
                 {
                     "label": "Int Parameter",
                     "options": {"format": "integer"},
-                    "scope": "#/properties/int_param",
+                    "scope": "#/properties/model/properties/int_param",
                     "type": "Control",
                 },
                 {
                     "label": "Double Parameter",
                     "options": {"format": "number"},
-                    "scope": "#/properties/double_param",
+                    "scope": "#/properties/model/properties/double_param",
                     "type": "Control",
                 },
                 {
                     "label": "String Parameter",
                     "options": {"format": "string"},
-                    "scope": "#/properties/string_param",
+                    "scope": "#/properties/model/properties/string_param",
                     "type": "Control",
                 },
                 {
                     "label": "Boolean Parameter",
                     "options": {"format": "boolean"},
-                    "scope": "#/properties/bool_param",
+                    "scope": "#/properties/model/properties/bool_param",
                     "type": "Control",
                 },
                 {
@@ -231,13 +270,13 @@ class ParameterTest(unittest.TestCase):
                                 {
                                     "label": "First Parameter",
                                     "options": {"format": "integer"},
-                                    "scope": "#/properties/parameter_group/properties/subgroup/properties/first",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
                                     "type": "Control",
                                 },
                                 {
                                     "label": "Second Parameter",
                                     "options": {"format": "integer"},
-                                    "scope": "#/properties/parameter_group/properties/subgroup/properties/second",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
                                     "type": "Control",
                                 },
                             ],
@@ -247,7 +286,7 @@ class ParameterTest(unittest.TestCase):
                         {
                             "label": "Internal int Parameter",
                             "options": {"format": "integer"},
-                            "scope": "#/properties/parameter_group/properties/third",
+                            "scope": "#/properties/model/properties/parameter_group/properties/third",
                             "type": "Control",
                         },
                     ],
@@ -333,8 +372,10 @@ class ParameterTest(unittest.TestCase):
         obj = ComposedParameterized()
         parameters = kp.extract_parameters(obj)
         expected = {
-            "first_group": {"first_param": 12345, "second_param": 54321},
-            "second_group": {"first_param": 12345, "second_param": 54321},
+            "model": {
+                "first_group": {"first_param": 12345, "second_param": 54321},
+                "second_group": {"first_param": 12345, "second_param": 54321},
+            }
         }
         self.assertEqual(parameters, expected)
 
@@ -343,8 +384,10 @@ class ParameterTest(unittest.TestCase):
         obj.first_group.first_param = 3
         parameters = kp.extract_parameters(obj)
         expected = {
-            "first_group": {"first_param": 3, "second_param": 54321},
-            "second_group": {"first_param": 12345, "second_param": 54321},
+            "model": {
+                "first_group": {"first_param": 3, "second_param": 54321},
+                "second_group": {"first_param": 12345, "second_param": 54321},
+            }
         }
         self.assertEqual(parameters, expected)
 
@@ -354,18 +397,43 @@ class ParameterTest(unittest.TestCase):
         expected = {
             "type": "object",
             "properties": {
-                "first_group": {
+                "model": {
                     "type": "object",
                     "properties": {
-                        "first_param": {"type": "integer"},
-                        "second_param": {"type": "integer"},
-                    },
-                },
-                "second_group": {
-                    "type": "object",
-                    "properties": {
-                        "first_param": {"type": "integer"},
-                        "second_param": {"type": "integer"},
+                        "first_group": {
+                            "type": "object",
+                            "properties": {
+                                "first_param": {
+                                    "title": "Plain int param",
+                                    "description": "Description of the plain int param.",
+                                    "type": "integer",
+                                    "format": "int32"
+                                },
+                                "second_param": {
+                                    "title": "Second int param",
+                                    "description": "Description of the second plain int param.",
+                                    "type": "integer",
+                                    "format": "int32",
+                                },
+                            },
+                        },
+                        "second_group": {
+                            "type": "object",
+                            "properties": {
+                                "first_param": {
+                                    "title": "Plain int param",
+                                    "description": "Description of the plain int param.",
+                                    "type": "integer",
+                                    "format": "int32"
+                                },
+                                "second_param": {
+                                    "title": "Second int param",
+                                    "description": "Description of the second plain int param.",
+                                    "type": "integer",
+                                    "format": "int32",
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -382,13 +450,13 @@ class ParameterTest(unittest.TestCase):
                         {
                             "label": "Plain int param",
                             "options": {"format": "integer"},
-                            "scope": "#/properties/first_group/properties/first_param",
+                            "scope": "#/properties/model/properties/first_group/properties/first_param",
                             "type": "Control",
                         },
                         {
                             "label": "Second int param",
                             "options": {"format": "integer"},
-                            "scope": "#/properties/first_group/properties/second_param",
+                            "scope": "#/properties/model/properties/first_group/properties/second_param",
                             "type": "Control",
                         },
                     ],
@@ -400,13 +468,13 @@ class ParameterTest(unittest.TestCase):
                         {
                             "label": "Plain int param",
                             "options": {"format": "integer"},
-                            "scope": "#/properties/second_group/properties/first_param",
+                            "scope": "#/properties/model/properties/second_group/properties/first_param",
                             "type": "Control",
                         },
                         {
                             "label": "Second int param",
                             "options": {"format": "integer"},
-                            "scope": "#/properties/second_group/properties/second_param",
+                            "scope": "#/properties/model/properties/second_group/properties/second_param",
                             "type": "Control",
                         },
                     ],
