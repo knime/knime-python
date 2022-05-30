@@ -395,7 +395,7 @@ final class CloseablePythonNodeProxy
     /**
      * @return an array of flow variable types that can be understood by this Python backend.
      */
-    public static VariableType<?>[] getCompatibleFlowVariableTypes() {
+    public static VariableType<?>[] getCompatibleFlowVariableTypes() { //NOSONAR
         return FlowVariableUtils.convertToFlowVariableTypes(KNOWN_FLOW_VARIABLE_TYPES);
     }
 }

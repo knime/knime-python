@@ -69,11 +69,24 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
  */
 public class FlowVariableUtils {
 
-    public static VariableType<?>[] convertToFlowVariableTypes(final Set<Class<?>> types) {
+    /**
+     * Helper method to convert a set of POJO types to flow variable types.
+     *
+     * @param types POJO type set
+     * @return {@link VariableType}s for the given POJO types
+     */
+    public static VariableType<?>[] convertToFlowVariableTypes(final Set<Class<?>> types) { //NOSONAR
         return Arrays.stream(VariableTypeRegistry.getInstance().getAllTypes())
             .filter(v -> types.contains(v.getSimpleType())).toArray(VariableType[]::new);
     }
 
+    /**
+     * Convert a collection of {@link FlowVariable}s to a POJO map from string (variable name) to a value of type
+     * {@link Object}. The returned map can be handed to Python via Py4j immediately.
+     *
+     * @param flowVariables The {@link FlowVariable}s
+     * @return a POJO map
+     */
     public static LinkedHashMap<String, Object> convertToMap(final Collection<FlowVariable> flowVariables) {
         final LinkedHashMap<String, Object> flowVariablesMap = new LinkedHashMap<>(flowVariables.size());
         for (final FlowVariable variable : flowVariables) {
@@ -90,6 +103,14 @@ public class FlowVariableUtils {
         return flowVariablesMap;
     }
 
+    /**
+     * Convert a POJO map from string (variable name) to values of type {@link Object} to a collection of
+     * {@link FlowVariable}s. The input map can be one that is received from Python via Py4j.
+     *
+     * @param flowVariablesMap The {@link FlowVariable}s as POJO map
+     * @param logger A logger used to log warnings that occur during conversion
+     * @return The {@link FlowVariable}s
+     */
     public static Collection<FlowVariable> convertFromMap(final Map<String, Object> flowVariablesMap,
         final NodeLogger logger) {
         final VariableType<?>[] allVariableTypes = VariableTypeRegistry.getInstance().getAllTypes();
@@ -105,7 +126,8 @@ public class FlowVariableUtils {
                 }
             }
             if (value != null) {
-                final VariableType<?> matchingType = findMatchingVariableType(variableName, value, allVariableTypes, logger);
+                final VariableType<?> matchingType =
+                    findMatchingVariableType(variableName, value, allVariableTypes, logger);
                 if (matchingType != null
                     // Reserved flow variables like "knime.workspace" are also passed through the node, filter them out.
                     && isValidVariableName(variableName)) {
@@ -120,7 +142,8 @@ public class FlowVariableUtils {
         return flowVariables;
     }
 
-    private static Object convertIntoArrayValue(final String variableName, final List<?> listValue, final NodeLogger logger) {
+    private static Object convertIntoArrayValue(final String variableName, final List<?> listValue,
+        final NodeLogger logger) {
         if (!listValue.isEmpty()) {
             try {
                 return listValue.toArray(size -> (Object[])Array.newInstance(listValue.get(0).getClass(), size));
