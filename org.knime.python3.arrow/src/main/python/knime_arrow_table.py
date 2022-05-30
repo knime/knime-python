@@ -409,7 +409,11 @@ def _select_columns(
 ) -> Union[pa.RecordBatch, pa.Table]:
     columns = []
 
-    if isinstance(selection, int) or isinstance(selection, str):
+    if isinstance(selection, int):
+        while selection < 0:
+            selection += len(data.schema)
+        selection = [selection]
+    elif isinstance(selection, str):
         selection = [selection]
 
     if isinstance(selection, slice):

@@ -373,6 +373,68 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(2, sl.num_columns)
         self.assertEqual(["Longs", "Doubles"], sl.column_names)
 
+    def test_column_selection(self):
+        types = [k.int32(), k.int64(), k.double(), k.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+        s = k.Schema(types, names)
+        self.assertEqual(s[1], s["Longs"])
+        self.assertEqual(s[1].type, s["Longs"].type)
+        self.assertEqual(s[1].name, s["Longs"].name)
+
+    def test_column_selection_wraparound(self):
+        types = [k.int32(), k.int64(), k.double(), k.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+        s = k.Schema(types, names)
+        self.assertEqual(s[2], s[-2])
+        self.assertEqual(s[2].type, s[-2].type)
+        self.assertEqual(s[2].name, s[-2].name)
+
+    def test_column_permutation(self):
+        types = [k.int32(), k.int64(), k.double(), k.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+        s = k.Schema(types, names)
+
+        selection = ["Strings", "Ints", "Longs"]
+        s_int = s[[3, 0, 1]]
+        s_str = s[selection]
+        self.assertEqual(s_int.num_columns, s_str.num_columns)
+        self.assertEqual(s_int.column_names, s_str.column_names)
+        self.assertEqual(selection, s_str.column_names)
+
+    def test_empty_column_name_throws(self):
+        types = [k.int32(), k.int64(), k.double(), k.string()]
+        names = ["Ints", "Longs", "", "Strings"]
+
+        with self.assertRaises(ValueError):
+            s = k.Schema(types, names)
+
+        with self.assertRaises(ValueError):
+            c = k.Column(k.int32(), "")
+
+        with self.assertRaises(ValueError):
+            c = k.Column(k.int32(), "\t    ")
+
+    def test_duplicate_column_name_throws_when_converted_to_knime_dict(self):
+        types = [k.int32(), k.int64(), k.double(), k.string()]
+        names = ["Ints", "Ints", "Doubles", "Strings"]
+        s = k.Schema(types, names)
+
+        with self.assertRaises(RuntimeError):
+            s.to_knime_dict()
+
+    def test_wrong_type_throws(self):
+        types = [k.int32(), int, k.double(), k.string()]
+        names = ["Ints", "Longs", "Double", "Strings"]
+
+        with self.assertRaises(TypeError):
+            s = k.Schema(types, names)
+
+        with self.assertRaises(TypeError):
+            c = k.Column(int, "Longs")
+
+        with self.assertRaises(TypeError):
+            c = k.Column(k.int32(), 12)
+
     def test_to_str(self):
         types = [
             k.int32(),

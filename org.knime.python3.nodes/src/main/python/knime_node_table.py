@@ -97,9 +97,9 @@ class _Tabular(ks._Columnar):
 
         Args:
             column_slice:
-                Optional. A slice object, a list of column indices, or a list of column names.
+                A column index, a column name, a slice object, a list of column indices, or a list of column names.
             row_slice:
-                A slice object describing which rows to use.
+                Optional: A slice object describing which rows to use.
 
         Returns:
             A _TabularView representing a slice of the original Table

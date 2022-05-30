@@ -462,8 +462,26 @@ class Column:
     name: str
     metadata: str
 
-    def __init__(self, type, name, metadata=None):
-        self.type = type
+    def __init__(self, dtype: KnimeType, name: str, metadata=None):
+        """
+        Construct a Column from type, name and optional metadata.
+        
+        Args:
+            dtype: The type of the column
+            name: The name of the column. May not be empty.
+
+        Raises:
+            TypeError: if the type is no KNIME type
+            ValueError: if the name is empty
+        """
+        if not isinstance(dtype, KnimeType):
+            raise TypeError(f"Column type must be a KnimeType, but got {type(dtype)}")
+        if not isinstance(name, str):
+            raise TypeError(f"Column name must be of type string, but got {type(name)}")
+        if name.strip() == "":
+            raise ValueError("Column name may not be empty")
+
+        self.type = dtype
         self.name = name
         self.metadata = metadata
 
@@ -503,6 +521,27 @@ class _Columnar(ABC):
     def __getitem__(
         self, slicing: Union[slice, List[int], List[str]]
     ) -> "_ColumnarView":
+        """
+        Creates a view of this Table or Schema by slicing columns. The slicing syntax is similar to that of numpy arrays,
+        but columns can also be addressed as index lists or via a list of column names. 
+
+        Args:
+            column_slice:
+                A column index, a column name, a slice object, a list of column indices, or a list of column names.
+                For single indices, the view will create a "Column" object. For slices or lists of indices,
+                a new Schema will be returned.
+
+        Returns:
+            A _ColumnarView representing a slice of the original Schema or Table.
+
+        **Examples:**
+
+        Get columns 1,2,3,4:
+        ``sliced_schema = schema[1:5]``
+
+        Get the columns "name" and "age":
+        ``sliced_schema = schema[["name", "age"]]``
+        """
         # we need to return IndexError already here if slicing is an int to end for-loops,
         # otherwise `for i in columnar_obj` will run forever
         if isinstance(slicing, int) and slicing >= self.num_columns:
@@ -527,6 +566,16 @@ class _Columnar(ABC):
 
 
 class _ColumnarView(_Columnar):
+    """
+    A _ColumnarView is created whenever operations such as slicing or appending
+    are applied to an object that implements _Columnar, which are Schema and Table.
+
+    Those operations are performed lazily, because especially on tables they can
+    involve allocating and copying large amounts of memory and copying.
+
+    If you need the materialized result of the operation, call the `.get()` method.
+    """
+
     def __init__(self, delegate: _Columnar, operation: "_ColumnarOperation"):
         self._delegate = delegate
         self._operation = operation
@@ -549,8 +598,8 @@ class _ColumnarView(_Columnar):
 
     def get(self, cache=True) -> _Columnar:
         """
-        Dispatches the application of all slicing etc operations and
-        returns a table that is backed by data.
+        Dispatches the application of all operations (slicing, appending, etc.) and
+        returns a table or schema that is backed by data.
 
         The result is cached internally to prevent re-evaluating the operation,
         unless this View is wrapped inside another view. Then only the outermost
@@ -581,6 +630,12 @@ class _ColumnarView(_Columnar):
     def __getattr__(self, name):
         # as a last resort, create and call the delegate
         return getattr(self.get(), name)
+
+    def __eq__(self, other):
+        if isinstance(other, _ColumnarView):
+            other = other.get()
+
+        return self.get() == other
 
 
 # --------------------------------------------------------------
@@ -698,7 +753,9 @@ class Schema(_Columnar, PortObjectSpec):
 
     def _select_columns(self, index) -> Union[Column, "Schema"]:
         if isinstance(index, int):
-            if index < 0 or index >= len(self._columns):
+            while index < 0:
+                index += len(self._columns)
+            if index >= len(self._columns):
                 raise IndexError(
                     f"Index {index} does not exist in schema with {self.num_columns} columns"
                 )
@@ -706,7 +763,7 @@ class Schema(_Columnar, PortObjectSpec):
         elif isinstance(index, str):
             for c in self._columns:
                 if c.name == index:
-                    return self.__class__.from_columns([c])
+                    return c
             raise IndexError(f"Schema has no column named '{index}'")
         elif isinstance(index, slice):
             return self.__class__.from_columns(self._columns[index])
@@ -729,7 +786,7 @@ class Schema(_Columnar, PortObjectSpec):
             return self.__class__.from_columns([self[c] for c in columns])
         else:
             raise TypeError(
-                f"{self.__class__.__name__} can only be indexed by int or slice, not {type(index)}"
+                f"{self.__class__.__name__} can only be indexed by int, string, slice, list of int, or list of string, not {type(index)}"
             )
 
     def __eq__(self, other) -> bool:
@@ -772,11 +829,21 @@ class Schema(_Columnar, PortObjectSpec):
 
         Because KNIME expects a row key column as first column of the schema but we don't
         include this in the KNIME Python table schema, we insert a row key column here.
+
+        Raises:
+            RuntimeError: if duplicate column names are detected
         """
+        col_names = self.column_names
+        if len(col_names) != len(set(col_names)):
+            raise RuntimeError(
+                "Duplicate column names detected, please make sure all columns have unique names"
+            )
+
         row_key_type = LogicalType(_row_key_type, string())
         schema_with_row_key = _wrap_primitive_types(self).insert(
             Column(row_key_type, "RowKey"), at=0
         )
+
         return _schema_to_knime_dict(schema_with_row_key.get())
 
     @classmethod
@@ -821,7 +888,6 @@ _knime_type_to_logical_type = {
     string(): _knime_logical_type("StringValueFactory"),
     bool_(): _knime_logical_type("BooleanValueFactory"),
     double(): _knime_logical_type("DoubleValueFactory"),
-    # null(): _knime_logical_type("VoidValueFactory"),
     list_(int32()): _knime_logical_type("IntListValueFactory"),
     list_(int64()): _knime_logical_type("LongListValueFactory"),
     list_(string()): _knime_logical_type("StringListValueFactory"),
