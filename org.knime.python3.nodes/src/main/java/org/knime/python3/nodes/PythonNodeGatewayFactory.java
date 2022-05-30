@@ -121,9 +121,8 @@ public final class PythonNodeGatewayFactory {
     }
 
     private static PythonCommand getPythonCommandForEnvironment(final String environmentName) {
-        var environment = CondaEnvironmentRegistry.getEnvironment(environmentName);
-        var legacyBundledCondaCommand = new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
-        return new LegacyPythonCommandAdapter(legacyBundledCondaCommand);
+        final var environment = CondaEnvironmentRegistry.getEnvironment(environmentName);
+        return new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
     }
 
 

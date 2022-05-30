@@ -48,41 +48,26 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.knime.python2.AbstractCondaPythonCommand;
-import org.knime.python2.CondaPythonCommand;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.PythonVersion;
+import org.knime.conda.CondaEnvironmentDirectory;
+import org.knime.python3.AbstractCondaPythonCommand;
+import org.knime.python3.PythonCommand;
 
 /**
  * Conda-specific implementation of {@link PythonCommand} that works with bundled Python environments. Allows to build
- * Python processes for a given Conda installation and environment name. Takes care of resolving PATH-related issues on
- * Windows.
+ * Python processes for a given Conda environment. Takes care of resolving PATH-related issues on Windows.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class BundledPythonCommand extends AbstractCondaPythonCommand {
+
     /**
      * Constructs a {@link PythonCommand} that describes a Python process that is run in the bundled Conda environment
-     * identified by the given Conda installation directory and the given Conda environment name.<br>
-     * The validity of the given arguments is not tested.
+     * identified by the given Conda environment directory. The validity of the given argument is not tested.
      *
      * @param environmentDirectoryPath The path to the directory of the bundled Conda environment.
      */
     public BundledPythonCommand(final String environmentDirectoryPath) {
-        super(PythonVersion.PYTHON3, environmentDirectoryPath);
-    }
-
-    /**
-     * For user-provided Conda environments we add the path to the "condabin" dir inside the conda installation
-     * directory for the {@link CondaPythonCommand}. But for bundled conda environments, we do not have a conda
-     * installation available, so we don't need to add anything
-     */
-    @Override
-    protected List<String> getAdditionalPathPrefixesForWindows() {
-        return new ArrayList<String>();
+        super(new CondaEnvironmentDirectory(environmentDirectoryPath));
     }
 }

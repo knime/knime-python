@@ -42,47 +42,42 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- * 
+ *
  * History
- *   May 6, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 31, 2022 (marcel): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3;
 
-import org.knime.python3.PythonCommand;
+import java.util.List;
 
-/* TODO Discuss the future of PythonCommands
- * - Separate for python2 and python3 (code duplication)
- * - One PythonPath in a common PythonUtils plugin (might become difficult to maintain)
- * - Acceptance of python2 dependency (probably not)
+import org.knime.conda.CondaEnvironmentDirectory;
+
+/**
+ * Abstract base class for Python commands created from Conda environments. Takes care of resolving PATH-related issues
+ * on Windows that may occur when omitting the activation of the environment prior to its use.
+ * <P>
+ * Implementation note: This class duplicates code from {@code org.knime.python2.CondaPythonCommand}. Please consider
+ * reflecting changes made here there as well.
+ *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-final class LegacyPythonCommandAdapter implements PythonCommand {
+public abstract class AbstractCondaPythonCommand extends AbstractPythonCommand { // NOSONAR Superclass equality is sufficient.
 
-    private final org.knime.python2.PythonCommand m_legacyCommand;
+    private final CondaEnvironmentDirectory m_environmentDirectory;
 
-    LegacyPythonCommandAdapter(final org.knime.python2.PythonCommand legacyCommand) {
-        m_legacyCommand = legacyCommand;
+    /**
+     * @param environmentDirectory The Conda environment for which to create Python processes via this command.
+     */
+    protected AbstractCondaPythonCommand(final CondaEnvironmentDirectory environmentDirectory) {
+        super(List.of(environmentDirectory.getPythonExecutableString()));
+        m_environmentDirectory = environmentDirectory;
     }
 
     @Override
     public ProcessBuilder createProcessBuilder() {
-        return m_legacyCommand.createProcessBuilder();
+        final var pb = super.createProcessBuilder();
+        m_environmentDirectory.patchEnvironmentVariables(pb.environment());
+        return pb;
     }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj instanceof LegacyPythonCommandAdapter) {
-            var other = (LegacyPythonCommandAdapter)obj;
-            return m_legacyCommand.equals(other.m_legacyCommand);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return m_legacyCommand.hashCode();
-    }
-
 }

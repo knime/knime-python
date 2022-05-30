@@ -44,54 +44,32 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 3, 2021 (benjamin): created
+ *   May 31, 2022 (marcel): created
  */
 package org.knime.python3;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import org.knime.conda.CondaEnvironmentDirectory;
 
 /**
+ * Conda-specific implementation of {@link PythonCommand}. Allows to build Python processes for a given Conda
+ * installation and environment. Takes care of resolving PATH-related issues on Windows.
+ *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-abstract class AbstractPythonCommand implements PythonCommand {
+public final class CondaPythonCommand extends AbstractCondaPythonCommand {
 
-    /** The Python command and possible arguments */
-    protected final List<String> m_command;
-
-    /** @param command The Python command and possible arguments */
-    protected AbstractPythonCommand(final List<String> command) {
-        m_command = Collections.unmodifiableList(new ArrayList<>(command));
-    }
-
-    @Override
-    public ProcessBuilder createProcessBuilder() {
-        return new ProcessBuilder(new ArrayList<>(m_command));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(m_command);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj == null || !obj.getClass().equals(getClass())) {
-            return false;
-        }
-        final AbstractPythonCommand other = (AbstractPythonCommand)obj;
-        return other.m_command.equals(m_command);
-    }
-
-    @Override
-    public String toString() {
-        return String.join(" ", m_command);
+    /**
+     * Constructs a {@link PythonCommand} that describes a Python process that is run in the Conda environment
+     * identified by the given Conda installation directory and the given Conda environment directory.<br>
+     * The validity of the given arguments is not tested.
+     *
+     * @param condaInstallationDirectoryPath The path to the directory of the Conda installation.
+     * @param environmentDirectoryPath The path to the directory of the Conda environment. The directory does not
+     *            necessarily need to be located inside the Conda installation directory, which is why a path is
+     *            required.
+     */
+    public CondaPythonCommand(final String condaInstallationDirectoryPath, final String environmentDirectoryPath) {
+        super(new CondaEnvironmentDirectory(environmentDirectoryPath, condaInstallationDirectoryPath));
     }
 }

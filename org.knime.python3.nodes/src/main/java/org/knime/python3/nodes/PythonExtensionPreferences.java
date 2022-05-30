@@ -60,8 +60,7 @@ import java.util.stream.Stream;
 
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
-import org.knime.python2.CondaPythonCommand;
-import org.knime.python2.PythonVersion;
+import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
 import org.yaml.snakeyaml.Yaml;
@@ -185,8 +184,8 @@ final class PythonExtensionPreferences {
                     LOGGER.warnWithFormat("Both conda_env_path and python_executable are provided for extension '%s'."
                         + " The conda_env_path takes precedence.", m_id);
                 }
-                return Optional.of(new LegacyPythonCommandAdapter(new CondaPythonCommand(PythonVersion.PYTHON3,
-                    CondaPreferences.getCondaInstallationDirectory(), m_condaEnvPath)));
+                return Optional
+                    .of(new CondaPythonCommand(CondaPreferences.getCondaInstallationDirectory(), m_condaEnvPath));
             } else if (m_pythonExecutable != null) {
                 return Optional.of(new SimplePythonCommand(List.of(m_pythonExecutable)));
             } else {
