@@ -52,13 +52,14 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.TextNodeSettingsService;
-import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
  * Delegates methods to a proxy object that can e.g. be implemented in Python.
@@ -69,7 +70,7 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
-    private String m_schema;
+    private final JsonNodeSettings m_settings;
 
     /**
      * Constructor.
@@ -78,41 +79,42 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
      */
     public DelegatingTextSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
         m_proxyProvider = proxyProvider;
+        try (var proxy = m_proxyProvider.get()) {
+            m_settings = new JsonNodeSettings(proxy.getParameters(), proxy.getSchema());
+        }
     }
 
     @Override
     public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
-            if (m_schema == null) {
-                m_schema = proxy.getSchema();
-            }
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
-            var parameters = new JsonNodeSettings(settings.get(SettingsType.MODEL), m_schema);
-            return proxy.getDialogRepresentation(parameters.getParameters(), parameters.getCreationVersion(),
+            try {
+                m_settings.loadFrom(settings.get(SettingsType.MODEL));
+            } catch (InvalidSettingsException ex) {
+                throw new IllegalArgumentException("The provided settings are invalid.", ex);
+            }
+            return proxy.getDialogRepresentation(m_settings.getParameters(), m_settings.getCreationVersion(),
                 specsWithoutFlowVars);
         }
     }
 
     @Override
     public void toNodeSettings(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        if (m_schema == null) {
-            try (var proxy = m_proxyProvider.get()) {
-                m_schema = proxy.getSchema();
-            }
-        }
-        var jsonSettings = new JsonNodeSettings(textSettings, m_schema);
-        jsonSettings.saveTo(settings.get(SettingsType.MODEL));
+        m_settings.update(extractModelSettings(textSettings));
+        m_settings.saveTo(settings.get(SettingsType.MODEL));
+    }
+
+    private static String extractModelSettings(final String textSettings) {
+        // TODO parse using Jackson, and extract the model settings
+        return textSettings;
     }
 
     @Override
     public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var parameters = proxy.getParameters();
-            if (m_schema == null) {
-                m_schema = proxy.getSchema();
-            }
-            var jsonSettings = new JsonNodeSettings(parameters, m_schema);
-            jsonSettings.saveTo(settings.get(SettingsType.MODEL));
+            m_settings.update(parameters);
+            m_settings.saveTo(settings.get(SettingsType.MODEL));
         }
     }
 

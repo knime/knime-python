@@ -55,7 +55,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -75,6 +74,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.utils.FlowVariableUtils;
 
 /**
@@ -89,9 +89,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     private final NodeModelProxyProvider m_proxyProvider;
 
-    private JsonNodeSettings m_settings;
-
-    private Function<NodeSettingsRO, JsonNodeSettings> m_settingsFactory;
+    private final JsonNodeSettings m_settings;
 
     private Optional<Path> m_view;
 
@@ -105,15 +103,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
      * @param initialSettings of the node
-     * @param settingsFactory for creating JsonNodeSettings from NodeSettingsRO
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts,
-        final JsonNodeSettings initialSettings, final Function<NodeSettingsRO, JsonNodeSettings> settingsFactory) {
+        final JsonNodeSettings initialSettings) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
-        m_settingsFactory = settingsFactory;
         m_view = Optional.empty();
     }
 
@@ -123,7 +119,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs, this);
             // allows for auto-configure
-            m_settings = node.saveSettings();
+            m_settings.update(node.getParameters());
             m_proxyShutdownTracker.closeAsynchronously(node);
             return result;
         }
@@ -134,7 +130,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         try (var node = m_proxyProvider.getExecutionProxy()) {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this);
-            m_settings = node.saveSettings();
+            m_settings.update(node.getParameters());
             m_view = result.getView();
             var objects = result.getPortObjects();
             m_proxyShutdownTracker.closeAsynchronously(node);
@@ -149,7 +145,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        var jsonSettings = m_settingsFactory.apply(settings);
+        var jsonSettings = m_settings.loadForValidation(settings);
         try (var node = m_proxyProvider.getConfigurationProxy()) {
             node.validateSettings(jsonSettings);
             m_proxyShutdownTracker.closeAsynchronously(node);
@@ -158,7 +154,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings = m_settingsFactory.apply(settings);
+        m_settings.loadFrom(settings);
         // the settings are not set on the proxy because the proxy is closed anyway
         // and any other operation will be performed on a new proxy where the settings are set anyway
     }
@@ -177,7 +173,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        final Path viewPath = persistedViewPath(nodeInternDir);
+        final var viewPath = persistedViewPath(nodeInternDir);
         if (Files.isReadable(viewPath)) {
             m_view = Optional.of(viewPath);
         }

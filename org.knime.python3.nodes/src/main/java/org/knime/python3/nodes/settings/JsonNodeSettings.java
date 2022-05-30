@@ -46,9 +46,8 @@
  * History
  *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.settings;
 
-import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
@@ -61,16 +60,15 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// TODO consider moving this class
 public final class JsonNodeSettings {
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
-    private final String m_parameters;
+    private String m_parameters;
 
-    private final String m_schema;
+    private final JsonNodeSettingsMapper m_mapper;
 
-    private final String m_version;
+    private String m_version;
 
     /**
      * Constructor.
@@ -79,9 +77,9 @@ public final class JsonNodeSettings {
      * @param schema the JSON schema of the parameters
      */
     public JsonNodeSettings(final String parametersJson, final String schema) {
+        m_mapper = new JsonNodeSettingsMapper(schema);
         m_parameters = parametersJson;
         m_version = KNIMEConstants.VERSION;
-        m_schema = schema;
     }
 
     /**
@@ -98,34 +96,58 @@ public final class JsonNodeSettings {
         return m_version;
     }
 
+
+    public void update(final String parameters) {
+        m_version = KNIMEConstants.VERSION;
+        m_parameters = parameters;
+    }
+
     /**
-     * Constructor.
+     * Saves the settings including their creation version.
      *
-     * @param settings {@link NodeSettingsRO} containing the parameters
-     * @param schema JSON schema of the parameters
+     * @param settings to save to
      */
-    public JsonNodeSettings(final NodeSettingsRO settings, final String schema) {
-        var settingsWithoutVersion = settingsWithoutVersion(toNodeSettings(settings));
-        m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(settingsWithoutVersion);
-        m_schema = schema;
+    public void saveTo(final NodeSettingsWO settings) {
+        var tempSettings = new NodeSettings("temp");
+        m_mapper.writeIntoNodeSettings(m_parameters, tempSettings);
         try {
-            m_version = settings.getString(CFG_VERSION);
+            var modelSettings = tempSettings.getNodeSettings("model");
+            modelSettings.copyTo(settings);
         } catch (InvalidSettingsException ex) {
-            throw new IllegalArgumentException("Settings without version encountered.", ex);
+            throw new IllegalStateException("Parameter conversion did not add model settings.", ex);
         }
+        settings.addString(CFG_VERSION, m_version);
     }
 
-    private static NodeSettings toNodeSettings(final NodeSettingsRO settings) {
-        if (settings instanceof NodeSettings) {
-            return (NodeSettings)settings;
-        } else {
-            var newSettings = new NodeSettings(settings.getKey());
-            settings.copyTo(newSettings);
-            return newSettings;
-        }
+    public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
+        var preprocessed = preprocess(settings);
+        m_parameters = m_mapper.toJson(preprocessed);
+        m_version = settings.getString(CFG_VERSION);
     }
 
-    private static NodeSettingsRO settingsWithoutVersion(final NodeSettings settingsWithVersion) {
+    private static NodeSettings preprocess(final NodeSettingsRO settings) {
+        var settingsWithoutVersion = settingsWithoutVersion(toNodeSettings(settings));
+        var tmpSettings = new NodeSettings("temp");
+        var modelSettings = tmpSettings.addNodeSettings("model");
+        settingsWithoutVersion.copyTo(modelSettings);
+        modelSettings.addNodeSettings(settingsWithoutVersion);
+        return tmpSettings;
+    }
+
+    private JsonNodeSettings(final JsonNodeSettingsMapper mapper, final String parameters, final String version) {
+        m_mapper = mapper;
+        m_parameters = parameters;
+        m_version = version;
+    }
+
+    public JsonNodeSettings loadForValidation(final NodeSettingsRO settings) throws InvalidSettingsException {
+        var preprocessed = preprocess(settings);
+        var parameters = m_mapper.toJson(preprocessed);
+        var version = settings.getString(CFG_VERSION);
+        return new JsonNodeSettings(m_mapper, parameters, version);
+    }
+
+    private static NodeSettings settingsWithoutVersion(final NodeSettings settingsWithVersion) {
         var settingsWithoutVersion = new NodeSettings(settingsWithVersion.getKey());
         for (var key : settingsWithVersion) {
             if (!CFG_VERSION.equals(key)) {
@@ -136,14 +158,14 @@ public final class JsonNodeSettings {
         return settingsWithoutVersion;
     }
 
-    /**
-     * Saves the settings including their creation version.
-     *
-     * @param settings to save to
-     */
-    public void saveTo(final NodeSettingsWO settings) {
-        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, settings);
-        settings.addString(CFG_VERSION, m_version);
+    private static NodeSettings toNodeSettings(final NodeSettingsRO settings) {
+        if (settings instanceof NodeSettings) {
+            return (NodeSettings)settings;
+        } else {
+            var newSettings = new NodeSettings(settings.getKey());
+            settings.copyTo(newSettings);
+            return newSettings;
+        }
     }
 
 }

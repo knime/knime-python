@@ -94,6 +94,7 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
 
@@ -166,10 +167,6 @@ final class CloseablePythonNodeProxy
         return m_closer.asynchronousClose();
     }
 
-    @Override
-    public String getParameters() {
-        return m_proxy.getParameters();
-    }
 
     @Override
     public String getDialogRepresentation(final String parameters, final String version, final PortObjectSpec[] specs) {
@@ -191,8 +188,8 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public JsonNodeSettings saveSettings() {
-        return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema());
+    public String getParameters() {
+        return m_proxy.getParameters();
     }
 
     private void initTableManager() {

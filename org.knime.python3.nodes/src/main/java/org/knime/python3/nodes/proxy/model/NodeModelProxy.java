@@ -51,7 +51,7 @@ package org.knime.python3.nodes.proxy.model;
 import java.util.Map;
 
 import org.knime.core.util.asynclose.AsynchronousCloseable;
-import org.knime.python3.nodes.JsonNodeSettings;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
  *
@@ -79,6 +79,9 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException> 
 
     void loadValidatedSettings(JsonNodeSettings settings);
 
-    JsonNodeSettings saveSettings();
+    /**
+     * @return the current parameters of the Python node
+     */
+    String getParameters();
 
 }

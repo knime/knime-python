@@ -50,8 +50,8 @@ package org.knime.python3.nodes.proxy.model;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
  * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
@@ -62,7 +62,7 @@ public interface NodeConfigurationProxy extends NodeModelProxy {
 
     /**
      * Performs configure with the proxy.
-     * In order to retrieve changed settings call {@link NodeModelProxy#saveSettings()}.
+     * In order to retrieve changed settings call {@link NodeModelProxy#getParameters()}.
      *
      * @param inSpecs the incoming port specs
      * @param flowVariableProxy for flow variable access

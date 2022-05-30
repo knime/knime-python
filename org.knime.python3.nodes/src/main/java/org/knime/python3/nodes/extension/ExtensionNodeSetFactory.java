@@ -86,10 +86,10 @@ import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.core.webui.page.Page;
 import org.knime.python3.nodes.DelegatingNodeModel;
-import org.knime.python3.nodes.JsonNodeSettings;
 import org.knime.python3.nodes.dialog.DelegatingTextSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.views.HtmlFileNodeView;
 
 /**
@@ -218,10 +218,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getParameters();
                 var schema = proxy.getSchema();
-
-                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(),
-                    m_node.getOutputPortTypes(), new JsonNodeSettings(initialSettings, schema),
-                    s -> new JsonNodeSettings(s, schema));
+                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
+                    new JsonNodeSettings(initialSettings, schema));
             }
         }
 
