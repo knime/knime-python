@@ -1,13 +1,13 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: KNIME Python 3 - Additional Dependencies of OSGi Wrapper for py4j
-Bundle-SymbolicName: org.knime.python3.py4j.dependencies;singleton:=true
+Bundle-Name: KNIME Python 3 Scripting - Additional Dependencies of OSGi Wrapper for py4j
+Bundle-SymbolicName: org.knime.python3.scripting.py4j.dependencies;singleton:=true
 Bundle-Version: 4.6.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Fragment-Host: org.knime.ext.py4j;bundle-version="[0.10.9.2,0.11.0)"
-Automatic-Module-Name: org.knime.python3.py4j.dependencies
+Automatic-Module-Name: org.knime.python3.scripting.py4j.dependencies
 Require-Bundle: org.knime.core.table;bundle-version="[4.5.0,5.0.0)",
  org.knime.python2;bundle-version="[4.5.0,5.0.0)"
 
