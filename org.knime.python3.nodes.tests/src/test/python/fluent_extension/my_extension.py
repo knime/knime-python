@@ -61,10 +61,12 @@ class MyNode:
     def configure(self, config_ctx, schema_1):
         LOGGER.warn("Configuring")
         LOGGER.info("Invisible")
+        config_ctx.set_warning("Configure warning")
         return schema_1, ks.BinaryPortObjectSpec("org.knime.python3.nodes.tests.model")
 
     def execute(self, exec_context, table):
         LOGGER.warn("Executing")
+        exec_context.set_warning("Execute warning")
         return (
             table,
             b"RandomTestData",
