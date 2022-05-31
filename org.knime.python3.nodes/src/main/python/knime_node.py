@@ -398,10 +398,29 @@ class _Node:
 
 _nodes = {}
 
+class NodeType(Enum):
+    """
+    Defines the different node types that are available for Python based nodes.
+    """
+    
+    SOURCE = "Source"
+    """A node producing data."""
+    SINK = "Sink"
+    """A node consuming data."""
+    LEARNER = "Learner"
+    """A node learning a model that is typically consumed by a PREDICTOR."""
+    PREDICTOR = "Predictor"
+    """A node that predicts something typically using a model provided by a LEARNER."""
+    MANIPULATOR = "Manipulator"
+    """A node that manipulates data."""
+    VISUALIZER = "Visualizer"
+    """A node that visualizes data."""
+
+
 # TODO allow to pass in other nodes as after?
 # TODO allow to define categories
 def node(
-    name: str, node_type: str, icon_path: str, category: str, after: str = None
+    name: str, node_type: NodeType, icon_path: str, category: str, after: str = None
 ) -> Callable:
     """
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode instance that should correspond to a node in KNIME.
@@ -409,11 +428,15 @@ def node(
 
     def register(node_factory):
         id = f"{category}/{name}"
+        if isinstance(node_type, NodeType):
+            nt = node_type.value
+        else:
+            nt = "Unknown" 
         n = _Node(
             node_factory=node_factory,
             id=id,
             name=name,
-            node_type=node_type,
+            node_type=nt,
             icon_path=icon_path,
             category=category,
             after=after,
