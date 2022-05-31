@@ -54,6 +54,7 @@ import java.util.Objects;
 
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.python3.Activator;
+import org.knime.python3.FreshPythonGatewayFactory;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
@@ -78,6 +79,8 @@ public final class PythonNodeGatewayFactory {
         .resolve("knime_node_backend.py");
 
     private static final PythonGatewayFactory FACTORY = Activator.GATEWAY_FACTORY;
+
+    private static final PythonGatewayFactory DEBUG_FACTORY = new FreshPythonGatewayFactory();
 
     private PythonNodeGatewayFactory() {
     }
@@ -104,7 +107,10 @@ public final class PythonNodeGatewayFactory {
             .withPreloaded(new PythonExtensionFromModuleName(extensionModule));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
-        var gateway = FACTORY.create(gatewayDescriptionBuilder.build());
+        // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
+        // in the node
+        var factory = PythonExtensionPreferences.debugMode(extensionId) ? DEBUG_FACTORY : FACTORY;
+        var gateway = factory.create(gatewayDescriptionBuilder.build());
         PythonEntryPointUtils.registerPythonValueFactories(gateway.getEntryPoint());
         return gateway;
     }
