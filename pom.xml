@@ -25,19 +25,24 @@
 		<module>org.knime.features.python3.scripting</module>
 		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.python3</module>
+		<module>org.knime.python3.tests</module>
 		<module>org.knime.python3.types</module>
 		<module>org.knime.python3.arrow</module>
-		<!-- 
-			Excluded because the tests currently do not work on Jenkins
-			<module>org.knime.python3.arrow.tests</module> 
-		-->
+		<module>org.knime.python3.arrow.tests</module>
 		<module>org.knime.python3.arrow.types</module>
+		<module>org.knime.python3.arrow.types.tests</module>
 		<module>org.knime.python3.scripting</module>
+		<module>org.knime.python3.scripting.tests</module>
 		<module>org.knime.python3.scripting.nodes</module>
 		<module>org.knime.python3.scripting.py4j.dependencies</module>
 		<module>org.knime.python3.nodes</module>
+		<module>org.knime.python3.nodes.tests</module>
 		<module>org.knime.python3.nodes.py4j.dependencies</module>
 		<module>org.knime.python3.views</module>
+		<!--
+			TODO: Should be enabled once Jenkins supports Python unit tests.
+			<module>org.knime.python3.views.tests</module>
+		-->
 		<module>org.knime.update.python</module>
 	</modules>
 
@@ -117,14 +122,6 @@
 
 	<build>
 		<plugins>
-            <plugin>
-                <groupId>org.eclipse.tycho</groupId>
-                <artifactId>tycho-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- org.knime.python2.tests currently only has abstract test classes -->
-                    <failIfNoTests>false</failIfNoTests>
-                </configuration>
-            </plugin>
 		</plugins>
 	</build>
 </project>
