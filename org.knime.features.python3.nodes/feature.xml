@@ -728,7 +728,6 @@ propagated with or for interoperation with KNIME.
    </license>
 
    <requires>
-      <import feature="org.knime.features.python2" version="4.6.0" match="greaterOrEqual"/>
       <import feature="org.knime.features.base.views" version="4.6.0" match="greaterOrEqual"/>
    </requires>
 
