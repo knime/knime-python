@@ -95,10 +95,10 @@ final class PythonExtensionPreferences {
             .flatMap(ExtensionConfig::getCommand);
     }
 
-    static boolean cacheGateway(final String extensionId) {
+    static boolean debugMode(final String extensionId) {
         return loadConfigs()//
                 .filter(e -> extensionId.equals(e.m_id))//
-                .map(ExtensionConfig::cacheGateway)//
+                .map(ExtensionConfig::debugMode)//
                 .findFirst()//
                 // cache the gateway if not told otherwise
                 .orElse(true);
@@ -133,13 +133,13 @@ final class PythonExtensionPreferences {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>)configEntry.getValue();
             // cache gateways if not told otherwise
-            var cacheGateway = map.containsKey("cache_gateway") ? (boolean)map.get("cache_gateway") : true;
+            var debugMode = map.containsKey("debug_mode") && (boolean)map.get("debug_mode");
             return new ExtensionConfig(//
                 configEntry.getKey(), //
                 (String)map.get("src"), //
                 (String)map.get("conda_env_path"), //
                 (String)map.get("python_executable"),//
-                cacheGateway//
+                debugMode//
                     );
         } catch (RuntimeException ex) {
             LOGGER.errorWithFormat("Failed to parse Python extension config.", ex);
@@ -156,19 +156,19 @@ final class PythonExtensionPreferences {
 
         private String m_pythonExecutable;
 
-        private boolean m_cacheGateway;
+        private boolean m_debugMode;
 
         ExtensionConfig(final String id, final String src, final String condaEnvPath, final String pythonExecutable,
-            final boolean cacheNonExecutionConfig) {
+            final boolean debugMode) {
             m_id = id;
             m_src = src;
             m_condaEnvPath = condaEnvPath;
             m_pythonExecutable = pythonExecutable;
-            m_cacheGateway = cacheNonExecutionConfig;
+            m_debugMode = debugMode;
         }
 
-        boolean cacheGateway() {
-            return m_cacheGateway;
+        boolean debugMode() {
+            return m_debugMode;
         }
 
         Optional<Path> getSrcPath() {

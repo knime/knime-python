@@ -191,10 +191,10 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
         @Override
         public NodeProxyProvider createProxyProvider(final String nodeId) throws InvalidSettingsException {
-            if (PythonExtensionPreferences.cacheGateway(getId())) {
-                return new CachedNodeProxyProvider(this, nodeId);
-            } else {
+            if (PythonExtensionPreferences.debugMode(getId())) {
                 return new PurePythonExtensionNodeProxyProvider(this, nodeId);
+            } else {
+                return new CachedNodeProxyProvider(this, nodeId);
             }
         }
 

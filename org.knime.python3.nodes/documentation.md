@@ -333,10 +333,16 @@ In order to register a Python extension you are developing, you can added to the
 id.of.your.dev.extension:
   src: path/to/your/extension
   conda_env_path: path/to/conda/env
-  cache_gateway: false
+  debug_mode: true
 ```
 Note that you have to specify either `conda_env_path` or `python_executable` because the Analytics Platform doesn't have a bundled environment for your extension installed.
-For debugging it is also advisable to disable gateway caching by setting `cache_gateway: false` because otherwise changes you make to your Python code won't immediately be reflected in the Analytics Platform. Note that you have to restart the Analytics Platform for the `cache_gateway` configuration to take effect.
+For debugging it is also advisable to enable the debug mode by setting `debug_mode: true`.
+The debug mode disables caching of Python processes which allows some of your code changes to be immediately shown in the Analytics Platform.
+Those changes include:
+- Changes to the execute and configure runtime logic
+- Changes to existing parameters e.g. changing the label
+Other changes such as adding a node or changing a node description require a restart of the Analytics Platform to take effect.
+Last but not least, fully enabling and disabling the debug mode also requires a restart.
 
 ## Other Topics
 
@@ -350,4 +356,4 @@ In order to allow for a smooth user experience, the Analytics Platform caches th
 - knime.python.extension.gateway.cache.size: Controls for how many extensions the gateway is cached. If the cache is full and a gateway for a new extension is requested, then the gateway of the least recently used extension is evicted from the cache. The default value is 3.
 - knime.python.extension.gateway.cache.expiration: Controls the time period in seconds after which an unused gateway is removed from the cache. The default is 300 seconds.
 
-It is also possible to disable caching for individual extensions via the config.yml file by adding the property `cache_gateway: false` to the extensions entry. Note that you will have to restart the Analytics Platform for the config change to take effect. By default all extensions use caching.
+It is also possible to disable caching for individual extensions via the config.yml file by adding the property `debug_mode: true` to the extensions entry. Note that you will have to restart the Analytics Platform for the config change to take effect. By default all extensions use caching.
