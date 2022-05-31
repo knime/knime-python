@@ -415,11 +415,12 @@ class _Node:
 
 _nodes = {}
 
+
 class NodeType(Enum):
     """
     Defines the different node types that are available for Python based nodes.
     """
-    
+
     SOURCE = "Source"
     """A node producing data."""
     SINK = "Sink"
@@ -435,30 +436,36 @@ class NodeType(Enum):
 
 
 # TODO allow to pass in other nodes as after?
-# TODO allow to define categories
 def node(
-    name: str, node_type: NodeType, icon_path: str, category: str, after: str = None
+    name: str,
+    node_type: NodeType,
+    icon_path: str,
+    category: str,
+    after: str = None,
+    id: str = None,
 ) -> Callable:
     """
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode instance that should correspond to a node in KNIME.
     """
 
     def register(node_factory):
-        id = f"{category}/{name}"
+        node_id = id if id is not None else node_factory.__name__
+
         if isinstance(node_type, NodeType):
             nt = node_type.value
         else:
-            nt = "Unknown" 
+            nt = "Unknown"
+
         n = _Node(
             node_factory=node_factory,
-            id=id,
+            id=node_id,
             name=name,
             node_type=nt,
             icon_path=icon_path,
             category=category,
             after=after,
         )
-        _nodes[id] = n
+        _nodes[node_id] = n
 
         def port_injector(*args, **kwargs):
             """
