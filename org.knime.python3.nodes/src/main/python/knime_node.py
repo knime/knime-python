@@ -437,6 +437,13 @@ def node(
     return register
 
 
+class InvalidParametersError(Exception):
+    """Error that should be raised if the values of the configured parameters are invalid."""
+
+    def __init__(self, message) -> None:
+        super().__init__(message)
+
+
 def _add_port(node_factory, port_slot: str, port: Port):
     if not hasattr(node_factory, port_slot) or getattr(node_factory, port_slot) is None:
         setattr(node_factory, port_slot, [])

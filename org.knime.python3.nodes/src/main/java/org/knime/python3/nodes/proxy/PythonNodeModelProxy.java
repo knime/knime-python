@@ -198,6 +198,15 @@ public interface PythonNodeModelProxy {
          * @param flowVariables A map of name -> object pairs for the flow variables;
          */
         void set_flow_variables(Map<String, Object> flowVariables); // NOSONAR
+
+        /**
+         * Set a failure of user code.
+         *
+         * @param message a short message that is shown to the node user
+         * @param details a detailed message containing the traceback that is logged in the console
+         * @param invalidSettings if the failure occurred because of invalid settings
+         */
+        void set_failure(String message, String details, boolean invalidSettings);
     }
 
     /**

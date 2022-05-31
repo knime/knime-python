@@ -60,6 +60,7 @@ import knime_node_table as kt
 import importlib
 import json
 import logging
+import traceback
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 
@@ -309,7 +310,11 @@ class _PythonNodeProxy:
 
         # execute
         exec_context.flow_variables = self._get_flow_variables()
-        outputs = self._node.execute(exec_context, *inputs)
+        try:
+            outputs = self._node.execute(exec_context, *inputs)
+        except Exception as ex:
+            self._set_failure(ex, 1)
+            return None
         self._set_flow_variables(exec_context.flow_variables)
 
         if outputs is None:
@@ -348,7 +353,12 @@ class _PythonNodeProxy:
         _push_log_callback(lambda msg: self._java_callback.log(msg))
         inputs = self._specs_to_python(input_specs)
         config_context.flow_variables = self._get_flow_variables()
-        outputs = self._node.configure(config_context, *inputs)
+        try:
+            outputs = self._node.configure(config_context, *inputs)
+        except Exception as ex:
+            self._set_failure(ex, 1)
+            return None
+
         self._set_flow_variables(config_context.flow_variables)
 
         if outputs is None:
@@ -363,6 +373,20 @@ class _PythonNodeProxy:
         ]
         _pop_log_callback()
         return ListConverter().convert(output_specs, kg.client_server._gateway_client)
+
+    def _set_failure(self, ex: Exception, remove_tb_levels=0):
+        # Remove levels from the traceback
+        tb = ex.__traceback__
+        for _ in range(remove_tb_levels):
+            tb = ex.__traceback__.tb_next
+
+        # Format the details: Traceback + Error type + Error
+        details = "".join(traceback.format_exception(etype=type(ex), value=ex, tb=tb))
+
+        # Set the failure in the Java callback
+        self._java_callback.set_failure(
+            str(ex), details, isinstance(ex, kn.InvalidParametersError)
+        )
 
     def _get_flow_variables(self):
         from py4j.java_collections import JavaArray

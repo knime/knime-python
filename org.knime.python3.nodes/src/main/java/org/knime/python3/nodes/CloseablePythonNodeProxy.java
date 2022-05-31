@@ -201,10 +201,11 @@ final class CloseablePythonNodeProxy
 
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
-        final FlowVariablesProxy flowVariablesProxy) throws IOException, CanceledExecutionException {
+        final FlowVariablesProxy flowVariablesProxy) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final PythonExecutionResult executionResult = new PythonExecutionResult();
+        final FailureState failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
@@ -248,6 +249,11 @@ final class CloseablePythonNodeProxy
             public void set_flow_variables(final Map<String, Object> flowVariables) {
                 flowVariablesProxy.setFlowVariables(flowVariables);
             }
+
+            @Override
+            public void set_failure(final String message, final String details, final boolean invalidSettings) {
+                failure.setFailure(message, details, invalidSettings);
+            }
         };
         m_proxy.initializeJavaCallback(callback);
 
@@ -282,8 +288,9 @@ final class CloseablePythonNodeProxy
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
-        final var outputExec = exec.createSubExecutionContext(0.1);
+        failure.throwIfFailure();
 
+        final var outputExec = exec.createSubExecutionContext(0.1);
         executionResult.m_portObjects = pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry
             .convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager, outputExec)).toArray(PortObject[]::new);
         return executionResult;
@@ -306,9 +313,12 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy) {
+    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy)
+        throws InvalidSettingsException {
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+
+        final var failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
@@ -346,6 +356,11 @@ final class CloseablePythonNodeProxy
             public PythonNodeViewSink create_view_sink() throws IOException {
                 throw new IllegalStateException("Cannot create view in configure");
             }
+
+            @Override
+            public void set_failure(final String message, final String details, final boolean invalidSettings) {
+                failure.setFailure(message, details, invalidSettings);
+            }
         };
         m_proxy.initializeJavaCallback(callback);
 
@@ -354,6 +369,7 @@ final class CloseablePythonNodeProxy
         };
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
+        failure.throwIfFailure();
 
         final var outputPortTypeIdentifiers = m_nodeSpec.getOutputPortTypes();
         if (serializedOutSpecs.size() != outputPortTypeIdentifiers.length) {
@@ -394,5 +410,35 @@ final class CloseablePythonNodeProxy
      */
     public static VariableType<?>[] getCompatibleFlowVariableTypes() { //NOSONAR
         return FlowVariableUtils.convertToFlowVariableTypes(KNOWN_FLOW_VARIABLE_TYPES);
+    }
+
+    /** Hold the state of a failure which can be thrown as an exception later */
+    private static final class FailureState {
+        private String m_message;
+
+        private String m_details;
+
+        private boolean m_isInvalidSettings;
+
+        private void setFailure(final String message, final String details, final boolean invalidSettings) {
+            m_message = message;
+            m_details = details;
+            m_isInvalidSettings = invalidSettings;
+        }
+
+        private void throwIfFailure() throws InvalidSettingsException {
+            // Log the details to the warning log
+            if (m_details != null && !m_details.isBlank()) {
+                LOGGER.warn(m_details);
+            }
+            // Throw an exception with the message
+            if (m_message != null) {
+                if (m_isInvalidSettings) {
+                    throw new InvalidSettingsException(m_message);
+                } else {
+                    throw new PythonNodeRuntimeException(m_message);
+                }
+            }
+        }
     }
 }

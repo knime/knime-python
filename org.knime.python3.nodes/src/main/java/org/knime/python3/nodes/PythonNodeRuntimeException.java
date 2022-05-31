@@ -44,39 +44,20 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 31, 2022 (benjamin): created
  */
-package org.knime.python3.nodes.proxy.model;
-
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
-import org.knime.python3.nodes.settings.JsonNodeSettings;
+package org.knime.python3.nodes;
 
 /**
- * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
+ * A {@link RuntimeException} that indicates that an exception occurred in Python code of a pure Python node.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeConfigurationProxy extends NodeModelProxy {
+public final class PythonNodeRuntimeException extends RuntimeException {
 
-    /**
-     * Performs configure with the proxy. In order to retrieve changed settings call
-     * {@link NodeModelProxy#getParameters()}.
-     *
-     * @param inSpecs the incoming port specs
-     * @param flowVariableProxy for flow variable access
-     * @return the output specs of the node
-     * @throws InvalidSettingsException if the node can't be configured because the settings are invalid
-     */
-    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariableProxy)
-        throws InvalidSettingsException;
+    private static final long serialVersionUID = 1L;
 
-    /**
-     * Validates the provided settings.
-     *
-     * @param settings to validate
-     * @throws InvalidSettingsException if the settings are invalid
-     */
-    void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
+    PythonNodeRuntimeException(final String message) {
+        super(message);
+    }
 }

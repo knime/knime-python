@@ -69,10 +69,10 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @return the result of the execution
      * @throws IOException if the data transfer failed
      * @throws CanceledExecutionException if the node execution is canceled
+     * @throws Exception if the node execution failed
      */
     ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy)
-        throws IOException, CanceledExecutionException;
-
+        throws Exception;
 
     /**
      * Encapsulates the result of an execute call.
