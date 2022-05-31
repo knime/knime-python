@@ -201,7 +201,7 @@ final class CloseablePythonNodeProxy
 
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
-        final FlowVariablesProxy flowVariablesProxy) throws Exception {
+        final FlowVariablesProxy flowVariablesProxy, final WarningConsumer warningConsumer) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final PythonExecutionResult executionResult = new PythonExecutionResult();
@@ -285,6 +285,11 @@ final class CloseablePythonNodeProxy
                 }
                 return false;
             }
+
+            @Override
+            public void set_warning(final String message) {
+                warningConsumer.setWarning(message);
+            }
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -313,8 +318,8 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy)
-        throws InvalidSettingsException {
+    public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
+        final WarningConsumer warningConsumer) throws InvalidSettingsException {
         final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
 
@@ -365,6 +370,11 @@ final class CloseablePythonNodeProxy
         m_proxy.initializeJavaCallback(callback);
 
         final var pythonConfigContext = new PythonNodeModelProxy.PythonConfigurationContext() {
+
+            @Override
+            public void set_warning(final String message) {
+                warningConsumer.setWarning(message);
+            }
             // TODO: add flow variables
         };
 

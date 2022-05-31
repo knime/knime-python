@@ -103,9 +103,10 @@ Table = kt.Table
 BatchOutputTable = kt.BatchOutputTable
 
 
-class FlowVariablesContext:
-    def __init__(self, flow_variables) -> None:
+class _BaseContext:
+    def __init__(self, java_ctx, flow_variables) -> None:
         self._flow_variables = flow_variables
+        self._java_ctx = java_ctx
 
     @property
     def flow_variables(self) -> Dict[str, Any]:
@@ -125,26 +126,34 @@ class FlowVariablesContext:
         """
         return self._flow_variables
 
+    def set_warning(self, message: str) -> None:
+        """
+        Sets a warning on the node.
 
-class ConfigurationContext(FlowVariablesContext):
+        Args:
+            message: the warning message to display on the node
+        """
+        self._java_ctx.set_warning(str(message))
+
+
+class ConfigurationContext(_BaseContext):
     """
     The ConfigurationContext provides utilities to communicate with KNIME
     during a node's configure() method.
     """
 
-    def __init__(self, flow_variables) -> None:
-        super().__init__(flow_variables)
+    def __init__(self, java_config_ctx, flow_variables) -> None:
+        super().__init__(java_config_ctx, flow_variables)
 
 
-class ExecutionContext(FlowVariablesContext):
+class ExecutionContext(_BaseContext):
     """
     The ExecutionContext provides utilities to communicate with KNIME during a
     node's execute() method.
     """
 
     def __init__(self, java_exec_ctx, flow_variables) -> None:
-        super().__init__(flow_variables)
-        self._java_exec_ctx = java_exec_ctx
+        super().__init__(java_exec_ctx, flow_variables)
 
     def set_progress(self, progress: float, message: str = None):
         """Set the progress of the execution.
@@ -171,7 +180,7 @@ class ExecutionContext(FlowVariablesContext):
         Nodes can check for this property and return early if the execution does
         not need to finish. Raising a RuntimeError in that case is encouraged.
         """
-        return self._java_exec_ctx.is_canceled()
+        return self._java_ctx.is_canceled()
 
 
 class PythonNode(ABC):

@@ -352,7 +352,7 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg: self._java_callback.log(msg))
         inputs = self._specs_to_python(input_specs)
-        config_context = kn.ConfigurationContext(self._get_flow_variables())
+        config_context = kn.ConfigurationContext(java_config_context, self._get_flow_variables())
         try:
             outputs = self._node.configure(config_context, *inputs)
         except Exception as ex:

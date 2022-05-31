@@ -215,7 +215,7 @@ public interface PythonNodeModelProxy {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public interface PythonExecutionContext {
+    public interface PythonExecutionContext extends PythonConfigurationContext {
         /**
          * Set the current node execution progress
          *
@@ -235,6 +235,8 @@ public interface PythonNodeModelProxy {
          * @return True if the node has been cancelled. Then the Python code should return as soon as possible
          */
         boolean is_canceled();
+
+
     }
 
     /**
@@ -243,6 +245,13 @@ public interface PythonNodeModelProxy {
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
     public interface PythonConfigurationContext {
-        // TODO: add flow variable
+
+        /**
+         * Sets a warning message on the node.
+         *
+         * @param message warning message
+         */
+        void set_warning(final String message);//NOSONAR
+
     }
 }

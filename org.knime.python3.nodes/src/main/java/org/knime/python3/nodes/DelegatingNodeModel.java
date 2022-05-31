@@ -73,6 +73,7 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.utils.FlowVariableUtils;
@@ -83,7 +84,7 @@ import org.knime.python3.utils.FlowVariableUtils;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 // TODO Perhaps move to the extension package?
-public final class DelegatingNodeModel extends NodeModel implements FlowVariablesProxy {
+public final class DelegatingNodeModel extends NodeModel implements FlowVariablesProxy, WarningConsumer {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -113,11 +114,12 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         m_view = Optional.empty();
     }
 
+
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         try (var node = m_proxyProvider.getConfigurationProxy()) {
             node.loadValidatedSettings(m_settings);
-            var result = node.configure(inSpecs, this);
+            var result = node.configure(inSpecs, this, this);
             // allows for auto-configure
             m_settings.update(node.getParameters());
             m_proxyShutdownTracker.closeAsynchronously(node);
@@ -129,13 +131,18 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         try (var node = m_proxyProvider.getExecutionProxy()) {
             node.loadValidatedSettings(m_settings);
-            var result = node.execute(inData, exec, this);
+            var result = node.execute(inData, exec, this, this);
             m_settings.update(node.getParameters());
             m_view = result.getView();
             var objects = result.getPortObjects();
             m_proxyShutdownTracker.closeAsynchronously(node);
             return objects;
         }
+    }
+
+    @Override
+    public void setWarning(final String message) {
+        setWarningMessage(message);
     }
 
     @Override

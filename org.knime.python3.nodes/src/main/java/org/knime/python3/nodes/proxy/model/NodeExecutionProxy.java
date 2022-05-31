@@ -66,13 +66,14 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @param inData the input data of the node
      * @param exec the execution context
      * @param flowVarProxy for access to flow variables
+     * @param warningConsumer for settings warning messages
      * @return the result of the execution
      * @throws IOException if the data transfer failed
      * @throws CanceledExecutionException if the node execution is canceled
      * @throws Exception if the node execution failed
      */
-    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy)
-        throws Exception;
+    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy,
+        WarningConsumer warningConsumer) throws Exception;
 
     /**
      * Encapsulates the result of an execute call.

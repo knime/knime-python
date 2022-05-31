@@ -77,6 +77,19 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException> 
         void setFlowVariables(Map<String, Object> flowVariables);
     }
 
+    /**
+     * Interface that should be implemented by a class that allows to set warning messages.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface WarningConsumer {
+
+        /**
+         * @param message the warning message to show
+         */
+        void setWarning(String message);
+    }
+
     void loadValidatedSettings(JsonNodeSettings settings);
 
     /**
