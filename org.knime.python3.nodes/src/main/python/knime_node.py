@@ -103,73 +103,75 @@ Table = kt.Table
 BatchOutputTable = kt.BatchOutputTable
 
 
-class ConfigurationContext(ABC):
+class FlowVariablesContext:
+    def __init__(self, flow_variables) -> None:
+        self._flow_variables = flow_variables
+
+    @property
+    def flow_variables(self) -> Dict[str, Any]:
+        """
+        The flow variables coming in from KNIME as a dictionary with string keys.
+        The dictionary can be edited and supports flow variables of the following types:
+
+        * bool
+        * list(bool)
+        * float
+        * list(float)
+        * int
+        * list(int)
+        * str
+        * list(str)
+
+        """
+        return self._flow_variables
+
+
+class ConfigurationContext(FlowVariablesContext):
     """
     The ConfigurationContext provides utilities to communicate with KNIME
     during a node's configure() method.
     """
 
-    @abstractproperty
-    def flow_variables(self) -> Dict[str, Any]:
-        """
-        The flow variables coming in from KNIME as a dictionary with string keys.
-        The dictionary can be edited and supports flow variables of the following types:
-
-        * bool
-        * list(bool)
-        * float
-        * list(float)
-        * int
-        * list(int)
-        * str
-        * list(str)
-
-        """
-        pass
+    def __init__(self, flow_variables) -> None:
+        super().__init__(flow_variables)
 
 
-class ExecutionContext(ABC):
+class ExecutionContext(FlowVariablesContext):
     """
-    The ExecutionContext provides utilities to communicate with KNIME during a 
+    The ExecutionContext provides utilities to communicate with KNIME during a
     node's execute() method.
     """
 
-    @abstractproperty
-    def flow_variables(self) -> Dict[str, Any]:
-        """
-        The flow variables coming in from KNIME as a dictionary with string keys.
-        The dictionary can be edited and supports flow variables of the following types:
+    def __init__(self, java_exec_ctx, flow_variables) -> None:
+        super().__init__(flow_variables)
+        self._java_exec_ctx = java_exec_ctx
 
-        * bool
-        * list(bool)
-        * float
-        * list(float)
-        * int
-        * list(int)
-        * str
-        * list(str)
-
-        """
-        pass
-
-    @abstractmethod
     def set_progress(self, progress: float, message: str = None):
-        """
-        Set the 
+        """Set the progress of the execution.
 
         Args:
             progress: a floating point number between 0 and 1
             message: an optional message to display in KNIME with the progress
         """
+        if not isinstance(progress, float):
+            raise ValueError(f"progress must be of type float. Got {type(progress)}.")
+        if progress < 0 or progress > 1:
+            raise ValueError("progress must be between 0 and 1.")
 
-    @abstractmethod
+        if message is None:
+            self._java_exec_ctx.set_progress(progress)
+        else:
+            if not isinstance(message, str):
+                raise ValueError("message must be a str or None.")
+            self._java_exec_ctx.set_progress(progress, message)
+
     def is_canceled(self) -> bool:
         """
         Returns true if this node's execution has been canceled from KNIME.
         Nodes can check for this property and return early if the execution does
         not need to finish. Raising a RuntimeError in that case is encouraged.
         """
-        pass
+        return self._java_exec_ctx.is_canceled()
 
 
 class PythonNode(ABC):

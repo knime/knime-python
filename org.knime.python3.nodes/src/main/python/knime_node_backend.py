@@ -292,7 +292,7 @@ class _PythonNodeProxy:
         self._java_callback = java_callback
 
     def execute(
-        self, input_objects: List[_PythonPortObject], exec_context
+        self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
         _push_log_callback(lambda msg: self._java_callback.log(msg))
 
@@ -309,7 +309,7 @@ class _PythonNodeProxy:
         kt._backend = kat._ArrowBackend(create_python_sink)
 
         # execute
-        exec_context.flow_variables = self._get_flow_variables()
+        exec_context = kn.ExecutionContext(java_exec_context, self._get_flow_variables())
         try:
             outputs = self._node.execute(exec_context, *inputs)
         except Exception as ex:
@@ -348,11 +348,11 @@ class _PythonNodeProxy:
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
     def configure(
-        self, input_specs: List[_PythonPortObjectSpec], config_context
+        self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg: self._java_callback.log(msg))
         inputs = self._specs_to_python(input_specs)
-        config_context.flow_variables = self._get_flow_variables()
+        config_context = kn.ConfigurationContext(self._get_flow_variables())
         try:
             outputs = self._node.configure(config_context, *inputs)
         except Exception as ex:
