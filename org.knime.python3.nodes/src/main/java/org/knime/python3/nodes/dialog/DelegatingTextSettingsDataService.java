@@ -100,13 +100,8 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
 
     @Override
     public void toNodeSettings(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        m_settings.update(extractModelSettings(textSettings));
+        m_settings.update(textSettings);
         m_settings.saveTo(settings.get(SettingsType.MODEL));
-    }
-
-    private static String extractModelSettings(final String textSettings) {
-        // TODO parse using Jackson, and extract the model settings
-        return textSettings;
     }
 
     @Override

@@ -56,7 +56,9 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 
 /**
- * Represents node settings that are created as JSON and stored as NodeSettings.
+ * Represents node settings that are created as JSON and stored as NodeSettings.</br>
+ * The settings consist of the actual parameters of the node as well as the version of AP the settings were created
+ * with.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
@@ -96,7 +98,11 @@ public final class JsonNodeSettings {
         return m_version;
     }
 
-
+    /**
+     * Updates the parameters in this settings object. Also sets the version to the current AP version.
+     *
+     * @param parameters to update with
+     */
     public void update(final String parameters) {
         m_version = KNIMEConstants.VERSION;
         m_parameters = parameters;
@@ -119,6 +125,13 @@ public final class JsonNodeSettings {
         settings.addString(CFG_VERSION, m_version);
     }
 
+    /**
+     * Loads the parameters from the provided settings. This method changes the state of this object. If you want to
+     * load without changing the state use {@link #loadForValidation(NodeSettingsRO)}.
+     *
+     * @param settings to load from
+     * @throws InvalidSettingsException if the settings are invalid i.e. can't be parsed
+     */
     public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         var preprocessed = preprocess(settings);
         m_parameters = m_mapper.toJson(preprocessed);
@@ -140,6 +153,14 @@ public final class JsonNodeSettings {
         m_version = version;
     }
 
+    /**
+     * Loads the parameters from the provided settings and produces a new instance of JsonNodeSettings. This method does
+     * not change the state of this instance.
+     *
+     * @param settings to load from
+     * @return JsonNodeSettings object containing the parameters in settings
+     * @throws InvalidSettingsException if the settings are invalid i.e. can't be parsed
+     */
     public JsonNodeSettings loadForValidation(final NodeSettingsRO settings) throws InvalidSettingsException {
         var preprocessed = preprocess(settings);
         var parameters = m_mapper.toJson(preprocessed);
