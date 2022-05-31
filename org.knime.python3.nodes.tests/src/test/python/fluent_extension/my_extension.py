@@ -29,7 +29,7 @@ class MyParameterGroup:
             raise ValueError("The sum of the parameter exceeds 10")
 
 
-@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category=pycat)
+@kn.node(name="My Node", node_type=kn.NodeType.LEARNER, icon_path="icon.png", category=pycat)
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
 @kn.output_binary(
@@ -73,7 +73,7 @@ class MyNode:
 
 
 @kn.node(
-    name="My Second Node", node_type="Predictor", icon_path="icon.png", category=pycat
+    name="My Second Node", node_type=kn.NodeType.PREDICTOR, icon_path="icon.png", category=pycat
 )
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.input_binary(
@@ -104,7 +104,7 @@ class MySecondNode:
 
 
 @kn.node(
-    name="My Third Node", node_type="Manipulator", icon_path="icon.png", category="/"
+    name="My Third Node", node_type=kn.NodeType.MANIPULATOR, icon_path="icon.png", category="/"
 )
 @kn.input_table(
     name="Input Data", description="The input table. Should contain double columns."
@@ -162,7 +162,7 @@ class MyThirdNode(kn.PythonNode):
         return kn.Table.from_pyarrow(table)
 
 
-@kn.node("No-Op", node_type="Visualizer", icon_path="icon.png", category=pycat)
+@kn.node("No-Op", node_type=kn.NodeType.VISUALIZER, icon_path="icon.png", category=pycat)
 class NoInpOupNode(kn.PythonNode):
     """Node without inputs or outputs that does nothing
 
