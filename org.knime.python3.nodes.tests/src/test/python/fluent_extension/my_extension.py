@@ -174,3 +174,45 @@ class NoInpOupNode(kn.PythonNode):
 
     def execute(self, exec_context: kn.ExecutionContext):
         pass
+
+
+@kn.node(name="Failing Node", node_type="Learner", icon_path="icon.png", category=pycat)
+@kn.input_table(name="Input Data", description="We read data from here")
+@kn.output_table(name="Output Data", description="Whatever the node has produced")
+class FailingNode:
+    """Failing node
+
+    This node fails
+    """
+
+    fail_with_invalid_settings = kn.BoolParameter(
+        "Fail with invalid settings",
+        "if configure should fail because the settings are invalid",
+        False,
+    )
+    fail_on_configure = kn.BoolParameter(
+        "Fail on configure", "if configure should fail", False
+    )
+    fail_on_execute = kn.BoolParameter(
+        "Fail on execute", "if execute should fail", True
+    )
+    use_exec_context_wrong = kn.BoolParameter(
+        "Use exec_context wrong",
+        "fails on execute because the exec_context is called with wrong types",
+        False,
+    )
+
+    def configure(self, config_ctx, schema_1):
+        if self.fail_with_invalid_settings:
+            raise kn.InvalidParametersError("Invalid parameters")
+        if self.fail_on_configure:
+            raise ValueError("Foo bar error description (configure)")
+        return schema_1
+
+    def execute(self, exec_context: kn.ExecutionContext, table):
+        if self.fail_on_execute:
+            raise ValueError("Foo bar error description (execute)")
+        if self.use_exec_context_wrong:
+            exec_context.set_progress("no progress")
+
+        return table
