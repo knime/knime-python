@@ -153,15 +153,6 @@ public interface PythonNodeModelProxy {
      * conventions. Sonar issues caused by this are suppressed.
      */
     public interface Callback {
-        /**
-         * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local
-         * temporary file.
-         *
-         * @param knimeUrl The {@code knime://} URL to resolve to a local path.
-         * @return The resolved local path.
-         * @throws IllegalStateException If resolving the URL failed. Wrapped in a {@code Py4JJavaError} on Python side.
-         */
-        String resolve_knime_url(String knimeUrl); // NOSONAR
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file

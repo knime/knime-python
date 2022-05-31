@@ -79,7 +79,6 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
-import org.knime.python2.kernel.Python2KernelBackend;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.extension.ExtensionNode;
@@ -210,11 +209,6 @@ final class CloseablePythonNodeProxy
         final PythonNodeModelProxy.Callback callback = new Callback() {
 
             @Override
-            public String resolve_knime_url(final String knimeUrl) {
-                return Python2KernelBackend.resolveKnimeUrl(knimeUrl, /* m_nodeContextManager */null);
-            }
-
-            @Override
             public PythonArrowDataSink create_sink() throws IOException {
                 return m_tableManager.createSink();
             }
@@ -326,11 +320,6 @@ final class CloseablePythonNodeProxy
         final var failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
-
-            @Override
-            public String resolve_knime_url(final String knimeUrl) {
-                return Python2KernelBackend.resolveKnimeUrl(knimeUrl, /* m_nodeContextManager */null);
-            }
 
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
