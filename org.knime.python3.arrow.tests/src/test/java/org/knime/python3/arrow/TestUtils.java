@@ -60,6 +60,7 @@ import java.util.UUID;
 import org.knime.core.columnar.store.FileHandle;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
+import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -69,7 +70,6 @@ import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
-import org.knime.python3.SimplePythonCommand;
 
 /**
  * Utilities for Python Arrow data transfer tests.
@@ -78,20 +78,8 @@ import org.knime.python3.SimplePythonCommand;
  */
 public final class TestUtils {
 
-    private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
-
     private TestUtils() {
         // Static utility class
-    }
-
-    /** Create a Python command from the path in the env var PYTHON3_EXEC_PATH */
-    private static PythonCommand getPythonCommand() throws IOException {
-        final String python3path = System.getenv(PYTHON_EXE_ENV);
-        if (python3path != null) {
-            return new SimplePythonCommand(python3path);
-        }
-        throw new IOException(
-            "Please set the environment variable '" + PYTHON_EXE_ENV + "' to the path of the Python 3 executable.");
     }
 
     /**
@@ -144,7 +132,7 @@ public final class TestUtils {
      * @throws InterruptedException
      */
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException, InterruptedException {
-        final PythonCommand command = getPythonCommand();
+        final PythonCommand command = Python3TestUtils.getPythonCommand();
         final String launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //

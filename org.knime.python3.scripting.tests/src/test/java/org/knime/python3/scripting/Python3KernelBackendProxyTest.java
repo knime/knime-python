@@ -84,13 +84,12 @@ import org.knime.core.util.FileUtil;
 import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.PythonCommand;
+import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath.PythonPathBuilder;
-import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
@@ -104,8 +103,6 @@ import org.knime.python3.arrow.TestUtils;
 public class Python3KernelBackendProxyTest {
 
     // TODO: parts of this class are copied from tests of other python3 plug-ins -- consolidate!
-
-    private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
 
     private static final ColumnarSchema COLUMN_SCHEMA = ColumnarSchema.of(STRING, DOUBLE, INT, LONG, STRING);
 
@@ -210,7 +207,7 @@ public class Python3KernelBackendProxyTest {
 
     private static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass)
         throws IOException, InterruptedException {
-        final var command = getPythonCommand();
+        final var command = Python3TestUtils.getPythonCommand();
         final var launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "knime_kernel_test.py").toString();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
@@ -225,15 +222,6 @@ public class Python3KernelBackendProxyTest {
 
     private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException, InterruptedException {
         return openPythonGateway(Python3KernelBackendProxyTestRunner.class);
-    }
-
-    private static PythonCommand getPythonCommand() throws IOException {
-        final String python3path = System.getenv(PYTHON_EXE_ENV);
-        if (python3path != null) {
-            return new SimplePythonCommand(python3path);
-        }
-        throw new IOException(
-            "Please set the environment variable '" + PYTHON_EXE_ENV + "' to the path of the Python 3 executable.");
     }
 
     private ArrowBatchReadStore createTestStore() throws IOException {
