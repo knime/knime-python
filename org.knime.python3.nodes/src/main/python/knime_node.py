@@ -195,7 +195,7 @@ class PythonNode(ABC):
 
     **Example**::
 
-        @kn.node("My Predictor", node_type="Predictor", icon_path="icon.png", category="/")
+        @kn.node("My Predictor", node_type="kn.NodeType.PREDICTOR", icon_path="icon.png", category="/")
         @kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
         @kn.input_table("Data", "The data on which to predict")
         @kn.input_table("Output Data", "The input table with appended double column which holds the predictions")

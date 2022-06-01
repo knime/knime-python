@@ -52,24 +52,103 @@ Classes
 
 
 Python Extension Development
------------------------------
+-------------------------------------
 
-These classes can be used by developers to implement their own python nodes for KNIME. For a more detailed description see the nodes documentation at: `Pure-Python KNIME Node Extensions <https://github.com/knime/knime-python/blob/master/org.knime.python3.nodes/documentation.md>`_
+Nodes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+These classes can be used by developers to implement their own python nodes for KNIME. For a more detailed description see the nodes documentation at:
+`Python Extension Tutorials <https://bitbucket.org/KNIME/knime-python-extension-examples/src/master/tutorials/basic/>`_
 
 .. autoclass:: knime_node.PythonNode
    :members:
    :noindex:
    :inherited-members:
 
-.. autoclass:: knime_node_table.Table
+A node has a type:
+
+.. autoclass:: knime_node.NodeType
    :members:
    :noindex:
    :inherited-members:
+
+
+
+Decorators
+++++++++++++++++++++++++++++++
+These decorators can be used to easily configure your python node.
+
+.. autofunction:: knime_node.node
+   :noindex:
+
+.. autofunction:: knime_node.input_binary
+   :noindex:
+
+.. autofunction:: knime_node.input_table
+   :noindex:
+
+.. autofunction:: knime_node.output_binary
+   :noindex:
+
+.. autofunction:: knime_node.output_table
+   :noindex:
+
+.. autofunction:: knime_node.view
+   :noindex:
+
+Tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``Table`` and ``Schema`` are the two classes that are used to communicate tabular data (Table) during execute,
+or the table structure (Schema) in configure between Python and KNIME.
+
+.. autoclass:: knime_node.Table
+   :members:
+   :noindex:
+   :inherited-members:
+   :special-members: __getitem__
+
 
 .. autoclass:: knime_schema.Schema
    :members:
    :noindex:
    :inherited-members:
+   :special-members: __getitem__
 
 
+.. autoclass:: knime_schema.Column
+   :members:
+   :noindex:
+   :inherited-members:
+   :special-members: __init__
+
+Data Types
+++++++++++++++++++++++++++++++
+These are helper functions to create KNIME compatible datatypes. For instance, if a new column is created.
+
+
+.. autofunction:: knime_schema.int32
+   :noindex:
+
+.. autofunction:: knime_schema.int64
+   :noindex:
+
+.. autofunction:: knime_schema.double
+   :noindex:
+
+.. autofunction:: knime_schema.bool_
+   :noindex:
+
+.. autofunction:: knime_schema.blob
+   :noindex:
+
+.. autofunction:: knime_schema.list_
+   :noindex:
+
+.. autofunction:: knime_schema.struct
+   :noindex:
+
+.. autofunction:: knime_schema.logical
+   :noindex:
 

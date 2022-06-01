@@ -258,7 +258,10 @@ _backend = None
 
 
 class Table(_Tabular):
-    """public API"""
+    """This class serves as public API to create KNIME tables either from pandas or pyarrow.
+    These tables can than be sent back to KNIME.
+    This class has to be instantiated by calling either :func:`~knime_node.Table.from_pyarrow()` or
+    :func:`~knime_node.Table.from_pandas()`"""
 
     def __init__(self):
         raise RuntimeError(
