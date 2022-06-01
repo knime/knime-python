@@ -54,6 +54,7 @@ import java.util.Objects;
 
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.python3.Activator;
+import org.knime.python3.BundledPythonCommand;
 import org.knime.python3.FreshPythonGatewayFactory;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
@@ -65,7 +66,6 @@ import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
-import org.knime.python3.scripting.nodes.prefs.BundledPythonCommand;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**

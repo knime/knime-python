@@ -46,11 +46,9 @@
  * History
  *   May 6, 2020 (marcel): created
  */
-package org.knime.python3.scripting.nodes.prefs;
+package org.knime.python3;
 
 import org.knime.conda.CondaEnvironmentDirectory;
-import org.knime.python3.AbstractCondaPythonCommand;
-import org.knime.python3.PythonCommand;
 
 /**
  * Conda-specific implementation of {@link PythonCommand} that works with bundled Python environments. Allows to build

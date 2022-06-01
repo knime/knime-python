@@ -59,6 +59,7 @@ import org.knime.python2.config.AbstractPythonEnvironmentConfig;
 import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.PythonEnvironmentConfig;
 import org.knime.python2.config.PythonEnvironmentsConfig;
+import org.knime.python3.BundledPythonCommand;
 
 /**
  * The {@link BundledCondaEnvironmentConfig} is a {@link PythonEnvironmentConfig} that points to a bundled conda
