@@ -314,7 +314,7 @@ except ImportError:
     pass
 
 
-def view_matplotlib(fig=None) -> NodeView:
+def view_matplotlib(fig=None, format="png") -> NodeView:
     """Create a view showing the given matplotlib figure.
 
     The figure is displayed by exporting it as an SVG. If no figure is given
@@ -323,12 +323,18 @@ def view_matplotlib(fig=None) -> NodeView:
 
     Args:
         fig: A matplotlib.figure.Figure which should be displayed.
+        format: Format of the view inside the HTML document. Either "png" or "svg".
 
     Raises:
         ImportError: If matplotlib is not available.
         TypeError: If the figure is not a matplotlib figure.
     """
     import matplotlib.figure
+
+    if format not in ["png", "svg"]:
+        raise ValueError(
+            f'unsupported format for matplotlib view: {format}. Use "png" or "svg".'
+        )
 
     if fig is None:
         # Use the current active figure
@@ -340,14 +346,17 @@ def view_matplotlib(fig=None) -> NodeView:
         if not isinstance(fig, matplotlib.figure.Figure):
             raise TypeError("the given object is not a matplotlib figure")
 
-    buffer = io.StringIO()
-    fig.savefig(buffer, format="svg")
+    buffer = io.BytesIO() if format == "png" else io.StringIO()
+    fig.savefig(buffer, format=format)
 
     # Matplotlib remembers every figure in an interal state
     # We remove the figure from the interal state such that the gc can clear the memory
     matplotlib.pyplot.close(fig)
 
-    return view_svg(buffer.getvalue())
+    if format == "png":
+        return view_png(buffer.getvalue())
+    else:
+        return view_svg(buffer.getvalue())
 
 
 def view_seaborn() -> NodeView:

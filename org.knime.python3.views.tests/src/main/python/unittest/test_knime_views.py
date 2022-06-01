@@ -153,9 +153,7 @@ class KnimeViewsTest(unittest.TestCase):
         def check_view(matplotlib_view):
             self.assertIsInstance(matplotlib_view, kv.NodeView)
             self.assertTrue(is_html(matplotlib_view.html))
-            self.assertTrue(
-                'xmlns="http://www.w3.org/2000/svg"' in matplotlib_view.html
-            )
+            self.assertTrue('<img src="data:image/png;base64' in matplotlib_view.html)
 
         import matplotlib.pyplot as plt
         import seaborn as sns
@@ -191,6 +189,24 @@ class KnimeViewsTest(unittest.TestCase):
 
         # This shouldn't do anything
         plt.show()
+
+    def test_matplotlib_view_svg(self):
+        def check_view(matplotlib_view):
+            self.assertIsInstance(matplotlib_view, kv.NodeView)
+            self.assertTrue(is_html(matplotlib_view.html))
+            self.assertTrue(
+                'xmlns="http://www.w3.org/2000/svg"' in matplotlib_view.html
+            )
+
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        data_x = list(range(10))
+        data_y = [i + 2 for i in range(10)]
+
+        # Stateful approach
+        plt.plot(data_x, data_y)
+        check_view(kv.view_matplotlib(format="svg"))
 
 
 if __name__ == "__main__":

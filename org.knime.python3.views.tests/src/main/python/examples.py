@@ -60,8 +60,7 @@ def jpeg_example():
     save_view(jpeg_view, "jpeg_view")
 
 
-def matplotlib_example():
-    print("Generating view from matplotlib figure...")
+def _plot_matplotlib():
     # https://matplotlib.org/stable/gallery/lines_bars_and_markers/bar_stacked.html#sphx-glr-gallery-lines-bars-and-markers-bar-stacked-py
     labels = ["G1", "G2", "G3", "G4", "G5"]
     men_means = [20, 35, 30, 35, 27]
@@ -78,8 +77,20 @@ def matplotlib_example():
     ax.set_ylabel("Scores")
     ax.set_title("Scores by group and gender")
     ax.legend()
+
+    return fig
+
+def matplotlib_example():
+    print("Generating view from matplotlib figure...")
+    fig = _plot_matplotlib()
     mpl_view = kv.view(fig)
     save_view(mpl_view, "mpl_view")
+
+def matplotlib_svg_example():
+    print("Generating SVG view from matplotlib figure...")
+    fig = _plot_matplotlib()
+    mpl_view = kv.view_matplotlib(fig, format="svg")
+    save_view(mpl_view, "mpl_view_svg")
 
 
 def seaborn_example():
@@ -112,4 +123,5 @@ if __name__ == "__main__":
     png_example()
     jpeg_example()
     matplotlib_example()
+    matplotlib_svg_example()
     seaborn_example()
