@@ -571,7 +571,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         try {
             return m_executor.performCancelable(task, cancelable);
         } catch (final ExecutionException ex) {//NOSONAR just holds the interesting exception
-            throw new PythonIOException(ex.getCause());
+            var cause = ex.getCause();
+            if (cause instanceof PythonIOException) {
+                throw (PythonIOException)cause;
+            }
+            throw new PythonIOException(cause);
         }
     }
 
