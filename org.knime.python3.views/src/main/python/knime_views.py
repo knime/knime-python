@@ -304,11 +304,14 @@ class NodeViewSink:
 ##########################################################################
 
 try:
-    # Set the matplotlib backend to svg which is a non-GUI backend
-    # Therefore, plt.show() will do noting
     import matplotlib
 
+    # Set the matplotlib backend to svg which is a non-GUI backend
+    # Therefore, plt.show() will do noting
     matplotlib.use("svg")
+
+    # Set the default figure size to 1014x730 px at 100dpi (size of the view window)
+    matplotlib.rcParams["figure.figsize"] = (10.14, 7.3)
 except ImportError:
     # matplotlib is not available
     pass
