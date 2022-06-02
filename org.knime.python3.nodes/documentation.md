@@ -63,6 +63,7 @@ long_description: This extension provides functionality that everyone wants to h
 group_id: org.knime.python3.nodes.tests # Will be concatenated with the name to an ID
 version: 4.6.0 # First version of the KNIME Analytics Platform, for which this extension can be used
 vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
+license_file: LICENSE.TXT # Best practice: put your LICENSE.TXT next to the knime.yml; otherwise you would need to change to path/to/LICENSE.txt
 ```
 
 The `id` will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
@@ -80,6 +81,7 @@ Recommended project folder structure:
 ├── test
 │   └── test_my_extension.py
 ├── knime.yml
+├── LICENSE.txt
 └── my_conda_env.yml
 ```
 
