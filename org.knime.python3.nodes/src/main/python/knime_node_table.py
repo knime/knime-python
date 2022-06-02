@@ -91,8 +91,8 @@ class _Tabular(ks._Columnar):
         """
         Creates a view of this Table by slicing rows and columns. The slicing syntax is similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names. 
-        
-        The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the Python Script 
+
+        The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the Python Script
         (Labs) node's ReadTable.
 
         Args:
@@ -104,13 +104,12 @@ class _Tabular(ks._Columnar):
         Returns:
             A _TabularView representing a slice of the original Table
 
-        **Examples:**
+        **Example**::
 
-        Get the first 100 rows of columns 1,2,3,4:
-        ``sliced_table = table[1:5, :100]``
+            row_sliced_table = table[:, :100] # Get the first 100 rows
+            column_sliced_table = table[["name", "age"]] # Get all rows of the columns "name" and "age"
+            row_and_column_sliced_table = table[1:5, :100] # Get the first 100 rows of columns 1,2,3,4
 
-        Get all rows of the columns "name" and "age":
-        ``sliced_table = table[["name", "age"]]``
         """
         # we need to return IndexError already here if slicing is an int to end for-loops,
         # otherwise `for i in table` will run forever

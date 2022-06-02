@@ -323,18 +323,16 @@ class Batch(_Tabular, _ReadData):
         Returns:
             A SlicedDataView that can be converted to pandas or pyarrow.
 
-        **Examples:**
+        **Example**::
 
-        Get the full batch:
-        ``full_batch = batch[:]``
+            full_batch = batch[:] # Slice/Get the full batch
 
-        Get the first 100 rows of columns 1,2,3,4:
-        ``sliced_batch = batch[:100, 1:5]``
+            # Slicing works for rows and columns. Column slices can be defined with int's or the column names
+            row_sliced_batch = batch[:100] # Get first 100 rows of the batch
+            column_sliced_batch = batch[:, ["name", "age"]] # Get all rows of the columns "name" and "age"
+            row_and_column_sliced_batch = batch[:100, 1:5] # Get the first 100 rows of columns 1,2,3,4
 
-        Get all rows of the columns "name" and "age":
-        ``sliced_batch = batch[:, ["name", "age"]]``
-
-        The returned `sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
+            # The resulting`sliced_batches` cannot be sliced further. But they can be converted to pandas or pyarrow.
         """
         if isinstance(slicing, Tuple):
             if not 0 < len(slicing) <= 2:
@@ -399,6 +397,8 @@ class ReadTable(_Table, _ReadData):
         Creates a view of this ReadTable by slicing rows and columns. The slicing syntax is similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
+        The returned `sliced_table` cannot be sliced further. But they can be converted to pandas or pyarrow.
+
         Args:
             row_slice:
                 A slice object describing which rows to use.
@@ -408,15 +408,13 @@ class ReadTable(_Table, _ReadData):
         Returns:
             a SlicedDataView that can be converted to pandas or pyarrow.
 
-        **Examples:**
+        **Example**::
 
-        Get the first 100 rows of columns 1,2,3,4:
-        ``sliced_table = table[:100, 1:5]``
+            row_sliced_table = table[:100] # Get the first 100 rows
+            column_sliced_table = table[:, ["name", "age"]] # Get all rows of the columns "name" and "age"
+            row_and_column_sliced_table = table[:100, 1:5] # Get the first 100 rows of columns 1,2,3,4
 
-        Get all rows of the columns "name" and "age":
-        ``sliced_table = table[:, ["name", "age"]]``
-
-        The returned `sliced_tables` cannot be sliced further. But they can be converted to pandas or pyarrow.
+            df = row_and_column_sliced_table.to_pandas()
         """
         if isinstance(slicing, Tuple):
             if not 0 < len(slicing) <= 2:
@@ -511,7 +509,7 @@ def write_table(
 
 def batch_write_table() -> BatchWriteTable:
     """
-    Factory method to create an empty BatchWriteTable that can be filled batch by batch.
+    Factory method to create an empty BatchWriteTable that can be filled sequentially batch by batch (see Example).
 
     **Example**::
 

@@ -61,15 +61,18 @@ _input_tables = []
 
 input_objects: List = _FixedSizeListView(_input_objects, "input_object")
 """
-A list of input objects of this script node using zero-based indices.
-Input objects are Python objects that are passed in from another Python script node's
-``output_object`` port. This can, for instance, be used to pass trained models between Python nodes.
+A list of input objects of this script node using zero-based indices. This list has a fixed size, which is determined 
+by the number of input object ports configured for this node. Input objects are Python objects that are passed in from 
+another Python script node's``output_object`` port. This can, for instance, be used to pass trained models between 
+Python nodes. If no input is given, the list exists but is empty.
 """
 
 input_tables: List[ReadTable] = _FixedSizeListView(_input_tables, "input_table")
 """
-The input tables of this script node. Tables are available in the same order as the port 
-connectors are displayed alongside the node, using zero-based indexing.
+The input tables of this script node. This list has a fixed size, which is determined by the number of input table 
+ports configured for this node.  Tables are available in the same order as the port connectors are displayed 
+alongside the node (from top to bottom), using zero-based indexing. If no input is given, the
+list exists but is empty.
 """
 
 _output_tables = []
@@ -78,9 +81,9 @@ _output_objects = []
 
 output_tables: List[WriteTable] = _FixedSizeListView(_output_tables, "output_table")
 """
-The output tables of this script node. You should assign a WriteTable
-or BatchWriteTable to each output port of this node. See the factory methods
-``knime_io.write_table()`` and ``knime_io.batch_write_table()`` below.
+The output tables of this script node. This list has a fixed size, which is determined by the number of output table 
+ports configured for this node.  You should assign a WriteTable or BatchWriteTable to each output port of this node. 
+See the factory methods ``knime_io.write_table()`` and ``knime_io.batch_write_table()`` below.
 
 **Example**::
 
@@ -89,8 +92,10 @@ or BatchWriteTable to each output port of this node. See the factory methods
 """
 
 output_images: List = _FixedSizeListView(_output_images, "output_image")
-"""The output images of this script node. The value passed to the output port
-should be an array of bytes encoding an SVG or PNG image.
+"""
+The output images of this script node. This list has a fixed size, which is determined by the number of output images
+configured for this node. The value passed to the output port should be an array of bytes encoding an 
+SVG or PNG image.
 
 **Example**::
 
@@ -107,9 +112,9 @@ should be an array of bytes encoding an SVG or PNG image.
 
 output_objects: List = _FixedSizeListView(_output_objects, "output_object")
 """
-The output objects of this script node. Each output object can be an arbitrary 
-Python object as long as it can be *pickled*. Use this to, for example, pass a trained
-model to another Python script node.
+The output objects of this script node. This list has a fixed size, which is determined by the number of output object 
+ports configured for this node. Each output object can be an arbitrary Python object as long as it can be *pickled*. 
+Use this to, for example, pass a trained model to another Python script node.
 
 **Example**::
 
