@@ -120,9 +120,6 @@ public final class PythonBundledEnvironmentTypePreferencePanel
             m_bundledCondaEnvironmentRadioButton = new Button(this, SWT.RADIO);
             m_bundledCondaEnvironmentRadioButton.setText(PythonEnvironmentType.BUNDLED.getName());
             m_bundledCondaEnvironmentRadioButton.setEnabled(isBundledEnvAvailable);
-            m_bundledCondaEnvironmentRadioButton
-                .setToolTipText("Use the Python environment bundled with KNIME. This option is only available "
-                    + "if you have the 'KNIME Python (Labs) - Bundled environment' feature installed.");
 
             m_condaEnvironmentRadioButton = new Button(this, SWT.RADIO);
             m_condaEnvironmentRadioButton.setText(PythonEnvironmentType.CONDA.getName());
