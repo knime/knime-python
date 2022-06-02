@@ -315,6 +315,12 @@ class _PythonNodeProxy:
         except Exception as ex:
             self._set_failure(ex, 1)
             return None
+
+        # Return null if the execution was canceled
+        if exec_context.is_canceled():
+            self._java_callback.set_failure("Canceled", "", False)
+            return None
+
         self._set_flow_variables(exec_context.flow_variables)
 
         if outputs is None:
