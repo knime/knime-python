@@ -152,27 +152,33 @@ class ExecutionContext(_BaseContext):
     node's execute() method.
     """
 
-    def __init__(self, java_exec_ctx, flow_variables) -> None:
-        super().__init__(java_exec_ctx, flow_variables)
+    def __init__(self, java_ctx, flow_variables) -> None:
+        super().__init__(java_ctx, flow_variables)
 
     def set_progress(self, progress: float, message: str = None):
         """Set the progress of the execution.
 
+        Note that the progress that can be set here is 80% of the total progress
+        of a node execution. The first and last 10% are reserved for data
+        transfer and will be set by the framework.
+
         Args:
-            progress: a floating point number between 0 and 1
+            progress: a floating point number between 0.0 and 1.0
             message: an optional message to display in KNIME with the progress
         """
+        if isinstance(progress, int):
+            progress = float(progress)
         if not isinstance(progress, float):
-            raise ValueError(f"progress must be of type float. Got {type(progress)}.")
+            raise TypeError(f"progress must be of type float. Got {type(progress)}.")
         if progress < 0 or progress > 1:
-            raise ValueError("progress must be between 0 and 1.")
+            raise ValueError("progress must be between 0.0 and 1.0.")
 
         if message is None:
-            self._java_exec_ctx.set_progress(progress)
+            self._java_ctx.set_progress(progress)
         else:
             if not isinstance(message, str):
-                raise ValueError("message must be a str or None.")
-            self._java_exec_ctx.set_progress(progress, message)
+                raise TypeError("message must be a str or None.")
+            self._java_ctx.set_progress(progress, message)
 
     def is_canceled(self) -> bool:
         """

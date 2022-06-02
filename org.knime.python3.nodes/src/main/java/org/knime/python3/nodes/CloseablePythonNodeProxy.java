@@ -256,6 +256,7 @@ final class CloseablePythonNodeProxy
                 .toArray(PythonPortObject[]::new);
         exec.setProgress(0.1, "Sending data to Python");
 
+        exec.setMessage(""); // Reset the message -> Only show the message from Python
         var progressMonitor = exec.createSubProgress(0.8);
 
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
