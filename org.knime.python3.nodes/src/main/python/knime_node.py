@@ -170,8 +170,10 @@ class ExecutionContext(_BaseContext):
             progress = float(progress)
         if not isinstance(progress, float):
             raise TypeError(f"progress must be of type float. Got {type(progress)}.")
-        if progress < 0 or progress > 1:
+        if progress < -0.0001 or progress > 1.0001:
+            # NOTE: We are less strict as we say we are because of possible floating point imprecision
             raise ValueError("progress must be between 0.0 and 1.0.")
+        progress = min(1.0, max(0.0, progress))
 
         if message is None:
             self._java_ctx.set_progress(progress)
