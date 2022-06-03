@@ -112,12 +112,12 @@ extension_module: my_extension
 description: My New Extension # Human readable bundle name / description
 long_description: This extension provides functionality that everyone wants to have. # Text describing the extension (optional)
 group_id: org.knime.python3.nodes.tests # Will be concatenated with the name to an ID
-version: 4.6.0 # First version of the KNIME Analytics Platform, for which this extension can be used
+version: 0.1.0 # Version of this Python node extension. Must use three-component semantic versioning for deployment to work.
 vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
 license_file: LICENSE.TXT # Best practice: put your LICENSE.TXT next to the knime.yml; otherwise you would need to change to path/to/LICENSE.txt
 ```
 
-The `id` will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
+The `id` of the extension will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
 
 The extension module will then be put on the Pythonpath and imported by KNIME using `import my_extension`. This module should contain KNIME nodes. Each class decorated with `@kn.node` within this file will become available in KNIME as dedicated node.
 
@@ -136,15 +136,13 @@ Recommended project folder structure:
 └── my_conda_env.yml
 ```
 
-> **TODO**: Prepare a template project
-
-> See `knime-python/org.knime.python3.nodes.tests/src/test/python/fluent_extension` for an example.
+> See [Tutorial 1](#tutorial-1-your-first-python-node-from-scratch) above for an example.
 
 To use this KNIME Python extension locally, set the `knime.python.extension.config` system property either in your KNIME launch configuration's VM arguments in Eclipse. See the chapters **Registering Python extensions during development** and **Customizing the Python executable** at the end of this document.
 
 ## Defining a KNIME Node in Python: Full API
 
-A Python KNIME node should be a class deriving from `KnimePythonNode` and has to implement the `execute` and `configure` methods. The node description is automatically generated from the docstrings of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@kn.node` decorator.
+A Python KNIME node needs to implement the `execute` and `configure` methods, so it will generally be a class. The node description is automatically generated from the docstrings of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@kn.node` decorator.
 
 The simplest possible node does nothing but passing an input table to its output unmodified:
 
@@ -154,49 +152,58 @@ import knime_node as kn
 import knime_table as kt
 import knime_schema as ks
 
-@kn.node(name="My Node", node_type="Learner", icon_path="../icons/icon.png", category="/")
+@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="../icons/icon.png", category="/")
 @kn.input_table(name="Input Data", description="The data to process in my node")
 @kn.output_table("Output Data", "Result of processing in my node")
-class MyNode():
-    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
-        return input_schemas
+class MyNode:
+    def configure(self, config_context, input_table_schema):
+        return input_table_schema
 
-    def execute(self, input_ports: List, exec_context) -> List
-        return [kt.write_table(input_ports[0])]
+    def execute(self, exec_context, input_table)
+        return input_table
 ```
 
 > `@kn.node`'s configuration options are:
 > * name: the name of the node in KNIME
-> * node_type: the type of node, should be one of "Learner", "Manipulator", "Predictor", ...?
-> * icon_path: module-relative path to the PNG file to use as icon. TODO: link icon requirements
-> * category: defines the path to the node inside KNIME's _Node Repository_
+> * node_type: the type of node, one of `kn.NodeType.MANIPULATOR`, `kn.NodeType.LEARNER`, `kn.NodeType.PREDICTOR`, `kn.NodeType.SOURCE`, `kn.NodeType.SINK` or `kn.NodeType.VISUALIZER`
+> * icon_path: module-relative path to a 16x16 pixel PNG file to use as icon
+> * category: defines the path to the node inside KNIME's _Node Repository_.
 
 ### Node port configuration
 
-The number of input and output ports of a node can be configured by decorating the node with `@kn.input_table`, `@kn.input_port`, 
-and respectively `@kn.output_table` and `@kn.output_port`. 
+The number of input and output ports of a node can be configured by decorating the node with `@kn.input_table`, `@kn.input_binary`, 
+and respectively `@kn.output_table` and `@kn.output_binary`. 
 All of these decorators take a `name` and a `description` which will be displayed in the node description.
 The port configuration decorators must be positioned _between_ the `@kn.node` decorator and the decorated objects, and their order determines the order of port connectors of the node in KNIME.
 
 The `_table` variants of the decorators configure the port to consume or produce KNIME tables. 
 
-If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_port` and `@kn.output_port`. This decorator has an additional argument `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be
+If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_binary` and `@kn.output_binary`. This decorator has an additional argument `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be
 connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. 
 The data is expected to have type `bytes`.
 
+The port configuration determines the expected signature of the `configure` and `execute` methods. 
+
+In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. For input table ports, the argument will be of type `kn.Schema`, for binary ports of `kn.BinaryPortObjectSpec`. The `configure` method is expected to return as many parameters as it has output ports configured, again of the types `kn.Schema` for tables and `kn.BinaryPortObjectSpec` for binary data. The order of the arguments and return values must match the order of the input and output port declarations. The arguments and expected return values of `execute` follow the same schema: one argument per input port, one return value per output port. 
+
+Here is an example with two input ports and one output port.
+
 ```python
-@kn.node("My Predictor", node_type="Predictor", icon_path="icon.png", category="/")
+@kn.node("My Predictor", node_type=kn.NodeType.PREDICTOR, icon_path="icon.png", category="/")
 @kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
 @kn.input_table("Data", "The data on which to predict")
+@kn.output_table("Output", "Resulting table")
 class MyPredictor():
-    def configure(self, in_specs: List[Union[kn.Schema, kn.BinaryPortObjectSpec]]):
-        return in_specs[1]
+    def configure(self, config_context, binary_input_spec, table_schema):
+        # We will add one column of type double to the table
+        return table_schema.append(kn.Column(kn.double(), "Predictions"))
     
-    def execute(self, input_data: List[Union[kn.Table, bytes]]):
-        model = self._load_model_from_bytes(input_data[0])
-        table = input_data[1]
-        new_col = model.predict(table.to_pandas()) # TODO: make this work :)
-        return [table.append_column(new_col)]
+    def execute(self, exec_context, trained_model, input_table):
+        model = self._load_model_from_bytes(trained_model)
+        predictions = model.predict(input_table.to_pandas())
+        output_table = input_table
+        output_table["Predictions"] = predictions
+        return kn.Table.from_pandas(output_table)
     
     def _load_model_from_bytes(self, data):
         return pickle.loads(data)
@@ -206,7 +213,7 @@ class MyPredictor():
 
 ### Defining the node's configuration dialog
 
-> **TODO:** Update once https://knime-com.atlassian.net/browse/AP-18300 is done
+> TODO: Ivan add some more info here
 
 The parameters of the KNIME node that should be shown in its configuration dialog are defined in the Python code. We have defined a set of parameter types to use, and these must be placed top level in your node class (they work like Python descriptors).
 
@@ -216,6 +223,8 @@ The availabla parameter types are
 * `kn.DoubleParameter` for floating point numbers
 * `kn.StringParameter` for string parameters
 * `kn.BoolParameter` for boolean parameters
+* `kn.ColumnParameter` for a single column selection
+* `kn.MultiColumnParameter` to select multiple columns
 
 All of those have arguments `label` and `description` as well as a `default_value`.
 
@@ -227,33 +236,33 @@ import knime_schema as ks
 import knime_table as kt
 import pyarrow as pa
 
-@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
-@kn.input_table("input", "table")
-@kn.output_table("output", "table")
-class MyNode():
-    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="peter")
+@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="icon.png", category="/")
+@kn.input_table(name="input", description="table")
+@kn.output_table(name="output", description="table")
+class MyNode:
+    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="foobar")
     
-    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    num_repetitions = kn.IntParameter(label="NumReps", description="How often do we repeat?", default_value=1, min_value=1)
     
     @num_repetitions.validator
     def reps_validator(value):
         if value == 2:
             raise ValueError("I don't like the number 2")
     
-    def configure(self, table_schema) -> ks.Schema:
+    def configure(self, config_context, table_schema):
         out_schema = table_schema
         for i in range(self.num_repetitions):
             out_schema.append(ks.Column(ks.string(), self.name + " Column"))
         return out_schema
     
-    def execute(self, exec_context, table: kt.ReadTable) -> kt.WriteTable:
+    def execute(self, exec_context, table):
         pa_table = table.to_pyarrow()
         col = pa.array([self.name] * len(pa_table))
         field = pa.field(self.name + " Column", type=pa.string())
     
         for i in range(self.num_repetitions):
             pa_table = pa_table.append_column(field, col)
-        return kt.write_table(pa_table)
+        return kn.Table.from_pyarrow(pa_table)
 ```
 
 More involved nodes might have groups of parameters, which will show up in the UI as sections. For these, you can define a class similar to a dataclass but using the `@kn.parameter_group` decorator which will turn this class into a parameter group that can be used inside your node just like the other parameters.
@@ -267,7 +276,7 @@ import knime_table as kt
 import pyarrow as pa
 
 @kn.parameter_group(label="My Settings")
-class MySettings():
+class MySettings:
     name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="peter")
     
     num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
@@ -275,26 +284,26 @@ class MySettings():
     @num_repetitions.validator
     def reps_validator(value):
         if value == 2:
-            raise ValueError("Stupid value!")
+            raise ValueError("I don't like the number 2")
             
 
-@kn.node(name="My Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="icon.png", category="/")
 @kn.input_table("input", "table")
 @kn.output_table("output", "table")
-class MyNode():
+class MyNode:
     settings = MySettings()
     
     @settings.validator
     def settings_validator(values):
         assert len(values["name"]) > values["num_repetitions"]
     
-    def configure(self, table_schema) -> ks.Schema:
+    def configure(self, config_context, table_schema):
         out_schema = table_schema
         for i in range(self.settings.num_repetitions):
             out_schema.append(ks.Column(ks.string(), self.settings.name + " Column"))
         return out_schema
     
-    def execute(self, exec_context, table: kt.ReadTable) -> kt.WriteTable:
+    def execute(self, exec_context, table: kt.ReadTable):
         pa_table = table.to_pyarrow()
         col = pa.array([self.settings.name] * len(pa_table))
         field = pa.field(self.settings.name + " Column", type=pa.string())
@@ -318,7 +327,7 @@ import knime_views as kv
 import seaborn as sns
 
 
-@kn.node(name="My Node", node_type="Manipulator", icon_path="icon.png", category="/")
+@kn.node(name="My Node", node_type=kn.NodeType.VISUALIZER, icon_path="icon.png", category="/")
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.output_view(name="My pretty view", description="Showing a seaborn plot")
 class MyViewNode(kn.PythonNode):
@@ -327,35 +336,14 @@ class MyViewNode(kn.PythonNode):
     This node shows a plot.
     """
 
-    def configure(self, input_schemas: List[ks.Schema]) -> List[ks.Schema]:
-        return []
+    def configure(self, config_context, input_table_schema)
+        pass
 
-    def execute(self, inputs, exec_context):
-        df = inputs[0].to_pandas()
+    def execute(self, exec_context, table):
+        df = table.to_pandas()
         sns.lineplot(x="x", y="y", data=df)
-        return [], kv.view_seaborn()
+        return kv.view_seaborn()
 ```
-
-## Functional Node API
-
-This shall be the preferred flexible and pythonic API to write KNIME nodes where one just has to define a single function that can work on a `Columnar` datastructure `= knime.Table`.
-
-In the background the `@kn.functional_node` will build a full fledged node like described above.
-
-> **TODO:** implement this :)
-
-The simplest functional node looks like this:
-
-```python
-from typing import List
-import knime_node as kn
-
-@kn.functional_node(name="My Functional Node", icon_path="../icons/icon.png", category="/")
-def my_function(inputs: List[kn.Table]) -> List[kn.Table]:
-    return inputs
-```
-
-> See `knime-python/org.knime.python3.arrow.tests/src/test/python/unittest/test_functional_table_api.py` for first experiments with this API
 
 ## Customizing the Python executable
 
