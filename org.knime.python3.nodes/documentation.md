@@ -75,11 +75,13 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 5. Edit the `config.yml` file located just outside of the `tutorial_extension` (for this example, the file already exists with prefilled fields and values, but you would need to manually create it for future extensions that you develop). The contents should be as follows:
 
     ```
+
     <extension_id>:
 
         src: path/to/folder/of/template
 
         conda_env_path: path/to/my_python_env
+
     ```
     where:
 
