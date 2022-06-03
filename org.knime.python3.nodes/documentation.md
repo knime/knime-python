@@ -74,14 +74,36 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 
 5. Edit the `config.yml` file located just outside of the `tutorial_extension` (for this example, the file already exists with prefilled fields and values, but you would need to manually create it for future extensions that you develop). The contents should be as follows:
 
+    ```console
+    conda install knime-python-base packaging -c knime -c conda-forge
     ```
 
+    Note that you __must__ append both the `knime` and `conda-forge` channels to the commands in order for them to work.
+
+5. Edit the `config.yml` file located just outside of the `tutorial_extension` (for this example, the file already exists with prefilled fields and values, but you would need to manually create it for future extensions that you develop). The contents should be as follows:
+
+    ```
     <extension_id>:
 
         src: path/to/folder/of/template
 
         conda_env_path: path/to/my_python_env
+    ```
+    where:
 
+    - `<extension_id>` should be replaced with the `group_id` and `name` values specified in `knime.yml`, combined with a dot.
+    
+    For our example extension, the value for `group_id` is `org.knime`, and the value for `name` is `fluent_extension`, therefore the `<extension_id>` placeholder should be replaced with `org.knime.fluent_extension`.
+    
+    - the `src` field should specify the path to the `tutorial_extension` folder.
+
+    - similarly, the `conda_env_path` field should specify the path to the `conda`/Python environment created in Step 4. On macOS/Linux, you can get this path by activating your environment via `conda activate my_python_env` and then running `which python`.
+
+6. We need to let the KAP know where the `config.yml` is in order to allow it to use our extension and its Python environment. To do this, you need to edit the `knime.ini` of your KAP installation, which is located at `<path-to-your-KAP>/Contents/Eclipse/knime.ini`.
+
+    Append the following line to the end, and modify it to have the correct path to `config.yml`: 
+    ```
+    -Dknime.python.extension.config=path/to/your/config.yml
     ```
     where:
 
@@ -248,9 +270,19 @@ The port configuration determines the expected signature of the `configure` and 
 
 Here is an example with two input ports and one output port.
 
-The port configuration determines the expected signature of the `configure` and `execute` methods. 
+The `@kn.input_table` and `@kn.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
 
-In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. For input table ports, the argument will be of type `kn.Schema`, for binary ports of `kn.BinaryPortObjectSpec`. The `configure` method is expected to return as many parameters as it has output ports configured, again of the types `kn.Schema` for tables and `kn.BinaryPortObjectSpec` for binary data. The order of the arguments and return values must match the order of the input and output port declarations. The arguments and expected return values of `execute` follow the same schema: one argument per input port, one return value per output port. 
+If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_binary` and `@kn.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
+
+The port configuration determines the expected signature of the `configure` and `execute` methods:
+
+- In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. The method is expected to return __as many parameters as it has output ports configured__. The argument and return value types corresponding to the input and output ports are:
+
+    - for __table__ ports, the argument/return value must be of type `kn.Schema`;
+    - for __binary__ ports, the argument/return value must be of type `kn.BinaryPortObjectSpec`.
+
+    Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
+- The arguments and expected return values of the `execute` method follow the same schema: one argument per input port, one return value per output port. 
 
 Here is an example with two input ports and one output port.
 
