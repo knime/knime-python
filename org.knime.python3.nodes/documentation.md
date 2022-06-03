@@ -6,7 +6,9 @@ We introduce a new API to write nodes for KNIME completely in Python.
 
 - [Pure-Python KNIME Node Extensions](#pure-python-knime-node-extensions)
   - [Contents](#contents)
-  - [Tutorial: Your First Python Node From Scratch](#tutorial-your-first-python-node-from-scratch)
+  - [Tutorials](#tutorials)
+    - [Prerequisites](#prerequisites)
+    - [Tutorial 1: Your First Python Node From Scratch](#tutorial-1-your-first-python-node-from-scratch)
   - [Python Node Extension Setup](#python-node-extension-setup)
   - [Defining a KNIME Node in Python: Full API](#defining-a-knime-node-in-python-full-api)
     - [Node port configuration](#node-port-configuration)
@@ -19,31 +21,78 @@ We introduce a new API to write nodes for KNIME completely in Python.
     - [Logging](#logging)
     - [Gateway caching](#gateway-caching)
 
-## Tutorial: Your First Python Node From Scratch
+## Tutorials
+
+### Prerequisites
+Conda installed (Anaconda or Miniconda). Quickest way:
+1. Go to [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
+2. If Windows: download installer and execute
+3. If MacOS: download Miniconda3 MacOSX 64-bit pkg and execute
+4. If Linux: choose your installer and execute the script via terminal
+
+### Tutorial 1: Your First Python Node From Scratch
+
 1. Install the KNIME Analytics Platform (KAP) version 4.6.0 or higher or a Nightly (if Nightly before the release of 4.6.0, use the master update site)
+
 2. Go to File --> Install KNIME Extensions... and search within the `KNIME Labs Extensions` for `KNIME Python Node Development Extension (Labs)`; install it
-3. Copy the extension template (TODO! Until then use `knime-python/org.knime.python3.nodes.tests/src/test/python/fluent_extension`) to some place on your computer; this will be your new extension; note that there is a `knime.yml` which holds information you need in step 5
+
+3. The `tutorial_extension` will be your new extension; note that there is a `knime.yml` which holds information you need in step 5
+
 4. Create a Python environment containing the `knime-python-base` metapackage and for now also `packaging`  
+
     Example via Conda:  
+
     `conda create -n my_python_env python=3.9 packaging knime-python-base -c knime -c conda-forge`
-    If you already have some environment `my_python_env` and want to install only `knime-python-base` and `packaging` on top, use _in that environment_ `conda install knime-python-base packaging -c knime -c conda-forge`; it is indispensable that you take both channels, `knime` and `conda-forge`
-5. Create a text file `config.yml` next to your extension; this will provide a link to your extension and to the used Python environment  
+
+    If you do not know where to put the above line, open either your terminal (MacOS/Linux) or open 'Anaconda Prompt' (Windows).  
+
+    If you already have some environment `my_python_env` *(with Python >= 3.9!)* and want to install only `knime-python-base` and `packaging` on top, use _in that environment_ `conda install knime-python-base packaging -c knime -c conda-forge`; it is indispensable that you take both channels, `knime` and `conda-forge`
+
+5. Create/adjust a text file `config.yml` next to your extension; this will provide a link to your extension and to the used Python environment  
+
     It has the content:
+
     ```
+
     <extension_id>:
+
         src: path/to/folder/of/template
+
         conda_env_path: path/to/my_python_env
+
     ```
-    Replace the two paths accordingly; as <extension_id> use from the `knime.yml` of your extension the `group_id` and `name` and connect them with a dot: `your_group_id.name`
-6. Let the KAP know where the `config.yml` is; this allows the KAP to use the extension and its Python environment; for this go to `<path>/<your-KAP>/Contents\Eclipse\knime.ini`; in that `knime.ini` add the following line at the end and change it accordingly: `-Dorg.knime.python.extension.config=path/to/your/config.yml`
+
+    As <extension_id> use from the `knime.yml` of your extension the `group_id` and `name` and connect them with a dot: `your_group_id.name`.  
+    For the `conda_env_path` you can activate your environment via `conda activate my_python_env` and then `which python` to see the path. Finally, replace the `src` path accordingly.
+
+6. Let the KAP know where the `config.yml` is; this allows the KAP to use the extension and its Python environment; for this go to `<path>/<your-KAP>/Contents\Eclipse\knime.ini`; in that `knime.ini` add the following line at the end and change it accordingly: `-Dknime.python.extension.config=path/to/your/config.yml`
+
 7. Start your KAP
+
 8. You should see the template node in the node repository
-9. Build a new workflow, which has a small `Table Creator` node
-10. Uncomment parameters; congrats, you did your first configuration dialogue!
-11. Uncomment for a second input table; change the `configure` method to reflect the changes in the schema; change execute method to reflect changes
-12. Uncomment to do something in the node
-13. Uncomment to use a parameter
-15. Execute; congrats, you have your first node doing something!
+
+9. Import and open the included testworkflow `Example_with_Python_node.knwf`:  
+    1.  Get familiar with the table 
+    2.  Compare the `my_extension.py` with the node you see in the KAP; in particular, understand where the descriptions and names for the node, the inputs and outputs and parameters come from 
+    3.  Execute the node and check that it has an output table
+
+10. Build your first dialog! In my_extension.py: uncomment the parameters; congrats, you did your first configuration dialog! (also, take a minute to compare names, description and default values between the `my_extension.py` and the dialog)
+
+11. Add your first port! Uncomment the corresponding lines to get a second input table:
+    1.   Uncomment the input table in line 13 
+    2.   Change the `configure` method to reflect the changes in the schema
+    3.   Change the `execute` method to reflect the change of the additional input table
+
+12. Add your first functionality! We will append a new column to the first table and output that new table:
+    1.  `configure`: To inform downstream nodes of the changed schema, we need to change it in the return statement of the `configure` method; for this, we append metadata about a column to the output schema (lines 41f)
+    2.  `execute`: Everything else is done in the execute method; we transform both input tables to Pandas dataframes and append a new column to the first Pandas dataframe (line 48)
+    3.  `execute`: We transform that dataframe back to a KNIME table and return it (line 48)
+
+13. Use your parameters and start logging!
+    1.  `execute`: Use the LOGGER functionality to inform users or for debugging
+    2.  `execute`: Use a parameter to change some table content; we will use a lambda for a row-wise multiplication with the parameter (line 53)
+
+14. Execute; congrats, you have your first node doing something!
 
 
 
