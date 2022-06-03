@@ -63,6 +63,7 @@ import json
 import logging
 import inspect
 import traceback
+import collections
 
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
@@ -145,6 +146,24 @@ class _PythonPortObjectSpec:
         implements = [
             "org.knime.python3.nodes.ports.PythonPortObjects$PythonPortObjectSpec"
         ]
+
+
+class _FlowVariablesDict(collections.UserDict):
+    def __init__(self):
+        super().__init__({})
+        self._locked = False
+
+    def __setitem__(self, key: str, value) -> None:
+        if not isinstance(key, str):
+            raise TypeError("the flow variable name must be a string")
+        if self._locked and key.startswith("knime"):
+            raise ValueError(
+                "setting or changing a flow variable that starts with 'knime' is not allowed"
+            )
+        super().__setitem__(key, value)
+
+    def __delitem__(self, _) -> None:
+        raise RuntimeError("deleting flow variables is not allowed")
 
 
 def _spec_to_python(spec: _PythonPortObjectSpec, port: kn.Port):
@@ -409,11 +428,12 @@ class _PythonNodeProxy:
 
         java_flow_variables = self._java_callback.get_flow_variables()
 
-        flow_variables = {}
+        flow_variables = _FlowVariablesDict()
         for key, value in java_flow_variables.items():
             if isinstance(value, JavaArray):
                 value = [x for x in value]
             flow_variables[key] = value
+        flow_variables._locked = True
         return flow_variables
 
     def _check_flow_variables(self, flow_variables):
