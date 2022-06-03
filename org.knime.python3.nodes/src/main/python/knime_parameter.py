@@ -38,10 +38,12 @@ def _extract_parameters(obj) -> dict:
     for name, param_obj in params.items():
         if param_obj.__kind__ == "parameter":
             result[name] = getattr(obj, name)
-        elif param_obj.__kind__ == "parameter_group":
+        elif _is_group(param_obj):
             result[name] = _extract_parameters(param_obj)
     return result
 
+def _is_group(param):
+    return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
 # TODO version support
 def inject_parameters(obj, parameters: dict, version) -> None:
@@ -90,30 +92,29 @@ def extract_ui_schema(obj) -> dict:
 
 
 def extract_parameter_descriptions(obj) -> dict:
-    descriptions = [
-        param._extract_description(_Scope("#/properties"))
-        for param in _get_parameters(obj).values()
-    ]
-    flattened = []
-    for description in descriptions:
-        if isinstance(description, list):
-            flattened = flattened + description
-        else:
-            flattened.append(description)
     return _extract_parameter_descriptions(obj, _Scope("#/properties"))
 
 
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
+    params = _get_parameters(obj).values()
     descriptions = [
-        param._extract_description(scope) for param in _get_parameters(obj).values()
+        param._extract_description(scope) for param in params
     ]
-    flattened = []
-    for description in descriptions:
-        if isinstance(description, list):
-            flattened = flattened + description
-        else:
-            flattened.append(description)
-    return flattened
+    if any(map(_is_group, params)):
+        # a top-level parameter_group is represented as tab in the dialog
+        # tab descriptions are the only descriptions with nested options
+        tabs = [tab_description for tab_description in descriptions if "options" in tab_description]
+        top_level_options = [description for description in descriptions if not "options" in description]
+        if len(top_level_options) > 0:
+            options_tab = {
+                "name": "Options",
+                "description": "",
+                "options": top_level_options
+            }
+            tabs.insert(0, options_tab)
+        return tabs
+    else:
+        return descriptions
 
 
 def _is_parameter_or_group(obj) -> bool:
@@ -495,6 +496,14 @@ class BoolParameter(_BaseParameter):
     def _get_options(self) -> dict:
         return {"format": "boolean"}
 
+def _flatten(lst: list) -> list:
+    flat = []
+    for e in lst:
+        if isinstance(e, list):
+            flat = flat + _flatten(e)
+        else:
+            flat.append(e)
+    return flat
 
 def parameter_group(label: str):
     """
@@ -627,7 +636,7 @@ def parameter_group(label: str):
                 return {
                     "name": self._label,
                     "description": self.__doc__,
-                    "options": options,
+                    "options": _flatten(options),
                 }
             else:
                 # flatten group
