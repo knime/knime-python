@@ -294,7 +294,7 @@ class _PythonNodeProxy:
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
-        _push_log_callback(lambda msg: self._java_callback.log(msg))
+        _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
 
         inputs = [
             _port_object_to_python(po, self._node.input_ports[idx])
@@ -356,7 +356,7 @@ class _PythonNodeProxy:
     def configure(
         self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
-        _push_log_callback(lambda msg: self._java_callback.log(msg))
+        _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         inputs = self._specs_to_python(input_specs)
         config_context = kn.ConfigurationContext(java_config_context, self._get_flow_variables())
         try:
@@ -461,7 +461,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
         return _PythonNodeProxy(node)
 
     def initializeJavaCallback(self, callback):
-        _push_log_callback(lambda msg: callback.log(msg))
+        _push_log_callback(lambda msg, sev: callback.log(msg, sev))
 
     def retrieveCategoriesAsJson(self, extension_module_name: str) -> str:
         importlib.import_module(extension_module_name)
@@ -533,7 +533,21 @@ class KnimeLogHandler(logging.StreamHandler):
     def emit(self, record: logging.LogRecord):
         if _log_callback is not None:
             msg = self.format(record)
-            _log_callback(msg)
+
+            # Ignore logs from the clientserver to prevent a deadlock
+            if record.name == "py4j.clientserver":
+                return
+
+            if record.levelno >= logging.ERROR:
+                severity = "error"
+            elif record.levelno >= logging.WARNING:
+                severity = "warn"
+            elif record.levelno >= logging.INFO:
+                severity = "info"
+            else:
+                severity = "debug"
+
+            _log_callback(msg, severity)
 
 
 backend = _KnimeNodeBackend()
@@ -556,7 +570,5 @@ def _pop_log_callback():
     _log_callback = callback
 
 
+logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger().addHandler(KnimeLogHandler(backend))
-# I'd like to set the log level to INFO here, but py4j logs some stuff to info while
-# calling into Java and then our log redirection into Java is biting itself :D so no
-# global log setting to INFO possible without other hacks (I didn't google yet).

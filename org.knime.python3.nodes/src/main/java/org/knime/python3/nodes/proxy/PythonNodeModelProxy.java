@@ -174,9 +174,11 @@ public interface PythonNodeModelProxy {
 
         /**
          * Pipe Python logging to KNIME's log facilities
+         *
          * @param msg The log message
+         * @param severity The severity of the log message. One of ["debug", "info", "warn", "error", "coding"].
          */
-        void log(String msg);
+        void log(String msg, String severity);
 
         /**
          * Used to send flow variables from KNIME to Python

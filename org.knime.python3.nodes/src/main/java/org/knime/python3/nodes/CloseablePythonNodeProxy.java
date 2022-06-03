@@ -230,8 +230,8 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public void log(final String msg) {
-                LOGGER.warn(msg);
+            public void log(final String msg, final String severity) {
+                logMessage(msg, severity);
             }
 
             @Override
@@ -333,8 +333,8 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public void log(final String msg) {
-                LOGGER.warn(msg);
+            public void log(final String msg, final String severity) {
+                logMessage(msg, severity);
             }
 
             @Override
@@ -393,6 +393,28 @@ final class CloseablePythonNodeProxy
 
     private static IFileStoreHandler getFileStoreHandler() {
         return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+    }
+
+    private static void logMessage(final String msg, final String severity) {
+        switch (severity) {
+            case "debug":
+                LOGGER.debug(msg);
+                break;
+            case "info":
+                LOGGER.info(msg);
+                break;
+            case "warn":
+                LOGGER.warn(msg);
+                break;
+            case "error":
+                LOGGER.error(msg);
+                break;
+            case "coding":
+                LOGGER.coding(msg);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid log severity: \"" + severity + "\"");
+        }
     }
 
     @Override
