@@ -248,6 +248,12 @@ The port configuration determines the expected signature of the `configure` and 
 
 Here is an example with two input ports and one output port.
 
+The port configuration determines the expected signature of the `configure` and `execute` methods. 
+
+In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. For input table ports, the argument will be of type `kn.Schema`, for binary ports of `kn.BinaryPortObjectSpec`. The `configure` method is expected to return as many parameters as it has output ports configured, again of the types `kn.Schema` for tables and `kn.BinaryPortObjectSpec` for binary data. The order of the arguments and return values must match the order of the input and output port declarations. The arguments and expected return values of `execute` follow the same schema: one argument per input port, one return value per output port. 
+
+Here is an example with two input ports and one output port.
+
 ```python
 @knext.node("My Predictor", node_type=knext.NodeType.PREDICTOR, icon_path="icon.png", category="/")
 @knext.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
