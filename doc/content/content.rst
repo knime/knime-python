@@ -73,11 +73,24 @@ A node has a type:
    :noindex:
    :inherited-members:
 
+A node's configure method receives a configuration context that lets you interact with KNIME
 
+.. autoclass:: knime_node.ConfigurationContext
+   :members:
+   :noindex:
+   :inherited-members:
+
+A node's execute method receives an execution context that lets you interact with KNIME and 
+e.g. check whether the user has cancelled the execution of your Python node.
+
+.. autoclass:: knime_node.ExecutionContext
+   :members:
+   :noindex:
+   :inherited-members:
 
 Decorators
 ++++++++++++++++++++++++++++++
-These decorators can be used to easily configure your python node.
+These decorators can be used to easily configure your Python node.
 
 .. autofunction:: knime_node.node
    :noindex:
