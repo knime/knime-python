@@ -249,8 +249,8 @@ class _PythonNodeProxy:
 
         inputs = self._specs_to_python(specs)
 
-        json_forms_dict = {"result":
-            {
+        json_forms_dict = {
+            "result": {
                 "data": kp.extract_parameters(self._node),
                 "schema": kp.extract_schema(self._node, inputs),
                 "ui_schema": kp.extract_ui_schema(self._node),
@@ -309,7 +309,9 @@ class _PythonNodeProxy:
         kt._backend = kat._ArrowBackend(create_python_sink)
 
         # execute
-        exec_context = kn.ExecutionContext(java_exec_context, self._get_flow_variables())
+        exec_context = kn.ExecutionContext(
+            java_exec_context, self._get_flow_variables()
+        )
         try:
             outputs = self._node.execute(exec_context, *inputs)
         except Exception as ex:
@@ -358,7 +360,9 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         inputs = self._specs_to_python(input_specs)
-        config_context = kn.ConfigurationContext(java_config_context, self._get_flow_variables())
+        config_context = kn.ConfigurationContext(
+            java_config_context, self._get_flow_variables()
+        )
         try:
             outputs = self._node.configure(config_context, *inputs)
         except Exception as ex:
