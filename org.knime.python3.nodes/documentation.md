@@ -30,6 +30,8 @@ Conda installed (Anaconda or Miniconda). Quickest way:
 3. If MacOS: download Miniconda3 MacOSX 64-bit pkg and execute
 4. If Linux: choose your installer and execute the script via terminal
 
+Extract [documentation-files/basic.zip](documentation-files)
+
 ### Tutorial 1: Your First Python Node From Scratch
 
 1. Install the KNIME Analytics Platform (KAP) version 4.6.0 or higher or a Nightly (if Nightly before the release of 4.6.0, use the master update site)
