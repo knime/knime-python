@@ -60,12 +60,23 @@ class MyNode:
 
     def configure(self, config_ctx, schema_1):
         LOGGER.warn("Configuring")
-        LOGGER.info("Invisible")
+        LOGGER.info("Configure info")
         config_ctx.set_warning("Configure warning")
         return schema_1, ks.BinaryPortObjectSpec("org.knime.python3.nodes.tests.model")
 
     def execute(self, exec_context, table):
-        LOGGER.warn("Executing")
+        LOGGER.log(5, "Ignored because loglevel < 10")
+        LOGGER.log(15, "Log with level 15 -> INFO")
+        LOGGER.debug("Executing - DEBUG")
+        LOGGER.info("Executing - INFO")
+        LOGGER.warn("Executing - WARN")
+        LOGGER.error("Executing - ERROR")
+        LOGGER.critical("Executing - CRITICAL")
+        try:
+            raise ValueError("caught exception")
+        except ValueError as e:
+            LOGGER.exception(e)
+
         exec_context.set_warning("Execute warning")
         return (
             table,
