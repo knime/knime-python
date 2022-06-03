@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes.settings;
 
+import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
@@ -68,9 +69,9 @@ public final class JsonNodeSettings {
 
     private String m_parameters;
 
-    private final JsonNodeSettingsMapper m_mapper;
-
     private String m_version;
+
+    private final String m_schema;
 
     /**
      * Constructor.
@@ -79,7 +80,7 @@ public final class JsonNodeSettings {
      * @param schema the JSON schema of the parameters
      */
     public JsonNodeSettings(final String parametersJson, final String schema) {
-        m_mapper = new JsonNodeSettingsMapper(schema);
+        m_schema = schema;
         m_parameters = parametersJson;
         m_version = KNIMEConstants.VERSION;
     }
@@ -115,7 +116,7 @@ public final class JsonNodeSettings {
      */
     public void saveTo(final NodeSettingsWO settings) {
         var tempSettings = new NodeSettings("temp");
-        m_mapper.writeIntoNodeSettings(m_parameters, tempSettings);
+        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, tempSettings);
         try {
             var modelSettings = tempSettings.getNodeSettings("model");
             modelSettings.copyTo(settings);
@@ -134,7 +135,7 @@ public final class JsonNodeSettings {
      */
     public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         var preprocessed = preprocess(settings);
-        m_parameters = m_mapper.toJson(preprocessed);
+        m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
         m_version = settings.getString(CFG_VERSION);
     }
 
@@ -147,8 +148,8 @@ public final class JsonNodeSettings {
         return tmpSettings;
     }
 
-    private JsonNodeSettings(final JsonNodeSettingsMapper mapper, final String parameters, final String version) {
-        m_mapper = mapper;
+    private JsonNodeSettings(final String schema, final String parameters, final String version) {
+        m_schema = schema;
         m_parameters = parameters;
         m_version = version;
     }
@@ -163,9 +164,9 @@ public final class JsonNodeSettings {
      */
     public JsonNodeSettings loadForValidation(final NodeSettingsRO settings) throws InvalidSettingsException {
         var preprocessed = preprocess(settings);
-        var parameters = m_mapper.toJson(preprocessed);
+        var parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
         var version = settings.getString(CFG_VERSION);
-        return new JsonNodeSettings(m_mapper, parameters, version);
+        return new JsonNodeSettings(m_schema, parameters, version);
     }
 
     private static NodeSettings settingsWithoutVersion(final NodeSettings settingsWithVersion) {
