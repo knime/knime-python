@@ -527,7 +527,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
 class KnimeLogHandler(logging.StreamHandler):
     def __init__(self, backend):
         super().__init__(self)
-        self.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+        self.setFormatter(logging.Formatter("%(name)s:%(message)s"))
         self._backend = backend
 
     def emit(self, record: logging.LogRecord):
