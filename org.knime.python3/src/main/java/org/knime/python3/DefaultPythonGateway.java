@@ -48,17 +48,15 @@
  */
 package org.knime.python3;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.ConnectException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.NodeLogger;
 
@@ -79,7 +77,7 @@ import py4j.Py4JServerConnection;
  */
 public final class DefaultPythonGateway<T extends PythonEntryPoint> implements PythonGateway<T> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGateway.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(DefaultPythonGateway.class);
 
     /**
      * Copied from {@code PythonKernel2KernelBackend}.
@@ -112,6 +110,10 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
      */
     private final Integer m_pid;
 
+    private final InputStream m_stdOutput;
+
+    private final InputStream m_stdError;
+
     /**
      * Creates a {@link PythonGateway} to a new Python process.
      *
@@ -125,6 +127,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
      * @throws IOException If creating the Python process or establishing the connection to it failed.
      * @throws InterruptedException If creating the Python process is interrupted (typically by the user)
      */
+    @SuppressWarnings("resource") // the processes streams are closed by the process
     public DefaultPythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
         final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
         throws IOException, InterruptedException {
@@ -134,25 +137,40 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
             final var pb = pythonProcessBuilder;
             Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
+
             pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
             m_process = pb.start();
+            m_stdOutput = new UncloseableInputStream(m_process.getInputStream());
+            m_stdError = new UncloseableInputStream(m_process.getErrorStream());
+            // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
+            // fully functional at this point in time.
+            try (var startupOutputConsumer =
+                PythonGatewayUtils.redirectGatewayOutput(this, LOGGER::debug, LOGGER::debug, 1000)) {//NOSONAR
 
-            @SuppressWarnings("unchecked")
-            final var casted = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
-            m_entryPoint = casted;
-            m_pid = waitForConnection(m_entryPoint, m_process, m_clientServer.getJavaServer());
+                @SuppressWarnings("unchecked")
+                final var casted = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
+                m_entryPoint = casted;
+                m_pid = waitForConnection(m_entryPoint, m_process, m_clientServer.getJavaServer());
 
-            m_entryPoint.registerExtensions(extensions.stream() //
-                .map(PythonExtension::getPythonModule) //
-                .collect(Collectors.toList()));
+                m_entryPoint.registerExtensions(extensions.stream() //
+                    .map(PythonExtension::getPythonModule) //
+                    .collect(Collectors.toList()));
+            }
         } catch (final Throwable th) { // NOSONAR We cannot risk leaking the Python process.
             try {
-                logPostMortem();
                 close();
             } catch (final Exception ex) { // NOSONAR We want to propagate the original error.
                 th.addSuppressed(ex);
             }
-            throw th;
+            if (th instanceof IOException) {
+                throw (IOException)th;
+            } else if (th instanceof RuntimeException) {
+                throw (RuntimeException)th;
+            } else if (th instanceof Error) {
+                throw (Error)th;
+            } else {
+                throw new IOException("Failed to create PythonGateway", th);
+            }
         }
     }
 
@@ -162,7 +180,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         final long start = System.currentTimeMillis();
         final var connectionLatch = new CountDownLatch(1);
         // Make sure that we also count down the latch if the process dies before we managed to set up a connection
-        process.onExit().thenRun(() -> connectionLatch.countDown());
+        process.onExit().thenRun(connectionLatch::countDown);
 
         final var listener = new DefaultGatewayServerListener() {
             @Override
@@ -207,51 +225,21 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
     }
 
     /**
-     * Logs all output of the Python process for diagnostic purposes in case something went wrong during the setup of
-     * the gateway. Note that we only read what is already available without waiting for more output to arrive. The
-     * reason is that in the case of a crash, any potential output will already have been written by the process.
-     * Conversely, if the gateway setup failed due to problems on the Java rather than the Python side (which includes
-     * interrupts due to node cancellation), the process may not write anything at all. Trying to read the process's
-     * outputs exhaustively in such a case would lead to a deadlock.
-     */
-    @SuppressWarnings("resource") // Streams will be closed or have been closed along with process.
-    private void logPostMortem() throws IOException {
-        if (m_process != null) {
-            final var stdoutStream = m_process.getInputStream();
-            final var stdoutWriter = new StringWriter();
-            if (stdoutStream.available() > 0) {
-                IOUtils.copy(stdoutStream, stdoutWriter, StandardCharsets.UTF_8);
-                final String stdout = stdoutWriter.toString();
-                if (!stdout.isBlank()) {
-                    LOGGER.info(stdout);
-                }
-            }
-            final var stderrStream = m_process.getErrorStream();
-            final var stderrWriter = new StringWriter();
-            if (stderrStream.available() > 0) {
-                IOUtils.copy(stderrStream, stderrWriter, StandardCharsets.UTF_8);
-                final String stderr = stderrWriter.toString();
-                if (!stderr.isBlank()) {
-                    LOGGER.error(stderr);
-                }
-            }
-        }
-    }
-
-    /**
+     *
      * @return The Python process's {@code stdout}.
      */
     @Override
     public InputStream getStandardOutputStream() {
-        return m_process.getInputStream();
+        return m_stdOutput;
     }
 
     /**
+     *
      * @return The Python process's {@code stderr}.
      */
     @Override
     public InputStream getStandardErrorStream() {
-        return m_process.getErrorStream();
+        return m_stdError;
     }
 
     /**
@@ -289,5 +277,23 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_process.destroy();
             m_process.destroyForcibly();
         }
+    }
+
+    private static final class UncloseableInputStream extends FilterInputStream {
+
+        UncloseableInputStream(final InputStream input) {
+            super(input);
+        }
+
+        @Override
+        public int read(final byte[] b, final int off, final int len) throws IOException {
+            return in.read(b, off, len);
+        }
+
+        @Override
+        public void close() throws IOException {
+            // don't close the underlying stream
+        }
+
     }
 }

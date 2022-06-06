@@ -44,45 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 18, 2022 (marcel): created
+ *   Jun 5, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+package org.knime.python3.utils;
 
 /**
- * Gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
- * {@link #close() closing} the instance. Python functionality can be accessed via a {@link #getEntryPoint() proxy}.
+ * Tracks multiple {@link AutoCloseable AutoCloseables} and closes them when {@link #close()} is invoked. If any of the
+ * tracked objects throws an exception, then the last such exception is thrown by {@link #close()}.
  *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
- * @param <T> the class of the proxy
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonGateway<T extends PythonEntryPoint> extends Closeable {
+public final class AutoCloser implements AutoCloseable {
+
+    private final AutoCloseable[] m_closeables;
 
     /**
-     * @return The entry point into Python. Calling methods on this object will call Python functions.
+     * @param closeables to close when this AutoCloser is closed
      */
-    T getEntryPoint();
+    public AutoCloser(final AutoCloseable... closeables) {
+        m_closeables = closeables;
+    }
 
     /**
-     * The standard output stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stdout}.
+     * Closes the tracked AutoCloseables. If any of the objects throws an exception, then the last such exception is
+     * thrown after all objects have been closed.
      */
-    InputStream getStandardOutputStream();
-
-    /**
-     * The standard error stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stderr}.
-     */
-    InputStream getStandardErrorStream();
-
     @Override
-    void close() throws IOException;
+    public void close() throws Exception {
+        Exception exception = null;
+        for (var closeable : m_closeables) {
+            try {
+                closeable.close();
+            } catch (Exception ex) {
+                exception = ex;
+            }
+        }
+        if (exception != null) {
+            throw exception;
+        }
+    }
 }

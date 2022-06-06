@@ -44,45 +44,80 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 18, 2022 (marcel): created
+ *   Jun 3, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import org.knime.core.node.NodeLogger;
 
 /**
- * Gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
- * {@link #close() closing} the instance. Python functionality can be accessed via a {@link #getEntryPoint() proxy}.
+ * Asynchronously reads lines from an InputStream and writes it to a Consumer provided in the constructor.
+ * Closing an instance will read all currently available values from the InputStream and then stop.
  *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
- * @param <T> the class of the proxy
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonGateway<T extends PythonEntryPoint> extends Closeable {
+final class AsyncLineRedirector implements Closeable {
 
-    /**
-     * @return The entry point into Python. Calling methods on this object will call Python functions.
-     */
-    T getEntryPoint();
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(AsyncLineRedirector.class);
 
-    /**
-     * The standard output stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stdout}.
-     */
-    InputStream getStandardOutputStream();
+    private final Future<?> m_future;
 
-    /**
-     * The standard error stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stderr}.
-     */
-    InputStream getStandardErrorStream();
+    private final Consumer<String> m_lineConsumer;
+
+    private final BufferedReader m_lineReader;
+
+    private final StoppableInputStream m_stoppableStream;
+
+    private final CountDownLatch m_closeLatch = new CountDownLatch(1);
+
+    private final long m_closeTimeoutInMs;
+
+    AsyncLineRedirector(final Function<Runnable, Future<?>> executor, final InputStream stream, final Consumer<String> lineConsumer, final long closeTimeoutInMs) {
+        m_lineConsumer = lineConsumer;
+        m_stoppableStream = new StoppableInputStream(stream, 100);
+        // we use the system default because that's also what the process uses
+        m_lineReader = new BufferedReader(new InputStreamReader(m_stoppableStream)); // NOSONAR
+        m_closeTimeoutInMs = closeTimeoutInMs;
+        m_future = executor.apply(this::readLines);
+    }
+
+    private void readLines() {
+        String line;
+        try {
+            while ((line = m_lineReader.readLine()) != null) {
+                m_lineConsumer.accept(line);
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException(ex);
+        } finally {
+            m_closeLatch.countDown();
+        }
+    }
 
     @Override
-    void close() throws IOException;
+    public void close() throws IOException {
+        m_stoppableStream.stop();
+        try {
+            if (!m_closeLatch.await(m_closeTimeoutInMs, TimeUnit.MILLISECONDS)) {
+                LOGGER.debugWithFormat("The thread was not stopped within %s ms.", m_closeTimeoutInMs);
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted while waiting for thread to stop.");
+        }
+        m_future.cancel(true);
+        m_lineReader.close();
+    }
+
 }

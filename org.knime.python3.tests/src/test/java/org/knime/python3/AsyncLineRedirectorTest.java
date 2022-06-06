@@ -44,45 +44,62 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 18, 2022 (marcel): created
+ *   Jun 3, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import static org.junit.Assert.assertEquals;
+
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintWriter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
+import org.junit.Test;
 
 /**
- * Gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
- * {@link #close() closing} the instance. Python functionality can be accessed via a {@link #getEntryPoint() proxy}.
  *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
- * @param <T> the class of the proxy
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonGateway<T extends PythonEntryPoint> extends Closeable {
+@SuppressWarnings("javadoc")
+public class AsyncLineRedirectorTest {
 
-    /**
-     * @return The entry point into Python. Calling methods on this object will call Python functions.
-     */
-    T getEntryPoint();
+    private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
 
-    /**
-     * The standard output stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stdout}.
-     */
-    InputStream getStandardOutputStream();
+    @Test
+    public void testConsumesEverythingBeforeClose() throws Exception {
+        test("foo\nbar\nbla\n", w -> {
+            w.println("foo");
+            w.println("bar");
+            w.println("bla");
+        });
+    }
 
-    /**
-     * The standard error stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stderr}.
-     */
-    InputStream getStandardErrorStream();
+    @Test
+    public void testNoNewLine() throws Exception {
+        test("foobarla\n", w -> {
+            w.print("foo");
+            w.print("bar");
+            w.print("la");
+        });
+    }
 
-    @Override
-    void close() throws IOException;
+    public void test(final String expectedOutput, final Consumer<PrintWriter> inputWriter) throws Exception {
+        var output = new StringBuilder();
+        try (//
+                var outputStream = new PipedOutputStream(); //
+                var inputStream = new PipedInputStream(outputStream); //
+                var writer = new PrintWriter(outputStream); //
+        ) {
+            try (var consumer =
+                new AsyncLineRedirector(EXECUTOR::submit, inputStream, l -> output.append(l).append("\n"), 1000)) {
+                inputWriter.accept(writer);
+                writer.flush();
+            }
+        }
+        assertEquals(expectedOutput, output.toString());
+    }
+
 }

@@ -44,45 +44,85 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 18, 2022 (marcel): created
+ *   Jun 3, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Gateway to a Python process. Starts a Python process upon construction of an instance and destroys it when
- * {@link #close() closing} the instance. Python functionality can be accessed via a {@link #getEntryPoint() proxy}.
+ * An {@link InputStream} that can be stopped while the underlying stream is not at the end of file yet.
  *
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
- * @param <T> the class of the proxy
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonGateway<T extends PythonEntryPoint> extends Closeable {
+final class StoppableInputStream extends InputStream {
 
-    /**
-     * @return The entry point into Python. Calling methods on this object will call Python functions.
-     */
-    T getEntryPoint();
+    private final CountDownLatch m_stopper = new CountDownLatch(1);
 
-    /**
-     * The standard output stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stdout}.
-     */
-    InputStream getStandardOutputStream();
+    private final AtomicBoolean m_isRunning = new AtomicBoolean(true);
 
-    /**
-     * The standard error stream of the Python process.
-     * Must properly implement {@link InputStream#available()} i.e. return a value > 0 if there is input available.
-     *
-     * @return The Python process's {@code stderr}.
-     */
-    InputStream getStandardErrorStream();
+    private final InputStream m_in;
+
+    private final long m_waitTimeInMs;
+
+    protected StoppableInputStream(final InputStream in, final long waitTimeInMs) {
+        m_in = in;
+        m_waitTimeInMs = waitTimeInMs;
+    }
 
     @Override
-    void close() throws IOException;
+    public int read() throws IOException {
+        boolean inputAvailable;
+        while ((inputAvailable = isInputAvailable()) || m_isRunning.get()) {
+            if (inputAvailable) {
+                return m_in.read();
+            } else {
+                waitForStop();
+            }
+        }
+        return -1;
+    }
+
+    private boolean isInputAvailable() throws IOException {
+        return m_in.available() > 0;
+    }
+
+    private void waitForStop() {
+        try {
+            m_stopper.await(m_waitTimeInMs, TimeUnit.MILLISECONDS);//NOSONAR
+        } catch (InterruptedException ex) {
+            stop();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public int available() throws IOException {
+        return m_in.available();
+    }
+
+    /**
+     * Sends the stop signal and immediately returns.<br>
+     * This means that any blocked {@link #read()} will return EOF.<br>
+     * Note that this method does not guarantee that the consumer of this stream will have processed all data. Ensuring
+     * that requires external synchronization.
+     */
+    void stop() {
+        m_stopper.countDown();
+        m_isRunning.set(false);
+    }
+
+    /**
+     * Closing this stream has no effect.
+     * It especially doesn't close the delegate stream.
+     */
+    @Override
+    public void close() {
+        // has no effect
+    }
+
 }
