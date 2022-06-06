@@ -125,7 +125,6 @@ public final class PythonNodeGatewayFactory {
         return new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
     }
 
-
     private static final class PythonExtensionFromModuleName implements PythonExtension {
 
         private final String m_moduleName;

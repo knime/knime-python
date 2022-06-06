@@ -51,6 +51,8 @@ package org.knime.python3.nodes;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.io.Closeable;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -65,7 +67,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class CachedObjectTest {
 
     @Mock
-    private AutoCloseable m_closeable;
+    private Closeable m_closeable;
 
     /**
      * When a CachedObject is no longer (or was never) used and is evicted from the cache, then it should close its

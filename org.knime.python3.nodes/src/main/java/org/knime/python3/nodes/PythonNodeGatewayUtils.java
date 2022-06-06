@@ -71,7 +71,7 @@ import org.knime.python3.views.Python3ViewsSourceDirectory;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonGatewayUtils {
+public final class PythonNodeGatewayUtils {
 
     private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
 
@@ -171,7 +171,7 @@ public final class PythonGatewayUtils {
 
     }
 
-    private PythonGatewayUtils() {
+    private PythonNodeGatewayUtils() {
 
     }
 }

@@ -48,6 +48,8 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -87,22 +89,17 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
 
     private static final int CACHE_EXPIRATION_DEFAULT = 300;
 
-    private static final ScheduledExecutorService EXEC_SERVICE = Executors.newScheduledThreadPool(1,
-        new ThreadFactoryBuilder().setNameFormat("python-non-execution-gateway-cleaner-%d").build());
+    private static final ScheduledExecutorService EXEC_SERVICE = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat("python-node-gateway-cache-cleaner-%d").build());
 
     private static final LoadingCache<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> GATEWAY_CACHE =
         createCache();
 
     private static boolean gatewayCacheClosed = false;
 
-    private final ResolvedPythonExtension m_extension;
-
-    private final String m_nodeId;
 
     CachedNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
         super(extension, nodeId);
-        m_extension = extension;
-        m_nodeId = nodeId;
     }
 
     private static int getCacheSize() {
@@ -162,7 +159,7 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         final RemovalNotification<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> notification) {
         try {
             notification.getValue().removeFromCache();
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             LOGGER.error("Failed to close PythonGateway.", ex);
         }
     }
@@ -200,10 +197,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
                 cachedGateway = GATEWAY_CACHE.get(m_extension);
                 cachedGateway.markAsUsed();
             }
-            var gateway = cachedGateway.get();
-            var nodeProxy = m_extension.createProxy(gateway.getEntryPoint(), m_nodeId);
-            var nodeSpec = m_extension.getNode(m_nodeId);
-            return new CloseablePythonNodeProxy(nodeProxy, cachedGateway, nodeSpec);
+            var gateway = new CachedPythonNodeGateway(cachedGateway);
+            return m_proxyFactory.createProxy(gateway);
         } catch (ExecutionException ex) {// NOSONAR ExecutionException is just a wrapper
             var cause = ex.getCause();
             if (cause instanceof InterruptedException) {
@@ -211,6 +206,38 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
             } else {
                 throw new IllegalStateException("Failed to initialize Python gateway.", cause);
             }
+        }
+    }
+
+    private static final class CachedPythonNodeGateway implements PythonGateway<KnimeNodeBackend> {
+
+        private final CachedObject<PythonGateway<KnimeNodeBackend>> m_cachedGateway;
+
+        private final PythonGateway<KnimeNodeBackend> m_delegate;
+
+        CachedPythonNodeGateway(final CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway) {
+            m_cachedGateway = cachedGateway;
+            m_delegate = cachedGateway.get();
+        }
+
+        @Override
+        public KnimeNodeBackend getEntryPoint() {
+            return m_delegate.getEntryPoint();
+        }
+
+        @Override
+        public InputStream getStandardOutputStream() {
+            return m_delegate.getStandardOutputStream();
+        }
+
+        @Override
+        public InputStream getStandardErrorStream() {
+            return m_delegate.getStandardErrorStream();
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_cachedGateway.close();
         }
     }
 

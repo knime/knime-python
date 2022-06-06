@@ -48,6 +48,8 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -56,7 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class CachedObject<T extends AutoCloseable> implements AutoCloseable {
+final class CachedObject<T extends Closeable> implements Closeable {
 
     private final AtomicBoolean m_isCached = new AtomicBoolean(true);
 
@@ -84,7 +86,7 @@ final class CachedObject<T extends AutoCloseable> implements AutoCloseable {
      * Marks this object as no longer cached and closes the delegate if it is no longer in use
      * @throws Exception if the close of the delegate throws an exception
      */
-    void removeFromCache() throws Exception {
+    void removeFromCache() throws IOException {
         if (!m_isCached.getAndSet(false)) {
             throw new IllegalStateException("The current implementation allows for only one removal from the cache.");
         }
@@ -97,14 +99,14 @@ final class CachedObject<T extends AutoCloseable> implements AutoCloseable {
      * The delegate is only closed if it isn't cached anymore.
      */
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         m_isUsed.set(false);
         if (!m_isCached.get()) {
             closeInternal();
         }
     }
 
-    private void closeInternal() throws Exception {//NOSONAR signature of AutoCloseable
+    private void closeInternal() throws IOException {//NOSONAR signature of AutoCloseable
         m_closeable.close();
     }
 

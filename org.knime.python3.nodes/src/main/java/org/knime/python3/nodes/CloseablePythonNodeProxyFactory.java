@@ -44,67 +44,42 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Jun 5, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes;
 
-import java.io.IOException;
-
+import org.knime.core.node.NodeLogger;
+import org.knime.python3.PythonGateway;
+import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
-import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
-import org.knime.python3.nodes.proxy.NodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
-import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
+import org.knime.python3.utils.AutoCloser;
 
 /**
- * {@link NodeProxyProvider} for a KNIME extension written purely in Python.
+ * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
+final class CloseablePythonNodeProxyFactory {
 
-    protected final CloseablePythonNodeProxyFactory m_proxyFactory;
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxyFactory.class);
 
-    protected final ResolvedPythonExtension m_extension;
+    private final ResolvedPythonExtension m_extension;
 
-    PurePythonExtensionNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
+    private final String m_nodeId;
+
+    CloseablePythonNodeProxyFactory(final ResolvedPythonExtension extension, final String nodeId) {
         m_extension = extension;
-        m_proxyFactory = new CloseablePythonNodeProxyFactory(extension, nodeId);
+        m_nodeId = nodeId;
     }
 
-    @Override
-    public NodeConfigurationProxy getConfigurationProxy() {
-        return createPythonNode();
-    }
-
-    @Override
-    public NodeExecutionProxy getExecutionProxy() {
-        return createPythonNode();
-    }
-
-    @Override
-    public CloseableNodeFactoryProxy getNodeFactoryProxy() {
-        return createPythonNode();
-    }
-
-    @Override
-    public NodeDialogProxy getNodeDialogProxy() {
-        return createPythonNode();
-    }
-
-    @SuppressWarnings("resource") // the gateway is managed by the returned object
-    private CloseablePythonNodeProxy createPythonNode() {
-        try {
-            var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
-                m_extension.getEnvironmentName(), m_extension.getExtensionModule());
-            return m_proxyFactory.createProxy(gateway);
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to initialize Python gateway.", ex);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while creating Python gateway.", ex);
-        }
+    @SuppressWarnings("resource") // the closer is closed when the returned object is closed
+    CloseablePythonNodeProxy createProxy(final PythonGateway<KnimeNodeBackend> gateway) {
+        final var backend = gateway.getEntryPoint();
+        var outputRetrieverHandle = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::info, LOGGER::debug, 100);
+        backend.initializeJavaCallback(LOGGER::warn);
+        var nodeProxy = m_extension.createProxy(backend, m_nodeId);
+        var closer = new AutoCloser(gateway, outputRetrieverHandle);
+        return new CloseablePythonNodeProxy(nodeProxy, closer, m_extension.getNode(m_nodeId));
     }
 
 }
