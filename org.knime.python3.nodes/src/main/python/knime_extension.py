@@ -51,10 +51,12 @@ It simplifies import of KNIME-related Python files such that only knime_extensio
 import knime_node_table as _kt
 import knime_node as _kn
 import knime_schema as _ks
+import knime_views as _kv
 
 # re-exporting symbols so that "import knime_extension" allows the user to conduct every KAP-facing call via this interface
 
 ## knime_node
+# (the first bunch comes from knime_parameter)
 IntParameter = _kn.IntParameter
 DoubleParameter = _kn.DoubleParameter
 BoolParameter = _kn.BoolParameter
@@ -105,3 +107,14 @@ PortObjectSpec = _ks.PortObjectSpec
 BinaryPortObjectSpec = _ks.BinaryPortObjectSpec
 Column = _ks.Column
 Schema = _ks.Schema
+
+## knime_views
+view = _kv.view
+view_ipy_repr = _kv.view_ipy_repr
+view_html = _kv.view_html
+view_svg = _kv.view_svg
+view_png = _kv.view_png
+view_jpeg = _kv.view_jpeg
+NodeViewSink = _kv.NodeViewSink
+view_matplotlib = _kv.view_matplotlib
+view_seaborn = _kv.view_seaborn
