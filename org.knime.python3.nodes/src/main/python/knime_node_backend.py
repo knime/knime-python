@@ -49,6 +49,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 """
 
 from typing import List
+from knime_kernel import PythonKernel, lock
 
 import knime_gateway as kg
 import knime_node as kn
@@ -60,15 +61,27 @@ import knime_node_table as kt
 import importlib
 import json
 import logging
+import inspect
 import traceback
+
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
+import py4j.clientserver
 
 # TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here.
 # TODO an alternative could be the use of tuples since we are only interested in comparability
 from packaging.version import parse
 
 # TODO: register extension types
+
+
+def executeOnMainLoop(f):
+    def _wrap(self, *args, **kwargs):
+        global lock
+        with lock:
+            return f(self, *args, **kwargs)
+
+    return _wrap
 
 
 class _PythonPortObject:
@@ -291,6 +304,7 @@ class _PythonNodeProxy:
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
 
+    @executeOnMainLoop
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
@@ -355,6 +369,7 @@ class _PythonNodeProxy:
         _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
+    @executeOnMainLoop
     def configure(
         self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
@@ -365,6 +380,7 @@ class _PythonNodeProxy:
         )
         try:
             outputs = self._node.configure(config_context, *inputs)
+
         except Exception as ex:
             self._set_failure(ex, 1)
             return None
@@ -444,7 +460,7 @@ class _PythonNodeProxy:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
 
 
-class _KnimeNodeBackend(kg.EntryPoint):
+class _KnimeNodeBackend(PythonKernel):
     def __init__(self) -> None:
         super().__init__()
 
@@ -459,7 +475,9 @@ class _KnimeNodeBackend(kg.EntryPoint):
     def createNodeProxy(
         self, module_name: str, python_node_class: str
     ) -> _PythonNodeProxy:
-        module = importlib.import_module(module_name)
+        module = self.executeOnMainThread(
+            inspect.getsource(importlib.import_module(module_name))
+        )
         node_class = getattr(module, python_node_class)
         node = node_class()  # TODO assumes that there is an empty constructor
         return _PythonNodeProxy(node)
@@ -554,8 +572,6 @@ class KnimeLogHandler(logging.StreamHandler):
             _log_callback(msg, severity)
 
 
-backend = _KnimeNodeBackend()
-kg.connect_to_knime(backend)
 _log_callback = None
 _old_log_callbacks = []
 
@@ -573,6 +589,14 @@ def _pop_log_callback():
     callback = _old_log_callbacks.pop()
     _log_callback = callback
 
+
+if __name__ == "__main__":
+    backend = _KnimeNodeBackend()
+    kg.connect_to_knime(backend)
+    py4j.clientserver.server_connection_stopped.connect(
+        lambda *args, **kwargs: backend.exit_main_loop()
+    )
+    backend.enter_main_loop()
 
 logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger().addHandler(KnimeLogHandler(backend))
