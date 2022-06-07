@@ -282,6 +282,7 @@ The port configuration determines the expected signature of the `configure` and 
     - for __binary__ ports, the argument/return value must be of type `kn.BinaryPortObjectSpec`.
 
     Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
+
 - The arguments and expected return values of the `execute` method follow the same schema: one argument per input port, one return value per output port. 
 
 Here is an example with two input ports and one output port.
