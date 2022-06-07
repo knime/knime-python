@@ -241,6 +241,7 @@ The port configuration determines the expected signature of the `configure` and 
     - for __binary__ ports, the argument/return value must be of type `kn.BinaryPortObjectSpec`.
 
     Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
+
 - The arguments and expected return values of the `execute` method follow the same schema: one argument per input port, one return value per output port. 
 
 Here is an example with two input ports and one output port.
@@ -270,26 +271,145 @@ class MyPredictor():
 
 ### Defining the node's configuration dialog
 
-> TODO: Ivan add some more info here
+> Note: for the sake of brevity, in the following code snippets we omit repetitive portions of the code whose utility has already been established and demonstrated earlier.
 
-In order to add parameterization to your node's functionality, we can define and customize its configuration dialog. The user-configurable parameters that should be displayed there are defined using …
+In order to add parameterization to your node's functionality, we can define and customize its configuration dialog. The user-configurable parameters that will be displayed there, and whose values can be accessed inside the `execute` method of the node, are set up using a list of parameter types that have been predefined:
 
-The parameters of the KNIME node that should be shown in its configuration dialog are defined in the Python code. We have defined a set of parameter types to use, and these must be placed top level in your node class (they work like Python descriptors).
-
-The availabla parameter types are
-
-* `kn.IntParameter` for integral numbers
+* `kn.IntParameter` for integer numbers
 * `kn.DoubleParameter` for floating point numbers
 * `kn.StringParameter` for string parameters
 * `kn.BoolParameter` for boolean parameters
 * `kn.ColumnParameter` for a single column selection
-* `kn.MultiColumnParameter` to select multiple columns
+* `kn.MultiColumnParameter` for a multiple column selection
 
-All of those have arguments `label` and `description` as well as a `default_value`.
+All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME, and `default_value`. Certain parameter types support additional arguments, for example the `min_value` and `max_value` for the integer and floating point types. These should be visible via autocompletion in your favourite IDE.
 
-Per-parameter validation can be added similar to Python property setters. Define a function that receives a potential value for the parameter, and decorate it with `@my_parameter_name.validator` as seen in the example below.
+Parameters are defined in the form of class attributes inside the node class definition (similar to Python [descriptors](https://docs.python.org/3/howto/descriptor.html)):
 
 ```python
+@kn.node(…)
+…
+class MyNode:
+    num_repetitions = kn.IntParameter(
+        label="Number of repetitions",
+        description="How often to repeat an action",
+        default_value=42
+    )
+
+    def configure(…):
+        …
+
+    def execute(…):
+        …
+```
+
+While each parameter type listed above has default type validation, they also support custom validation via a property-like decorator notation. By wrapping a function that receives a tentative parameter value, and raises an exception should some condition be violated, with the `@some_param.validator` decorator, you are able to add an additional layer of validation to the parameter `some_param`. This should be done _below_ the definition of the parameter for which you are adding a validator, and _above_ the `configure` and `execute` methods:
+
+```python
+@kn.node(…)
+…
+class MyNode:
+    num_repetitions = kn.IntParameter(
+        label="Number of repetitions",
+        description="How often to repeat an action",
+        default_value=42
+    )
+
+    @num_repetitions.validator
+    def validate_reps(value):
+        if value > 100:
+            raise ValueError("Too many repetitions!")
+
+    def configure(…):
+        …
+
+    def execute(…):
+        …
+```
+
+It is also possible to define groups of parameters, which are displayed as separate sections in the configuration dialog UI. By using the `@kn.parameter_group` decorator with a [dataclass](https://docs.python.org/3/library/dataclasses.html)-like class definition, you are able to encapsulate parameters and, optionally, their validators into a separate entity outside of the node class definition, keeping your code clean and maintainable. A parameter group is linked to a node just like an individual parameter would be:
+
+```python
+@kn.parameter_group(label="My Settings")
+class MySettings:
+    name = kn.StringParameter("Name", "The name of the person", "Bario")
+    
+    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    
+    @num_repetitions.validator
+    def reps_validator(value):
+        if value == 2:
+            raise ValueError("I don't like the number 2")
+
+
+@kn.node(…)
+…
+class MyNodeWithSettings:
+    settings = MySettings()
+    
+    def configure(…):
+        …
+
+    def execute(…):
+        …
+```
+
+Another benefit of defining parameter groups is the ability to provide group validation. As opposed to only being able to validate a single value when attaching a validator to a parameter, group validators have access to the values of all parameters contained in the group, allowing for more complex validation routines.
+
+We provide two ways of defining a group validator, with the `values` argument being a dictionary of `parameter_name` : `parameter_value` mappings:
+
+1. by implementing a `validate(self, values)` method inside the parameter group class definition:
+    ```python
+    @kn.parameter_group(label="My Group")
+    class MyGroup:
+        first_param = kn.IntParameter("Simple Int", "Testing a simple int param", 42)
+
+        second_param = kn.StringParameter("Simple String", "Testing a simple string param", "foo")
+
+        def validate(self, values):
+            if values["first_param"] < len(values["second_param"]):
+                raise ValueError("Params are unbalanced!")
+    ```
+2. by using the familiar `@group_name.validator` decorator notation with a validator function inside the class definition of the "parent" of the group:
+    ```python
+    @kn.parameter_group(label="My Group")
+    class MyGroup:
+        first_param = kn.IntParameter("Simple Int", "Testing a simple int param", 42)
+
+        second_param = kn.StringParameter("Simple String", "Testing a simple string param", "foo")
+
+
+    @kn.node(…)
+    …
+    class MyNode:
+        param_group = MyGroup()
+
+        @param_group.validator
+        def validate_param_group(values):
+            if values["first_param"] < len(values["second_param"]):
+                raise ValueError("Params are unbalanced!")
+    ```
+
+> NOTE: if you define a validator using the first method, and then define another validator for the same group using the second method, the second validator will __override__ the first validator. If you would like to keep __both__ validators active, you can pass the optional `override=False` argument to the decorator: `@param_group.validator(override=False)`.
+
+Intuitively, parameter groups can be nested inside other parameter groups, and their parameter values accessed during the parent group's validation:
+
+```python
+@kn.parameter_group(label="Inner Group")
+class InnerGroup:
+    inner_int = kn.IntParameter("Inner Int", "The inner int param", 1)
+
+@kn.parameter_group(label="Outer Group")
+class OuterGroup:
+    outer_int = kn.IntParameter("Outer Int", "The outer int param", 2)
+    inner_group = InnerGroup()
+
+    def validate(self, values):
+        if values["inner_group"]["inner_int"] > values["outer_int"]:
+            raise ValueError("The inner int should not be larger than the outer!")
+```
+
+<!-- ```python
 import knime_node as kn
 import knime_schema as ks
 import knime_table as kt
@@ -322,11 +442,9 @@ class MyNode:
         for i in range(self.num_repetitions):
             pa_table = pa_table.append_column(field, col)
         return kn.Table.from_pyarrow(pa_table)
-```
+``` -->
 
-More involved nodes might have groups of parameters, which will show up in the UI as sections. For these, you can define a class similar to a dataclass but using the `@kn.parameter_group` decorator which will turn this class into a parameter group that can be used inside your node just like the other parameters.
-
-Validation on group level can be added using the `@my_group_instance.validator`, where the method receives a dictionary containing `parameter_name : value` mappings.
+Let's have a look at a complete node definition, together with a parameter group, without any code omissions:
 
 ```python
 import knime_node as kn
@@ -336,7 +454,9 @@ import pyarrow as pa
 
 @kn.parameter_group(label="My Settings")
 class MySettings:
-    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="peter")
+    name = kn.StringParameter(
+        label="Name",
+        description="This name will be broadcasted...", default_value="peter")
     
     num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
     
