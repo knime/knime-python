@@ -8,7 +8,7 @@ We introduce a new API to write nodes for KNIME completely in Python.
   - [Contents](#contents)
   - [Tutorials](#tutorials)
     - [Prerequisites](#prerequisites)
-    - [Tutorial 1: Writing your first Python node from scratch](#tutorial-1-your-first-python-node-from-scratch)
+    - [Tutorial 1: Writing your first Python node from scratch](#tutorial-1-writing-your-first-python-node-extension-from-scratch)
   - [Python Node Extension Setup](#python-node-extension-setup)
   - [Defining a KNIME Node in Python: Full API](#defining-a-knime-node-in-python-full-api)
     - [Node port configuration](#node-port-configuration)
