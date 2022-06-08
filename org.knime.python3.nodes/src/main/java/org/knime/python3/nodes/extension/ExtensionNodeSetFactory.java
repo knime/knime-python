@@ -268,13 +268,12 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             if (!hasNodeView()) {
                 throw new IllegalStateException("The node has no view.");
             }
-            final var pathToHtml = nodeModel.getPathToHtmlView();
-            if (pathToHtml.isEmpty()) {
-                // FIXME this is just a hack to make dialogs work for nodes without view
-//                throw new IllegalStateException("The node did not return a view.");
+            // FIXME this is just a hack to make dialogs work for nodes without view
+            if (nodeModel.getPathToHtmlView().isEmpty()) {
                 return new DummyNodeView();
             }
-            return new HtmlFileNodeView(pathToHtml.get());
+            return new HtmlFileNodeView(() -> nodeModel.getPathToHtmlView()
+                .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")));
         }
 
         private static final class DummyNodeView implements NodeView {

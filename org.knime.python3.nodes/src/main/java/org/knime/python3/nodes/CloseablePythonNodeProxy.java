@@ -224,7 +224,7 @@ final class CloseablePythonNodeProxy
             @Override
             public PythonNodeViewSink create_view_sink() throws IOException {
                 if (executionResult.m_view == null) {
-                    executionResult.m_view = PathUtils.createTempFile("python_node_view_", "html");
+                    executionResult.m_view = PathUtils.createTempFile("python_node_view_", ".html");
                 }
                 return new PythonNodeViewSink(executionResult.m_view.toAbsolutePath().toString());
             }

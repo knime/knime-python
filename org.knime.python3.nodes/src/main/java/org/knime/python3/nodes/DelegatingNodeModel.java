@@ -71,6 +71,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
@@ -129,6 +130,10 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
+        // Delete the old view file if it exists
+        if (m_view.isPresent()) {
+            PathUtils.deleteFileIfExists(m_view.get());
+        }
         try (var node = m_proxyProvider.getExecutionProxy()) {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this, this);

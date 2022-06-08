@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -68,15 +69,16 @@ import org.knime.core.webui.page.Page;
  */
 public final class HtmlFileNodeView implements NodeView {
 
-    private final Path m_pathToHtml;
+    private final Supplier<Path> m_htmlSupplier;
 
     /**
      * Create a view that shows the HTML document that is saved at the given location.
      *
-     * @param pathToHtml the path to the HTML file. The file must exist and must be readable.
+     * @param htmlSupplier A supplier that provides the path to the HTML file that should be shown currently. The file
+     *            must exist and must be readable.
      */
-    public HtmlFileNodeView(final Path pathToHtml) {
-        m_pathToHtml = pathToHtml;
+    public HtmlFileNodeView(final Supplier<Path> htmlSupplier) {
+        m_htmlSupplier = htmlSupplier;
     }
 
     @Override
@@ -98,7 +100,7 @@ public final class HtmlFileNodeView implements NodeView {
     public Page getPage() {
         return Page.builder(() -> {
             try {
-                return Files.newInputStream(m_pathToHtml);
+                return Files.newInputStream(m_htmlSupplier.get());
             } catch (final IOException e) {
                 // We require the file to exist and be readable
                 // If this is not the case we ended up in an illegal state
