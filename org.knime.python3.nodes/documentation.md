@@ -59,15 +59,15 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
     - `my_extension.py`, which contains Python definitions of the nodes of your extension.
     - `config.yml`, just outside of the folder, contains information that binds your extension and the corresponding `conda`/Python environment with KAP.
 
-4. Create a `conda`/Python environment containing the [`knime-python-base`](https://anaconda.org/knime/knime-python-base) metapackage together with [`packaging`](https://anaconda.org/anaconda/packaging). If you are using `conda`, you can create the environment by running the following command in your terminal (macOS/Linux) or Anaconda Prompt (Windows):
+4. Create a `conda`/Python environment containing the [`knime-python-base`](https://anaconda.org/knime/knime-python-base) metapackage, together with the node development API [`knime-extension`](https://anaconda.org/knime/knime-extension), and [`packaging`](https://anaconda.org/anaconda/packaging). If you are using `conda`, you can create the environment by running the following command in your terminal (macOS/Linux) or Anaconda Prompt (Windows):
 
     ```console
-    conda create -n my_python_env python=3.9 packaging knime-python-base -c knime -c conda-forge
+    conda create -n my_python_env python=3.9 packaging knime-python-base knime-extension -c knime -c conda-forge
     ```
     If you would like to install `knime-python-base` and `packaging` into an already existing environment, you can run the following command _from within that environment_:
 
     ```console
-    conda install knime-python-base packaging -c knime -c conda-forge
+    conda install knime-python-base knime-extension packaging -c knime -c conda-forge
     ```
 
     Note that you __must__ append both the `knime` and `conda-forge` channels to the commands in order for them to work.
@@ -116,7 +116,7 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 11. Add your first port!
 
     To add a second input table to the node, follow these steps (marked by the "Tutorial Step 11" comment):
-    1. Uncomment the `@kn.input_table` decorator on line 13.
+    1. Uncomment the `@knext.input_table` decorator on line 13.
     2. Change the `configure` method's definition to reflect the changes in the schema by commenting line 35 and uncommenting line 36.
     3. Change the `execute` method to reflect the addition of the second input table by commenting line 44 and uncommenting line 45.
 
@@ -159,7 +159,7 @@ license_file: LICENSE.TXT # Best practice: put your LICENSE.TXT next to the knim
 
 The `id` of the extension will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` in order to prevent `id` clashes. For example, a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes`, which are part of `python3`.
 
-The extension module will then be put on the `Pythonpath` and imported by KNIME using `import my_extension`. This Python module should contain the definitions of KNIME nodes. Each class decorated with `@kn.node` within this file will become available in KNIME as a dedicated node.
+The extension module will then be put on the `Pythonpath` and imported by KNIME using `import my_extension`. This Python module should contain the definitions of KNIME nodes. Each class decorated with `@knext.node` within this file will become available in KNIME as a dedicated node.
 
 Recommended project folder structure:
 
@@ -182,19 +182,19 @@ To use this KNIME Python extension locally, set the `knime.python.extension.conf
 
 ## Defining a KNIME Node in Python: Full API
 
-A Python KNIME node needs to implement the `configure` and `execute` methods, so it will generally be a class. The node description is _automatically generated from the docstrings_ of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@kn.node` decorator.
+We provide a `conda` package that includes the full API for node development in Python - `knime-extension` (see [Tutorial 1](#tutorial-1-writing-your-first-python-node-extension-from-scratch) for help in setting up your development `conda` environment). To enable helpful code autocompletion via `import knime_extension as knext`, make sure your IDE of choice's Python interpreter is configured to work in that `conda` environment when you are developing your Python node extension (see [here](https://code.visualstudio.com/docs/python/environments#_work-with-python-interpreters) for help with Visual Studio Code, and [here](https://www.jetbrains.com/help/pycharm/configuring-python-interpreter.html) for PyCharm).
 
-The simplest possible node does nothing but pass an input table to its output unmodified. In the example below, we define a class `MyNode` and indicate that it is a KNIME node by decorating it with `@kn.node`. We then "attach" an input table and an output table to the node by decorating it with `@kn.input_table` and `@kn.output_table` respectively. Finally, we implement the two required methods, `configure` and `execute`.
+A Python KNIME node needs to implement the `configure` and `execute` methods, so it will generally be a class. The node description is _automatically generated from the docstrings_ of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@knext.node` decorator.
+
+The simplest possible node does nothing but pass an input table to its output unmodified. In the example below, we define a class `MyNode` and indicate that it is a KNIME node by decorating it with `@knext.node`. We then "attach" an input table and an output table to the node by decorating it with `@knext.input_table` and `@knext.output_table` respectively. Finally, we implement the two required methods, `configure` and `execute`.
 
 ```python
 from typing import List, Tuple
-import knime_node as kn
-import knime_table as kt
-import knime_schema as ks
+import knime_extension as knext
 
-@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="../icons/icon.png", category="/")
-@kn.input_table(name="Input Data", description="The data to process in my node")
-@kn.output_table("Output Data", "Result of processing in my node")
+@knext.node(name="My Node", node_type=knext.NodeType.MANIPULATOR, icon_path="../icons/icon.png", category="/")
+@knext.input_table(name="Input Data", description="The data to process in my node")
+@knext.output_table("Output Data", "Result of processing in my node")
 class MyNode:
     """
     Node description which will be displayed in KAP.
@@ -206,39 +206,39 @@ class MyNode:
         return input_table
 ```
 
-`@kn.node`'s configuration options are:
+`@knext.node`'s configuration options are:
 
 - __name__: the name of the node in KNIME.
 - __node_type__: the type of the node, one of:
-    - `kn.NodeType.MANIPULATOR`
-    - `kn.NodeType.LEARNER`
-    - `kn.NodeType.PREDICTOR`
-    - `kn.NodeType.SOURCE`
-    - `kn.NodeType.SINK`
-    - `kn.NodeType.VISUALIZER`
+    - `knext.NodeType.MANIPULATOR`
+    - `knext.NodeType.LEARNER`
+    - `knext.NodeType.PREDICTOR`
+    - `knext.NodeType.SOURCE`
+    - `knext.NodeType.SINK`
+    - `knext.NodeType.VISUALIZER`
 - __icon_path__: module-relative path to a 16x16 pixel PNG file to use as icon.
 - __category__: defines the path to the node inside KNIME's _Node Repository_.
 
 ### Node port configuration
 
-The input and output ports of a node can be configured by decorating the node class with `@kn.input_table`, `@kn.input_binary`, and respectively `@kn.output_table` and `@kn.output_binary`. 
+The input and output ports of a node can be configured by decorating the node class with `@knext.input_table`, `@knext.input_binary`, and respectively `@knext.output_table` and `@knext.output_binary`. 
 
 These port decorators have the following properties:
 
 - they take `name` and `description` arguments, which will be displayed in the node description area inside KNIME;
-- they must be positioned _after_ the `@kn.node` decorator and _before_ the decorated object (e.g. the node class);
+- they must be positioned _after_ the `@knext.node` decorator and _before_ the decorated object (e.g. the node class);
 - their order determines the order of the port connectors of the node in KNIME. 
 
-The `@kn.input_table` and `@kn.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
+The `@knext.input_table` and `@knext.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
 
-If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_binary` and `@kn.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
+If you want to receive or send other data, e.g. a trained machine learning model, use `@knext.input_binary` and `@knext.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
 
 The port configuration determines the expected signature of the `configure` and `execute` methods:
 
 - In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. The method is expected to return __as many parameters as it has output ports configured__. The argument and return value types corresponding to the input and output ports are:
 
-    - for __table__ ports, the argument/return value must be of type `kn.Schema`;
-    - for __binary__ ports, the argument/return value must be of type `kn.BinaryPortObjectSpec`.
+    - for __table__ ports, the argument/return value must be of type `knext.Schema`;
+    - for __binary__ ports, the argument/return value must be of type `knext.BinaryPortObjectSpec`.
 
     Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
 
@@ -247,21 +247,21 @@ The port configuration determines the expected signature of the `configure` and 
 Here is an example with two input ports and one output port.
 
 ```python
-@kn.node("My Predictor", node_type=kn.NodeType.PREDICTOR, icon_path="icon.png", category="/")
-@kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
-@kn.input_table("Data", "The data on which to predict")
-@kn.output_table("Output", "Resulting table")
+@knext.node("My Predictor", node_type=knext.NodeType.PREDICTOR, icon_path="icon.png", category="/")
+@knext.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
+@knext.input_table("Data", "The data on which to predict")
+@knext.output_table("Output", "Resulting table")
 class MyPredictor():
     def configure(self, config_context, binary_input_spec, table_schema):
         # We will add one column of type double to the table
-        return table_schema.append(kn.Column(kn.double(), "Predictions"))
+        return table_schema.append(knext.Column(knext.double(), "Predictions"))
     
     def execute(self, exec_context, trained_model, input_table):
         model = self._load_model_from_bytes(trained_model)
         predictions = model.predict(input_table.to_pandas())
         output_table = input_table
         output_table["Predictions"] = predictions
-        return kn.Table.from_pandas(output_table)
+        return knext.Table.from_pandas(output_table)
     
     def _load_model_from_bytes(self, data):
         return pickle.loads(data)
@@ -275,22 +275,22 @@ class MyPredictor():
 
 In order to add parameterization to your node's functionality, we can define and customize its configuration dialog. The user-configurable parameters that will be displayed there, and whose values can be accessed inside the `execute` method of the node, are set up using a list of parameter types that have been predefined:
 
-* `kn.IntParameter` for integer numbers
-* `kn.DoubleParameter` for floating point numbers
-* `kn.StringParameter` for string parameters
-* `kn.BoolParameter` for boolean parameters
-* `kn.ColumnParameter` for a single column selection
-* `kn.MultiColumnParameter` for a multiple column selection
+* `knext.IntParameter` for integer numbers
+* `knext.DoubleParameter` for floating point numbers
+* `knext.StringParameter` for string parameters
+* `knext.BoolParameter` for boolean parameters
+* `knext.ColumnParameter` for a single column selection
+* `knext.MultiColumnParameter` for a multiple column selection
 
 All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME, and `default_value`. Certain parameter types support additional arguments, for example the `min_value` and `max_value` for the integer and floating point types. These should be visible via autocompletion in your favourite IDE.
 
 Parameters are defined in the form of class attributes inside the node class definition (similar to Python [descriptors](https://docs.python.org/3/howto/descriptor.html)):
 
 ```python
-@kn.node(…)
+@knext.node(…)
 …
 class MyNode:
-    num_repetitions = kn.IntParameter(
+    num_repetitions = knext.IntParameter(
         label="Number of repetitions",
         description="How often to repeat an action",
         default_value=42
@@ -306,10 +306,10 @@ class MyNode:
 While each parameter type listed above has default type validation, they also support custom validation via a property-like decorator notation. By wrapping a function that receives a tentative parameter value, and raises an exception should some condition be violated, with the `@some_param.validator` decorator, you are able to add an additional layer of validation to the parameter `some_param`. This should be done _below_ the definition of the parameter for which you are adding a validator, and _above_ the `configure` and `execute` methods:
 
 ```python
-@kn.node(…)
+@knext.node(…)
 …
 class MyNode:
-    num_repetitions = kn.IntParameter(
+    num_repetitions = knext.IntParameter(
         label="Number of repetitions",
         description="How often to repeat an action",
         default_value=42
@@ -327,14 +327,14 @@ class MyNode:
         …
 ```
 
-It is also possible to define groups of parameters, which are displayed as separate sections in the configuration dialog UI. By using the `@kn.parameter_group` decorator with a [dataclass](https://docs.python.org/3/library/dataclasses.html)-like class definition, you are able to encapsulate parameters and, optionally, their validators into a separate entity outside of the node class definition, keeping your code clean and maintainable. A parameter group is linked to a node just like an individual parameter would be:
+It is also possible to define groups of parameters, which are displayed as separate sections in the configuration dialog UI. By using the `@knext.parameter_group` decorator with a [dataclass](https://docs.python.org/3/library/dataclasses.html)-like class definition, you are able to encapsulate parameters and, optionally, their validators into a separate entity outside of the node class definition, keeping your code clean and maintainable. A parameter group is linked to a node just like an individual parameter would be:
 
 ```python
-@kn.parameter_group(label="My Settings")
+@knext.parameter_group(label="My Settings")
 class MySettings:
-    name = kn.StringParameter("Name", "The name of the person", "Bario")
+    name = knext.StringParameter("Name", "The name of the person", "Bario")
     
-    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    num_repetitions = knext.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
     
     @num_repetitions.validator
     def reps_validator(value):
@@ -342,7 +342,7 @@ class MySettings:
             raise ValueError("I don't like the number 2")
 
 
-@kn.node(…)
+@knext.node(…)
 …
 class MyNodeWithSettings:
     settings = MySettings()
@@ -360,11 +360,11 @@ We provide two ways of defining a group validator, with the `values` argument be
 
 1. by implementing a `validate(self, values)` method inside the parameter group class definition:
     ```python
-    @kn.parameter_group(label="My Group")
+    @knext.parameter_group(label="My Group")
     class MyGroup:
-        first_param = kn.IntParameter("Simple Int", "Testing a simple int param", 42)
+        first_param = knext.IntParameter("Simple Int", "Testing a simple int param", 42)
 
-        second_param = kn.StringParameter("Simple String", "Testing a simple string param", "foo")
+        second_param = knext.StringParameter("Simple String", "Testing a simple string param", "foo")
 
         def validate(self, values):
             if values["first_param"] < len(values["second_param"]):
@@ -372,14 +372,14 @@ We provide two ways of defining a group validator, with the `values` argument be
     ```
 2. by using the familiar `@group_name.validator` decorator notation with a validator function inside the class definition of the "parent" of the group:
     ```python
-    @kn.parameter_group(label="My Group")
+    @knext.parameter_group(label="My Group")
     class MyGroup:
-        first_param = kn.IntParameter("Simple Int", "Testing a simple int param", 42)
+        first_param = knext.IntParameter("Simple Int", "Testing a simple int param", 42)
 
-        second_param = kn.StringParameter("Simple String", "Testing a simple string param", "foo")
+        second_param = knext.StringParameter("Simple String", "Testing a simple string param", "foo")
 
 
-    @kn.node(…)
+    @knext.node(…)
     …
     class MyNode:
         param_group = MyGroup()
@@ -395,13 +395,13 @@ We provide two ways of defining a group validator, with the `values` argument be
 Intuitively, parameter groups can be nested inside other parameter groups, and their parameter values accessed during the parent group's validation:
 
 ```python
-@kn.parameter_group(label="Inner Group")
+@knext.parameter_group(label="Inner Group")
 class InnerGroup:
-    inner_int = kn.IntParameter("Inner Int", "The inner int param", 1)
+    inner_int = knext.IntParameter("Inner Int", "The inner int param", 1)
 
-@kn.parameter_group(label="Outer Group")
+@knext.parameter_group(label="Outer Group")
 class OuterGroup:
-    outer_int = kn.IntParameter("Outer Int", "The outer int param", 2)
+    outer_int = knext.IntParameter("Outer Int", "The outer int param", 2)
     inner_group = InnerGroup()
 
     def validate(self, values):
@@ -444,54 +444,6 @@ class MyNode:
         return kn.Table.from_pyarrow(pa_table)
 ``` -->
 
-Let's have a look at a complete node definition, together with a parameter group, without any code omissions:
-
-```python
-import knime_node as kn
-import knime_schema as ks
-import knime_table as kt
-import pyarrow as pa
-
-@kn.parameter_group(label="My Settings")
-class MySettings:
-    name = kn.StringParameter(
-        label="Name",
-        description="This name will be broadcasted...", default_value="peter")
-    
-    num_repetitions = kn.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
-    
-    @num_repetitions.validator
-    def reps_validator(value):
-        if value == 2:
-            raise ValueError("I don't like the number 2")
-            
-
-@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="icon.png", category="/")
-@kn.input_table("input", "table")
-@kn.output_table("output", "table")
-class MyNode:
-    settings = MySettings()
-    
-    @settings.validator
-    def settings_validator(values):
-        assert len(values["name"]) > values["num_repetitions"]
-    
-    def configure(self, config_context, table_schema):
-        out_schema = table_schema
-        for i in range(self.settings.num_repetitions):
-            out_schema.append(ks.Column(ks.string(), self.settings.name + " Column"))
-        return out_schema
-    
-    def execute(self, exec_context, table: kt.ReadTable):
-        pa_table = table.to_pyarrow()
-        col = pa.array([self.settings.name] * len(pa_table))
-        field = pa.field(self.settings.name + " Column", type=pa.string())
-    
-        for i in range(self.settings.num_repetitions):
-            pa_table = pa_table.append_column(field, col)
-        return kt.write_table(pa_table)
-```
-
 ### Node view declaration
 
 You can use the `@kn.output_view(name="", description="")` decorator to specify that a node returns a view. 
@@ -499,18 +451,17 @@ In that case, the `execute` method should return a tuple of port outputs and the
 
 ```python
 from typing import List
-import knime_node as kn
-import knime_table as kt
-import knime_schema as ks
+import knime_extension as knext
 import knime_views as kv
 import seaborn as sns
 
 
-@kn.node(name="My Node", node_type=kn.NodeType.VISUALIZER, icon_path="icon.png", category="/")
-@kn.input_table(name="Input Data", description="We read data from here")
-@kn.output_view(name="My pretty view", description="Showing a seaborn plot")
-class MyViewNode(kn.PythonNode):
-    """A view node
+@knext.node(name="My Node", node_type=knext.NodeType.VISUALIZER, icon_path="icon.png", category="/")
+@knext.input_table(name="Input Data", description="We read data from here")
+@knext.output_view(name="My pretty view", description="Showing a seaborn plot")
+class MyViewNode:
+    """
+    A view node
 
     This node shows a plot.
     """
