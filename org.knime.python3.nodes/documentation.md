@@ -272,14 +272,14 @@ Here is an example with two input ports and one output port.
 
 The `@kn.input_table` and `@kn.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
 
-If you want to receive or send other data, e.g. a trained machine learning model, use `@kn.input_binary` and `@kn.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
+If you want to receive or send other data, e.g. a trained machine learning model, use `@knext.input_binary` and `@knext.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
 
 The port configuration determines the expected signature of the `configure` and `execute` methods:
 
 - In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. The method is expected to return __as many parameters as it has output ports configured__. The argument and return value types corresponding to the input and output ports are:
 
-    - for __table__ ports, the argument/return value must be of type `kn.Schema`;
-    - for __binary__ ports, the argument/return value must be of type `kn.BinaryPortObjectSpec`.
+    - for __table__ ports, the argument/return value must be of type `knext.Schema`;
+    - for __binary__ ports, the argument/return value must be of type `knext.BinaryPortObjectSpec`.
 
     Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
 
