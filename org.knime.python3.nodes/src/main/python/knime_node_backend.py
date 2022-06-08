@@ -356,7 +356,7 @@ class _PythonNodeProxy:
             # single outputs are fine
             outputs = [outputs]
 
-        if hasattr(self._node, "view") and self._node.view is not None:
+        if hasattr(self._node, "output_view") and self._node.output_view is not None:
             out_view = outputs[-1]
             outputs = outputs[:-1]
 

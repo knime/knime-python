@@ -94,7 +94,7 @@ These decorators can be used to easily configure your python node.
 .. autofunction:: knime_node.output_table
    :noindex:
 
-.. autofunction:: knime_node.view
+.. autofunction:: knime_node.output_view
    :noindex:
 
 Tables

@@ -79,7 +79,7 @@ input_binary = _kn.input_binary
 input_table = _kn.input_table
 output_binary = _kn.output_binary
 output_table = _kn.output_table
-view = _kn.view
+output_view = _kn.output_view
 
 
 ## knime_node_table

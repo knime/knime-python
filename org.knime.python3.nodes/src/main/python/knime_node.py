@@ -196,7 +196,7 @@ class PythonNode(ABC):
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
 
     Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary, 
-    and @kn.view, or populate the input_ports, output_ports, and view attributes.
+    and @kn.output_view, or populate the input_ports, output_ports, and output_view attributes.
 
     Use the Python logging facilities and its `.warn` and `.error` methods to write warnings
     and errors to the KNIME console.
@@ -226,7 +226,7 @@ class PythonNode(ABC):
 
     input_ports: List[Port] = None
     output_ports: List[Port] = None
-    view: ViewDeclaration = None
+    output_view: ViewDeclaration = None
 
     @abstractmethod
     def configure(self, config_context: ConfigurationContext, *inputs):
@@ -478,7 +478,7 @@ def node(
             node = node_factory(*args, **kwargs)
             node.input_ports = n.input_ports
             node.output_ports = n.output_ports
-            node.view = n.views[0]
+            node.output_view = n.views[0]
             return node
 
         return port_injector
@@ -535,7 +535,7 @@ def _get_ports(node_factory, port_slot) -> List[Port]:
 
 
 def _get_view(node_factory) -> Optional[ViewDeclaration]:
-    return _get_attr_from_instance_or_factory(node_factory, "view")
+    return _get_attr_from_instance_or_factory(node_factory, "output_view")
 
 
 def input_binary(name: str, description: str, id: str):
@@ -588,13 +588,13 @@ def output_table(name: str, description: str):
     )
 
 
-def view(name: str, description: str):
+def output_view(name: str, description: str):
     """
-    Use this decorator to specify that this node has a view
+    Use this decorator to specify that this node produces a view
     """
 
     def add_view(node_factory):
-        setattr(node_factory, "view", ViewDeclaration(name, description))
+        setattr(node_factory, "output_view", ViewDeclaration(name, description))
         return node_factory
 
     return add_view

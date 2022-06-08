@@ -255,7 +255,7 @@ class MyNode():
 
 ### Node view declaration
 
-You can use the `@kn.view(name="", description="")` decorator to specify that a node returns a view. 
+You can use the `@kn.output_view(name="", description="")` decorator to specify that a node returns a view. 
 In that case, the `execute` method should return a tuple of port outputs and the view (of type `knime_views.NodeView`). The package `knime_views` contains utilities to create node views from different kinds of objects.
 
 ```python
@@ -269,7 +269,7 @@ import seaborn as sns
 
 @kn.node(name="My Node", node_type="Manipulator", icon_path="icon.png", category="/")
 @kn.input_table(name="Input Data", description="We read data from here")
-@kn.view(name="My pretty view", description="Showing a seaborn plot")
+@kn.output_view(name="My pretty view", description="Showing a seaborn plot")
 class MyViewNode(kn.PythonNode):
     """A view node
 

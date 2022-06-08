@@ -50,7 +50,13 @@ import knime_node_table as kt
 import knime_schema as ks
 
 
-@kn.node(name="My Test Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(
+    name="My Test Node",
+    node_type="Learner",
+    icon_path="icon.png",
+    category="/",
+    id="My Test Node",
+)
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.input_table(
     name="Second input table", description="We might also read data from there"
@@ -61,7 +67,7 @@ import knime_schema as ks
     description="Maybe a model",
     id="org.knime.python3.nodes.test.port",
 )
-@kn.view(name="Test View", description="lalala")
+@kn.output_view(name="Test View", description="lalala")
 class MyTestNode:
     def configure(self, config_ctx, schema_1, schema_2):
         return schema_1
@@ -71,7 +77,7 @@ class MyTestNode:
 
 
 class NodeApiTest(unittest.TestCase):
-    node_id = "//My Test Node"
+    node_id = "My Test Node"
 
     def setUp(self):
         self.node = kn._nodes.get(NodeApiTest.node_id, None)
@@ -82,8 +88,8 @@ class NodeApiTest(unittest.TestCase):
 
     def test_has_node_view(self):
         self.assertIsNotNone(self.node.views[0])
-        self.assertIsNotNone(self.node_instance.view)
-        self.assertIsInstance(self.node_instance.view, kn.ViewDeclaration)
+        self.assertIsNotNone(self.node_instance.output_view)
+        self.assertIsInstance(self.node_instance.output_view, kn.ViewDeclaration)
 
     def test_input_ports(self):
         self.assertEqual(2, len(self.node.input_ports))
@@ -96,7 +102,13 @@ class NodeApiTest(unittest.TestCase):
         self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
 
 
-@kn.node(name="My Second Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(
+    name="My Second Node",
+    node_type="Learner",
+    icon_path="icon.png",
+    category="/",
+    id="MyTestNode",
+)
 class MyTestNode:
     input_ports = [
         kn.Port(
@@ -129,7 +141,7 @@ class MyTestNode:
         ]
 
     @property
-    def view(self):
+    def output_view(self):
         return kn.ViewDeclaration(
             name="ExampleView", description="White letters on white background"
         )
@@ -142,7 +154,7 @@ class MyTestNode:
 
 
 class InstanceAttributePortsTest(unittest.TestCase):
-    node_id = "//My Second Node"
+    node_id = "MyTestNode"
 
     def setUp(self):
         self.node = kn._nodes.get(InstanceAttributePortsTest.node_id, None)
@@ -177,7 +189,13 @@ class PortTest(unittest.TestCase):
         self.assertIsNone(t.id)
 
 
-@kn.node(name="My Third Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(
+    name="My Third Node",
+    node_type="Learner",
+    icon_path="icon.png",
+    category="/",
+    id="My Third Node",
+)
 @kn.input_table(name="Input Data", description="We read data from here")
 @kn.input_table(
     name="Second input table", description="We might also read data from there"
@@ -200,7 +218,7 @@ def my_node_generating_func():
 
 
 class NodeFactoryApiTest(unittest.TestCase):
-    node_id = "//My Third Node"
+    node_id = "My Third Node"
 
     def setUp(self):
         self.node = kn._nodes.get(NodeFactoryApiTest.node_id, None)
@@ -211,7 +229,7 @@ class NodeFactoryApiTest(unittest.TestCase):
 
     def test_has_no_node_view(self):
         self.assertIsNone(self.node.views[0])
-        self.assertIsNone(self.node_instance.view)
+        self.assertIsNone(self.node_instance.output_view)
 
     def test_input_ports(self):
         self.assertEqual(2, len(self.node.input_ports))
@@ -248,7 +266,13 @@ class DoubleInputPortsTest(unittest.TestCase):
 
 
 # test case where the init method adds a port
-@kn.node(name="My Fourth Node", node_type="Learner", icon_path="icon.png", category="/")
+@kn.node(
+    name="My Fourth Node",
+    node_type="Learner",
+    icon_path="icon.png",
+    category="/",
+    id="My Fourth Node",
+)
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
 class MyPropertyOverridingNode:
     input_ports = [
@@ -278,7 +302,7 @@ class MyPropertyOverridingNode:
 
 
 class OverriddenInputPortsTest(unittest.TestCase):
-    node_id = "//My Fourth Node"
+    node_id = "My Fourth Node"
 
     def setUp(self):
         self.node = kn._nodes.get(OverriddenInputPortsTest.node_id, None)
@@ -286,7 +310,7 @@ class OverriddenInputPortsTest(unittest.TestCase):
 
     def test_has_no_node_view(self):
         self.assertIsNone(self.node.views[0])
-        self.assertIsNone(self.node_instance.view)
+        self.assertIsNone(self.node_instance.output_view)
 
     def test_input_ports(self):
         self.assertEqual(4, len(self.node.input_ports))
