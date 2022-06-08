@@ -54,10 +54,7 @@ class NestedParameterGroup:
 
 @kp.parameter_group("Primary Group")
 class ParameterGroup:
-    """
-    A parameter group which contains a parameter group as a subgroup, and sets a
-    custom validator for a parameter.
-    """
+    """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter."""
 
     subgroup = NestedParameterGroup()
     third = kp.IntParameter(
@@ -485,6 +482,25 @@ class ParameterTest(unittest.TestCase):
             "type": "VerticalLayout",
         }
         self.assertEqual(ui_schema, expected)
+
+    def test_extract_description(self):
+        expected = [
+            {"name": "Options", "description": "", "options": [
+                {"name": "Int Parameter", "description": "An integer parameter"},
+                {"name": "Double Parameter", "description": "A double parameter"},
+                {"name": "String Parameter", "description": "A string parameter"},
+                {"name": "Boolean Parameter", "description": "A boolean parameter"},
+            ]},
+            {"name": "Primary Group",
+            "description": """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter.""",
+            "options": [
+                {"name": "First Parameter", "description": "First parameter description"},
+                {"name": "Second Parameter", "description": "Second parameter description"},
+                {"name": "Internal int Parameter", "description": "Internal int parameter description"},
+            ]}
+        ]
+        description = kp.extract_parameter_descriptions(self.parameterized)
+        self.assertEqual(description, expected)
 
     def test_inject_validates(self):
         pass  # TODO

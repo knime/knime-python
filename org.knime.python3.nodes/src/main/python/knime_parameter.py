@@ -136,15 +136,8 @@ def extract_ui_schema(obj) -> dict:
 
 
 def extract_parameter_descriptions(obj) -> dict:
-    return _extract_parameter_descriptions(obj, _Scope("#/properties"))
-
-
-def _extract_parameter_descriptions(obj, scope: "_Scope"):
-    params = _get_parameters(obj).values()
-    descriptions = [
-        param._extract_description(scope) for param in params
-    ]
-    if any(map(_is_group, params)):
+    descriptions = _extract_parameter_descriptions(obj, _Scope("#/properties"))
+    if any(map(_is_group, _get_parameters(obj).values())):
         # a top-level parameter_group is represented as tab in the dialog
         # tab descriptions are the only descriptions with nested options
         tabs = [tab_description for tab_description in descriptions if "options" in tab_description]
@@ -159,6 +152,11 @@ def _extract_parameter_descriptions(obj, scope: "_Scope"):
         return tabs
     else:
         return descriptions
+
+
+def _extract_parameter_descriptions(obj, scope: "_Scope"):
+    params = _get_parameters(obj).values()
+    return [param._extract_description(scope) for param in params]
 
 
 def _is_parameter_or_group(obj) -> bool:
@@ -683,7 +681,6 @@ def parameter_group(label: str):
                     "options": _flatten(options),
                 }
             else:
-                # flatten group
                 return options
 
         custom_cls.__init__ = __init__
