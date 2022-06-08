@@ -45,63 +45,26 @@
 """
 @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+@author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+@author David Arnold, KNIME GmbH, Berlin, Germany
 """
 
-import os
-import pickle
-import py4j.clientserver
-import sys
-import warnings
-from contextlib import redirect_stdout, redirect_stderr
-from io import StringIO
-from py4j.java_collections import JavaArray, ListConverter
-from py4j.java_gateway import JavaClass
 from queue import Full, Queue
-from threading import Event, Lock, get_ident
-from typing import Any, Callable, Dict, List, Optional, TextIO
+from threading import Event, Lock
+from typing import Callable, List, Optional
 
-import knime_arrow_table as kat
-import knime_gateway as kg
 
-import debugpy
-
-#debugpy.listen(5678)
-#debugpy.wait_for_client()
-
-#class MainLoopStation -> org.knime.python3 -> knime_main_loop
-# TODO update knime_kernel.py
-lock = Lock()
-
-class PythonKernel(kg.EntryPoint):
+class MainLoop:
     def __init__(self):
         super().__init__()
-        self._workspace: Dict[str, Any] = {}  # TODO: should we make this thread safe?
         self._main_loop_queue: Queue[Optional[_ExecuteTask]] = Queue()
-        self._main_loop_lock = lock
+        self._main_loop_lock = Lock()
         self._main_loop_stopped = False
-        self._external_custom_path_initialized = False
-        self._working_dir_initialized = False
-        self._java_callback = None
 
-    def initializeJavaCallback(self, java_callback: JavaClass) -> None:
-        if self._java_callback is not None:
-            raise RuntimeError(
-                "Java callback has already been initialized. Calling this method again is an implementation error."
-            )
-        self._java_callback = java_callback
-
-    @property
-    def java_callback(self):
-        #Provides access to functionality on the Java side. Used by e.g. knime_jupyter to resolve KNIME URLs.
-        #:return: The callback on the Java side of Java type
-        #org.knime.python3.scripting.Python3KernelBackendProxy.Callback.
-        return self._java_callback
-
-    def enter_main_loop(self) -> None:
+    def enter(self) -> None:
         queue = self._main_loop_queue
         while True:
             task = queue.get()
-            #debugpy.breakpoint()
 
             if task is not None:
                 task.run()
@@ -111,7 +74,7 @@ class PythonKernel(kg.EntryPoint):
                 queue.task_done()
                 return
 
-    def exit_main_loop(self) -> None:
+    def exit(self) -> None:
         with self._main_loop_lock:
             self._main_loop_stopped = True
             queue = self._main_loop_queue
@@ -127,31 +90,37 @@ class PythonKernel(kg.EntryPoint):
                 else:
                     break
 
-
-    def executeOnMainThread(self, source_code: str, check_outputs: bool) -> List[str]:
+    def execute(self, func, *args, **kwargs):
+        """
+        Run the given function on the main thread, wait for its results and return those
+        """
         with self._main_loop_lock:
             if self._main_loop_stopped:
                 raise RuntimeError(
                     "Cannot schedule executions on the main thread after the main loop stopped."
                 )
-            execute_task = _ExecuteTask(self.execute, source_code, check_outputs)
+            execute_task = _ExecuteTask(func, *args, **kwargs)
             self._main_loop_queue.put(execute_task)
             return execute_task.result()
 
+
 class _ExecuteTask:
     """
-    Executes
+    Executes the given function with provided arguments and provides access
+    to the results.
     """
-    def __init__(self, execute_func: Callable[[str], List[str]], *args):
+
+    def __init__(self, execute_func: Callable[[str], List[str]], *args, **kwargs):
         self._execute_func = execute_func
         self._args = args
+        self._kwargs = kwargs
         self._execute_finished = Event()
         self._result = None
         self._exception = None
 
     def run(self):
         try:
-            self._result = self._execute_func(*self._args)
+            self._result = self._execute_func(*self._args, **self._kwargs)
         except Exception as ex:
             self._exception = ex
         finally:

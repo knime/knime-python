@@ -56,23 +56,20 @@ from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from py4j.java_collections import JavaArray, ListConverter
 from py4j.java_gateway import JavaClass
-from queue import Full, Queue
-from threading import Event, Lock
 from typing import Any, Callable, Dict, List, Optional, TextIO
 
 import knime_arrow_table as kat
 import knime_gateway as kg
 import knime_io as kio
 import knime_table as kt
+from knime_main_loop import MainLoop
 from autocompletion_utils import disable_autocompletion
 
 
 class PythonKernel(kg.EntryPoint):
     def __init__(self):
         self._workspace: Dict[str, Any] = {}  # TODO: should we make this thread safe?
-        self._main_loop_queue: Queue[Optional[_ExecuteTask]] = Queue()
-        self._main_loop_lock = Lock()
-        self._main_loop_stopped = False
+        self._main_loop = MainLoop()
         self._external_custom_path_initialized = False
         self._working_dir_initialized = False
         self._java_callback = None
@@ -110,34 +107,6 @@ class PythonKernel(kg.EntryPoint):
         os.chdir(working_directory_path)
         sys.path.insert(0, working_directory_path)
         self._working_dir_initialized = True
-
-    def enter_main_loop(self) -> None:
-        queue = self._main_loop_queue
-        while True:
-            task = queue.get()
-            if task is not None:
-                task.run()
-                queue.task_done()
-            else:
-                # Poison pill, exit loop.
-                queue.task_done()
-                return
-
-    def exit_main_loop(self) -> None:
-        with self._main_loop_lock:
-            self._main_loop_stopped = True
-            queue = self._main_loop_queue
-            # Aggressively try to clear queue and insert poison pill.
-            while True:
-                with queue.all_tasks_done:
-                    queue.queue.clear()
-                    queue.unfinished_tasks = 0
-                try:
-                    queue.put_nowait(None)  # Poison pill
-                except Full:
-                    continue
-                else:
-                    break
 
     def setFlowVariables(self, flow_variables: Dict[str, Any]) -> None:
         kio.flow_variables.clear()
@@ -197,10 +166,7 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
         kio._pad_up_to_length(kio._output_tables, num_output_tables)
 
-    def getOutputTable(
-        self,
-        table_index: int,
-    ) -> Optional[JavaClass]:
+    def getOutputTable(self, table_index: int,) -> Optional[JavaClass]:
         # Get the java sink for this write table
         write_table = kio.output_tables[table_index]
         if (not hasattr(write_table, "_sink")) or (
@@ -242,11 +208,7 @@ class PythonKernel(kg.EntryPoint):
     def setNumExpectedOutputImages(self, num_output_images: int) -> None:
         kio._pad_up_to_length(kio._output_images, num_output_images)
 
-    def getOutputImage(
-        self,
-        image_index: int,
-        path: str,
-    ) -> None:
+    def getOutputImage(self, image_index: int, path: str,) -> None:
         image = kio.output_images[image_index]
         with open(path, "wb") as file:
             file.write(image)
@@ -312,8 +274,7 @@ class PythonKernel(kg.EntryPoint):
                     try:
                         # Use jedi's 0.16.0+ API.
                         completions = jedi.Script(source_code, path="").complete(
-                            line,
-                            column,
+                            line, column,
                         )
                     except AttributeError:
                         # Fall back to jedi's older API. ("complete" raises the AttributeError caught here.)
@@ -337,14 +298,7 @@ class PythonKernel(kg.EntryPoint):
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 
     def executeOnMainThread(self, source_code: str, check_outputs: bool) -> List[str]:
-        with self._main_loop_lock:
-            if self._main_loop_stopped:
-                raise RuntimeError(
-                    "Cannot schedule executions on the main thread after the main loop stopped."
-                )
-            execute_task = _ExecuteTask(self._execute, source_code, check_outputs)
-            self._main_loop_queue.put(execute_task)
-            return execute_task.result()
+        return self._main_loop.execute(self._execute, source_code, check_outputs)
 
     def executeOnCurrentThread(self, source_code: str) -> List[str]:
         return self._execute(source_code)
@@ -391,34 +345,6 @@ class PythonKernel(kg.EntryPoint):
 
     class Java:
         implements = ["org.knime.python3.scripting.Python3KernelBackendProxy"]
-
-
-class _ExecuteTask:
-    def __init__(self, execute_func: Callable[[str], List[str]], *args):
-        self._execute_func = execute_func
-        self._args = args
-        self._execute_finished = Event()
-        self._result = None
-        self._exception = None
-
-    def run(self):
-        try:
-            self._result = self._execute_func(*self._args)
-        except Exception as ex:
-            self._exception = ex
-        finally:
-            self._execute_finished.set()
-
-    def result(self) -> List[str]:
-        self._execute_finished.wait()
-        if self._exception is not None:
-            try:
-                raise self._exception
-            finally:
-                # Copied from concurrent.futures._base.Future:
-                # Break a reference cycle with the exception in self._exception
-                self = None
-        return self._result
 
 
 class _CopyingTextIO:
@@ -510,9 +436,9 @@ if __name__ == "__main__":
         kernel = PythonKernel()
         kg.connect_to_knime(kernel)
         py4j.clientserver.server_connection_stopped.connect(
-            lambda *args, **kwargs: kernel.exit_main_loop()
+            lambda *args, **kwargs: kernel._main_loop.exit()
         )
-        kernel.enter_main_loop()
+        kernel._main_loop.enter()
     finally:
         if kg.client_server is not None:
             kg.client_server.shutdown()

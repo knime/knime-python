@@ -49,8 +49,8 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 """
 
 from typing import List
-from knime_kernel import PythonKernel, lock
 
+from knime_main_loop import MainLoop
 import knime_gateway as kg
 import knime_node as kn
 import knime_parameter as kp
@@ -73,15 +73,6 @@ import py4j.clientserver
 from packaging.version import parse
 
 # TODO: register extension types
-
-
-def executeOnMainLoop(f):
-    def _wrap(self, *args, **kwargs):
-        global lock
-        with lock:
-            return f(self, *args, **kwargs)
-
-    return _wrap
 
 
 class _PythonPortObject:
@@ -304,7 +295,6 @@ class _PythonNodeProxy:
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
 
-    @executeOnMainLoop
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
@@ -327,6 +317,7 @@ class _PythonNodeProxy:
             java_exec_context, self._get_flow_variables()
         )
         try:
+            # TODO: maybe we want to run execute on the main thread? use knime_main_loop
             outputs = self._node.execute(exec_context, *inputs)
         except Exception as ex:
             self._set_failure(ex, 1)
@@ -369,7 +360,6 @@ class _PythonNodeProxy:
         _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
-    @executeOnMainLoop
     def configure(
         self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
@@ -379,8 +369,8 @@ class _PythonNodeProxy:
             java_config_context, self._get_flow_variables()
         )
         try:
+            # TODO: maybe we want to run execute on the main thread? use knime_main_loop
             outputs = self._node.configure(config_context, *inputs)
-
         except Exception as ex:
             self._set_failure(ex, 1)
             return None
@@ -460,9 +450,10 @@ class _PythonNodeProxy:
         implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
 
 
-class _KnimeNodeBackend(PythonKernel):
+class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
+        self._main_loop = MainLoop()
 
     def createNodeExtensionProxy(
         self, factory_module_name: str, factory_method_name: str, node_id: str
@@ -475,9 +466,7 @@ class _KnimeNodeBackend(PythonKernel):
     def createNodeProxy(
         self, module_name: str, python_node_class: str
     ) -> _PythonNodeProxy:
-        module = self.executeOnMainThread(
-            inspect.getsource(importlib.import_module(module_name))
-        )
+        module = inspect.getsource(importlib.import_module(module_name))
         node_class = getattr(module, python_node_class)
         node = node_class()  # TODO assumes that there is an empty constructor
         return _PythonNodeProxy(node)
@@ -594,9 +583,13 @@ if __name__ == "__main__":
     backend = _KnimeNodeBackend()
     kg.connect_to_knime(backend)
     py4j.clientserver.server_connection_stopped.connect(
-        lambda *args, **kwargs: backend.exit_main_loop()
+        lambda *args, **kwargs: backend._main_loop.exit()
     )
-    backend.enter_main_loop()
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().addHandler(KnimeLogHandler(backend))
 
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().addHandler(KnimeLogHandler(backend))
+    # We enter the main loop - but never enqueue any tasks. It
+    # seems as if keeping the main thread alive as long as the
+    # py4j connection is established is enough / required to allow
+    # other threading operations to work.
+    backend._main_loop.enter()
