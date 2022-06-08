@@ -66,7 +66,7 @@ _PNG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
     <body>
-    <img src="data:image/png;base64,{png_b64}" />
+    <img src="data:image/png;base64,{png_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
@@ -75,7 +75,7 @@ _JPEG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
     <body>
-    <img src="data:image/jpeg;base64,{jpeg_b64}" />
+    <img src="data:image/jpeg;base64,{jpeg_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
