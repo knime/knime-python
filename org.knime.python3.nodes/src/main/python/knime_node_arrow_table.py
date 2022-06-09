@@ -146,12 +146,15 @@ class ArrowTable(knt.Table):
         )
 
     def _append(self, other: "ArrowTable") -> "ArrowTable":
-        a = self._get_table()
-        b = other._get_table()
-        appended = pa.Table.from_arrays(
-            a.columns + b.columns, names=a.schema.names + b.schema.names
-        )
-        return ArrowTable(appended)
+        # FIXME exclude row key from second table - AP-19077
+        # a = self._get_table()
+        # b = other._get_table()
+        # appended = pa.Table.from_arrays(
+        #     a.columns + b.columns, names=a.schema.names + b.schema.names
+        # )
+        # return ArrowTable(appended)
+
+        raise NotImplementedError("append/insert for Arrow tables is not yet implemented")
 
     @property
     def num_rows(self) -> int:
