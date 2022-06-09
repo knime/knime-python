@@ -48,14 +48,19 @@
  */
 package org.knime.python3;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.knime.python3.PythonPath.PythonPathBuilder;
@@ -147,6 +152,31 @@ public class DefaultPythonGatewayTest {
         }
         assertEquals("foobarla", sb.toString());
     }
+
+    @Test
+    public void testConcurrentGatewayCreation() throws Exception {
+        var creationStartLatch = new CountDownLatch(1);
+        var fail = new AtomicBoolean(false);
+        var threads = Stream.generate(() -> new Thread(() -> {
+            try {
+                creationStartLatch.await();
+                try (var gateway = createGateway(PrintingEntryPoint.class, "printing_launcher.py")) {
+                    gateway.getEntryPoint().print("foobar");
+                }
+            } catch (IOException | InterruptedException e) {
+                fail.set(true);
+            }
+        })).limit(10).collect(toList());
+        threads.forEach(Thread::start);
+        creationStartLatch.countDown();
+        for (var thread : threads) {
+            thread.join();
+        }
+        if (fail.get()) {
+            fail("One thread failed with an exception.");
+        }
+    }
+
 
     private static BufferedReader getOutputReader(final PythonGateway<?> gateway) {
         return new BufferedReader(new InputStreamReader(gateway.getStandardOutputStream())); //NOSONAR just for testing

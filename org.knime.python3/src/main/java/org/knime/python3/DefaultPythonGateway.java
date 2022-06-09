@@ -132,7 +132,9 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
         throws IOException, InterruptedException {
         try {
-            m_clientServer = new ClientServerBuilder().javaPort(0).build();
+            m_clientServer = new ClientServerBuilder()//
+                    .javaPort(0)//
+                    .build();
             final int javaPort = m_clientServer.getJavaServer().getListeningPort();
 
             final var pb = pythonProcessBuilder;
@@ -199,10 +201,14 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 LOGGER.debug("Connected to Python process with PID: " + pid + " after ms: "
                     + (System.currentTimeMillis() - start)); // TODO: remove once in production!
                 return pid;
-            } catch (final Py4JException ex) {
-                if (!(ex.getCause() instanceof ConnectException)) {
-                    throw ex;
-                }
+                //NOSONAR: Expected control flow as the Python process may not be connected yet
+            } catch (final Py4JException ex) {//NOSONAR
+                // try again
+            	// TODO AP-19073: Ideally, we only retry if the connection is not established
+            	// i.e. ex.getCause() instanceof ConnectException. However, the connection might be live
+            	// but we get a Py4JException because Python is concurrently resetting the callback client
+            	// If we can somehow wait for this process to finish, then this would likely reduce startup time
+            	// because we could avoid the exception handling
             }
         } while (process.isAlive() && (System.currentTimeMillis() - start) <= timeout);
         throw new ConnectException("Could not connect to the Python process.");
