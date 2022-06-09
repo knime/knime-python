@@ -1,6 +1,6 @@
 # Pure-Python KNIME Node Extensions
 
-We introduce a new API to write nodes for KNIME completely in Python.
+We introduce a new API to write nodes for KNIME Analytics Platform completely in Python.
 
 ## Contents
 
@@ -8,7 +8,7 @@ We introduce a new API to write nodes for KNIME completely in Python.
   - [Contents](#contents)
   - [Tutorials](#tutorials)
     - [Prerequisites](#prerequisites)
-    - [Tutorial 1: Writing your first Python node from scratch](#tutorial-1-writing-your-first-python-node-extension-from-scratch)
+    - [Tutorial 1: Writing your first Python node from scratch](#tutorial-1-writing-your-first-python-node-from-scratch)
   - [Python Node Extension Setup](#python-node-extension-setup)
   - [Defining a KNIME Node in Python: Full API](#defining-a-knime-node-in-python-full-api)
     - [Node port configuration](#node-port-configuration)
@@ -44,20 +44,20 @@ With `conda` set up, you should extract [documentation-files/basic.zip](document
 └── README.md
 ```
 
-### Tutorial 1: Writing your first Python node extension from scratch
+### Tutorial 1: Writing your first Python node from scratch
 
 This is a quickstart guide that will walk you through the essential steps of writing and running your first Python Node Extension. We will use `tutorial_extension` as the basis. The steps of the tutorial requiring modification of the Python code in `my_extension.py` have corresponding comments in the file, for convenience.
 
 For an extensive overview of the full API, please refer to the [Defining a KNIME Node in Python: Full API](#defining-a-knime-node-in-python-full-api) section, as well as our [Read the Docs page](https://knime-python.readthedocs.io/en/latest/content/content.html#python-extension-development).
 
-1. Install the KNIME Analytics Platform (KAP) version 4.6.0 or higher, or a Nightly version (if Nightly before the release of 4.6.0, use the master update site. See [here](https://knime-com.atlassian.net/wiki/spaces/SPECS/pages/1369407489/How+to+find+download+install+update+and+use+KNIME+Nightly+Builds+for+Verification.) for help with Nightlies and update sites.)
+1. Install the KNIME Analytics Platform version 4.6.0 or higher, or a Nightly version (if Nightly before the release of 4.6.0, use the master update site. See [here](https://knime-com.atlassian.net/wiki/spaces/SPECS/pages/1369407489/How+to+find+download+install+update+and+use+KNIME+Nightly+Builds+for+Verification.) for help with Nightlies and update sites.)
 
 2. Go to _File_ -> _Install KNIME Extensions…_, enter "Python" in the search field, and look for `KNIME Python Node Development Extension (Labs)`. Alternatively you can manually navigate to the `KNIME Labs Extensions` category and find the extension there. Select it and proceed with installation.
 
 3. The `tutorial_extension` will be your new extension. Familiarise yourself with the files contained in that folder, in particular:
     - `knime.yml`, which contains important metadata about your extension.
     - `my_extension.py`, which contains Python definitions of the nodes of your extension.
-    - `config.yml`, just outside of the folder, contains information that binds your extension and the corresponding `conda`/Python environment with KAP.
+    - `config.yml`, just outside of the folder, contains information that binds your extension and the corresponding `conda`/Python environment with KNIME Analytics Platform.
 
 4. Create a `conda`/Python environment containing the [`knime-python-base`](https://anaconda.org/knime/knime-python-base) metapackage, together with the node development API [`knime-extension`](https://anaconda.org/knime/knime-extension), and [`packaging`](https://anaconda.org/anaconda/packaging). If you are using `conda`, you can create the environment by running the following command in your terminal (macOS/Linux) or Anaconda Prompt (Windows):
 
@@ -76,10 +76,9 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 
     ```
     <extension_id>:
-
         src: path/to/folder/of/template
-
         conda_env_path: path/to/my_python_env
+        debug_mode: true
     ```
     where:
 
@@ -89,36 +88,38 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
     
     - the `src` field should specify the path to the `tutorial_extension` folder.
 
-    - similarly, the `conda_env_path` field should specify the path to the `conda`/Python environment created in Step 4. On macOS/Linux, you can get this path by activating your environment via `conda activate my_python_env` and then running `which python`.
+    - similarly, the `conda_env_path` field should specify the path to the `conda`/Python environment created in Step 4. To get this path, run the `conda env list` command in your Terminal/Anaconda Prompt, and copy the path next to the appropriate environment (`my_python_env` in our case).
 
-6. We need to let the KAP know where the `config.yml` is in order to allow it to use our extension and its Python environment. To do this, you need to edit the `knime.ini` of your KAP installation, which is located at `<path-to-your-KAP>/Contents/Eclipse/knime.ini`.
+    - the `debug_mode` is an optional field, which, if set to `true`, will tell KNIME Analytics Platform to use the latest changes in the `configure` and `execute` methods of your Python node class whenever those methods are called.
+
+6. We need to let KNIME Analytics Platform know where the `config.yml` is in order to allow it to use our extension and its Python environment. To do this, you need to edit the `knime.ini` of your KNIME Analytics Platform installation, which is located at `<path-to-your-KAP>/Contents/Eclipse/knime.ini`.
 
     Append the following line to the end, and modify it to have the correct path to `config.yml`: 
     ```
     -Dknime.python.extension.config=path/to/your/config.yml
     ```
 
-7. Start your KAP.
+7. Start your KNIME Analytics Platform.
 
 8. The "My Template Node" node should now be visible in the Node Repository.
 
 9. Import and open the `Example_with_Python_node.knwf` workflow, which contains our test node:  
     1. Get familiar with the table.
-    2. Study the code in `my_extension.py` and compare it with the node you see in the KAP. In particular, understand where the node name and description, as well as its inputs and outputs, come from.
+    2. Study the code in `my_extension.py` and compare it with the node you see in KNIME Analytics Platform. In particular, understand where the node name and description, as well as its inputs and outputs, come from.
     3. Execute the node and make sure that it produces an output table.
 
 10. Build your first configuration dialog!
 
-    In `my_extension.py`, uncomment the definitions of parameters (marked by the "Tutorial Step 10" comment), starting from line 23 and until the `configure` method. Restart your KAP, and you should be able to double-click the node and see configurable parameters - congrats!
+    In `my_extension.py`, uncomment the definitions of parameters (marked by the "Tutorial Step 10" comment). Restart your KNIME Analytics Platform, and you should be able to double-click the node and see configurable parameters - congrats!
     
     Take a minute to see how the names, descriptions, and default values compare between their definitions in `my_extension.py` and the node dialog.
 
 11. Add your first port!
 
     To add a second input table to the node, follow these steps (marked by the "Tutorial Step 11" comment):
-    1. Uncomment the `@knext.input_table` decorator on line 13.
-    2. Change the `configure` method's definition to reflect the changes in the schema by commenting line 35 and uncommenting line 36.
-    3. Change the `execute` method to reflect the addition of the second input table by commenting line 44 and uncommenting line 45.
+    1. Uncomment the `@knext.input_table` decorator.
+    2. Change the `configure` method's definition to reflect the changes in the schema.
+    3. Change the `execute` method to reflect the addition of the second input table.
 
 12. Add some functionality to the node!
 
@@ -159,7 +160,7 @@ license_file: LICENSE.TXT # Best practice: put your LICENSE.TXT next to the knim
 
 The `id` of the extension will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` in order to prevent `id` clashes. For example, a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes`, which are part of `python3`.
 
-The extension module will then be put on the `Pythonpath` and imported by KNIME using `import my_extension`. This Python module should contain the definitions of KNIME nodes. Each class decorated with `@knext.node` within this file will become available in KNIME as a dedicated node.
+The extension module will then be put on the `Pythonpath` and imported by KNIME Analytics Platform using `import my_extension`. This Python module should contain the definitions of KNIME nodes. Each class decorated with `@knext.node` within this file will become available in KNIME Analytics Platform as a dedicated node.
 
 Recommended project folder structure:
 
@@ -176,17 +177,17 @@ Recommended project folder structure:
 └── my_conda_env.yml
 ```
 
-> See [Tutorial 1](#tutorial-1-writing-your-first-python-node-extension-from-scratch) above for an example.
+> See [Tutorial 1](#tutorial-1-writing-your-first-python-node-from-scratch) above for an example.
 
-To use this KNIME Python extension locally, set the `knime.python.extension.config` system property in your KNIME launch configuration's VM arguments in Eclipse. See the [Registering Python extensions during development](#registering-python-extensions-during-development) and [Customizing the Python executable](#customizing-the-python-executable) sections at the end of this document.
+To use this KNIME Python extension locally, set the `knime.python.extension.config` system property in your KNIME Analytics Platform's launch configuration's VM arguments in Eclipse. See the [Registering Python extensions during development](#registering-python-extensions-during-development) and [Customizing the Python executable](#customizing-the-python-executable) sections at the end of this document.
 
 ## Defining a KNIME Node in Python: Full API
 
-We provide a `conda` package that includes the full API for node development in Python - `knime-extension` (see [Tutorial 1](#tutorial-1-writing-your-first-python-node-extension-from-scratch) for help in setting up your development `conda` environment). To enable helpful code autocompletion via `import knime_extension as knext`, make sure your IDE of choice's Python interpreter is configured to work in that `conda` environment when you are developing your Python node extension (see [here](https://code.visualstudio.com/docs/python/environments#_work-with-python-interpreters) for help with Visual Studio Code, and [here](https://www.jetbrains.com/help/pycharm/configuring-python-interpreter.html) for PyCharm).
+We provide a `conda` package that includes the full API for node development in Python - `knime-extension` (see [Tutorial 1](#tutorial-1-writing-your-first-python-node-from-scratch) for help in setting up your development `conda` environment). To enable helpful code autocompletion via `import knime_extension as knext`, make sure your IDE of choice's Python interpreter is configured to work in that `conda` environment when you are developing your Python node extension (see [here](https://code.visualstudio.com/docs/python/environments#_work-with-python-interpreters) for help with Visual Studio Code, and [here](https://www.jetbrains.com/help/pycharm/configuring-python-interpreter.html) for PyCharm).
 
-A Python KNIME node needs to implement the `configure` and `execute` methods, so it will generally be a class. The node description is _automatically generated from the docstrings_ of the class and the `execute` method. The node's location in KNIME's _Node Repository_ as well as its icon are specified in the `@knext.node` decorator.
+A Python KNIME node needs to implement the `configure` and `execute` methods, so it will generally be a class. The node description is _automatically generated from the docstrings_ of the class and the `execute` method. The node's location in KNIME Analytics Platform's _Node Repository_ as well as its icon are specified in the `@knext.node` decorator.
 
-The simplest possible node does nothing but pass an input table to its output unmodified. In the example below, we define a class `MyNode` and indicate that it is a KNIME node by decorating it with `@knext.node`. We then "attach" an input table and an output table to the node by decorating it with `@knext.input_table` and `@knext.output_table` respectively. Finally, we implement the two required methods, `configure` and `execute`.
+A simple example of a node does nothing but pass an input table to its output unmodified. Below, we define a class `MyNode` and indicate that it is a KNIME node by decorating it with `@knext.node`. We then "attach" an input table and an output table to the node by decorating it with `@knext.input_table` and `@knext.output_table` respectively. Finally, we implement the two required methods, `configure` and `execute`, which simply return their inputs unchaged.
 
 ```python
 from typing import List, Tuple
@@ -197,7 +198,7 @@ import knime_extension as knext
 @knext.output_table("Output Data", "Result of processing in my node")
 class MyNode:
     """
-    Node description which will be displayed in KAP.
+    Node description which will be displayed in KNIME Analytics Platform.
     """
     def configure(self, config_context, input_table_schema):
         return input_table_schema
@@ -208,26 +209,26 @@ class MyNode:
 
 `@knext.node`'s configuration options are:
 
-- __name__: the name of the node in KNIME.
+- __name__: the name of the node in KNIME Analytics Platform.
 - __node_type__: the type of the node, one of:
-    - `knext.NodeType.MANIPULATOR`
-    - `knext.NodeType.LEARNER`
-    - `knext.NodeType.PREDICTOR`
-    - `knext.NodeType.SOURCE`
-    - `knext.NodeType.SINK`
-    - `knext.NodeType.VISUALIZER`
+    - `knext.NodeType.MANIPULATOR`: a node that manipulates data.
+    - `knext.NodeType.LEARNER`: a node learning a model that is typically consumed by a PREDICTOR.
+    - `knext.NodeType.PREDICTOR`: a node that predicts something typically using a model provided by a LEARNER.
+    - `knext.NodeType.SOURCE`: a node producing data.
+    - `knext.NodeType.SINK`: a node consuming data.
+    - `knext.NodeType.VISUALIZER`: a node that visualizes data.
 - __icon_path__: module-relative path to a 16x16 pixel PNG file to use as icon.
-- __category__: defines the path to the node inside KNIME's _Node Repository_.
+- __category__: defines the path to the node inside KNIME Analytics Platform's _Node Repository_.
 
 ### Node port configuration
 
-The input and output ports of a node can be configured by decorating the node class with `@knext.input_table`, `@knext.input_binary`, and respectively `@knext.output_table` and `@knext.output_binary`. 
+The input and output ports of a node can be configured by decorating the node class with `@knext.input_table`, `@knext.input_binary`, and respectively `@knext.output_table` and `@knext.output_binary`. Additionally, an output port producing a view can be added with the `@knext.output_view` decorator.
 
 These port decorators have the following properties:
 
-- they take `name` and `description` arguments, which will be displayed in the node description area inside KNIME;
+- they take `name` and `description` arguments, which will be displayed in the node description area inside KNIME Analytics Platform;
 - they must be positioned _after_ the `@knext.node` decorator and _before_ the decorated object (e.g. the node class);
-- their order determines the order of the port connectors of the node in KNIME. 
+- their order determines the order of the port connectors of the node in KNIME Analytics Platform. 
 
 The `@knext.input_table` and `@knext.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
 
@@ -410,13 +411,18 @@ In order to add parameterization to your node's functionality, we can define and
         "Select the columns that should be filtered out."
     )
     ```
+    - Setup within the `configure` method of the node class:
+    ```python
+    # the multiple column selection parameter needs to be provided the list of columns of an input table
+    self.selected_columns = input_schema_1.column_names
+    ```
     - Usage within the `execute` method of the node class:
     ```python
     for col_name in self.selected_columns:
         # drop the column from the table
     ```
 
-All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME, as well as in the configuration dialog itself.
+All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME Analytics Platform, as well as in the configuration dialog itself.
 
 Parameters are defined in the form of class attributes inside the node class definition (similar to Python [descriptors](https://docs.python.org/3/howto/descriptor.html)):
 
@@ -543,56 +549,20 @@ class OuterGroup:
             raise ValueError("The inner int should not be larger than the outer!")
 ```
 
-<!-- ```python
-import knime_node as kn
-import knime_schema as ks
-import knime_table as kt
-import pyarrow as pa
-
-@kn.node(name="My Node", node_type=kn.NodeType.MANIPULATOR, icon_path="icon.png", category="/")
-@kn.input_table(name="input", description="table")
-@kn.output_table(name="output", description="table")
-class MyNode:
-    name = kn.StringParameter(label="Name", description="This name will be broadcasted...", default_value="foobar")
-    
-    num_repetitions = kn.IntParameter(label="NumReps", description="How often do we repeat?", default_value=1, min_value=1)
-    
-    @num_repetitions.validator
-    def reps_validator(value):
-        if value == 2:
-            raise ValueError("I don't like the number 2")
-    
-    def configure(self, config_context, table_schema):
-        out_schema = table_schema
-        for i in range(self.num_repetitions):
-            out_schema.append(ks.Column(ks.string(), self.name + " Column"))
-        return out_schema
-    
-    def execute(self, exec_context, table):
-        pa_table = table.to_pyarrow()
-        col = pa.array([self.name] * len(pa_table))
-        field = pa.field(self.name + " Column", type=pa.string())
-    
-        for i in range(self.num_repetitions):
-            pa_table = pa_table.append_column(field, col)
-        return kn.Table.from_pyarrow(pa_table)
-``` -->
-
 ### Node view declaration
 
 You can use the `@knext.view(name="", description="")` decorator to specify that a node returns a view. 
-In that case, the `execute` method should return a tuple of port outputs and the view (of type `knime_views.NodeView`). The package `knime_views` contains utilities to create node views from different kinds of objects.
+In that case, the `execute` method should return a tuple of port outputs and the view (of type `knime_views.NodeView`).
 
 ```python
 from typing import List
 import knime_extension as knext
-import knime_views as kv
 import seaborn as sns
 
 
 @knext.node(name="My Node", node_type=knext.NodeType.VISUALIZER, icon_path="icon.png", category="/")
 @knext.input_table(name="Input Data", description="We read data from here")
-@knext.view(name="My pretty view", description="Showing a seaborn plot")
+@knext.output_view(name="My pretty view", description="Showing a seaborn plot")
 class MyViewNode:
     """
     A view node
@@ -606,7 +576,7 @@ class MyViewNode:
     def execute(self, exec_context, table):
         df = table.to_pandas()
         sns.lineplot(x="x", y="y", data=df)
-        return kv.view_seaborn()
+        return knext.view_seaborn()
 ```
 
 ## Customizing the Python executable
@@ -633,7 +603,7 @@ As illustrated above, you can overwrite the Python executable of multiple extens
 
 ## Registering Python extensions during development
 
-In order to register a Python extension you are developing, you can added to the `knime.python.extension.config` YAML explained above by adding a src property:
+In order to register a Python extension you are developing, you can add it to the `knime.python.extension.config` YAML explained above by adding a src property:
 ```yml
 id.of.your.dev.extension:
   src: path/to/your/extension
@@ -653,7 +623,32 @@ Last but not least, fully enabling and disabling the debug mode also requires a 
 
 ### Logging
 
-You can use the logging module to send warnings and errors to the KNIME console
+You can use the [logging](https://docs.python.org/3/library/logging.html) Python module to send warnings and errors to the KNIME Analytics Platform console. By going to _File -> Preferences -> KNIME -> KNIME GUI_, you can choose the Console View Log Level. Each consequtive level includes the previous levels (i.e. `DEBUG` will also allow message from `INFO`, `WARN`, and `ERROR` to come through in the console, whereas `WARN` will only allow `WARN` and `ERROR` levels of messages).
+
+In your Python script, you can initiate the logger, and use it to send out messages to the KNIME Analytics Platform console as follows:
+```python
+# other various imports including knime_extension
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+# your node definition via the knext decorators
+class MyNode:
+    # your configuration dialog parameter definitions
+
+    def configure(…):
+        …
+        LOGGER.debug("This message will be displayed in the KNIME Analytics Platform console at the DEBUG level")
+        LOGGER.info("This one will be displayed at the INFO level.")
+        LOGGER.warning("This one at the WARN level.")
+        LOGGER.error("And this will be displayed as an ERROR message.")
+        …
+
+    def execute(…):
+        …
+        LOGGER.info("Logger messages can be inserted anywhere in your code.")
+        …
+```
 
 ### Gateway caching
 
