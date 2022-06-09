@@ -259,8 +259,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         public boolean hasNodeView() {
-            // FIXME hack to make dialogs for nodes without views work until they work on their own.
-            return true;
+            return m_numViews > 0;
         }
 
         @Override
@@ -268,46 +267,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             if (!hasNodeView()) {
                 throw new IllegalStateException("The node has no view.");
             }
-            // FIXME this is just a hack to make dialogs work for nodes without view
-            if (nodeModel.getPathToHtmlView().isEmpty()) {
-                return new DummyNodeView();
-            }
             return new HtmlFileNodeView(() -> nodeModel.getPathToHtmlView()
                 .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")));
-        }
-
-        private static final class DummyNodeView implements NodeView {
-
-            @Override
-            public Optional<InitialDataService> createInitialDataService() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<DataService> createDataService() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ApplyDataService> createApplyDataService() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Page getPage() {
-                return Page.builder(() -> "<!DOCTYPE html>", "index.html").build();
-            }
-
-            @Override
-            public void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-                // nothing to do
-            }
-
-            @Override
-            public void loadValidatedSettingsFrom(final NodeSettingsRO settings) {
-                // nothing to do
-            }
-
         }
     }
 }
