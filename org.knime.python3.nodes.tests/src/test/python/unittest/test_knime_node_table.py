@@ -300,6 +300,12 @@ class ArrowTableTest(unittest.TestCase):
         self.assertIsInstance(batches[0], knt.Table)
         self.assertEqual(table.num_columns, batches[0].num_columns)
 
+    def test_missing_row_key(self):
+        table = self._test_table
+        data = table.to_pyarrow()
+        data_no_row_key = data.select([4, 5, 6])
+        self.assertRaises(TypeError, lambda: knt.Table.from_pyarrow(data_no_row_key))
+
 
 class BatchOutputTableTest(unittest.TestCase):
     def _generate_test_batch(self, index):
