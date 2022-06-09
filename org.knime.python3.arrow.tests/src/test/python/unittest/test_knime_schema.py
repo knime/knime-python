@@ -46,6 +46,7 @@
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
+import os
 import unittest
 import json
 import datetime as dt
@@ -553,7 +554,9 @@ class SchemaTest(unittest.TestCase):
         _register_extension_types()
 
         # load a JSON schema as it is coming from KNIME for a table created with the Test Data Generator
-        with open("schema.json", "rt") as f:
+        with open(
+            os.path.normpath(os.path.join(__file__, "..", "schema.json")), "rt"
+        ) as f:
             table_schema = json.load(f)
 
         specs = table_schema["schema"]["specs"]
@@ -599,4 +602,3 @@ class SchemaTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

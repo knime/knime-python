@@ -1,4 +1,5 @@
 import datetime
+import os
 import unittest
 from typing import Type, Union
 import pythonpath
@@ -372,7 +373,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         return pa.Table.from_arrays(columns, names=list(d.keys()))
 
     def _generate_test_data_frame(
-        self, path="generatedTestData.zip", lists=True, sets=True
+        self, file_name="generatedTestData.zip", lists=True, sets=True
     ) -> pd.DataFrame:
         """
         Creates a Dataframe from a KNIME table on disk
@@ -381,7 +382,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         @param sets: allow sets in output table (extension sets have difficulties)
         @return: pandas dataframe containing data from KNIME GenerateTestTable node
         """
-        knime_generated_table_path = path
+        knime_generated_table_path = os.path.normpath(
+            os.path.join(__file__, "..", file_name)
+        )
 
         test_data_source = TestDataSource(knime_generated_table_path)
         pa_data_source = knar.ArrowDataSource(test_data_source)
@@ -753,7 +756,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         # Create table
         df = self._generate_test_data_frame(
-            path="missingTestData.zip", lists=True, sets=True
+            file_name="missingTestData.zip", lists=True, sets=True
         )
         # print(df.columns)
         remove_cols = [

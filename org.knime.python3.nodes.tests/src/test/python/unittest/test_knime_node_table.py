@@ -123,7 +123,9 @@ class ArrowTableTest(unittest.TestCase):
         """
         import os
 
-        knime_generated_table_path = os.path.join(os.curdir, "generatedTestData.zip")
+        knime_generated_table_path = os.path.normpath(
+            os.path.join(__file__, "..", "generatedTestData.zip")
+        )
         column_names = [
             "StringCol",
             "StringListCol",
