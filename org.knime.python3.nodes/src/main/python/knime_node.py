@@ -203,26 +203,25 @@ class PythonNode(ABC):
 
     **Example**::
 
-        @kn.node("My Predictor", node_type="kn.NodeType.PREDICTOR", icon_path="icon.png", category="/")
-        @kn.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
-        @kn.input_table("Data", "The data on which to predict")
-        @kn.input_table("Output Data", "The input table with appended double column which holds the predictions")
-        class MyPredictor():
-            def configure(self, binary_spec, table_spec):
-                # append a "double" column to the table_spec
-                return table_spec.append(kn.Column(ks.double(), "Predictions"))
+            import logging
+            import knime_extension as knext
 
-            def execute(self, table, binary):
-                model = self._load_model_from_bytes(binary)
-                df = table.to_pandas()
-                new_col = model.predict(df)
-                df["Predictions"] = new_col
-                return [table.append(kn.Table.from_pandas(df))]
+            LOGGER = logging.getLogger(__name__)
 
-            def _load_model_from_bytes(self, data):
-                return pickle.loads(data)
-    
-    """
+            @knext.node(name="Pure Python Node", node_type=knext.NodeType.LEARNER, icon_path="../icons/icon.png", category="/")
+            @knext.input_table(name="Input Data", description="We read data from here")
+            @knext.output_table(name="Output Data", description="Whatever the node has produced")
+            class TemplateNode(knext.PythonNode):
+                # A Python node has a description.
+
+                def configure(self, configure_context):
+                    LOGGER.info(f"Configuring node")
+                    pass
+
+                def execute(self, exec_context, input):
+                    return input
+
+                """
 
     input_ports: List[Port] = None
     output_ports: List[Port] = None

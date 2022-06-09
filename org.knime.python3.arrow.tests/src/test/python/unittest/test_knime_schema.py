@@ -279,7 +279,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
             self.assertIsInstance(s[i].get(), k.Column)
-            self.assertEqual(t, s[i].type)
+            self.assertEqual(t, s[i].ktype)
             self.assertEqual(n, s[i].name)
             self.assertIsNone(s[i].metadata)
 
@@ -290,7 +290,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
             self.assertIsInstance(s[i].get(), k.Column)
-            self.assertEqual(t, s[i].type)
+            self.assertEqual(t, s[i].ktype)
             self.assertEqual(n, s[i].name)
             self.assertEqual(n, s[i].metadata)
 
@@ -302,7 +302,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
             self.assertIsInstance(s[i].get(), k.Column)
-            self.assertEqual(t, s[i].type)
+            self.assertEqual(t, s[i].ktype)
             self.assertEqual(n, s[i].name)
             self.assertIsNone(s[i].metadata)
 
@@ -314,7 +314,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(len(types), s.num_columns)
         for i, (t, n) in enumerate(zip(types, names)):
             self.assertIsInstance(s[i].get(), k.Column)
-            self.assertEqual(t, s[i].type)
+            self.assertEqual(t, s[i].ktype)
             self.assertEqual(n, s[i].name)
             self.assertEqual(n, s[i].metadata)
 
@@ -379,7 +379,7 @@ class SchemaTest(unittest.TestCase):
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema(types, names)
         self.assertEqual(s[1], s["Longs"])
-        self.assertEqual(s[1].type, s["Longs"].type)
+        self.assertEqual(s[1].ktype, s["Longs"].ktype)
         self.assertEqual(s[1].name, s["Longs"].name)
 
     def test_column_selection_wraparound(self):
@@ -387,7 +387,7 @@ class SchemaTest(unittest.TestCase):
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema(types, names)
         self.assertEqual(s[2], s[-2])
-        self.assertEqual(s[2].type, s[-2].type)
+        self.assertEqual(s[2].ktype, s[-2].ktype)
         self.assertEqual(s[2].name, s[-2].name)
 
     def test_column_permutation(self):

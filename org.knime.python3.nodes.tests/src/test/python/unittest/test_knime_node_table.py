@@ -30,7 +30,7 @@ class SchemaTest(unittest.TestCase):
         self.assertIsInstance(s[2], ks._ColumnarView)
         self.assertEqual("Doubles", s[2].name)
         self.assertIsInstance(s[3], ks._ColumnarView)
-        self.assertEqual(ks.string(), s[3].type)
+        self.assertEqual(ks.string(), s[3].ktype)
         with self.assertRaises(AttributeError):
             # try calling something random
             s[1].foobar(2)
@@ -41,7 +41,7 @@ class SchemaTest(unittest.TestCase):
         s = ks.Schema.from_types(types, names)
 
         columns = [c for c in s]
-        self.assertEqual(types, [c.type for c in columns])
+        self.assertEqual(types, [c.ktype for c in columns])
         self.assertEqual(names, [c.name for c in columns])
 
 
@@ -311,7 +311,7 @@ class ArrowTableTest(unittest.TestCase):
         schema = table.schema
         self.assertEqual(table.num_columns, schema.num_columns)
         self.assertEqual(schema.column_names[0], "StringCol")
-        self.assertEqual(schema[3].type, ks.int32())
+        self.assertEqual(schema[3].ktype, ks.int32())
 
 
 class BatchOutputTableTest(unittest.TestCase):

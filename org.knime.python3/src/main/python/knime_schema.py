@@ -454,50 +454,51 @@ class BinaryPortObjectSpec(PortObjectSpec):
 # --------------------------------------------------------------------
 class Column:
     """
-    A column inside a table schema consists of the datatype, a column name
+    A column inside a table schema consists of the knime datatype, a column name
     and optional metadata.
     """
 
-    type: KnimeType
+    ktype: KnimeType
     name: str
     metadata: str
 
-    def __init__(self, dtype: KnimeType, name: str, metadata=None):
+    def __init__(self, ktype: KnimeType, name: str, metadata=None):
         """
         Construct a Column from type, name and optional metadata.
         
         Args:
-            dtype: The type of the column
+            ktype: The knime type of the column
             name: The name of the column. May not be empty.
 
         Raises:
             TypeError: if the type is no KNIME type
             ValueError: if the name is empty
         """
-        if not isinstance(dtype, KnimeType):
-            raise TypeError(f"Column type must be a KnimeType, but got {type(dtype)}")
+        if not isinstance(ktype, KnimeType):
+            raise TypeError(f"Column type must be a KnimeType, but got {type(ktype)}")
         if not isinstance(name, str):
             raise TypeError(f"Column name must be of type string, but got {type(name)}")
         if name.strip() == "":
             raise ValueError("Column name may not be empty")
 
-        self.type = dtype
+        self.ktype = ktype
         self.name = name
         self.metadata = metadata
 
     def __str__(self) -> str:
         metastr = "" if self.metadata is None else f", {self.metadata}"
-        return f"{self.__class__.__name__}<'{self.name}', {self.type}{metastr}>"
+        return f"{self.__class__.__name__}<'{self.name}', {self.ktype}{metastr}>"
 
     def __eq__(self, other) -> bool:
         return (
-            self.type == other.type
+            self.ktype == other.ktype
             and self.name == other.name
             and (
                 (self.metadata is None and other.metadata is None)
                 or (self.metadata == other.metadata)
             )
         )
+
 
 
 class _Columnar(ABC):
@@ -682,7 +683,7 @@ class _AppendOperation(_ColumnarOperation):
 class Schema(_Columnar, PortObjectSpec):
     """
     A schema defines the data types and names of the columns inside a table.
-    Additionally it can hold metadata for the individual columns.
+    Additionally, it can hold metadata for the individual columns.
     """
 
     @classmethod
@@ -690,23 +691,23 @@ class Schema(_Columnar, PortObjectSpec):
         """Create a schema from a list of columns"""
         if len(columns) == 0:
             return cls([], [], [])
-        types, names, metadata = zip(*[(c.type, c.name, c.metadata) for c in columns])
-        return cls(types, names, metadata)
+        ktypes, names, metadata = zip(*[(c.ktype, c.name, c.metadata) for c in columns])
+        return cls(ktypes, names, metadata)
 
     @classmethod
     def from_types(
-        cls, types: List[KnimeType], names: List[str], metadata: List = None
+        cls, ktypes: List[KnimeType], names: List[str], metadata: List = None
     ):
         """Create a schema from a list of column data types, names and metadata"""
-        return cls(types, names, metadata)
+        return cls(ktypes, names, metadata)
 
-    def __init__(self, types: List[KnimeType], names: List[str], metadata: List = None):
+    def __init__(self, ktypes: List[KnimeType], names: List[str], metadata: List = None):
         """Create a schema from a list of column data types, names and metadata"""
-        if not isinstance(types, Sequence) or not all(
-            isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in types
+        if not isinstance(ktypes, Sequence) or not all(
+            isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in ktypes
         ):
             raise TypeError(
-                f"Schema expected types to be a sequence of KNIME types but got {type(types)}: {types}"
+                f"Schema expected types to be a sequence of KNIME types but got {type(ktypes)}: {ktypes}"
             )
 
         if (not isinstance(names, list) and not isinstance(names, tuple)) or not all(
@@ -716,26 +717,26 @@ class Schema(_Columnar, PortObjectSpec):
                 f"Schema expected names to be a sequence of strings, but got {type(names)}"
             )
 
-        if len(types) != len(names):
+        if len(ktypes) != len(names):
             raise ValueError(
-                f"Number of types must match number of names, but {len(types)} != {len(names)}"
+                f"Number of types must match number of names, but {len(ktypes)} != {len(names)}"
             )
 
         if metadata is not None:
             if not isinstance(metadata, Sequence):
-                # DOESNT WORK: or not all(m is None or isinstance(m, str) for m in metadata):
+                # DOESN'T WORK: or not all(m is None or isinstance(m, str) for m in metadata):
                 raise TypeError(
                     "Schema expected Metadata to be None or a sequence of strings or Nones"
                 )
 
-            if len(types) != len(metadata):
+            if len(ktypes) != len(metadata):
                 raise ValueError(
-                    f"Number of types must match number of metadata fields, but {len(types)} != {len(metadata)}"
+                    f"Number of types must match number of metadata fields, but {len(ktypes)} != {len(metadata)}"
                 )
         else:
-            metadata = [None] * len(types)
+            metadata = [None] * len(ktypes)
 
-        self._columns = [Column(t, n, m) for t, n, m in zip(types, names, metadata)]
+        self._columns = [Column(t, n, m) for t, n, m in zip(ktypes, names, metadata)]
 
     @property
     def column_names(self) -> List[str]:
@@ -786,7 +787,8 @@ class Schema(_Columnar, PortObjectSpec):
             return self.__class__.from_columns([self[c] for c in columns])
         else:
             raise TypeError(
-                f"{self.__class__.__name__} can only be indexed by int, string, slice, list of int, or list of string, not {type(index)}"
+                f"{self.__class__.__name__} can only be indexed by int, string, slice, list of int, "
+                f"or list of string, not {type(index)}"
             )
 
     def __eq__(self, other) -> bool:
@@ -827,7 +829,7 @@ class Schema(_Columnar, PortObjectSpec):
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME
         as result of a node's configure() method.
 
-        Because KNIME expects a row key column as first column of the schema but we don't
+        Because KNIME expects a row key column as first column of the schema, but we don't
         include this in the KNIME Python table schema, we insert a row key column here.
 
         Raises:
@@ -860,15 +862,15 @@ class Schema(_Columnar, PortObjectSpec):
         names = table_schema["columnNames"]
         metadata = table_schema["columnMetaData"]
 
-        types = [_dict_to_knime_type(s, t) for s, t in zip(specs, traits)]
+        ktypes = [_dict_to_knime_type(s, t) for s, t in zip(specs, traits)]
         row_key_type = LogicalType(_row_key_type, string())
-        if types[0] == row_key_type:
-            schema_without_row_key = cls(types[1:], names[1:], metadata[1:])
+        if ktypes[0] == row_key_type:
+            schema_without_row_key = cls(ktypes[1:], names[1:], metadata[1:])
         else:
             LOGGER.warning(
                 "Did not find RowKey column when creating Schema from KNIME dict"
             )
-            schema_without_row_key = cls(types, names, metadata)
+            schema_without_row_key = cls(ktypes, names, metadata)
         return _unwrap_primitive_types(schema_without_row_key)
 
 
@@ -946,7 +948,7 @@ def _unwrap_primitive_types(schema: Schema) -> Schema:
     """
     unwrapped_columns = []
     for c in schema:
-        c.type = _unwrap_primitive_type(c.type)
+        c.ktype = _unwrap_primitive_type(c.ktype)
         unwrapped_columns.append(c)
     return schema.__class__.from_columns(unwrapped_columns)
 
@@ -959,7 +961,7 @@ def _wrap_primitive_types(schema: Schema) -> Schema:
     """
     wrapped_columns = []
     for c in schema:
-        c.type = _wrap_primitive_type(c.type)
+        c.ktype = _wrap_primitive_type(c.ktype)
         wrapped_columns.append(c)
     return schema.__class__.from_columns(wrapped_columns)
 
@@ -1022,23 +1024,23 @@ _knime_to_type_str = {
 }
 
 
-def _knime_type_to_dict(dtype):
+def _knime_type_to_dict(ktype):
     traits = {}
 
-    if isinstance(dtype, LogicalType):
-        traits["traits"] = {"logical_type": dtype.logical_type}
-        dtype = dtype.storage_type
+    if isinstance(ktype, LogicalType):
+        traits["traits"] = {"logical_type": ktype.logical_type}
+        ktype = ktype.storage_type
     else:
         traits["traits"] = {}
 
-    if isinstance(dtype, ListType):
-        inner_spec, inner_traits = _knime_type_to_dict(dtype.inner_type)
+    if isinstance(ktype, ListType):
+        inner_spec, inner_traits = _knime_type_to_dict(ktype.inner_type)
         traits["type"] = "list"
         traits["inner"] = inner_traits
         spec = {"type": "list", "inner_type": inner_spec}
-    elif isinstance(dtype, StructType):
+    elif isinstance(ktype, StructType):
         inner_specs, inner_traits = zip(
-            *[_knime_type_to_dict(i) for i in dtype.inner_types]
+            *[_knime_type_to_dict(i) for i in ktype.inner_types]
         )
         traits["type"] = "struct"
         traits["inner"] = list(inner_traits)
@@ -1046,28 +1048,28 @@ def _knime_type_to_dict(dtype):
     else:
         traits["type"] = "simple"
         if (
-            isinstance(dtype, PrimitiveType)
+            isinstance(ktype, PrimitiveType)
             and (
-                dtype._type_id == PrimitiveTypeId.STRING
-                or dtype._type_id == PrimitiveTypeId.BLOB
+                ktype._type_id == PrimitiveTypeId.STRING
+                or ktype._type_id == PrimitiveTypeId.BLOB
             )
-            and dtype.dict_encoding_key_type is not None
+            and ktype.dict_encoding_key_type is not None
         ):
-            traits["traits"]["dict_encoding"] = dtype.dict_encoding_key_type.value
-            dtype = (
-                dtype.plain_type
+            traits["traits"]["dict_encoding"] = ktype.dict_encoding_key_type.value
+            ktype = (
+                ktype.plain_type
             )  # to look up the data type without key in the _knime_to_type_str dict
 
         try:
-            spec = _knime_to_type_str[dtype]
+            spec = _knime_to_type_str[ktype]
         except KeyError:
-            raise KeyError(f"Could not find spec for type: {dtype}")
+            raise KeyError(f"Could not find spec for type: {ktype}")
 
     return spec, traits
 
 
 def _schema_to_knime_dict(schema):
-    specs, traits = zip(*[_knime_type_to_dict(c.type) for c in schema])
+    specs, traits = zip(*[_knime_type_to_dict(c.ktype) for c in schema])
     return {
         "schema": {"specs": specs, "traits": traits},
         "columnNames": [c.name for c in schema],

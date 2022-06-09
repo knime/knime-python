@@ -285,7 +285,7 @@ class RowFilterOperation(TabularOperation):
 class Schema(Columnar):
     @staticmethod
     def from_columns(columns):
-        types, names, metadata = zip(*[(c.type, c.name, c.metadata) for c in columns])
+        types, names, metadata = zip(*[(c.ktype, c.name, c.metadata) for c in columns])
         return Schema(types, names, metadata)
 
     @staticmethod
@@ -569,7 +569,7 @@ class SchemaTest(unittest.TestCase):
         self.assertIsInstance(s[2], ColumnarView)
         self.assertEqual("Doubles", s[2].name)
         self.assertIsInstance(s[3], ColumnarView)
-        self.assertEqual(ks.string(), s[3].type)
+        self.assertEqual(ks.string(), s[3].ktype)
         with self.assertRaises(AttributeError):
             s[1].foobar(2)
 
