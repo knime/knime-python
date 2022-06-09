@@ -143,7 +143,9 @@ class ArrowTable(knt.Table):
     def _select_columns(self, selection) -> "ArrowTable":
         import knime_arrow_table as kat
 
-        return ArrowTable(kat._select_columns(self._get_table(), selection))
+        return ArrowTable(
+            kat._select_columns(self._get_table(), selection, auto_include_row_key=True)
+        )
 
     def _append(self, other: "ArrowTable") -> "ArrowTable":
         a = self._get_table()
@@ -159,11 +161,13 @@ class ArrowTable(knt.Table):
 
     @property
     def num_columns(self) -> int:
-        return len(self._table.schema)
+        # NOTE: We don't count the row key column
+        return len(self._table.schema) - 1
 
     @property
     def column_names(self) -> List[str]:
-        return self._table.schema.names
+        # NOTE: We don't include the row key column
+        return self._table.schema.names[1:]
 
     @property
     def schema(self) -> ks.Schema:
@@ -210,11 +214,13 @@ class ArrowSourceTable(ArrowTable):
 
     @property
     def num_columns(self) -> int:
-        return len(self._source.schema)
+        # NOTE: We don't count the row key column
+        return len(self._source.schema) - 1
 
     @property
     def column_names(self) -> List[str]:
-        return self._source.schema.names
+        # NOTE: We don't include the row key column
+        return self._source.schema.names[1:]
 
     @property
     def schema(self) -> ks.Schema:

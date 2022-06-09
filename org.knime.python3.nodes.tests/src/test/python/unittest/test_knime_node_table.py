@@ -57,7 +57,7 @@ class TableTest(unittest.TestCase):
         df[0] = [1, 2, 3, 4]
         df[1] = [5.0, 6.0, 7.0, 8.0]
         t = knt.Table.from_pandas(df)
-        tv = t[0:2]  # Row Key and first column
+        tv = t[:1]  # Row Key and first column
         self.assertIsInstance(tv, ks._ColumnarView)
         self.assertIsInstance(tv, knt._TabularView)
         self.assertIsInstance(tv.operation, ks._ColumnSlicingOperation)
@@ -257,19 +257,16 @@ class ArrowTableTest(unittest.TestCase):
         names = [table.column_names[i] for i in indices]
         sliced = table[names]
         self.assertEqual(len(names), sliced.num_columns)
-        self.assertTrue(
-            all(
-                table.column_names[i] == sliced.column_names[e]
-                for e, i in enumerate(indices)
-            )
+        self.assertListEqual(
+            [table.column_names[i] for i in indices],
+            [sliced.column_names[i] for i in range(len(indices))],
         )
 
         data = sliced.to_pyarrow()
-        self.assertTrue(
-            all(
-                table.column_names[i] == data.schema.names[e]
-                for e, i in enumerate(indices)
-            )
+        self.assertEqual(data.schema.names[0], "<Row Key>")
+        self.assertListEqual(
+            [table.column_names[i] for i in indices],
+            [data.schema.names[i + 1] for i in range(len(indices))],
         )
 
     def test_both_slicings(self):

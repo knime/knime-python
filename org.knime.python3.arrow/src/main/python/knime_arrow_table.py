@@ -405,7 +405,9 @@ def _select_rows(
 
 
 def _select_columns(
-    data: Union[pa.RecordBatch, pa.Table], selection
+    data: Union[pa.RecordBatch, pa.Table],
+    selection,
+    auto_include_row_key=False,
 ) -> Union[pa.RecordBatch, pa.Table]:
     columns = []
 
@@ -416,26 +418,30 @@ def _select_columns(
     elif isinstance(selection, str):
         selection = [selection]
 
+    col_names = data.schema.names if not auto_include_row_key else data.schema.names[1:]
     if isinstance(selection, slice):
-        columns = list(range(*selection.indices(len(data.schema.names))))
+        columns = list(range(*selection.indices(len(col_names))))
     elif isinstance(selection, list):
-        schema = data.schema
         for col in selection:
             if isinstance(col, str):
                 try:
-                    columns.append(schema.names.index(col))
+                    columns.append(col_names.index(col))
                 except ValueError:
                     raise IndexError(
-                        f"Invalid column selection, '{col}' is not available in {schema.names}"
+                        f"Invalid column selection, '{col}' is not available in {col_names}"
                     )
             elif isinstance(col, int):
-                if not 0 <= col < len(schema.names):
+                if not 0 <= col < len(col_names):
                     raise IndexError(f"Column index {col} out of bounds")
                 columns.append(col)
             else:
                 raise IndexError(f"Invalid column index {col}")
     else:
         raise IndexError(f"Invalid column selection '{selection}' for '{data}'")
+
+    # Include the row key column and shift all indices
+    if auto_include_row_key:
+        columns = [0, *[c + 1 for c in columns]]
 
     if isinstance(data, pa.Table):
         return data.select(columns)
