@@ -306,6 +306,13 @@ class ArrowTableTest(unittest.TestCase):
         data_no_row_key = data.select([4, 5, 6])
         self.assertRaises(TypeError, lambda: knt.Table.from_pyarrow(data_no_row_key))
 
+    def test_schema(self):
+        table = self._test_table
+        schema = table.schema
+        self.assertEqual(table.num_columns, schema.num_columns)
+        self.assertEqual(schema.column_names[0], "StringCol")
+        self.assertEqual(schema[3].type, ks.int32())
+
 
 class BatchOutputTableTest(unittest.TestCase):
     def _generate_test_batch(self, index):

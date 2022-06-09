@@ -54,7 +54,6 @@ import knime_table as kta
 import knime_schema as ks
 import knime_arrow as ka
 import knime_arrow_types as kat
-import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
 
 
@@ -453,52 +452,3 @@ def _select_columns(
             arrays.append(data.column(c))
             fields.append(data.schema.field(c))
         return pa.RecordBatch.from_arrays(arrays, schema=pa.schema(fields))
-
-
-_arrow_to_knime_types = {
-    pa.int32(): ks.int32(),
-    pa.int64(): ks.int64(),
-    pa.string(): ks.string(),
-    pa.bool_(): ks.bool_(),
-    pa.float64(): ks.double(),
-    pa.large_binary(): ks.blob()
-    # pa.null(): ks.void(), ?
-}
-
-
-def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
-    if kat.is_dict_encoded_value_factory_type(dtype):
-        return ks.LogicalType(
-            "structDictEncodedValueFactory",
-            _convert_arrow_type_to_knime(dtype.value_type),
-        )
-    elif kas.is_struct_dict_encoded(dtype):
-        return ks.LogicalType(
-            "structDictEncoded", _convert_arrow_type_to_knime(dtype.value_type)
-        )
-    elif kat.is_value_factory_type(dtype):
-        return ks.LogicalType(
-            dtype.logical_type, _convert_arrow_type_to_knime(dtype.storage_type)
-        )
-    elif dtype in _arrow_to_knime_types:
-        return _arrow_to_knime_types[dtype]
-    elif isinstance(dtype, pa.ListType) or isinstance(dtype, pa.LargeListType):
-        return ks.list_(_convert_arrow_type_to_knime(dtype.value_type))
-    elif isinstance(dtype, pa.StructType):
-        return ks.StructType(
-            [_convert_arrow_type_to_knime(field.type) for field in dtype]
-        )
-    else:
-        raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")
-
-
-def _convert_arrow_schema_to_knime(schema: pa.Schema) -> ks.Schema:
-    types = []
-    metadata = []
-    names = schema.names
-
-    for field in schema:
-        types.append(_convert_arrow_type_to_knime(field.type))
-        metadata.append(field.metadata)
-
-    return ks.Schema(types, names, metadata)

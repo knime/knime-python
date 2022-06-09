@@ -53,6 +53,8 @@ import pyarrow as pa
 import logging
 
 import knime_arrow
+import knime_arrow_types as katy
+import knime_arrow_struct_dict_encoding as kas
 import knime_schema as ks
 import knime_node_table as knt
 
@@ -65,8 +67,6 @@ class _ArrowBackend(knt._Backend):
         self._sinks = []
 
     def create_table_from_pyarrow(self, data, sentinel):
-        import knime_arrow_types as katy
-
         if sentinel is not None:
             data = katy.sentinel_to_missing_value(data, sentinel)
         data = katy.wrap_primitive_arrays(data)
@@ -123,8 +123,6 @@ class ArrowTable(knt.Table):
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel))
 
     def to_pyarrow(self, sentinel: Optional[Union[str, int]] = None) -> pa.Table:
-        import knime_arrow_types as katy
-
         table = katy.unwrap_primitive_arrays(self._get_table())
 
         if sentinel is not None:
@@ -171,9 +169,7 @@ class ArrowTable(knt.Table):
 
     @property
     def schema(self) -> ks.Schema:
-        import knime_arrow_table as kat
-
-        return kat._convert_arrow_schema_to_knime(self._get_table().schema)
+        return _convert_arrow_schema_to_knime(self._get_table().schema)
 
     def __str__(self):
         return f"ArrowTable[shape=({self.num_columns}, {self.num_rows})]"
@@ -224,9 +220,7 @@ class ArrowSourceTable(ArrowTable):
 
     @property
     def schema(self) -> ks.Schema:
-        import knime_arrow_table as kat
-
-        return kat._convert_arrow_schema_to_knime(self._source.schema)
+        return _convert_arrow_schema_to_knime(self._source.schema)
 
     def __str__(self):
         return f"ArrowSourceTable[cols={self.num_columns}, rows={self.num_rows}, batches={self.num_batches}]"
@@ -252,3 +246,57 @@ class ArrowSourceTable(ArrowTable):
         while batch_idx < len(self._source):
             yield ArrowTable(self._source[batch_idx])
             batch_idx += 1
+
+
+def _convert_arrow_schema_to_knime(schema: pa.Schema) -> ks.Schema:
+    # TODO the metadata is always "{}"
+    types, names, metadata = zip(
+        *[
+            (
+                _convert_arrow_type_to_knime(schema[i].type),
+                schema.names[i],
+                schema[i].metadata,
+            )
+            for i in range(1, len(schema))
+        ]
+    )
+
+    return ks.Schema(types, names, metadata)
+
+
+_arrow_to_knime_types = {
+    pa.int32(): ks.int32(),
+    pa.int64(): ks.int64(),
+    pa.string(): ks.string(),
+    pa.bool_(): ks.bool_(),
+    pa.float64(): ks.double(),
+    pa.large_binary(): ks.blob()
+    # pa.null(): ks.void(), ?
+}
+
+def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
+    if katy.is_dict_encoded_value_factory_type(dtype):
+        return ks.LogicalType(
+            "structDictEncodedValueFactory",
+            _convert_arrow_type_to_knime(dtype.value_type),
+        )
+    elif kas.is_struct_dict_encoded(dtype):
+        return ks.LogicalType(
+            "structDictEncoded", _convert_arrow_type_to_knime(dtype.value_type)
+        )
+    elif katy.is_value_factory_type(dtype):
+        if katy._is_knime_primitive_type(dtype):
+            return _convert_arrow_type_to_knime(dtype.storage_type)
+        return ks.LogicalType(
+            dtype.logical_type, _convert_arrow_type_to_knime(dtype.storage_type)
+        )
+    elif dtype in _arrow_to_knime_types:
+        return _arrow_to_knime_types[dtype]
+    elif isinstance(dtype, pa.ListType) or isinstance(dtype, pa.LargeListType):
+        return ks.list_(_convert_arrow_type_to_knime(dtype.value_type))
+    elif isinstance(dtype, pa.StructType):
+        return ks.StructType(
+            [_convert_arrow_type_to_knime(field.type) for field in dtype]
+        )
+    else:
+        raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")

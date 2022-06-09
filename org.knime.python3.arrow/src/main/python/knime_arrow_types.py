@@ -590,7 +590,7 @@ _arrow_to_knime_list_type = _knime_primitive_type("ListValueFactory")
 _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
 
 
-def _is_primitive_type(dtype):
+def _is_knime_primitive_type(dtype):
     return is_value_factory_type(dtype) and (
             dtype.logical_type == _row_key_type
             or dtype.logical_type in _arrow_to_knime_primitive_types.values()
@@ -609,14 +609,14 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
     if (
             is_value_factory_type(array.type)
             and array.type.logical_type == _arrow_to_knime_list_type
-            and _is_primitive_type(array.type.storage_type.value_type)
+            and _is_knime_primitive_type(array.type.storage_type.value_type)
     ):
         # special handling for unspecific list types: we unwrap the values
         # and maintain the offsets and validity mask
         offsets = _get_offsets_with_nulls(array.storage)
         values = _unwrap_primitive_knime_extension_array(array.storage.values)
         return _create_list_array(offsets, values)
-    elif _is_primitive_type(array.type):
+    elif _is_knime_primitive_type(array.type):
         return array.storage
     else:
         return array

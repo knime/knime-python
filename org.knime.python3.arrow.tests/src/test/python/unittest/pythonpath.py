@@ -103,3 +103,22 @@ sys.path.append(
         )
     )
 )
+
+# Path to knime_node_table_arrow.py
+sys.path.append(
+    os.path.normpath(
+        os.path.join(
+            __file__,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "org.knime.python3.nodes",
+            "src",
+            "main",
+            "python",
+        )
+    )
+)

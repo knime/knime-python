@@ -16,6 +16,7 @@ import knime_arrow as knar
 import knime_arrow_pandas
 import knime_arrow_types as katy
 import knime_arrow_table as kat
+import knime_node_arrow_table as knat
 
 
 class MyArrowExtType(pa.ExtensionType):
@@ -689,7 +690,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
                 ks.struct(ks.int64(), ks.int64()),
             ),
-            kat._convert_arrow_schema_to_knime(A._schema)[1].type,
+            knat._convert_arrow_schema_to_knime(A._schema)[0].type,
         )
 
     def test_timestamp_columns(self):
@@ -740,7 +741,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
         self.assertEqual(
-            knime_ts_ext_str, str(kat._convert_arrow_schema_to_knime(A._schema)[1].type)
+            knime_ts_ext_str, str(knat._convert_arrow_schema_to_knime(A._schema)[0].type)
         )
 
     def test_lists_with_missing_values(self):
