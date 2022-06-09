@@ -51,13 +51,9 @@ not for the Python Scripting (Labs) node!
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
 
-from abc import ABC, abstractmethod, abstractproperty
+from abc import abstractmethod, abstractproperty
 
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
-import unittest
-import pandas as pd
-import pyarrow as pa
-import numpy as np
+from typing import Iterator, List, Optional, Tuple, Union
 import logging
 
 import knime_schema as ks
@@ -140,9 +136,7 @@ class _Tabular(ks._Columnar):
         """
         return self.get().to_pandas()
 
-    def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None
-    ) -> Union["pyarrow.Table", "pyarrow.RecordBatch"]:
+    def to_pyarrow(self, sentinel: Optional[Union[str, int]] = None) -> "pyarrow.Table":
         """
         Access this table as a pyarrow.Table.
 
@@ -187,13 +181,11 @@ class _TabularView(_Tabular, ks._ColumnarView):
         self, sentinel: Optional[Union[str, int]] = None
     ) -> "pandas.DataFrame":
         """See _Tabular.to_pandas"""
-        return self.get().to_pandas()
+        return self.get().to_pandas(sentinel)
 
-    def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None
-    ) -> Union["pyarrow.Table", "pyarrow.RecordBatch"]:
+    def to_pyarrow(self, sentinel: Optional[Union[str, int]] = None) -> "pyarrow.Table":
         """See _Tabular.to_pyarrow"""
-        return self.get().to_pyarrow()
+        return self.get().to_pyarrow(sentinel)
 
     @property
     def num_rows(self):
@@ -268,7 +260,7 @@ class Table(_Tabular):
         )
 
     @staticmethod
-    def from_pyarrow(data: pa.Table, sentinel: Optional[Union[str, int]] = None):
+    def from_pyarrow(data: "pyarrow.Table", sentinel: Optional[Union[str, int]] = None):
         """
         Factory method to create a Table given a pyarrow.Table.
         The first column of the pyarrow.Table must contain unique row identifiers of type 'string'.
@@ -290,7 +282,9 @@ class Table(_Tabular):
         return _backend.create_table_from_pyarrow(data, sentinel)
 
     @staticmethod
-    def from_pandas(data: pa.Table, sentinel: Optional[Union[str, int]] = None):
+    def from_pandas(
+        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
+    ):
         """
         Factory method to create a Table given a pandas.DataFrame.
         The index of the data frame will be used as RowKey by KNIME.
