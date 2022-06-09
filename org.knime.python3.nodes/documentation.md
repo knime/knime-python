@@ -74,36 +74,12 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 
 5. Edit the `config.yml` file located just outside of the `tutorial_extension` (for this example, the file already exists with prefilled fields and values, but you would need to manually create it for future extensions that you develop). The contents should be as follows:
 
-    ```console
-    conda install knime-python-base packaging -c knime -c conda-forge
-    ```
-
-    Note that you __must__ append both the `knime` and `conda-forge` channels to the commands in order for them to work.
-
-5. Edit the `config.yml` file located just outside of the `tutorial_extension` (for this example, the file already exists with prefilled fields and values, but you would need to manually create it for future extensions that you develop). The contents should be as follows:
-
     ```
     <extension_id>:
 
         src: path/to/folder/of/template
 
         conda_env_path: path/to/my_python_env
-    ```
-    where:
-
-    - `<extension_id>` should be replaced with the `group_id` and `name` values specified in `knime.yml`, combined with a dot.
-    
-    For our example extension, the value for `group_id` is `org.knime`, and the value for `name` is `fluent_extension`, therefore the `<extension_id>` placeholder should be replaced with `org.knime.fluent_extension`.
-    
-    - the `src` field should specify the path to the `tutorial_extension` folder.
-
-    - similarly, the `conda_env_path` field should specify the path to the `conda`/Python environment created in Step 4. On macOS/Linux, you can get this path by activating your environment via `conda activate my_python_env` and then running `which python`.
-
-6. We need to let the KAP know where the `config.yml` is in order to allow it to use our extension and its Python environment. To do this, you need to edit the `knime.ini` of your KAP installation, which is located at `<path-to-your-KAP>/Contents/Eclipse/knime.ini`.
-
-    Append the following line to the end, and modify it to have the correct path to `config.yml`: 
-    ```
-    -Dknime.python.extension.config=path/to/your/config.yml
     ```
     where:
 
@@ -270,23 +246,6 @@ The port configuration determines the expected signature of the `configure` and 
 
 Here is an example with two input ports and one output port.
 
-The `@kn.input_table` and `@kn.output_table` decorators configure the port to consume and respectively produce a KNIME table. 
-
-If you want to receive or send other data, e.g. a trained machine learning model, use `@knext.input_binary` and `@knext.output_binary`. This decorator _has an additional argument_, `id`, used to identify the type of data going along this port connection. Only ports with equal `id` can be connected, and it is good practice to use your domain in reverse to prevent `id` clashes with other node extensions. The data is expected to have type `bytes`.
-
-The port configuration determines the expected signature of the `configure` and `execute` methods:
-
-- In the `configure` method, the first argument is a `ConfigurationContext`, followed by one argument per input port. The method is expected to return __as many parameters as it has output ports configured__. The argument and return value types corresponding to the input and output ports are:
-
-    - for __table__ ports, the argument/return value must be of type `knext.Schema`;
-    - for __binary__ ports, the argument/return value must be of type `knext.BinaryPortObjectSpec`.
-
-    Note that the order of the arguments and return values must match the order of the input and output port declarations via the decorators.
-
-- The arguments and expected return values of the `execute` method follow the same schema: one argument per input port, one return value per output port. 
-
-Here is an example with two input ports and one output port.
-
 ```python
 @knext.node("My Predictor", node_type=knext.NodeType.PREDICTOR, icon_path="icon.png", category="/")
 @knext.input_binary("Trained Model", "Trained fancy machine learning model", id="org.example.my.model")
@@ -314,16 +273,150 @@ class MyPredictor():
 
 > Note: for the sake of brevity, in the following code snippets we omit repetitive portions of the code whose utility has already been established and demonstrated earlier.
 
-In order to add parameterization to your node's functionality, we can define and customize its configuration dialog. The user-configurable parameters that will be displayed there, and whose values can be accessed inside the `execute` method of the node, are set up using a list of parameter types that have been predefined:
+In order to add parameterization to your node's functionality, we can define and customize its configuration dialog. The user-configurable parameters that will be displayed there, and whose values can be accessed inside the `execute` method of the node via `self.param_name`, are set up using a list of parameter types that have been predefined:
 
-* `knext.IntParameter` for integer numbers
-* `knext.DoubleParameter` for floating point numbers
-* `knext.StringParameter` for string parameters
-* `knext.BoolParameter` for boolean parameters
-* `knext.ColumnParameter` for a single column selection
+* `knext.IntParameter` for integer numbers:
+
+    - Signature:
+    ```python
+    knext.IntParameter(
+        label=None,
+        description=None,
+        default_value=0,
+        min_value=None,
+        max_value=None,
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    no_steps = knext.IntParameter("Number of steps", "The number of repetition steps.", 10, max_value=50)
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    for i in range(self.no_steps):
+        # do something
+    ```
+
+* `knext.DoubleParameter` for floating point numbers:
+
+    - Signature:
+    ```python
+    knext.DoubleParameter(
+        label=None,
+        description=None,
+        default_value=0.0,
+        min_value=None,
+        max_value=None,
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    learning_rate = knext.DoubleParameter("Learning rate", "The learning rate for Adam.", 0.003, min_value=0.)
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    optimizer = torch.optim.Adam(lr=self.learning_rate)
+    ```
+
+* `knext.StringParameter` for string parameters and single-choice selections:
+
+    - Signature:
+    ```python
+    knext.StringParameter(
+        label=None,
+        description=None,
+        default_value:"",
+        enum: List[str] = None
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    # as a text input field
+    search_term = knext.StringParameter("Search term", "The string to search for in the text.", "")
+
+    # as a single-choice selection
+    selection_param = knext.StringParameter("Selection", "The options to choose from.", "A", enum=["A", "B", "C", "D"])
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    table[table["str_column"].str.contains(self.search_term)]
+    ```
+
+* `knext.BoolParameter` for boolean parameters:
+
+    - Signature:
+    ```python
+    knext.BoolParameter(
+        label=None,
+        description=None,
+        default_value:False
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    output_image = knext.BoolParameter("Enable image output", "Option to output the node view as an image.", False)
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    if self.output_image is True:
+        # generate an image of the plot
+    ```
+
+* `knext.ColumnParameter` for a single column selection:
+
+    - Signature:
+    ```python
+    knext.ColumnParameter(
+        label=None,
+        description=None,
+        port_index=0, # the port from which to source the input table
+        column_filter: Callable[[knext.Column], bool] = None, # a (lambda) function to filter columns
+        include_row_key=False, # whether to include the table Row ID column in the list of selectable columns
+        include_none_column=False # whether to enable None as a selectable option, which returns "<none>"
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    selected_col = knext.ColumnParameter(
+        "Target column",
+        "Select the column containing country codes.",
+        column_filter= lambda col: True if "country" in col.name else False,
+        include_row_key=False,
+        include_none_column=True
+    )
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    if self.selected_column != "<none>":
+        column = input_table[self.selected_column]
+        # do something with the column
+    ```
+
 * `knext.MultiColumnParameter` for a multiple column selection
 
-All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME, and `default_value`. Certain parameter types support additional arguments, for example the `min_value` and `max_value` for the integer and floating point types. These should be visible via autocompletion in your favourite IDE.
+    - Signature:
+    ```python
+    knext.MultiColumnParameter(
+        label=None,
+        description=None,
+        port_index=0, # the port from which to source the input table
+        column_filter: Callable[[knext.Column], bool] = None, # a (lambda) function to filter columns
+    )
+    ```
+    - Definition within a node/parameter group class:
+    ```python
+    selected_columns = knext.MultiColumnParameter(
+        "Filter columns",
+        "Select the columns that should be filtered out."
+    )
+    ```
+    - Usage within the `execute` method of the node class:
+    ```python
+    for col_name in self.selected_columns:
+        # drop the column from the table
+    ```
+
+All of the above have arguments `label` and `description`, which are displayed in the node description in KNIME, as well as in the configuration dialog itself.
 
 Parameters are defined in the form of class attributes inside the node class definition (similar to Python [descriptors](https://docs.python.org/3/howto/descriptor.html)):
 
@@ -487,7 +580,7 @@ class MyNode:
 
 ### Node view declaration
 
-You can use the `@kn.output_view(name="", description="")` decorator to specify that a node returns a view. 
+You can use the `@knext.view(name="", description="")` decorator to specify that a node returns a view. 
 In that case, the `execute` method should return a tuple of port outputs and the view (of type `knime_views.NodeView`). The package `knime_views` contains utilities to create node views from different kinds of objects.
 
 ```python
@@ -499,7 +592,7 @@ import seaborn as sns
 
 @knext.node(name="My Node", node_type=knext.NodeType.VISUALIZER, icon_path="icon.png", category="/")
 @knext.input_table(name="Input Data", description="We read data from here")
-@knext.output_view(name="My pretty view", description="Showing a seaborn plot")
+@knext.view(name="My pretty view", description="Showing a seaborn plot")
 class MyViewNode:
     """
     A view node
