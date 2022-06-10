@@ -14,6 +14,7 @@ We introduce a new API to write nodes for KNIME Analytics Platform completely in
     - [Node port configuration](#node-port-configuration)
     - [Defining the node's configuration dialog](#defining-the-nodes-configuration-dialog)
     - [Node view declaration](#node-view-declaration)
+  - [Bundling your Python Extension Nodes](#bundling-your-python-extension-nodes)
   - [Customizing the Python executable](#customizing-the-python-executable)
   - [Registering Python extensions during development](#registering-python-extensions-during-development)
   - [Other topics](#other-topics)
@@ -110,13 +111,14 @@ For an extensive overview of the full API, please refer to the [Defining a KNIME
 
 10. Build your first configuration dialog!
 
-    In `my_extension.py`, uncomment the definitions of parameters (marked by the "Tutorial Step 10" comment). Restart your KNIME Analytics Platform, and you should be able to double-click the node and see configurable parameters - congrats!
+    In `my_extension.py`, uncomment the definitions of parameters (marked by the "Tutorial Step 10" comment). Restart your KNIME Analytics Platform, re-drag your node from the node repository into the workflow, and you should be able to double-click the node and see configurable parameters - congrats!
     
     Take a minute to see how the names, descriptions, and default values compare between their definitions in `my_extension.py` and the node dialog.
 
 11. Add your first port!
 
     To add a second input table to the node, follow these steps (marked by the "Tutorial Step 11" comment):
+
     1. Uncomment the `@knext.input_table` decorator.
     2. Change the `configure` method's definition to reflect the changes in the schema.
     3. Change the `execute` method to reflect the addition of the second input table.
@@ -578,6 +580,96 @@ class MyViewNode:
         sns.lineplot(x="x", y="y", data=df)
         return knext.view_seaborn()
 ```
+
+## Bundling your Python Extension Nodes
+### Setup
+If you created a Python Extension and want to share it with others, you can bundle the extension. This means that it can be used as a local update site for KNIME Analytics Platform. To ensure that the person you've shared it with uses the same python dependencies, we use `conda` as the bundling channel.
+
+As mentioned in the [Python Node Extension Setup](#python-node-extension-setup) section, a Python node extension needs to contain a YAML file called `knime.yml` that contains the general information about the node extension, which Python module to load, and what conda environment should be used for the nodes.
+
+#### `knime.yml`:
+```yaml
+---
+name: bundling_extension # Will be concatenated with the group_id to an ID
+author: Jane Doe
+env_yml_path: environment.yml # Path to the Conda environment yml, from which the environment for this extension will be built
+extension_module: src.my_extension # path to the extension.py file but without the .py (points no dashes)
+description: My New Extension # Human readable bundle name / description
+long_description: This extension provides functionality that everyone wants to have. # Text describing the extension (optional)
+group_id: org.knime # Will be concatenated with the name to an ID
+version: 4.6.0 # First version of the KNIME Analytics Platform, for which this extension can be used
+vendor: KNIME AG, Zurich, Switzerland # Who offers the extension
+license_file: LICENSE.TXT # Best practice: put your LICENSE.TXT next to the knime.yml; otherwise you would need to change to path/to/LICENSE.txt
+```
+The `id` will be of the form `group_id.name`. It needs to be a unique identifier for your extension, so it is a good idea to encode your username or company's URL followed by a logical structure as `group_id` to prevent `id` clashes. For example a developer from KNIME could encode its URL to `org.knime` and add `python3.nodes.tests` to indicate that the extension is a member of `tests` of `nodes` which are part of `python3`.
+
+The extension module will then be put on the Pythonpath and imported by KNIME using `import my_extension`. This module should contain KNIME nodes. Each class decorated with `@knext.node` within this file will become available in KNIME as dedicated node.
+
+Additionally, a conda environment has to be specified as a YAML file for importing all necessary dependencies. This YAML must contain all dependencies necessary for the python node to work.
+
+`Warning:` As the bundling has to work on different operation systems, giving too strict versions can lead to conda errors `(ResolvePackageNotFound)`. Thus, try not to strictly define version numbers (except if you really have to) (see [environment.yml](#environment.yml)).
+Such an loosely defined environment can be created by using for instance: `conda env export --from-history>environment.yml`
+
+
+#### `environment.yml`:
+```yaml
+name: knime-python-scripting
+channels:
+- conda-forge
+dependencies:
+- python=3.9   # base dependency
+- py4j         # base dependency
+- nomkl        # base dependency
+- pandas       # base dependency
+- pyarrow>=7   # base dependency
+- numpy>=1.22  # base dependency
+- packaging    # base dependency
+...
+```
+
+Finally, a new extension needs a `LICENSE.TXT`. We recommend to follow the below folder structure for your project:
+
+```
+bundling_extension
+.
+├── icons
+│   └── my_node.svg
+├── src
+│   └── my_extension.py
+├── test
+│   └── test_my_extension.py
+├── knime.yml
+├── LICENSE.TXT
+└── my_conda_env.yml
+```
+### Bundling
+
+For bundling, we provide a special conda environment with the `knime-extension-bundling` package.
+
+1. Create the environment
+```
+conda create -n knime-ext-bundling -c knime -c conda-forge knime-extension-bundling
+```
+
+2. Activate the environment
+```
+conda activate knime-ext-bundling
+```
+
+3. Bundle your Python extension
+
+- macOS/Linux:
+```
+build_python_extension.py path/to/directoryof/myextension/ path/to/directoryof/output
+```
+
+- Windows:
+```
+build_python_extension.bat path/to/directoryof/myextension/ path/to/directoryof/output
+```
+
+4. Add the `repository` folder to KNIME AP as a Software Site in _File -> Preferences -> Install/Update -> Available Software Sites_
+5. Install it via _File -> Install KNIME Extensions_
 
 ## Customizing the Python executable
 
