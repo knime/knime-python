@@ -74,8 +74,6 @@ import py4j.Py4JException;
 @SuppressWarnings("javadoc")
 public class DefaultPythonGatewayTest {
 
-    private static final String PYTHON_EXE_ENV = "PYTHON3_EXEC_PATH";
-
     /**
      * We observed that Python startup sometimes gets stuck if there is a syntax error in the launch script.
      *
@@ -187,22 +185,12 @@ public class DefaultPythonGatewayTest {
         var launcherPath = PythonSourceDirectoryLocator.getPathFor(DefaultPythonGatewayTest.class, "src/test/python")//
             .resolve(launcherFile)//
             .toString();
-        final var command = getPythonCommand();
+        final var command = Python3TestUtils.getPythonCommand();
         final PythonPathBuilder builder = PythonPath.builder()//
             .add(Python3SourceDirectory.getPath());
         final var pythonPath = builder.build();
         return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, entryPointClass,
             List.of(extensions), pythonPath);
-    }
-
-    /** Create a Python command from the path in the env var PYTHON3_EXEC_PATH */
-    private static PythonCommand getPythonCommand() throws IOException {
-        final String python3path = System.getenv(PYTHON_EXE_ENV);
-        if (python3path != null) {
-            return new SimplePythonCommand(python3path);
-        }
-        throw new IOException(
-            "Please set the environment variable '" + PYTHON_EXE_ENV + "' to the path of the Python 3 executable.");
     }
 
     public interface DummyEntryPoint extends PythonEntryPoint {
