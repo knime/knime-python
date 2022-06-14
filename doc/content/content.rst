@@ -123,6 +123,13 @@ or the table structure (Schema) in configure between Python and KNIME.
    :special-members: __getitem__
 
 
+.. autoclass:: knime_node.BatchOutputTable
+   :members:
+   :noindex:
+   :inherited-members:
+   :special-members: __getitem__
+
+
 .. autoclass:: knime_schema.Schema
    :members:
    :noindex:

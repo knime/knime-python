@@ -17,7 +17,9 @@ class MyParameterGroup:
     """
 
     first = knext.IntParameter("First Parameter", "The first parameter in the group", 1)
-    second = knext.IntParameter("Second Parameter", "The second parameter in the group", 5)
+    second = knext.IntParameter(
+        "Second Parameter", "The second parameter in the group", 5
+    )
 
     def validate(self, values: dict):
         if values["first"] + values["second"] > 10:
@@ -25,7 +27,10 @@ class MyParameterGroup:
 
 
 @knext.node(
-    name="My Node", node_type=knext.NodeType.LEARNER, icon_path="icon.png", category=pycat
+    name="My Node",
+    node_type=knext.NodeType.LEARNER,
+    icon_path="icon.png",
+    category=pycat,
 )
 @knext.input_table(name="Input Data", description="We read data from here")
 @knext.output_table(name="Output Data", description="Whatever the node has produced")
@@ -49,24 +54,31 @@ class MyNode:
         "Some String parameter", "The classic placeholder", "foobar"
     )
 
-    double_param = knext.DoubleParameter("Double Parameter", "Just for test purposes", 1.0)
+    double_param = knext.DoubleParameter(
+        "Double Parameter", "Just for test purposes", 1.0
+    )
 
-    boolean_param = knext.BoolParameter("Boolean Parameter", "also just for testing", True)
+    boolean_param = knext.BoolParameter(
+        "Boolean Parameter", "also just for testing", True
+    )
 
     param_group = MyParameterGroup()
 
     def configure(self, config_ctx, schema_1):
-        LOGGER.warn("Configuring")
+        LOGGER.warning("Configuring")
         LOGGER.info("Configure info")
         config_ctx.set_warning("Configure warning")
-        return schema_1, knext.BinaryPortObjectSpec("org.knime.python3.nodes.tests.model")
+        return (
+            schema_1,
+            knext.BinaryPortObjectSpec("org.knime.python3.nodes.tests.model"),
+        )
 
     def execute(self, exec_context, table):
         LOGGER.log(5, "Ignored because loglevel < 10")
         LOGGER.log(15, "Log with level 15 -> INFO")
         LOGGER.debug("Executing - DEBUG")
         LOGGER.info("Executing - INFO")
-        LOGGER.warn("Executing - WARN")
+        LOGGER.warning("Executing - WARN")
         LOGGER.error("Executing - ERROR")
         LOGGER.critical("Executing - CRITICAL")
         try:
@@ -194,7 +206,9 @@ class NoInpOupNode(knext.PythonNode):
         pass
 
 
-@knext.node(name="Failing Node", node_type="Learner", icon_path="icon.png", category=pycat)
+@knext.node(
+    name="Failing Node", node_type="Learner", icon_path="icon.png", category=pycat
+)
 @knext.input_table(name="Input Data", description="We read data from here")
 @knext.output_table(name="Output Data", description="Whatever the node has produced")
 class FailingNode:

@@ -198,8 +198,9 @@ class PythonNode(ABC):
     Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary, 
     and @kn.output_view, or populate the input_ports, output_ports, and output_view attributes.
 
-    Use the Python logging facilities and its `.warn` and `.error` methods to write warnings
-    and errors to the KNIME console.
+    Use the Python logging facilities and its `.warning` and `.error` methods to write warnings
+    and errors to the KNIME console. `.info` and `.debug` will only show up in the KNIME console
+    if the log level in KNIME is configured to show these.
 
     **Example**::
 
@@ -214,12 +215,12 @@ class PythonNode(ABC):
             class TemplateNode(knext.PythonNode):
                 # A Python node has a description.
 
-                def configure(self, configure_context):
+                def configure(self, configure_context, table_schema):
                     LOGGER.info(f"Configuring node")
-                    pass
+                    return table_schema
 
-                def execute(self, exec_context, input):
-                    return input
+                def execute(self, exec_context, table):
+                    return table
 
                 """
 
