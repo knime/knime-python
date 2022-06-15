@@ -50,7 +50,6 @@ package org.knime.python3;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -59,7 +58,7 @@ import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -111,6 +110,7 @@ public class DefaultPythonGatewayTest {
     @Test
     public void testChattyLauncher() throws Exception {
         try (var gateway = createGateway(DummyEntryPoint.class, "chatty_launcher.py")) {
+            // just tests the creation
         }
     }
 
@@ -156,15 +156,15 @@ public class DefaultPythonGatewayTest {
     @Test
     public void testConcurrentGatewayCreation() throws Exception {
         var creationStartLatch = new CountDownLatch(1);
-        var fail = new AtomicBoolean(false);
+        var threadException = new AtomicReference<Exception>();
         var threads = Stream.generate(() -> new Thread(() -> {
             try {
                 creationStartLatch.await();
                 try (var gateway = createGateway(PrintingEntryPoint.class, "printing_launcher.py")) {
                     gateway.getEntryPoint().print("foobar");
                 }
-            } catch (IOException | InterruptedException e) {
-                fail.set(true);
+            } catch (IOException | InterruptedException e) {//NOSONAR
+                threadException.set(e);
             }
         })).limit(10).collect(toList());
         threads.forEach(Thread::start);
@@ -172,8 +172,8 @@ public class DefaultPythonGatewayTest {
         for (var thread : threads) {
             thread.join();
         }
-        if (fail.get()) {
-            fail("One thread failed with an exception.");
+        if (threadException.get() != null) {
+            throw threadException.get();
         }
     }
 
@@ -191,7 +191,7 @@ public class DefaultPythonGatewayTest {
         final PythonPathBuilder builder = PythonPath.builder()//
             .add(Python3SourceDirectory.getPath());
         final var pythonPath = builder.build();
-        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass,
+        return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, entryPointClass,
             List.of(extensions), pythonPath);
     }
 

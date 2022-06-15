@@ -153,7 +153,7 @@ public final class TestUtils {
             .build();
         final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
 
-        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, ArrowTestsEntryPoint.class,
+        return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, ArrowTestsEntryPoint.class,
             extensions, pythonPath);
     }
 
