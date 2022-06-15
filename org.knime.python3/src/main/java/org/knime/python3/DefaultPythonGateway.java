@@ -116,6 +116,27 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
     /**
      * Creates a {@link PythonGateway} to a new Python process.
+     * @param <T> the type of {@link PythonEntryPoint}
+     * @param pythonProcessBuilder the builder used to configure and start the Python process
+     * @param launcherPath the Python script that bootstraps the py4j-based communication on the Python side (via
+     *            {@code knime_gateway.connect_to_knime})
+     * @param entryPointClass the class of the {@link PythonEntryPoint proxy}
+     * @param extensions a collection of extensions which should be imported after the Python process has started
+     * @param pythonPath the {@link PythonPath} which defines additional folders from which Python modules can be
+     *            imported
+     * @return the open gateway
+     * @throws IOException If creating the Python process or establishing the connection to it failed.
+     * @throws InterruptedException If creating the Python process is interrupted (typically by the user)
+     */
+    public static synchronized <T extends PythonEntryPoint> DefaultPythonGateway<T> create(
+        final ProcessBuilder pythonProcessBuilder, final String launcherPath, final Class<T> entryPointClass,
+        final Collection<PythonExtension> extensions, final PythonPath pythonPath)
+        throws IOException, InterruptedException {
+        return new DefaultPythonGateway<>(pythonProcessBuilder, launcherPath, entryPointClass, extensions, pythonPath);
+    }
+
+    /**
+     * Creates a {@link PythonGateway} to a new Python process.
      *
      * @param pythonProcessBuilder the builder used to configure and start the Python process
      * @param launcherPath the Python script that bootstraps the py4j-based communication on the Python side (via
@@ -128,7 +149,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
      * @throws InterruptedException If creating the Python process is interrupted (typically by the user)
      */
     @SuppressWarnings("resource") // the processes streams are closed by the process
-    public DefaultPythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
+    private DefaultPythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
         final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
         throws IOException, InterruptedException {
         try {

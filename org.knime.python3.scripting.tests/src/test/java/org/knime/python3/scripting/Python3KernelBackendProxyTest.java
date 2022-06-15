@@ -219,7 +219,7 @@ public class Python3KernelBackendProxyTest {
             .add(Python3ArrowSourceDirectory.getPath()) //
             .add(Python3ScriptingSourceDirectory.getPath()) //
             .build();
-        return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
+        return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
             pythonPath);
     }
 

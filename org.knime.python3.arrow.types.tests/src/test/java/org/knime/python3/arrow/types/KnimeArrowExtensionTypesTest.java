@@ -999,7 +999,7 @@ public class KnimeArrowExtensionTypesTest {
 		final List<PythonExtension> pyExtensions = new ArrayList<>();
 		pyExtensions.add(PythonArrowExtension.INSTANCE);
 
-		return new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
+		return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, entryPointClass, pyExtensions,
 				pythonPath);
 	}
 

@@ -95,4 +95,5 @@ public final class Python3TestUtils {
         throw new IOException("Please set environment variable '" + PYTHON_EXE_ENV_VAR + "' or '"
             + python3PathEnvVarForOs + "' to the path of the Python 3 executable.");
     }
+
 }

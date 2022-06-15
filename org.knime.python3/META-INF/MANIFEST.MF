@@ -18,5 +18,6 @@ Export-Package: org.knime.python3,
  org.knime.python3.data,
  org.knime.python3.utils
 Automatic-Module-Name: org.knime.python3
+Eclipse-ExtensibleAPI: true
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Bundle-Activator: org.knime.python3.Activator

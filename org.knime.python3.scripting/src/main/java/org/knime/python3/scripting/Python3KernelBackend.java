@@ -271,7 +271,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             addPythonValueFactoriesToPythonPath(pythonPathBuilder);
             final PythonPath pythonPath = pythonPathBuilder.build();
 
-            m_gateway = new DefaultPythonGateway<>(command.createProcessBuilder(), launcherPath,
+            m_gateway = DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath,
                 Python3KernelBackendProxy.class, extensions, pythonPath);
 
             @SuppressWarnings("resource") // Will be closed along with gateway.
