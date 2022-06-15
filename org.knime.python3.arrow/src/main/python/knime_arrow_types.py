@@ -488,6 +488,11 @@ class KnimeExtensionArray(pa.ExtensionArray):
         #  to be consistent with other pa.Arrays
         return KnimeExtensionScalar(self.type, storage_scalar)
 
+    def __iter__(self):
+        """Return a generator that iterates over extension scalars"""
+        for idx in range(len(self)):
+            yield KnimeExtensionScalar(self.type, self.storage[idx])
+
     def to_pylist(self):
         return [self.type.decode(x) for x in self.storage.to_pylist()]
 
