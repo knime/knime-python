@@ -479,11 +479,14 @@ def _filter_columns(
         return list()
     else:
         spec = specs[port_index]
-        return [
-            {"const": column.name, "title": column.name}
-            for column in spec
-            if column_filter(column)
-        ]
+        filtered = [_const(column.name) for column in spec if column_filter(column)]
+        if len(filtered) > 0:
+            return filtered
+        else:
+            return [_const("")]
+
+def _const(name):
+    return {"const": name, "title": name}
 
 
 class MultiColumnParameter(_BaseParameter):
@@ -507,6 +510,7 @@ class MultiColumnParameter(_BaseParameter):
     def _extract_schema(self, specs: List[ks.Schema] = None):
         schema = super()._extract_schema(specs)
         values = _filter_columns(specs, self._port_index, self._column_filter)
+        # use an empty string as placeholder if there are no compatible columns
         schema["anyOf"] = values
         return schema
 
