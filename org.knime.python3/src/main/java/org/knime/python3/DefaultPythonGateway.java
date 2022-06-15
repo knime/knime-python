@@ -55,6 +55,7 @@ import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
@@ -212,7 +213,12 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             }
         };
         server.addListener(listener);
-        connectionLatch.await();
+        if (!connectionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
+            throw new ConnectException(String.format(
+                "The connection to the Python process timed out. The current timeout is %s milliseconds. "
+                + "You can set a longer timeout via the %s system property.",
+                timeout, CONNECT_TIMEOUT_VM_OPT));
+        }
         server.removeListener(listener);
         do {
             try {
