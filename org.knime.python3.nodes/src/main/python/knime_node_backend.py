@@ -510,7 +510,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
     def extract_description(self, node: kn.PythonNode, name) -> dict:
         doc = node.__doc__
-        lines = doc.splitlines()
+        lines = doc.splitlines() if not doc is None else []
         if len(lines) == 0:
             short_description = "Please document your node class with a docstring"
             logging.warning(
