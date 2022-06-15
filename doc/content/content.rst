@@ -58,8 +58,8 @@ Nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-These classes can be used by developers to implement their own python nodes for KNIME. For a more detailed description see the nodes documentation at:
-`Python Extension Tutorials <https://bitbucket.org/KNIME/knime-python-extension-examples/src/master/tutorials/basic/>`_
+These classes can be used by developers to implement their own Python nodes for KNIME. 
+For a more detailed description see the `Pure Python Node Extensions Guide <https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#introduction>`_
 
 .. autoclass:: knime_node.PythonNode
    :members:
