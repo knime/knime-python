@@ -86,7 +86,7 @@ import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.core.webui.page.Page;
 import org.knime.python3.nodes.DelegatingNodeModel;
-import org.knime.python3.nodes.dialog.DelegatingTextSettingsDataService;
+import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -174,7 +174,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private ConfigRO m_nodeFactoryConfig;
 
-        private DelegatingTextSettingsDataService m_dialogSettingsService;
+        private DelegatingJsonSettingsDataService m_dialogSettingsService;
 
         private NodeDescription m_nodeDescription;
 
@@ -198,7 +198,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_numViews = m_node.getNumViews();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
-            m_dialogSettingsService = new DelegatingTextSettingsDataService(m_proxyProvider::getNodeDialogProxy);
+            m_dialogSettingsService = new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy);
             super.loadAdditionalFactorySettings(config);
         }
 

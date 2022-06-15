@@ -56,8 +56,8 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.webui.node.dialog.JsonNodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextNodeSettingsService;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 
@@ -66,7 +66,7 @@ import org.knime.python3.nodes.settings.JsonNodeSettings;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingTextSettingsDataService implements TextNodeSettingsService {
+public final class DelegatingJsonSettingsDataService implements JsonNodeSettingsService<String> {
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
@@ -77,7 +77,7 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
      *
      * @param proxyProvider provides proxy objects
      */
-    public DelegatingTextSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
+    public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
         m_proxyProvider = proxyProvider;
         try (var proxy = m_proxyProvider.get()) {
             m_settings = new JsonNodeSettings(proxy.getParameters(), proxy.getSchema());
@@ -85,7 +85,7 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
     }
 
     @Override
-    public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
+    public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
             try {
@@ -99,10 +99,11 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
     }
 
     @Override
-    public void toNodeSettings(final String textSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        m_settings.update(textSettings);
+    public void toNodeSettingsFromObject(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+        m_settings.update(jsonSettings);
         m_settings.saveTo(settings.get(SettingsType.MODEL));
     }
+
 
     @Override
     public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
@@ -113,4 +114,13 @@ public final class DelegatingTextSettingsDataService implements TextNodeSettings
         }
     }
 
+    @Override
+    public String fromJson(final String json) {
+        return json;
+    }
+
+    @Override
+    public String toJson(final String obj) {
+        return obj;
+    }
 }
