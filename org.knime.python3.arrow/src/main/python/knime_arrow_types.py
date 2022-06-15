@@ -91,7 +91,9 @@ def _get_arrow_storage_to_ext_fn(dtype):
     @param dtype: dtype of the target extensiontype
     @return: converter function
     """
-    if is_dict_encoded_value_factory_type(dtype):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
+    if is_dict_encoded_value_factory_type(
+            dtype
+    ):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
         key_gen = kas.DictKeyGenerator()
         # gets conversion fct for nested dtypes
         storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
@@ -109,18 +111,20 @@ def _get_arrow_storage_to_ext_fn(dtype):
 
         return wrap_and_struct_dict_encode
 
-    elif kas.is_struct_dict_encoded(dtype):  # if datatype is a dict encoded pa.struct type
+    elif kas.is_struct_dict_encoded(
+            dtype
+    ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict encoding function
         key_gen = kas.DictKeyGenerator()
         return lambda a: kas.struct_dict_encode(a, key_gen, key_type=dtype.key_type)
 
-    elif is_value_factory_type(dtype): # if datatype is a LogicalTypeExtensionType
+    elif is_value_factory_type(dtype):  # if datatype is a LogicalTypeExtensionType
         # finds nested encoding function
         storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
         # returns an extension array with encoded data
         return lambda a: pa.ExtensionArray.from_storage(dtype, storage_fn(a))
 
-    elif is_list_type(dtype): # if datatype is a pa.list type
+    elif is_list_type(dtype):  # if datatype is a pa.list type
         if not contains_knime_extension_type(dtype):
             return _identity
 
@@ -128,7 +132,9 @@ def _get_arrow_storage_to_ext_fn(dtype):
         # We have to cast the returned list to the expected type because
         # otherwise some internal field will have a different name (item != $data$)
         # and make PyArrow's type conversion state that the types differ...
-        return lambda a: _create_list_array(_get_offsets_with_nulls(a), value_fn(a.values)).cast(dtype)
+        return lambda a: _create_list_array(
+            _get_offsets_with_nulls(a), value_fn(a.values)
+        ).cast(dtype)
 
     elif pat.is_struct(dtype):  # if dtype is pa.struct
         if not contains_knime_extension_type(dtype):
@@ -177,14 +183,18 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
     @param dtype: dtype of the pa.array
     @return: converter function
     """
-    if is_dict_encoded_value_factory_type(dtype):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
+    if is_dict_encoded_value_factory_type(
+            dtype
+    ):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
         # in this case we recursively call function with the value type of the StructDictEncodedLogicalTypeExtensionType
         # resulting in the decode function for the storage type
         # which we return, called with the storage of the logicalTypeExtensionType
         storage_fn = _get_array_to_storage_fn(dtype.value_type) or _identity
         return lambda a: storage_fn(a.dictionary_decode())
 
-    elif kas.is_struct_dict_encoded(dtype):  # if datatype is a dict encoded pa.struct type
+    elif kas.is_struct_dict_encoded(
+            dtype
+    ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict decoding function
         return lambda a: a.dictionary_decode()
 
@@ -204,7 +214,9 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
             # as the list structure is decoded with offset ( start indices of all contained lists)
             # calculate the offsets with missing elements
             # create a pa.listArray from the offsets and decoded values
-            return lambda a: _create_list_array(_get_offsets_with_nulls(a), value_fn(a.values))
+            return lambda a: _create_list_array(
+                _get_offsets_with_nulls(a), value_fn(a.values)
+            )
 
     elif pat.is_struct(dtype):  # if dtype is pa.struct
         # get decoding for all contained types
@@ -709,10 +721,7 @@ def _nulls(num_nulls: int, dtype: pa.DataType):
     # type.
     validbits = np.packbits(np.ones(num_nulls, dtype=np.uint8), bitorder="little")
     return pa.Array.from_buffers(
-        dtype,
-        num_nulls,
-        [pa.py_buffer(validbits)],
-        null_count=num_nulls,
+        dtype, num_nulls, [pa.py_buffer(validbits)], null_count=num_nulls,
     )
 
 
@@ -744,10 +753,7 @@ def _wrap_primitive_array(
             list_data = _create_list_array(offsets, inner_data)
             return pa.ExtensionArray.from_storage(wrapped_type, list_data)
 
-        return _apply_to_array(
-            array,
-            to_list_of_nulls,
-        )
+        return _apply_to_array(array, to_list_of_nulls, )
     else:
         return _apply_to_array(
             array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
@@ -756,10 +762,14 @@ def _wrap_primitive_array(
 
 def _check_is_rowkey(array: pa.Array):
     first_column_type = array.type
-    if not is_value_factory_type(first_column_type) or \
-            first_column_type.storage_type != pa.string() or \
-            first_column_type.logical_type != _row_key_type:
-        raise TypeError("The first column must contain unique row identifiers of type 'string'")
+    if (
+            not is_value_factory_type(first_column_type)
+            or first_column_type.storage_type != pa.string()
+            or first_column_type.logical_type != _row_key_type
+    ):
+        raise TypeError(
+            "The first column must contain unique row identifiers of type 'string'"
+        )
 
 
 def wrap_primitive_arrays(
