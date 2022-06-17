@@ -55,6 +55,7 @@ import knime_arrow as ka
 import knime_arrow_table as kat
 import knime_arrow_struct_dict_encoding as kas
 import knime_gateway as kg
+import knime_main_loop
 
 FLOAT_COMPARISON_EPSILON = 1e-5
 DOUBLE_COMPARISON_EPSILON = 1e-12
@@ -629,3 +630,4 @@ class EntryPoint(kg.EntryPoint):
 
 
 kg.connect_to_knime(EntryPoint())
+knime_main_loop.MainLoop().enter()
