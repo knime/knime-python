@@ -117,11 +117,13 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
                 raise OverflowError(
                     f"Cannot represent the date {day_of_epoch} days and {micro_of_day} ms {_before_or_after(day_of_epoch)}"
                     f" {_start_of_epoch} in Pandas, the data range only allows dates from {dt.date.min}"
-                    f" to {dt.date.max}") from None
+                    f" to {dt.date.max}"
+                ) from None
             else:
                 raise OverflowError(
                     f"Cannot represent the value {day_of_epoch} or {micro_of_day} as date as it too large,"
-                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
 
     def encode(self, datetime):
         if datetime is None:
@@ -129,8 +131,8 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
         delta = datetime.replace(tzinfo=None) - _start_of_epoch
         day_of_epoch = delta.days
         micro_of_day = (
-                               datetime - datetime.replace(hour=0, minute=0, second=0, microsecond=0)
-                       ) // _microsecond_delta
+            datetime - datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+        ) // _microsecond_delta
         nano_of_day = micro_of_day * 1000
         return {"0": day_of_epoch, "1": nano_of_day}
 
@@ -156,11 +158,13 @@ class DurationValueFactory(kt.PythonValueFactory):
             if e.args[0] == "date value out of range":
                 raise OverflowError(
                     f"Cannot represent {seconds} and {nanos} {_before_or_after(seconds)} the date {_start_of_epoch}"
-                    f" in Pandas, the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f" in Pandas, the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
             else:
                 raise OverflowError(
                     f"Cannot represent the value {seconds} or {nanos} as date as it is too large, "
-                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
 
     def encode(self, value):
         if value is None:
@@ -188,11 +192,13 @@ class LocalDateValueFactory(kt.PythonValueFactory):
                 raise OverflowError(
                     f"Cannot represent the  Date value of {day_of_epoch} days {_before_or_after(day_of_epoch)}"
                     f" {_start_of_epoch.date()} in Pandas, "
-                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
             else:
                 raise OverflowError(
                     f"Cannot represent the value {day_of_epoch} as date as it is too large, "
-                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
 
     def encode(self, date):
         if date is None:
@@ -216,12 +222,14 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
             if e.args[0] == "date value out of range":
                 raise OverflowError(
                     f"Cannot represent the  Date value of {micro_of_day} microseconds after {dt.datetime.min} in Pandas,"
-                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}") from None
+                    f"the data range only allows dates from {dt.date.min} to {dt.date.max}"
+                ) from None
             else:
                 raise OverflowError(
                     f"Cannot represent the value {micro_of_day} microseconds after {dt.datetime.min} as date"
                     f" as it is too large the data range only allows dates from"
-                    f" {dt.date.min} to {dt.date.max}") from None
+                    f" {dt.date.min} to {dt.date.max}"
+                ) from None
 
     def encode(self, time):
         if time is None:
@@ -286,7 +294,7 @@ class BooleanSetValue:
 
 
 class BooleanSetValueFactory(kt.PythonValueFactory):
-    def __init__(self) -> None:
+    def __init__(self):
         kt.PythonValueFactory.__init__(self, BooleanSetValue)
 
     def decode(self, storage):
@@ -300,6 +308,51 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}
 
 
+try:
+    from bitarray import bitarray
+    from bitarray.util import ba2hex, hex2ba
+
+    class DenseBitVectorValueFactory(kt.PythonValueFactory):
+        def __init__(self):
+            kt.PythonValueFactory.__init__(self, bitarray)
+
+        def decode(self, storage):
+            if storage is None:
+                return None
+            return hex2ba(storage)
+
+        def encode(self, value):
+            if value is None:
+                return None
+            return ba2hex(value)
+
+        def can_convert(self, value):
+            return type(value) == bitarray
+
+
+except ImportError:
+    import logging
+
+    LOGGER = logging.getLogger(__name__)
+    LOGGER.warning(
+        "Could not find library bitarray, KNIME BitVectorValues will only be represented as hex string in Python"
+    )
+
+    class DenseBitVectorValueFactory(kt.PythonValueFactory):
+        """
+        Barebones variant of a BitVector representation as hex string
+        """
+
+        def __init__(self):
+            kt.PythonValueFactory.__init__(self, str)
+
+        def decode(self, storage):
+            return storage
+
+        def encode(self, value):
+            return value
+
+
 def _knime_value_factory(name):
     return '{"value_factory_class":"' + name + '"}'
 
@@ -309,6 +362,7 @@ class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
     """
     Converts columns containing pandas timestamps to a py.datetime extension type
     """
+
     def can_convert(self, dtype) -> bool:
         return hasattr(dtype, "name") and dtype.name == "datetime64[ns]"
 
@@ -325,4 +379,9 @@ class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
             logical_type=_knime_value_factory(logical_type_str),
             converter=LocalDateTimeValueFactory(),
         )
-        return Series([x.to_pydatetime() for x in column.tolist()], dtype=dtype, index=column.index)
+        return Series(
+            [x.to_pydatetime() for x in column.tolist()],
+            dtype=dtype,
+            index=column.index,
+        )
+

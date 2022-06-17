@@ -33,6 +33,10 @@
                PythonClassName="BooleanSetValueFactory"
                ValueFactory="org.knime.core.data.v2.value.BooleanSetValueFactory">
          </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="DenseBitVectorValueFactory"
+               ValueFactory="org.knime.core.data.v2.value.DenseBitVectorValueFactory">
+         </PythonValueFactory>
       </Module>
    </extension>
 
