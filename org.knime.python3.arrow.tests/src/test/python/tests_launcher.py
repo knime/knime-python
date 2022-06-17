@@ -577,9 +577,9 @@ class EntryPoint(kg.EntryPoint):
                 if mode == "arrow":
                     arrow_batch = read_batch.to_pyarrow()
                     arrays = []
-                    arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
+                    arrays.append(arrow_batch.column(0))
                     arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
-                    arrays.append(arrow_batch.column(2))
+                    arrays.append(pa.array(arrow_batch.column(2).to_numpy() * 2))
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
@@ -587,22 +587,22 @@ class EntryPoint(kg.EntryPoint):
                 elif mode == "arrow-sentinel":
                     arrow_batch = read_batch.to_pyarrow(sentinel=0)
                     arrays = []
-                    arrays.append(pa.array(arrow_batch.column(0).to_numpy() * 2))
+                    arrays.append(arrow_batch.column(0))
                     arrays.append(pa.array(arrow_batch.column(1).to_numpy() * 2))
-                    arrays.append(arrow_batch.column(2))
+                    arrays.append(pa.array(arrow_batch.column(2).to_numpy() * 2))
                     new_batch = pa.RecordBatch.from_arrays(
                         arrays, schema=arrow_batch.schema
                     )
                     write_batch = kat.ArrowBatch(new_batch, sentinel=0)
                 elif mode == "pandas":
                     pandas_df = read_batch.to_pandas()
-                    pandas_df["0"] = pandas_df["0"] * 2
                     pandas_df["1"] = pandas_df["1"] * 2
+                    pandas_df["2"] = pandas_df["2"] * 2
                     write_batch = kat.ArrowBatch(pandas_df)
                 elif mode == "dict":
                     d = read_batch.to_pyarrow().to_pydict()
-                    d["0"] = [i * 2 for i in d["0"]]
                     d["1"] = [i * 2 for i in d["1"]]
+                    d["2"] = [i * 2 for i in d["2"]]
                     write_batch = kat.ArrowBatch(
                         # from_pydict requires pyarrow 6.0! Install via PIP
                         pa.RecordBatch.from_pydict(d)

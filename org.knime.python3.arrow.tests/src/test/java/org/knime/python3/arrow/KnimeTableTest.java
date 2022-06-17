@@ -105,7 +105,7 @@ public class KnimeTableTest {
     @Test
     public void test() throws IOException, InterruptedException {
 
-        final var schema = ColumnarSchema.of(LONG, DOUBLE, STRING);
+        final var schema = ColumnarSchema.of(STRING, LONG, DOUBLE);
 
         final var numBatches = 50;
         final var numRowsPerBatch = 200_000;
