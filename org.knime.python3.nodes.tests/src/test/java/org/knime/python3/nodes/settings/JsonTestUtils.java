@@ -68,7 +68,7 @@ final class JsonTestUtils {
         var schema = OM.createObjectNode().put("type", "object");
         var properties = schema.putObject("properties");
         properties.putObject("int_param").put("type", "integer");
-        properties.putObject("double_param").put("type", "numeric");
+        properties.putObject("double_param").put("type", "number");
         properties.putObject("string_param").put("type", "string");
         properties.putObject("bool_param").put("type", "boolean");
         return schema;
@@ -103,7 +103,7 @@ final class JsonTestUtils {
         properties.putObject("int_param").put("type", "integer");
         var outer = properties.putObject("outer").put("type", "object")//
             .putObject("properties");
-        outer.putObject("double_param").put("type", "numeric");
+        outer.putObject("double_param").put("type", "number");
         outer.putObject("inner")//
             .put("type", "object")//
             .putObject("properties")//

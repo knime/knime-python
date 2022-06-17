@@ -95,7 +95,8 @@ public class JsonNodeSettingsTest {
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createSimpleSettings();
-        expected.addString("version" + SettingsModel.CFGKEY_INTERNAL, KNIMEConstants.VERSION);
+        addVersion(expected, KNIMEConstants.VERSION);
+        addJsonType(expected);
         assertEquals(expected, nodeSettings);
     }
 
@@ -104,19 +105,23 @@ public class JsonNodeSettingsTest {
         var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createSimpleSettings();
-        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
         addVersion(nodeSettings, oldVersion);
+        addJsonType(nodeSettings);
+        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(SIMPLE_MODEL_JSON, jsonSettings.getParameters());
     }
 
     @Test
-    public void testNestedSaveTo() {
+    public void testNestedSaveTo() throws Exception {
         var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createNestedSettings();
-        expected.addString("version" + SettingsModel.CFGKEY_INTERNAL, KNIMEConstants.VERSION);
+        addVersion(expected, KNIMEConstants.VERSION);
+        addJsonType(expected);
+        addJsonType(expected.getNodeSettings("outer"));
+        addJsonType(expected.getNodeSettings("outer").getNodeSettings("inner"));
         assertEquals(expected, nodeSettings);
     }
 
@@ -126,6 +131,9 @@ public class JsonNodeSettingsTest {
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createNestedSettings();
         addVersion(nodeSettings, oldVersion);
+        addJsonType(nodeSettings);
+        addJsonType(nodeSettings.getNodeSettings("outer"));
+        addJsonType(nodeSettings.getNodeSettings("outer").getNodeSettings("inner"));
         jsonSettings = jsonSettings.createFromSettings(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(NESTED_MODEL_JSON, jsonSettings.getParameters());
@@ -133,5 +141,9 @@ public class JsonNodeSettingsTest {
 
     private static void addVersion(final NodeSettingsWO settings, final String version) {
         settings.addString("version" + SettingsModel.CFGKEY_INTERNAL, version);
+    }
+
+    private static void addJsonType(final NodeSettings expected) {
+        expected.addString("json-type" + SettingsModel.CFGKEY_INTERNAL, "OBJECT");
     }
 }
