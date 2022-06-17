@@ -260,6 +260,12 @@ class ArrowDataSource:
     def __getitem__(self, index: int) -> pa.RecordBatch:
         """Get a batch from the source and apply the column names"""
         batch_without_names = self._get_batch(index)
+
+        # The column names are unknown
+        if self._column_names is None:
+            return batch_without_names
+
+        # Apply the column names
         return pa.RecordBatch.from_arrays(
             batch_without_names.columns, names=self._column_names
         )
@@ -304,7 +310,7 @@ class ArrowDataSource:
     @property
     def num_rows(self) -> int:
         if not hasattr(self, "_num_rows"):
-            self._num_rows = sum(len(self[i]) for i in range(len(self)))
+            self._num_rows = sum(len(self._get_batch(i)) for i in range(len(self)))
         return self._num_rows
 
 
