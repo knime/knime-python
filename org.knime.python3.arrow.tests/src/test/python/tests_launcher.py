@@ -314,16 +314,6 @@ class EntryPoint(kg.EntryPoint):
         def check_batch(batch, b):
             array = batch.column(0)
 
-            # TODO(typeextensions) this should happen automatically
-            if data_type == "dictstring":
-                array = pa.ExtensionArray.from_storage(
-                    kas.StructDictEncodedType(pa.string()), array
-                )
-            elif data_type == "dictvarbinary":
-                array = pa.ExtensionArray.from_storage(
-                    kas.StructDictEncodedType(pa.large_binary()), array
-                )
-
             # Check length
             assert (
                 len(array) == NUM_ROWS
