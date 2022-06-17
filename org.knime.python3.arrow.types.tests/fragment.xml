@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <fragment>
-   <extension
-         point="org.knime.core.DataType">
-      <DataType
-            cellClass="org.knime.python3.arrow.types.utf8string.Utf8StringCell"
-            factoryValue="org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory">
-         <serializer
-               cellClass="org.knime.python3.arrow.types.utf8string.Utf8StringCell"
-               serializerClass="org.knime.python3.arrow.types.utf8string.Utf8StringCell$Utf8StringCellSerializer">
-         </serializer>
-      </DataType>
-   </extension>
-
 </fragment>

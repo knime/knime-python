@@ -57,9 +57,6 @@ import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowFileHandle;
 import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowPath;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -71,7 +68,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -99,8 +95,6 @@ import org.knime.core.columnar.data.StringData.StringReadData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.columnar.data.StructData.StructReadData;
 import org.knime.core.columnar.data.StructData.StructWriteData;
-import org.knime.core.columnar.data.VarBinaryData.VarBinaryReadData;
-import org.knime.core.columnar.data.VarBinaryData.VarBinaryWriteData;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
@@ -169,10 +163,7 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
-import org.knime.core.table.schema.traits.DataTraits;
 import org.knime.core.table.schema.traits.LogicalTypeTrait;
-import org.knime.core.table.virtual.serialization.DataSpecSerializer;
-import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.data.location.FSLocationValue;
@@ -188,25 +179,17 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.types.PythonModule;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
-import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.TestUtils;
-import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
-import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
-import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
-import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
-import org.knime.python3.types.PythonValueFactory;
+import org.knime.python3.types.PythonModule;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
-
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 /**
  *
@@ -314,35 +297,6 @@ public class KnimeArrowExtensionTypesTest {
 						factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
 			}
 		}
-
-		registerUtf8ValueFactory(entryPoint);
-	}
-
-	private static void registerUtf8ValueFactory(final KnimeArrowExtensionTypeEntryPoint entryPoint) {
-		// Added here for testing purposes. Not registered at the extension point or it
-		// will also be loaded in the Python Script (Labs) node when running KNIME from Eclipse.
-		var vf = new Utf8StringValueFactory();
-		var dataSpecJson = new DataSpecSerializer().save(vf.getSpec(), JsonNodeFactory.instance);
-
-		final var traits = ValueFactoryUtils.getTraits(vf);
-		var dataTraitJson = new DataTraitsSerializer(JsonNodeFactory.instance).save(traits);
-
-		entryPoint.registerPythonValueFactory("utf8_string", "Utf8EncodedStringFactory",
-				dataSpecJson.toString(), dataTraitJson.toString());
-	}
-
-	private static void prepareUtf8EncodedStringData(final BatchWriter writer, final String value) throws IOException {
-		final var batch = writer.create(1);
-		final VarBinaryWriteData data = (VarBinaryWriteData) batch.get(0);
-		data.setBytes(0, value.getBytes(StandardCharsets.UTF_8));
-		final ReadBatch readBatch = batch.close(1);
-		writer.write(readBatch);
-		readBatch.release();
-	}
-
-	private static ColumnarSchema createUtf8EncodedSchema() {
-		var vf = new Utf8StringValueFactory();
-		return ColumnarSchema.of(new DataSpecWithTraits(vf.getSpec(), ValueFactoryUtils.getTraits(vf)));
 	}
 
 	@Test
@@ -357,26 +311,6 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@Test
-	public void testUtf8EncodedString() throws Exception {
-		try (var tester = createTester()) {
-			tester.runJavaToPythonTest(//
-					createUtf8EncodedSchema(), //
-					w -> prepareUtf8EncodedStringData(w, "barfoo"), //
-					(e, s) -> e.assertUtf8EncodedStringEquals(s, "barfoo")//
-			);
-		}
-	}
-
-	@Test
-	public void testUtf8EncodedStringFromPythonViaPandas() throws Exception {
-		try (var tester = createTester()) {
-			tester.runPythonToJavaTest(//
-					(e, s) -> e.writeUtf8EncodedStringViaPandas(s, "raboof"), //
-					createSingleUtf8Tester("raboof"));
-		}
-	}
-
-	@Test
 	public void testIntListJavaToPython() throws Exception {
 		try (var tester = createTester()) {
 			tester.runJavaToPythonTest(//
@@ -385,22 +319,6 @@ public class KnimeArrowExtensionTypesTest {
 					(e, s) -> e.assertIntListEquals(s, 1, 2, 3, 4, 5)//
 			);
 		}
-	}
-
-	private Consumer<RandomAccessBatchReadable> createSingleUtf8Tester(String expected) {
-		return createSingleDataTester(0, VarBinaryReadData.class, d -> {
-			var decoded = new String(d.getBytes(0), StandardCharsets.UTF_8);
-			assertEquals(expected, decoded);// NOSONAR this is test code...
-		});
-	}
-
-	@Test
-	public void testUtf8EncodedStringFromPythonViaPyList() throws Exception {
-		try (var tester = createTester()) {
-			tester.runPythonToJavaTest((e, s) -> e.writeUtf8EncodedStringViaPyList(s, "bazbar"), //
-					createSingleUtf8Tester("bazbar"));
-		}
-
 	}
 
 	@Test
@@ -465,15 +383,15 @@ public class KnimeArrowExtensionTypesTest {
 		final var location = new FSLocation(FSCategory.CUSTOM_URL, "1000", "https://www.dummy.com");
 		var rowFiller = singleRowFiller("foo", w -> {
 			w.<FSLocationWriteValue>getWriteValue(0).setLocation(location);
-			w.<Utf8StringWriteValue>getWriteValue(1).setValue("bar");
+			w.<IntWriteValue>getWriteValue(1).setIntValue(5);
 		});
-		var tableTester = singleRowTableTester(dataTableSpec(List.of("location", "utf8string"),
-				List.of(SimpleFSLocationCellFactory.TYPE, Utf8StringCell.TYPE)), "foo", r -> {
+		var tableTester = singleRowTableTester(dataTableSpec(List.of("location", "int"),
+				List.of(SimpleFSLocationCellFactory.TYPE, IntCell.TYPE)), "foo", r -> {
 					assertEquals(location, r.<FSLocationValue>getValue(0).getFSLocation());
-					assertEquals("bar", r.<Utf8StringValue>getValue(1).getString());
+					assertEquals(5, r.<IntValue>getValue(1).getIntValue());
 				});
-		testCopyingData(() -> rowFiller, tableTester, List.of("location", "utf8string"),
-				List.of(new FSLocationValueFactory(), new Utf8StringValueFactory()), EnumSet.allOf(CopyPathway.class));
+		testCopyingData(() -> rowFiller, tableTester, List.of("location", "int"),
+				List.of(new FSLocationValueFactory(), new IntValueFactory()), EnumSet.allOf(CopyPathway.class));
 	}
 
 	@Test
@@ -700,15 +618,6 @@ public class KnimeArrowExtensionTypesTest {
 				EnumSet.allOf(CopyPathway.class));
 	}
 
-	@Test
-	public void testCopyingSingleUtf8EncodedStringCellTable() throws Exception {
-		var rowFiller = singleRowFiller("foobar", r -> r.<Utf8StringWriteValue>getWriteValue(0).setValue("barfoo"));
-		var tableTester = singleRowTableTester(dataTableSpec("dummy", Utf8StringCell.TYPE), "foobar",
-				r -> assertEquals("barfoo", r.<Utf8StringValue>getValue(0).getString()));
-		testCopyingData(() -> rowFiller, tableTester, List.of("dummy"), List.of(new Utf8StringValueFactory()),
-				EnumSet.allOf(CopyPathway.class));
-	}
-
 	private void testCopyingData(Supplier<RowFiller> rowFillerSupplier,
 			Consumer<UnsavedColumnarContainerTable> tableTester, List<String> columnNames,
 			List<ValueFactory<?, ?>> valueFactories, EnumSet<CopyPathway> pathways) throws Exception {
@@ -785,12 +694,6 @@ public class KnimeArrowExtensionTypesTest {
 		void assertIntListEquals(PythonArrowDataSource dataSource, int a, int b, int c, int d, int e);
 
 		void assertFsLocationEquals(PythonDataSource dataSource, String category, String specifier, String path);
-
-		void assertUtf8EncodedStringEquals(PythonDataSource dataSource, String value);
-
-		void writeUtf8EncodedStringViaPandas(final PythonDataSink dataSink, String value);
-
-		void writeUtf8EncodedStringViaPyList(final PythonDataSink dataSink, String value);
 
 		void writeFsLocationViaPandas(final PythonDataSink dataSink, String category, String specifier, String path);
 
