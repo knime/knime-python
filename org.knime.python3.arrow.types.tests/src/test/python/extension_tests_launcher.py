@@ -204,10 +204,9 @@ def test_primitive_list_in_df():
     df = pd.DataFrame()
     df["column"] = [[1]]
     arrow_table = kap.pandas_df_to_arrow(df)
-    field = arrow_table.schema.field(0)
+    field = arrow_table.schema.field(1)
     assert isinstance(field.type, pa.ListType)
-    assert isinstance(field.type.value_type, kat.LogicalTypeExtensionType)
-    assert field.type.value_type.storage_type == pa.int32()
+    assert field.type.value_type == pa.int64()
     assert field.name == "column"
 
 
