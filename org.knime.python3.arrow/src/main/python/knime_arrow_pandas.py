@@ -59,7 +59,7 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
         col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
         if col_converter is not None:
-            data_frame[col_name] = col_converter.convert_column(data_frame[col_name])
+            data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
 
     # Convert the index to a str series and prepend to the data_frame:
     # extract and drop index from DF

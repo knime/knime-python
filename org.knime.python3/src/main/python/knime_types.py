@@ -181,7 +181,7 @@ class FromPandasColumnConverter(ABC):
         return False
 
     @abstractmethod
-    def convert_column(self, column: "pandas.Series") -> "pandas.Series":
+    def convert_column(self, data_frame: "pandas.dataframe", column_name: str) -> "pandas.Series":
         pass
 
 
