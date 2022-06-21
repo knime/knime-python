@@ -30,3 +30,4 @@ Require-Bundle:
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Bundle-Activator: org.knime.python3.nodes.Activator
+Export-Package: org.knime.python3.nodes.ports

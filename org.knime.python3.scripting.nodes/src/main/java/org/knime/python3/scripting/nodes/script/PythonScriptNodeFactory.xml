@@ -111,6 +111,11 @@
 			<tt>knio.input_objects</tt>. For example, the first input object can be accessed like this:
 			<tt>knio.input_objects[0]</tt>.
 		</dynInPort>
+		<dynInPort name="Binary object" group-identifier="Input object (binary)" insert-before="0">
+			A binary input object. Binary input objects consist just of a byte array. You can access them via
+			<tt>knio.input_object</tt>. For example, the first input object can be accessed as follows:
+			<tt>knio.input_objects[0]</tt>
+		</dynInPort>
 		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
 			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
 			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
@@ -138,6 +143,11 @@
 			populate the first output object, assign it a value like this: <tt>knio.output_objects[0] =
 			&lt;value&gt;</tt>. The assigned value can be of any type that can be pickled. It will automatically be
 			pickled for you.
+		</dynOutPort>
+		<dynOutPort name="Binary object" group-identifier="Output object (binary)" insert-before="0">
+			A binary output object. The object has to be populated via <tt>knio.output_objects</tt>. For example,
+			to populate the first output object, assign it a value like this: <tt>knio.output_objects[0] = (id, value)</tt> where <tt>id</tt> is a string identifying the type and
+			<tt>value</tt> is an array of bytes.
 		</dynOutPort>
 	</ports>
 	<views>

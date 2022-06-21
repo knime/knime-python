@@ -143,7 +143,7 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param path The path from which to unpickle the object. May be {@code null} in which case the corresponding
      *            object on Python side will be {@code None}.
      */
-    void setInputObject(int objectIndex, String path);
+    void setInputObject(int objectIndex, String path, boolean unpickle);
 
     void setNumExpectedOutputObjects(int numOutputObjects);
 
@@ -155,6 +155,8 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param path The path to which to pickle the object.
      */
     void getOutputObject(int objectIndex, String path);
+
+    String getBinaryOutputObject(int objectIndex, String path);
 
     /**
      * Implements parts of the functionality required by

@@ -177,10 +177,13 @@ class PythonKernel(kg.EntryPoint):
             )
         return write_table._sink._java_data_sink
 
-    def setInputObject(self, object_index: int, path: Optional[str]) -> None:
+    def setInputObject(self, object_index: int, path: Optional[str], unpickle:bool) -> None:
         if path is not None:
             with open(path, "rb") as file:
-                obj = pickle.load(file)
+                if unpickle:
+                    obj = pickle.load(file)
+                else:
+                    obj = file.read()
         else:
             obj = None
         kio._pad_up_to_length(kio._input_objects, object_index + 1)
@@ -193,6 +196,13 @@ class PythonKernel(kg.EntryPoint):
         obj = kio.output_objects[object_index]
         with open(path, "wb") as file:
             pickle.dump(obj=obj, file=file)
+
+    def getBinaryOutputObject(self, object_index: int, path: str) -> str:
+        obj = kio.output_objects[object_index]
+        with open(path, "wb") as file:
+            # TODO introduce class to represent the binary objects
+            file.write(obj[1])
+        return obj[0]
 
     def getOutputObjectType(self, object_index: int) -> str:
         return type(kio.output_objects[object_index]).__name__

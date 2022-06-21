@@ -205,7 +205,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                     outputTableNames.add(variableName);
                 } else if (outPort instanceof ImageOutputPort) {
                     outputImageNames.add(variableName);
-                } else if (outPort instanceof PickledObjectOutputPort) {
+                } else if (outPort instanceof PickledObjectOutputPort || outPort instanceof PythonBinaryObjectPort) {
                     outputObjectNames.add(variableName);
                 }
                 outWeight += outPort.getExecuteProgressWeight();

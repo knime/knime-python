@@ -70,6 +70,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.IDataRepository;
+import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
@@ -123,6 +124,7 @@ import org.knime.python3.arrow.SinkManager;
 import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
 import org.knime.python3.data.PythonValueFactoryModule;
 import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
 import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.utils.FlowVariableUtils;
 
@@ -444,7 +446,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
      */
     @Override
     public void putObject(final String name, final PickledObjectFile object) throws PythonIOException {
-        m_proxy.setInputObject(parseIndex(name), object != null ? object.getFile().getAbsolutePath() : null);
+        m_proxy.setInputObject(parseIndex(name), object != null ? object.getFile().getAbsolutePath() : null, true);
     }
 
     @Override
@@ -454,6 +456,19 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             putObject(name, object);
             return null;
         }, executionMonitor);
+    }
+
+    public void putObject(final String name, final PythonBinaryBlobFileStorePortObject object) {
+        m_proxy.setInputObject(parseIndex(name), object != null ? object.getFilePath() : null, false);
+    }
+
+    public PythonBinaryBlobFileStorePortObject getObject(final String name, final FileStore fileStore) {
+        var id = m_proxy.getBinaryOutputObject(parseIndex(name), fileStore.getFile().getAbsolutePath());
+        try {
+            return PythonBinaryBlobFileStorePortObject.create(fileStore, id, null);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to create output object.", ex);
+        }
     }
 
     @Override

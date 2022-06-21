@@ -52,7 +52,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
@@ -69,6 +71,7 @@ import org.knime.python2.config.PythonFixedVersionExecutableSelectionPanel;
 import org.knime.python2.config.PythonSourceCodeConfig;
 import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
+import org.knime.python2.config.WorkspacePreparer;
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
 import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
@@ -89,6 +92,8 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
     private final PythonSourceCodePanel m_scriptPanel;
 
     private final PythonFixedVersionExecutableSelectionPanel m_executablePanel;
+
+    private final Map<InputPort, WorkspacePreparer> m_dataAwarePreparer = new HashMap<>();
 
     public AbstractPythonScriptingNodeDialog(final InputPort[] inPorts, final VariableNames variableNames,
         final String templateRepositoryId) {
@@ -154,6 +159,11 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
             } else if (inPort instanceof PickledObjectInputPort) {
                 inPickledObjects.add(null);
             }
+            var preparer = m_dataAwarePreparer.merge(inPort, inPort.prepareInDialog(inObject), (o, n) -> {
+                m_scriptPanel.unregisterWorkspacePreparer(o);
+                return n;
+            });
+            m_scriptPanel.registerWorkspacePreparer(preparer);
         }
         m_scriptPanel.updateData(inTableSpecs.toArray(DataTableSpec[]::new), inTables.toArray(BufferedDataTable[]::new),
             inPickledObjects.toArray(PickledObjectFile[]::new));

@@ -60,6 +60,7 @@ import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
+import org.knime.python3.scripting.nodes.PythonBinaryObjectPort;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -82,7 +83,8 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
                 final String outVariableName = outPort.getVariableName();
                 if (outPort instanceof DataTableOutputPort) {
                     defaultScript += outVariableName + " = None"; // TODO: create an empty table
-                } else if (outPort instanceof ImageOutputPort || outPort instanceof PickledObjectOutputPort) {
+                } else if (outPort instanceof ImageOutputPort || outPort instanceof PickledObjectOutputPort
+                    || outPort instanceof PythonBinaryObjectPort) {
                     defaultScript += outVariableName + " = None";
                 }
                 defaultScript += "\n";
@@ -111,7 +113,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
                 outputTables.add(variableName);
             } else if (outPort instanceof ImageOutputPort) {
                 outputImages.add(variableName);
-            } else if (outPort instanceof PickledObjectOutputPort) {
+            } else if (outPort instanceof PickledObjectOutputPort || outPort instanceof PythonBinaryObjectPort) {
                 outputObjects.add(variableName);
             }
         }

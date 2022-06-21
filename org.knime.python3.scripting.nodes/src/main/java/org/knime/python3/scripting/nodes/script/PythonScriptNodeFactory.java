@@ -69,6 +69,8 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
+import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
+import org.knime.python3.scripting.nodes.PythonBinaryObjectPort;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -79,12 +81,14 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
         final var b = new PortsConfigurationBuilder();
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
+        b.addExtendableInputPortGroup("Input object (binary)", PythonBinaryBlobFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
         b.addExtendableOutputPortGroupWithDefault("Output table", new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
         b.addExtendableOutputPortGroup("Output image", ImagePortObject.TYPE);
         b.addExtendableOutputPortGroup("Output object (pickled)", PickledObjectFileStorePortObject.TYPE);
+        b.addExtendableOutputPortGroup("Output object (binary)", PythonBinaryBlobFileStorePortObject.TYPE);
         return Optional.of(b);
     }
 
@@ -133,6 +137,8 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
                 inPort = new DataTableInputPort("knio.input_tables[" + inTableIndex++ + "]");
             } else if (PickledObjectFileStorePortObject.TYPE.equals(inType)) {
                 inPort = new PickledObjectInputPort("knio.input_objects[" + inObjectIndex++ + "]");
+            } else if (PythonBinaryBlobFileStorePortObject.TYPE.equals(inType)) {
+                inPort = new PythonBinaryObjectPort("knio.input_objects[" + inObjectIndex++ + "]");
             } else {
                 throw new IllegalStateException("Unsupported input type: " + inType.getName());
             }
@@ -152,6 +158,8 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
                 outPort = new ImageOutputPort("knio.output_images[" + outImageSuffix++ + "]");
             } else if (PickledObjectFileStorePortObject.TYPE.equals(outType)) {
                 outPort = new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix++ + "]");
+            } else if (PythonBinaryBlobFileStorePortObject.TYPE.equals(outType)) {
+                outPort = new PythonBinaryObjectPort("knio.output_objects[" + outObjectSuffix++ + "]");
             } else {
                 throw new IllegalStateException("Unsupported output type: " + outType.getName());
             }
