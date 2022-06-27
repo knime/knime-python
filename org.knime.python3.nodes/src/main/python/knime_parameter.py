@@ -49,7 +49,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 import knime_schema as ks
 
 
@@ -70,20 +70,20 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj) -> dict:
+def extract_parameters(obj, for_dialog=False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
-    return {"model": _extract_parameters(obj)}
+    return {"model": _extract_parameters(obj, for_dialog)}
 
-def _extract_parameters(obj) -> dict:
+def _extract_parameters(obj, for_dialog=False) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
         if param_obj.__kind__ == "parameter":
-            result[name] = getattr(obj, name)
+            result[name] = param_obj.get_value(obj, for_dialog)
         elif _is_group(param_obj):
-            result[name] = _extract_parameters(param_obj)
+            result[name] = _extract_parameters(param_obj, for_dialog)
     return result
 
 def _is_group(param):
@@ -221,6 +221,9 @@ class _BaseParameter(ABC):
         self._name = name
         if self._label is None:
             self._label = name
+
+    def get_value(self, obj:Any, for_dialog: bool):
+        return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
         if not hasattr(obj, "__kind__"):
@@ -516,6 +519,13 @@ class MultiColumnParameter(_BaseParameter):
 
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
+
+    def get_value(self, obj: Any, for_dialog: bool):
+        value = super().get_value(obj, for_dialog)
+        if for_dialog and value is None:
+            return []
+        else:
+            return value
 
 
 class BoolParameter(_BaseParameter):

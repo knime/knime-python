@@ -273,7 +273,7 @@ class _PythonNodeProxy:
         inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
-            "data": kp.extract_parameters(self._node),
+            "data": kp.extract_parameters(self._node, for_dialog=True),
             "schema": kp.extract_schema(self._node, inputs),
             "ui_schema": kp.extract_ui_schema(self._node),
         }
