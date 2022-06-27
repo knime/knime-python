@@ -95,7 +95,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     for col_name, col_type in zip(data.schema.names, data.schema.types):
         col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
         if col_converter is not None:
-            data_frame[col_name] = col_converter.convert_column(data_frame[col_name])
+            data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
 
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
