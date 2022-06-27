@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3 - Scripting
 Bundle-SymbolicName: org.knime.python3.scripting;singleton:=true
-Bundle-Version: 4.6.0.qualifier
+Bundle-Version: 4.7.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
