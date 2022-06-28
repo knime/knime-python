@@ -48,14 +48,17 @@
  */
 package org.knime.python3.nodes;
 
-import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
+import org.knime.core.node.NodeDescription;
+import org.knime.core.node.port.PortType;
+import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.ports.PythonPortObjects;
 
 /**
  * Represents a PythonNode.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonNode { // TODO record in Java 17
+public final class PythonNode implements ExtensionNode {
 
     private final String m_id;
 
@@ -63,19 +66,13 @@ public final class PythonNode { // TODO record in Java 17
 
     private final String m_afterId;
 
-    private final String m_iconPath;
+    private final PortType[] m_inputPortTypes;
 
-    private final String m_name;
-
-    private final String m_type;
-
-    private final NodeDescriptionBuilder m_descriptionBuilder;
-
-    private final String[] m_inputPortTypes;
-
-    private final String[] m_outputPortTypes;
+    private final PortType[] m_outputPortTypes;
 
     private final int m_numViews;
+
+    private final NodeDescription m_description;
 
     /**
      * Constructor.
@@ -83,10 +80,7 @@ public final class PythonNode { // TODO record in Java 17
      * @param id of the node
      * @param categoryPath path to the category the node is contained in in the node repository
      * @param afterId id of the node after which to insert this node
-     * @param iconPath path to the icon (relative to the node)
-     * @param descriptionBuilder for building the node description
-     * @param name human-readable name of the node
-     * @param type of the node e.g. Manipulator
+     * @param description the node's description
      * @param inputPortTypes
      * @param outputPortTypes
      * @param numViews
@@ -95,28 +89,23 @@ public final class PythonNode { // TODO record in Java 17
         final String id, //
         final String categoryPath, //
         final String afterId, //
-        final String iconPath, //
-        final NodeDescriptionBuilder descriptionBuilder, //
-        final String name, //
-        final String type, //
+        final NodeDescription description, //
         final String[] inputPortTypes, //
         final String[] outputPortTypes, //
         final int numViews) {
         m_id = id;
         m_categoryPath = categoryPath;
         m_afterId = afterId;
-        m_descriptionBuilder = descriptionBuilder;
-        m_iconPath = iconPath;
-        m_name = name;
-        m_type = type;
-        m_inputPortTypes = inputPortTypes;
-        m_outputPortTypes = outputPortTypes;
+        m_description = description;
+        m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
+        m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
         m_numViews = numViews;
     }
 
     /**
      * @return id of the node
      */
+    @Override
     public String getId() {
         return m_id;
     }
@@ -124,6 +113,7 @@ public final class PythonNode { // TODO record in Java 17
     /**
      * @return category path
      */
+    @Override
     public String getCategoryPath() {
         return m_categoryPath;
     }
@@ -131,48 +121,40 @@ public final class PythonNode { // TODO record in Java 17
     /**
      * @return id of the node after which to insert this node
      */
+    @Override
     public String getAfterId() {
         return m_afterId;
     }
 
     /**
-     * @return path to this node's icon
+     * @return the nodes description
      */
-    public String getIconPath() {
-        return m_iconPath;
+    @Override
+    public NodeDescription getNodeDescription() {
+        return m_description;
     }
 
-    /**
-     * @return the pre-filled builder for the NodeDescription
-     */
-    public NodeDescriptionBuilder getDescriptionBuilder() {
-        return m_descriptionBuilder;
-    }
-
-    /**
-     * @return type of this node
-     */
-    public String getType() {
-        return m_type;
-    }
 
     /**
      * @return Input port type identifiers
      */
-    public String[] getInputPortTypes() {
+    @Override
+    public PortType[] getInputPortTypes() {
         return m_inputPortTypes;
     }
 
     /**
      * @return Output port type identifiers
      */
-    public String[] getOutputPortTypes() {
+    @Override
+    public PortType[] getOutputPortTypes() {
         return m_outputPortTypes;
     }
 
     /**
      * @return The number of views offered by this node
      */
+    @Override
     public int getNumViews() {
         return m_numViews;
     }

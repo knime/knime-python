@@ -48,9 +48,12 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.knime.core.node.extension.CategoryExtension;
+import org.knime.python3.PythonGateway;
+import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.proxy.NodeProxy;
 
 /**
@@ -66,11 +69,6 @@ public interface PyNodeExtension {
     String getId();
 
     /**
-     * @return human-readable name of the extension
-     */
-    String getDescription();
-
-    /**
      * @return a stream of builders that will build the category declarations defined for the extension. The caller is
      *         supposed to set the pluginId of the extension.
      */
@@ -82,15 +80,7 @@ public interface PyNodeExtension {
      */
     PythonNode getNode(String id);
 
-    /**
-     * @return the name of the required Python environment
-     */
-    String getEnvironmentName();
-
-    /**
-     * @return the name of the Python module providing this extension
-     */
-    String getExtensionModule();
+    PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException;
 
     /**
      * @param backend Python proxy for node creation
@@ -102,5 +92,5 @@ public interface PyNodeExtension {
     /**
      * @return the contained nodes
      */
-    Stream<PythonNode> getNodeStream();
+    Stream<ExtensionNode> getNodeStream();
 }

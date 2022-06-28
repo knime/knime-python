@@ -50,15 +50,19 @@ package org.knime.python3.nodes.pycentric;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.knime.core.node.extension.CategoryExtension;
+import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PyNodeExtension;
 import org.knime.python3.nodes.PythonNode;
+import org.knime.python3.nodes.PythonNodeGatewayFactory;
+import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.proxy.NodeProxy;
 
 /**
@@ -71,32 +75,24 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     private final Map<String, PythonNode> m_nodes;
 
-    private final String m_description;
-
     private final String m_id;
-
-    private final String m_environmentName;
 
     private final String m_extensionModule;
 
-    FluentPythonNodeExtension(final String id, final String description, final String environmentName,
-        final String extensionModule, final PythonNode[] nodes, final List<CategoryExtension.Builder> categoryBuilders) {
+    private final PythonNodeGatewayFactory m_gatewayFactory;
+
+    FluentPythonNodeExtension(final String id, final String extensionModule, final PythonNode[] nodes,
+        final List<CategoryExtension.Builder> categoryBuilders, final PythonNodeGatewayFactory gatewayFactory) {
         m_id = id;
-        m_description = description;
-        m_environmentName = environmentName;
         m_extensionModule = extensionModule;
         m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));
         m_categoryBuilders = categoryBuilders;
+        m_gatewayFactory = gatewayFactory;
     }
 
     @Override
     public String getId() {
         return m_id;
-    }
-
-    @Override
-    public String getDescription() {
-        return m_description;
     }
 
     @Override
@@ -110,25 +106,17 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     }
 
     @Override
-    public String getEnvironmentName() {
-        return m_environmentName;
-    }
-
-    @Override
-    public String getExtensionModule() {
-        return m_extensionModule;
-    }
-
-    @Override
     public NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
-        // TODO if we decide to use purely this version of PythonNodeExtensions, then we should
-        // preload the extension module when we create the Gateway.
-        // This would reduce response time if there is a gateway queue in place.
         return backend.createNodeFromExtension(m_extensionModule, nodeId);
     }
 
     @Override
-    public Stream<PythonNode> getNodeStream() {
-        return m_nodes.values().stream();
+    public Stream<ExtensionNode> getNodeStream() {
+        return m_nodes.values().stream().map(Function.identity());
+    }
+
+    @Override
+    public PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException {
+        return m_gatewayFactory.create();
     }
 }

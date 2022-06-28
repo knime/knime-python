@@ -79,7 +79,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     @Override
     public PyNodeExtension parseExtension(final Path path) throws IOException {
         var staticInfo = readStaticInformation(path);
-        return retrieveDynamicInformationFromPython(path, staticInfo);
+        return retrieveDynamicInformationFromPython(staticInfo);
     }
 
     private static StaticExtensionInfo readStaticInformation(final Path path) throws IOException {
@@ -94,30 +94,30 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 group_id, //
                 (String)map.get("author"), //
                 env_name, //
-                (String)map.get("extension_module")//
+                (String)map.get("extension_module"),//
+                path
             );
         }
     }
 
-    private static PyNodeExtension retrieveDynamicInformationFromPython(final Path pathToExtension,
-        final StaticExtensionInfo staticInfo) throws IOException {
-        try (var gateway = PythonNodeGatewayFactory.create(staticInfo.m_id, pathToExtension,
-            staticInfo.m_environmentName, staticInfo.m_extensionModule)) {
-            return createNodeExtension(gateway.getEntryPoint(), pathToExtension, staticInfo);
+    private static PyNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo) throws IOException {
+        var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
+            staticInfo.m_modulePath);
+        try (var gateway = gatewayFactory.create()) {
+            return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IOException("Python gateway creation was interrupted.", ex);
         }
     }
 
-    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend, final Path pathToExtension,
-        final StaticExtensionInfo staticInfo) {
-        // TODO should we decide on using only this way of defining PythonNodeExtensions, we should add the extension
-        // module to the preloaded modules to take full advantage of a potential process/gateway queue
-        var categoriesJson = backend.retrieveCategoriesAsJson(staticInfo.m_extensionModule);
-        var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_extensionModule);
-        return new FluentPythonNodeExtension(staticInfo.m_id, "TODO", staticInfo.m_environmentName,
-            staticInfo.m_extensionModule, parseNodes(nodesJson), parseCategories(categoriesJson, pathToExtension));
+    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
+        final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
+        var categoriesJson = backend.retrieveCategoriesAsJson(staticInfo.m_moduleName);
+        var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_moduleName);
+        return new FluentPythonNodeExtension(staticInfo.m_id, staticInfo.m_moduleName,
+            parseNodes(nodesJson, staticInfo.m_modulePath), parseCategories(categoriesJson, staticInfo.m_modulePath),
+            gatewayFactory);
     }
 
     private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,
@@ -128,10 +128,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             .collect(Collectors.toUnmodifiableList());
     }
 
-    private static PythonNode[] parseNodes(final String nodesJson) {
+    private static PythonNode[] parseNodes(final String nodesJson, final Path modulePath) {
         JsonNodeDescription[] nodes = new Gson().fromJson(nodesJson, JsonNodeDescription[].class);
         return Stream.of(nodes)//
-            .map(JsonNodeDescription::toPythonNode)//
+            .map(n -> n.toPythonNode(modulePath))//
             .toArray(PythonNode[]::new);
     }
 
@@ -167,9 +167,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private JsonDescribed[] views;
 
-        PythonNode toPythonNode() {
-            return new PythonNode(id, category, after, icon_path, createDescriptionBuilder(), name, node_type,
-                input_port_types, output_port_types, views.length);
+        PythonNode toPythonNode(final Path modulePath) {
+            var descriptionBuilder = createDescriptionBuilder();
+            descriptionBuilder.withIcon(modulePath.resolve(icon_path));
+            return new PythonNode(id, category, after, descriptionBuilder.build(), input_port_types, output_port_types,
+                views.length);
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
@@ -233,11 +235,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private boolean locked;
 
-        CategoryExtension.Builder toExtension(final Path pathToExtension) {
+        CategoryExtension.Builder toExtension(final Path modulePath) {
             return CategoryExtension.builder(name, level_id) //
                 .withPath(path) //
                 .withDescription(description) //
-                .withIcon(pathToIcon(pathToExtension)) //
+                .withIcon(pathToIcon(modulePath)) //
                 .withAfter(after) //
                 .withLocked(locked);
         }
@@ -257,18 +259,28 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String m_id;
 
-        private String m_author;
-
         private String m_environmentName;
 
-        private String m_extensionModule;
+        private String m_moduleName;
+
+        private Path m_modulePath;
 
         StaticExtensionInfo(final String name, final String group_id, final String author, final String environmentName,
-            final String extensionModule) {
+            final String extensionModule, final Path extensionPath) {
             m_id = group_id + "." + name;
-            m_author = author;
             m_environmentName = environmentName;
-            m_extensionModule = extensionModule;
+
+            var relativeModulePath = Path.of(extensionModule);
+            if (relativeModulePath.getParent() == null) {
+                // the extension module is top level in the extension folder next to the knime.yml
+                m_moduleName = extensionModule;
+                m_modulePath = extensionPath.resolve(extensionModule);
+            } else {
+                // the extension module is in a potentially nested subfolder
+                m_modulePath = extensionPath.resolve(relativeModulePath);
+                m_moduleName = relativeModulePath.getFileName().toString();
+            }
         }
+
     }
 }

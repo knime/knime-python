@@ -56,15 +56,13 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
-import org.knime.core.node.port.PortType;
+import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
-import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
@@ -130,7 +128,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     private static final KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
         try {
             var extension = EXTENSION_PARSER.parseExtension(extensionPath);
-            return new ResolvedPythonExtension(extensionPath, extension, bundleName);
+            return new ResolvedPythonExtension(extension, bundleName);
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole
             // class from loading
@@ -141,14 +139,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     static final class ResolvedPythonExtension implements KnimeExtension {
 
-        private final Path m_path;
-
         private final PyNodeExtension m_extension;
 
         private final String m_bundleName;
 
-        ResolvedPythonExtension(final Path path, final PyNodeExtension extension, final String bundleName) {
-            m_path = path;
+        ResolvedPythonExtension(final PyNodeExtension extension, final String bundleName) {
             m_extension = extension;
             m_bundleName = bundleName;
         }
@@ -163,10 +158,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return Optional.ofNullable(m_bundleName);
         }
 
-        Path getPath() {
-            return m_path;
-        }
-
         @Override
         public Stream<CategoryExtension> getCategories() {
             return m_extension.getCategories().map(b -> b.withPluginId(m_bundleName).build());
@@ -174,19 +165,15 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
         @Override
         public Stream<ExtensionNode> getNodes() {
-            return m_extension.getNodeStream().map(n -> new ResolvedPythonNode(m_path, n));
+            return m_extension.getNodeStream();
+        }
+
+        PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException {
+            return m_extension.createGateway();
         }
 
         NodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
             return m_extension.createNodeProxy(backend, nodeId);
-        }
-
-        String getEnvironmentName() {
-            return m_extension.getEnvironmentName();
-        }
-
-        String getExtensionModule() {
-            return m_extension.getExtensionModule();
         }
 
         @Override
@@ -200,7 +187,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
         @Override
         public ExtensionNode getNode(final String nodeId) {
-            return new ResolvedPythonNode(m_path, m_extension.getNode(nodeId));
+            return m_extension.getNode(nodeId);
         }
 
         @Override
@@ -219,56 +206,6 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         public int hashCode() {
             return getId().hashCode();
         }
-    }
-
-    private static final class ResolvedPythonNode implements ExtensionNode {
-
-        private final PythonNode m_node;
-
-        private final Path m_iconPath;
-
-        ResolvedPythonNode(final Path pathToExtension, final PythonNode node) {
-            m_node = node;
-            m_iconPath = pathToExtension.resolve(node.getIconPath());
-        }
-
-        @Override
-        public String getId() {
-            return m_node.getId();
-        }
-
-        @Override
-        public String getCategoryPath() {
-            return m_node.getCategoryPath();
-        }
-
-        @Override
-        public String getAfterId() {
-            return m_node.getAfterId();
-        }
-
-        @Override
-        public NodeDescription getNodeDescription() {
-            return m_node.getDescriptionBuilder()//
-                .withIcon(m_iconPath)//
-                .build();
-        }
-
-        @Override
-        public PortType[] getInputPortTypes() {
-            return PythonPortObjects.getPortTypesForIdentifiers(m_node.getInputPortTypes());
-        }
-
-        @Override
-        public PortType[] getOutputPortTypes() {
-            return PythonPortObjects.getPortTypesForIdentifiers(m_node.getOutputPortTypes());
-        }
-
-        @Override
-        public int getNumViews() {
-            return m_node.getNumViews();
-        }
-
     }
 
 }
