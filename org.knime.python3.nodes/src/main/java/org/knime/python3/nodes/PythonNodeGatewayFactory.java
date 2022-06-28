@@ -82,34 +82,47 @@ public final class PythonNodeGatewayFactory {
 
     private static final PythonGatewayFactory DEBUG_FACTORY = new FreshPythonGatewayFactory();
 
-    private PythonNodeGatewayFactory() {
+    private final PythonExtensionFromModuleName m_module;
+
+    private final Path m_modulePath;
+
+    private final String m_extensionId;
+
+    private final String m_environmentName;
+
+    /**
+     * @param extensionId the extension's id
+     * @param environmentName the name of the environment the extension uses
+     * @param modulePath the absolute path to the module defining the extension
+     */
+    public PythonNodeGatewayFactory(final String extensionId, final String environmentName, final Path modulePath) {
+        m_module = new PythonExtensionFromModuleName(modulePath.getFileName().toString());
+        m_modulePath = modulePath.getParent();
+        m_extensionId = extensionId;
+        m_environmentName = environmentName;
     }
 
     /**
      * Creates a {@link PythonGateway} with the {@link KnimeNodeBackend} entry point.
      *
-     * @param extensionId id of the extension for which to create the gateway
-     * @param pathToExtension location of the extension on disc
-     * @param environmentName name of the environment the extension uses
-     * @param extensionModule the name of the Python module providing the extension
      * @return a {@link PythonGateway} for the provided extension
      * @throws IOException if creation fails due to I/O problems
      * @throws InterruptedException if the creation is interrupted
      */
-    public static PythonGateway<KnimeNodeBackend> create(final String extensionId, final Path pathToExtension,
-        final String environmentName, final String extensionModule) throws IOException, InterruptedException {
-        var command = createCommand(extensionId, environmentName);
+    public PythonGateway<KnimeNodeBackend> create() throws IOException, InterruptedException {
+        var command = createCommand(m_extensionId, m_environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
             .addToPythonPath(Python3SourceDirectory.getPath())//
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
-            .addToPythonPath(Python3ViewsSourceDirectory.getPath()) //
-            .addToPythonPath(pathToExtension) //
-            .withPreloaded(new PythonExtensionFromModuleName(extensionModule));
+            .addToPythonPath(Python3ViewsSourceDirectory.getPath())//
+            .addToPythonPath(m_modulePath)//
+            .withPreloaded(m_module);
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
         // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
         // in the node
-        var factory = PythonExtensionPreferences.debugMode(extensionId) ? DEBUG_FACTORY : FACTORY;
+        // The factory is not held as member, so that it is possible to toggle debug mode without a restart
+        var factory = PythonExtensionPreferences.debugMode(m_extensionId) ? DEBUG_FACTORY : FACTORY;
         var gateway = factory.create(gatewayDescriptionBuilder.build());
         PythonEntryPointUtils.registerPythonValueFactories(gateway.getEntryPoint());
         return gateway;

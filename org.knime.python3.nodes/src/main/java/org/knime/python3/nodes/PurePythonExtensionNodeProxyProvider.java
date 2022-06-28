@@ -96,8 +96,7 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNode() {
         try {
-            var gateway = PythonNodeGatewayFactory.create(m_extension.getId(), m_extension.getPath(),
-                m_extension.getEnvironmentName(), m_extension.getExtensionModule());
+            var gateway = m_extension.createGateway();
             return m_proxyFactory.createProxy(gateway);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
