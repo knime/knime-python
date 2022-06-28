@@ -473,6 +473,10 @@ class ColumnParameter(_BaseParameter):
             "showRowKeys": self._include_row_key,
             "showNoneColumn": self._include_none_column,
         }
+    
+    def _inject(self, obj, value, version):
+        value = None if value == "" else value
+        return super()._inject(obj, value, version)
 
 
 def _filter_columns(
@@ -526,6 +530,12 @@ class MultiColumnParameter(_BaseParameter):
             return []
         else:
             return value
+
+    def _inject(self, obj, value, version):
+        # if there are no columns then the empty string is used as placeholder and we need to filter it out here
+        if value is not None:
+            value = [c for c in value if c != ""]
+        return super()._inject(obj, value, version)
 
 
 class BoolParameter(_BaseParameter):
