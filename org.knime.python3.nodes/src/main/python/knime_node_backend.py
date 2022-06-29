@@ -261,6 +261,7 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
 class _PythonNodeProxy:
     def __init__(self, node: kn.PythonNode) -> None:
         self._node = node
+        self._num_outports = len(node.output_ports) if node.output_ports is not None else 0
 
     def getDialogRepresentation(
         self,
@@ -395,13 +396,14 @@ class _PythonNodeProxy:
         self._set_flow_variables(config_context.flow_variables)
 
         if outputs is None:
-            outputs = []
+            # indicates that downstream nodes can't be configured, yet
+            outputs = [None] * self._num_outports
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
 
         output_specs = [
-            _spec_from_python(spec, self._node.output_ports[i])
+            _spec_from_python(spec, self._node.output_ports[i]) if spec is not None else None
             for i, spec in enumerate(outputs)
         ]
         _pop_log_callback()
