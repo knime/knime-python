@@ -71,6 +71,21 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.gson.Gson;
 
 /**
+ * Parses a Python Extension of the following format:
+ *
+ * <pre>
+ * knime.yml
+ * extension.py
+ * environment.yml
+ * ...
+ * </pre>
+ *
+ * The knime.yml is the entry point pointing to the extension module ({@code extension.py} in this example) as well as
+ * an environment definition ({@code environment.yml} in this example). It also declares the id, version and description
+ * of the extension. The extension module registers categories and nodes and can also be located in a potentially nested
+ * subfolder. Note that the paths for icons are relative to the knime.yml file, not the module they are referenced from.
+ * That is, if {@code extension.py} is within a subfolder {@code sub} and an icon {@code icon.png} is located next to
+ * it, then the correct path to the icon is {@code sub/icon.png}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
@@ -92,7 +107,6 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             return new StaticExtensionInfo(//
                 name, //
                 group_id, //
-                (String)map.get("author"), //
                 env_name, //
                 (String)map.get("extension_module"),//
                 path
@@ -116,7 +130,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         var categoriesJson = backend.retrieveCategoriesAsJson(staticInfo.m_moduleName);
         var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_moduleName);
         return new FluentPythonNodeExtension(staticInfo.m_id, staticInfo.m_moduleName,
-            parseNodes(nodesJson, staticInfo.m_modulePath), parseCategories(categoriesJson, staticInfo.m_modulePath),
+            parseNodes(nodesJson, staticInfo.m_extensionPath), parseCategories(categoriesJson, staticInfo.m_extensionPath),
             gatewayFactory);
     }
 
@@ -128,10 +142,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             .collect(Collectors.toUnmodifiableList());
     }
 
-    private static PythonNode[] parseNodes(final String nodesJson, final Path modulePath) {
+    private static PythonNode[] parseNodes(final String nodesJson, final Path extensionPath) {
         JsonNodeDescription[] nodes = new Gson().fromJson(nodesJson, JsonNodeDescription[].class);
         return Stream.of(nodes)//
-            .map(n -> n.toPythonNode(modulePath))//
+            .map(n -> n.toPythonNode(extensionPath))//
             .toArray(PythonNode[]::new);
     }
 
@@ -265,11 +279,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private Path m_modulePath;
 
-        StaticExtensionInfo(final String name, final String group_id, final String author, final String environmentName,
+        private Path m_extensionPath;
+
+        StaticExtensionInfo(final String name, final String group_id, final String environmentName,
             final String extensionModule, final Path extensionPath) {
             m_id = group_id + "." + name;
             m_environmentName = environmentName;
-
+            m_extensionPath = extensionPath;
             var relativeModulePath = Path.of(extensionModule);
             if (relativeModulePath.getParent() == null) {
                 // the extension module is top level in the extension folder next to the knime.yml
