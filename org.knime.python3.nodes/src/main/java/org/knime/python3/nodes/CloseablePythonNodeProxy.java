@@ -377,7 +377,8 @@ final class CloseablePythonNodeProxy
             throw new IllegalStateException("Python node configure returned wrong number of output port specs");
         }
 
-        return serializedOutSpecs.stream().map(PythonPortObjectTypeRegistry::convertFromPythonPortObjectSpec)
+        return serializedOutSpecs.stream()//
+            .map(PythonPortObjectTypeRegistry::convertFromPythonPortObjectSpec)//
             .toArray(PortObjectSpec[]::new);
     }
 
