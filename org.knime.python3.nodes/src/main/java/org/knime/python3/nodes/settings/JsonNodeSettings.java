@@ -156,7 +156,6 @@ public final class JsonNodeSettings {
         var tmpSettings = new NodeSettings("temp");
         var modelSettings = tmpSettings.addNodeSettings("model");
         settingsWithoutVersion.copyTo(modelSettings);
-        modelSettings.addNodeSettings(settingsWithoutVersion);
         return tmpSettings;
     }
 
