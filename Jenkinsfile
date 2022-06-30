@@ -21,7 +21,7 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python2 && python3 && java11')
+    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python-all && java11')
 
     def parallelConfigs = [:]
     for (py in PYTHON_VERSIONS) {

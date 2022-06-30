@@ -128,9 +128,9 @@
 				<configuration>
 					<environmentVariables>
 						<!-- Python executables required by unit tests. Paths copied from workflow-tests/ -->
-						<PYTHON3_EXEC_PATH_LINUX>/home/jenkins/miniconda3/envs/py3_knime43/bin/python</PYTHON3_EXEC_PATH_LINUX>
-						<PYTHON3_EXEC_PATH_MAC>/Users/jenkins/miniconda3/envs/py3_knime43/bin/python</PYTHON3_EXEC_PATH_MAC>
-						<PYTHON3_EXEC_PATH_WINDOWS>C:\\Users\\jenkins\\Miniconda3\\envs\\py3_knime43\\python.exe</PYTHON3_EXEC_PATH_WINDOWS>
+						<PYTHON3_EXEC_PATH_LINUX>/home/jenkins/miniconda3/envs/knime_py39/bin/python</PYTHON3_EXEC_PATH_LINUX>
+						<PYTHON3_EXEC_PATH_MAC>/Users/jenkins/miniconda3/envs/knime_py39/bin/python</PYTHON3_EXEC_PATH_MAC>
+						<PYTHON3_EXEC_PATH_WINDOWS>C:\\Users\\jenkins\\Miniconda3\\envs\\knime_py39\\python.exe</PYTHON3_EXEC_PATH_WINDOWS>
 					</environmentVariables>
 				</configuration>
 			</plugin>
