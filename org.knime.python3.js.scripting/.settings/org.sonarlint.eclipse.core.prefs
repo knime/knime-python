@@ -1,0 +1,6 @@
+autoEnabled=true
+eclipse.preferences.version=1
+idePrefixKey=
+projectKey=org.knime\:knime-python
+serverId=sonar.knime.com
+sqPrefixKey=org.knime.python3.scripting.jsnodes
