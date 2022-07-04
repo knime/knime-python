@@ -414,7 +414,7 @@ class _PythonNodeProxy:
             tb = ex.__traceback__.tb_next
 
         # Format the details: Traceback + Error type + Error
-        details = "".join(traceback.format_exception(etype=type(ex), value=ex, tb=tb))
+        details = "".join(traceback.format_exception(type(ex), value=ex, tb=tb))
 
         # Set the failure in the Java callback
         self._java_callback.set_failure(
