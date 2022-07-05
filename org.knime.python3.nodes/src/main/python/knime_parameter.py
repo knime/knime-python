@@ -262,6 +262,26 @@ class _BaseParameter(ABC):
         """
         To be used as a decorator for setting a validator function for a parameter.
         Note that 'func' will be encapsulated in '_validator' and will not be available in the namespace of the class.
+
+        **Example**::
+
+                @knext.node(args)
+                class MyNode:
+                    num_repetitions = knext.IntParameter(
+                        label="Number of repetitions",
+                        description="How often to repeat an action",
+                        default_value=42
+                    )
+                    @num_repetitions.validator
+                    def validate_reps(value):
+                        if value > 100:
+                            raise ValueError("Too many repetitions!")
+
+                    def configure(args):
+                        pass
+
+                    def execute(args):
+                        pass
         """
         self._validator = func
 
@@ -579,18 +599,42 @@ def parameter_group(label: str):
     Group validators need to raise an exception if a values-based condition is violated, where values is a dictionary
     of parameter names and values.
     Group validators can be set using either of the following methods:
-    - By implementing the "validate(self, values)" method inside the class definition of the group. For example:
+    - By implementing the "validate(self, values)" method inside the class definition of the group.
+
+    **Example**::
 
         def validate(self, values):
             assert values['first_param'] + values['second_param'] < 100
 
     - By using the "@group_name.validator" decorator notation inside the class definition of the "parent" of the group.
       The decorator has an optional 'override' parameter, set to True by default, which overrides the "validate" method.
-      If 'override' is set to False, the "validate" method, if defined, will be called first. For example:
+      If 'override' is set to False, the "validate" method, if defined, will be called first.
+
+    **Example**::
 
         @hyperparameters.validator(override=False)
         def validate_hyperparams(values):
             assert values['first_param'] + values['second_param'] < 100
+
+    **Example**::
+
+        @knext.parameter_group(label="My Settings")
+        class MySettings:
+            name = knext.StringParameter("Name", "The name of the person", "Bario")
+            num_repetitions = knext.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+            @num_repetitions.validator
+            def reps_validator(value):
+                if value == 2:
+                    raise ValueError("I don't like the number 2")
+
+        @knext.node(args)
+        class MyNodeWithSettings:
+            settings = MySettings()
+            def configure(args):
+                pass
+
+            def execute(args):
+                pass
     """
 
     def decorate_class(custom_cls):

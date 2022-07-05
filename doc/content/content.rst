@@ -110,6 +110,76 @@ These decorators can be used to easily configure your Python node.
 .. autofunction:: knime_node.output_view
    :noindex:
 
+Parameters
+++++++++++++++++++++++++++++++
+To add parameterization to your nodes, the configuration dialog can be defined and customized. Each parameter can be
+used in the nodes execution by accessing ``self.param_name``. These parameters can be set up by using
+the following parameter types. For a more detailed description see
+`Defining the node's configuration dialog <https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#_defining_the_nodes_configuration_dialog>`_.
+
+.. autoclass:: knime_parameter.IntParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+.. autoclass:: knime_parameter.DoubleParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime_parameter.BoolParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime_parameter.StringParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime_parameter.ColumnParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime_parameter.MultiColumnParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+**Validation**
+
+While each parameter type listed above has default type validation (eg checking if the IntParameter contains only Integers),
+they also support custom validation via a property-like decorator notation. For instance, this can be used to verify that
+the parameter value matches a certain criteria (see example below). The validator should be placed below the definition of
+the corresponding parameter.
+
+.. autoclass:: knime_parameter.IntParameter
+   :members:
+   :noindex:
+   :inherited-members:
+
+**Parameter Groups**
+
+Additionally these parameters can be combined in ``parameter_groups``. These groups are visualized as sections in the
+configuration dialog. Another benefit of defining parameter groups is the ability to provide group validation.
+As opposed to only being able to validate a single value when attaching a validator to a parameter, group validators
+have access to the values of all parameters contained in the group, allowing for more complex validation routines.
+
+.. autofunction:: knime_parameter.parameter_group
+   :noindex:
+
+
 Tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
