@@ -251,7 +251,10 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
 
         return _PythonTablePortObject(class_name, java_data_sink)
     elif port.type == kn.PortType.BINARY:
-        assert isinstance(obj, bytes)
+        if not isinstance(obj, bytes):
+            tb = None
+            raise TypeError(f"Binary Port can only process objects of type bytes, not {type(obj)}").with_traceback(tb)
+
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
         return _PythonBinaryPortObject(class_name, file_creator(), obj, port.id)
     else:
@@ -347,40 +350,43 @@ class _PythonNodeProxy:
         try:
             # TODO: maybe we want to run execute on the main thread? use knime_main_loop
             outputs = self._node.execute(exec_context, *inputs)
+
+            # Return null if the execution was canceled
+            if exec_context.is_canceled():
+                self._java_callback.set_failure("Canceled", "", False)
+                return None
+
+            self._set_flow_variables(exec_context.flow_variables)
+
+
+            if outputs is None:
+                outputs = []
+
+            if not isinstance(outputs, list) and not isinstance(outputs, tuple):
+                # single outputs are fine
+                outputs = [outputs]
+
+            if hasattr(self._node, "output_view") and self._node.output_view is not None:
+                out_view = outputs[-1]
+                outputs = outputs[:-1]
+
+                # write the view to the sink
+                view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
+                view_sink.display(out_view)
+
+            java_outputs = [
+                _port_object_from_python(
+                    obj,
+                    lambda: self._java_callback.create_filestore_file(),
+                    self._node.output_ports[idx],
+                )
+                for idx, obj in enumerate(outputs)
+            ]
+
         except Exception as ex:
-            self._set_failure(ex, 1)
+            self._set_failure(ex, 0)
             return None
 
-        # Return null if the execution was canceled
-        if exec_context.is_canceled():
-            self._java_callback.set_failure("Canceled", "", False)
-            return None
-
-        self._set_flow_variables(exec_context.flow_variables)
-
-        if outputs is None:
-            outputs = []
-
-        if not isinstance(outputs, list) and not isinstance(outputs, tuple):
-            # single outputs are fine
-            outputs = [outputs]
-
-        if hasattr(self._node, "output_view") and self._node.output_view is not None:
-            out_view = outputs[-1]
-            outputs = outputs[:-1]
-
-            # write the view to the sink
-            view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
-            view_sink.display(out_view)
-
-        java_outputs = [
-            _port_object_from_python(
-                obj,
-                lambda: self._java_callback.create_filestore_file(),
-                self._node.output_ports[idx],
-            )
-            for idx, obj in enumerate(outputs)
-        ]
 
         kt._backend.close()
         kt._backend = None
