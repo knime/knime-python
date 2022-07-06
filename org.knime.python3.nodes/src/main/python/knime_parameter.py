@@ -87,14 +87,16 @@ def _is_group(param):
     return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
 # TODO version support
-def inject_parameters(obj, parameters: dict, version) -> None:
-    _inject_parameters(obj, parameters["model"], version)
+def inject_parameters(obj, parameters: dict, version, fail_on_missing: bool = True) -> None:
+    _inject_parameters(obj, parameters["model"], version, fail_on_missing)
 
-def _inject_parameters(obj, parameters: dict, version) -> None:
-    _validate_parameters(obj, parameters, version)
+def _inject_parameters(obj, parameters: dict, version, fail_on_missing: bool = True) -> None:
     for name, parameter in _get_parameters(obj).items():
-        # TODO can only set if the parameter was already available in version
-        parameter._inject(obj, parameters[name], version)
+        if name in parameters:
+            # TODO can only set if the parameter was already available in version
+            parameter._inject(obj, parameters[name], version, fail_on_missing)
+        elif fail_on_missing:
+            raise ValueError(f"No value available for parameter {name}")
 
 
 # TODO version support
@@ -233,7 +235,7 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, version, fail_on_missing=True):
         # TODO only set if the parameter was available in the version
         self.__set__(obj, value)
 
@@ -491,9 +493,9 @@ class ColumnParameter(_BaseParameter):
             "showNoneColumn": self._include_none_column,
         }
     
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, version, fail_on_missing):
         value = None if value == "" else value
-        return super()._inject(obj, value, version)
+        return super()._inject(obj, value, version, fail_on_missing)
 
 
 def _filter_columns(
@@ -548,11 +550,11 @@ class MultiColumnParameter(_BaseParameter):
         else:
             return value
 
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, version, fail_on_missing):
         # if there are no columns then the empty string is used as placeholder and we need to filter it out here
         if value is not None:
             value = [c for c in value if c != ""]
-        return super()._inject(obj, value, version)
+        return super()._inject(obj, value, version, fail_on_missing)
 
 
 class BoolParameter(_BaseParameter):
@@ -693,12 +695,10 @@ def parameter_group(label: str):
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
 
-        def _inject(self, obj, values, version):
-            group_view = _create_group_view(self, obj)
-            for name, parameter in _get_parameters(group_view).items():
-                # TODO versioning
-                parameter._inject(group_view, values[name], version)
-
+        def _inject(self, obj, values, version, fail_on_missing=True):
+            param_holder = _get_param_holder(self, obj)
+            _inject_parameters(param_holder, values, version, fail_on_missing)
+            
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
