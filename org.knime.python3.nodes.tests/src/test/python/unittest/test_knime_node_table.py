@@ -44,6 +44,20 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(types, [c.ktype for c in columns])
         self.assertEqual(names, [c.name for c in columns])
 
+    def test_schema_list_appending(self):
+        types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+        new_names = ["a", "b", "c"]
+
+        s = ks.Schema.from_types(types, names)
+        column_list = [ks.Column(ktype=ks.double(), name=n) for n in new_names]
+        s = s.append(column_list).get()
+
+        s2 = ks.Schema.from_types(types, names)
+        for n in new_names:
+            s2 = s2.append(ks.Column(ktype=ks.double(), name=n))
+        s2 = s2.get()
+        self.assertEqual(s, s2, "Appended list does not match single appending")
 
 class TableTest(unittest.TestCase):
     def setUp(self):

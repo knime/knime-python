@@ -500,7 +500,6 @@ class Column:
         )
 
 
-
 class _Columnar(ABC):
     """
     Base interface for columnar data structures like Schema and Table,
@@ -552,7 +551,7 @@ class _Columnar(ABC):
 
         return _ColumnarView(delegate=self, operation=_ColumnSlicingOperation(slicing))
 
-    def append(self, other: "_Columnar") -> "_ColumnarView":
+    def append(self, other: Union["_Columnar", Sequence["_Columnar"]]) -> "_ColumnarView":
         return _ColumnarView(delegate=self, operation=_AppendOperation(other))
 
     @abstractmethod
@@ -797,10 +796,9 @@ class Schema(_Columnar, PortObjectSpec):
 
         return all(a == b for a, b in zip(self._columns, other._columns))
 
-    def _append(self, other: Union["Schema", Column]) -> "Schema":
-        """Create a new schema by adding another schema or a column to the end"""
+    def _append(self, other: Union["Schema", Column, Sequence["Column"]]) -> "Schema":
+        """Create a new schema by adding another schema, a sequence of columns or a column to the end"""
         cols = self._columns.copy()
-
         if isinstance(other, _ColumnarView):
             other = other.get()
 
@@ -808,11 +806,16 @@ class Schema(_Columnar, PortObjectSpec):
             cols.extend(other._columns)
         elif isinstance(other, Column):
             cols.append(other)
+        elif isinstance(other, Sequence):
+            for col in other: # check if list only contains columns
+                if not isinstance(col, Column):
+                    raise TypeError(f"A column list to append can only contain columns, not {type(col)}")
+            schema = self.__class__.from_columns(other) # create another schema to extend
+            cols.extend(schema)
         else:
-            raise ValueError(
-                f"Can only append columns or schemas to this schema, not {type(other)}"
+            raise TypeError(
+                f"Can only append columns, column lists or schemas to this schema, not {type(other)}"
             )
-
         return self.__class__.from_columns(cols)
 
     def __str__(self) -> str:
