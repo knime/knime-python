@@ -58,6 +58,31 @@ class SchemaTest(unittest.TestCase):
             s2 = s2.append(ks.Column(ktype=ks.double(), name=n))
         s2 = s2.get()
         self.assertEqual(s, s2, "Appended list does not match single appending")
+        
+    def test_schema_from_columns(self):
+        types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+        columns = [ks.Column(t,n) for t,n in zip(types, names)]
+
+        # test if from columns works in general
+        s = ks.Schema.from_columns(columns)
+        for i, col in enumerate(s):
+            self.assertEqual(types[i], col.ktype)
+            self.assertEqual(names[i], col.name)
+
+        # test if from columns works with only one column in the list
+        for t, n in zip(types, names):
+            columns = [ks.Column(t, n)]
+            s = ks.Schema.from_columns(columns)
+            self.assertEqual(t, s[0].ktype)
+            self.assertEqual(n, s[0].name)
+
+        # test if from columns works with only one column
+        for t, n in zip(types, names):
+            column = ks.Column(t, n)
+            s = ks.Schema.from_columns(column)
+            self.assertEqual(t, s[0].ktype)
+            self.assertEqual(n, s[0].name)
 
 class TableTest(unittest.TestCase):
     def setUp(self):
