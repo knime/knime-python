@@ -686,10 +686,24 @@ class Schema(_Columnar, PortObjectSpec):
     """
 
     @classmethod
-    def from_columns(cls, columns: List[Column]):
-        """Create a schema from a list of columns"""
+    def from_columns(cls, columns: Union[Sequence[Column], Column]):
+        """Create a schema from a single column or a list of columns"""
+
+        if isinstance(columns, Column):  # single column is wrapped in a list
+            columns = [columns]
+
+        try:
+            for col in iter(columns):  # check if sequence is iterable and only contains columns
+                if not isinstance(col, Column):
+                    raise ValueError(f"Can only instantiate a schema from columns, not {type(col)}")
+        except TypeError:
+            raise TypeError(f"Columns needs to be an iterable, but is {type(columns)}")
+        except ValueError as e:
+            raise TypeError(e) # e is used such that type(col) is preserved
+
         if len(columns) == 0:
             return cls([], [], [])
+
         ktypes, names, metadata = zip(*[(c.ktype, c.name, c.metadata) for c in columns])
         return cls(ktypes, names, metadata)
 
