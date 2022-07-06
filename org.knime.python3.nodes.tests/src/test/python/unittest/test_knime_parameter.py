@@ -203,6 +203,18 @@ class ParameterTest(unittest.TestCase):
         extracted = kp.extract_parameters(self.parameterized)
         self.assertEqual(params, extracted)
 
+    def test_inject_parameters_with_missing_allowed(self):
+        obj = Parameterized()
+        params = {
+            "model": {
+                "int_param": 5
+            }
+        }
+        kp.inject_parameters(obj, params, version=None, fail_on_missing=False)
+        extracted = kp.extract_parameters(obj)
+        expected = generate_values_dict(5)
+        self.assertEqual(expected, extracted)
+
     def test_extract_schema(self):
         expected = {
             "type": "object",
