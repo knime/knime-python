@@ -80,10 +80,7 @@ def _extract_parameters(obj, for_dialog=False) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
-        if param_obj.__kind__ == "parameter":
-            result[name] = param_obj.get_value(obj, for_dialog)
-        elif _is_group(param_obj):
-            result[name] = _extract_parameters(param_obj, for_dialog)
+        result[name] = param_obj._get_value(obj, for_dialog)
     return result
 
 def _is_group(param):
@@ -222,7 +219,7 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def get_value(self, obj:Any, for_dialog: bool):
+    def _get_value(self, obj:Any, for_dialog: bool):
         return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
@@ -544,8 +541,8 @@ class MultiColumnParameter(_BaseParameter):
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
 
-    def get_value(self, obj: Any, for_dialog: bool):
-        value = super().get_value(obj, for_dialog)
+    def _get_value(self, obj: Any, for_dialog: bool):
+        value = super()._get_value(obj, for_dialog)
         if for_dialog and value is None:
             return []
         else:
@@ -651,6 +648,16 @@ def parameter_group(label: str):
         def __set_name__(self, owner, name):
             self._name = name
 
+        def _is_descriptor(parameter_group):
+            """
+            A parameter_group used as descriptor i.e. declared on class level needs to be
+            handled differently than a parameter_group that is used via composition i.e. passed via __init__.
+            Here we use the _name attribute set via __set_name__ to distinguish the two since __set_name__ is only
+            called if the parameter_group is used as descriptor, namely when it is declared in the class definition.
+            """
+            return hasattr(parameter_group, "_name")
+
+
         def __get__(self, obj, obj_type=None):
             """
             Generate a new GroupView class every time, and return an instance of the class
@@ -659,6 +666,13 @@ def parameter_group(label: str):
             """
             return _create_group_view(self, obj)
 
+        def _get_value(self, obj, for_dialog=False):
+            param_holder = _get_param_holder(self, obj)
+            return {name: param._get_value(param_holder, for_dialog) for name, param in _get_parameters(param_holder).items()}
+
+        def _get_param_holder(parameter_group, obj):
+            return _create_group_view(parameter_group, obj) if _is_descriptor(parameter_group) else parameter_group
+
         def _create_group_view(self, obj):
             if not hasattr(obj, "__kind__"):
                 # obj is the root parameterised object
@@ -666,9 +680,6 @@ def parameter_group(label: str):
 
             if self._name not in obj.__parameters__:
                 obj.__parameters__[self._name] = {}
-
-            # store a "view" of the subdict associated with this parameter group
-            self.__parameters__ = obj.__parameters__[self._name]
 
             class GroupView:
                 def __init__(self, group_params_dict):
@@ -756,6 +767,7 @@ def parameter_group(label: str):
         custom_cls.__get__ = __get__
         custom_cls.__set__ = __set__
         custom_cls.__str__ = __str__
+        custom_cls._get_value = _get_value
         custom_cls._inject = _inject
         custom_cls._validate = _validate
         custom_cls._extract_schema = _extract_schema

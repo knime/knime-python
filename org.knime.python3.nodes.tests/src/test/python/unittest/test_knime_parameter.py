@@ -104,12 +104,45 @@ class ReusableGroup:
         default_value=54321,
     )
 
+    @classmethod
+    def create_default_dict(cls):
+        return {
+            "first_param": 12345,
+            "second_param": 54321
+        }
+
 
 class ComposedParameterized:
     def __init__(self) -> None:
         # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
         self.first_group = ReusableGroup()
         self.second_group = ReusableGroup()
+
+@kp.parameter_group("Nested composed")
+class NestedComposed:
+    def __init__(self) -> None:
+        self.first_group = ReusableGroup()
+        self.second_group = ReusableGroup()
+
+    @classmethod
+    def create_default_dict(cls):
+        return {
+            "first_group": ReusableGroup.create_default_dict(),
+            "second_group": ReusableGroup.create_default_dict()
+        }
+
+
+class NestedComposedParameterized:
+    def __init__(self) -> None:
+        self.group = NestedComposed()
+
+    @classmethod
+    def create_default_dict(cls):
+        return {
+            "model": {
+                "group": NestedComposed.create_default_dict()
+            }
+        }
 
 
 #### Tests: ####
@@ -387,6 +420,29 @@ class ParameterTest(unittest.TestCase):
             }
         }
         self.assertEqual(parameters, expected)
+
+    def test_extract_altered_nested_composition(self):
+        obj = NestedComposedParameterized()
+        obj.group.first_group.first_param = 42
+        extracted = kp.extract_parameters(obj)
+        expected = NestedComposedParameterized.create_default_dict()
+        expected["model"]["group"]["first_group"]["first_param"] = 42
+        self.assertEqual(expected, extracted)
+
+    def test_extract_default_nested_compositon(self):
+        obj = NestedComposedParameterized()
+        extracted = kp.extract_parameters(obj)
+        expected = NestedComposedParameterized.create_default_dict()
+        self.assertEqual(expected, extracted)
+
+    def test_inject_extract_nested_composition(self):
+        obj = NestedComposedParameterized()
+        inject = NestedComposedParameterized.create_default_dict()
+        inject["model"]["group"]["first_group"]["first_param"] = 2
+        inject["model"]["group"]["second_group"]["first_param"] = -5
+        kp.inject_parameters(obj, inject, None)
+        extracted = kp.extract_parameters(obj)
+        self.assertEqual(inject, extracted)
 
     def test_extract_schema_from_composed(self):
         obj = ComposedParameterized()
