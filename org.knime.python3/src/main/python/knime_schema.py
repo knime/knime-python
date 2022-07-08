@@ -797,7 +797,7 @@ class Schema(_Columnar, PortObjectSpec):
                     columns.append(col)
                 else:
                     raise IndexError(f"Invalid column index {col}")
-            return self.__class__.from_columns([self[c] for c in columns])
+            return self.__class__.from_columns([self._columns[c] for c in columns])
         else:
             raise TypeError(
                 f"{self.__class__.__name__} can only be indexed by int, string, slice, list of int, "
