@@ -501,8 +501,8 @@ class ColumnParameter(_BaseParameter):
 def _filter_columns(
     specs: List[ks.Schema], port_index: int, column_filter: Callable[[ks.Column], bool]
 ):
-    if specs is None:
-        return list()
+    if specs is None or specs[port_index] is None:
+        return [_const("")]
     else:
         spec = specs[port_index]
         filtered = [_const(column.name) for column in spec if column_filter(column)]

@@ -284,7 +284,7 @@ class _PythonNodeProxy:
         input_ports = (
             self._node.input_ports if self._node.input_ports is not None else []
         )
-        return [_spec_to_python(spec, port) for port, spec in zip(input_ports, specs)]
+        return [_spec_to_python(spec, port) if spec is not None else None for port, spec in zip(input_ports, specs)]
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
