@@ -56,6 +56,31 @@ import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
 import json
+import logging
+
+if pa.__version__.split('.')[0] == '8':
+    # due to a pyarrow bug the as_py method from an ExtensionScalar is used, which does not decode our Extension
+    # Scalar (in pa >= 8). Therefore, the builtin method has to be overwritten using forbidden fruit curse magic.
+    # This Fix should be removed if https://issues.apache.org/jira/browse/ARROW-13612 is resolved.
+    try:
+        # forbidden fruit can override types and methods built in C or cython
+        from forbiddenfruit import curse
+
+        _orig_ext_scalar_as_py = pa.lib.ExtensionScalar.as_py
+
+
+        def as_py_fix(self):
+            if hasattr(self, 'type') and isinstance(self.type,
+                                                    LogicalTypeExtensionType):  # if we have an extension type
+                return self.type.decode(self.value.as_py())  # use our own decode
+            return _orig_ext_scalar_as_py(self)  # else use the usual ExtensionScalar as_py
+
+
+        curse(pa.lib.ExtensionScalar, 'as_py', as_py_fix)  # swap methods
+
+    except ImportError:
+        logging.info(f"Using pyarrow with version {pa.__version__}  can result in errors when using pyarrow "
+                     f"Extension types.")
 
 
 def _pretty_type_string(dtype: pa.DataType):
