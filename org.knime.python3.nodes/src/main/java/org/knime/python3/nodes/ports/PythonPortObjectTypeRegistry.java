@@ -129,11 +129,11 @@ public final class PythonPortObjectTypeRegistry {
      * Convert from a {@link PortObjectSpec} to a {@link PythonPortObjectSpec} using the registered conversion rules.
      *
      * @param spec The {@link PortObjectSpec}
-     * @return The {@link PythonPortObjectSpec}
+     * @return The {@link PythonPortObjectSpec} {@code null} if spec is {@code null}
      */
     public static PythonPortObjectSpec convertToPythonPortObjectSpec(final PortObjectSpec spec) {
         if (spec == null) {
-            throw new IllegalStateException("Cannot convert null spec from KNIME to Python");
+            return null;
         }
         var registry = InstanceHolder.INSTANCE;
         var clazz = registry.m_pythonPortObjectSpecMap.get(spec.getClass().getName());

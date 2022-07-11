@@ -171,8 +171,6 @@ final class CloseablePythonNodeProxy
     public String getDialogRepresentation(final String parameters, final String version, final PortObjectSpec[] specs) {
         final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
-
-        // TODO catch exceptions coming from Python and make sure they are displayed nicely
         return m_proxy.getDialogRepresentation(parameters, version, serializedSpecs);
     }
 
