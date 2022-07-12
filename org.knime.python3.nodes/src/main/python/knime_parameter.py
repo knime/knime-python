@@ -336,8 +336,8 @@ class _NumericParameter(_BaseParameter):
             raise ValueError(
                 f"{value} is smaller than the minimal value {self.min_value}"
             )
-        if self.max_value is not None and value >= self.max_value:
-            raise ValueError(f"{value} is >= the max value {self.max_value}")
+        if self.max_value is not None and value > self.max_value:
+            raise ValueError(f"{value} is > the max value {self.max_value}")
 
     def _extract_schema(self, specs):
         schema = super()._extract_schema(specs)
