@@ -598,6 +598,7 @@ def parameter_group(label: str):
     Group validators need to raise an exception if a values-based condition is violated, where values is a dictionary
     of parameter names and values.
     Group validators can be set using either of the following methods:
+
     - By implementing the "validate(self, values)" method inside the class definition of the group.
 
     **Example**::
