@@ -52,9 +52,12 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDescription41Proxy;
+import org.knime.node.v41.ExtendedDescription;
+import org.knime.node.v41.Intro;
 import org.knime.node.v41.KnimeNodeDocument;
 import org.knime.node.v41.NodeType;
 import org.knime.node.v41.Views;
@@ -89,7 +92,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Constructor for a new builder.
      *
-     * @param name     of the node
+     * @param name of the node
      * @param nodeType of the node
      */
     public NodeDescriptionBuilder(final String name, final String nodeType) {
@@ -115,7 +118,7 @@ public final class NodeDescriptionBuilder {
 
         var fullDescription = node.addNewFullDescription();
         if (!m_intro.isBlank()) {
-            fullDescription.addNewIntro().addNewP().newCursor().setTextValue(m_intro);
+            addDescription(fullDescription.addNewIntro(), m_intro);
         }
 
         m_topLevelOptions.forEach(o -> o.fill(fullDescription.addNewOption()));
@@ -128,33 +131,54 @@ public final class NodeDescriptionBuilder {
         var ports = node.addNewPorts();
         int inputIdx = 0;// NOSONAR
         for (var inPort : m_inputPorts) {
-            var port = ports.addNewInPort();
-            port.setIndex(BigInteger.valueOf(inputIdx));
+            inPort.fill(ports.addNewInPort(), inputIdx);
             inputIdx++;
-            port.setName(inPort.getName());
-            port.addNewP().newCursor().setTextValue(inPort.getDescription());
         }
         int outputIdx = 0;// NOSONAR
         for (var outPort : m_outputPorts) {
-            var port = ports.addNewOutPort();
-            port.setIndex(BigInteger.valueOf(outputIdx));
+            outPort.fill(ports.addNewOutPort(), outputIdx);
             outputIdx++;
-            port.setName(outPort.getName());
-            port.addNewP().newCursor().setTextValue(outPort.getDescription());
         }
 
         if (!m_views.isEmpty()) {
             final Views views = node.addNewViews();
             for (int i = 0; i < m_views.size(); i++) {
                 final View view = m_views.get(i);
-                org.knime.node.v41.View viewXML = views.addNewView();
-                viewXML.setName(view.getName());
-                viewXML.setIndex(BigInteger.valueOf(i));
-                viewXML.addNewP().newCursor().setTextValue(view.getDescription());
+                view.fill(views.addNewView(), i);
             }
         }
 
         return new NodeDescription41Proxy(doc);
+    }
+
+    /** Call {@link #addDescription(String, Consumer, Consumer)} for {@link ExtendedDescription} */
+    private static void addDescription(final ExtendedDescription o, final String description) {
+        addDescription(description, p -> o.newCursor().setTextValue(p), p -> o.addNewP().newCursor().setTextValue(p));
+    }
+
+    /** Call {@link #addDescription(String, Consumer, Consumer)} for {@link Intro} */
+    private static void addDescription(final Intro o, final String description) {
+        addDescription(description, p -> o.newCursor().setTextValue(p), p -> o.addNewP().newCursor().setTextValue(p));
+    }
+
+    /**
+     * Add the description string to the XML object. The description must not be empty but might consist of multiple
+     * paragraphs separated by two new lines. The first paragraph is added directly to the XML element while all other
+     * paragraphs are added inside a &lt;p&gt; tag.
+     */
+    private static void addDescription(final String description, final Consumer<String> addFirstParagraph,
+        final Consumer<String> addOtherParagraphs) {
+        if (description != null) {
+            final String[] paragraphs = description.strip().split("\n\n");
+
+            // NB: String#split never returns an empty list
+            addFirstParagraph.accept(paragraphs[0]);
+            for (int i = 1; i < paragraphs.length; i++) {
+                if (!paragraphs[i].isBlank()) {
+                    addOtherParagraphs.accept(paragraphs[i]);
+                }
+            }
+        }
     }
 
     /**
@@ -193,7 +217,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds an input port.
      *
-     * @param name        of the input port
+     * @param name of the input port
      * @param description of the input port
      * @return this builder
      */
@@ -205,7 +229,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds an output port.
      *
-     * @param name        of the port
+     * @param name of the port
      * @param description of the port
      * @return this builder
      */
@@ -217,7 +241,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds a top-level option.
      *
-     * @param name        of the option
+     * @param name of the option
      * @param description of the option
      * @return this builder
      */
@@ -240,7 +264,7 @@ public final class NodeDescriptionBuilder {
     /**
      * Adds a view.
      *
-     * @param name        of the view
+     * @param name of the view
      * @param description of the view
      * @return this builder
      */
@@ -274,6 +298,11 @@ public final class NodeDescriptionBuilder {
             super(name, description);
         }
 
+        private void fill(final org.knime.node.v41.Port port, final int inputIdx) {
+            port.setIndex(BigInteger.valueOf(inputIdx));
+            port.setName(getName());
+            addDescription(port, getDescription());
+        }
     }
 
     /**
@@ -293,7 +322,7 @@ public final class NodeDescriptionBuilder {
         /**
          * Creates a Builder for a Tab.
          *
-         * @param name        of the tab
+         * @param name of the tab
          * @param description of the tab
          * @return the builder
          */
@@ -303,6 +332,9 @@ public final class NodeDescriptionBuilder {
 
         private void fill(final org.knime.node.v41.Tab tab) {
             tab.setName(getName());
+            // FIXME: Respect new lines when adding the description
+            // Note, that #addDescription does not work because here we have no
+            // ExtendedDescription and cannot use <p>
             tab.addNewDescription().newCursor().setTextValue(getDescription());
             for (var option : m_options) {
                 option.fill(tab.addNewOption());
@@ -325,7 +357,7 @@ public final class NodeDescriptionBuilder {
             /**
              * Adds an option to the tab.
              *
-             * @param name        of the option
+             * @param name of the option
              * @param description of the option
              * @return this builder
              */
@@ -352,7 +384,7 @@ public final class NodeDescriptionBuilder {
 
         void fill(final org.knime.node.v41.Option option) {
             option.setName(getName());
-            option.addNewP().newCursor().setTextValue(getDescription());
+            addDescription(option, getDescription());
         }
     }
 
@@ -360,6 +392,12 @@ public final class NodeDescriptionBuilder {
 
         View(final String name, final String description) {
             super(name, description);
+        }
+
+        private void fill(final org.knime.node.v41.View view, final int viewIdx) {
+            view.setName(getName());
+            view.setIndex(BigInteger.valueOf(viewIdx));
+            addDescription(view, getDescription());
         }
     }
 
