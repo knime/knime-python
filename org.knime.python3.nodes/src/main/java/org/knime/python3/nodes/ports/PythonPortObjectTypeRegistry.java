@@ -250,8 +250,11 @@ public final class PythonPortObjectTypeRegistry {
                 ExecutionContext.class);
             final var object = factory.invoke(null, pythonPortObject, fileStoresByKey, tableConverter, execContext);
             return ((PortObjectProvider)object).getPortObject();
+        } catch (InvocationTargetException ex) {
+            // If #fromPurePython threw an exception we just use the message of this exception
+            throw new IllegalStateException(ex.getCause().getMessage(), ex);
         } catch (NoSuchElementException | SecurityException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException | NoSuchMethodException ex) {
+                | NoSuchMethodException ex) {
             throw new IllegalStateException("Could not instantiate PortObject from Python representation for "
                 + pythonPortObject.getJavaClassName(), ex);
         }
