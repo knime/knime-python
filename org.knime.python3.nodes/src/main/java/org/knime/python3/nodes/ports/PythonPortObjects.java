@@ -161,17 +161,18 @@ public final class PythonPortObjects {
          *            {@link PythonArrowDataSink}s
          * @param execContext The current {@link ExecutionContext}
          * @return the {@link PythonTablePortObject}
+         * @throws IOException if the table could not be converted
          */
         public static PythonTablePortObject fromPurePython(final PurePythonTablePortObject portObject,
             final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
-            final ExecutionContext execContext) {
+            final ExecutionContext execContext) throws IOException {
             try {
                 final var sink = portObject.getPythonArrowDataSink();
                 final var bdt = tableConverter.convertToTable(sink, execContext);
                 return new PythonTablePortObject(bdt, tableConverter);
-            } catch (IOException | InterruptedException ex) {
-                // TODO: better error handling!
-                throw new IllegalStateException("Could not retrieve BufferedDataTable from Python", ex);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt(); // Re-interrupt
+                throw new IllegalStateException("Interrupted retrieving BufferedDataTable from Python", ex);
             }
         }
 
@@ -225,18 +226,15 @@ public final class PythonPortObjects {
          *            {@link PythonPortObjectTypeRegistry}
          * @param execContext The current {@link ExecutionContext}
          * @return new {@link PythonBinaryPortObject} wrapping the binary data
+         * @throws IOException if the object could not be converted
          */
         public static PythonBinaryPortObject fromPurePython(final PurePythonBinaryPortObject portObject,
             final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
-            final ExecutionContext execContext) {
-            try {
-                final var key = portObject.getFileStoreKey();
-                final var fileStore = fileStoresByKey.get(key);
-                return new PythonBinaryPortObject(
-                    PythonBinaryBlobFileStorePortObject.create(fileStore, portObject.getPortId(), execContext), null);
-            } catch (IOException ex) {
-                throw new IllegalStateException("Could not create PythonBinaryPortObject", ex);
-            }
+            final ExecutionContext execContext) throws IOException {
+            final var key = portObject.getFileStoreKey();
+            final var fileStore = fileStoresByKey.get(key);
+            return new PythonBinaryPortObject(
+                PythonBinaryBlobFileStorePortObject.create(fileStore, portObject.getPortId(), execContext), null);
         }
 
         @Override
