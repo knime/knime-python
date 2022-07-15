@@ -56,6 +56,7 @@ import java.util.function.Consumer;
 
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDescription41Proxy;
+import org.knime.core.node.NodeLogger;
 import org.knime.node.v41.ExtendedDescription;
 import org.knime.node.v41.Intro;
 import org.knime.node.v41.KnimeNodeDocument;
@@ -112,9 +113,7 @@ public final class NodeDescriptionBuilder {
             node.setIcon(m_iconPath.toAbsolutePath().toString());
         }
 
-        if (!m_shortDescription.isBlank()) {
-            node.setShortDescription(m_shortDescription);
-        }
+        node.setShortDescription(getShortDescription());
 
         var fullDescription = node.addNewFullDescription();
         if (!m_intro.isBlank()) {
@@ -149,6 +148,16 @@ public final class NodeDescriptionBuilder {
         }
 
         return new NodeDescription41Proxy(doc);
+    }
+
+    private String getShortDescription() {
+        if (m_shortDescription.isBlank()) {
+            NodeLogger.getLogger(NodeDescriptionBuilder.class)
+                .codingWithFormat("Please provide a short description for the node %s.", m_name);
+            return m_name;
+        } else {
+            return m_shortDescription;
+        }
     }
 
     /** Call {@link #addDescription(String, Consumer, Consumer)} for {@link ExtendedDescription} */
