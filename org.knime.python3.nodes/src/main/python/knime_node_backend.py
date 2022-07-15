@@ -258,10 +258,18 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
         raise ValueError("Configure got unsupported PortObject")
 
 
+def _check_attr_is_available(node, attr_name):
+    if not hasattr(node, attr_name) or getattr(node, attr_name) is None:
+        raise ValueError(f"Attribute {attr_name} is missing in node {node}")
+
+
 class _PythonNodeProxy:
     def __init__(self, node: kn.PythonNode) -> None:
+        _check_attr_is_available(node, "input_ports")
+        _check_attr_is_available(node, "output_ports")
+
         self._node = node
-        self._num_outports = len(node.output_ports) if node.output_ports is not None else 0
+        self._num_outports = len(node.output_ports)
 
     def getDialogRepresentation(
         self,
@@ -281,10 +289,10 @@ class _PythonNodeProxy:
         return json.dumps(json_forms_dict)
 
     def _specs_to_python(self, specs):
-        input_ports = (
-            self._node.input_ports if self._node.input_ports is not None else []
-        )
-        return [_spec_to_python(spec, port) if spec is not None else None for port, spec in zip(input_ports, specs)]
+        return [
+            _spec_to_python(spec, port) if spec is not None else None
+            for port, spec in zip(self._node.input_ports, specs)
+        ]
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -296,7 +304,9 @@ class _PythonNodeProxy:
         schema = kp.extract_schema(self._node, specs)
         return json.dumps(schema)
 
-    def setParameters(self, parameters: str, version: str, fail_on_missing: bool = True) -> None:
+    def setParameters(
+        self, parameters: str, version: str, fail_on_missing: bool = True
+    ) -> None:
         parameters_dict = json.loads(parameters)
         version = parse(version)
         kp.inject_parameters(self._node, parameters_dict, version, fail_on_missing)
@@ -403,7 +413,9 @@ class _PythonNodeProxy:
             outputs = [outputs]
 
         output_specs = [
-            _spec_from_python(spec, self._node.output_ports[i]) if spec is not None else None
+            _spec_from_python(spec, self._node.output_ports[i])
+            if spec is not None
+            else None
             for i, spec in enumerate(outputs)
         ]
         _pop_log_callback()
