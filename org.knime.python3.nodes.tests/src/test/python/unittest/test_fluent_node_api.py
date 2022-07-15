@@ -222,7 +222,8 @@ class NodeFactoryApiTest(unittest.TestCase):
 
     def setUp(self):
         self.node = kn._nodes.get(NodeFactoryApiTest.node_id, None)
-        self.node_instance = my_node_generating_func()
+        self.node_instance = self.node.node_factory()
+        self.node_instance_direct = my_node_generating_func()
 
     def test_node_registration(self):
         self.assertTrue(NodeFactoryApiTest.node_id in kn._nodes)
@@ -232,22 +233,16 @@ class NodeFactoryApiTest(unittest.TestCase):
         self.assertIsNone(self.node_instance.output_view)
 
     def test_input_ports(self):
-        self.assertEqual(2, len(self.node.input_ports))
-        self.assertEqual(kn.PortType.TABLE, self.node.input_ports[0].type)
-        self.assertEqual(kn.PortType.TABLE, self.node.input_ports[1].type)
-
-        self.assertEqual(2, len(self.node_instance.input_ports))
-        self.assertEqual(kn.PortType.TABLE, self.node_instance.input_ports[0].type)
-        self.assertEqual(kn.PortType.TABLE, self.node_instance.input_ports[1].type)
+        for n in [self.node, self.node_instance, self.node_instance_direct]:
+            self.assertEqual(2, len(n.input_ports))
+            self.assertEqual(kn.PortType.TABLE, n.input_ports[0].type)
+            self.assertEqual(kn.PortType.TABLE, n.input_ports[1].type)
 
     def test_output_ports(self):
-        self.assertEqual(2, len(self.node.output_ports))
-        self.assertEqual(kn.PortType.TABLE, self.node.output_ports[0].type)
-        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
-
-        self.assertEqual(2, len(self.node_instance.output_ports))
-        self.assertEqual(kn.PortType.TABLE, self.node_instance.output_ports[0].type)
-        self.assertEqual(kn.PortType.BINARY, self.node_instance.output_ports[1].type)
+        for n in [self.node, self.node_instance, self.node_instance_direct]:
+            self.assertEqual(2, len(n.output_ports))
+            self.assertEqual(kn.PortType.TABLE, n.output_ports[0].type)
+            self.assertEqual(kn.PortType.BINARY, n.output_ports[1].type)
 
 
 class DoubleInputPortsTest(unittest.TestCase):
@@ -306,33 +301,68 @@ class OverriddenInputPortsTest(unittest.TestCase):
 
     def setUp(self):
         self.node = kn._nodes.get(OverriddenInputPortsTest.node_id, None)
-        self.node_instance = MyPropertyOverridingNode()
+        self.node_instance = self.node.node_factory()
+        self.node_instance_direct = MyPropertyOverridingNode()
+
+    def test_has_no_node_view(self):
+        self.assertIsNone(self.node.views[0])
+        self.assertIsNone(self.node_instance.output_view)
+        self.assertIsNone(self.node_instance_direct.output_view)
+
+    def test_input_ports(self):
+        for n in [self.node, self.node_instance, self.node_instance_direct]:
+            self.assertEqual(4, len(n.input_ports))
+            self.assertTrue(all(p.type == kn.PortType.TABLE for p in n.input_ports))
+
+    def test_output_ports(self):
+        # Both, an instance as well as the "Node" proxy should know that there
+        # are two output ports, so that the node shows up properly in KNIME
+        for n in [self.node, self.node_instance, self.node_instance_direct]:
+            self.assertEqual(2, len(n.output_ports))
+            self.assertTrue(all(p.type == kn.PortType.TABLE for p in n.output_ports))
+
+
+# test case where no ports are defined at all
+@kn.node(
+    name="My Node Without Ports",
+    node_type="Learner",
+    icon_path="icon.png",
+    category="/",
+    id="My Node Without Ports",
+)
+class NodeWithoutPorts:
+    pass
+    # no config and execute needed for this test class
+
+
+class NodeWithoutPortsTest(unittest.TestCase):
+    node_id = "My Node Without Ports"
+
+    def setUp(self):
+        self.node = kn._nodes.get(NodeWithoutPortsTest.node_id, None)
+        self.node_instance = self.node.node_factory()
 
     def test_has_no_node_view(self):
         self.assertIsNone(self.node.views[0])
         self.assertIsNone(self.node_instance.output_view)
 
-    def test_input_ports(self):
-        self.assertEqual(4, len(self.node.input_ports))
-        self.assertTrue(all(p.type == kn.PortType.TABLE for p in self.node.input_ports))
+    def test_has_no_input_ports(self):
+        self.assertTrue(hasattr(self.node, "input_ports"))
+        self.assertEqual(0, len(self.node.input_ports))
+        self.assertTrue(hasattr(self.node_instance, "input_ports"))
+        self.assertEqual(0, len(self.node_instance.input_ports))
 
-        self.assertEqual(4, len(self.node_instance.input_ports))
-        self.assertTrue(
-            all(p.type == kn.PortType.TABLE for p in self.node_instance.input_ports)
-        )
+    def test_has_no_output_ports(self):
+        self.assertTrue(hasattr(self.node, "output_ports"))
+        self.assertEqual(0, len(self.node.output_ports))
+        self.assertTrue(hasattr(self.node_instance, "output_ports"))
+        self.assertEqual(0, len(self.node_instance.output_ports))
 
-    def test_output_ports(self):
-        # Both, an instance as well as the "Node" proxy should know that there
-        # are two output ports, so that the node shows up properly in KNIME
-        self.assertEqual(2, len(self.node.output_ports))
-        self.assertTrue(
-            all(p.type == kn.PortType.TABLE for p in self.node.output_ports)
-        )
+    def test_create_node_proxy(self):
+        from knime_node_backend import _PythonNodeProxy
 
-        self.assertEqual(2, len(self.node_instance.output_ports))
-        self.assertTrue(
-            all(p.type == kn.PortType.TABLE for p in self.node_instance.output_ports)
-        )
+        _PythonNodeProxy(self.node_instance)
+        _PythonNodeProxy(self.node)
 
 
 if __name__ == "__main__":
