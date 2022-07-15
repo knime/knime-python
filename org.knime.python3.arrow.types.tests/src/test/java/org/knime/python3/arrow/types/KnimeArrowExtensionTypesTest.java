@@ -187,7 +187,7 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonModule;
+import org.knime.python3.types.PythonModule;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.SimplePythonCommand;
@@ -201,9 +201,9 @@ import org.knime.python3.arrow.types.utf8string.Utf8StringCell;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValue;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory;
 import org.knime.python3.arrow.types.utf8string.Utf8StringValueFactory.Utf8StringWriteValue;
-import org.knime.python3.data.PythonValueFactory;
-import org.knime.python3.data.PythonValueFactoryModule;
-import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.types.PythonValueFactory;
+import org.knime.python3.types.PythonValueFactoryModule;
+import org.knime.python3.types.PythonValueFactoryRegistry;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 

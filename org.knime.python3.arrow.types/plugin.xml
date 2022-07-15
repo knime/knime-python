@@ -2,7 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
-         point="org.knime.python3.PythonValueFactory">
+         point="org.knime.python3.types.PythonValueFactory">
       <Module
             modulePath="src/main/python/extension_types.py">
          <PythonValueFactory

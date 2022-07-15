@@ -50,8 +50,8 @@ package org.knime.python3;
 
 import java.util.List;
 
-import org.knime.python3.data.PythonValueFactoryModule;
-import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.types.PythonValueFactoryModule;
+import org.knime.python3.types.PythonValueFactoryRegistry;
 
 import py4j.Py4JException;
 

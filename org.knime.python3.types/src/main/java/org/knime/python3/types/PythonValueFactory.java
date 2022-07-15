@@ -46,43 +46,54 @@
  * History
  *   Aug 27, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.data;
+package org.knime.python3.types;
 
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
+import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.data.v2.ValueFactoryUtils;
+import org.knime.core.table.schema.traits.DataTraits;
+import org.knime.core.table.virtual.serialization.DataSpecSerializer;
+import org.knime.core.table.virtual.serialization.DataTraitsSerializer;
 
-import org.knime.python3.PythonModule;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 /**
- * Module holding one or more {@link PythonValueFactory PythonValueFactories}.
+ * Bundles a Java {@link ValueFactory} with its equivalent on the Python side.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonValueFactoryModule implements Iterable<PythonValueFactory>, PythonModule {
+public final class PythonValueFactory {
 
-    private final Path m_modulePath;
+    private final ValueFactory<?, ?> m_valueFactory;
 
-    private final List<PythonValueFactory> m_factories;
+    private final String m_pythonValueFactoryName;
 
-    PythonValueFactoryModule(final Path modulePath, final PythonValueFactory[] factories) {
-        m_modulePath = modulePath;
-        m_factories = List.of(factories);
+    PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName) {
+        m_valueFactory = valueFactory;
+        m_pythonValueFactoryName = pythonClassName;
     }
 
-    @Override
-    public Path getParentDirectory() {
-        return m_modulePath.getParent();
+    /**
+     * @return the name of the ValueFactory on Python side
+     */
+    public String getPythonValueFactoryName() {
+        return m_pythonValueFactoryName;
     }
 
-    @Override
-    public String getModuleName() {
-        return m_modulePath.getFileName().toString().replace(".py", "");
+    /**
+     * @return JSON representation of the underlying DataSpec
+     */
+    public String getDataSpecRepresentation() {
+        var json = new DataSpecSerializer().save(m_valueFactory.getSpec(), JsonNodeFactory.instance);
+        return json.toString();
     }
 
-    @Override
-    public Iterator<PythonValueFactory> iterator() {
-        return m_factories.iterator();
+    /**
+     * @return JSON representation of the {@link DataTraits}
+     */
+    public String getDataTraitsJson() {
+        final var traits = ValueFactoryUtils.getTraits(m_valueFactory);
+        var json = new DataTraitsSerializer(JsonNodeFactory.instance).save(traits);
+        return json.toString();
     }
 
 }

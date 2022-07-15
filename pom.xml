@@ -25,6 +25,7 @@
 		<module>org.knime.features.python3.scripting</module>
 		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.python3</module>
+		<module>org.knime.python3.types</module>
 		<module>org.knime.python3.arrow</module>
 		<!-- 
 			Excluded because the tests currently do not work on Jenkins

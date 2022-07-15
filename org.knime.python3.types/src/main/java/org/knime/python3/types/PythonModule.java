@@ -46,7 +46,7 @@
  * History
  *   Aug 27, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3;
+package org.knime.python3.types;
 
 import java.nio.file.Path;
 

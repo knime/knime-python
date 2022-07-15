@@ -64,8 +64,8 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
-import org.knime.python3.data.PythonValueFactoryModule;
-import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.types.PythonValueFactoryModule;
+import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**

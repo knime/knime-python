@@ -46,7 +46,7 @@
  * History
  *   Aug 12, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.data;
+package org.knime.python3.types;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -78,7 +78,7 @@ public final class PythonValueFactoryRegistry {
 
     private static final PythonValueFactoryRegistry INSTANCE = new PythonValueFactoryRegistry();
 
-    private static final String EXT_POINT = "org.knime.python3.PythonValueFactory";
+    private static final String EXT_POINT = "org.knime.python3.types.PythonValueFactory";
 
     private static final String MODULE = "modulePath";
 

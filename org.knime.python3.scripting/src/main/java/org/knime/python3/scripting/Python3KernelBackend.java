@@ -121,8 +121,8 @@ import org.knime.python3.arrow.PythonArrowDataSourceFactory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.SinkManager;
 import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
-import org.knime.python3.data.PythonValueFactoryModule;
-import org.knime.python3.data.PythonValueFactoryRegistry;
+import org.knime.python3.types.PythonValueFactoryModule;
+import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.utils.FlowVariableUtils;
 

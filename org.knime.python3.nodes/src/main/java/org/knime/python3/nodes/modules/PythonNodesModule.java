@@ -50,8 +50,8 @@ package org.knime.python3.nodes.modules;
 
 import java.nio.file.Path;
 
-import org.knime.python3.PythonModule;
 import org.knime.python3.nodes.PythonNodesSourceDirectory;
+import org.knime.python3.types.PythonModule;
 
 /**
  *
