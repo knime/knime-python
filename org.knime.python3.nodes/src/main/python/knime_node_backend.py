@@ -475,22 +475,6 @@ class _KnimeNodeBackend(kg.EntryPoint):
         super().__init__()
         self._main_loop = MainLoop()
 
-    def createNodeExtensionProxy(
-        self, factory_module_name: str, factory_method_name: str, node_id: str
-    ) -> _PythonNodeProxy:
-        factory_module = importlib.import_module(factory_module_name)
-        factory_method = getattr(factory_module, factory_method_name)
-        node = factory_method(node_id)
-        return _PythonNodeProxy(node)
-
-    def createNodeProxy(
-        self, module_name: str, python_node_class: str
-    ) -> _PythonNodeProxy:
-        module = inspect.getsource(importlib.import_module(module_name))
-        node_class = getattr(module, python_node_class)
-        node = node_class()  # TODO assumes that there is an empty constructor
-        return _PythonNodeProxy(node)
-
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
 

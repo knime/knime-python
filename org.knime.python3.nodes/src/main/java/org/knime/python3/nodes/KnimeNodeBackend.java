@@ -59,15 +59,6 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 public interface KnimeNodeBackend extends PythonEntryPoint {
 
     /**
-     * Creates a proxy for a node implemented in Python.
-     *
-     * @param moduleName containing the node
-     * @param pythonNodeClass class of the node
-     * @return a proxy for the Python node
-     */
-    NodeProxy createNodeProxy(final String moduleName, final String pythonNodeClass);
-
-    /**
      * Initialize global callbacks like access to the logging functionality
      * @param callback
      */
@@ -83,8 +74,6 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
          */
         void log(String msg);
     }
-
-    NodeProxy createNodeExtensionProxy(final String factoryModule, String factoryMethod, String nodeId);
 
     String retrieveCategoriesAsJson(final String extensionModule);
 
