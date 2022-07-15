@@ -375,7 +375,6 @@ class _Node:
         category: str,
         after: str,
     ) -> None:
-        self.node_factory = node_factory
         self.id = id
         self.name = name
         self.node_type = node_type
@@ -385,6 +384,22 @@ class _Node:
         self.input_ports = _get_ports(node_factory, "input_ports")
         self.output_ports = _get_ports(node_factory, "output_ports")
         self.views = [_get_view(node_factory)]
+
+        def port_injector(*args, **kwargs):
+            """
+            This method is called whenever a node is instanciated through the node_factory
+            which was modified by the @kn.node decorator.
+
+            We inject the found ports/views into the instance after creation so that they are available
+            to the users.
+            """
+            node = node_factory(*args, **kwargs)
+            node.input_ports = self.input_ports
+            node.output_ports = self.output_ports
+            node.output_view = self.views[0]
+            return node
+
+        self.node_factory = port_injector
 
     def to_dict(self):
         def port_to_str(port):
@@ -445,7 +460,8 @@ def node(
     id: str = None,
 ) -> Callable:
     """
-    Use this decorator to annotate a PythonNode class or function that creates a PythonNode instance that should correspond to a node in KNIME.
+    Use this decorator to annotate a PythonNode class or function that creates a PythonNode 
+    instance that should correspond to a node in KNIME.
     """
 
     def register(node_factory):
@@ -467,21 +483,8 @@ def node(
         )
         _nodes[node_id] = n
 
-        def port_injector(*args, **kwargs):
-            """
-            This method is called whenever a node is instanciated through the node_factory
-            which was modified by the @kn.node decorator.
-
-            We inject the found ports/views into the instance after creation so that they are available
-            to the users.
-            """
-            node = node_factory(*args, **kwargs)
-            node.input_ports = n.input_ports
-            node.output_ports = n.output_ports
-            node.output_view = n.views[0]
-            return node
-
-        return port_injector
+        # Return n.node_factory here because this is a modified variant where we're injecting ports
+        return n.node_factory
 
     return register
 
