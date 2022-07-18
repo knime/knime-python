@@ -62,6 +62,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("javadoc")
 public class JsonNodeSettingsTest {
 
     private static final String SIMPLE_MODEL_SCHEMA = createSimpleModelSchema().toString();
@@ -89,7 +90,7 @@ public class JsonNodeSettingsTest {
             .set("model", JsonTestUtils.createNestedJson()).toString();
 
     @Test
-    public void testSimpleSaveTo() throws Exception {
+    public void testSimpleSaveTo() {
         var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
@@ -103,14 +104,14 @@ public class JsonNodeSettingsTest {
         var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createSimpleSettings();
+        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
         addVersion(nodeSettings, oldVersion);
-        jsonSettings.loadFrom(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(SIMPLE_MODEL_JSON, jsonSettings.getParameters());
     }
 
     @Test
-    public void testNestedSaveTo() throws Exception {
+    public void testNestedSaveTo() {
         var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
@@ -125,7 +126,7 @@ public class JsonNodeSettingsTest {
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createNestedSettings();
         addVersion(nodeSettings, oldVersion);
-        jsonSettings.loadFrom(nodeSettings);
+        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(NESTED_MODEL_JSON, jsonSettings.getParameters());
     }

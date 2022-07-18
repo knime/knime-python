@@ -70,7 +70,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
-    private final JsonNodeSettings m_settings;
+    private JsonNodeSettings m_lastSettings;
 
     /**
      * Constructor.
@@ -79,38 +79,36 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
      */
     public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
         m_proxyProvider = proxyProvider;
-        try (var proxy = m_proxyProvider.get()) {
-            m_settings = new JsonNodeSettings(proxy.getParameters(), proxy.getSchema());
-        }
     }
 
     @Override
     public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
-            try {
-                m_settings.loadFrom(settings.get(SettingsType.MODEL));
-            } catch (InvalidSettingsException ex) {
-                throw new IllegalArgumentException("The provided settings are invalid.", ex);
-            }
-            return proxy.getDialogRepresentation(m_settings.getParameters(), m_settings.getCreationVersion(),
-                specsWithoutFlowVars);
+            m_lastSettings = proxy.getSettings();
+            var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
+            return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars);
+        }
+    }
+
+    private JsonNodeSettings loadSettings(final NodeSettingsRO settings) {
+        try {
+            return m_lastSettings.createFromSettings(settings);
+        } catch (InvalidSettingsException ex) {
+            throw new IllegalArgumentException("The provided settings are invalid.", ex);
         }
     }
 
     @Override
     public void toNodeSettingsFromObject(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        m_settings.update(jsonSettings);
-        m_settings.saveTo(settings.get(SettingsType.MODEL));
+        m_lastSettings.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
     }
 
 
     @Override
     public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
-            var parameters = proxy.getParameters();
-            m_settings.update(parameters);
-            m_settings.saveTo(settings.get(SettingsType.MODEL));
+            proxy.getSettings().saveTo(settings.get(SettingsType.MODEL));
         }
     }
 

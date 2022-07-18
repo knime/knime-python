@@ -51,13 +51,14 @@ package org.knime.python3.nodes.proxy.model;
 import java.util.Map;
 
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException> {
+public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>, NodeProxy {
 
     /**
      * Interface that should be implemented by a class that provides access to and can receive updated flow variables
@@ -92,9 +93,6 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException> 
 
     void loadValidatedSettings(JsonNodeSettings settings);
 
-    /**
-     * @return the current parameters of the Python node
-     */
-    String getParameters();
+
 
 }

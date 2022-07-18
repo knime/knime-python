@@ -44,16 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Jul 18, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.python3.nodes.settings.JsonNodeSettings;
+
 /**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
+ * Proxy for a node.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeProxy extends NodeFactoryProxy, PythonNodeModelProxy, PythonNodeDialogProxy {
-    // marker interface that is implemented on the Python side
+public interface NodeProxy {
+
+    /**
+     * @return the current settings of the node
+     */
+    JsonNodeSettings getSettings();
 }

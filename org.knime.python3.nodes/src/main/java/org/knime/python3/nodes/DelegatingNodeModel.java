@@ -73,6 +73,7 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
@@ -84,14 +85,13 @@ import org.knime.python3.utils.FlowVariableUtils;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// TODO Perhaps move to the extension package?
 public final class DelegatingNodeModel extends NodeModel implements FlowVariablesProxy, WarningConsumer {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
     private final NodeModelProxyProvider m_proxyProvider;
 
-    private final JsonNodeSettings m_settings;
+    private JsonNodeSettings m_settings;
 
     private Optional<Path> m_view;
 
@@ -122,7 +122,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs, this, this);
             // allows for auto-configure
-            m_settings.update(node.getParameters());
+            m_settings = node.getSettings();
             m_proxyShutdownTracker.closeAsynchronously(node);
             return result;
         }
@@ -137,7 +137,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         try (var node = m_proxyProvider.getExecutionProxy()) {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this, this);
-            m_settings.update(node.getParameters());
+            m_settings = node.getSettings();
             m_view = result.getView();
             var objects = result.getPortObjects();
             m_proxyShutdownTracker.closeAsynchronously(node);
@@ -157,8 +157,10 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        var jsonSettings = m_settings.loadForValidation(settings);
         try (var node = m_proxyProvider.getConfigurationProxy()) {
+            // we retrieve the settings instead of using m_settings because we want to have the latest schema
+            // which can change during development
+            var jsonSettings = node.getSettings().createFromSettings(settings);
             node.validateSettings(jsonSettings);
             m_proxyShutdownTracker.closeAsynchronously(node);
         }
@@ -166,9 +168,11 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadFrom(settings);
-        // the settings are not set on the proxy because the proxy is closed anyway
-        // and any other operation will be performed on a new proxy where the settings are set anyway
+        try (var node = m_proxyProvider.getConfigurationProxy()) {
+            m_settings = node.getSettings().createFromSettings(settings);
+            m_proxyShutdownTracker.closeAsynchronously(node);
+        }
+    }
     }
 
     @Override
