@@ -63,7 +63,7 @@ import org.knime.python3.nodes.PyNodeExtension;
 import org.knime.python3.nodes.PythonNode;
 import org.knime.python3.nodes.PythonNodeGatewayFactory;
 import org.knime.python3.nodes.extension.ExtensionNode;
-import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 
 /**
  *
@@ -106,7 +106,7 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
     }
 
     @Override
-    public NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
+    public PythonNodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
         return backend.createNodeFromExtension(m_extensionModule, nodeId);
     }
 

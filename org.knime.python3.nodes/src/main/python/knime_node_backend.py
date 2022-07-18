@@ -479,7 +479,7 @@ class _PythonNodeProxy:
         self._java_callback.set_flow_variables(java_flow_variables)
 
     class Java:
-        implements = ["org.knime.python3.nodes.proxy.NodeProxy"]
+        implements = ["org.knime.python3.nodes.proxy.PythonNodeProxy"]
 
 
 class _KnimeNodeBackend(kg.EntryPoint):

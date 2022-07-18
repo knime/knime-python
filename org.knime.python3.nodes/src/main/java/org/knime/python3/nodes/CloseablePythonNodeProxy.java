@@ -87,10 +87,10 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
-import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -110,7 +110,7 @@ final class CloseablePythonNodeProxy
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
-    private final NodeProxy m_proxy;
+    private final PythonNodeProxy m_proxy;
 
     private final AutoCloseable m_gateway;
 
@@ -139,7 +139,7 @@ final class CloseablePythonNodeProxy
         String[].class //
     );
 
-    CloseablePythonNodeProxy(final NodeProxy proxy, final AutoCloseable gateway, final ExtensionNode nodeSpec) {
+    CloseablePythonNodeProxy(final PythonNodeProxy proxy, final AutoCloseable gateway, final ExtensionNode nodeSpec) {
         m_proxy = proxy;
         m_gateway = gateway;
         m_nodeSpec = nodeSpec;

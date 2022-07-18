@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.extension.ExtensionNode;
-import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 
 /**
  * Represents a pure Python extension.
@@ -87,7 +87,7 @@ public interface PyNodeExtension {
      * @param nodeId id of the node to create a Python proxy for
      * @return the NodeProxy for the node identified by nodeId
      */
-    NodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId);
+    PythonNodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId);
 
     /**
      * @return the contained nodes
