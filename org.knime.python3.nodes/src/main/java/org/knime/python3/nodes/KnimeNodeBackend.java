@@ -60,6 +60,7 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
 
     /**
      * Initialize global callbacks like access to the logging functionality
+     *
      * @param callback
      */
     void initializeJavaCallback(Callback callback);
@@ -67,12 +68,7 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
     /**
      * Global callbacks for this entry point
      */
-    interface Callback {
-        /**
-         * Pipe Python logging to KNIME's log facilities
-         * @param msg The log message
-         */
-        void log(String msg);
+    interface Callback extends LogCallback {
     }
 
     String retrieveCategoriesAsJson(final String extensionModule);

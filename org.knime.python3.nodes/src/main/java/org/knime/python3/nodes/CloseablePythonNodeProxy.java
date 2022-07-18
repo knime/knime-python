@@ -206,6 +206,7 @@ final class CloseablePythonNodeProxy
         final FailureState failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
+            private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
 
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
@@ -230,7 +231,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public void log(final String msg, final String severity) {
-                logMessage(msg, severity);
+                m_logCallback.log(msg, severity);
             }
 
             @Override
@@ -320,6 +321,7 @@ final class CloseablePythonNodeProxy
         final var failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
+            private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
 
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
@@ -333,7 +335,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public void log(final String msg, final String severity) {
-                logMessage(msg, severity);
+                m_logCallback.log(msg, severity);
             }
 
             @Override
@@ -393,28 +395,6 @@ final class CloseablePythonNodeProxy
 
     private static IFileStoreHandler getFileStoreHandler() {
         return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
-    }
-
-    private static void logMessage(final String msg, final String severity) {
-        switch (severity) {
-            case "debug":
-                LOGGER.debug(msg);
-                break;
-            case "info":
-                LOGGER.info(msg);
-                break;
-            case "warn":
-                LOGGER.warn(msg);
-                break;
-            case "error":
-                LOGGER.error(msg);
-                break;
-            case "coding":
-                LOGGER.coding(msg);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid log severity: \"" + severity + "\"");
-        }
     }
 
     @Override

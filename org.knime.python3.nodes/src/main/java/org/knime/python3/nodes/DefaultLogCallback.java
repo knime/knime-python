@@ -44,50 +44,49 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jun 5, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   18 Jul 2022 (Carsten Haubold): created
  */
 package org.knime.python3.nodes;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonGatewayUtils;
-import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
-import org.knime.python3.utils.AutoCloser;
 
 /**
- * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
+ * Default implementation for callbacks that handle logging
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-final class CloseablePythonNodeProxyFactory {
+public class DefaultLogCallback implements LogCallback {
+    private final NodeLogger m_logger;
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxyFactory.class);
-
-    private final ResolvedPythonExtension m_extension;
-
-    private final String m_nodeId;
-
-    CloseablePythonNodeProxyFactory(final ResolvedPythonExtension extension, final String nodeId) {
-        m_extension = extension;
-        m_nodeId = nodeId;
+    /**
+     * Create a {@link DefaultLogCallback} with a {@link NodeLogger}
+     *
+     * @param logger The {@link NodeLogger} to use for all logging
+     */
+    public DefaultLogCallback(final NodeLogger logger) {
+        m_logger = logger;
     }
 
-    @SuppressWarnings("resource") // the closer is closed when the returned object is closed
-    CloseablePythonNodeProxy createProxy(final PythonGateway<KnimeNodeBackend> gateway) {
-        final var backend = gateway.getEntryPoint();
-        var outputRetrieverHandle = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::info, LOGGER::debug, 100);
-        final var callback = new KnimeNodeBackend.Callback() {
-            private LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
-
-            @Override
-            public void log(final String message, final String severity) {
-                m_logCallback.log(message, severity);
-            }
-        };
-        backend.initializeJavaCallback(callback);
-        var nodeProxy = m_extension.createProxy(backend, m_nodeId);
-        var closer = new AutoCloser(gateway, outputRetrieverHandle);
-        return new CloseablePythonNodeProxy(nodeProxy, closer, m_extension.getNode(m_nodeId));
+    @Override
+    public final void log(final String msg, final String severity) {
+        switch (severity) {
+            case "debug":
+                m_logger.debug(msg);
+                break;
+            case "info":
+                m_logger.info(msg);
+                break;
+            case "warn":
+                m_logger.warn(msg);
+                break;
+            case "error":
+                m_logger.error(msg);
+                break;
+            case "coding":
+                m_logger.coding(msg);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid log severity: \"" + severity + "\"");
+        }
     }
-
 }

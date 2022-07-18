@@ -44,50 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jun 5, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   18 Jul 2022 (Carsten Haubold): created
  */
 package org.knime.python3.nodes;
 
-import org.knime.core.node.NodeLogger;
-import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonGatewayUtils;
-import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
-import org.knime.python3.utils.AutoCloser;
-
 /**
- * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
+ * Interface for all Python Callbacks that should support logging from Python
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-final class CloseablePythonNodeProxyFactory {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxyFactory.class);
-
-    private final ResolvedPythonExtension m_extension;
-
-    private final String m_nodeId;
-
-    CloseablePythonNodeProxyFactory(final ResolvedPythonExtension extension, final String nodeId) {
-        m_extension = extension;
-        m_nodeId = nodeId;
-    }
-
-    @SuppressWarnings("resource") // the closer is closed when the returned object is closed
-    CloseablePythonNodeProxy createProxy(final PythonGateway<KnimeNodeBackend> gateway) {
-        final var backend = gateway.getEntryPoint();
-        var outputRetrieverHandle = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::info, LOGGER::debug, 100);
-        final var callback = new KnimeNodeBackend.Callback() {
-            private LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
-
-            @Override
-            public void log(final String message, final String severity) {
-                m_logCallback.log(message, severity);
-            }
-        };
-        backend.initializeJavaCallback(callback);
-        var nodeProxy = m_extension.createProxy(backend, m_nodeId);
-        var closer = new AutoCloser(gateway, outputRetrieverHandle);
-        return new CloseablePythonNodeProxy(nodeProxy, closer, m_extension.getNode(m_nodeId));
-    }
-
+public interface LogCallback {
+    /**
+     * Handle a log message coming in from the Python side
+     *
+     * @param message The message
+     * @param severity The severity (one of "debug", "info", "warn", "error", "coding")
+     */
+    void log(String message, String severity);
 }
