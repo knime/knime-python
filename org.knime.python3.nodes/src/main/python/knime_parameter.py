@@ -76,6 +76,7 @@ def extract_parameters(obj, for_dialog=False) -> dict:
     """
     return {"model": _extract_parameters(obj, for_dialog)}
 
+
 def _extract_parameters(obj, for_dialog=False) -> dict:
     result = dict()
     params = _get_parameters(obj)
@@ -83,14 +84,21 @@ def _extract_parameters(obj, for_dialog=False) -> dict:
         result[name] = param_obj._get_value(obj, for_dialog)
     return result
 
+
 def _is_group(param):
     return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
+
 # TODO version support
-def inject_parameters(obj, parameters: dict, version, fail_on_missing: bool = True) -> None:
+def inject_parameters(
+    obj, parameters: dict, version, fail_on_missing: bool = True
+) -> None:
     _inject_parameters(obj, parameters["model"], version, fail_on_missing)
 
-def _inject_parameters(obj, parameters: dict, version, fail_on_missing: bool = True) -> None:
+
+def _inject_parameters(
+    obj, parameters: dict, version, fail_on_missing: bool = True
+) -> None:
     for name, parameter in _get_parameters(obj).items():
         if name in parameters:
             # TODO can only set if the parameter was already available in version
@@ -106,15 +114,16 @@ def validate_parameters(obj, parameters: dict, version=None) -> str:
     """
     return _validate_parameters(obj, parameters["model"], version)
 
+
 def _validate_parameters(obj, parameters: dict, version=None) -> str:
     for name, param in _get_parameters(obj).items():
         # TODO test if that also works for parameter groups
         param._validate(parameters[name], version)
-    
 
 
 def extract_schema(obj, specs=None) -> dict:
     return {"type": "object", "properties": {"model": _extract_schema(obj, specs)}}
+
 
 def _extract_schema(obj, specs=None):
     properties = {
@@ -139,13 +148,19 @@ def extract_parameter_descriptions(obj) -> dict:
     if any(map(_is_group, _get_parameters(obj).values())):
         # a top-level parameter_group is represented as tab in the dialog
         # tab descriptions are the only descriptions with nested options
-        tabs = [tab_description for tab_description in descriptions if "options" in tab_description]
-        top_level_options = [description for description in descriptions if not "options" in description]
+        tabs = [
+            tab_description
+            for tab_description in descriptions
+            if "options" in tab_description
+        ]
+        top_level_options = [
+            description for description in descriptions if not "options" in description
+        ]
         if len(top_level_options) > 0:
             options_tab = {
                 "name": "Options",
                 "description": "",
-                "options": top_level_options
+                "options": top_level_options,
             }
             tabs.insert(0, options_tab)
         return tabs
@@ -221,7 +236,7 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj:Any, for_dialog: bool):
+    def _get_value(self, obj: Any, for_dialog: bool):
         return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
@@ -492,7 +507,7 @@ class ColumnParameter(_BaseParameter):
             "showRowKeys": self._include_row_key,
             "showNoneColumn": self._include_none_column,
         }
-    
+
     def _inject(self, obj, value, version, fail_on_missing):
         value = None if value == "" else value
         return super()._inject(obj, value, version, fail_on_missing)
@@ -510,8 +525,8 @@ def _filter_columns(
         spec = specs[port_index]
     except IndexError as ex:
         raise IndexError(
-                f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
-                f"Maybe a port_index for a parameter does not match the index for an input table? "
+            f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
+            f"Maybe a port_index for a parameter does not match the index for an input table? "
         ) from None
 
     if not isinstance(spec, ks.Schema):
@@ -525,6 +540,7 @@ def _filter_columns(
         return filtered
     else:
         return [_const("")]
+
 
 def _const(name):
     return {"const": name, "title": name}
@@ -596,6 +612,7 @@ class BoolParameter(_BaseParameter):
     def _get_options(self) -> dict:
         return {"format": "boolean"}
 
+
 def _flatten(lst: list) -> list:
     flat = []
     for e in lst:
@@ -604,6 +621,7 @@ def _flatten(lst: list) -> list:
         else:
             flat.append(e)
     return flat
+
 
 def parameter_group(label: str):
     """
@@ -675,7 +693,6 @@ def parameter_group(label: str):
             """
             return hasattr(parameter_group, "_name")
 
-
         def __get__(self, obj, obj_type=None):
             """
             Generate a new GroupView class every time, and return an instance of the class
@@ -686,10 +703,17 @@ def parameter_group(label: str):
 
         def _get_value(self, obj, for_dialog=False):
             param_holder = _get_param_holder(self, obj)
-            return {name: param._get_value(param_holder, for_dialog) for name, param in _get_parameters(param_holder).items()}
+            return {
+                name: param._get_value(param_holder, for_dialog)
+                for name, param in _get_parameters(param_holder).items()
+            }
 
         def _get_param_holder(parameter_group, obj):
-            return _create_group_view(parameter_group, obj) if _is_descriptor(parameter_group) else parameter_group
+            return (
+                _create_group_view(parameter_group, obj)
+                if _is_descriptor(parameter_group)
+                else parameter_group
+            )
 
         def _create_group_view(self, obj):
             if not hasattr(obj, "__kind__"):
@@ -714,7 +738,7 @@ def parameter_group(label: str):
         def _inject(self, obj, values, version, fail_on_missing=True):
             param_holder = _get_param_holder(self, obj)
             _inject_parameters(param_holder, values, version, fail_on_missing)
-            
+
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
