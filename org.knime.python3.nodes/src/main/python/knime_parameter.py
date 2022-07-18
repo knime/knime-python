@@ -501,15 +501,22 @@ class ColumnParameter(_BaseParameter):
 def _filter_columns(
     specs: List[ks.Schema], port_index: int, column_filter: Callable[[ks.Column], bool]
 ):
-    if specs is None or specs[port_index] is None:
-        return [_const("")]
-    else:
-        spec = specs[port_index]
-        filtered = [_const(column.name) for column in spec if column_filter(column)]
-        if len(filtered) > 0:
-            return filtered
-        else:
+    try:
+        if specs is None or specs[port_index] is None:
             return [_const("")]
+
+        spec = specs[port_index]
+    except IndexError as ex:
+        raise IndexError(
+                f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
+                f"Maybe a port_index for a parameter does not match the index for an input table? "
+        ) from None
+
+    filtered = [_const(column.name) for column in spec if column_filter(column)]
+    if len(filtered) > 0:
+        return filtered
+    else:
+        return [_const("")]
 
 def _const(name):
     return {"const": name, "title": name}
