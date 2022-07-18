@@ -125,7 +125,7 @@ final class RowKeyChecker extends AbstractAsyncBatchProcessor {
                 m_duplicateChecker.addKey(rowKeys.getString(i));
             }
         } catch (DuplicateKeyException e) {
-            throw new IOException(e);
+            throw new IOException(e.getMessage(), e);
         }
     }
 
@@ -156,7 +156,7 @@ final class RowKeyChecker extends AbstractAsyncBatchProcessor {
                 m_invalidCause.set(e);
                 return false;
             } catch (final DuplicateKeyException e) {
-                m_invalidCause.set(new IOException(e));
+                m_invalidCause.set(new IOException(e.getMessage(), e));
                 return false;
             }
         } else {

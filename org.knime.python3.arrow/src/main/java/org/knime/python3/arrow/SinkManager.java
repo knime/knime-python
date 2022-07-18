@@ -133,7 +133,7 @@ public final class SinkManager implements AutoCloseable {
     private void checkRowKeys(final DefaultPythonArrowDataSink sink) throws InterruptedException, IOException {
         final var rowKeyChecker = m_rowKeyCheckers.get(sink);
         if (!rowKeyChecker.allUnique()) {
-            throw new IOException(rowKeyChecker.getInvalidCause());
+            throw new IOException("Row key checking: " + rowKeyChecker.getInvalidCause());
         }
     }
 
