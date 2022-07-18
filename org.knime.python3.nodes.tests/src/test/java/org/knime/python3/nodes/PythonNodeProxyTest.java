@@ -61,7 +61,7 @@ import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonSourceDirectoryLocator;
 import org.knime.python3.nodes.modules.PythonNodesModule;
-import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 
 /**
  * Tests the communication with Python via Py4J.
@@ -76,7 +76,7 @@ public class PythonNodeProxyTest {
             .resolve("python_node_proxy_test_launcher.py")//
             .toString();
 
-    private NodeProxy m_proxy;
+    private PythonNodeProxy m_proxy;
 
     private PythonGateway<PythonNodeProxyTestEntryPoint> m_gateway;
 
@@ -124,6 +124,6 @@ public class PythonNodeProxyTest {
 
     public interface PythonNodeProxyTestEntryPoint extends PythonEntryPoint {
 
-        NodeProxy getProxy();
+        PythonNodeProxy getProxy();
     }
 }

@@ -46,34 +46,15 @@
  * History
  *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
-
-import org.knime.python3.PythonEntryPoint;
-import org.knime.python3.nodes.proxy.PythonNodeProxy;
+package org.knime.python3.nodes.proxy;
 
 /**
- * Handles the communication with a node written purely in Python.
+ * Proxy for a node implemented in Python.
+ * This interface is implemented on the Python side.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface KnimeNodeBackend extends PythonEntryPoint {
+public interface PythonNodeProxy extends NodeFactoryProxy, PythonNodeModelProxy, PythonNodeDialogProxy {
+    // marker interface that is implemented on the Python side
 
-    /**
-     * Initialize global callbacks like access to the logging functionality
-     *
-     * @param callback
-     */
-    void initializeJavaCallback(Callback callback);
-
-    /**
-     * Global callbacks for this entry point
-     */
-    interface Callback extends LogCallback {
-    }
-
-    String retrieveCategoriesAsJson(final String extensionModule);
-
-    String retrieveNodesAsJson(final String extensionModule);
-
-    PythonNodeProxy createNodeFromExtension(final String extensionModule, final String nodeId);
 }

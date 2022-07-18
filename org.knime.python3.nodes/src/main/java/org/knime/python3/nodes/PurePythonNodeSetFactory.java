@@ -63,7 +63,7 @@ import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
-import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
 
@@ -172,7 +172,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return m_extension.createGateway();
         }
 
-        NodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
+        PythonNodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
             return m_extension.createNodeProxy(backend, nodeId);
         }
 
