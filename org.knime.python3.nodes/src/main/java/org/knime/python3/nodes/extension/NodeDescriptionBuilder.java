@@ -116,9 +116,8 @@ public final class NodeDescriptionBuilder {
         node.setShortDescription(getShortDescription());
 
         var fullDescription = node.addNewFullDescription();
-        if (!m_intro.isBlank()) {
-            addDescription(fullDescription.addNewIntro(), m_intro);
-        }
+
+        addDescription(fullDescription.addNewIntro(), getIntro());
 
         m_topLevelOptions.forEach(o -> o.fill(fullDescription.addNewOption()));
 
@@ -148,6 +147,17 @@ public final class NodeDescriptionBuilder {
         }
 
         return new NodeDescription41Proxy(doc);
+    }
+
+    private String getIntro() {
+        if (m_intro.isBlank()) {
+            NodeLogger.getLogger(NodeDescriptionBuilder.class)
+                .codingWithFormat("Please provide an intro for the node %s.", m_name);
+            return m_name;
+
+        } else {
+            return m_intro;
+        }
     }
 
     private String getShortDescription() {
