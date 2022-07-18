@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -118,14 +119,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-        try (var node = m_proxyProvider.getConfigurationProxy()) {
+        return runWithProxy(m_proxyProvider::getConfigurationProxy, node -> {
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs, this, this);
             // allows for auto-configure
             m_settings = node.getSettings();
-            m_proxyShutdownTracker.closeAsynchronously(node);
             return result;
-        }
+        });
     }
 
     @Override
@@ -134,15 +134,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         if (m_view.isPresent()) {
             PathUtils.deleteFileIfExists(m_view.get());
         }
-        try (var node = m_proxyProvider.getExecutionProxy()) {
+        return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this, this);
             m_settings = node.getSettings();
             m_view = result.getView();
-            var objects = result.getPortObjects();
-            m_proxyShutdownTracker.closeAsynchronously(node);
-            return objects;
-        }
+            return result.getPortObjects();
+        });
     }
 
     @Override
@@ -157,22 +155,42 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        try (var node = m_proxyProvider.getConfigurationProxy()) {
-            // we retrieve the settings instead of using m_settings because we want to have the latest schema
-            // which can change during development
-            var jsonSettings = node.getSettings().createFromSettings(settings);
-            node.validateSettings(jsonSettings);
-            m_proxyShutdownTracker.closeAsynchronously(node);
-        }
+        runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
+            node -> node.validateSettings(node.getSettings().createFromSettings(settings)));
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        try (var node = m_proxyProvider.getConfigurationProxy()) {
-            m_settings = node.getSettings().createFromSettings(settings);
-            m_proxyShutdownTracker.closeAsynchronously(node);
+        runWithProxy(m_proxyProvider::getConfigurationProxy,
+            node -> m_settings = node.getSettings().createFromSettings(settings));
+    }
+
+    private interface ThrowingFunction<S, T, X extends Exception> {
+        T apply(S object) throws X;
+    }
+
+    private interface ThrowingConsumer<S, X extends Exception> extends ThrowingFunction<S, Void, X> {
+        void accept(final S object) throws X;
+
+        @Override
+        default Void apply(final S object) throws X {
+            accept(object);
+            return null;
         }
     }
+
+    private <P extends NodeModelProxy, X extends Exception, T> T runWithProxy(final Supplier<P> proxySupplier,
+        final ThrowingFunction<P, T, X> function) throws X {
+        try (var proxy = proxySupplier.get()) {
+            var result = function.apply(proxy);
+            m_proxyShutdownTracker.closeAsynchronously(proxy);
+            return result;
+        }
+    }
+
+    private <P extends NodeModelProxy, X extends Exception> void runWithProxyConsumer(final Supplier<P> proxySupplier,
+        final ThrowingConsumer<P, X> consumer) throws X {
+        runWithProxy(proxySupplier, consumer);
     }
 
     @Override
