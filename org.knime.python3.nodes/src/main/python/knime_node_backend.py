@@ -516,10 +516,12 @@ class _KnimeNodeBackend(kg.EntryPoint):
         doc = node.__doc__
         lines = doc.splitlines() if not doc is None else []
         if len(lines) == 0:
-            short_description = "Please document your node class with a docstring"
             logging.warning(
                 f"No docstring available for node {name}. Please document the node class with a docstring or set __doc__ in the init of the node."
             )
+            short_description = ""
+            # The further handling of a not existing or empty doc string is handled on
+            # the Java side in org.knime.python3.nodes.extension.NodeDescriptionBuilder.java
         else:
             short_description = lines[0]
         if len(lines) > 1:
