@@ -54,6 +54,7 @@ import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.views.PythonNodeViewSink;
@@ -152,7 +153,7 @@ public interface PythonNodeModelProxy {
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
      */
-    public interface Callback {
+    public interface Callback extends LogCallback {
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file
@@ -171,14 +172,6 @@ public interface PythonNodeModelProxy {
          * @throws IOException if the temporary folder could not be created
          */
         PythonNodeViewSink create_view_sink() throws IOException; // NOSONAR
-
-        /**
-         * Pipe Python logging to KNIME's log facilities
-         *
-         * @param msg The log message
-         * @param severity The severity of the log message. One of ["debug", "info", "warn", "error", "coding"].
-         */
-        void log(String msg, String severity);
 
         /**
          * Used to send flow variables from KNIME to Python
