@@ -84,7 +84,6 @@ import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.views.HtmlFileNodeView;
 
 /**
@@ -211,10 +210,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         public DelegatingNodeModel createNodeModel() {
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
-                var initialSettings = proxy.getParameters();
-                var schema = proxy.getSchema();
+                var initialSettings = proxy.getSettings();
                 return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
-                    new JsonNodeSettings(initialSettings, schema));
+                    initialSettings);
             }
         }
 

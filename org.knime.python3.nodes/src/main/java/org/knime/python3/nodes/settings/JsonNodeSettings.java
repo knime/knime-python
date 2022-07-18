@@ -67,9 +67,9 @@ public final class JsonNodeSettings {
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
-    private String m_parameters;
+    private final String m_parameters;
 
-    private String m_version;
+    private final String m_version;
 
     private final String m_schema;
 
@@ -86,6 +86,20 @@ public final class JsonNodeSettings {
     }
 
     /**
+     * Constructor that creates a new instance from a {@link NodeSettingsRO} object and a schema.
+     *
+     * @param settings containing the stored settings
+     * @param schema of the settings
+     * @throws InvalidSettingsException if the settings are invalid
+     */
+    private JsonNodeSettings(final NodeSettingsRO settings, final String schema) throws InvalidSettingsException {
+        m_schema = schema;
+        var preprocessed = preprocess(settings);
+        m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
+        m_version = settings.getString(CFG_VERSION);
+    }
+
+    /**
      * @return JSON string containing the parameters
      */
     public String getParameters() {
@@ -97,16 +111,6 @@ public final class JsonNodeSettings {
      */
     public String getCreationVersion() {
         return m_version;
-    }
-
-    /**
-     * Updates the parameters in this settings object. Also sets the version to the current AP version.
-     *
-     * @param parameters to update with
-     */
-    public void update(final String parameters) {
-        m_version = KNIMEConstants.VERSION;
-        m_parameters = parameters;
     }
 
     /**
@@ -127,16 +131,24 @@ public final class JsonNodeSettings {
     }
 
     /**
-     * Loads the parameters from the provided settings. This method changes the state of this object. If you want to
-     * load without changing the state use {@link #loadForValidation(NodeSettingsRO)}.
+     * Creates a new instance with the same schema but the settings stored in {@code settings}.
      *
-     * @param settings to load from
-     * @throws InvalidSettingsException if the settings are invalid i.e. can't be parsed
+     * @param settings to load into the newly created object
+     * @return a new instance with the same schema as this instance but the values from settings
+     * @throws InvalidSettingsException if the settings are invalid
      */
-    public void loadFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        var preprocessed = preprocess(settings);
-        m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
-        m_version = settings.getString(CFG_VERSION);
+    public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        return new JsonNodeSettings(settings, m_schema);
+    }
+
+    /**
+     * Creates a new instance from the provided JSON string and the schema of this instance.
+     *
+     * @param json holding the settings
+     * @return a new instance with the same schema as this instance but the values from the json
+     */
+    public JsonNodeSettings createFromJson(final String json) {
+        return new JsonNodeSettings(json, m_schema);
     }
 
     private static NodeSettings preprocess(final NodeSettingsRO settings) {
@@ -146,27 +158,6 @@ public final class JsonNodeSettings {
         settingsWithoutVersion.copyTo(modelSettings);
         modelSettings.addNodeSettings(settingsWithoutVersion);
         return tmpSettings;
-    }
-
-    private JsonNodeSettings(final String schema, final String parameters, final String version) {
-        m_schema = schema;
-        m_parameters = parameters;
-        m_version = version;
-    }
-
-    /**
-     * Loads the parameters from the provided settings and produces a new instance of JsonNodeSettings. This method does
-     * not change the state of this instance.
-     *
-     * @param settings to load from
-     * @return JsonNodeSettings object containing the parameters in settings
-     * @throws InvalidSettingsException if the settings are invalid i.e. can't be parsed
-     */
-    public JsonNodeSettings loadForValidation(final NodeSettingsRO settings) throws InvalidSettingsException {
-        var preprocessed = preprocess(settings);
-        var parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
-        var version = settings.getString(CFG_VERSION);
-        return new JsonNodeSettings(m_schema, parameters, version);
     }
 
     private static NodeSettings settingsWithoutVersion(final NodeSettings settingsWithVersion) {

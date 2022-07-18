@@ -53,17 +53,7 @@ package org.knime.python3.nodes.proxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeFactoryProxy {
-
-    /**
-     * @return the initial parameters of the node as JSON string
-     */
-    String getParameters();
-
-    /**
-     * @return the JSON schema of the parameters
-     */
-    String getSchema();
+public interface NodeFactoryProxy extends NodeProxy {
 
     /**
      * @return The number of views of the node
