@@ -499,7 +499,9 @@ class ColumnParameter(_BaseParameter):
 
 
 def _filter_columns(
-    specs: List[ks.Schema], port_index: int, column_filter: Callable[[ks.Column], bool]
+    specs: List[ks.PortObjectSpec],
+    port_index: int,
+    column_filter: Callable[[ks.Column], bool],
 ):
     try:
         if specs is None or specs[port_index] is None:
@@ -511,6 +513,12 @@ def _filter_columns(
                 f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
                 f"Maybe a port_index for a parameter does not match the index for an input table? "
         ) from None
+
+    if not isinstance(spec, ks.Schema):
+        raise TypeError(
+            f"The port at index {port_index} is not a Table. "
+            f"The ColumnParameter or MultiColumnParameter can only be used for Table ports."
+        )
 
     filtered = [_const(column.name) for column in spec if column_filter(column)]
     if len(filtered) > 0:
