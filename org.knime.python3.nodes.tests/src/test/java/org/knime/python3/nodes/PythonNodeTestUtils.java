@@ -58,11 +58,11 @@ import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonModule;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
+import org.knime.python3.types.PythonModule;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**
