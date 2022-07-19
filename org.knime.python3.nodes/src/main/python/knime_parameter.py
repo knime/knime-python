@@ -121,6 +121,14 @@ def _validate_parameters(obj, parameters: dict, version=None) -> str:
         param._validate(parameters[name], version)
 
 
+def validate_specs(obj, specs) -> None:
+    """
+    Checks if the provided specs are compatible with the parameter of obj.
+    """
+    for param in _get_parameters(obj).values():
+        param._validate_specs(specs)
+
+
 def extract_schema(obj, specs=None) -> dict:
     return {"type": "object", "properties": {"model": _extract_schema(obj, specs)}}
 
@@ -271,6 +279,10 @@ class _BaseParameter(ABC):
     # TODO does version make sense here?
     def _validate(self, value, version=None):
         self._validator(value)
+
+    def _validate_specs(self, specs):
+        # can be overriden by parameter types that require a certain spec
+        pass
 
     def validator(self, func):
         """
@@ -473,7 +485,39 @@ class StringParameter(_BaseParameter):
             return {"format": "radio"}
 
 
-class ColumnParameter(_BaseParameter):
+class _BaseColumnParameter(_BaseParameter):
+    """
+    Base class for single and multi column selection parameters.
+    """
+
+    def __init__(
+        self,
+        label,
+        description,
+        port_index: int,
+        column_filter: Callable[[ks.Column], bool],
+        schema_option: str
+    ):
+        super().__init__(label, description, default_value=None)
+        self._port_index = port_index
+        if column_filter is None:
+            column_filter = lambda c: True
+        self._column_filter = column_filter
+        self._schema_option = schema_option
+
+    def _extract_schema(self, specs: List[ks.Schema] = None):
+        schema = super()._extract_schema(specs)
+        values = _filter_columns(specs, self._port_index, self._column_filter)
+        schema[self._schema_option] = values
+        return schema
+
+    def _validate_specs(self, specs):
+        if len(specs) <= self._port_index:
+            raise ValueError(f"There are too few input specs. The column selection '{self._name}' requires a table input at index {self._port_index}")
+        elif not isinstance(specs[self._port_index], ks.Schema):
+            raise TypeError(f"The port index ({self._port_index}) of the column selection '{self._name}' does not point to a table input.")
+
+class ColumnParameter(_BaseColumnParameter):
     """
     Parameter class for single columns.
     """
@@ -487,19 +531,10 @@ class ColumnParameter(_BaseParameter):
         include_row_key=False,
         include_none_column=False,
     ):
-        super().__init__(label, description, default_value=None)
-        self._port_index = port_index
+        super().__init__(label, description, port_index, column_filter, "oneOf")
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
-        if column_filter is None:
-            column_filter = lambda c: True
-        self._column_filter = column_filter
-
-    def _extract_schema(self, specs: List[ks.Schema] = None):
-        schema = super()._extract_schema(specs)
-        values = _filter_columns(specs, self._port_index, self._column_filter)
-        schema["oneOf"] = values
-        return schema
+        
 
     def _get_options(self) -> dict:
         return {
@@ -546,7 +581,7 @@ def _const(name):
     return {"const": name, "title": name}
 
 
-class MultiColumnParameter(_BaseParameter):
+class MultiColumnParameter(_BaseColumnParameter):
     """
     Parameter class for multiple columns.
     """
@@ -558,18 +593,7 @@ class MultiColumnParameter(_BaseParameter):
         port_index=0,
         column_filter: Callable[[ks.Column], bool] = None,
     ):
-        super().__init__(label, description, default_value=None)
-        self._port_index = port_index
-        if column_filter is None:
-            column_filter = lambda c: True
-        self._column_filter = column_filter
-
-    def _extract_schema(self, specs: List[ks.Schema] = None):
-        schema = super()._extract_schema(specs)
-        values = _filter_columns(specs, self._port_index, self._column_filter)
-        # use an empty string as placeholder if there are no compatible columns
-        schema["anyOf"] = values
-        return schema
+        super().__init__(label, description, port_index, column_filter, "anyOf")
 
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
@@ -810,6 +834,7 @@ def parameter_group(label: str):
         custom_cls._get_value = _get_value
         custom_cls._inject = _inject
         custom_cls._validate = _validate
+        custom_cls._validate_specs = validate_specs
         custom_cls._extract_schema = _extract_schema
         custom_cls._extract_ui_schema = _extract_ui_schema
         custom_cls._extract_description = _extract_description
