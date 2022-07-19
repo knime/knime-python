@@ -854,6 +854,17 @@ class Schema(_Columnar, PortObjectSpec):
         return str(self)
 
     def remove(self, key: Union[Column, str]):
+        """
+        Remove a column from this schema. The key can either be a column or a column name.
+        If it is a column, then the first column in the schema that matches the given column
+        will be removed. If it is a column name, than the first column with matching name
+        is removed.
+
+        Raises:
+            KeyError if no matching column is found
+            TypeError if the key is neither a column nor a string
+        """
+
         # Returns None or first index matching the condition
         def find_index(columns, key, condition):
             for idx, _column in enumerate(columns):
