@@ -551,7 +551,9 @@ class _Columnar(ABC):
 
         return _ColumnarView(delegate=self, operation=_ColumnSlicingOperation(slicing))
 
-    def append(self, other: Union["_Columnar", Sequence["_Columnar"]]) -> "_ColumnarView":
+    def append(
+        self, other: Union["_Columnar", Sequence["_Columnar"]]
+    ) -> "_ColumnarView":
         return _ColumnarView(delegate=self, operation=_AppendOperation(other))
 
     @abstractmethod
@@ -693,13 +695,17 @@ class Schema(_Columnar, PortObjectSpec):
             columns = [columns]
 
         try:
-            for col in iter(columns):  # check if sequence is iterable and only contains columns
+            for col in iter(
+                columns
+            ):  # check if sequence is iterable and only contains columns
                 if not isinstance(col, Column):
-                    raise ValueError(f"Can only instantiate a schema from columns, not {type(col)}")
+                    raise ValueError(
+                        f"Can only instantiate a schema from columns, not {type(col)}"
+                    )
         except TypeError:
             raise TypeError(f"Columns needs to be an iterable, but is {type(columns)}")
         except ValueError as e:
-            raise TypeError(e) # e is used such that type(col) is preserved
+            raise TypeError(e)  # e is used such that type(col) is preserved
 
         if len(columns) == 0:
             return cls([], [], [])
@@ -714,7 +720,9 @@ class Schema(_Columnar, PortObjectSpec):
         """Create a schema from a list of column data types, names and metadata"""
         return cls(ktypes, names, metadata)
 
-    def __init__(self, ktypes: List[KnimeType], names: List[str], metadata: List = None):
+    def __init__(
+        self, ktypes: List[KnimeType], names: List[str], metadata: List = None
+    ):
         """Create a schema from a list of column data types, names and metadata"""
         if not isinstance(ktypes, Sequence) or not all(
             isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in ktypes
@@ -821,10 +829,14 @@ class Schema(_Columnar, PortObjectSpec):
         elif isinstance(other, Column):
             cols.append(other)
         elif isinstance(other, Sequence):
-            for col in other: # check if list only contains columns
+            for col in other:  # check if list only contains columns
                 if not isinstance(col, Column):
-                    raise TypeError(f"A column list to append can only contain columns, not {type(col)}")
-            schema = self.__class__.from_columns(other) # create another schema to extend
+                    raise TypeError(
+                        f"A column list to append can only contain columns, not {type(col)}"
+                    )
+            schema = self.__class__.from_columns(
+                other
+            )  # create another schema to extend
             cols.extend(schema)
         else:
             raise TypeError(
@@ -842,26 +854,28 @@ class Schema(_Columnar, PortObjectSpec):
         return str(self)
 
     def remove(self, key: Union[Column, str]):
-
-        #Returns None or first index matching the condition
+        # Returns None or first index matching the condition
         def find_index(columns, key, condition):
             for idx, _column in enumerate(columns):
                 if condition(key, _column):
                     return idx
 
-        #Removes the first occurrence by key from the array.
+        # Removes the first occurrence by key from the array.
         if isinstance(key, str):
             _idx = find_index(self._columns, key, lambda x, y: x == y.name)
             if _idx is None:
                 raise KeyError(f"No Column found for column name: {key}")
 
-        #Removes the first occurrence by column from the array.
+        # Removes the first occurrence by column from the array.
         elif isinstance(key, Column):
             _idx = find_index(self._columns, key, lambda x, y: x == y)
             if _idx is None:
                 raise KeyError(f"No Column found for key: {key}")
         else:
-            raise TypeError(f"Removing a column identified by type: {type(key)} is not implemented")
+            raise TypeError(
+                f"Removing a column identified by type: {type(key)} is not implemented"
+            )
+
         del self._columns[_idx]
 
     def to_knime_dict(self) -> Dict:

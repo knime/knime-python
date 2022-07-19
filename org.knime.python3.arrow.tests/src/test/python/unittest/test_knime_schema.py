@@ -380,13 +380,11 @@ class SchemaTest(unittest.TestCase):
                 s.remove(name)
         self.assertEqual(len(s._columns), len(names))
 
-
         # All should be removed
         for name in s.column_names:
             s.remove(name)
             self.assertTrue(name not in list(map(lambda x: x.name, s._columns)))
         self.assertEqual(len(s._columns), 0)
-
 
     def test_delete_by_column(self):
         # Case One / Tier 1
@@ -394,10 +392,9 @@ class SchemaTest(unittest.TestCase):
         # Create a list of Columns to delete from the schema
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
-        
+
         s = k.Schema(types, names)
         _cols = [k.Column(t, n) for (t, n) in zip(types, names)]
-
 
         # Should not remove a column
         _col = k.Column(k.int32(), "NotIncluded")
@@ -415,16 +412,16 @@ class SchemaTest(unittest.TestCase):
         # Create a identical Schema from which we delete the columns
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
-        
+
         s = k.Schema(types, names)
-        _s = k.Schema(types,  names)
+        _s = k.Schema(types, names)
 
         for col in _s._columns:
             s.remove(col)
         self.assertEqual(len(s._columns), 0)
 
     def test_delete_by_column_advanced(self):
-        # Case Three / Tier 3 
+        # Case Three / Tier 3
         # Create Schema
         # Delete Schema referencing it's own columns
         # NOTE Expected Behaviour is the following:
@@ -442,7 +439,6 @@ class SchemaTest(unittest.TestCase):
             s.remove(col)
 
         self.assertEqual(len(types) // 2, len(s._columns))
-
 
     def test_slicing(self):
         types = [k.int32(), k.int64(), k.double(), k.string()]
