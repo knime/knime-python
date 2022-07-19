@@ -403,6 +403,7 @@ class _PythonNodeProxy:
             java_config_context, self._get_flow_variables()
         )
         try:
+            kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime_main_loop
             outputs = self._node.configure(config_context, *inputs)
         except Exception as ex:
