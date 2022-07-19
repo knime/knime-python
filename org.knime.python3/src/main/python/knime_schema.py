@@ -841,6 +841,29 @@ class Schema(_Columnar, PortObjectSpec):
     def __repr__(self) -> str:
         return str(self)
 
+    def remove(self, key: Union[Column, str]):
+
+        #Returns None or first index matching the condition
+        def find_index(columns, key, condition):
+            for idx, _column in enumerate(columns):
+                if condition(key, _column):
+                    return idx
+
+        #Removes the first occurrence by key from the array.
+        if isinstance(key, str):
+            _idx = find_index(self._columns, key, lambda x, y: x == y.name)
+            if _idx is None:
+                raise KeyError(f"No Column found for column name: {key}")
+
+        #Removes the first occurrence by column from the array.
+        elif isinstance(key, Column):
+            _idx = find_index(self._columns, key, lambda x, y: x == y)
+            if _idx is None:
+                raise KeyError(f"No Column found for key: {key}")
+        else:
+            raise TypeError(f"Removing a column identified by type: {type(key)} is not implemented")
+        del self._columns[_idx]
+
     def to_knime_dict(self) -> Dict:
         """
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME

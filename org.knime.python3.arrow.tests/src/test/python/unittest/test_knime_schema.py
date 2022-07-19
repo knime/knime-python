@@ -369,7 +369,7 @@ class SchemaTest(unittest.TestCase):
     def test_delete_by_key(self):
         # Case One / Tier 1
         # Delte columns from schema by key identifier
-        print(f"BY KEY")
+        # NOTE that in general names can be duplicates
         types = [k.int32(), k.int64(), k.double(), k.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
         s = k.Schema(types, names)
@@ -384,6 +384,7 @@ class SchemaTest(unittest.TestCase):
         # All should be removed
         for name in s.column_names:
             s.remove(name)
+            self.assertTrue(name not in list(map(lambda x: x.name, s._columns)))
         self.assertEqual(len(s._columns), 0)
 
 
