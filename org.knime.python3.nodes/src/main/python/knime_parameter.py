@@ -51,6 +51,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
+from utils import parse
 
 import logging
 
@@ -103,12 +104,11 @@ def inject_parameters(
 def _inject_parameters(
     obj, parameters: dict, version, fail_on_missing: bool = True
 ) -> None:
-    LOGGER.warning(f"Injecting parameters with version {version}")
     for name, parameter in _get_parameters(obj).items():
         if name in parameters:
             # TODO can only set if the parameter was already available in version
             parameter._inject(obj, parameters[name], version, fail_on_missing)
-        elif fail_on_missing:
+        elif fail_on_missing and parameter._since_version <= version:
             raise ValueError(f"No value available for parameter {name}")
 
 
@@ -233,12 +233,13 @@ class _BaseParameter(ABC):
     __kind__ = "parameter"
 
     def __init__(
-        self, label, description, default_value, validator=None,
+        self, label, description, default_value, validator=None, since_version=None
     ):
         self._label = label
         self._default_value = default_value
         self._validator = validator if validator is not None else _default_validator
         self.__doc__ = description if description is not None else ""
+        self._since_version = parse(since_version)
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -352,12 +353,13 @@ class _NumericParameter(_BaseParameter):
         validator=None,
         min_value=None,
         max_value=None,
+        since_version=None,
     ):
         self.min_value = min_value
         self.max_value = max_value
         if validator is None:
             validator = self.default_validator
-        super().__init__(label, description, default_value, validator)
+        super().__init__(label, description, default_value, validator, since_version)
 
     def check_range(self, value):
         if self.min_value is not None and value < self.min_value:
@@ -390,9 +392,16 @@ class IntParameter(_NumericParameter):
         validator=None,
         min_value=None,
         max_value=None,
+        since_version=None,
     ):
         super().__init__(
-            label, description, default_value, validator, min_value, max_value
+            label,
+            description,
+            default_value,
+            validator,
+            min_value,
+            max_value,
+            since_version,
         )
 
     def check_type(self, value):
@@ -425,9 +434,16 @@ class DoubleParameter(_NumericParameter):
         validator=None,
         min_value=None,
         max_value=None,
+        since_version=None,
     ):
         super().__init__(
-            label, description, default_value, validator, min_value, max_value
+            label,
+            description,
+            default_value,
+            validator,
+            min_value,
+            max_value,
+            since_version,
         )
 
     def check_type(self, value):
@@ -463,13 +479,14 @@ class StringParameter(_BaseParameter):
         default_value: str = "",
         enum: List[str] = None,
         validator=None,
+        since_version=None,
     ):
         if validator is None:
             validator = self.default_validator
         if enum is not None and not isinstance(enum, list):
             raise TypeError("The enum parameter must be a list.")
         self._enum = enum
-        super().__init__(label, description, default_value, validator)
+        super().__init__(label, description, default_value, validator, since_version)
 
     def _extract_schema(self, specs):
         schema = super()._extract_schema(specs)
@@ -498,8 +515,11 @@ class _BaseColumnParameter(_BaseParameter):
         port_index: int,
         column_filter: Callable[[ks.Column], bool],
         schema_option: str,
+        since_version=None,
     ):
-        super().__init__(label, description, default_value=None)
+        super().__init__(
+            label, description, default_value=None, since_version=since_version
+        )
         self._port_index = port_index
         if column_filter is None:
             column_filter = lambda c: True
@@ -536,8 +556,11 @@ class ColumnParameter(_BaseColumnParameter):
         column_filter: Callable[[ks.Column], bool] = None,
         include_row_key=False,
         include_none_column=False,
+        since_version=None,
     ):
-        super().__init__(label, description, port_index, column_filter, "oneOf")
+        super().__init__(
+            label, description, port_index, column_filter, "oneOf", since_version
+        )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
 
@@ -597,8 +620,11 @@ class MultiColumnParameter(_BaseColumnParameter):
         description=None,
         port_index=0,
         column_filter: Callable[[ks.Column], bool] = None,
+        since_version=None,
     ):
-        super().__init__(label, description, port_index, column_filter, "anyOf")
+        super().__init__(
+            label, description, port_index, column_filter, "anyOf", since_version
+        )
 
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
@@ -627,11 +653,16 @@ class BoolParameter(_BaseParameter):
             raise TypeError(f"{value} is not a boolean")
 
     def __init__(
-        self, label=None, description=None, default_value=False, validator=None
+        self,
+        label=None,
+        description=None,
+        default_value=False,
+        validator=None,
+        since_version=None,
     ):
         if validator is None:
             validator = self.default_validator
-        super().__init__(label, description, default_value, validator)
+        super().__init__(label, description, default_value, validator, since_version)
 
     def _extract_schema(self, specs):
         schema = super()._extract_schema(specs)

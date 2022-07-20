@@ -53,6 +53,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
@@ -68,6 +69,8 @@ import org.knime.python3.nodes.settings.JsonNodeSettings;
  */
 public final class DelegatingJsonSettingsDataService implements JsonNodeSettingsService<String> {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingJsonSettingsDataService.class);
+
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
     private JsonNodeSettings m_lastSettings;
@@ -78,6 +81,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
      * Constructor.
      *
      * @param proxyProvider provides proxy objects
+     * @param extensionVersion the version of the extension
      */
     public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider, final String extensionVersion) {
         m_proxyProvider = proxyProvider;

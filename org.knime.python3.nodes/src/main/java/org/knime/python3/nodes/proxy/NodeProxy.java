@@ -62,4 +62,5 @@ public interface NodeProxy {
      * @return the current settings of the node
      */
     JsonNodeSettings getSettings(String version);
+
 }

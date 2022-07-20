@@ -73,4 +73,5 @@ public interface PythonNodeDialogProxy {
      * @return the JSON schema of the parameters
      */
     String getSchema();
+
 }

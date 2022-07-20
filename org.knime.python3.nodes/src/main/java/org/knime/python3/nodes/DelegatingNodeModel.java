@@ -108,6 +108,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
      * @param initialSettings of the node
+     * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts,

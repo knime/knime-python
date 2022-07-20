@@ -70,9 +70,8 @@ from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 import py4j.clientserver
 
-# TODO currently not part of our dependencies but maybe worth adding instead of reimplementing here.
-# TODO an alternative could be the use of tuples since we are only interested in comparability
-from packaging.version import parse
+# to allow Version comparisons
+from utils import parse
 
 LOGGER = logging.getLogger(__name__)
 
@@ -285,9 +284,6 @@ class _PythonNodeProxy:
         parameters_version: str,
         specs: List[_PythonPortObjectSpec],
     ):
-        LOGGER.warning(
-            f"calling 'getDialogRepresentation' with version {parameters_version}"
-        )
 
         self.setParameters(parameters, parameters_version, False)
 
@@ -319,15 +315,12 @@ class _PythonNodeProxy:
     def setParameters(
         self, parameters: str, version: str, fail_on_missing: bool = True
     ) -> None:
-        LOGGER.warning(f"calling 'setParameters' with version {version}")
 
         parameters_dict = json.loads(parameters)
         version = parse(version)
         kp.inject_parameters(self._node, parameters_dict, version, fail_on_missing)
 
     def validateParameters(self, parameters: str, version: str) -> None:
-        LOGGER.warning(f"calling 'validateParameters' with version {version}")
-
         parameters_dict = json.loads(parameters)
         version = parse(version)
         try:

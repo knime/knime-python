@@ -50,6 +50,7 @@ package org.knime.python3.nodes.settings;
 
 import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -64,6 +65,8 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  */
 public final class JsonNodeSettings {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(JsonNodeSettings.class);
+
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
     private final String m_parameters;
@@ -77,12 +80,12 @@ public final class JsonNodeSettings {
      *
      * @param parametersJson JSON containing the parameters
      * @param schema the JSON schema of the parameters
+     * @param version the extension version
      */
     public JsonNodeSettings(final String parametersJson, final String schema, final String version) {
         m_schema = schema;
         m_parameters = parametersJson;
         m_version = version;
-//        m_version = KNIMEConstants.VERSION;
     }
 
     /**

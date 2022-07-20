@@ -397,6 +397,7 @@ final class CloseablePythonNodeProxy
         return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema(), version);
     }
 
+
     @Override
     public int getNumViews() {
         return m_nodeSpec.getNumViews();
