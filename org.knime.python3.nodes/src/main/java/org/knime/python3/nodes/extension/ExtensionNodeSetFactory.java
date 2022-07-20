@@ -178,6 +178,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private int m_numViews;
 
+        private String m_extensionVersion;
+
         @SuppressWarnings("null")
         @Override
         public void loadAdditionalFactorySettings(final ConfigRO config) throws InvalidSettingsException {
@@ -190,9 +192,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_nodeDescription = m_node.getNodeDescription();
             m_nodeFactoryConfig = config;
             m_numViews = m_node.getNumViews();
+            m_extensionVersion = extension.getVersion();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
-            m_dialogSettingsService = new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy);
+            m_dialogSettingsService = new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
             super.loadAdditionalFactorySettings(config);
         }
 
@@ -210,9 +213,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         public DelegatingNodeModel createNodeModel() {
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
-                var initialSettings = proxy.getSettings();
+                var initialSettings = proxy.getSettings(m_extensionVersion);
                 return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
-                    initialSettings);
+                    initialSettings, m_extensionVersion);
             }
         }
 

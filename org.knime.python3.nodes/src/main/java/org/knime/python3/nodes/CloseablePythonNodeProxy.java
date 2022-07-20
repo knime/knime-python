@@ -393,8 +393,8 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public JsonNodeSettings getSettings() {
-        return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema());
+    public JsonNodeSettings getSettings(final String version) {
+        return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema(), version);
     }
 
     @Override

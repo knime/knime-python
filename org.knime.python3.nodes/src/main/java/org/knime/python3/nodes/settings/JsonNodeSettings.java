@@ -50,7 +50,6 @@ package org.knime.python3.nodes.settings;
 
 import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -79,10 +78,11 @@ public final class JsonNodeSettings {
      * @param parametersJson JSON containing the parameters
      * @param schema the JSON schema of the parameters
      */
-    public JsonNodeSettings(final String parametersJson, final String schema) {
+    public JsonNodeSettings(final String parametersJson, final String schema, final String version) {
         m_schema = schema;
         m_parameters = parametersJson;
-        m_version = KNIMEConstants.VERSION;
+        m_version = version;
+//        m_version = KNIMEConstants.VERSION;
     }
 
     /**
@@ -148,7 +148,7 @@ public final class JsonNodeSettings {
      * @return a new instance with the same schema as this instance but the values from the json
      */
     public JsonNodeSettings createFromJson(final String json) {
-        return new JsonNodeSettings(json, m_schema);
+        return new JsonNodeSettings(json, m_schema, m_version);
     }
 
     private static NodeSettings preprocess(final NodeSettingsRO settings) {

@@ -155,6 +155,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         }
 
         @Override
+        public String getVersion() {
+            return m_extension.getVersion();
+        }
+
+        @Override
         public Optional<String> getBundleName() {
             return Optional.ofNullable(m_bundleName);
         }

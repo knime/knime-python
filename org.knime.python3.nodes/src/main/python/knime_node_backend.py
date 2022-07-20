@@ -74,6 +74,8 @@ import py4j.clientserver
 # TODO an alternative could be the use of tuples since we are only interested in comparability
 from packaging.version import parse
 
+LOGGER = logging.getLogger(__name__)
+
 # TODO: register extension types
 
 
@@ -283,6 +285,10 @@ class _PythonNodeProxy:
         parameters_version: str,
         specs: List[_PythonPortObjectSpec],
     ):
+        LOGGER.warning(
+            f"calling 'getDialogRepresentation' with version {parameters_version}"
+        )
+
         self.setParameters(parameters, parameters_version, False)
 
         inputs = self._specs_to_python(specs)
@@ -313,11 +319,15 @@ class _PythonNodeProxy:
     def setParameters(
         self, parameters: str, version: str, fail_on_missing: bool = True
     ) -> None:
+        LOGGER.warning(f"calling 'setParameters' with version {version}")
+
         parameters_dict = json.loads(parameters)
         version = parse(version)
         kp.inject_parameters(self._node, parameters_dict, version, fail_on_missing)
 
     def validateParameters(self, parameters: str, version: str) -> None:
+        LOGGER.warning(f"calling 'validateParameters' with version {version}")
+
         parameters_dict = json.loads(parameters)
         version = parse(version)
         try:

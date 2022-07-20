@@ -104,12 +104,14 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             final var name = (String)map.get("name");
             final var group_id = (String)map.get("group_id");
             final var env_name = group_id.replace('.', '_') + "_" + name;
+            final var version = (String)map.get("version");
             return new StaticExtensionInfo(//
                 name, //
                 group_id, //
                 env_name, //
                 (String)map.get("extension_module"),//
-                path
+                path, //
+                version
             );
         }
     }
@@ -131,7 +133,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_moduleName);
         return new FluentPythonNodeExtension(staticInfo.m_id, staticInfo.m_moduleName,
             parseNodes(nodesJson, staticInfo.m_extensionPath), parseCategories(categoriesJson, staticInfo.m_extensionPath),
-            gatewayFactory);
+            gatewayFactory, staticInfo.m_version);
     }
 
     private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,
@@ -277,15 +279,18 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String m_moduleName;
 
+        private String m_version;
+
         private Path m_modulePath;
 
         private Path m_extensionPath;
 
         StaticExtensionInfo(final String name, final String group_id, final String environmentName,
-            final String extensionModule, final Path extensionPath) {
+            final String extensionModule, final Path extensionPath, final String version) {
             m_id = group_id + "." + name;
             m_environmentName = environmentName;
             m_extensionPath = extensionPath;
+            m_version = version;
             var relativeModulePath = Path.of(extensionModule);
             if (relativeModulePath.getParent() == null) {
                 // the extension module is top level in the extension folder next to the knime.yml

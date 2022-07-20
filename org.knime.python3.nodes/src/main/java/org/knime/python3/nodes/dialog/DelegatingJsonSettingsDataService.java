@@ -72,20 +72,23 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
 
     private JsonNodeSettings m_lastSettings;
 
+    private String m_extensionVersion;
+
     /**
      * Constructor.
      *
      * @param proxyProvider provides proxy objects
      */
-    public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider) {
+    public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider, final String extensionVersion) {
         m_proxyProvider = proxyProvider;
+        m_extensionVersion = extensionVersion;
     }
 
     @Override
     public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
-            m_lastSettings = proxy.getSettings();
+            m_lastSettings = proxy.getSettings(m_extensionVersion);
             var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
             return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars);
         }
@@ -108,7 +111,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     @Override
     public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
-            proxy.getSettings().saveTo(settings.get(SettingsType.MODEL));
+            proxy.getSettings(m_extensionVersion).saveTo(settings.get(SettingsType.MODEL));
         }
     }
 

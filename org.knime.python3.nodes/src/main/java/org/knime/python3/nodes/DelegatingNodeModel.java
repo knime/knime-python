@@ -96,6 +96,8 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     private Optional<Path> m_view;
 
+    private String m_extensionVersion;
+
     private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
 
@@ -109,11 +111,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts,
-        final JsonNodeSettings initialSettings) {
+        final JsonNodeSettings initialSettings,
+        final String extensionVersion) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
         m_view = Optional.empty();
+        m_extensionVersion = extensionVersion;
     }
 
 
@@ -123,7 +127,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
             node.loadValidatedSettings(m_settings);
             var result = node.configure(inSpecs, this, this);
             // allows for auto-configure
-            m_settings = node.getSettings();
+            m_settings = node.getSettings(m_extensionVersion);
             return result;
         });
     }
@@ -137,7 +141,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this, this);
-            m_settings = node.getSettings();
+            m_settings = node.getSettings(m_extensionVersion);
             m_view = result.getView();
             return result.getPortObjects();
         });
@@ -156,13 +160,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            node -> node.validateSettings(node.getSettings().createFromSettings(settings)));
+            node -> node.validateSettings(node.getSettings(m_extensionVersion).createFromSettings(settings)));
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxy(m_proxyProvider::getConfigurationProxy,
-            node -> m_settings = node.getSettings().createFromSettings(settings));
+            node -> m_settings = node.getSettings(m_extensionVersion).createFromSettings(settings));
     }
 
     private interface ThrowingFunction<S, T, X extends Exception> {

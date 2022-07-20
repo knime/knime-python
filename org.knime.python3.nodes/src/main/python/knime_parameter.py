@@ -52,6 +52,10 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
 
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     """
@@ -99,6 +103,7 @@ def inject_parameters(
 def _inject_parameters(
     obj, parameters: dict, version, fail_on_missing: bool = True
 ) -> None:
+    LOGGER.warning(f"Injecting parameters with version {version}")
     for name, parameter in _get_parameters(obj).items():
         if name in parameters:
             # TODO can only set if the parameter was already available in version
@@ -228,11 +233,7 @@ class _BaseParameter(ABC):
     __kind__ = "parameter"
 
     def __init__(
-        self,
-        label,
-        description,
-        default_value,
-        validator=None,
+        self, label, description, default_value, validator=None,
     ):
         self._label = label
         self._default_value = default_value

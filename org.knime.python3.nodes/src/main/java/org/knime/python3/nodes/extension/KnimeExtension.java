@@ -68,6 +68,11 @@ public interface KnimeExtension {
     String getId();
 
     /**
+     * @return version of the extension
+     */
+    String getVersion();
+
+    /**
      * @return the name of the OSGI bundle containing the extension or empty if the extension is not provided via a
      *         bundle
      */

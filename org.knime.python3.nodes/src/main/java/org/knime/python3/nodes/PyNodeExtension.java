@@ -69,6 +69,11 @@ public interface PyNodeExtension {
     String getId();
 
     /**
+     * @return version of the extension
+     */
+    String getVersion();
+
+    /**
      * @return a stream of builders that will build the category declarations defined for the extension. The caller is
      *         supposed to set the pluginId of the extension.
      */

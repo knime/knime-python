@@ -58,7 +58,8 @@ import org.knime.python3.nodes.settings.JsonNodeSettings;
 public interface NodeProxy {
 
     /**
+     * @param version of the Python extension
      * @return the current settings of the node
      */
-    JsonNodeSettings getSettings();
+    JsonNodeSettings getSettings(String version);
 }
