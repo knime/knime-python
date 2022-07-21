@@ -164,7 +164,7 @@ public class Python3KernelBackendProxyTest {
     @Test
     public void testGetObjectType() throws Exception {
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
+            e.putStringIntoOutputObject(0, "foobar");
             var kernelProxy = e.getKernel();
             assertEquals("str", kernelProxy.getOutputObjectType(0));
         });
@@ -173,11 +173,11 @@ public class Python3KernelBackendProxyTest {
     @Test
     public void testGetObjectRepresentation() throws Exception {
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
+            e.putStringIntoOutputObject(0, "foobar");
             var kernelProxy = e.getKernel();
             assertEquals("foobar", kernelProxy.getOutputObjectStringRepresentation(0));
             var veryLongString = Stream.generate(() -> "foobar").limit(500).collect(Collectors.joining());
-            e.putStringIntoWorkspace(1, veryLongString); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
+            e.putStringIntoOutputObject(1, veryLongString);
             var expected = veryLongString.subSequence(0, 996) + "\n...";
             assertEquals(expected, kernelProxy.getOutputObjectStringRepresentation(1));
         });
@@ -188,14 +188,14 @@ public class Python3KernelBackendProxyTest {
         final var file = Files.createTempFile("pickled", "object");
         final var path = file.toAbsolutePath().toString();
         performEntryPointTest(e -> {
-            e.putStringIntoWorkspace(0, "foobar"); // FIXME: this won't work anymore, pickled objects are not directly in the workspace anymore
+            e.putStringIntoOutputObject(0, "foobar");
             e.getKernel().getOutputObject(0, path);
         });
         assertNotEquals(0, Files.size(file));
         performEntryPointTest(e -> {
             var kernel = e.getKernel();
             kernel.setInputObject(1, path);
-            assertEquals("foobar", kernel.getOutputObjectStringRepresentation(1));
+            assertEquals("foobar", e.getStringFromInputObject(1));
         });
     }
 
@@ -271,7 +271,8 @@ public class Python3KernelBackendProxyTest {
 
         Python3KernelBackendProxy getKernel();
 
-        void putStringIntoWorkspace(final int index, final String testString);
+        void putStringIntoOutputObject(final int index, final String testString);
 
+        String getStringFromInputObject(final int index);
     }
 }

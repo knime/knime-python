@@ -53,6 +53,7 @@ from typing import Optional, Union
 from io import BytesIO
 
 import knime_gateway as kg
+import knime_io as kio
 from knime_kernel import PythonKernel
 from knime_testing import PythonTestResult
 
@@ -65,8 +66,12 @@ class Python3KernelBackendProxyTestRunner(kg.EntryPoint):
     def getKernel(self):
         return self._kernel
 
-    def putStringIntoWorkspace(self, index: str, test_string: str):
-        self._kernel._workspace[index] = test_string
+    def putStringIntoOutputObject(self, index: int, test_string: str):
+        self._kernel.setNumExpectedOutputObjects(index + 1)
+        kio.output_objects[index] = test_string
+
+    def getStringFromInputObject(self, index: int):
+        return str(kio.input_objects[index])
 
     def testPutTableIntoWorkspace(self, java_table_data_source):
         suite = unittest.TestSuite(
@@ -89,8 +94,9 @@ class Python3KernelBackendProxyTestRunner(kg.EntryPoint):
         # The output is the content of the buffer
         img_data = buffer.getvalue()
         kernel = PythonKernel()
-        kernel._workspace["img"] = img_data
-        kernel.writeImageToPath("img", path)
+        kernel.setNumExpectedOutputImages(1)
+        kio.output_images[0] = img_data
+        kernel.getOutputImage(0, path)
 
     class Java:
         implements = [
@@ -104,24 +110,17 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
         self._java_table_data_source = java_table_data_source
 
     def testPutTableIntoWorkspace(self):
-        for num_rows in [60, 50]:
-            for sentinel in [None, "min", "max", 123]:
-                with self.subTest(num_rows=num_rows, sentinel=sentinel):
-                    self._testPutTableIntoWorkspace(
-                        self._java_table_data_source, num_rows, sentinel
-                    )
+        for sentinel in [None, "min", "max", 123]:
+            with self.subTest(sentinel=sentinel):
+                self._testPutTableIntoWorkspace(self._java_table_data_source, sentinel)
 
     def _testPutTableIntoWorkspace(
-        self, java_table_data_source, num_rows: int, sentinel: Optional[Union[str, int]]
+        self, java_table_data_source, sentinel: Optional[Union[str, int]]
     ):
         kernel = PythonKernel()
-        variable_name = "my_test_table"
-        assert variable_name not in kernel._workspace
-        kernel.putTableIntoWorkspace(
-            variable_name, java_table_data_source, num_rows, sentinel
-        )
-        assert variable_name in kernel._workspace
-        table = kernel._workspace[variable_name]
+        kernel.setInputTable(0, java_table_data_source)
+        assert kio.input_tables[0] is not None
+        table = kio.input_tables[0].to_pandas(sentinel=sentinel)
         assert table is not None
 
         self.assertEqual(4, len(table.columns))
@@ -144,9 +143,9 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
         else:
             self.assertEqual("int32", table[my_int_col_name].dtype)
             self.assertEqual("int64", table[my_long_col_name].dtype)
-        self.assertEqual("object", table[my_string_col_name].dtype)
+        self.assertEqual("string", table[my_string_col_name].dtype)
 
-        self.assertEqual(num_rows, len(table))
+        self.assertEqual(60, len(table))
         for i, (index, row) in enumerate(table.iterrows()):
             self.assertEqual(f"Row{i}", index)
             my_double = row[my_double_col_idx]
@@ -161,16 +160,16 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
                     self.assertIsNan(my_long)
                 else:
                     if sentinel == "min":
-                        int_sentinel = -(2 ** 31)
-                        long_sentinel = -(2 ** 63)
+                        int_sentinel = -(2**31)
+                        long_sentinel = -(2**63)
                     elif sentinel == "max":
-                        int_sentinel = 2 ** 31 - 1
-                        long_sentinel = 2 ** 63 - 1
+                        int_sentinel = 2**31 - 1
+                        long_sentinel = 2**63 - 1
                     else:
                         int_sentinel = long_sentinel = int(sentinel)
                     self.assertEqual(int_sentinel, my_int)
                     self.assertEqual(long_sentinel, my_long)
-                self.assertEqual(None, my_string)
+                self.assertTrue(pd.isnull(my_string))
             else:
                 self.assertEqual(float(i), my_double)
                 self.assertEqual(i * 2, my_int)
