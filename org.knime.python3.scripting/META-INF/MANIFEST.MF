@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3 - Scripting
 Bundle-SymbolicName: org.knime.python3.scripting;singleton:=true
 Bundle-Version: 4.7.0.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: knime-python3-scripting.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
@@ -23,4 +23,5 @@ Require-Bundle: com.google.guava;bundle-version="[19.0.0,20.0.0)",
  org.knime.python3.types;bundle-version="[4.7.0,5.0.0)"
 Export-Package: org.knime.python3.scripting
 Automatic-Module-Name: org.knime.python3.scripting
+Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j
