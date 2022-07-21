@@ -171,9 +171,9 @@ def extract_parameter_descriptions(obj) -> dict:
                 "options": top_level_options,
             }
             tabs.insert(0, options_tab)
-        return tabs
+        return tabs, True
     else:
-        return descriptions
+        return descriptions, False
 
 
 def _extract_parameter_descriptions(obj, scope: "_Scope"):

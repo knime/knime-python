@@ -51,6 +51,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 from typing import List
 
 from knime_main_loop import MainLoop
+
 import knime_gateway as kg
 import knime_node as kn
 import knime_parameter as kp
@@ -61,7 +62,7 @@ import knime_node_table as kt
 import importlib
 import json
 import logging
-import inspect
+
 import traceback
 import collections
 
@@ -506,6 +507,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
         return json.dumps(category_dicts)
 
     def retrieveNodesAsJson(self, extension_module_name: str) -> str:
+        # NOTE: extract
         importlib.import_module(extension_module_name)
         node_dicts = [self.resolve_node_dict(n) for n in kn._nodes.values()]
         return json.dumps(node_dicts)
@@ -517,38 +519,53 @@ class _KnimeNodeBackend(kg.EntryPoint):
         return {**d, **description}
 
     def extract_description(self, node: kn.PythonNode, name) -> dict:
-        doc = node.__doc__
-        lines = doc.splitlines() if not doc is None else []
-        if len(lines) == 0:
+        node_doc = node.__doc__
+
+        param_doc, tabs_used = kp.extract_parameter_descriptions(node)
+
+        try:
+            from knime_markdown_parser import KnimeMarkdownParser
+
+            knime_parser = KnimeMarkdownParser()
+        except ModuleNotFoundError:
+            knime_parser = FallBackMarkdownParser()
+
+        if node_doc is None:
             logging.warning(
                 f"No docstring available for node {name}. Please document the node class with a docstring or set __doc__ in the init of the node."
             )
-            short_description = ""
-            # The further handling of a not existing or empty doc string is handled on
-            # the Java side in org.knime.python3.nodes.extension.NodeDescriptionBuilder.java
         else:
-            short_description = lines[0]
-        if len(lines) > 1:
-            full_description = "\n".join(lines[1:])
-        else:
-            full_description = short_description
-
-        param_doc = kp.extract_parameter_descriptions(node)
-        options = []
-        tabs = []
-        for doc in param_doc:
-            if "options" in doc:
-                tabs.append(doc)
+            split_description = node_doc.splitlines()
+            short_description = split_description[0]
+            if len(split_description) > 1:
+                full_description = "\n".join(split_description[1:])
+                full_description = knime_parser.parse_fulldescription(full_description)
             else:
-                options.append(doc)
-        # TODO support for tabs
-        # TODO support for ports
-        # TODO support for views
+                full_description = "Missing description."
+
+        # Check short description
+        if not len(short_description):
+            logging.warning(
+                f"No short description available. Create it by placing text right next to starting docstrings."
+            )
+
+        if tabs_used:
+            tabs = knime_parser.parse_tabs(param_doc)
+            options = []
+        else:
+            options = knime_parser.parse_options(param_doc)
+            tabs = []
+
+        input_ports = knime_parser.parse_ports(node.input_ports)
+        output_ports = knime_parser.parse_ports(node.output_ports)
+
         return {
             "short_description": short_description,
             "full_description": full_description,
             "options": options,
             "tabs": tabs,
+            "input_ports": input_ports,
+            "output_ports": output_ports,
         }
 
     def createNodeFromExtension(
@@ -587,6 +604,30 @@ class KnimeLogHandler(logging.StreamHandler):
                 severity = "debug"
 
             _log_callback(msg, severity)
+
+
+class FallBackMarkdownParser:
+    """
+    Is used when markdown is not imported.
+    """
+
+    def __init__(self):
+        pass
+
+    def parse_fulldescription(self, s):
+        return s
+
+    def parse_basic(self, s):
+        return s
+
+    def parse_ports(self, ports):
+        return [{"name": port.name, "description": port.description} for port in ports]
+
+    def parse_options(self, options):
+        return options
+
+    def parse_tabs(self, tabs):
+        return tabs
 
 
 _log_callback = None

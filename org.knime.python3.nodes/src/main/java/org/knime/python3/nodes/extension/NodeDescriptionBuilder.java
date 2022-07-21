@@ -48,20 +48,28 @@
  */
 package org.knime.python3.nodes.extension;
 
-import java.math.BigInteger;
+import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.xmlbeans.XmlException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDescription41Proxy;
 import org.knime.core.node.NodeLogger;
-import org.knime.node.v41.ExtendedDescription;
-import org.knime.node.v41.Intro;
-import org.knime.node.v41.KnimeNodeDocument;
 import org.knime.node.v41.NodeType;
-import org.knime.node.v41.Views;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  * A builder for {@link NodeDescription NodeDescriptions}.
@@ -70,15 +78,17 @@ import org.knime.node.v41.Views;
  */
 public final class NodeDescriptionBuilder {
 
-    private final String m_name;
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(NodeDescriptionBuilder.class);
 
-    private final NodeType.Enum m_nodeType;
+    private final String m_name;
 
     private Path m_iconPath;
 
     private String m_shortDescription = "";
 
     private String m_intro = "";
+
+    private final String m_nodeType;
 
     private final List<Port> m_inputPorts = new ArrayList<>();
 
@@ -98,61 +108,157 @@ public final class NodeDescriptionBuilder {
      */
     public NodeDescriptionBuilder(final String name, final String nodeType) {
         m_name = name;
-        m_nodeType = NodeType.Enum.forString(nodeType);
+        // will complain if nodeType is not a valid NodeType
+        NodeType.Enum.forString(nodeType);
+        m_nodeType = nodeType;
     }
 
     /**
      * @return the NodeDescription
      */
     public NodeDescription build() {
-        var doc = KnimeNodeDocument.Factory.newInstance();
-        var node = doc.addNewKnimeNode();
-        node.setName(m_name);
-        node.setType(m_nodeType);
-        if (m_iconPath != null) {
-            node.setIcon(m_iconPath.toAbsolutePath().toString());
+
+        var fac = NodeDescription.getDocumentBuilderFactory();
+
+        DocumentBuilder docBuilder = createDocBuilder(fac);
+
+        // create Document for Node
+        var doc = docBuilder.newDocument();
+
+        var buildHelper = new BuildHelper(docBuilder, doc);
+
+        var node = doc.createElement("knimeNode");
+
+        node.setAttribute("icon", m_iconPath.toAbsolutePath().toString());
+        node.setAttribute("type", m_nodeType);
+        var name = doc.createElement("name");
+        name.setTextContent(m_name);
+        node.appendChild(name);
+
+
+        // short description
+        var shortDesc = doc.createElement("shortDescription");
+        shortDesc.appendChild(buildHelper.parseDocumentFragment(getShortDescription()));
+        node.appendChild(shortDesc);
+
+        // intro
+        var fullDesc  = doc.createElement("fullDescription");
+        var intro = doc.createElement("intro");
+        intro.appendChild(buildHelper.parseDocumentFragment(getIntro()));
+        fullDesc.appendChild(intro);
+        node.appendChild(fullDesc);
+
+        // tabs
+        for (var tab : m_tabs) {
+            var tabDesc = doc.createElement("tab");
+            tabDesc.setAttribute("name", tab.getName());
+            var description = doc.createElement("description");
+            description.appendChild(buildHelper.parseDocumentFragment(tab.getDescription()));
+            for (var option : tab.m_options) {
+                tabDesc.appendChild(buildHelper.createOptionElement(option));
+            }
+            fullDesc.appendChild(tabDesc);
         }
 
-        node.setShortDescription(getShortDescription());
+        // options
+        for (var option : m_topLevelOptions) {
+            fullDesc.appendChild(buildHelper.createOptionElement(option));
+        }
 
-        var fullDescription = node.addNewFullDescription();
-
-        addDescription(fullDescription.addNewIntro(), getIntro());
-
-        m_topLevelOptions.forEach(o -> o.fill(fullDescription.addNewOption()));
-
-        m_tabs.forEach(t -> t.fill(fullDescription.addNewTab()));
-
+        // create ports
         // NOTE:
         // We always need the "ports" element even if there are no ports.
         // Otherwise the XML validation will fail.
-        var ports = node.addNewPorts();
-        int inputIdx = 0;// NOSONAR
-        for (var inPort : m_inputPorts) {
-            inPort.fill(ports.addNewInPort(), inputIdx);
-            inputIdx++;
-        }
-        int outputIdx = 0;// NOSONAR
-        for (var outPort : m_outputPorts) {
-            outPort.fill(ports.addNewOutPort(), outputIdx);
-            outputIdx++;
-        }
+        var ports = doc.createElement("ports");
+        buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
+        buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
+        node.appendChild(ports);
+        //var option = doc.createElement("option");
+        //option.setAttribute("name", "title");
+        //doc.appendChild(option);
 
         if (!m_views.isEmpty()) {
-            final Views views = node.addNewViews();
-            for (int i = 0; i < m_views.size(); i++) {
-                final View view = m_views.get(i);
-                view.fill(views.addNewView(), i);
-            }
+            var views = doc.createElement("views");
+            buildHelper.createElements("view", m_views).forEach(views::appendChild);
+            node.appendChild(views);
         }
 
-        return new NodeDescription41Proxy(doc);
+        doc.appendChild(node);
+
+        try {
+            return new NodeDescription41Proxy(doc);
+        } catch (XmlException e) {
+            // should never happen
+            throw new IllegalStateException("Problem creating node description", e);
+        }
+
+    }
+
+    private static final class BuildHelper {
+
+        private final DocumentBuilder m_docBuilder;
+
+        private final Document m_doc;
+
+        BuildHelper(final DocumentBuilder docBuilder, final Document doc) {
+            m_docBuilder = docBuilder;
+            m_doc = doc;
+        }
+
+        Stream<Element> createElements(final String elementType, final List<? extends Described> describeds) {
+            return IntStream.range(0, describeds.size())//
+                    .mapToObj(i -> createIndexedDescribed(elementType, describeds.get(i), i));
+        }
+
+        Element createIndexedDescribed(final String elementType, final Described described, final int idx) {
+            var element = createDescribed(elementType, described);
+            element.setAttribute("index", Integer.toString(idx));
+            return element;
+        }
+
+        Element createOptionElement(final Option option) {
+            return createDescribed("option", option);
+        }
+
+        Element createDescribed(final String elementType, final Described described) {
+            var element = m_doc.createElement(elementType);
+            element.setAttribute("name", described.getName());
+            element.appendChild(parseDocumentFragment(described.getDescription()));
+            return element;
+        }
+
+        private DocumentFragment parseDocumentFragment(final String s) {
+            var wrapped = "<fragment>" + s + "</fragment>";
+            Document parsed;
+            try {
+                parsed = m_docBuilder.parse(new InputSource(new StringReader(wrapped)));
+            } catch (SAXException | IOException e) {
+                // should never happen
+                throw new IllegalStateException("Problem creating node description", e);
+            }
+            var fragment = m_doc.createDocumentFragment();
+            var children = parsed.getDocumentElement().getChildNodes();
+            for (var i = 0; i < children.getLength(); i++) {
+                var child = m_doc.importNode(children.item(i), true);
+                fragment.appendChild(child);
+            }
+            return fragment;
+        }
+    }
+
+
+    private static DocumentBuilder createDocBuilder(final DocumentBuilderFactory fac) {
+        try {
+            return fac.newDocumentBuilder(); //NOSONAR
+        } catch (ParserConfigurationException e) {
+            // should never happen
+            throw new IllegalStateException("Problem creating node description", e);
+        }
     }
 
     private String getIntro() {
         if (m_intro.isBlank()) {
-            NodeLogger.getLogger(NodeDescriptionBuilder.class)
-                .codingWithFormat("Please provide an intro for the node %s.", m_name);
+            LOGGER.codingWithFormat("Please provide an intro for the node %s.", m_name);
             return m_name;
 
         } else {
@@ -162,43 +268,13 @@ public final class NodeDescriptionBuilder {
 
     private String getShortDescription() {
         if (m_shortDescription.isBlank()) {
-            NodeLogger.getLogger(NodeDescriptionBuilder.class)
-                .codingWithFormat("Please provide a short description for the node %s.", m_name);
+            LOGGER.codingWithFormat("Please provide a short description for the node %s.", m_name);
             return m_name;
         } else {
             return m_shortDescription;
         }
     }
 
-    /** Call {@link #addDescription(String, Consumer, Consumer)} for {@link ExtendedDescription} */
-    private static void addDescription(final ExtendedDescription o, final String description) {
-        addDescription(description, p -> o.newCursor().setTextValue(p), p -> o.addNewP().newCursor().setTextValue(p));
-    }
-
-    /** Call {@link #addDescription(String, Consumer, Consumer)} for {@link Intro} */
-    private static void addDescription(final Intro o, final String description) {
-        addDescription(description, p -> o.newCursor().setTextValue(p), p -> o.addNewP().newCursor().setTextValue(p));
-    }
-
-    /**
-     * Add the description string to the XML object. The description must not be empty but might consist of multiple
-     * paragraphs separated by two new lines. The first paragraph is added directly to the XML element while all other
-     * paragraphs are added inside a &lt;p&gt; tag.
-     */
-    private static void addDescription(final String description, final Consumer<String> addFirstParagraph,
-        final Consumer<String> addOtherParagraphs) {
-        if (description != null) {
-            final String[] paragraphs = description.strip().split("\n\n");
-
-            // NB: String#split never returns an empty list
-            addFirstParagraph.accept(paragraphs[0]);
-            for (int i = 1; i < paragraphs.length; i++) {
-                if (!paragraphs[i].isBlank()) {
-                    addOtherParagraphs.accept(paragraphs[i]);
-                }
-            }
-        }
-    }
 
     /**
      * Sets a new icon.
@@ -316,12 +392,6 @@ public final class NodeDescriptionBuilder {
         Port(final String name, final String description) {
             super(name, description);
         }
-
-        private void fill(final org.knime.node.v41.Port port, final int inputIdx) {
-            port.setIndex(BigInteger.valueOf(inputIdx));
-            port.setName(getName());
-            addDescription(port, getDescription());
-        }
     }
 
     /**
@@ -347,17 +417,6 @@ public final class NodeDescriptionBuilder {
          */
         public static Builder builder(final String name, final String description) {
             return new Builder(name, description);
-        }
-
-        private void fill(final org.knime.node.v41.Tab tab) {
-            tab.setName(getName());
-            // FIXME: Respect new lines when adding the description
-            // Note, that #addDescription does not work because here we have no
-            // ExtendedDescription and cannot use <p>
-            tab.addNewDescription().newCursor().setTextValue(getDescription());
-            for (var option : m_options) {
-                option.fill(tab.addNewOption());
-            }
         }
 
         /**
@@ -400,23 +459,12 @@ public final class NodeDescriptionBuilder {
         Option(final String name, final String description) {
             super(name, description);
         }
-
-        void fill(final org.knime.node.v41.Option option) {
-            option.setName(getName());
-            addDescription(option, getDescription());
-        }
     }
 
     private static final class View extends Described {
 
         View(final String name, final String description) {
             super(name, description);
-        }
-
-        private void fill(final org.knime.node.v41.View view, final int viewIdx) {
-            view.setName(getName());
-            view.setIndex(BigInteger.valueOf(viewIdx));
-            addDescription(view, getDescription());
         }
     }
 
