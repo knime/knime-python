@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3 - Nodes
 Bundle-SymbolicName: org.knime.python3.nodes;singleton:=true
 Bundle-Version: 4.6.1.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: knime-python3-nodes.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
@@ -29,4 +29,5 @@ Require-Bundle:
  org.knime.python3.views;bundle-version="[4.6.0,5.0.0)"
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
+Eclipse-BundleShape: dir
 Bundle-Activator: org.knime.python3.nodes.Activator

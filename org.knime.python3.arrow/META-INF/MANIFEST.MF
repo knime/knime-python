@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python - Data Transfer using Apache Arrow
 Bundle-SymbolicName: org.knime.python3.arrow;singleton:=true
 Bundle-Version: 4.6.1.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: knime-python3-arrow.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
@@ -23,5 +23,6 @@ Require-Bundle: org.knime.python3;bundle-version="[4.5.0,5.0.0)",
  com.google.guava;bundle-version="[19.0.0,20.0.0)"
 Export-Package: org.knime.python3.arrow
 Automatic-Module-Name: org.knime.python3.arrow
+Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-ExtensibleAPI: true

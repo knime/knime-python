@@ -2,8 +2,8 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python - Extension types for Apache Arrow
 Bundle-SymbolicName: org.knime.python3.arrow.types;singleton:=true
-Bundle-Version: 4.6.0.qualifier
-Bundle-ClassPath: .
+Bundle-Version: 4.6.1.qualifier
+Bundle-ClassPath: knime-python3-arrow-types.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
@@ -16,4 +16,5 @@ Require-Bundle: org.knime.filehandling.core;bundle-version="[4.5.0,5.0.0)",
  org.knime.time;bundle-version="[4.5.0,5.0.0)"
 Export-Package: org.knime.python3.arrow.types
 Automatic-Module-Name: org.knime.python3.arrow.types
+Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j

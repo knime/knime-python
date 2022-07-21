@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3
 Bundle-SymbolicName: org.knime.python3;singleton:=true
 Bundle-Version: 4.6.1.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: knime-python3.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
@@ -20,4 +20,5 @@ Export-Package: org.knime.python3,
 Automatic-Module-Name: org.knime.python3
 Eclipse-ExtensibleAPI: true
 Eclipse-RegisterBuddy: org.knime.ext.py4j
+Eclipse-BundleShape: dir
 Bundle-Activator: org.knime.python3.Activator
