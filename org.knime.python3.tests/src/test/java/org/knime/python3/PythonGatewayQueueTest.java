@@ -114,12 +114,21 @@ public final class PythonGatewayQueueTest {
      */
     @Test
     public void testTakeGatewayFromQueueTwiceWithoutWaiting() throws IOException, InterruptedException {
-        assertEquals(0, m_queue.getNumQueuedGateways(DESCRIPTION_0));
-        takeGatewayAndClose(DESCRIPTION_0);
-        takeGatewayAndClose(DESCRIPTION_0);
-        m_gatewayFactory.waitForNumCreatedGateways(4);
-        assertNumQueuedGateways(2, DESCRIPTION_0);
-        closeQueue(4);
+        // This ensures that creating a gateway asynchronously takes longer than in the test thread
+        // Thus it is guaranteed that the second take is executed before the asynchronous creation triggered by the
+        // first get is completed.
+        m_gatewayFactory.setTestThread(Thread.currentThread());
+        try {
+            assertEquals(0, m_queue.getNumQueuedGateways(DESCRIPTION_0));
+            takeGatewayAndClose(DESCRIPTION_0);
+            takeGatewayAndClose(DESCRIPTION_0);
+            m_gatewayFactory.waitForNumCreatedGateways(4);
+            assertNumQueuedGateways(2, DESCRIPTION_0);
+            closeQueue(4);
+        } finally {
+            // no other test requires a faster synchronous than asynchronous creation
+            m_gatewayFactory.setTestThread(null);
+        }
     }
 
     /**
@@ -227,6 +236,8 @@ public final class PythonGatewayQueueTest {
 
     private static final class TestPythonGatewayFactory implements PythonGatewayFactory {
 
+        private static final int CREATION_DELAY_IN_MILLIS = 500;
+
         private int m_numActiveGateways = 0;
 
         private int m_numCreatedGateways = 0;
@@ -235,15 +246,27 @@ public final class PythonGatewayQueueTest {
 
         private final Condition m_numGatewaysChanged = m_numGatewaysLock.newCondition();
 
+        private Thread m_testThread;
+
+
         @Override
         public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
             throws IOException, InterruptedException {
+            if (m_testThread != Thread.currentThread()) {
+                // queue threads have to wait longer than the test thread
+                Thread.sleep(CREATION_DELAY_IN_MILLIS);
+            }
             @SuppressWarnings({"resource", "unchecked"})
             final PythonGateway<E> casted =
                 (PythonGateway<E>)new TestPythonGateway((PythonGatewayDescription<PythonEntryPoint>)description, this);
             gatewayCreated();
             return casted;
         }
+
+        void setTestThread(final Thread thread) {
+            m_testThread = thread;
+        }
+
 
         public int getNumActiveGateways() {
             m_numGatewaysLock.lock();
@@ -302,7 +325,7 @@ public final class PythonGatewayQueueTest {
                     throw new IllegalArgumentException(numCreatedGateways + " vs " + m_numCreatedGateways);
                 }
                 while (m_numCreatedGateways != numCreatedGateways) {
-                    if (!m_numGatewaysChanged.await(10l * TestPythonGateway.CREATION_DELAY_IN_MILLIS,
+                    if (!m_numGatewaysChanged.await(10l * CREATION_DELAY_IN_MILLIS,
                         TimeUnit.MILLISECONDS)) {
                         throw new AssertionError("Queue failed to produce gateway in time: expected="
                             + numCreatedGateways + " vs actual=" + m_numCreatedGateways);
@@ -316,8 +339,6 @@ public final class PythonGatewayQueueTest {
 
     private static final class TestPythonGateway implements PythonGateway<PythonEntryPoint> {
 
-        private static final int CREATION_DELAY_IN_MILLIS = 500;
-
         private final PythonGatewayDescription<PythonEntryPoint> m_description;
 
         private final TestPythonGatewayFactory m_factory;
@@ -326,7 +347,6 @@ public final class PythonGatewayQueueTest {
             final TestPythonGatewayFactory factory) throws InterruptedException {
             m_description = description;
             m_factory = factory;
-            Thread.sleep(CREATION_DELAY_IN_MILLIS);
         }
 
         @Override
