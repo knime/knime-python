@@ -306,7 +306,11 @@ class _PythonNodeProxy:
         parameters_dict = kp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
-    def getSchema(self, specs: List[str] = None) -> str:
+    def getSchema(self, version=None, specs: List[str] = None) -> str:
+        LOGGER.warning(f"getSchema called with version {version}")
+
+        if version is not None:
+            v = parse(version)
         if specs is not None:
             specs = self._specs_to_python(specs)
         schema = kp.extract_schema(self._node, specs)

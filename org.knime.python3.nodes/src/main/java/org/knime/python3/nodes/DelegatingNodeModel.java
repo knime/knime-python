@@ -79,6 +79,7 @@ import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
+import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
 
 /**
@@ -167,7 +168,8 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxy(m_proxyProvider::getConfigurationProxy,
-            node -> m_settings = node.getSettings(m_extensionVersion).createFromSettings(settings));
+//            node -> m_settings = node.getSettings(m_extensionVersion).createFromSettings(settings));
+            node -> m_settings = node.getSettingsSchema(JsonNodeSettingsSchema.readVersion(settings)).createFromSettings(settings));
     }
 
     private interface ThrowingFunction<S, T, X extends Exception> {

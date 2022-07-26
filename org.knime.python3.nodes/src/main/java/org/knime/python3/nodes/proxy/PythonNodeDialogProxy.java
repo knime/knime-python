@@ -70,6 +70,12 @@ public interface PythonNodeDialogProxy {
     String getParameters();
 
     /**
+     * @param version the saved settings version
+     * @return the JSON schema of the parameters
+     */
+    String getSchema(String version);
+
+    /**
      * @return the JSON schema of the parameters
      */
     String getSchema();

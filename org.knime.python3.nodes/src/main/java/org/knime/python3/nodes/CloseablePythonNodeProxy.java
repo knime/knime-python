@@ -94,6 +94,7 @@ import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
+import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
 
@@ -395,6 +396,11 @@ final class CloseablePythonNodeProxy
     @Override
     public JsonNodeSettings getSettings(final String version) {
         return new JsonNodeSettings(m_proxy.getParameters(), m_proxy.getSchema(), version);
+    }
+
+    @Override
+    public JsonNodeSettingsSchema getSettingsSchema(final String version) {
+        return new JsonNodeSettingsSchema(m_proxy.getSchema(version), version);
     }
 
 

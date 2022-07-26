@@ -48,89 +48,44 @@
  */
 package org.knime.python3.nodes.settings;
 
-import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 
 /**
- * Represents node settings that are created as JSON and stored as NodeSettings.</br>
- * The settings consist of the actual parameters of the node as well as the version of AP the settings were created
- * with.
+ * Used to create {@link JsonNodeSettings} objects using the provided schema and saved settings.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
-public final class JsonNodeSettings {
+public final class JsonNodeSettingsSchema {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JsonNodeSettings.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(JsonNodeSettingsSchema.class);
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
-    private final String m_parameters;
+    private final String m_schema;
 
     private final String m_version;
-
-    private final String m_schema;
 
     /**
      * Constructor.
      *
-     * @param parametersJson JSON containing the parameters
      * @param schema the JSON schema of the parameters
      * @param version the extension version
      */
-    public JsonNodeSettings(final String parametersJson, final String schema, final String version) {
+    public JsonNodeSettingsSchema(final String schema, final String version) {
         m_schema = schema;
-        m_parameters = parametersJson;
         m_version = version;
     }
 
     /**
-     * Constructor that creates a new instance from a {@link NodeSettingsRO} object and a schema.
-     *
-     * @param settings containing the stored settings
-     * @param schema of the settings
-     * @throws InvalidSettingsException if the settings are invalid
+     * @param settings the saved node settings
+     * @return the version the settings were saved with
+     * @throws InvalidSettingsException if settings are missing the version field
      */
-    public JsonNodeSettings(final NodeSettingsRO settings, final String schema) throws InvalidSettingsException {
-        m_schema = schema;
-        var preprocessed = preprocess(settings);
-        m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
-        m_version = settings.getString(CFG_VERSION);
-    }
-
-    /**
-     * @return JSON string containing the parameters
-     */
-    public String getParameters() {
-        return m_parameters;
-    }
-
-    /**
-     * @return the version with which the settings were created
-     */
-    public String getCreationVersion() {
-        return m_version;
-    }
-
-    /**
-     * Saves the settings including their creation version.
-     *
-     * @param settings to save to
-     */
-    public void saveTo(final NodeSettingsWO settings) {
-        var tempSettings = new NodeSettings("temp");
-        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, tempSettings);
-        try {
-            var modelSettings = tempSettings.getNodeSettings("model");
-            modelSettings.copyTo(settings);
-        } catch (InvalidSettingsException ex) {
-            throw new IllegalStateException("Parameter conversion did not add model settings.", ex);
-        }
-        settings.addString(CFG_VERSION, m_version);
+    public static String readVersion(final NodeSettingsRO settings) throws InvalidSettingsException {
+        return settings.getString(CFG_VERSION);
     }
 
     /**
@@ -154,33 +109,5 @@ public final class JsonNodeSettings {
         return new JsonNodeSettings(json, m_schema, m_version);
     }
 
-    private static NodeSettings preprocess(final NodeSettingsRO settings) {
-        var settingsWithoutVersion = settingsWithoutVersion(toNodeSettings(settings));
-        var tmpSettings = new NodeSettings("temp");
-        var modelSettings = tmpSettings.addNodeSettings("model");
-        settingsWithoutVersion.copyTo(modelSettings);
-        return tmpSettings;
-    }
-
-    private static NodeSettings settingsWithoutVersion(final NodeSettings settingsWithVersion) {
-        var settingsWithoutVersion = new NodeSettings(settingsWithVersion.getKey());
-        for (var key : settingsWithVersion) {
-            if (!CFG_VERSION.equals(key)) {
-                var entry = settingsWithVersion.getEntry(key);
-                settingsWithoutVersion.addEntry(entry);
-            }
-        }
-        return settingsWithoutVersion;
-    }
-
-    private static NodeSettings toNodeSettings(final NodeSettingsRO settings) {
-        if (settings instanceof NodeSettings) {
-            return (NodeSettings)settings;
-        } else {
-            var newSettings = new NodeSettings(settings.getKey());
-            settings.copyTo(newSettings);
-            return newSettings;
-        }
-    }
 
 }

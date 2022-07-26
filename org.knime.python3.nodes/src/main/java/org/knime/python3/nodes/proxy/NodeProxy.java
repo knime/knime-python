@@ -49,6 +49,7 @@
 package org.knime.python3.nodes.proxy;
 
 import org.knime.python3.nodes.settings.JsonNodeSettings;
+import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 
 /**
  * Proxy for a node.
@@ -62,5 +63,12 @@ public interface NodeProxy {
      * @return the current settings of the node
      */
     JsonNodeSettings getSettings(String version);
+
+    /**
+     *
+     * @param version
+     * @return the node schema for the current extension version
+     */
+    JsonNodeSettingsSchema getSettingsSchema(String version);
 
 }
