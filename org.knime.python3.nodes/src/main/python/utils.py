@@ -15,6 +15,9 @@ def parse(s):
     if s is None:
         return Version("0", "0", "0")
 
+    if type(s) is Version:
+        return s
+
     try:
         major, minor, patch = s.split(".")
         return Version(major, minor, patch)

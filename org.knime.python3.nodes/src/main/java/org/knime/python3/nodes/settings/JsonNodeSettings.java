@@ -122,6 +122,10 @@ public final class JsonNodeSettings {
      * @param settings to save to
      */
     public void saveTo(final NodeSettingsWO settings) {
+        LOGGER.info("Attempting to save settings.");
+        LOGGER.info("Parameters are: " + m_parameters);
+        LOGGER.info("Schema is: " + m_schema);
+        LOGGER.info("Version is: " + m_version);
         var tempSettings = new NodeSettings("temp");
         JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, tempSettings);
         try {

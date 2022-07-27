@@ -55,7 +55,8 @@ from utils import parse
 
 import logging
 
-LOGGER = logging.getLogger(__name__)
+# LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("Python")
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -75,18 +76,19 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj, for_dialog=False) -> dict:
+def extract_parameters(obj, for_dialog=False, version=None) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
-    return {"model": _extract_parameters(obj, for_dialog)}
+    return {"model": _extract_parameters(obj, for_dialog, version)}
 
 
-def _extract_parameters(obj, for_dialog=False) -> dict:
+def _extract_parameters(obj, for_dialog=False, version=None) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
-        result[name] = param_obj._get_value(obj, for_dialog)
+        if param_obj._since_version <= version:
+            result[name] = param_obj._get_value(obj, for_dialog)
     return result
 
 
@@ -96,20 +98,29 @@ def _is_group(param):
 
 # TODO version support
 def inject_parameters(
-    obj, parameters: dict, version, fail_on_missing: bool = True
+    obj, parameters: dict, extension_version, fail_on_missing: bool = True
 ) -> None:
-    _inject_parameters(obj, parameters["model"], version, fail_on_missing)
+    _inject_parameters(obj, parameters["model"], extension_version, fail_on_missing)
 
 
 def _inject_parameters(
-    obj, parameters: dict, version, fail_on_missing: bool = True
+    obj, parameters: dict, extension_version, fail_on_missing: bool = True
 ) -> None:
+    extension_version = parse(extension_version)
     for name, parameter in _get_parameters(obj).items():
         if name in parameters:
-            # TODO can only set if the parameter was already available in version
-            parameter._inject(obj, parameters[name], version, fail_on_missing)
-        elif fail_on_missing and parameter._since_version <= version:
+            # param is in loaded settings
+            parameter._inject(obj, parameters[name], fail_on_missing)
+        elif fail_on_missing and parameter._since_version <= extension_version:
             raise ValueError(f"No value available for parameter {name}")
+        else:
+            # param is a newly added parameter
+            if parameter._since_version <= extension_version:
+                parameter._inject(obj, parameter._default_value, fail_on_missing)
+            else:
+                LOGGER.warning(
+                    f" >>> >>> Parameter '{name}' not found in saved settings and is incompatible with extension version, skipping injection..."
+                )
 
 
 # TODO version support
@@ -123,7 +134,12 @@ def validate_parameters(obj, parameters: dict, version=None) -> str:
 def _validate_parameters(obj, parameters: dict, version=None) -> str:
     for name, param in _get_parameters(obj).items():
         # TODO test if that also works for parameter groups
-        param._validate(parameters[name], version)
+        if name in parameters:
+            param._validate(parameters[name], version)
+        else:
+            LOGGER.warning(
+                f" >>> >>> Parameter '{name}' not found in saved settings, skipping validation..."
+            )
 
 
 def validate_specs(obj, specs) -> None:
@@ -134,25 +150,43 @@ def validate_specs(obj, specs) -> None:
         param._validate_specs(specs)
 
 
-def extract_schema(obj, specs=None) -> dict:
-    return {"type": "object", "properties": {"model": _extract_schema(obj, specs)}}
-
-
-def _extract_schema(obj, specs=None):
-    properties = {
-        name: param._extract_schema(specs)
-        for name, param in _get_parameters(obj).items()
+def extract_schema(obj, version=None, specs=None) -> dict:
+    return {
+        "type": "object",
+        "properties": {"model": _extract_schema(obj, version, specs)},
     }
+
+
+def _extract_schema(obj, version=None, specs=None):
+    if version is not None:
+        properties = {
+            name: param._extract_schema(specs)
+            for name, param in _get_parameters(obj).items()
+            if param._since_version <= version
+        }
+    else:
+        properties = {
+            name: param._extract_schema(specs)
+            for name, param in _get_parameters(obj).items()
+        }
     return {"type": "object", "properties": properties}
 
 
-def extract_ui_schema(obj) -> dict:
+def extract_ui_schema(obj, version=None) -> dict:
     # TODO discuss with UIEXT if we can unpack the dicts
-    elements = [
-        # name is provided for parameter_groups that are held as instance variables
-        param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
-        for name, param in _get_parameters(obj).items()
-    ]
+    if version is not None:
+        elements = [
+            # name is provided for parameter_groups that are held as instance variables
+            param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
+            for name, param in _get_parameters(obj).items()
+            if param._since_version <= version
+        ]
+    else:
+        elements = [
+            # name is provided for parameter_groups that are held as instance variables
+            param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
+            for name, param in _get_parameters(obj).items()
+        ]
     return {"type": "VerticalLayout", "elements": elements}
 
 
@@ -239,7 +273,9 @@ class _BaseParameter(ABC):
         self._default_value = default_value
         self._validator = validator if validator is not None else _default_validator
         self.__doc__ = description if description is not None else ""
-        self._since_version = parse(since_version)
+        self._since_version = (
+            parse(since_version) if since_version is not None else None
+        )
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -260,7 +296,7 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value, version, fail_on_missing=True):
+    def _inject(self, obj, value, fail_on_missing=True):
         # TODO only set if the parameter was available in the version
         self.__set__(obj, value)
 

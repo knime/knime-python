@@ -95,6 +95,8 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
 
     private JsonNodeSettings m_settings;
 
+    private JsonNodeSettingsSchema m_settingsSchema;
+
     private Optional<Path> m_view;
 
     private String m_extensionVersion;
@@ -108,16 +110,19 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
      * @param proxyProvider provides the proxies for delegation
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
-     * @param initialSettings of the node
+     * @param initialSettingsSchema of the node
+     * @param initialSettings
      * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts,
+        final JsonNodeSettingsSchema initialSettingsSchema,
         final JsonNodeSettings initialSettings,
         final String extensionVersion) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
+        m_settingsSchema = initialSettingsSchema;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
     }

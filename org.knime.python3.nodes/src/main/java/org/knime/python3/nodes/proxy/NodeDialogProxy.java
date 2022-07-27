@@ -63,6 +63,6 @@ public interface NodeDialogProxy extends NodeProxy, AsynchronousCloseable<Runtim
      * @param specs input specs
      * @return the representation of the dialog e.g. JSON Forms
      */
-    String getDialogRepresentation(JsonNodeSettings settings, PortObjectSpec[] specs);
+    String getDialogRepresentation(JsonNodeSettings settings, PortObjectSpec[] specs, String extensionVersion);
 
 }

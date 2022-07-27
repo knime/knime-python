@@ -71,9 +71,10 @@ from py4j.java_collections import ListConverter
 import py4j.clientserver
 
 # to allow Version comparisons
-from utils import parse
+from utils import parse, Version
 
-LOGGER = logging.getLogger(__name__)
+# LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("Python")
 
 # TODO: register extension types
 
@@ -283,17 +284,35 @@ class _PythonNodeProxy:
         parameters: str,
         parameters_version: str,
         specs: List[_PythonPortObjectSpec],
+        extension_version: str,
     ):
+        # import debugpy
 
-        self.setParameters(parameters, parameters_version, False)
+        # debugpy.listen(5678)
+        # print("Waiting for debugger attach")
+        # debugpy.wait_for_client()
+        # debugpy.breakpoint()
+
+        LOGGER.warning(
+            f" >>> getDialogRepresentation | parameters: {json.loads(parameters)} | parameter version: {parameters_version} | extension version: {extension_version}"
+        )
+
+        parameters_version = parse(parameters_version)
+        extension_version = parse(extension_version)
+        self.setParameters(parameters, extension_version, False)
 
         inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
-            "data": kp.extract_parameters(self._node, for_dialog=True),
-            "schema": kp.extract_schema(self._node, inputs),
-            "ui_schema": kp.extract_ui_schema(self._node),
+            "data": kp.extract_parameters(
+                self._node, for_dialog=True, version=parameters_version
+            ),
+            "schema": kp.extract_schema(self._node, parameters_version, inputs),
+            "ui_schema": kp.extract_ui_schema(self._node, version=parameters_version),
         }
+        LOGGER.warning(
+            f" >>> getDialogRepresentation | dumping the following for json forms: {json_forms_dict}"
+        )
         return json.dumps(json_forms_dict)
 
     def _specs_to_python(self, specs):
@@ -302,31 +321,46 @@ class _PythonNodeProxy:
             for port, spec in zip(self._node.input_ports, specs)
         ]
 
-    def getParameters(self) -> str:
-        parameters_dict = kp.extract_parameters(self._node)
+    def getParameters(self, version=None) -> str:
+        version = parse(version)
+        # LOGGER.warning(f" >>> getParameters before extraction | version: {version}")
+        parameters_dict = kp.extract_parameters(self._node, version=version)
+        LOGGER.warning(
+            f" >>> getParameters | version: {version} | dumping the following for json: {parameters_dict}"
+        )
         return json.dumps(parameters_dict)
 
     def getSchema(self, version=None, specs: List[str] = None) -> str:
-        LOGGER.warning(f"getSchema called with version {version}")
+        version = parse(version)
 
-        if version is not None:
-            v = parse(version)
+        # LOGGER.warning(f" >>> getSchema before extraction | version {version}")
+
         if specs is not None:
             specs = self._specs_to_python(specs)
-        schema = kp.extract_schema(self._node, specs)
+
+        schema = kp.extract_schema(self._node, version, specs)
+        # LOGGER.warning(
+        #     f" >>> getSchema after extraction | dumping the following schema: {schema}"
+        # )
         return json.dumps(schema)
 
     def setParameters(
-        self, parameters: str, version: str, fail_on_missing: bool = True
+        self, parameters: str, extension_version: str, fail_on_missing: bool = True
     ) -> None:
-
         parameters_dict = json.loads(parameters)
-        version = parse(version)
-        kp.inject_parameters(self._node, parameters_dict, version, fail_on_missing)
+        LOGGER.warning(
+            f" >>> setParameters | parameters: {parameters_dict} | extension version {extension_version}."
+        )
+        kp.inject_parameters(
+            self._node, parameters_dict, extension_version, fail_on_missing
+        )
 
     def validateParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
         version = parse(version)
+        # LOGGER.warning(
+        #     f" >>> validateParameters | parameters: {parameters_dict} | version {version}."
+        # )
         try:
             kp.validate_parameters(self._node, parameters_dict, version)
             return None
@@ -334,6 +368,7 @@ class _PythonNodeProxy:
             return str(error)
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
+        # LOGGER.warning(f" >>> initializeJavaCallback")
         self._java_callback = java_callback
 
     def execute(
