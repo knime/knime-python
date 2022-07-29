@@ -44,7 +44,6 @@
 
 from typing import List, Tuple, Type
 import unittest
-import pythonpath
 import knime_node as kn
 import knime_node_table as kt
 import knime_schema as ks

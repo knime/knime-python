@@ -1,5 +1,4 @@
 import unittest
-import pythonpath
 import knime_parameter as kp
 
 

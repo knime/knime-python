@@ -6,7 +6,6 @@ import pandas as pd
 import pyarrow as pa
 import numpy as np
 
-import pythonpath
 import knime_arrow_pandas as kap
 import knime_arrow_types as katy
 import knime_arrow as knar

@@ -4,9 +4,9 @@ Run this script and open the html files that were created in the working directo
 using your browser.
 """
 import os
+import pythonpath
 
 from numpy import save
-import pythonpath  # adds knime_views to the Python path
 import urllib.request
 
 import knime_views as kv

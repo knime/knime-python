@@ -51,7 +51,6 @@ import unittest
 import json
 import datetime as dt
 
-import pythonpath
 import knime_schema as k
 
 

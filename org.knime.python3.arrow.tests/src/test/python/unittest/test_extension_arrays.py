@@ -53,7 +53,6 @@ import string
 import numpy as np
 import pyarrow as pa
 
-import pythonpath
 import knime_arrow as ka
 import knime_arrow_struct_dict_encoding as kasde
 

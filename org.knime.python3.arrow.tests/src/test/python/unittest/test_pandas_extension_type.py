@@ -2,7 +2,6 @@ import datetime
 import os
 import unittest
 from typing import Type, Union
-import pythonpath
 import extension_types  # import to register column converters
 
 import numpy as np

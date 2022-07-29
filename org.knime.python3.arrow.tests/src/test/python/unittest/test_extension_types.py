@@ -47,7 +47,6 @@
 """
 import unittest
 
-import pythonpath
 import extension_types as et
 
 

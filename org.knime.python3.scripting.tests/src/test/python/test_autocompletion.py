@@ -3,7 +3,6 @@ To run: python -m unittest discover
 """
 import unittest
 
-import pythonpath
 from autocompletion_utils import disable_autocompletion
 
 

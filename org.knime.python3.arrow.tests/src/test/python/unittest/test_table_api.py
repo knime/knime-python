@@ -1,4 +1,3 @@
-import pythonpath
 import unittest
 import knime_table as kt
 import knime_arrow_table as kat

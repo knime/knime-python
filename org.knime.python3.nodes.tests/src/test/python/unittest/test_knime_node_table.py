@@ -4,7 +4,6 @@ import pandas as pd
 import datetime as dt
 import json
 
-import pythonpath
 import knime_schema as ks
 import knime_node_table as knt
 import knime_node_arrow_table as knat

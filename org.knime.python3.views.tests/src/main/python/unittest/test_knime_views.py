@@ -1,5 +1,4 @@
 import os
-import pythonpath  # adds knime_views to the Python path
 
 import unittest
 import knime_views as kv
