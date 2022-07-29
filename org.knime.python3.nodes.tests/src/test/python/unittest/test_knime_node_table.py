@@ -57,11 +57,11 @@ class SchemaTest(unittest.TestCase):
             s2 = s2.append(ks.Column(ktype=ks.double(), name=n))
         s2 = s2.get()
         self.assertEqual(s, s2, "Appended list does not match single appending")
-        
+
     def test_schema_from_columns(self):
         types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
-        columns = [ks.Column(t,n) for t,n in zip(types, names)]
+        columns = [ks.Column(t, n) for t, n in zip(types, names)]
 
         # test if from columns works in general
         s = ks.Schema.from_columns(columns)
@@ -82,6 +82,7 @@ class SchemaTest(unittest.TestCase):
             s = ks.Schema.from_columns(column)
             self.assertEqual(t, s[0].ktype)
             self.assertEqual(n, s[0].name)
+
 
 class TableTest(unittest.TestCase):
     def setUp(self):
@@ -127,27 +128,18 @@ class TestDataSource:
         return self._column_names
 
 
-class DummyJavaDataSink:
-    def __init__(self) -> None:
-        import os
+class DummyDataSink:
+    def __enter__(self):
+        return self
 
-        self._path = os.path.join(os.curdir, "test_data_sink")
-
-    def getAbsolutePath(self):
-        return self._path
-
-    def reportBatchWritten(self, offset):
-        pass
-
-    def setColumnarSchema(self, schema):
-        pass
-
-    def setFinalSize(self, size):
-        import os
-
-        os.remove(self._path)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     def write(self, data):
+        pass
+
+    def close(self):
         pass
 
 
@@ -207,7 +199,6 @@ class ArrowTableTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        knt._backend = knat._ArrowBackend(lambda: DummyJavaDataSink())
         cls._test_table = cls._generate_test_table()
 
     def test_table_setup(self):
@@ -353,6 +344,15 @@ class ArrowTableTest(unittest.TestCase):
 
 
 class BatchOutputTableTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        knt._backend = knat._ArrowBackend(lambda: DummyDataSink())
+
+    @classmethod
+    def tearDownClass(cls):
+        knt._backend.close()
+        knt._backend = None
+
     def _generate_test_batch(self, index):
         nr = 10
         t = pa.Table.from_pydict(
