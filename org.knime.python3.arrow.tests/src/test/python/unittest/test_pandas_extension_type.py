@@ -361,6 +361,14 @@ class DummyWriter:
         pass
 
 
+def _create_dummy_arrow_sink():
+    dummy_java_sink = DummyJavaDataSink()
+    dummy_writer = DummyWriter()
+    arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+    arrow_sink._writer = dummy_writer
+    return arrow_sink
+
+
 class PyArrowExtensionTypeTest(unittest.TestCase):
     def _create_test_table(self):
         d = {"test_data": [0, 1, 2, 3, 4], "reference": [0, 1, 2, 3, 4]}
@@ -647,18 +655,16 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df.drop(dict_columns, axis=1, inplace=True)
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        dummy_java_sink = DummyJavaDataSink()
-        dummy_writer = DummyWriter()
-        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-        arrow_sink._writer = dummy_writer
-        t = kat.ArrowBatchWriteTable(arrow_sink)
+        with _create_dummy_arrow_sink() as arrow_sink:
+            t = kat.ArrowBatchWriteTable(arrow_sink)
 
-        mid = int(len(df) / 2)
-        df1 = df[:mid]
-        df2 = df[mid:]
-        # Create batch write table, fill it with batches
-        t.append(df1)
-        t.append(df2)
+            mid = int(len(df) / 2)
+            df1 = df[:mid]
+            df2 = df[mid:]
+            # Create batch write table, fill it with batches
+            t.append(df1)
+            t.append(df2)
+
 
     def test_send_timestamp_to_knime(self):
         """
@@ -668,12 +674,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         :func:`~ka.ArrowDataSink.write_table` thats why the assertion is just looking at the table result.
 
         """
-        dummy_java_sink = DummyJavaDataSink()
-        dummy_writer = DummyWriter()
-        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-        arrow_sink._writer = dummy_writer
-
-        arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
+        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
 
         # Create table
         rng = pd.date_range("2015-02-24", periods=5e5, freq="s")
@@ -694,18 +695,15 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         )
 
+        arrow_backend.close()
+
     def test_timestamp_columns(self):
         """
         This test tests the conversion of a dict encoded KNIME timestamp from KNIME to python and back to KNIME.
         Currently, the dict representation of timestamps on the python side is not working properly. This can be
         reproduced in the test by readding the outcommented line in the test.
         """
-        dummy_java_sink = DummyJavaDataSink()
-        dummy_writer = DummyWriter()
-        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-        arrow_sink._writer = dummy_writer
-
-        arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
+        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
 
         df = self._generate_test_data_frame(lists=False, sets=False)
         # currently, it does not work for lists, sets and dicts
@@ -745,71 +743,70 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             knime_ts_ext_str, str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype)
         )
 
+        arrow_backend.close()
+
     def test_lists_with_missing_values(self):
         """
         Tests if list extensiontypes can handle missing values
         @return:
         """
-        dummy_java_sink = DummyJavaDataSink()
-        dummy_writer = DummyWriter()
-        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-        arrow_sink._writer = dummy_writer
-        t = kat.ArrowBatchWriteTable(arrow_sink)
+        with _create_dummy_arrow_sink() as arrow_sink:
+            t = kat.ArrowBatchWriteTable(arrow_sink)
 
-        # Create table
-        df = self._generate_test_data_frame(
-            file_name="missingTestData.zip", lists=True, sets=True
-        )
-        # print(df.columns)
-        remove_cols = [
-            "StringCol",
-            "StringListCol",
-            "StringSetCol",
-            "IntCol",
-            "IntListCol",
-            "IntSetCol",
-            "LongCol",
-            "LongListCol",
-            "LongSetCol",
-            "DoubleCol",
-            "DoubleListCol",
-            "TimestampCol",
-            "TimestampSetCol",
-            "BooleanCol",
-            "BooleanListCol",
-            "BooleanSetCol",
-            "URICol",
-            "URIListCol",
-            "URISetCol",
-            "MissingValStringCol",
-            "MissingValStringListCol",
-            "MissingValStringSetCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
+            # Create table
+            df = self._generate_test_data_frame(
+                file_name="missingTestData.zip", lists=True, sets=True
+            )
+            # print(df.columns)
+            remove_cols = [
+                "StringCol",
+                "StringListCol",
+                "StringSetCol",
+                "IntCol",
+                "IntListCol",
+                "IntSetCol",
+                "LongCol",
+                "LongListCol",
+                "LongSetCol",
+                "DoubleCol",
+                "DoubleListCol",
+                "TimestampCol",
+                "TimestampSetCol",
+                "BooleanCol",
+                "BooleanListCol",
+                "BooleanSetCol",
+                "URICol",
+                "URIListCol",
+                "URISetCol",
+                "MissingValStringCol",
+                "MissingValStringListCol",
+                "MissingValStringSetCol",
+                "LongStringColumnName",
+                "LongDoubleColumnName",
+                "Local Date",
+                "Local Time",
+                "Local Date Time",
+                "Zoned Date Time",
+                "Period",
+                "Duration",
+            ]
 
-        df.drop(remove_cols, axis=1, inplace=True)
-        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+            df.drop(remove_cols, axis=1, inplace=True)
+            df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        # Slice into two dfs which we will use as batches
-        mid = int(len(df) / 2)
-        df1 = df[:mid]
-        # actually here the null value gets replaced by a list
-        df2 = df[mid:]
+            # Slice into two dfs which we will use as batches
+            mid = int(len(df) / 2)
+            df1 = df[:mid]
+            # actually here the null value gets replaced by a list
+            df2 = df[mid:]
 
-        # Create batch write table, fill it with batches
-        t.append(df1, sentinel="min")
-        t.append(df2, sentinel="min")
+            # Create batch write table, fill it with batches
+            t.append(df1, sentinel="min")
+            t.append(df2, sentinel="min")
 
-        self.assertEqual(
-            "<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t))
-        )
+            self.assertEqual(
+                "<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t))
+            )
 
 
 if __name__ == "__main__":
