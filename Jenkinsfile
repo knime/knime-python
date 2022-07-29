@@ -23,6 +23,20 @@ properties([
 try {
     knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python-all && java11')
 
+    node('ubuntu20.04 && python-all') {
+        stage('Run pytest') {
+            env.lastStage = env.STAGE_NAME
+            checkout scm
+
+            for (py in ['38', '39']) {
+                sh """
+                /home/jenkins/miniconda3/envs/knime_py${py}/bin/pytest --junit-xml=pytest_results_py${py}.xml --junit-prefix=py${py} || true
+                """
+                junit "pytest_results_py${py}.xml"
+            }
+        }
+    }
+
     def parallelConfigs = [:]
     for (py in PYTHON_VERSIONS) {
         if (params[py]) {
