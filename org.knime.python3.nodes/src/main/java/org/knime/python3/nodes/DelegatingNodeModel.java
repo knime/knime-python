@@ -131,7 +131,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return runWithProxy(m_proxyProvider::getConfigurationProxy, node -> {
-            node.loadValidatedSettings(m_settings);
+            node.loadValidatedSettings(m_settings, m_extensionVersion);
             var result = node.configure(inSpecs, this, this);
             // allows for auto-configure
             m_settings = node.getSettings(m_extensionVersion);
@@ -146,7 +146,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
             PathUtils.deleteFileIfExists(m_view.get());
         }
         return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
-            node.loadValidatedSettings(m_settings);
+            node.loadValidatedSettings(m_settings, m_extensionVersion);
             var result = node.execute(inData, exec, this, this);
             m_settings = node.getSettings(m_extensionVersion);
             m_view = result.getView();
@@ -167,7 +167,8 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            node -> node.validateSettings(node.getSettings(m_extensionVersion).createFromSettings(settings)));
+//            node -> node.validateSettings(node.getSettings(m_extensionVersion).createFromSettings(settings)));
+            node -> node.getSettingsSchema(JsonNodeSettingsSchema.readVersion(settings)).createFromSettings(settings));
     }
 
     @Override

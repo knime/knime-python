@@ -305,10 +305,10 @@ class _PythonNodeProxy:
 
         json_forms_dict = {
             "data": kp.extract_parameters(
-                self._node, for_dialog=True, version=parameters_version
+                self._node, for_dialog=True, version=extension_version
             ),
-            "schema": kp.extract_schema(self._node, parameters_version, inputs),
-            "ui_schema": kp.extract_ui_schema(self._node, version=parameters_version),
+            "schema": kp.extract_schema(self._node, extension_version, inputs),
+            "ui_schema": kp.extract_ui_schema(self._node, version=extension_version),
         }
         LOGGER.warning(
             f" >>> getDialogRepresentation | dumping the following for json forms: {json_forms_dict}"
@@ -345,7 +345,7 @@ class _PythonNodeProxy:
         return json.dumps(schema)
 
     def setParameters(
-        self, parameters: str, extension_version: str, fail_on_missing: bool = True
+        self, parameters: str, extension_version: str, fail_on_missing: bool = False
     ) -> None:
         parameters_dict = json.loads(parameters)
         LOGGER.warning(

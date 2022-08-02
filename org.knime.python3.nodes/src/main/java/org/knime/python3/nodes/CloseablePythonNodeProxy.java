@@ -182,8 +182,9 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public void loadValidatedSettings(final JsonNodeSettings settings) {
-        m_proxy.setParameters(settings.getParameters(), settings.getCreationVersion());
+    public void loadValidatedSettings(final JsonNodeSettings settings, final String extensionVersion) {
+//        m_proxy.setParameters(settings.getParameters(), settings.getCreationVersion());
+        m_proxy.setParameters(settings.getParameters(), extensionVersion);
     }
 
     private void initTableManager() {

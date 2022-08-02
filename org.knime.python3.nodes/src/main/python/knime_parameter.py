@@ -114,6 +114,9 @@ def _inject_parameters(
         elif fail_on_missing and parameter._since_version <= extension_version:
             raise ValueError(f"No value available for parameter {name}")
         else:
+            LOGGER.warning(
+                f" >>> >>> Parameter '{name}' not found in saved settings, since version is {parameter._since_version} and extension version is {extension_version}"
+            )
             # param is a newly added parameter
             if parameter._since_version <= extension_version:
                 parameter._inject(obj, parameter._default_value, fail_on_missing)
