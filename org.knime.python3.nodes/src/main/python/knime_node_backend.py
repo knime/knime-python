@@ -71,9 +71,8 @@ from py4j.java_collections import ListConverter
 import py4j.clientserver
 
 # to allow Version comparisons
-from utils import parse, Version
+from utils import parse_version
 
-# LOGGER = logging.getLogger(__name__)
 LOGGER = logging.getLogger("Python")
 
 # TODO: register extension types
@@ -282,37 +281,21 @@ class _PythonNodeProxy:
     def getDialogRepresentation(
         self,
         parameters: str,
-        parameters_version: str,
         specs: List[_PythonPortObjectSpec],
         extension_version: str,
     ):
-        # import debugpy
-
-        # debugpy.listen(5678)
-        # print("Waiting for debugger attach")
-        # debugpy.wait_for_client()
-        # debugpy.breakpoint()
-
-        LOGGER.warning(
-            f" >>> getDialogRepresentation | parameters: {json.loads(parameters)} | parameter version: {parameters_version} | extension version: {extension_version}"
-        )
-
-        parameters_version = parse(parameters_version)
-        extension_version = parse(extension_version)
         self.setParameters(parameters, extension_version, False)
 
         inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
             "data": kp.extract_parameters(
-                self._node, for_dialog=True, version=extension_version
+                self._node, extension_version, for_dialog=True
             ),
             "schema": kp.extract_schema(self._node, extension_version, inputs),
-            "ui_schema": kp.extract_ui_schema(self._node, version=extension_version),
+            "ui_schema": kp.extract_ui_schema(self._node, extension_version),
         }
-        LOGGER.warning(
-            f" >>> getDialogRepresentation | dumping the following for json forms: {json_forms_dict}"
-        )
+
         return json.dumps(json_forms_dict)
 
     def _specs_to_python(self, specs):
@@ -321,54 +304,34 @@ class _PythonNodeProxy:
             for port, spec in zip(self._node.input_ports, specs)
         ]
 
-    def getParameters(self, version=None) -> str:
-        version = parse(version)
-        # LOGGER.warning(f" >>> getParameters before extraction | version: {version}")
-        parameters_dict = kp.extract_parameters(self._node, version=version)
-        LOGGER.warning(
-            f" >>> getParameters | version: {version} | dumping the following for json: {parameters_dict}"
-        )
+    def getParameters(self, extension_version=None) -> str:
+        parameters_dict = kp.extract_parameters(self._node, extension_version)
         return json.dumps(parameters_dict)
 
     def getSchema(self, version=None, specs: List[str] = None) -> str:
-        version = parse(version)
-
-        # LOGGER.warning(f" >>> getSchema before extraction | version {version}")
-
         if specs is not None:
             specs = self._specs_to_python(specs)
 
         schema = kp.extract_schema(self._node, version, specs)
-        # LOGGER.warning(
-        #     f" >>> getSchema after extraction | dumping the following schema: {schema}"
-        # )
         return json.dumps(schema)
 
     def setParameters(
         self, parameters: str, extension_version: str, fail_on_missing: bool = False
     ) -> None:
         parameters_dict = json.loads(parameters)
-        LOGGER.warning(
-            f" >>> setParameters | parameters: {parameters_dict} | extension version {extension_version}."
-        )
         kp.inject_parameters(
             self._node, parameters_dict, extension_version, fail_on_missing
         )
 
     def validateParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
-        version = parse(version)
-        # LOGGER.warning(
-        #     f" >>> validateParameters | parameters: {parameters_dict} | version {version}."
-        # )
         try:
-            kp.validate_parameters(self._node, parameters_dict, version)
+            kp.validate_parameters(self._node, parameters_dict)
             return None
         except BaseException as error:
             return str(error)
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
-        # LOGGER.warning(f" >>> initializeJavaCallback")
         self._java_callback = java_callback
 
     def execute(

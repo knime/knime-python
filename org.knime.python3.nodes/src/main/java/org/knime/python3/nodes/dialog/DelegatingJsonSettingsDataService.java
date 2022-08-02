@@ -53,7 +53,6 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
@@ -61,6 +60,7 @@ import org.knime.core.webui.node.dialog.JsonNodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
+import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 
 /**
  * Delegates methods to a proxy object that can e.g. be implemented in Python.
@@ -69,11 +69,9 @@ import org.knime.python3.nodes.settings.JsonNodeSettings;
  */
 public final class DelegatingJsonSettingsDataService implements JsonNodeSettingsService<String> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingJsonSettingsDataService.class);
-
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
-    private JsonNodeSettings m_lastSettings;
+    private JsonNodeSettingsSchema m_lastSettingsSchema;
 
     private String m_extensionVersion;
 
@@ -92,7 +90,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
-            m_lastSettings = proxy.getSettings(m_extensionVersion);
+            m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
             var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
             return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars, m_extensionVersion);
         }
@@ -100,7 +98,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
 
     private JsonNodeSettings loadSettings(final NodeSettingsRO settings) {
         try {
-            return m_lastSettings.createFromSettings(settings);
+            return m_lastSettingsSchema.createFromSettings(settings);
         } catch (InvalidSettingsException ex) {
             throw new IllegalArgumentException("The provided settings are invalid.", ex);
         }
@@ -108,7 +106,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
 
     @Override
     public void toNodeSettingsFromObject(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
-        m_lastSettings.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
+        m_lastSettingsSchema.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
     }
 
 

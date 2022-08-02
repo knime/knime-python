@@ -51,12 +51,9 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
-from utils import parse
 
-import logging
 
-# LOGGER = logging.getLogger(__name__)
-LOGGER = logging.getLogger("Python")
+from utils import parse_version, Version
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -73,22 +70,30 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
         for name, param in obj.__dict__.items()
         if _is_parameter_or_group(param)
     }
+
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj, for_dialog=False, version=None) -> dict:
+def extract_parameters(obj, extension_version=None, for_dialog=False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
-    return {"model": _extract_parameters(obj, for_dialog, version)}
+    extension_version = parse_version(extension_version)
+    return {"model": _extract_parameters(obj, extension_version, for_dialog)}
 
 
-def _extract_parameters(obj, for_dialog=False, version=None) -> dict:
+def _extract_parameters(obj, extension_version: Version, for_dialog: bool) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
-        if param_obj._since_version <= version:
-            result[name] = param_obj._get_value(obj, for_dialog)
+        if param_obj._since_version <= extension_version:
+            if _is_group(param_obj):
+                result[name] = _extract_parameters(
+                    param_obj, extension_version, for_dialog
+                )
+            else:
+                result[name] = param_obj._get_value(obj)
+
     return result
 
 
@@ -96,53 +101,47 @@ def _is_group(param):
     return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
 
-# TODO version support
 def inject_parameters(
-    obj, parameters: dict, extension_version, fail_on_missing: bool = True
+    obj, parameters: dict, extension_version=None, fail_on_missing: bool = True
 ) -> None:
+    extension_version = parse_version(extension_version)
     _inject_parameters(obj, parameters["model"], extension_version, fail_on_missing)
 
 
 def _inject_parameters(
-    obj, parameters: dict, extension_version, fail_on_missing: bool = True
+    obj, parameters: dict, extension_version: Version, fail_on_missing: bool
 ) -> None:
-    extension_version = parse(extension_version)
-    for name, parameter in _get_parameters(obj).items():
-        if name in parameters:
-            # param is in loaded settings
-            parameter._inject(obj, parameters[name], fail_on_missing)
-        elif fail_on_missing and parameter._since_version <= extension_version:
-            raise ValueError(f"No value available for parameter {name}")
-        else:
-            LOGGER.warning(
-                f" >>> >>> Parameter '{name}' not found in saved settings, since version is {parameter._since_version} and extension version is {extension_version}"
-            )
-            # param is a newly added parameter
-            if parameter._since_version <= extension_version:
-                parameter._inject(obj, parameter._default_value, fail_on_missing)
+    for name, param_obj in _get_parameters(obj).items():
+        if _is_group(param_obj):
+            if name in parameters:
+                group_params = parameters[name]
             else:
-                LOGGER.warning(
-                    f" >>> >>> Parameter '{name}' not found in saved settings and is incompatible with extension version, skipping injection..."
-                )
+                group_params = _get_parameters(param_obj).items()
+            _inject_parameters(
+                param_obj, group_params, extension_version, fail_on_missing
+            )
+        else:
+            if name in parameters:
+                param_value = parameters[name]
+            elif param_obj._since_version <= extension_version:
+                if fail_on_missing:
+                    raise ValueError(f"No value available for parameter '{name}'")
+                param_value = param_obj._default_value
+            param_obj._inject(obj, param_value)
 
 
-# TODO version support
-def validate_parameters(obj, parameters: dict, version=None) -> str:
+def validate_parameters(obj, parameters: dict) -> str:
     """
     Perform validation on the individual parameters of obj.
     """
-    return _validate_parameters(obj, parameters["model"], version)
+    return _validate_parameters(obj, parameters["model"])
 
 
-def _validate_parameters(obj, parameters: dict, version=None) -> str:
+def _validate_parameters(obj, parameters: dict) -> str:
     for name, param in _get_parameters(obj).items():
         # TODO test if that also works for parameter groups
         if name in parameters:
-            param._validate(parameters[name], version)
-        else:
-            LOGGER.warning(
-                f" >>> >>> Parameter '{name}' not found in saved settings, skipping validation..."
-            )
+            param._validate(parameters[name])
 
 
 def validate_specs(obj, specs) -> None:
@@ -153,44 +152,43 @@ def validate_specs(obj, specs) -> None:
         param._validate_specs(specs)
 
 
-def extract_schema(obj, version=None, specs=None) -> dict:
+def extract_schema(obj, extension_version=None, specs=None) -> dict:
+    extension_version = parse_version(extension_version)
     return {
         "type": "object",
-        "properties": {"model": _extract_schema(obj, version, specs)},
+        "properties": {"model": _extract_schema(obj, extension_version, specs)},
     }
 
 
-def _extract_schema(obj, version=None, specs=None):
-    if version is not None:
-        properties = {
-            name: param._extract_schema(specs)
-            for name, param in _get_parameters(obj).items()
-            if param._since_version <= version
-        }
-    else:
-        properties = {
-            name: param._extract_schema(specs)
-            for name, param in _get_parameters(obj).items()
-        }
+def _extract_schema(obj, extension_version, specs=None):
+    properties = {}
+    for name, param in _get_parameters(obj).items():
+        if _is_group(param):
+            properties[name] = _extract_schema(param, extension_version, specs)
+        else:
+            if param._since_version <= extension_version:
+                properties[name] = param._extract_schema(specs)
+
     return {"type": "object", "properties": properties}
 
 
-def extract_ui_schema(obj, version=None) -> dict:
-    # TODO discuss with UIEXT if we can unpack the dicts
-    if version is not None:
-        elements = [
-            # name is provided for parameter_groups that are held as instance variables
-            param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
-            for name, param in _get_parameters(obj).items()
-            if param._since_version <= version
-        ]
-    else:
-        elements = [
-            # name is provided for parameter_groups that are held as instance variables
-            param._extract_ui_schema(name, _Scope("#/properties/model/properties"))
-            for name, param in _get_parameters(obj).items()
-        ]
+def extract_ui_schema(obj, extension_version=None) -> dict:
+    extension_version = parse_version(extension_version)
+    elements = _extract_ui_schema_elements(obj, extension_version)
+
     return {"type": "VerticalLayout", "elements": elements}
+
+
+def _extract_ui_schema_elements(obj, extension_version, scope=None) -> dict:
+    # TODO discuss with UIEXT if we can unpack the dicts
+    if scope is None:
+        scope = _Scope("#/properties/model/properties")
+    elements = []
+    for name, param_obj in _get_parameters(obj).items():
+        if param_obj._since_version <= extension_version:
+            elements.append(param_obj._extract_ui_schema(name, scope))
+
+    return elements
 
 
 def extract_parameter_descriptions(obj) -> dict:
@@ -276,16 +274,14 @@ class _BaseParameter(ABC):
         self._default_value = default_value
         self._validator = validator if validator is not None else _default_validator
         self.__doc__ = description if description is not None else ""
-        self._since_version = (
-            parse(since_version) if since_version is not None else None
-        )
+        self._since_version = parse_version(since_version)
 
     def __set_name__(self, owner, name):
         self._name = name
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj: Any, for_dialog: bool):
+    def _get_value(self, obj: Any):
         return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
@@ -299,7 +295,7 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value, fail_on_missing=True):
+    def _inject(self, obj, value):
         # TODO only set if the parameter was available in the version
         self.__set__(obj, value)
 
@@ -311,14 +307,14 @@ class _BaseParameter(ABC):
 
         # perform individual validation
         self._validate(value)
-
         obj.__parameters__[self._name] = value
 
     def __str__(self):
-        return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t - value: {self._value}"
+        # return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t - value: {self._value}"
+        return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
 
     # TODO does version make sense here?
-    def _validate(self, value, version=None):
+    def _validate(self, value):
         self._validator(value)
 
     def _validate_specs(self, specs):
@@ -355,7 +351,9 @@ class _BaseParameter(ABC):
     def _extract_schema(self, specs: List[ks.Schema] = None):
         return {"title": self._label, "description": self.__doc__}
 
-    def _extract_ui_schema(self, name, parent_scope: _Scope):
+    def _extract_ui_schema(self, name, parent_scope: _Scope, extension_version=None):
+        # note the extension_version parameter - not used but needed for conciseness;
+        # see the general _extract_ui_schema method
         return {
             "type": "Control",
             "label": self._label,
@@ -772,8 +770,11 @@ def parameter_group(label: str):
     def decorate_class(custom_cls):
         orig_init = custom_cls.__init__
 
-        def __init__(self, label=label, validator=None, *args, **kwargs):
+        def __init__(
+            self, label=label, since_version=None, validator=None, *args, **kwargs
+        ):
             self._label = label
+            self._since_version = parse_version(since_version)
             self._validator = validator
             self.__parameters__ = {}
             self._override_internal_validator = False
@@ -834,16 +835,16 @@ def parameter_group(label: str):
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
 
-        def _inject(self, obj, values, version, fail_on_missing=True):
+        def _inject(self, obj, values, version=None, fail_on_missing=True):
             param_holder = _get_param_holder(self, obj)
             _inject_parameters(param_holder, values, version, fail_on_missing)
 
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
-        def _validate(self, values, version=None):
+        def _validate(self, values):
             # validate individual parameters
-            _validate_parameters(self, values, version)
+            _validate_parameters(self, values)
 
             # use the "internal" group validator if exists
             if (
@@ -872,15 +873,12 @@ def parameter_group(label: str):
                 self._validator = func
                 self._override_internal_validator = True
 
-        def _extract_ui_schema(self, name, parent_scope: _Scope):
+        def _extract_ui_schema(self, name, parent_scope: _Scope, version=None):
             scope = parent_scope.create_child(name, is_group=True)
+            version = parse_version(version)
+            elements = _extract_ui_schema_elements(self, version, scope)
             # TODO how do we get the name in case of composition? Pass name as parameter!
-            elements = [
-                param._extract_ui_schema(name, scope)
-                for name, param in _get_parameters(self).items()
-            ]
             # TODO treat first level groups as sections and deeper nested groups as groups
-
             # TODO can we have nested sections?
             if scope.level() == 1:
                 group_type = "Section"

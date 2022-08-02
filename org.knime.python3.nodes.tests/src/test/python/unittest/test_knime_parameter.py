@@ -276,6 +276,69 @@ class ParameterTest(unittest.TestCase):
         extracted = kp.extract_schema(self.parameterized)
         self.assertEqual(expected, extracted)
 
+    def test_extract_schema_with_version(self):
+        expected = {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "int_param": {
+                            "title": "Int Parameter",
+                            "description": "An integer parameter",
+                            "type": "integer",
+                            "format": "int32"
+                            },
+                        "double_param": {
+                            "title": "Double Parameter",
+                            "description": "A double parameter",
+                            "type": "number",
+                            "format": "double"},
+                        "string_param": {
+                            "title": "String Parameter",
+                            "description": "A string parameter",
+                            "type": "string"
+                            },
+                        "bool_param": {
+                            "title": "Boolean Parameter",
+                            "description": "A boolean parameter",
+                            "type": "boolean"
+                            },
+                        "parameter_group": {
+                            "type": "object",
+                            "properties": {
+                                "subgroup": {
+                                    "properties": {
+                                        "first": {
+                                            "title": "First Parameter",
+                                            "description": "First parameter description",
+                                            "type": "integer",
+                                            "format": "int32"
+                                            },
+                                        "second": {
+                                            "title": "Second Parameter",
+                                            "description": "Second parameter description",
+                                            "type": "integer",
+                                            "format": "int32"
+                                            },
+                                    },
+                                    "type": "object",
+                                },
+                                "third": {
+                                    "title": "Internal int Parameter",
+                                    "description": "Internal int parameter description",
+                                    "type": "integer",
+                                    "format": "int32"
+                                    },
+                            },
+                        },
+                    },
+                }
+            }
+        }
+        extracted = kp.extract_schema(self.parameterized, extension_version="0.1.0")
+        self.assertEqual(expected, extracted)
+
     def test_extract_ui_schema(self):
         expected = {
             "elements": [
@@ -391,13 +454,13 @@ class ParameterTest(unittest.TestCase):
         params_forbidden = generate_values_dict(first=42)
 
         with self.assertRaises(ValueError):
-            kp.validate_parameters(self.parameterized, params_internal, version=None)
+            kp.validate_parameters(self.parameterized, params_internal)
 
         with self.assertRaises(ValueError):
-            kp.validate_parameters(self.parameterized, params_external, version=None)
+            kp.validate_parameters(self.parameterized, params_external)
 
         with self.assertRaises(ValueError):
-            kp.validate_parameters(self.parameterized, params_forbidden, version=None)
+            kp.validate_parameters(self.parameterized, params_forbidden)
 
     def test_groups_are_independent(self):
         obj1 = Parameterized()

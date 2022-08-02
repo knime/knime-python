@@ -50,7 +50,6 @@ package org.knime.python3.nodes.settings;
 
 import org.knime.base.views.node.defaultdialog.JsonNodeSettingsMapperUtil;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -64,8 +63,6 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class JsonNodeSettings {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JsonNodeSettings.class);
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -122,10 +119,6 @@ public final class JsonNodeSettings {
      * @param settings to save to
      */
     public void saveTo(final NodeSettingsWO settings) {
-        LOGGER.info("Attempting to save settings.");
-        LOGGER.info("Parameters are: " + m_parameters);
-        LOGGER.info("Schema is: " + m_schema);
-        LOGGER.info("Version is: " + m_version);
         var tempSettings = new NodeSettings("temp");
         JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, tempSettings);
         try {
@@ -135,27 +128,6 @@ public final class JsonNodeSettings {
             throw new IllegalStateException("Parameter conversion did not add model settings.", ex);
         }
         settings.addString(CFG_VERSION, m_version);
-    }
-
-    /**
-     * Creates a new instance with the same schema but the settings stored in {@code settings}.
-     *
-     * @param settings to load into the newly created object
-     * @return a new instance with the same schema as this instance but the values from settings
-     * @throws InvalidSettingsException if the settings are invalid
-     */
-    public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        return new JsonNodeSettings(settings, m_schema);
-    }
-
-    /**
-     * Creates a new instance from the provided JSON string and the schema of this instance.
-     *
-     * @param json holding the settings
-     * @return a new instance with the same schema as this instance but the values from the json
-     */
-    public JsonNodeSettings createFromJson(final String json) {
-        return new JsonNodeSettings(json, m_schema, m_version);
     }
 
     private static NodeSettings preprocess(final NodeSettingsRO settings) {

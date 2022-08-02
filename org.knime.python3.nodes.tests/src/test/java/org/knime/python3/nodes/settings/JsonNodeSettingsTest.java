@@ -103,11 +103,12 @@ public class JsonNodeSettingsTest {
     @Test
     public void testSimpleLoadFrom() throws Exception {
         var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettingsSchema = new JsonNodeSettingsSchema(SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createSimpleSettings();
         addVersion(nodeSettings, oldVersion);
         addJsonType(nodeSettings);
-        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
+        jsonSettings = jsonSettingsSchema.createFromSettings(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(SIMPLE_MODEL_JSON, jsonSettings.getParameters());
     }
@@ -128,13 +129,14 @@ public class JsonNodeSettingsTest {
     @Test
     public void testNestedLoadFrom() throws Exception {
         var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettingsSchema = new JsonNodeSettingsSchema(SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createNestedSettings();
         addVersion(nodeSettings, oldVersion);
         addJsonType(nodeSettings);
         addJsonType(nodeSettings.getNodeSettings("outer"));
         addJsonType(nodeSettings.getNodeSettings("outer").getNodeSettings("inner"));
-        jsonSettings = jsonSettings.createFromSettings(nodeSettings);
+        jsonSettings = jsonSettingsSchema.createFromSettings(nodeSettings);
         assertEquals(oldVersion, jsonSettings.getCreationVersion());
         assertEquals(NESTED_MODEL_JSON, jsonSettings.getParameters());
     }

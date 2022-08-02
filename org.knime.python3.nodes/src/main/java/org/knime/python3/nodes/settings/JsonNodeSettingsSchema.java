@@ -44,23 +44,20 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Jul 26, 2022 (Ivan Prigarin, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3.nodes.settings;
 
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 
 /**
- * Used to create {@link JsonNodeSettings} objects using the provided schema and saved settings.
+ * Used to create {@link JsonNodeSettings} objects using the provided schema and NodeSettings or Json objects.
  *
  * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
 public final class JsonNodeSettingsSchema {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JsonNodeSettingsSchema.class);
 
     private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -72,7 +69,7 @@ public final class JsonNodeSettingsSchema {
      * Constructor.
      *
      * @param schema the JSON schema of the parameters
-     * @param version the extension version
+     * @param version of the extension
      */
     public JsonNodeSettingsSchema(final String schema, final String version) {
         m_schema = schema;

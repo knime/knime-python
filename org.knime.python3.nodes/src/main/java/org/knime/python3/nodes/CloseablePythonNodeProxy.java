@@ -172,7 +172,7 @@ final class CloseablePythonNodeProxy
     public String getDialogRepresentation(final JsonNodeSettings settings, final PortObjectSpec[] specs, final String extensionVersion) {
         final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
-        return m_proxy.getDialogRepresentation(settings.getParameters(), settings.getCreationVersion(), serializedSpecs, extensionVersion);
+        return m_proxy.getDialogRepresentation(settings.getParameters(), serializedSpecs, extensionVersion);
     }
 
     @Override
@@ -183,7 +183,6 @@ final class CloseablePythonNodeProxy
 
     @Override
     public void loadValidatedSettings(final JsonNodeSettings settings, final String extensionVersion) {
-//        m_proxy.setParameters(settings.getParameters(), settings.getCreationVersion());
         m_proxy.setParameters(settings.getParameters(), extensionVersion);
     }
 
