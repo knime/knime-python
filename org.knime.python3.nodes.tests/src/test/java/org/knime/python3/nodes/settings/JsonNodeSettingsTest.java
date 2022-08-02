@@ -91,7 +91,7 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testSimpleSaveTo() {
-        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA);
+        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createSimpleSettings();
@@ -102,7 +102,7 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testSimpleLoadFrom() throws Exception {
-        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA);
+        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createSimpleSettings();
         addVersion(nodeSettings, oldVersion);
@@ -114,7 +114,7 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testNestedSaveTo() throws Exception {
-        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA);
+        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createNestedSettings();
@@ -127,7 +127,7 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testNestedLoadFrom() throws Exception {
-        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA);
+        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createNestedSettings();
         addVersion(nodeSettings, oldVersion);

@@ -200,7 +200,7 @@ class ParameterTest(unittest.TestCase):
     def test_inject_parameters(self):
         params = generate_values_dict(4, 2.7, "bar", False, 3, 2, 1)
         # TODO versioning
-        kp.inject_parameters(self.parameterized, params, version=None)
+        kp.inject_parameters(self.parameterized, params)
         extracted = kp.extract_parameters(self.parameterized)
         self.assertEqual(params, extracted)
 
