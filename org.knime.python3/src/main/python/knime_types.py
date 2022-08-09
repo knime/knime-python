@@ -47,11 +47,12 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
-
+import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 import importlib
 import json
-
+from typing import List
 
 class PythonValueFactory:
     def __init__(self, compatible_type):
@@ -175,6 +176,8 @@ class FromPandasColumnConverter(ABC):
     Note: additional module imports should only occur in the convert_column method,
           as each module import leads to slower startup time of the Python process.
     """
+    # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
+    warnings_to_suppress: List[str] = None
 
     @abstractmethod
     def can_convert(self, dtype) -> bool:
@@ -185,6 +188,24 @@ class FromPandasColumnConverter(ABC):
         self, data_frame: "pandas.dataframe", column_name: str
     ) -> "pandas.Series":
         pass
+
+    @contextmanager
+    def warning_manager(self):
+        """
+        The contextlib.contextmanager decorates a function which yields exactly once.
+        Everything before yield is considered to be __enter__ section and everything after,
+        to be __exit__ section.
+        To suppress specific warnings while converting the data, overwrite the suppress_warnings list
+        in the converter's implementation
+
+        """
+        if self.warnings_to_suppress is not None:
+            for warning in self.warnings_to_suppress:
+                warnings.filterwarnings("ignore", message=warning)
+        yield
+        if self.warnings_to_suppress is not None:
+            for warning in self.warnings_to_suppress:
+                warnings.filterwarnings("default", message=warning)
 
 
 class ToPandasColumnConverter(ABC):
@@ -195,6 +216,8 @@ class ToPandasColumnConverter(ABC):
     Note: additional module imports should only occur in the convert_column method,
           as each module import leads to slower startup time of the Python process.
     """
+    # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
+    warnings_to_suppress: List[str] = None
 
     @abstractmethod
     def can_convert(self, dtype) -> bool:
@@ -205,6 +228,24 @@ class ToPandasColumnConverter(ABC):
         self, data_frame: "pandas.dataframe", column_name: str
     ) -> "pandas.Series":
         pass
+
+    @contextmanager
+    def warning_manager(self):
+        """
+        The contextlib.contextmanager decorates a function which yields exactly once.
+        Everything before yield is considered to be __enter__ section and everything after,
+        to be __exit__ section.
+        To suppress specific warnings while converting the data, overwrite the suppress_warnings list
+        in the converter's implementation
+
+        """
+        if self.warnings_to_suppress is not None:
+            for warning in self.warnings_to_suppress:
+                warnings.filterwarnings("ignore", message=warning)
+        yield
+        if self.warnings_to_suppress is not None:
+            for warning in self.warnings_to_suppress:
+                warnings.filterwarnings("default", message=warning)
 
 
 _from_pandas_column_converters = []

@@ -56,23 +56,41 @@ import knime_types as kt
 def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     if data_frame.shape == (0, 0,):
         return pa.table([])
+
+    if not issubclass(type(data_frame), pd.DataFrame):
+        raise TypeError(f"Input must be subclass of a Pandas Dataframe, but is {type(data_frame)}")
+
+    # if we change the columns we have to make a shallow copy of the df
+    # otherwise changes would be reflected in the original dataframe
+    # to avoid copying when not necessary the copy is only made when we actually convert
+    df = None
     for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
         col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
         if col_converter is not None:
-            data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
+            if df is None:
+                # create a shallow copy of the dataframe
+                df = data_frame.copy(deep=False)
+            with col_converter.warning_manager():
+                df[col_name] = col_converter.convert_column(df, col_name)
+
+    if df is None:
+        df = data_frame
+    # change to dataframe, for instance if GeoDataFrame
+    if type(df) != pd.DataFrame:
+        df = pd.DataFrame(df)
 
     # Convert the index to a str series and prepend to the data_frame:
     # extract and drop index from DF
-    row_keys = data_frame.index.to_series().astype(str)
+    row_keys = df.index.to_series().astype(str)
     row_keys.name = "<Row Key>"  # TODO what is the right string?
-    data_frame = pd.concat(
-        [row_keys.reset_index(drop=True), data_frame.reset_index(drop=True)], axis=1,
+    df = pd.concat(
+        [row_keys.reset_index(drop=True), df.reset_index(drop=True)], axis=1,
     )
 
     # Convert all column names to string or PyArrow might complain
-    data_frame.columns = [str(c) for c in data_frame.columns]
+    df.columns = [str(c) for c in df.columns]
 
-    return pa.Table.from_pandas(data_frame)
+    return pa.Table.from_pandas(df)
 
 
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:
@@ -95,7 +113,8 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     for col_name, col_type in zip(data.schema.names, data.schema.types):
         col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
         if col_converter is not None:
-            data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
+            with col_converter.warning_manager():
+                data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
 
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
