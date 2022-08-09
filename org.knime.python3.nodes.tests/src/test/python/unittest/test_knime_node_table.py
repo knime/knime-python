@@ -1,8 +1,6 @@
 import unittest
 import pyarrow as pa
 import pandas as pd
-import datetime as dt
-import json
 
 import knime_schema as ks
 import knime_node_table as knt

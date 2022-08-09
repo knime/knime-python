@@ -52,7 +52,7 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod, abstractclassmethod, abstractproperty
-from typing import Dict, Iterator, List, Sequence, Type, Union, Tuple
+from typing import Dict, Iterator, List, Sequence, Type, Union
 import logging
 from enum import Enum, unique
 
@@ -374,7 +374,7 @@ def struct(*inner_types):
     return StructType(inner_types)
 
 
-def logical(value_type):
+def logical(value_type) -> LogicalType:
     """
     Create a KNIME logical data type of the given Python value type.
 

@@ -48,14 +48,13 @@ Arrow implementation of the knime_types.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import Optional, Union
+from typing import Union
 
 import knime_types as kt
 import knime_arrow_struct_dict_encoding as kas
 import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
-import json
 import logging
 
 if pa.__version__.split(".")[0] == "8":

@@ -49,9 +49,8 @@ Provides the implementation of the KNIME Table using the Apache Arrow backend
 """
 
 from types import LambdaType
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Union
 import knime_table as kta
-import knime_schema as ks
 import knime_arrow as ka
 import knime_arrow_types as kat
 import pyarrow as pa
