@@ -527,8 +527,9 @@ class _Columnar(ABC):
         Implements remove method for Columnar data structures.
         The input can be a column index, a column name or a list of column names.
 
-        If it is a column, then the first column matching will be removed.
-        If it is a column name, than the first column with matching name is removed.
+        If the input is a column index, the column with that index will be removed.
+        If it is a column name, then the first column with matching name is removed.
+        Passing a list of column names will filter out all (including duplicate) columns with matching names.
 
         Args:
             slicing:
@@ -542,7 +543,7 @@ class _Columnar(ABC):
         Raises:
             ValueError if no matching column is found given a list or str
             IndexError if column is accessed by integer and is out of bounds
-            TypeError if the key is neither a column nor a string
+            TypeError if the key is neither a integer nor a string or list of strings.
         """
 
         if isinstance(slicing, List):
