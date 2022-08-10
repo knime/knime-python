@@ -598,6 +598,88 @@ class SchemaTest(unittest.TestCase):
                 f"Traits of Col {i} differ: {a_traits[i]}, {b_traits[i]}",
             )
 
+    def test_pyarrow_and_pandas_extension_types(self):
+        """Tests the methods `to_pandas()` and `to_pyarrow()` of `knime_schema.LogicalType`.
+        Should give back `knime_arrow_types.LogicalTypeExtensionType` and `knime_arrow_pandas.PandasLogicalTypeExtensionType`"""
+        import pyarrow as pa
+        import extension_types as et
+        import knime_arrow_types as kat
+
+        logical_type = k.logical(dt.time)
+        pandas_dtype = logical_type.to_pandas()
+        pyarrow_extension_type = logical_type.to_pyarrow()
+        # Test pandas dtype
+        self.assertEqual(
+            pandas_dtype.name,
+            'PandasLogicalTypeExtensionType(int64, {"value_factory_class":"org.knime.core.data.v2.time.LocalTimeValueFactory"})',
+        )
+        # Test pyarrow extension type
+        self.assertEqual(pyarrow_extension_type.storage_type, pa.int64())
+        self.assertEqual(
+            pyarrow_extension_type.logical_type,
+            '{"value_factory_class":"org.knime.core.data.v2.time.LocalTimeValueFactory"}',
+        )
+        self.assertEqual(
+            pyarrow_extension_type._converter.__class__, et.LocalTimeValueFactory
+        )
+        self.assertEqual(pyarrow_extension_type.__class__, kat.LogicalTypeExtensionType)
+
+    def test_data_spec_to_arrow(self):
+        """Tests the method knime_arrow_types._data_spec_to_arrow with two nested scenarios
+        to see (amongst others) that lists can contain other lists or structs."""
+        import knime_arrow_types as kat
+        import pyarrow as pa
+
+        data_spec = {
+            "type": "struct",
+            "inner_types": [
+                {"type": "struct", "inner_types": ["long", "long"]},
+                {"type": "list", "inner_type": "long"},
+            ],
+        }
+        pa_storage_type = kat.data_spec_to_arrow(data_spec=data_spec)
+        pa_type = pa.struct(
+            [
+                ("0", pa.struct([("0", pa.int64()), ("1", pa.int64())])),
+                ("1", pa.large_list(pa.int64())),
+            ]
+        )
+        self.assertEqual(
+            str(pa_storage_type),
+            "struct<0: struct<0: int64, 1: int64>, 1: large_list<item: int64>>",
+        )
+        self.assertEqual(pa_storage_type, pa_type)
+        data_spec2 = {
+            "type": "struct",
+            "inner_types": [
+                {
+                    "type": "struct",
+                    "inner_types": [
+                        {"type": "struct", "inner_types": ["long", "long"]},
+                        {
+                            "type": "struct",
+                            "inner_types": [
+                                {"type": "list", "inner_type": "long"},
+                                {"type": "struct", "inner_types": ["long", "long"]},
+                            ],
+                        },
+                    ],
+                },
+                {
+                    "type": "list",
+                    "inner_type": {
+                        "type": "struct",
+                        "inner_types": [{"type": "list", "inner_type": "long"}, "long"],
+                    },
+                },
+            ],
+        }
+        pa_storage_type2 = kat.data_spec_to_arrow(data_spec=data_spec2)
+        self.assertEqual(
+            str(pa_storage_type2),
+            "struct<0: struct<0: struct<0: int64, 1: int64>, 1: struct<0: large_list<item: int64>, 1: struct<0: int64, 1: int64>>>, 1: large_list<item: struct<0: large_list<item: int64>, 1: int64>>>",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
