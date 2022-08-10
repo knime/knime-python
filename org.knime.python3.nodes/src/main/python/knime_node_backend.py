@@ -70,11 +70,6 @@ from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 import py4j.clientserver
 
-# to allow Version comparisons
-from utils import parse_version
-
-LOGGER = logging.getLogger("Python")
-
 # TODO: register extension types
 
 

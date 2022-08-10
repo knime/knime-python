@@ -122,12 +122,11 @@ def _inject_parameters(
             )
         else:
             if name in parameters:
-                param_value = parameters[name]
+                param_obj._inject(obj, parameters[name])
             elif param_obj._since_version <= extension_version:
                 if fail_on_missing:
                     raise ValueError(f"No value available for parameter '{name}'")
-                param_value = param_obj._default_value
-            param_obj._inject(obj, param_value)
+                param_obj._inject(obj, param_obj._default_value)
 
 
 def validate_parameters(obj, parameters: dict) -> str:
@@ -162,12 +161,12 @@ def extract_schema(obj, extension_version=None, specs=None) -> dict:
 
 def _extract_schema(obj, extension_version, specs=None):
     properties = {}
-    for name, param in _get_parameters(obj).items():
-        if _is_group(param):
-            properties[name] = _extract_schema(param, extension_version, specs)
-        else:
-            if param._since_version <= extension_version:
-                properties[name] = param._extract_schema(specs)
+    for name, param_obj in _get_parameters(obj).items():
+        if param_obj._since_version <= extension_version:
+            if _is_group(param_obj):
+                properties[name] = _extract_schema(param_obj, extension_version, specs)
+            else:
+                properties[name] = param_obj._extract_schema(specs)
 
     return {"type": "object", "properties": properties}
 
@@ -186,7 +185,9 @@ def _extract_ui_schema_elements(obj, extension_version, scope=None) -> dict:
     elements = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
-            elements.append(param_obj._extract_ui_schema(name, scope))
+            elements.append(
+                param_obj._extract_ui_schema(name, scope, extension_version)
+            )
 
     return elements
 

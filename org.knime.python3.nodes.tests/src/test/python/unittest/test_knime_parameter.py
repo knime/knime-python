@@ -25,6 +25,268 @@ def generate_values_dict(
     }
 
 
+def generate_versioned_values_dict(
+    int_param=3,
+    double_param=1.5,
+    string_param="foo",
+    bool_param=True,
+    first=1,
+    second=5,
+    extension_version=None,
+):
+    model = {}
+    if extension_version is None:
+        model = {
+            "int_param": int_param,
+            "double_param": double_param,
+            "string_param": string_param,
+            "bool_param": bool_param,
+            "group": {"first": first, "second": second},
+        }
+    else:
+        if extension_version == "0.1.0":
+            model = {
+                "int_param": int_param,
+                "double_param": double_param,
+            }
+        elif extension_version == "0.2.0":
+            model = {
+                "int_param": int_param,
+                "double_param": double_param,
+                "string_param": string_param,
+                "group": {"first": first},
+            }
+        elif extension_version == "0.3.0":
+            model = {
+                "int_param": int_param,
+                "double_param": double_param,
+                "string_param": string_param,
+                "bool_param": bool_param,
+                "group": {"first": first, "second": second},
+            }
+    return {"model": model}
+
+
+def generate_versioned_schema_dict(extension_version):
+    if extension_version == "0.1.0":
+        return {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "int_param": {
+                            "title": "Int Parameter",
+                            "description": "An integer parameter",
+                            "type": "integer",
+                            "format": "int32",
+                        },
+                        "double_param": {
+                            "title": "Double Parameter",
+                            "description": "A double parameter",
+                            "type": "number",
+                            "format": "double",
+                        },
+                    },
+                }
+            },
+        }
+    elif extension_version == "0.2.0":
+        return {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "int_param": {
+                            "title": "Int Parameter",
+                            "description": "An integer parameter",
+                            "type": "integer",
+                            "format": "int32",
+                        },
+                        "double_param": {
+                            "title": "Double Parameter",
+                            "description": "A double parameter",
+                            "type": "number",
+                            "format": "double",
+                        },
+                        "string_param": {
+                            "title": "String Parameter",
+                            "description": "A string parameter",
+                            "type": "string",
+                        },
+                        "group": {
+                            "type": "object",
+                            "properties": {
+                                "first": {
+                                    "title": "First Parameter",
+                                    "description": "First parameter description",
+                                    "type": "integer",
+                                    "format": "int32",
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+        }
+    elif extension_version == "0.3.0":
+        return {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "int_param": {
+                            "title": "Int Parameter",
+                            "description": "An integer parameter",
+                            "type": "integer",
+                            "format": "int32",
+                        },
+                        "double_param": {
+                            "title": "Double Parameter",
+                            "description": "A double parameter",
+                            "type": "number",
+                            "format": "double",
+                        },
+                        "string_param": {
+                            "title": "String Parameter",
+                            "description": "A string parameter",
+                            "type": "string",
+                        },
+                        "bool_param": {
+                            "title": "Boolean Parameter",
+                            "description": "A boolean parameter",
+                            "type": "boolean",
+                        },
+                        "group": {
+                            "type": "object",
+                            "properties": {
+                                "first": {
+                                    "title": "First Parameter",
+                                    "description": "First parameter description",
+                                    "type": "integer",
+                                    "format": "int32",
+                                },
+                                "second": {
+                                    "title": "Second Parameter",
+                                    "description": "Second parameter description",
+                                    "type": "integer",
+                                    "format": "int32",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+        }
+
+
+def generate_versioned_ui_schema_dict(extension_version):
+    if extension_version == "0.1.0":
+        return {
+            "elements": [
+                {
+                    "label": "Int Parameter",
+                    "options": {"format": "integer"},
+                    "scope": "#/properties/model/properties/int_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "Double Parameter",
+                    "options": {"format": "number"},
+                    "scope": "#/properties/model/properties/double_param",
+                    "type": "Control",
+                },
+            ],
+            "type": "VerticalLayout",
+        }
+    elif extension_version == "0.2.0":
+        return {
+            "elements": [
+                {
+                    "label": "Int Parameter",
+                    "options": {"format": "integer"},
+                    "scope": "#/properties/model/properties/int_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "Double Parameter",
+                    "options": {"format": "number"},
+                    "scope": "#/properties/model/properties/double_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "String Parameter",
+                    "options": {"format": "string"},
+                    "scope": "#/properties/model/properties/string_param",
+                    "type": "Control",
+                },
+                {
+                    "elements": [
+                        {
+                            "label": "First Parameter",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/model/properties/group/properties/first",
+                            "type": "Control",
+                        },
+                    ],
+                    "label": "Versioned parameter group",
+                    "type": "Section",
+                },
+            ],
+            "type": "VerticalLayout",
+        }
+    elif extension_version == "0.3.0":
+        return {
+            "elements": [
+                {
+                    "label": "Int Parameter",
+                    "options": {"format": "integer"},
+                    "scope": "#/properties/model/properties/int_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "Double Parameter",
+                    "options": {"format": "number"},
+                    "scope": "#/properties/model/properties/double_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "String Parameter",
+                    "options": {"format": "string"},
+                    "scope": "#/properties/model/properties/string_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "Boolean Parameter",
+                    "options": {"format": "boolean"},
+                    "scope": "#/properties/model/properties/bool_param",
+                    "type": "Control",
+                },
+                {
+                    "elements": [
+                        {
+                            "label": "First Parameter",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/model/properties/group/properties/first",
+                            "type": "Control",
+                        },
+                        {
+                            "label": "Second Parameter",
+                            "options": {"format": "integer"},
+                            "scope": "#/properties/model/properties/group/properties/second",
+                            "type": "Control",
+                        },
+                    ],
+                    "label": "Versioned parameter group",
+                    "type": "Section",
+                },
+            ],
+            "type": "VerticalLayout",
+        }
+
+
 #### Primary parameterised object and its groups for testing main functionality: ####
 @kp.parameter_group("Subgroup")
 class NestedParameterGroup:
@@ -145,14 +407,48 @@ class NestedComposedParameterized:
         return {"model": {"group": NestedComposed.create_default_dict()}}
 
 
+@kp.parameter_group("Versioned parameter group")
+class VersionedParameterGroup:
+    first = kp.IntParameter(
+        label="First Parameter",
+        description="First parameter description",
+        default_value=1,
+        since_version="0.2.0",
+    )
+    second = kp.IntParameter(
+        label="Second Parameter",
+        description="Second parameter description",
+        default_value=5,
+        since_version="0.3.0",
+    )
+
+
+class VersionedParameterized:
+    # no since_version specified defaults to it being "0.0.0"
+    int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+    double_param = kp.DoubleParameter(
+        "Double Parameter", "A double parameter", 1.5, since_version="0.1.0"
+    )
+    string_param = kp.StringParameter(
+        "String Parameter", "A string parameter", "foo", since_version="0.2.0"
+    )
+    bool_param = kp.BoolParameter(
+        "Boolean Parameter", "A boolean parameter", True, since_version="0.3.0"
+    )
+
+    group = VersionedParameterGroup(since_version="0.2.0")
+
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
         self.parameterized = Parameterized()
+        self.versioned_parameterized = VersionedParameterized()
         self.parameterized_without_group = ParameterizedWithoutGroup()
 
         self.maxDiff = None
 
+    #### Test central functionality: ####
     def test_getting_parameters(self):
         """
         Test that parameter values can be retrieved.
@@ -199,7 +495,6 @@ class ParameterTest(unittest.TestCase):
 
     def test_inject_parameters(self):
         params = generate_values_dict(4, 2.7, "bar", False, 3, 2, 1)
-        # TODO versioning
         kp.inject_parameters(self.parameterized, params)
         extracted = kp.extract_parameters(self.parameterized)
         self.assertEqual(params, extracted)
@@ -207,7 +502,7 @@ class ParameterTest(unittest.TestCase):
     def test_inject_parameters_with_missing_allowed(self):
         obj = Parameterized()
         params = {"model": {"int_param": 5}}
-        kp.inject_parameters(obj, params, version=None, fail_on_missing=False)
+        kp.inject_parameters(obj, params, fail_on_missing=False)
         extracted = kp.extract_parameters(obj)
         expected = generate_values_dict(5)
         self.assertEqual(expected, extracted)
@@ -274,69 +569,6 @@ class ParameterTest(unittest.TestCase):
             },
         }
         extracted = kp.extract_schema(self.parameterized)
-        self.assertEqual(expected, extracted)
-
-    def test_extract_schema_with_version(self):
-        expected = {
-            "type": "object",
-            "properties": {
-                "model": {
-                    "type": "object",
-                    "properties": {
-                        "int_param": {
-                            "title": "Int Parameter",
-                            "description": "An integer parameter",
-                            "type": "integer",
-                            "format": "int32"
-                            },
-                        "double_param": {
-                            "title": "Double Parameter",
-                            "description": "A double parameter",
-                            "type": "number",
-                            "format": "double"},
-                        "string_param": {
-                            "title": "String Parameter",
-                            "description": "A string parameter",
-                            "type": "string"
-                            },
-                        "bool_param": {
-                            "title": "Boolean Parameter",
-                            "description": "A boolean parameter",
-                            "type": "boolean"
-                            },
-                        "parameter_group": {
-                            "type": "object",
-                            "properties": {
-                                "subgroup": {
-                                    "properties": {
-                                        "first": {
-                                            "title": "First Parameter",
-                                            "description": "First parameter description",
-                                            "type": "integer",
-                                            "format": "int32"
-                                            },
-                                        "second": {
-                                            "title": "Second Parameter",
-                                            "description": "Second parameter description",
-                                            "type": "integer",
-                                            "format": "int32"
-                                            },
-                                    },
-                                    "type": "object",
-                                },
-                                "third": {
-                                    "title": "Internal int Parameter",
-                                    "description": "Internal int parameter description",
-                                    "type": "integer",
-                                    "format": "int32"
-                                    },
-                            },
-                        },
-                    },
-                }
-            }
-        }
-        extracted = kp.extract_schema(self.parameterized, extension_version="0.1.0")
         self.assertEqual(expected, extracted)
 
     def test_extract_ui_schema(self):
@@ -471,6 +703,7 @@ class ParameterTest(unittest.TestCase):
         obj2.parameter_group.third = 7
         self.assertEqual(group1.third, 5)
 
+    #### Test parameter composition: ####
     def test_extract_parameters_from_uninitialized_composed(self):
         obj = ComposedParameterized()
         parameters = kp.extract_parameters(obj)
@@ -664,6 +897,63 @@ class ParameterTest(unittest.TestCase):
         pass  # TODO
         # injection of custom parameter/parameter group validators can only be done
         # inside their "parent" class declaration
+
+    #### Test versioning of node settings ####
+    def test_extracting_parameters_with_version(self):
+        for version in ["0.1.0", "0.2.0", "0.3.0"]:
+            params = kp.extract_parameters(self.versioned_parameterized, version)
+            expected = generate_versioned_values_dict(extension_version=version)
+            self.assertEqual(params, expected)
+
+    def test_inject_parameters_with_version(self):
+        for version in ["0.1.0", "0.2.0", "0.3.0"]:
+            params = generate_versioned_values_dict(extension_version=version)
+            kp.inject_parameters(self.versioned_parameterized, params, version)
+            extracted = kp.extract_parameters(self.versioned_parameterized, version)
+            self.assertEqual(params, extracted)
+
+    def test_extract_schema_with_version(self):
+        for version in ["0.1.0", "0.2.0", "0.3.0"]:
+            schema = kp.extract_schema(self.versioned_parameterized, version)
+            expected = generate_versioned_schema_dict(extension_version=version)
+            self.assertEqual(schema, expected)
+
+    def test_extract_ui_schema_with_version(self):
+        for version in ["0.1.0", "0.2.0", "0.3.0"]:
+            ui_schema = kp.extract_ui_schema(self.versioned_parameterized, version)
+            expected = generate_versioned_ui_schema_dict(extension_version=version)
+            self.assertEqual(ui_schema, expected)
+
+    def test_version_parsing(self):
+        # test default behaviour
+        self.assertEqual(kp.parse_version(None), kp.Version(0, 0, 0))
+
+        self.assertEqual(kp.parse_version(kp.parse_version(None)), kp.Version(0, 0, 0))
+
+        self.assertEqual(kp.parse_version("0.1.0"), kp.Version(0, 1, 0))
+
+        # test that incorrect formatting raises ValueError
+        for version in [
+            "0.0.0.1",
+            "0.0.a",
+            "0.1.a",
+            "0.1.0-alpha",
+            "0.0-alpha.1",
+            "1.-3.7.-5.2",
+            ".0.1",
+            "a.b.c",
+            "",
+            "0",
+            "...",
+        ]:
+            with self.assertRaises(ValueError):
+                kp.parse_version(version)
+
+        # check that comparing version works as expected
+        self.assertTrue(kp.Version(0, 1, 0) > kp.Version(0, 0, 0))
+        self.assertTrue(kp.Version(0, 1, 0) >= kp.Version(0, 0, 0))
+        self.assertTrue(kp.Version(0, 0, 1) >= kp.Version(0, 0, 0))
+        self.assertTrue(kp.Version(1, 1, 2) >= kp.Version(1, 1, 1))
 
 
 if __name__ == "__main__":

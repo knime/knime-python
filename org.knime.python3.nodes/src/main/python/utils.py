@@ -66,12 +66,10 @@ def parse_version(version_string):
         return version_string
 
     try:
-        # only allow non-negative integers for version parts
-        major, minor, patch = [
-            int(part) for part in version_string.split(".") if int(part) >= 0
-        ]
+        major, minor, patch = [int(part) for part in version_string.split(".")]
+        assert major >= 0 and minor >= 0 and patch >= 0
         return Version(major, minor, patch)
-    except ValueError:
+    except (ValueError, AssertionError):
         raise ValueError(
             f"Incorrect version format: '{version_string}'. Must be of the form 'major.minor.patch', with non-negative integers for major, minor and patch."
         )
@@ -80,6 +78,7 @@ def parse_version(version_string):
 class Version(namedtuple("Version", ["major", "minor", "patch"])):
     """
     A Version namedtuple with a __repr__ method that returns a string of the form "0.1.2".
+    Version objects can be compared with other Version objects.
     """
 
     def __repr__(self):
