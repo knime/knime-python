@@ -58,6 +58,50 @@ class SchemaTest(unittest.TestCase):
         s2 = s2.get()
         self.assertEqual(s, s2, "Appended list does not match single appending")
 
+    def test_remove(self):
+        types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
+        names = ["1", "2", "3", "4"]
+        s = ks.Schema(types, names)
+        _s = s.remove(names[0])
+
+        # Check Type
+        self.assertIsInstance(_s, ks._ColumnarView)
+        self.assertIsInstance(s, ks.Schema)
+        self.assertIsInstance(_s.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(_s.delegate, ks.Schema)
+
+        # Check Errors
+        with self.assertRaises(ValueError):
+            s.remove("5")
+
+        with self.assertRaises(ValueError):
+            s.remove(["5"])
+
+        with self.assertRaises(ValueError):
+            s.remove(["4", "5"])
+
+        with self.assertRaises(IndexError):
+            s.remove(-1)
+
+        with self.assertRaises(IndexError):
+            s.remove(len(names))
+
+        # Check Functionality
+        _s = s.remove("4")
+        self.assertEqual(s.num_columns - 1, _s.get().num_columns)
+
+        _s = s.remove(["4"])
+        self.assertEqual(s.num_columns - 1, _s.get().num_columns)
+
+        _s = s.remove(["4", "3"])
+        self.assertEqual(s.num_columns - 2, _s.get().num_columns)
+
+        _s = _s.remove("1").remove("2")
+        self.assertEqual(0, _s.get().num_columns)
+
+        _s = s.remove(3)
+        self.assertEqual(s.num_columns - 1, _s.get().num_columns)
+
     def test_schema_from_columns(self):
         types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
         names = ["Ints", "Longs", "Doubles", "Strings"]
@@ -90,6 +134,46 @@ class TableTest(unittest.TestCase):
             return None
 
         knt._backend = knat._ArrowBackend(sink_factory)
+
+    def test_remove(self):
+        df = pd.DataFrame()
+        df["1"] = [1, 2, 3, 4]
+        df["2"] = [5.0, 6.0, 7.0, 8.0]
+        t = knt.Table.from_pandas(df)
+        _t = t.remove("1")
+
+        # Check Type
+        self.assertIsInstance(_t, ks._ColumnarView)
+        self.assertIsInstance(t, knt.Table)
+        self.assertIsInstance(_t.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(_t.delegate, knt.Table)
+
+        # Check Errors
+        with self.assertRaises(ValueError):
+            t.remove("5")
+
+        with self.assertRaises(ValueError):
+            t.remove(["5"])
+
+        with self.assertRaises(ValueError):
+            t.remove(["4", "1"])
+
+        # Check Functionality
+        _t = t.remove("1")
+        _df = _t.to_pandas()
+        self.assertNotIn("1", _df.columns)
+
+        # Check Functionality
+        __t = _t.remove("2")
+        _df = __t.to_pandas()
+        self.assertNotIn("2", _df.columns)
+        self.assertNotIn("1", _df.columns)
+
+        # Check Functionality
+        __t = _t.remove(["2"])
+        _df = __t.to_pandas()
+        self.assertNotIn("2", _df.columns)
+        self.assertNotIn("1", _df.columns)
 
     def test_table_ops(self):
         df = pd.DataFrame()

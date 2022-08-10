@@ -366,7 +366,6 @@ class _Table(_Tabular):
         """Returns the number of batches of this table"""
         return self.num_batches
 
-
 class ReadTable(_Table, _ReadData):
     """
     A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory)

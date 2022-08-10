@@ -327,11 +327,11 @@ def string(dict_encoding_key_type: DictEncodingKeyType = None):
     Create a KNIME string type.
 
     Args:
-        dict_encoding_key_type: 
+        dict_encoding_key_type:
             The key type to use for dictionary encoding. If this is
             None (the default), no dictionary encoding will be used.
             Dictionary encoding helps to reduce storage space and read/write
-            performance for columns with repeating values such as categorical data. 
+            performance for columns with repeating values such as categorical data.
     """
     return PrimitiveType(PrimitiveTypeId.STRING, dict_encoding_key_type)
 
@@ -341,11 +341,11 @@ def blob(dict_encoding_key_type: DictEncodingKeyType = None):
     Create a KNIME blob type for binary data of variable length
 
     Args:
-        dict_encoding_key_type: 
+        dict_encoding_key_type:
             The key type to use for dictionary encoding. If this is
             None (the default), no dictionary encoding will be used.
             Dictionary encoding helps to reduce storage space and read/write
-            performance for columns with repeating values such as categorical data. 
+            performance for columns with repeating values such as categorical data.
     """
     return PrimitiveType(PrimitiveTypeId.BLOB, dict_encoding_key_type)
 
@@ -367,7 +367,7 @@ def struct(*inner_types):
 
     Args:
         inner_types:
-            The argument list of this method defines the fields 
+            The argument list of this method defines the fields
             in this structured data type. Each inner type must be a
             KNIME type
     """
@@ -379,13 +379,13 @@ def logical(value_type):
     Create a KNIME logical data type of the given Python value type.
 
     Args:
-        value_type: 
-            The type of the values inside this column. A knime_types.PythonValueFactory 
+        value_type:
+            The type of the values inside this column. A knime_types.PythonValueFactory
             must be registered for this type.
-    
+
     Raise:
-        TypeError: 
-            if no PythonValueFactory has been registered for this value type 
+        TypeError:
+            if no PythonValueFactory has been registered for this value type
             with `knime_types.register_python_value_factory`
     """
     try:
@@ -423,7 +423,7 @@ class PortObjectSpec(ABC):
 class BinaryPortObjectSpec(PortObjectSpec):
     """
     Port object spec for simple binary port objects.
-    
+
     BinaryPortObjectSpecs have an ID that is used to ensure
     that only ports with equal ID can be connected.
     """
@@ -465,7 +465,7 @@ class Column:
     def __init__(self, ktype: KnimeType, name: str, metadata=None):
         """
         Construct a Column from type, name and optional metadata.
-        
+
         Args:
             ktype: The knime type of the column
             name: The name of the column. May not be empty.
@@ -511,6 +511,10 @@ class _Columnar(ABC):
     def num_columns(self):
         pass
 
+    @abstractproperty
+    def column_names(self):
+        pass
+
     def insert(self, other: "_Columnar", at: int) -> "_Columnar":
         n = self.num_columns
         permuted_indices = list(range(n))
@@ -518,12 +522,59 @@ class _Columnar(ABC):
         permuted_indices[at:at] = [i + n for i in range(new_columns)]
         return self.append(other)[permuted_indices]
 
+    def remove(self, slicing: Union[str, int, List[str]]):
+        """
+        Implements remove method for Columnar data structures.
+        The input can be a column index, a column name or a list of column names.
+
+        If it is a column, then the first column matching will be removed.
+        If it is a column name, than the first column with matching name is removed.
+
+        Args:
+            slicing:
+                Can be of type integer representing the index in column_names to remove.
+                Or a list of strings removing every column matching from that list.
+                Or a string of which first occurence is removed from the column_names.
+
+        Returns:
+            A View missing the columns to be removed.
+
+        Raises:
+            ValueError if no matching column is found given a list or str
+            IndexError if column is accessed by integer and is out of bounds
+            TypeError if the key is neither a column nor a string
+        """
+
+        if isinstance(slicing, List):
+            if any(slice not in self.column_names for slice in slicing):
+                raise ValueError(
+                    f"The following values ({' '.join([col for col in self.column_names if col not in slicing])})"
+                    + f" did not match any in {type(self)}"
+                )
+            _columns = [column for column in self.column_names if column not in slicing]
+
+        elif isinstance(slicing, int):
+            if slicing >= len(self.column_names) or slicing < 0:
+                raise IndexError(
+                    f"Index out of bounds. Choose an index between 0,{len(self.column_names)}."
+                )
+            _columns = self.column_names[:slicing] + self.column_names[slicing + 1 :]
+
+        elif isinstance(slicing, str):
+            _columns = self.column_names
+            _columns.remove(slicing)
+
+        else:
+            raise TypeError(f"Could not match input type {type(slicing)}.")
+
+        return _ColumnarView(delegate=self, operation=_ColumnSlicingOperation(_columns))
+
     def __getitem__(
         self, slicing: Union[slice, List[int], List[str]]
     ) -> "_ColumnarView":
         """
         Creates a view of this Table or Schema by slicing columns. The slicing syntax is similar to that of numpy arrays,
-        but columns can also be addressed as index lists or via a list of column names. 
+        but columns can also be addressed as index lists or via a list of column names.
 
         Args:
             column_slice:
@@ -595,6 +646,10 @@ class _ColumnarView(_Columnar):
     def num_columns(self):
         return self.get().num_columns
 
+    @property
+    def column_names(self):
+        return self.get().column_names
+
     def __str__(self):
         return f"ColumnarView<delegate={self._delegate}, op={self._operation}>"
 
@@ -642,6 +697,7 @@ class _ColumnarView(_Columnar):
 
 # --------------------------------------------------------------
 # Operations
+# --------------------------------------------------------------
 class _ColumnarOperation(ABC):
     @abstractmethod
     def apply(self, input: _Columnar) -> _Columnar:
@@ -679,8 +735,6 @@ class _AppendOperation(_ColumnarOperation):
 # ------------------------------------------------------------------
 # Schema
 # ------------------------------------------------------------------
-
-
 class Schema(_Columnar, PortObjectSpec):
     """
     A schema defines the data types and names of the columns inside a table.
@@ -853,42 +907,6 @@ class Schema(_Columnar, PortObjectSpec):
     def __repr__(self) -> str:
         return str(self)
 
-    def remove(self, key: Union[Column, str]):
-        """
-        Remove a column from this schema. The key can either be a column or a column name.
-        If it is a column, then the first column in the schema that matches the given column
-        will be removed. If it is a column name, than the first column with matching name
-        is removed.
-
-        Raises:
-            KeyError if no matching column is found
-            TypeError if the key is neither a column nor a string
-        """
-
-        # Returns None or first index matching the condition
-        def find_index(columns, key, condition):
-            for idx, _column in enumerate(columns):
-                if condition(key, _column):
-                    return idx
-
-        # Removes the first occurrence by key from the array.
-        if isinstance(key, str):
-            _idx = find_index(self._columns, key, lambda x, y: x == y.name)
-            if _idx is None:
-                raise KeyError(f"No Column found for column name: {key}")
-
-        # Removes the first occurrence by column from the array.
-        elif isinstance(key, Column):
-            _idx = find_index(self._columns, key, lambda x, y: x == y)
-            if _idx is None:
-                raise KeyError(f"No Column found for key: {key}")
-        else:
-            raise TypeError(
-                f"Removing a column identified by type: {type(key)} is not implemented"
-            )
-
-        del self._columns[_idx]
-
     def to_knime_dict(self) -> Dict:
         """
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME
@@ -1007,7 +1025,7 @@ def _wrap_primitive_type(dtype: KnimeType) -> KnimeType:
 def _unwrap_primitive_types(schema: Schema) -> Schema:
     """
     A table schema as it is coming from KNIME contains all columns as "logical types",
-    because they have a logical type trait (and java_value_factory) attached to it. 
+    because they have a logical type trait (and java_value_factory) attached to it.
     Here we unwrap all logical types that are known to us and present them as
     primitive types to our users.
     """

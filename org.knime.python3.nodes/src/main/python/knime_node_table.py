@@ -86,7 +86,7 @@ class _Tabular(ks._Columnar):
     ) -> "_TabularView":
         """
         Creates a view of this Table by slicing rows and columns. The slicing syntax is similar to that of numpy arrays,
-        but columns can also be addressed as index lists or via a list of column names. 
+        but columns can also be addressed as index lists or via a list of column names.
 
         The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the Python Script
         (Labs) node's ReadTable.
@@ -192,6 +192,10 @@ class _TabularView(_Tabular, ks._ColumnarView):
         return self.get().num_rows
 
     @property
+    def column_names(self):
+        return self.get().column_names
+
+    @property
     def schema(self) -> ks.Schema:
         return self.get().schema
 
@@ -208,7 +212,6 @@ class _TabularOperation(ks._ColumnarOperation):
     @abstractmethod
     def apply(self, input: _Tabular) -> _Tabular:
         pass
-
 
 class _RowSlicingOperation(_TabularOperation):
     def __init__(self, row_slice):
@@ -311,9 +314,9 @@ class Table(_Tabular):
         with all columns, but only a subset of the rows. A batch should always fit into
         memory (max size currently 64mb). The table being passed to execute() is already
         present in batches, so accessing the data this way is very efficient.
-        
+
         **Example**::
-        
+
             output_table = BatchOutputTable.create()
             for batch in my_table.to_batches():
                 input_batch = batch.to_pandas()
