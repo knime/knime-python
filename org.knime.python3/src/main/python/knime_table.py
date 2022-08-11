@@ -238,7 +238,8 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         """
         Access the batch or table as a pandas.DataFrame.
@@ -258,7 +259,8 @@ class _ReadData(ABC):
 
     @abstractmethod
     def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         """
         Access this batch or table as a pyarrow.RecordBatch or pyarrow.table. The returned
@@ -289,12 +291,14 @@ class SlicedDataView(_SlicedView, _ReadData):
         super().__init__(delegate, row_slice, column_slice)
 
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         return self._delegate.to_pandas(sentinel, self._row_slice, self._column_slice)
 
     def to_pyarrow(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> Union["pyarrow.RecordBatch", "pyarrow.Table"]:
         return self._delegate.to_pyarrow(sentinel, self._row_slice, self._column_slice)
 
@@ -366,6 +370,7 @@ class _Table(_Tabular):
         """Returns the number of batches of this table"""
         return self.num_batches
 
+
 class ReadTable(_Table, _ReadData):
     """
     A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory)
@@ -378,9 +383,9 @@ class ReadTable(_Table, _ReadData):
         Returns an generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
         len(my_read_table) gives the static amount of batches within the table, which is not updated.
-        
+
         **Example**::
-        
+
             processed_table = knime_io.batch_write_table()
             for batch in knime_io.input_tables[0].batches():
                 input_batch = batch.to_pandas()
@@ -444,16 +449,16 @@ class BatchWriteTable(_Table):
         data types, must match that of the previous batches in this table.
         Note that this cannot take a pyarrow.Table as input. With pyarrow, it can only process batches, which
         can be created as follows from some input table.
-        
+
         **Example**::
-        
+
             processed_table = knime_io.batch_write_table()
             for batch in knime_io.input_tables[0].batches():
                 input_batch = batch.to_pandas()
                 # process the batch
                 processed_table.append(input_batch)
-        
-        
+
+
 
         Args:
             data:

@@ -109,7 +109,6 @@ class EntryPoint(kg.EntryPoint):
                 pd_array[0] == values[0]
             ), f"Wrong list of ints returned from pandas, expected '{values}' got '{pd_array[0]}'"
 
-
     def writeFsLocationViaPandas(self, data_sink, category, specifier, path):
         with kg.data_sink_mapper(data_sink) as sink:
             import extension_types as et
@@ -167,4 +166,3 @@ def test_primitive_list_in_df():
     assert isinstance(field.type, pa.ListType)
     assert field.type.value_type == pa.int64()
     assert field.name == "column"
-

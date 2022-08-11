@@ -213,6 +213,7 @@ class _TabularOperation(ks._ColumnarOperation):
     def apply(self, input: _Tabular) -> _Tabular:
         pass
 
+
 class _RowSlicingOperation(_TabularOperation):
     def __init__(self, row_slice):
         self._row_slice = row_slice

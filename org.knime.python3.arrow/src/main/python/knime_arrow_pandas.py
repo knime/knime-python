@@ -54,11 +54,16 @@ import knime_types as kt
 
 
 def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
-    if data_frame.shape == (0, 0,):
+    if data_frame.shape == (
+        0,
+        0,
+    ):
         return pa.table([])
 
     if not issubclass(type(data_frame), pd.DataFrame):
-        raise TypeError(f"Input must be subclass of a Pandas Dataframe, but is {type(data_frame)}")
+        raise TypeError(
+            f"Input must be subclass of a Pandas Dataframe, but is {type(data_frame)}"
+        )
 
     # if we change the columns we have to make a shallow copy of the df
     # otherwise changes would be reflected in the original dataframe
@@ -84,7 +89,8 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     row_keys = df.index.to_series().astype(str)
     row_keys.name = "<Row Key>"  # TODO what is the right string?
     df = pd.concat(
-        [row_keys.reset_index(drop=True), df.reset_index(drop=True)], axis=1,
+        [row_keys.reset_index(drop=True), df.reset_index(drop=True)],
+        axis=1,
     )
 
     # Convert all column names to string or PyArrow might complain
@@ -114,7 +120,9 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
         col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
         if col_converter is not None:
             with col_converter.warning_manager():
-                data_frame[col_name] = col_converter.convert_column(data_frame, col_name)
+                data_frame[col_name] = col_converter.convert_column(
+                    data_frame, col_name
+                )
 
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)

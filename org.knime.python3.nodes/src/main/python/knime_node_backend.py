@@ -253,7 +253,9 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
     elif port.type == kn.PortType.BINARY:
         if not isinstance(obj, bytes):
             tb = None
-            raise TypeError(f"Binary Port can only process objects of type bytes, not {type(obj)}").with_traceback(tb)
+            raise TypeError(
+                f"Binary Port can only process objects of type bytes, not {type(obj)}"
+            ).with_traceback(tb)
 
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
         return _PythonBinaryPortObject(class_name, file_creator(), obj, port.id)
@@ -358,7 +360,6 @@ class _PythonNodeProxy:
 
             self._set_flow_variables(exec_context.flow_variables)
 
-
             if outputs is None:
                 outputs = []
 
@@ -366,7 +367,10 @@ class _PythonNodeProxy:
                 # single outputs are fine
                 outputs = [outputs]
 
-            if hasattr(self._node, "output_view") and self._node.output_view is not None:
+            if (
+                hasattr(self._node, "output_view")
+                and self._node.output_view is not None
+            ):
                 out_view = outputs[-1]
                 outputs = outputs[:-1]
 
@@ -386,7 +390,6 @@ class _PythonNodeProxy:
         except Exception as ex:
             self._set_failure(ex, 0)
             return None
-
 
         kt._backend.close()
         kt._backend = None

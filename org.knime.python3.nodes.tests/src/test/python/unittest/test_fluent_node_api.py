@@ -288,7 +288,9 @@ class MyPropertyOverridingNode:
 
         self.output_ports = self.output_ports + [
             kn.Port(
-                type=kn.PortType.TABLE, name="New output table", description="Blupp",
+                type=kn.PortType.TABLE,
+                name="New output table",
+                description="Blupp",
             )
         ]
 

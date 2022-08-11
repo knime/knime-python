@@ -54,13 +54,14 @@ import importlib
 import json
 from typing import List
 
+
 class PythonValueFactory:
     def __init__(self, compatible_type):
         """
         Create a PythonValueFactory that can perform special encoding/
         decoding for the values represented by this ValueFactory.
 
-        Args: 
+        Args:
             compatible_type:
         """
         self._compatible_type = compatible_type
@@ -123,7 +124,10 @@ _java_value_factory_to_python_type = {}
 
 
 def register_python_value_factory(
-    python_module, python_value_factory_name, data_spec_json, data_traits,
+    python_module,
+    python_value_factory_name,
+    data_spec_json,
+    data_traits,
 ):
     module = importlib.import_module(python_module)
     value_factory_class = getattr(module, python_value_factory_name)
@@ -176,6 +180,7 @@ class FromPandasColumnConverter(ABC):
     Note: additional module imports should only occur in the convert_column method,
           as each module import leads to slower startup time of the Python process.
     """
+
     # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
     warnings_to_suppress: List[str] = None
 
@@ -216,6 +221,7 @@ class ToPandasColumnConverter(ABC):
     Note: additional module imports should only occur in the convert_column method,
           as each module import leads to slower startup time of the Python process.
     """
+
     # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
     warnings_to_suppress: List[str] = None
 

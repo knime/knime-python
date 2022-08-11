@@ -58,7 +58,7 @@ import numpy as np
 import json
 import logging
 
-if pa.__version__.split('.')[0] == '8':
+if pa.__version__.split(".")[0] == "8":
     # due to a pyarrow bug the as_py method from an ExtensionScalar is used, which does not decode our Extension
     # Scalar (in pa >= 8). Therefore, the builtin method has to be overwritten using forbidden fruit curse magic.
     # This Fix should be removed if https://issues.apache.org/jira/browse/ARROW-13612 is resolved.
@@ -68,19 +68,22 @@ if pa.__version__.split('.')[0] == '8':
 
         _orig_ext_scalar_as_py = pa.lib.ExtensionScalar.as_py
 
-
         def as_py_fix(self):
-            if hasattr(self, 'type') and isinstance(self.type,
-                                                    LogicalTypeExtensionType):  # if we have an extension type
+            if hasattr(self, "type") and isinstance(
+                self.type, LogicalTypeExtensionType
+            ):  # if we have an extension type
                 return self.type.decode(self.value.as_py())  # use our own decode
-            return _orig_ext_scalar_as_py(self)  # else use the usual ExtensionScalar as_py
+            return _orig_ext_scalar_as_py(
+                self
+            )  # else use the usual ExtensionScalar as_py
 
-
-        curse(pa.lib.ExtensionScalar, 'as_py', as_py_fix)  # swap methods
+        curse(pa.lib.ExtensionScalar, "as_py", as_py_fix)  # swap methods
 
     except ImportError:
-        logging.info(f"Using pyarrow with version {pa.__version__}  can result in errors when using pyarrow "
-                     f"Extension types.")
+        logging.info(
+            f"Using pyarrow with version {pa.__version__}  can result in errors when using pyarrow "
+            f"Extension types."
+        )
 
 
 def _pretty_type_string(dtype: pa.DataType):
@@ -117,7 +120,7 @@ def _get_arrow_storage_to_ext_fn(dtype):
     @return: converter function
     """
     if is_dict_encoded_value_factory_type(
-            dtype
+        dtype
     ):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
         key_gen = kas.DictKeyGenerator()
         # gets conversion fct for nested dtypes
@@ -137,7 +140,7 @@ def _get_arrow_storage_to_ext_fn(dtype):
         return wrap_and_struct_dict_encode
 
     elif kas.is_struct_dict_encoded(
-            dtype
+        dtype
     ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict encoding function
         key_gen = kas.DictKeyGenerator()
@@ -209,7 +212,7 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
     @return: converter function
     """
     if is_dict_encoded_value_factory_type(
-            dtype
+        dtype
     ):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
         # in this case we recursively call function with the value type of the StructDictEncodedLogicalTypeExtensionType
         # resulting in the decode function for the storage type
@@ -218,7 +221,7 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
         return lambda a: storage_fn(a.dictionary_decode())
 
     elif kas.is_struct_dict_encoded(
-            dtype
+        dtype
     ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict decoding function
         return lambda a: a.dictionary_decode()
@@ -268,9 +271,9 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
 
 def contains_knime_extension_type(dtype: pa.DataType):
     if (
-            is_value_factory_type(dtype)
-            or kas.is_struct_dict_encoded(dtype)
-            or is_dict_encoded_value_factory_type(dtype)
+        is_value_factory_type(dtype)
+        or kas.is_struct_dict_encoded(dtype)
+        or is_dict_encoded_value_factory_type(dtype)
     ):
         return True
     elif is_list_type(dtype):
@@ -334,7 +337,7 @@ def _to_extension_array(data, target_type):
 
 
 def insert_sentinel_for_missing_values(
-        data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
+    data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
     arrays = []
     for column in data:
@@ -359,14 +362,14 @@ def _sentinel_value(dtype: pa.DataType, sentinel: Union[str, int]) -> int:
 
 
 def _insert_sentinels_for_missing_values_in_int_array(
-        array: pa.Array, sentinel: Union[str, int]
+    array: pa.Array, sentinel: Union[str, int]
 ) -> pa.Array:
     sentinel_value = _sentinel_value(array.type, sentinel)
     return array.fill_null(sentinel_value)
 
 
 def sentinel_to_missing_value(
-        data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
+    data: Union[pa.RecordBatch, pa.Table], sentinel: Union[str, int]
 ) -> Union[pa.RecordBatch, pa.Table]:
     arrays = []
     for column in data:
@@ -381,7 +384,7 @@ def sentinel_to_missing_value(
 
 
 def _sentinel_to_missing_value_in_int_array(
-        array: pa.Array, sentinel: Union[str, int]
+    array: pa.Array, sentinel: Union[str, int]
 ) -> pa.Array:
     sentinel_value = _sentinel_value(array.type, sentinel)
     mask = pa.compute.equal(array, sentinel_value)
@@ -634,9 +637,9 @@ _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
 
 def _is_knime_primitive_type(dtype):
     return is_value_factory_type(dtype) and (
-            dtype.logical_type == _row_key_type
-            or dtype.logical_type in _arrow_to_knime_primitive_types.values()
-            or dtype.logical_type in _arrow_to_knime_primitive_list_types.values()
+        dtype.logical_type == _row_key_type
+        or dtype.logical_type in _arrow_to_knime_primitive_types.values()
+        or dtype.logical_type in _arrow_to_knime_primitive_list_types.values()
     )
 
 
@@ -649,9 +652,9 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
         array: A pa.Array
     """
     if (
-            is_value_factory_type(array.type)
-            and array.type.logical_type == _arrow_to_knime_list_type
-            and _is_knime_primitive_type(array.type.storage_type.value_type)
+        is_value_factory_type(array.type)
+        and array.type.logical_type == _arrow_to_knime_list_type
+        and _is_knime_primitive_type(array.type.storage_type.value_type)
     ):
         # special handling for unspecific list types: we unwrap the values
         # and maintain the offsets and validity mask
@@ -665,7 +668,7 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
 
 
 def unwrap_primitive_arrays(
-        table: Union[pa.Table, pa.RecordBatch]
+    table: Union[pa.Table, pa.RecordBatch]
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = [
         _apply_to_array(column, _unwrap_primitive_knime_extension_array)
@@ -684,8 +687,8 @@ def _get_wrapped_type(dtype, is_row_key):
             kt.get_converter(_row_key_type), dtype, _row_key_type
         )
     elif (
-            not isinstance(dtype, pa.ExtensionType)
-            and dtype in _arrow_to_knime_primitive_types
+        not isinstance(dtype, pa.ExtensionType)
+        and dtype in _arrow_to_knime_primitive_types
     ):
         # if it is a primitive extension type
         logical_type = _arrow_to_knime_primitive_types[dtype]
@@ -693,9 +696,9 @@ def _get_wrapped_type(dtype, is_row_key):
             kt.get_converter(logical_type), dtype, logical_type
         )
     elif (
-            not isinstance(dtype, pa.ExtensionType)
-            and is_list_type(dtype)
-            and (dtype.value_type in _arrow_to_knime_primitive_list_types)
+        not isinstance(dtype, pa.ExtensionType)
+        and is_list_type(dtype)
+        and (dtype.value_type in _arrow_to_knime_primitive_list_types)
     ):
         # We have to treat lists differently here because arrow's comparison of list types is
         # extremely strict and fails due to a mismatch in field names (which we have no control over).
@@ -704,9 +707,9 @@ def _get_wrapped_type(dtype, is_row_key):
             kt.get_converter(logical_type), dtype, logical_type
         )
     elif (
-            not isinstance(dtype, pa.ExtensionType)
-            and is_list_type(dtype)
-            and dtype.value_type == pa.null()
+        not isinstance(dtype, pa.ExtensionType)
+        and is_list_type(dtype)
+        and dtype.value_type == pa.null()
     ):
         # There is no special VoidList type in KNIME, so we need two extension types,
         # one for the outer list, and one for the inner void type
@@ -746,12 +749,15 @@ def _nulls(num_nulls: int, dtype: pa.DataType):
     # type.
     validbits = np.packbits(np.ones(num_nulls, dtype=np.uint8), bitorder="little")
     return pa.Array.from_buffers(
-        dtype, num_nulls, [pa.py_buffer(validbits)], null_count=num_nulls,
+        dtype,
+        num_nulls,
+        [pa.py_buffer(validbits)],
+        null_count=num_nulls,
     )
 
 
 def _wrap_primitive_array(
-        array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool, column_name: str
+    array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool, column_name: str
 ) -> Union[pa.Array, pa.ChunkedArray]:
     """
     wraps the given column array in the corresponding LogicalTypeExtensionType and returns it
@@ -778,7 +784,10 @@ def _wrap_primitive_array(
             list_data = _create_list_array(offsets, inner_data)
             return pa.ExtensionArray.from_storage(wrapped_type, list_data)
 
-        return _apply_to_array(array, to_list_of_nulls, )
+        return _apply_to_array(
+            array,
+            to_list_of_nulls,
+        )
     else:
         return _apply_to_array(
             array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
@@ -788,9 +797,9 @@ def _wrap_primitive_array(
 def _check_is_rowkey(array: pa.Array):
     first_column_type = array.type
     if (
-            not is_value_factory_type(first_column_type)
-            or first_column_type.storage_type != pa.string()
-            or first_column_type.logical_type != _row_key_type
+        not is_value_factory_type(first_column_type)
+        or first_column_type.storage_type != pa.string()
+        or first_column_type.logical_type != _row_key_type
     ):
         raise TypeError(
             "The first column must contain unique row identifiers of type 'string'"
@@ -798,7 +807,7 @@ def _check_is_rowkey(array: pa.Array):
 
 
 def wrap_primitive_arrays(
-        table: Union[pa.Table, pa.RecordBatch]
+    table: Union[pa.Table, pa.RecordBatch]
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = [
         _wrap_primitive_array(column, i == 0, table.schema.names[i])

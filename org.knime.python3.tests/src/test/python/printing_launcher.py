@@ -2,8 +2,8 @@ import knime_gateway as kg
 
 print("startup")
 
-class PrintingEntryPoint(kg.EntryPoint):
 
+class PrintingEntryPoint(kg.EntryPoint):
     def print(self, msg):
         print(msg)
 

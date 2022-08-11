@@ -116,7 +116,8 @@ class ArrowTable(knt.Table):
         self._table = table
 
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 
@@ -154,7 +155,9 @@ class ArrowTable(knt.Table):
         # )
         # return ArrowTable(appended)
 
-        raise NotImplementedError("append/insert for Arrow tables is not yet implemented")
+        raise NotImplementedError(
+            "append/insert for Arrow tables is not yet implemented"
+        )
 
     @property
     def num_rows(self) -> int:
@@ -236,9 +239,9 @@ class ArrowSourceTable(ArrowTable):
         """
         Returns an generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
-        
+
         **Example**::
-        
+
             processed_table = BatchOutputTable.create()
             for batch in my_table.to_batches():
                 input_batch = batch.to_pandas()
@@ -276,6 +279,7 @@ _arrow_to_knime_types = {
     pa.large_binary(): ks.blob()
     # pa.null(): ks.void(), ?
 }
+
 
 def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
     if katy.is_dict_encoded_value_factory_type(dtype):

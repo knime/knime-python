@@ -105,10 +105,7 @@ class ReusableGroup:
 
     @classmethod
     def create_default_dict(cls):
-        return {
-            "first_param": 12345,
-            "second_param": 54321
-        }
+        return {"first_param": 12345, "second_param": 54321}
 
 
 class ComposedParameterized:
@@ -116,6 +113,7 @@ class ComposedParameterized:
         # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
         self.first_group = ReusableGroup()
         self.second_group = ReusableGroup()
+
 
 @kp.parameter_group("Nested composed")
 class NestedComposed:
@@ -127,7 +125,7 @@ class NestedComposed:
     def create_default_dict(cls):
         return {
             "first_group": ReusableGroup.create_default_dict(),
-            "second_group": ReusableGroup.create_default_dict()
+            "second_group": ReusableGroup.create_default_dict(),
         }
 
 
@@ -137,11 +135,7 @@ class NestedComposedParameterized:
 
     @classmethod
     def create_default_dict(cls):
-        return {
-            "model": {
-                "group": NestedComposed.create_default_dict()
-            }
-        }
+        return {"model": {"group": NestedComposed.create_default_dict()}}
 
 
 #### Tests: ####
@@ -204,11 +198,7 @@ class ParameterTest(unittest.TestCase):
 
     def test_inject_parameters_with_missing_allowed(self):
         obj = Parameterized()
-        params = {
-            "model": {
-                "int_param": 5
-            }
-        }
+        params = {"model": {"int_param": 5}}
         kp.inject_parameters(obj, params, version=None, fail_on_missing=False)
         extracted = kp.extract_parameters(obj)
         expected = generate_values_dict(5)
@@ -225,23 +215,24 @@ class ParameterTest(unittest.TestCase):
                             "title": "Int Parameter",
                             "description": "An integer parameter",
                             "type": "integer",
-                            "format": "int32"
-                            },
+                            "format": "int32",
+                        },
                         "double_param": {
                             "title": "Double Parameter",
                             "description": "A double parameter",
                             "type": "number",
-                            "format": "double"},
+                            "format": "double",
+                        },
                         "string_param": {
                             "title": "String Parameter",
                             "description": "A string parameter",
-                            "type": "string"
-                            },
+                            "type": "string",
+                        },
                         "bool_param": {
                             "title": "Boolean Parameter",
                             "description": "A boolean parameter",
-                            "type": "boolean"
-                            },
+                            "type": "boolean",
+                        },
                         "parameter_group": {
                             "type": "object",
                             "properties": {
@@ -251,14 +242,14 @@ class ParameterTest(unittest.TestCase):
                                             "title": "First Parameter",
                                             "description": "First parameter description",
                                             "type": "integer",
-                                            "format": "int32"
-                                            },
+                                            "format": "int32",
+                                        },
                                         "second": {
                                             "title": "Second Parameter",
                                             "description": "Second parameter description",
                                             "type": "integer",
-                                            "format": "int32"
-                                            },
+                                            "format": "int32",
+                                        },
                                     },
                                     "type": "object",
                                 },
@@ -266,13 +257,13 @@ class ParameterTest(unittest.TestCase):
                                     "title": "Internal int Parameter",
                                     "description": "Internal int parameter description",
                                     "type": "integer",
-                                    "format": "int32"
-                                    },
+                                    "format": "int32",
+                                },
                             },
                         },
                     },
                 }
-            }
+            },
         }
         extracted = kp.extract_schema(self.parameterized)
         self.assertEqual(expected, extracted)
@@ -471,7 +462,7 @@ class ParameterTest(unittest.TestCase):
                                     "title": "Plain int param",
                                     "description": "Description of the plain int param.",
                                     "type": "integer",
-                                    "format": "int32"
+                                    "format": "int32",
                                 },
                                 "second_param": {
                                     "title": "Second int param",
@@ -488,7 +479,7 @@ class ParameterTest(unittest.TestCase):
                                     "title": "Plain int param",
                                     "description": "Description of the plain int param.",
                                     "type": "integer",
-                                    "format": "int32"
+                                    "format": "int32",
                                 },
                                 "second_param": {
                                     "title": "Second int param",
@@ -552,19 +543,34 @@ class ParameterTest(unittest.TestCase):
 
     def test_extract_description(self):
         expected = [
-            {"name": "Options", "description": "", "options": [
-                {"name": "Int Parameter", "description": "An integer parameter"},
-                {"name": "Double Parameter", "description": "A double parameter"},
-                {"name": "String Parameter", "description": "A string parameter"},
-                {"name": "Boolean Parameter", "description": "A boolean parameter"},
-            ]},
-            {"name": "Primary Group",
-            "description": """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter.""",
-            "options": [
-                {"name": "First Parameter", "description": "First parameter description"},
-                {"name": "Second Parameter", "description": "Second parameter description"},
-                {"name": "Internal int Parameter", "description": "Internal int parameter description"},
-            ]}
+            {
+                "name": "Options",
+                "description": "",
+                "options": [
+                    {"name": "Int Parameter", "description": "An integer parameter"},
+                    {"name": "Double Parameter", "description": "A double parameter"},
+                    {"name": "String Parameter", "description": "A string parameter"},
+                    {"name": "Boolean Parameter", "description": "A boolean parameter"},
+                ],
+            },
+            {
+                "name": "Primary Group",
+                "description": """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter.""",
+                "options": [
+                    {
+                        "name": "First Parameter",
+                        "description": "First parameter description",
+                    },
+                    {
+                        "name": "Second Parameter",
+                        "description": "Second parameter description",
+                    },
+                    {
+                        "name": "Internal int Parameter",
+                        "description": "Internal int parameter description",
+                    },
+                ],
+            },
         ]
         description = kp.extract_parameter_descriptions(self.parameterized)
         self.assertEqual(description, expected)

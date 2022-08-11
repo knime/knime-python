@@ -80,11 +80,13 @@ def _plot_matplotlib():
 
     return fig
 
+
 def matplotlib_example():
     print("Generating view from matplotlib figure...")
     fig = _plot_matplotlib()
     mpl_view = kv.view(fig)
     save_view(mpl_view, "mpl_view")
+
 
 def matplotlib_svg_example():
     print("Generating SVG view from matplotlib figure...")

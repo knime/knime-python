@@ -329,7 +329,6 @@ try:
         def can_convert(self, value):
             return type(value) == bitarray
 
-
 except ImportError:
     import logging
 
@@ -366,7 +365,9 @@ class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
     def can_convert(self, dtype) -> bool:
         return hasattr(dtype, "name") and dtype.name == "datetime64[ns]"
 
-    def convert_column(self, data_frame: "pandas.dataframe", column_name: str) -> "pandas.Series":
+    def convert_column(
+        self, data_frame: "pandas.dataframe", column_name: str
+    ) -> "pandas.Series":
         from pyarrow import int64, struct
         from knime_arrow_pandas import PandasLogicalTypeExtensionType
         from pandas import Series
@@ -384,4 +385,3 @@ class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
             dtype=dtype,
             index=column.index,
         )
-

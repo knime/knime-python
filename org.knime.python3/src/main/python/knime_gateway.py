@@ -103,7 +103,7 @@ class EntryPoint:
         # Note: Import errors are given back to the Java caller
         for ext in extensions:
             importlib.import_module(ext)
-    
+
     def registerPythonValueFactory(
         self,
         python_module,

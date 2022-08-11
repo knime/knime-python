@@ -125,7 +125,8 @@ class AbstractArrayTest(abc.ABC):
         array = self.data_to_array(data)
 
         self.assertListEqual(
-            [v is None for v in data], [not v.is_valid for v in array],
+            [v is None for v in data],
+            [not v.is_valid for v in array],
         )
 
     def test_is_null(self):
@@ -133,7 +134,8 @@ class AbstractArrayTest(abc.ABC):
         array = self.data_to_array(data)
 
         self.assertListEqual(
-            [v is None for v in data], [v.as_py() for v in array.is_null()],
+            [v is None for v in data],
+            [v.as_py() for v in array.is_null()],
         )
 
     def test_nullcount(self):
@@ -236,7 +238,8 @@ class AbstractArrayTest(abc.ABC):
         data = self.create_data(50, False)
         for array_slice, data_slice in self.create_slices(data):
             self.assertListEqual(
-                [v is None for v in data_slice], [not v.is_valid for v in array_slice],
+                [v is None for v in data_slice],
+                [not v.is_valid for v in array_slice],
             )
 
     def test_slice_is_null(self):
@@ -342,7 +345,8 @@ class AbstractArrayTest(abc.ABC):
         data = self.create_data(50, False)
         for array_take, data_take in self.create_takes(data):
             self.assertListEqual(
-                [v is None for v in data_take], [not v.is_valid for v in array_take],
+                [v is None for v in data_take],
+                [not v.is_valid for v in array_take],
             )
 
     def test_take_is_null(self):

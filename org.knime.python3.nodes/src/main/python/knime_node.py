@@ -195,7 +195,7 @@ class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
 
-    Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary, 
+    Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary,
     and @kn.output_view, or populate the input_ports, output_ports, and output_view attributes.
 
     Use the Python logging facilities and its `.warning` and `.error` methods to write warnings
@@ -222,7 +222,7 @@ class PythonNode(ABC):
                 def execute(self, exec_context, table):
                     return table
 
-                """
+    """
 
     input_ports: List[Port] = None
     output_ports: List[Port] = None
@@ -238,11 +238,11 @@ class PythonNode(ABC):
             *inputs:
                 Each input table spec or binary port spec will be added as parameter,
                 in the same order that the ports were defined.
-        
+
         Returns:
             Either a single spec, or a tuple or list of specs. The number of specs
             must match the number of defined output ports, and they must be returned in this order.
-        
+
         Raise:
             InvalidConfigurationError:
                 If the input configuration does not satisfy this node's requirements.
@@ -261,12 +261,12 @@ class PythonNode(ABC):
                 in the same order that the ports were defined.
                 Tables will be provided as a `kn.Table`, while binary data will be a plain
                 Python `bytes` object.
-        
+
         Returns:
-            Either a single output object (table or binary), or a tuple or list of objects. 
-            The number of output objects must match the number of defined output ports, 
-            and they must be returned in this order. 
-            Tables must be provided as a `kn.Table` or `kn.BatchOutputTable`, while binary data 
+            Either a single output object (table or binary), or a tuple or list of objects.
+            The number of output objects must match the number of defined output ports,
+            and they must be returned in this order.
+            Tables must be provided as a `kn.Table` or `kn.BatchOutputTable`, while binary data
             should be returned as plain Python `bytes` object.
         """
         pass
@@ -460,7 +460,7 @@ def node(
     id: str = None,
 ) -> Callable:
     """
-    Use this decorator to annotate a PythonNode class or function that creates a PythonNode 
+    Use this decorator to annotate a PythonNode class or function that creates a PythonNode
     instance that should correspond to a node in KNIME.
     """
 

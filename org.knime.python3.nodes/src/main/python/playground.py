@@ -87,4 +87,3 @@ class MyDecoratedNode(kn.PythonNode):
             exec_context.set_progress(0.25 * i)
 
         return ([t], objects)
-

@@ -184,7 +184,12 @@ class MyPandasExtArray(pdext.ExtensionArray):
 
     @classmethod
     def _from_sequence(
-        cls, scalars, dtype=None, copy=None, storage_type=None, logical_type=None,
+        cls,
+        scalars,
+        dtype=None,
+        copy=None,
+        storage_type=None,
+        logical_type=None,
     ):
         if scalars is None:
             raise ValueError("Cannot create MyPandasExtArray from empty data")
@@ -196,7 +201,9 @@ class MyPandasExtArray(pdext.ExtensionArray):
                     "MyPandasExtArray must be backed by MyArrowExtType values"
                 )
             return MyPandasExtArray(
-                scalars.type.storage_type, scalars.type.logical_type, scalars,
+                scalars.type.storage_type,
+                scalars.type.logical_type,
+                scalars,
             )
 
         if isinstance(dtype, MyPandasExtType):
@@ -521,7 +528,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         import knime_arrow_types as katy
 
         df = pd.DataFrame(
-            {"missingList": [[None, None], [None, None, None], None, [None, None]],}
+            {
+                "missingList": [[None, None], [None, None, None], None, [None, None]],
+            }
         )
         raw_t = pa.Table.from_pandas(df)
         array = raw_t.columns[0].chunks[0]
@@ -665,7 +674,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             t.append(df1)
             t.append(df2)
 
-
     def test_send_timestamp_to_knime(self):
         """
         This Testcase creates a pandas dataframe containing pandas timestamps and sends this timestamps to knime.
@@ -690,9 +698,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
                 ks.struct(ks.int64(), ks.int64()),
             ),
-
             knat._convert_arrow_schema_to_knime(A._schema)[0].ktype,
-
         )
 
         arrow_backend.close()
@@ -740,7 +746,8 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
         self.assertEqual(
-            knime_ts_ext_str, str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype)
+            knime_ts_ext_str,
+            str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype),
         )
 
         arrow_backend.close()
@@ -792,7 +799,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             ]
 
             df.drop(remove_cols, axis=1, inplace=True)
-            df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+            df.reset_index(
+                inplace=True, drop=True
+            )  # drop index as it messes up equality
 
             # Slice into two dfs which we will use as batches
             mid = int(len(df) / 2)

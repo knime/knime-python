@@ -173,8 +173,12 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
         # Appending this way keeps the CRS
         df = pd.concat(
-            [df, geopandas.GeoDataFrame(
-                [["testPoint", Point(12, 34)]], columns=["column1", "geometry"])],
+            [
+                df,
+                geopandas.GeoDataFrame(
+                    [["testPoint", Point(12, 34)]], columns=["column1", "geometry"]
+                ),
+            ],
             ignore_index=True,
         )
 
@@ -199,19 +203,26 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         # load test table
         t = self._generate_test_table(path="geospatial_table_3.zip")
         df = self._to_pandas(t)
-        df.columns =["column1", "geometry"]
+        df.columns = ["column1", "geometry"]
 
         gdf = gpd.GeoDataFrame(df)
         gdf = pd.concat(
-            [gdf, gpd.GeoDataFrame([["testPoint", Point(12, 34)]], columns=["column1", "geometry"])],
+            [
+                gdf,
+                gpd.GeoDataFrame(
+                    [["testPoint", Point(12, 34)]], columns=["column1", "geometry"]
+                ),
+            ],
             ignore_index=True,
         )
-        gdf['area'] = gdf.area
+        gdf["area"] = gdf.area
         original_df = gdf.reset_index(drop=True)
 
         # new backend
         gdf_copy = gdf.copy(deep=True)
-        node_table = node_arrow_backend.create_table_from_pandas(gdf_copy, sentinel='min')
+        node_table = node_arrow_backend.create_table_from_pandas(
+            gdf_copy, sentinel="min"
+        )
         geodf2 = gpd.GeoDataFrame(node_table.to_pandas())
         new_df = geodf2.reset_index(drop=True)
         self.assertEqual(original_df.crs, new_df.crs)
@@ -244,14 +255,15 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
         # test for new backend
         gdf_copy = gdf.copy(deep=True)
-        node_table = node_arrow_backend.create_table_from_pandas(gdf_copy, sentinel='min')
+        node_table = node_arrow_backend.create_table_from_pandas(
+            gdf_copy, sentinel="min"
+        )
         pd.testing.assert_frame_equal(gdf, gdf_copy)
 
         # test for old backend
         gdf_copy = gdf.copy(deep=True)
         table = arrow_backend.write_table(gdf_copy)
         pd.testing.assert_frame_equal(gdf, gdf_copy)
-
 
 
 if __name__ == "__main__":

@@ -47,7 +47,11 @@ class Columnar(ABC):
         return self._map(func, output_type, output_name, output_metadata)
 
     def _map(
-        self, func, output_type: ks.KnimeType, output_name: str, output_metadata=None,
+        self,
+        func,
+        output_type: ks.KnimeType,
+        output_name: str,
+        output_metadata=None,
     ) -> "ColumnarView":
         return ColumnarView(
             delegate=self,
@@ -438,7 +442,8 @@ class ArrowTable(Table):
         self._table = table
 
     def to_pandas(
-        self, sentinel: Optional[Union[str, int]] = None,
+        self,
+        sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
         import knime_arrow_pandas as kap
 

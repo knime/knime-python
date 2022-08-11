@@ -496,7 +496,7 @@ class _BaseColumnParameter(_BaseParameter):
         description,
         port_index: int,
         column_filter: Callable[[ks.Column], bool],
-        schema_option: str
+        schema_option: str,
     ):
         super().__init__(label, description, default_value=None)
         self._port_index = port_index
@@ -513,9 +513,14 @@ class _BaseColumnParameter(_BaseParameter):
 
     def _validate_specs(self, specs):
         if len(specs) <= self._port_index:
-            raise ValueError(f"There are too few input specs. The column selection '{self._name}' requires a table input at index {self._port_index}")
+            raise ValueError(
+                f"There are too few input specs. The column selection '{self._name}' requires a table input at index {self._port_index}"
+            )
         elif not isinstance(specs[self._port_index], ks.Schema):
-            raise TypeError(f"The port index ({self._port_index}) of the column selection '{self._name}' does not point to a table input.")
+            raise TypeError(
+                f"The port index ({self._port_index}) of the column selection '{self._name}' does not point to a table input."
+            )
+
 
 class ColumnParameter(_BaseColumnParameter):
     """
@@ -534,7 +539,6 @@ class ColumnParameter(_BaseColumnParameter):
         super().__init__(label, description, port_index, column_filter, "oneOf")
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
-        
 
     def _get_options(self) -> dict:
         return {

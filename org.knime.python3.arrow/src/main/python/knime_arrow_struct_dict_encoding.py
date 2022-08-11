@@ -441,7 +441,7 @@ class StructDictEncodedType(pa.ExtensionType):
 
     @staticmethod
     def version():
-        """ The version is stored in the Arrow field's metadata and must match the Java version of the extension type """
+        """The version is stored in the Arrow field's metadata and must match the Java version of the extension type"""
         return 0
 
     def __arrow_ext_serialize__(self):
@@ -549,6 +549,7 @@ class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
         # TODO use a more sophisticated mechanism. Maybe we can convert this to an (Arrow)dictionary encoded array
         py_list = self.to_pylist()
         return pa.array(py_list, type=self._value_type())
+
 
 ###############################################################################
 # PRIVATE HELPER FUNCTIONS
