@@ -5,6 +5,11 @@ import unittest
 
 
 class BlackFormattingTest(unittest.TestCase):
+    def setUp(self):
+        # Skip the test for Python < 3.9
+        if sys.version_info[1] < 9:
+            self.skipTest("skipped black formatting test on Python < 3.9")
+
     def test_black_formatting(self):
         root_dir = os.path.normpath(os.path.join(__file__, ".."))
         black_path = os.path.join(sys.prefix, "bin", "black")
