@@ -290,6 +290,49 @@ class LogicalType(KnimeType):
     def __hash__(self):
         return hash(str(self))
 
+    def to_pyarrow(self):
+        import knime_arrow_types as kat
+
+        try:
+            # decode the storage type of this value_type from the info provided with the java value factory
+            bundle = kt.get_bundle_by_logical_type(self.logical_type)
+        except (KeyError, AttributeError):
+            raise ValueError(
+                f"Unknown value_type. Are you missing an extension? Possible value types: {kt.get_python_type_list()}"
+            )
+        data_spec = bundle.data_spec_json
+        pa_storage_type = kat.data_spec_to_arrow(data_spec)
+
+        return kat.LogicalTypeExtensionType(
+            converter=bundle.value_factory,
+            storage_type=pa_storage_type,
+            java_value_factory=self.logical_type,
+        )
+
+    def to_pandas(self):
+        return self.to_pyarrow().to_pandas_dtype()
+
+    @staticmethod
+    def supported_value_types():
+        """
+        Returns a string with all possible value types in your current environment and tips and examples how to get them.
+        """
+        return f"""
+            The value types, which are currently available in your environment.
+            If you lack some value type, it might not have been installed and imported yet.
+
+            Examples:
+            ---------
+            # You see in the following list of value types \"<class 'datetime.time'>\"
+            import datetime
+            value_type = datetime.time
+
+            import datetime as dt
+            value_type = dt.time
+
+            List of available value types:
+            {kt.get_python_type_list()}"""
+
 
 # --------------------------------------------------------------------
 # Helpers
@@ -389,10 +432,10 @@ def logical(value_type) -> LogicalType:
             with `knime_types.register_python_value_factory`
     """
     try:
-        vf = kt._python_type_to_java_value_factory[value_type]
+        java_value_factory = kt.get_logical_by_python_type(value_type)
 
         # decode the storage type of this value_type from the info provided with the java value factory
-        bundle = kt._java_value_factory_to_bundle[vf]
+        bundle = kt.get_bundle_by_logical_type(java_value_factory)
         specs = bundle.data_spec_json
         traits = bundle.data_traits
         return _dict_to_knime_type(specs, traits)

@@ -520,6 +520,43 @@ def is_value_factory_type(dtype: pa.DataType):
     return isinstance(dtype, LogicalTypeExtensionType)
 
 
+_primitive_type_map = {
+    "string": pa.string(),
+    "variable_width_binary": pa.large_binary(),
+    "boolean": pa.bool_(),
+    "byte": pa.int8(),
+    "double": pa.float64(),
+    "float": pa.float32(),
+    "int": pa.int32(),
+    "long": pa.int64(),
+    "void": pa.null(),
+}
+
+
+def data_spec_to_arrow(data_spec):
+    """
+    Gives the pyarrow representation of a data spec.
+    Used, for example, to get the storage_type of logical extension types.
+    @param data_spec: A dict containing the data specification
+    @return: wrapped data
+    """
+    if isinstance(data_spec, str):
+        return _primitive_type_map[data_spec]
+    else:
+        type_id = data_spec["type"]
+        if type_id == "list":
+            value_type = data_spec["inner_type"]
+            return pa.large_list(data_spec_to_arrow(value_type))
+        elif type_id == "struct":
+            fields = [
+                (str(i), data_spec_to_arrow(t))
+                for (i, t) in enumerate(data_spec["inner_types"])
+            ]
+            return pa.struct(fields)
+        else:
+            raise ValueError("Invalid data_spec: " + str(data_spec))
+
+
 class KnimeExtensionArray(pa.ExtensionArray):
     def __getitem__(self, idx):
         storage_scalar = self.storage[idx]

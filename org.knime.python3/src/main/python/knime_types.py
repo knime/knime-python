@@ -123,6 +123,19 @@ _python_type_to_java_value_factory = {}
 _java_value_factory_to_python_type = {}
 
 
+def get_logical_by_python_type(python_type: str) -> str:
+    return _python_type_to_java_value_factory[python_type]
+
+
+def get_python_type_list():
+    return _python_type_to_java_value_factory.keys()
+
+
+def get_bundle_by_logical_type(logical_type: str):
+    "Logical type, also called Java value factory."
+    return _java_value_factory_to_bundle[logical_type]
+
+
 def register_python_value_factory(
     python_module,
     python_value_factory_name,
