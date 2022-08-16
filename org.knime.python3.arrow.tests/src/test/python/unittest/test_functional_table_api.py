@@ -633,20 +633,20 @@ class TableTest(unittest.TestCase):
     #     out_df = out_t.to_pandas()
     #     self.assertTrue(all(out_df.loc[:, "reference"] == out_df.loc[:, "result"]))
 
-    def test_filter(self):
-        df = pd.DataFrame()
-        df["A"] = [1, 2, 3, 4]
-        df["B"] = [10, 20, 30, 40]
-        t = Table.from_pandas(df)
+    # def test_filter(self):
+    #     df = pd.DataFrame()
+    #     df["A"] = [1, 2, 3, 4]
+    #     df["B"] = [10, 20, 30, 40]
+    #     t = Table.from_pandas(df)
 
-        def my_filter(row_key, a, *args):
-            return a % 2 == 0
+    #     def my_filter(row_key, a, *args):
+    #         return a % 2 == 0
 
-        out_t = t.filter(my_filter)
-        out_df = out_t.to_pandas()
-        self.assertEqual(2, len(out_df))
-        self.assertEqual(2, out_df.iloc[0, 0])
-        self.assertEqual(4, out_df.iloc[1, 0])
+    #     out_t = t.filter(my_filter)
+    #     out_df = out_t.to_pandas()
+    #     self.assertEqual(2, len(out_df))
+    #     self.assertEqual(2, out_df.iloc[0, 0])
+    #     self.assertEqual(4, out_df.iloc[1, 0])
 
 
 # TODO: look at / use sympy for arithmetic operations of tables
