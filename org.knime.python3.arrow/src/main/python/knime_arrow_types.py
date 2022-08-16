@@ -425,7 +425,29 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         return LogicalTypeExtensionType(converter, storage_type, logical_type)
 
     def __arrow_ext_class__(self):
+        """
+        Specify which exension array class to use when creating pyarrow arrays of this type
+        """
         return KnimeExtensionArray
+
+    def __arrow_ext_scalar_class__(self):
+        """
+        Specify which scalar class to use when accessing individual values of this type.
+        This feature was introduced in pyarrow 9. Before that, we were using
+        KnimeExtensionScalar (see below), but that stopped working in pyarrow 8 due to
+        their internal treatment of ExtensionArrays.
+
+        We define a special scalar type that references this logical type when this method is
+        called, the scalar invokes the decode method of this logical type in as_py().
+        """
+
+        class LogicalTypeExtensionScalar(pa.ExtensionScalar):
+            _ext_type = self
+
+            def as_py(self):
+                return self._ext_type.decode(self.value.as_py())
+
+        return LogicalTypeExtensionScalar
 
     def decode(self, storage):
         return self._converter.decode(storage)
